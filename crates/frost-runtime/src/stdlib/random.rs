@@ -126,10 +126,16 @@ fn float(rng: &Shared) -> Value {
         if low > high {
             return Err(bounds_error("rng.float", &args[0], &args[1]));
         }
+        if low == high {
+            return Ok(Value::Float(
+                FrostFloat::new(low).expect("a Numeric argument is finite"),
+            ));
+        }
         let t = draw(&rng, fastrand::Rng::f64_inclusive);
         // Weighting both ends, rather than `low + (high - low) * t`, cannot
-        // overflow, and gives exactly `low` and `high` at the ends.
-        let drawn = (1.0 - t) * low + t * high;
+        // overflow, and gives exactly `low` and `high` at the ends. Rounding can
+        // still step just past an end, so the result is clamped.
+        let drawn = ((1.0 - t) * low + t * high).clamp(low, high);
         Ok(Value::Float(
             FrostFloat::new(drawn).expect("a point between two finite floats is finite"),
         ))

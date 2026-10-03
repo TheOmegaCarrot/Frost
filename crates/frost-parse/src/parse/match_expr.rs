@@ -3,8 +3,9 @@ use crate::ast::{
     TypeConstraint,
 };
 use crate::lex::Token;
+use crate::parse::ParseResult;
+use crate::parse::ctx::{ParseCtx, int_literal};
 use crate::parse::strings::QuoteStyle;
-use crate::parse::{ParseResult, ctx::ParseCtx};
 
 impl<'src, 'f> ParseCtx<'src, 'f> {
     pub(crate) fn parse_match(&mut self) -> ParseResult<Spanned<Expr>> {
@@ -104,7 +105,8 @@ impl<'src, 'f> ParseCtx<'src, 'f> {
                 ))
             }
 
-            Token::IntLiteral(n) => {
+            Token::IntLiteral(magnitude) => {
+                let n = int_literal(magnitude, false, peek_start..peek_end)?;
                 self.advance(1);
                 Ok(literal_pattern(peek_start, peek_end, Literal::Int(n)))
             }
@@ -158,10 +160,11 @@ impl<'src, 'f> ParseCtx<'src, 'f> {
                 self.advance(1);
                 let next = self.must_peek("negative literal in match pattern")?;
                 match next.token {
-                    Token::IntLiteral(n) => {
+                    Token::IntLiteral(magnitude) => {
                         let end = next.span.end;
+                        let n = int_literal(magnitude, true, peek_start..end)?;
                         self.advance(1);
-                        Ok(literal_pattern(peek_start, end, Literal::Int(-n)))
+                        Ok(literal_pattern(peek_start, end, Literal::Int(n)))
                     }
                     Token::FloatLiteral(n) => {
                         let end = next.span.end;

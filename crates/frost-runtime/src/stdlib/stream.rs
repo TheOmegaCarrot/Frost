@@ -301,13 +301,45 @@ impl Sink for BufWriter<File> {
     }
 }
 
-impl Sink for Cursor<Vec<u8>> {
+/// An in-memory sink, which keeps everything written to it.
+#[derive(Default)]
+pub(super) struct Buffer(Cursor<Vec<u8>>);
+
+impl Write for Buffer {
+    fn write(&mut self, content: &[u8]) -> io::Result<usize> {
+        // Writing grows the buffer to the write's end, which may be far past
+        // the content after a seek. Past `isize::MAX` bytes, that would panic.
+        let fits = usize::try_from(self.0.position())
+            .ok()
+            .and_then(|position| position.checked_add(content.len()))
+            .is_some_and(|end| isize::try_from(end).is_ok());
+        if !fits {
+            return Err(io::Error::new(
+                io::ErrorKind::OutOfMemory,
+                "the buffer cannot grow that large",
+            ));
+        }
+        self.0.write(content)
+    }
+
+    fn flush(&mut self) -> io::Result<()> {
+        Ok(())
+    }
+}
+
+impl Seek for Buffer {
+    fn seek(&mut self, position: SeekFrom) -> io::Result<u64> {
+        self.0.seek(position)
+    }
+}
+
+impl Sink for Buffer {
     fn seekable(&mut self) -> Option<&mut dyn Seek> {
         Some(self)
     }
 
     fn contents(&self) -> Option<&[u8]> {
-        Some(self.get_ref())
+        Some(self.0.get_ref())
     }
 }
 

@@ -325,6 +325,23 @@ impl<'src, 'f> ParseCtx<'src, 'f> {
     }
 }
 
+/// The Int an Int literal of `magnitude` denotes, negated if `negative`, or an
+/// error at `span` if that is out of the Int range.
+pub(crate) fn int_literal(magnitude: u64, negative: bool, span: Range<usize>) -> ParseResult<i64> {
+    let value = if negative {
+        0i64.checked_sub_unsigned(magnitude)
+    } else {
+        i64::try_from(magnitude).ok()
+    };
+    value.ok_or_else(|| {
+        Diagnostic::at(
+            "Int literal out of range",
+            span.into(),
+            "an Int is from -9223372036854775808 to 9223372036854775807",
+        )
+    })
+}
+
 fn lex_error(span: Range<usize>) -> Diagnostic {
     Diagnostic::at("unexpected character", span.into(), "unrecognized")
 }

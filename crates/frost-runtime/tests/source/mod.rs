@@ -22,6 +22,8 @@
 // Each test binary uses its own subset of the harness.
 #![allow(dead_code)]
 
+pub(crate) mod assertions;
+
 use std::collections::BTreeMap;
 use std::num::NonZeroUsize;
 use std::sync::{Arc, Mutex};

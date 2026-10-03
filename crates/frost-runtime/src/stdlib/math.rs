@@ -159,7 +159,7 @@ fn clamp() -> Value {
         Param::of(FrostType::NUMERIC).named("hi"),
     ]);
     Value::checked_native("math.clamp", PARAMS, |_, args| {
-        if float_arg(&args[1]) > float_arg(&args[2]) {
+        if args[1].compare(&args[2])?.is_gt() {
             return Err(FrostError::from_string(format!(
                 "Function math.clamp requires argument 2 (lo) to be at most argument 3 (hi), \
                  got {} and {}",

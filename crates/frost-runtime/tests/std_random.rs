@@ -11,7 +11,13 @@ use std::sync::Arc;
 
 use frost_runtime::stdlib::RandomConfig;
 use frost_runtime::{Importer, ImporterBuilder, Stdlib, Value, stdlib};
+use source::assertions::{Library, library_assertions};
 use source::{Script, UNOPTIMIZED};
+
+library_assertions!(Library::module(
+    || stdlib::random(RandomConfig::default()),
+    "random"
+));
 
 /// An importer providing only `std.random`, configured by `config`.
 fn importer(config: RandomConfig) -> Arc<Importer> {
@@ -21,57 +27,11 @@ fn importer(config: RandomConfig) -> Arc<Importer> {
     ImporterBuilder::new().with_stdlib(stdlib).build()
 }
 
-/// `expression`, with `std.random` bound as `random`.
-fn source(expression: &str) -> String {
-    format!(
-        r"
-        def random = import('std.random')
-        {expression}
-        "
-    )
-}
-
-/// `expression`, run with `std.random` bound as `random`.
-fn script(expression: &str) -> Script {
-    Script::new(&source(expression)).importer(importer(RandomConfig::default()))
-}
-
 /// `expression`, run once with `importer`'s `std.random` bound as `random`.
 fn run_once(expression: &str, importer: &Arc<Importer>) -> Value {
-    Script::new(&source(expression))
+    Script::new(&LIBRARY.source(expression))
         .importer(Arc::clone(importer))
         .run_under(UNOPTIMIZED)
-}
-
-/// Assert each `expression` runs to the value of the Frost expression `expected`.
-fn assert_values(cases: &[(&str, &str)]) {
-    for (expression, expected) in cases {
-        assert_eq!(
-            script(expression).run(),
-            script(expected).run(),
-            "{expression:?} is {expected}"
-        );
-    }
-}
-
-/// Assert each `expression` raises exactly `message`.
-fn assert_raises(cases: &[(&str, &str)]) {
-    for (expression, message) in cases {
-        assert_eq!(script(expression).raises(), *message, "{expression:?}");
-    }
-}
-
-/// Assert `call` (such as `random.seed(1).int`) raises the arity error of
-/// `function` for each count in `counts`, where `expects` is how the error
-/// states its arity.
-fn assert_arity(call: &str, function: &str, expects: &str, counts: &[usize]) {
-    for &argc in counts {
-        let expression = format!("{call}({})", vec!["null"; argc].join(", "));
-        assert_raises(&[(
-            &expression,
-            &format!("Function {function} expects {expects} arguments, but was called with {argc}"),
-        )]);
-    }
 }
 
 /// A Frost expression for `count` draws from a fresh engine seeded with 1, each
@@ -98,13 +58,24 @@ fn the_module_holds_a_default_engine_and_seed() {
 }
 
 #[test]
-fn the_module_is_contained() {
-    let stdlib = Stdlib::contained(RandomConfig { rng_seed: Some(9) });
-    let contained = ImporterBuilder::new().with_stdlib(stdlib).build();
-    let result = Script::new("import('std.random').rng.int(4, 4)")
-        .importer(contained)
-        .run();
-    assert_eq!(result, Value::Int(4));
+fn the_presets_forward_the_configured_seed() {
+    let config = RandomConfig { rng_seed: Some(9) };
+    let draw = "random.seed(9).int(0, 1000000000000)";
+    let expected = run_once(draw, &importer(RandomConfig::default()));
+    for (name, stdlib) in [
+        ("contained", Stdlib::contained(config)),
+        ("complete", Stdlib::complete(config)),
+    ] {
+        let preset = ImporterBuilder::new().with_stdlib(stdlib).build();
+        // Each importer is new, so its default engine is at its first draw.
+        let result = Script::new("import('std.random').rng.int(0, 1000000000000)")
+            .importer(preset)
+            .run_under(UNOPTIMIZED);
+        assert_eq!(
+            result, expected,
+            "the {name} preset seeds random.rng with 9"
+        );
+    }
 }
 
 // --- Seeded engines ---
@@ -131,13 +102,21 @@ fn engines_of_one_seed_draw_alike() {
 
 #[test]
 fn any_int_is_a_seed() {
-    for seed in ["0", "-1", "math_maxint", "-9223372036854775807 - 1"] {
-        let seed = seed.replace("math_maxint", "9223372036854775807");
+    for seed in ["0", "-1", "9223372036854775807", "-9223372036854775807 - 1"] {
         assert_values(&[(
             &format!("random.seed({seed}).int(1, 6) == random.seed({seed}).int(1, 6)"),
             "true",
         )]);
     }
+    // The extreme seeds are distinct seeds, not folded together.
+    let source = r"
+        defn first(seed) -> random.seed(seed).int(0, 1000000000000)
+        len(count_by(
+            [first(0), first(-1), first(9223372036854775807), first(-9223372036854775807 - 1)],
+            id,
+        ))
+    ";
+    assert_values(&[(source, "4")]);
 }
 
 #[test]
@@ -215,6 +194,14 @@ fn float_draws_within_inclusive_bounds() {
             ),
             "true",
         ),
+        // The draws spread across the range, not clustering at one point.
+        (
+            &format!(
+                "[len(select({0}, fn x -> x < 0)) > 100, len(select({0}, fn x -> x > 1)) > 100]",
+                draws("r.float(-1.5, 2.5)", 1000)
+            ),
+            "[true, true]",
+        ),
         // Int bounds are taken as Floats.
         (
             &format!("all({}, is_float)", draws("r.float(0, 1)", 50)),
@@ -222,6 +209,29 @@ fn float_draws_within_inclusive_bounds() {
         ),
         (
             &format!("all({}, fn x -> x == 2.0)", draws("r.float(2, 2)", 50)),
+            "true",
+        ),
+        // Bounds that are not sums of powers of two, where weighting the ends
+        // rounds, still bound every draw exactly.
+        (
+            &format!(
+                "all({}, fn x -> x == 0.1)",
+                draws("r.float(0.1, 0.1)", 1000)
+            ),
+            "true",
+        ),
+        (
+            &format!(
+                "all({}, fn x -> x >= 0.1 and x <= 0.10000000000000002)",
+                draws("r.float(0.1, 0.10000000000000002)", 1000)
+            ),
+            "true",
+        ),
+        (
+            &format!(
+                "all({}, fn x -> x >= 0.3 and x <= 0.30000000000000004)",
+                draws("r.float(0.3, 0.30000000000000004)", 1000)
+            ),
             "true",
         ),
         // The widest bounds do not overflow.
@@ -246,16 +256,19 @@ fn bool_draws_with_a_probability() {
         (&format!("none({}, id)", draws("r.bool(0)", 200)), "true"),
         (&format!("all({}, id)", draws("r.bool(1)", 200)), "true"),
         (&format!("all({}, id)", draws("r.bool(1.0)", 200)), "true"),
-        // A fair coin and a biased one both come up both ways.
-        (
-            &format!("len(count_by({}, id))", draws("r.bool()", 200)),
-            "2",
-        ),
-        (
-            &format!("len(count_by({}, id))", draws("r.bool(0.2)", 200)),
-            "2",
-        ),
     ]);
+    // The seeded engine's draws are fixed, so these bands never flake; each is
+    // wide around the expected count.
+    for (draw, expected) in [("r.bool()", 400..600), ("r.bool(0.2)", 100..300)] {
+        let trues = script(&format!("len(select({}, id))", draws(draw, 1000))).run();
+        let Value::Int(trues) = trues else {
+            panic!("a count is an Int, got {trues:?}");
+        };
+        assert!(
+            expected.contains(&trues),
+            "{trues} of 1000 draws of {draw} were true, outside {expected:?}"
+        );
+    }
     for probability in ["-0.1", "1.5", "2"] {
         assert_raises(&[(
             &format!("random.seed(1).bool({probability})"),
@@ -438,16 +451,16 @@ fn every_function_checks_its_arguments() {
             "Function random.seed requires Int as argument 1 (seed), got Float",
         ),
     ]);
-    assert_arity(&format!("{engine}.int"), "rng.int", "2", &[0, 1, 3]);
-    assert_arity(&format!("{engine}.float"), "rng.float", "2", &[0, 1, 3]);
-    assert_arity(
+    assert_arity_of(&format!("{engine}.int"), "rng.int", 2, &[0, 1, 3]);
+    assert_arity_of(&format!("{engine}.float"), "rng.float", 2, &[0, 1, 3]);
+    assert_arity_of(
         &format!("{engine}.bool"),
         "rng.bool",
         "between 0 and 1",
         &[2],
     );
-    assert_arity(&format!("{engine}.choice"), "rng.choice", "1", &[0, 2]);
-    assert_arity(&format!("{engine}.sample"), "rng.sample", "2", &[0, 1, 3]);
-    assert_arity(&format!("{engine}.shuffle"), "rng.shuffle", "1", &[0, 2]);
-    assert_arity("random.seed", "random.seed", "1", &[0, 2]);
+    assert_arity_of(&format!("{engine}.choice"), "rng.choice", 1, &[0, 2]);
+    assert_arity_of(&format!("{engine}.sample"), "rng.sample", 2, &[0, 1, 3]);
+    assert_arity_of(&format!("{engine}.shuffle"), "rng.shuffle", 1, &[0, 2]);
+    assert_arity("seed", 1, &[0, 2]);
 }

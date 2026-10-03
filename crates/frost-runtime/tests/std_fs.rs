@@ -15,12 +15,12 @@ mod source;
 use std::os::unix::ffi::OsStrExt;
 use std::os::unix::fs::PermissionsExt;
 use std::path::{Path, PathBuf};
-use std::sync::Arc;
 use std::{env, fs, process};
 
 use frost_runtime::stdlib::RandomConfig;
-use frost_runtime::{Importer, ImporterBuilder, Stdlib, Value, stdlib};
+use frost_runtime::{ImporterBuilder, Stdlib, Value, stdlib};
 use source::Script;
+use source::assertions::Library;
 
 /// A scratch directory of one test's own, removed when it is dropped.
 struct Scratch(PathBuf);
@@ -69,14 +69,7 @@ impl Scratch {
 
     /// `expression`, run with `std.fs` bound as `fs` and this directory as `dir`.
     fn script(&self, expression: &str) -> Script {
-        let source = format!(
-            r"
-            def fs = import('std.fs')
-            {expression}
-            "
-        );
-        Script::new(&source)
-            .importer(importer())
+        FS.script(expression)
             .capture("dir", Value::from(self.text("")))
     }
 
@@ -95,13 +88,8 @@ impl Drop for Scratch {
     }
 }
 
-/// An importer providing only `std.fs`.
-fn importer() -> Arc<Importer> {
-    let stdlib = Stdlib::new()
-        .with_module(stdlib::fs())
-        .expect("a lone module is accepted");
-    ImporterBuilder::new().with_stdlib(stdlib).build()
-}
+/// `std.fs`, bound as `fs`.
+const FS: Library = Library::module(stdlib::fs, "fs");
 
 /// The value of the Frost expression `source`, which needs no module.
 fn frost(source: &str) -> Value {
@@ -194,6 +182,7 @@ fn cwd_absolute_and_canonical_resolve_paths() {
         "fs.canonical",
         &missing,
     );
+    assert_io_error(&scratch.raises("fs.absolute('')"), "fs.absolute", "");
 }
 
 // --- Types and metadata ---
@@ -257,6 +246,14 @@ fn special_file_tests() {
             ]"
         )
     );
+    assert_eq!(
+        scratch.run(
+            r"
+            map [fs.concat(dir, 'fifo'), fs.concat(dir, 'socket')] with fn path -> fs.stat(path).type
+            "
+        ),
+        frost("['fifo', 'socket']")
+    );
     // A block device, where the machine has a familiar one.
     let block = ["/dev/loop0", "/dev/sda", "/dev/vda", "/dev/nvme0n1"]
         .into_iter()
@@ -264,11 +261,18 @@ fn special_file_tests() {
             use std::os::unix::fs::FileTypeExt;
             fs::metadata(path).is_ok_and(|metadata| metadata.file_type().is_block_device())
         });
-    if let Some(block) = block {
-        assert_eq!(
-            scratch.run(&format!("fs.is_block('{block}')")),
-            Value::Bool(true)
-        );
+    match block {
+        Some(block) => {
+            assert_eq!(
+                scratch.run(&format!("fs.is_block('{block}')")),
+                Value::Bool(true)
+            );
+            assert_eq!(
+                scratch.run(&format!("fs.stat('{block}').type")),
+                frost("'block'")
+            );
+        }
+        None => eprintln!("skipped: no familiar block device here, so is_block is not tested true"),
     }
 }
 
@@ -311,10 +315,23 @@ fn stat_describes_a_file_without_following_a_link() {
 #[test]
 fn size_measures_a_regular_file() {
     let scratch = Scratch::new("size");
-    scratch.file("five", "hello").file("empty", "").dir("dir");
+    scratch
+        .file("five", "hello")
+        .file("empty", "")
+        .dir("dir")
+        .link("to_five", scratch.path("five"));
     assert_eq!(
         scratch.run("[fs.size(fs.concat(dir, 'five')), fs.size(fs.concat(dir, 'empty'))]"),
         frost("[5, 0]")
+    );
+    assert_eq!(
+        scratch.run("fs.size(fs.concat(dir, 'to_five'))"),
+        Value::Int(5),
+        "a link is followed to the file's size"
+    );
+    assert_eq!(
+        scratch.raises("fs.size('/dev/null')"),
+        "Function fs.size requires a regular file, but `/dev/null` is a character device"
     );
     assert_eq!(
         scratch.raises("fs.size(fs.concat(dir, 'dir'))"),
@@ -386,6 +403,71 @@ fn list_recursively_lists_a_tree_without_entering_links() {
 }
 
 #[test]
+fn listings_sort_by_path_component() {
+    let scratch = Scratch::new("component_order");
+    scratch.file("sub/b", "").file("sub-x", "");
+    // Sorted as text, `sub-x` would come before `sub/b`.
+    let expected: Vec<String> = ["sub", "sub/b", "sub-x"]
+        .into_iter()
+        .map(|entry| scratch.text(entry))
+        .collect();
+    assert_eq!(
+        scratch.run("fs.list_recursively(dir)"),
+        Value::from_iter(expected.into_iter().map(Value::from))
+    );
+}
+
+/// Restores a directory's permissions when dropped, so a failed assertion
+/// cannot leave a directory the scratch cleanup cannot remove.
+struct Restore {
+    path: PathBuf,
+    mode: u32,
+}
+
+impl Drop for Restore {
+    fn drop(&mut self) {
+        let _ = fs::set_permissions(&self.path, fs::Permissions::from_mode(self.mode));
+    }
+}
+
+#[test]
+fn list_recursively_lists_but_skips_a_directory_it_may_not_read() {
+    let scratch = Scratch::new("denied");
+    scratch
+        .file("tree/open/x", "")
+        .file("tree/locked/hidden", "");
+    let locked = scratch.path("tree/locked");
+    let mode = fs::metadata(&locked)
+        .expect("metadata")
+        .permissions()
+        .mode();
+    let _restore = Restore {
+        path: locked.clone(),
+        mode,
+    };
+    fs::set_permissions(&locked, fs::Permissions::from_mode(0o000)).expect("permissions set");
+    // Root reads any directory, so the denial cannot be arranged: skip.
+    if fs::read_dir(&locked).is_ok() {
+        eprintln!("skipped: this user can read a directory with no permissions (root?)");
+        return;
+    }
+    let expected: Vec<String> = ["locked", "open", "open/x"]
+        .into_iter()
+        .map(|entry| scratch.text(&format!("tree/{entry}")))
+        .collect();
+    assert_eq!(
+        scratch.run("fs.list_recursively(fs.concat(dir, 'tree'))"),
+        Value::from_iter(expected.into_iter().map(Value::from)),
+        "the unreadable directory is listed, not entered"
+    );
+    assert_io_error(
+        &scratch.raises("fs.list(fs.concat(dir, 'tree/locked'))"),
+        "fs.list",
+        &scratch.text("tree/locked"),
+    );
+}
+
+#[test]
 fn a_path_that_is_not_utf8_is_an_error() {
     let scratch = Scratch::new("utf8");
     let name = std::ffi::OsStr::from_bytes(b"bad\xff");
@@ -433,6 +515,23 @@ fn move_renames() {
 }
 
 #[test]
+fn move_replaces_a_file() {
+    let scratch = Scratch::new("move_replace");
+    scratch.file("old", "old");
+    // An update made whole: write a new file, then move it over the old one.
+    let source = r"
+        def old = fs.concat(dir, 'old')
+        def new = fs.concat(dir, 'new')
+        fs.write(new, 'replaced')
+        fs.move(new, old)
+        def result = [fs.read(old), fs.exists(new)]
+        fs.write(old, 'old')
+        result
+    ";
+    assert_eq!(scratch.run(source), frost("['replaced', false]"));
+}
+
+#[test]
 fn copy_copies_a_file_without_overwriting() {
     let scratch = Scratch::new("copy_file");
     scratch.file("from", "hello").file("taken", "");
@@ -475,6 +574,112 @@ fn copy_copies_a_tree_keeping_links_as_links() {
         result
     ";
     assert_eq!(scratch.run(source), frost("[true, 2, true]"));
+}
+
+#[test]
+fn copy_follows_a_link_at_the_top() {
+    let scratch = Scratch::new("copy_top_link");
+    scratch
+        .file("file", "hi")
+        .link("link", scratch.path("file"));
+    let source = r"
+        def to = fs.concat(dir, 'to')
+        fs.copy(fs.concat(dir, 'link'), to)
+        def result = [fs.is_symlink(to), fs.is_file(to), fs.read(to)]
+        fs.remove(to)
+        result
+    ";
+    assert_eq!(scratch.run(source), frost("[false, true, 'hi']"));
+}
+
+#[test]
+fn copy_merges_a_tree_into_an_existing_directory() {
+    let scratch = Scratch::new("copy_merge");
+    scratch
+        .file("tree/a", "a")
+        .file("tree/sub/b", "b")
+        .file("copy/keep", "k");
+    let source = r"
+        def to = fs.concat(dir, 'copy')
+        fs.copy(fs.concat(dir, 'tree'), to)
+        def result = [
+            map fs.list(to) with fs.filename,
+            fs.read(fs.concat(to, 'sub/b')),
+            fs.read(fs.concat(to, 'keep')),
+        ]
+        fs.remove(fs.concat(to, 'a'))
+        fs.remove_recursively(fs.concat(to, 'sub'))
+        result
+    ";
+    assert_eq!(
+        scratch.run(source),
+        frost("[['a', 'keep', 'sub'], 'b', 'k']")
+    );
+}
+
+#[test]
+fn copy_refuses_to_overwrite_a_file_inside_a_tree() {
+    let scratch = Scratch::new("copy_nested_collision");
+    // Entries copied before and after the collision, were nothing checked first.
+    scratch
+        .file("tree/a", "a")
+        .file("tree/sub/b", "new")
+        .file("tree/z", "z")
+        .file("copy/sub/b", "old");
+    assert_eq!(
+        scratch.raises("fs.copy(fs.concat(dir, 'tree'), fs.concat(dir, 'copy'))"),
+        format!(
+            "Function fs.copy failed on `{}`: `{}` already exists",
+            scratch.text("tree"),
+            scratch.text("copy/sub/b")
+        )
+    );
+    assert_eq!(
+        fs::read_to_string(scratch.path("copy/sub/b")).unwrap(),
+        "old",
+        "untouched"
+    );
+    assert_eq!(
+        scratch.run("fs.list_recursively(fs.concat(dir, 'copy'))"),
+        Value::array([scratch.text("copy/sub"), scratch.text("copy/sub/b")]),
+        "a copy that collides copies nothing"
+    );
+}
+
+#[test]
+fn copy_refuses_anything_in_the_way() {
+    let scratch = Scratch::new("copy_in_the_way");
+    scratch
+        .file("tree/file", "x")
+        .file("tree/dir/inner", "x")
+        .dir("copy_dir_at_file/file")
+        .file("copy_file_at_dir/dir", "")
+        .file("copy_link_at_file/keep", "");
+    scratch.link("copy_link_at_file/file", scratch.path("gone"));
+    for (destination, in_the_way) in [
+        // A directory where a file would go.
+        ("copy_dir_at_file", "copy_dir_at_file/file"),
+        // A file where a directory would go.
+        ("copy_file_at_dir", "copy_file_at_dir/dir"),
+        // A broken link where a file would go.
+        ("copy_link_at_file", "copy_link_at_file/file"),
+    ] {
+        assert_eq!(
+            scratch.raises(&format!(
+                "fs.copy(fs.concat(dir, 'tree'), fs.concat(dir, '{destination}'))"
+            )),
+            format!(
+                "Function fs.copy failed on `{}`: `{}` already exists",
+                scratch.text("tree"),
+                scratch.text(in_the_way)
+            ),
+            "{destination}"
+        );
+    }
+    assert!(
+        !scratch.path("copy_link_at_file/dir").exists(),
+        "a copy that collides copies nothing"
+    );
 }
 
 #[test]
@@ -555,17 +760,24 @@ fn remove_removes_a_file_link_or_empty_directory() {
     let source = r"
         def empty = fs.concat(dir, 'empty')
         def link = fs.concat(dir, 'link')
+        def file = fs.concat(dir, 'file')
         def target = fs.concat(dir, 'target')
         fs.mkdir(empty)
         fs.symlink(target, link)
+        fs.write(file, 'x')
         [
             fs.remove(empty),
             fs.remove(link),
             fs.exists(target),
+            fs.remove(file),
+            fs.exists(file),
             fs.remove(fs.concat(dir, 'missing')),
         ]
     ";
-    assert_eq!(scratch.run(source), frost("[true, true, true, false]"));
+    assert_eq!(
+        scratch.run(source),
+        frost("[true, true, true, true, false, false]")
+    );
     assert_io_error(
         &scratch.raises("fs.remove(fs.concat(dir, 'full'))"),
         "fs.remove",
@@ -585,15 +797,27 @@ fn remove_recursively_counts_what_it_removes() {
         def from = fs.concat(dir, 'tree')
         def to = fs.concat(dir, 'copy')
         fs.copy(from, to)
-        def entries = len(fs.list_recursively(to))
+        def lone = fs.concat(dir, 'lone')
+        def link = fs.concat(dir, 'link')
+        fs.write(lone, 'x')
+        fs.symlink(fs.concat(dir, 'kept'), link)
         [
-            fs.remove_recursively(to) == entries + 1,
+            fs.remove_recursively(to),
             fs.exists(to),
             fs.exists(fs.concat(dir, 'kept/c')),
             fs.remove_recursively(fs.concat(dir, 'missing')),
+            fs.remove_recursively(lone),
+            fs.exists(lone),
+            fs.remove_recursively(link),
+            fs.exists(link),
+            fs.exists(fs.concat(dir, 'kept/c')),
         ]
     ";
-    assert_eq!(scratch.run(source), frost("[true, false, true, 0]"));
+    // The copy holds itself, `a`, `sub`, `sub/b`, and the link `to_kept`.
+    assert_eq!(
+        scratch.run(source),
+        frost("[5, false, true, 0, 1, false, 1, false, true]")
+    );
 }
 
 // --- Reading and writing ---
@@ -621,11 +845,17 @@ fn read_reads_a_whole_file() {
             scratch.text("binary")
         )
     );
+    scratch.dir("directory");
     for function in ["read", "read_bytes"] {
         assert_io_error(
             &scratch.raises(&format!("fs.{function}(fs.concat(dir, 'missing'))")),
             &format!("fs.{function}"),
             &scratch.text("missing"),
+        );
+        assert_io_error(
+            &scratch.raises(&format!("fs.{function}(fs.concat(dir, 'directory'))")),
+            &format!("fs.{function}"),
+            &scratch.text("directory"),
         );
     }
 }
@@ -797,6 +1027,136 @@ fn open_append_writes_at_the_end_of_a_file() {
     );
 }
 
+#[test]
+fn a_closed_file_stream_refuses_every_operation_but_close_and_is_open() {
+    let scratch = Scratch::new("closed");
+    scratch.file("file", "content");
+    for call in [
+        "read_one()",
+        "read_rest()",
+        "read_bytes(1)",
+        "read_rest_bytes()",
+    ] {
+        let member = call.split('(').next().expect("a call has a name");
+        let source = format!(
+            r"
+            def r = fs.open_read(fs.concat(dir, 'file'))
+            r.close()
+            r.{call}
+            "
+        );
+        assert_eq!(
+            scratch.raises(&source),
+            format!("Function reader.{member} requires an open stream, but it is closed")
+        );
+    }
+    for call in ["writeln('x')", "tell()", "seek(0)", "flush()"] {
+        let member = call.split('(').next().expect("a call has a name");
+        let source = format!(
+            r"
+            def w = fs.open_write(fs.concat(dir, 'out'))
+            w.close()
+            w.{call}
+            "
+        );
+        assert_eq!(
+            scratch.raises(&source),
+            format!("Function writer.{member} requires an open stream, but it is closed")
+        );
+    }
+    let source = r"
+        def w = fs.open_write(fs.concat(dir, 'out'))
+        w.close()
+        w.close()
+        w.is_open()
+    ";
+    assert_eq!(scratch.run(source), Value::Bool(false));
+}
+
+#[test]
+fn file_stream_members_check_their_arguments() {
+    let scratch = Scratch::new("stream_arguments");
+    scratch.file("file", "content");
+    for member in [
+        "close",
+        "is_open",
+        "read_line",
+        "read_one",
+        "read_rest",
+        "read_rest_bytes",
+        "eof",
+        "tell",
+    ] {
+        let source = format!(
+            r"
+            def r = fs.open_read(fs.concat(dir, 'file'))
+            r.{member}(1)
+            "
+        );
+        assert_eq!(
+            scratch.raises(&source),
+            format!("Function reader.{member} expects 0 arguments, but was called with 1")
+        );
+    }
+    for member in ["close", "is_open", "flush", "tell"] {
+        let source = format!(
+            r"
+            def w = fs.open_write(fs.concat(dir, 'out'))
+            w.{member}(1)
+            "
+        );
+        assert_eq!(
+            scratch.raises(&source),
+            format!("Function writer.{member} expects 0 arguments, but was called with 1")
+        );
+    }
+    for (stream, open, kind) in [
+        ("r", "fs.open_read(fs.concat(dir, 'file'))", "reader"),
+        ("w", "fs.open_write(fs.concat(dir, 'out'))", "writer"),
+    ] {
+        for (argument, problem) in [
+            ("'0'", "requires Int as argument 1, got String"),
+            ("-1", "requires argument 1 to be at least 0, got -1"),
+        ] {
+            let source = format!(
+                r"
+                def {stream} = {open}
+                {stream}.seek({argument})
+                "
+            );
+            assert_eq!(
+                scratch.raises(&source),
+                format!("Function {kind}.seek {problem}")
+            );
+        }
+    }
+}
+
+#[cfg(target_os = "linux")]
+#[test]
+fn closing_a_writer_reports_a_failure_to_write_out_and_still_closes_it() {
+    let scratch = Scratch::new("full");
+    // `/dev/full` accepts a buffered write, then fails the flush as out of space.
+    let raised = scratch.raises(
+        r"
+        def w = fs.open_write('/dev/full')
+        w.write('x')
+        w.close()
+        ",
+    );
+    assert!(
+        raised.starts_with("Function writer.close failed: "),
+        "{raised}"
+    );
+    let source = r"
+        def w = fs.open_write('/dev/full')
+        w.write('x')
+        def closed = try_call(w.close)
+        [closed.ok, w.is_open()]
+    ";
+    assert_eq!(scratch.run(source), frost("[false, false]"));
+}
+
 // --- Arguments ---
 
 #[test]
@@ -846,13 +1206,20 @@ fn every_function_checks_its_arguments() {
     }
     for function in ["move", "copy", "symlink"] {
         assert_eq!(
+            scratch.raises(&format!("fs.{function}(x'62', 'a')")),
+            format!("Function fs.{function} requires String as argument 1, got Bytes")
+        );
+        assert_eq!(
             scratch.raises(&format!("fs.{function}('a', x'62')")),
             format!("Function fs.{function} requires String as argument 2, got Bytes")
         );
-        assert_eq!(
-            scratch.raises(&format!("fs.{function}('a')")),
-            format!("Function fs.{function} expects 2 arguments, but was called with 1")
-        );
+        for argc in [0, 1, 3] {
+            let args = vec!["'a'"; argc].join(", ");
+            assert_eq!(
+                scratch.raises(&format!("fs.{function}({args})")),
+                format!("Function fs.{function} expects 2 arguments, but was called with {argc}")
+            );
+        }
     }
     for function in ["write", "append"] {
         assert_eq!(
@@ -877,6 +1244,17 @@ fn every_function_checks_its_arguments() {
         scratch.raises("fs.concat('a', 1)"),
         "Function fs.concat requires String as argument 2 (path), got Int"
     );
+    assert_eq!(
+        scratch.raises("fs.concat(1, 'a')"),
+        "Function fs.concat requires String as argument 1 (base), got Int"
+    );
+    for argc in [0, 1, 3] {
+        let args = vec!["'a'"; argc].join(", ");
+        assert_eq!(
+            scratch.raises(&format!("fs.concat({args})")),
+            format!("Function fs.concat expects 2 arguments, but was called with {argc}")
+        );
+    }
     assert_eq!(
         scratch.raises("fs.cwd(1)"),
         "Function fs.cwd expects 0 arguments, but was called with 1"

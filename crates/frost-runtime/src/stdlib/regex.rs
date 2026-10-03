@@ -82,9 +82,13 @@ impl Pattern {
         // span with the text's would not do: `a|ab` finds only `a` in `ab`.
         // The pattern is already valid alone, which wrapping it relies on: an
         // unbalanced one such as `a)|(?:b` would otherwise become valid, with
-        // another meaning.
+        // another meaning. So wrapping fails only when the pattern ends in a
+        // verbose-mode `#` comment, which swallows the closing `)\z`; ending the
+        // line first ends the comment, and verbose mode ignores the line break.
         let whole = self.whole.get_or_init(|| {
-            Regex::new(&format!(r"\A(?:{})\z", self.regex.as_str()))
+            let pattern = self.regex.as_str();
+            Regex::new(&format!(r"\A(?:{pattern})\z"))
+                .or_else(|_| Regex::new(&format!("\\A(?:{pattern}\n)\\z")))
                 .expect("a valid pattern stays valid anchored")
         });
         Value::Bool(whole.is_match(text))

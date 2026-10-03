@@ -7,40 +7,11 @@
 
 mod source;
 
-use std::sync::Arc;
-
-use frost_runtime::{Importer, ImporterBuilder, Stdlib, Value, stdlib};
+use frost_runtime::{Value, stdlib};
 use source::Script;
+use source::assertions::{Library, library_assertions};
 
-/// An importer providing only `std.encoding`.
-fn importer() -> Arc<Importer> {
-    let stdlib = Stdlib::new()
-        .with_module(stdlib::encoding())
-        .expect("a lone module is accepted");
-    ImporterBuilder::new().with_stdlib(stdlib).build()
-}
-
-/// `expression`, run with `std.encoding` bound as `enc`.
-fn script(expression: &str) -> Script {
-    let source = format!(
-        r"
-        def enc = import('std.encoding')
-        {expression}
-        "
-    );
-    Script::new(&source).importer(importer())
-}
-
-/// Assert each `expression` runs to the value of the Frost expression `expected`.
-fn assert_values(cases: &[(&str, &str)]) {
-    for (expression, expected) in cases {
-        assert_eq!(
-            script(expression).run(),
-            script(expected).run(),
-            "{expression:?} is {expected}"
-        );
-    }
-}
+library_assertions!(Library::module(stdlib::encoding, "enc"));
 
 /// Assert each `expression` runs to Null.
 fn assert_nulls(expressions: &[&str]) {
@@ -50,28 +21,6 @@ fn assert_nulls(expressions: &[&str]) {
             Value::Null,
             "{expression:?} is Null"
         );
-    }
-}
-
-/// Assert each `expression` raises exactly `message`.
-fn assert_raises(cases: &[(&str, &str)]) {
-    for (expression, message) in cases {
-        assert_eq!(script(expression).raises(), *message, "{expression:?}");
-    }
-}
-
-/// Assert `function` (a path under `enc`, such as `b64.encode`) raises its
-/// arity error when called with each count in `counts`, where it expects
-/// exactly `arity` arguments.
-fn assert_arity(function: &str, arity: usize, counts: &[usize]) {
-    for &argc in counts {
-        let expression = format!("enc.{function}({})", vec!["null"; argc].join(", "));
-        assert_raises(&[(
-            &expression,
-            &format!(
-                "Function encoding.{function} expects {arity} arguments, but was called with {argc}"
-            ),
-        )]);
     }
 }
 
@@ -326,9 +275,10 @@ fn b64_decode_returns_null_for_text_that_is_not_canonical_base64() {
             // Bits past the last byte that are not zero.
             &format!("enc.b64.{decoder}('Zh==')"),
             &format!("enc.b64.{decoder}('Zm9=')"),
-            // Characters outside the alphabet.
-            &format!("enc.b64.{decoder}('Zm9v Yg==')"),
-            &format!(r"enc.b64.{decoder}('\u{{e9}}AAA')"),
+            // Characters outside the alphabet, in a length that is a multiple of four.
+            &format!("enc.b64.{decoder}('Zm 9')"),
+            &format!("enc.b64.{decoder}('Zm9v Yg=')"),
+            &format!(r"enc.b64.{decoder}('\u{{e9}}AA')"),
         ]);
     }
 }

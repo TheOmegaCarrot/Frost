@@ -7,13 +7,32 @@
 //   slots
 //        0  f
 //        1  inv
+//   constants
+//        0  "Function inv requires Function as argument 1, got "
 //   children
 //        0  inv_fn (child 0)
 //   code
-//        0  DefLocal       0  ; f
-//        1  DefLocal       1  ; inv
-//        2  ConsumeLocal   0  ; f
-//        3  CreateClosure  0  ; inv_fn, 1 capture
+//        0  DefLocal       0    ; f
+//        1  DefLocal       1    ; inv
+//        2  LoadGlobal     8    ; is_function
+//        3  LoadLocal      0    ; f
+//        4  Call           1
+//        5  LogicalNot
+//        6  JumpIfFalse    L0   ; +8
+//        7  LoadGlobal     102  ; error
+//        8  LoadConst      0    ; "Function inv requires Function as ar...
+//        9  LoadGlobal     14   ; type
+//       10  LoadLocal      0    ; f
+//       11  Call           1
+//       12  Concat         2
+//       13  Call           1
+//       14  Jump           L1   ; +1
+//   L0:
+//       15  PushNull
+//   L1:
+//       16  DropBelow      0
+//       17  ConsumeLocal   0    ; f
+//       18  CreateClosure  0    ; inv_fn, 1 capture
 //
 // function inv_fn (child 0)
 //   arity 0 or more, 1 capture
@@ -36,15 +55,34 @@
 //        0  outer
 //        1  f
 //        2  curry
+//   constants
+//        0  "Function curry requires Function as argument 1, got "
 //   children
 //        0  curry_fn (child 0)
 //   code
-//        0  DefLocal       0  ; outer
-//        1  DefLocal       1  ; f
-//        2  DefLocal       2  ; curry
-//        3  ConsumeLocal   1  ; f
-//        4  ConsumeLocal   0  ; outer
-//        5  CreateClosure  0  ; curry_fn, 2 captures
+//        0  DefLocal       0    ; outer
+//        1  DefLocal       1    ; f
+//        2  DefLocal       2    ; curry
+//        3  LoadGlobal     8    ; is_function
+//        4  LoadLocal      1    ; f
+//        5  Call           1
+//        6  LogicalNot
+//        7  JumpIfFalse    L0   ; +8
+//        8  LoadGlobal     102  ; error
+//        9  LoadConst      0    ; "Function curry requires Function as ...
+//       10  LoadGlobal     14   ; type
+//       11  LoadLocal      1    ; f
+//       12  Call           1
+//       13  Concat         2
+//       14  Call           1
+//       15  Jump           L1   ; +1
+//   L0:
+//       16  PushNull
+//   L1:
+//       17  DropBelow      0
+//       18  ConsumeLocal   1    ; f
+//       19  ConsumeLocal   0    ; outer
+//       20  CreateClosure  0    ; curry_fn, 2 captures
 //
 // function curry_fn (child 0)
 //   arity 0 or more, 2 captures
@@ -69,15 +107,34 @@
 //        0  outer
 //        1  f
 //        2  bcurry
+//   constants
+//        0  "Function bcurry requires Function as argument 1, got "
 //   children
 //        0  bcurry_fn (child 0)
 //   code
-//        0  DefLocal       0  ; outer
-//        1  DefLocal       1  ; f
-//        2  DefLocal       2  ; bcurry
-//        3  ConsumeLocal   1  ; f
-//        4  ConsumeLocal   0  ; outer
-//        5  CreateClosure  0  ; bcurry_fn, 2 captures
+//        0  DefLocal       0    ; outer
+//        1  DefLocal       1    ; f
+//        2  DefLocal       2    ; bcurry
+//        3  LoadGlobal     8    ; is_function
+//        4  LoadLocal      1    ; f
+//        5  Call           1
+//        6  LogicalNot
+//        7  JumpIfFalse    L0   ; +8
+//        8  LoadGlobal     102  ; error
+//        9  LoadConst      0    ; "Function bcurry requires Function as...
+//       10  LoadGlobal     14   ; type
+//       11  LoadLocal      1    ; f
+//       12  Call           1
+//       13  Concat         2
+//       14  Call           1
+//       15  Jump           L1   ; +1
+//   L0:
+//       16  PushNull
+//   L1:
+//       17  DropBelow      0
+//       18  ConsumeLocal   1    ; f
+//       19  ConsumeLocal   0    ; outer
+//       20  CreateClosure  0    ; bcurry_fn, 2 captures
 //
 // function bcurry_fn (child 0)
 //   arity 0 or more, 2 captures
@@ -111,13 +168,32 @@
 //   slots
 //        0  f
 //        1  spread
+//   constants
+//        0  "Function spread requires Function as argument 1, got "
 //   children
 //        0  spread_fn (child 0)
 //   code
-//        0  DefLocal       0  ; f
-//        1  DefLocal       1  ; spread
-//        2  ConsumeLocal   0  ; f
-//        3  CreateClosure  0  ; spread_fn, 1 capture
+//        0  DefLocal       0    ; f
+//        1  DefLocal       1    ; spread
+//        2  LoadGlobal     8    ; is_function
+//        3  LoadLocal      0    ; f
+//        4  Call           1
+//        5  LogicalNot
+//        6  JumpIfFalse    L0   ; +8
+//        7  LoadGlobal     102  ; error
+//        8  LoadConst      0    ; "Function spread requires Function as...
+//        9  LoadGlobal     14   ; type
+//       10  LoadLocal      0    ; f
+//       11  Call           1
+//       12  Concat         2
+//       13  Call           1
+//       14  Jump           L1   ; +1
+//   L0:
+//       15  PushNull
+//   L1:
+//       16  DropBelow      0
+//       17  ConsumeLocal   0    ; f
+//       18  CreateClosure  0    ; spread_fn, 1 capture
 //
 // function spread_fn (child 0)
 //   arity 1, 1 capture
@@ -138,13 +214,32 @@
 //   slots
 //        0  f
 //        1  rev_args
+//   constants
+//        0  "Function rev_args requires Function as argument 1, got "
 //   children
 //        0  rev_args_fn (child 0)
 //   code
-//        0  DefLocal       0  ; f
-//        1  DefLocal       1  ; rev_args
-//        2  ConsumeLocal   0  ; f
-//        3  CreateClosure  0  ; rev_args_fn, 1 capture
+//        0  DefLocal       0    ; f
+//        1  DefLocal       1    ; rev_args
+//        2  LoadGlobal     8    ; is_function
+//        3  LoadLocal      0    ; f
+//        4  Call           1
+//        5  LogicalNot
+//        6  JumpIfFalse    L0   ; +8
+//        7  LoadGlobal     102  ; error
+//        8  LoadConst      0    ; "Function rev_args requires Function ...
+//        9  LoadGlobal     14   ; type
+//       10  LoadLocal      0    ; f
+//       11  Call           1
+//       12  Concat         2
+//       13  Call           1
+//       14  Jump           L1   ; +1
+//   L0:
+//       15  PushNull
+//   L1:
+//       16  DropBelow      0
+//       17  ConsumeLocal   0    ; f
+//       18  CreateClosure  0    ; rev_args_fn, 1 capture
 //
 // function rev_args_fn (child 0)
 //   arity 0 or more, 1 capture
@@ -168,15 +263,34 @@
 //        0  f
 //        1  a
 //        2  tap
+//   constants
+//        0  "Function tap requires Function as argument 2, got "
 //   code
-//        0  DefLocal      0  ; f
-//        1  DefLocal      1  ; a
-//        2  DefLocal      2  ; tap
-//        3  ConsumeLocal  0  ; f
-//        4  LoadLocal     1  ; a
+//        0  DefLocal      0    ; f
+//        1  DefLocal      1    ; a
+//        2  DefLocal      2    ; tap
+//        3  LoadGlobal    8    ; is_function
+//        4  LoadLocal     0    ; f
 //        5  Call          1
-//        6  DropBelow     0
-//        7  ConsumeLocal  1  ; a
+//        6  LogicalNot
+//        7  JumpIfFalse   L0   ; +8
+//        8  LoadGlobal    102  ; error
+//        9  LoadConst     0    ; "Function tap requires Function as ar...
+//       10  LoadGlobal    14   ; type
+//       11  LoadLocal     0    ; f
+//       12  Call          1
+//       13  Concat        2
+//       14  Call          1
+//       15  Jump          L1   ; +1
+//   L0:
+//       16  PushNull
+//   L1:
+//       17  DropBelow     0
+//       18  ConsumeLocal  0    ; f
+//       19  LoadLocal     1    ; a
+//       20  Call          1
+//       21  DropBelow     0
+//       22  ConsumeLocal  1    ; a
 //
 // function const
 //   arity 1, 0 captures
@@ -208,90 +322,112 @@
 //        1  g
 //        2  f
 //        3  compose
-//        4  require_fn
+//        4  functions
 //        5  compose2
 //   constants
 //        0  "No match arm matches the value: "
 //   children
-//        0  require_fn (child 0)
+//        0  <lambda> (child 0)
 //        1  compose2 (child 1)
 //   code
 //        0  DefLocal           0    ; rest
 //        1  DefLocal           1    ; g
 //        2  DefLocal           2    ; f
 //        3  DefLocal           3    ; compose
-//        4  CreateClosure      0    ; require_fn, 0 captures
-//        5  DefLocal           4    ; require_fn
-//        6  LoadGlobal         96   ; each
-//        7  LoadLocal          2    ; f
-//        8  LoadLocal          1    ; g
-//        9  MakeArray          2
-//       10  LoadLocal          0    ; rest
-//       11  Add
-//       12  ConsumeLocal       4    ; require_fn
-//       13  Call               2
-//       14  DropBelow          0
-//       15  CreateClosure      1    ; compose2, 0 captures
-//       16  DefLocal           5    ; compose2
-//       17  LoadLocal          0    ; rest
-//       18  MarkStack
-//       19  PeekDown           0
-//       20  TestArrayLenExact  0
-//       21  JumpIfFalse        L0   ; +8
-//       22  ExplodeArray
-//       23  DropMark
-//       24  DropBelow          0
-//       25  ConsumeLocal       5    ; compose2
-//       26  ConsumeLocal       2    ; f
-//       27  ConsumeLocal       1    ; g
-//       28  TailCall           2
-//       29  Jump               L1   ; +22
+//        4  LoadLocal          2    ; f
+//        5  LoadLocal          1    ; g
+//        6  MakeArray          2
+//        7  LoadLocal          0    ; rest
+//        8  Add
+//        9  DefLocal           4    ; functions
+//       10  LoadGlobal         96   ; each
+//       11  LoadGlobal         49   ; range
+//       12  LoadGlobal         48   ; len
+//       13  LoadLocal          4    ; functions
+//       14  Call               1
+//       15  Call               1
+//       16  ConsumeLocal       4    ; functions
+//       17  CreateClosure      0    ; <lambda>, 1 capture
+//       18  Call               2
+//       19  DropBelow          0
+//       20  CreateClosure      1    ; compose2, 0 captures
+//       21  DefLocal           5    ; compose2
+//       22  LoadLocal          0    ; rest
+//       23  MarkStack
+//       24  PeekDown           0
+//       25  TestArrayLenExact  0
+//       26  JumpIfFalse        L0   ; +8
+//       27  ExplodeArray
+//       28  DropMark
+//       29  DropBelow          0
+//       30  ConsumeLocal       5    ; compose2
+//       31  ConsumeLocal       2    ; f
+//       32  ConsumeLocal       1    ; g
+//       33  TailCall           2
+//       34  Jump               L1   ; +22
 //   L0:
-//       30  RewindToMark
-//       31  MarkStack
-//       32  PeekDown           0
-//       33  DropBelow          0
-//       34  DropMark
-//       35  DropBelow          0
-//       36  LoadGlobal         100  ; call
-//       37  ConsumeLocal       3    ; compose
-//       38  ConsumeLocal       5    ; compose2
-//       39  ConsumeLocal       2    ; f
-//       40  ConsumeLocal       1    ; g
-//       41  Call               2
-//       42  MakeArray          1
-//       43  ConsumeLocal       0    ; rest
-//       44  Add
-//       45  TailCall           2
-//       46  Jump               L1   ; +5
-//       47  RewindToMark
-//       48  LoadConst          0    ; "No match arm matches the value: "
-//       49  PeekDown           1
-//       50  Concat             2
-//       51  ProduceError
+//       35  RewindToMark
+//       36  MarkStack
+//       37  PeekDown           0
+//       38  DropBelow          0
+//       39  DropMark
+//       40  DropBelow          0
+//       41  LoadGlobal         100  ; call
+//       42  ConsumeLocal       3    ; compose
+//       43  ConsumeLocal       5    ; compose2
+//       44  ConsumeLocal       2    ; f
+//       45  ConsumeLocal       1    ; g
+//       46  Call               2
+//       47  MakeArray          1
+//       48  ConsumeLocal       0    ; rest
+//       49  Add
+//       50  TailCall           2
+//       51  Jump               L1   ; +5
+//       52  RewindToMark
+//       53  LoadConst          0    ; "No match arm matches the value: "
+//       54  PeekDown           1
+//       55  Concat             2
+//       56  ProduceError
 //   L1:
-//       52  (end)
+//       57  (end)
 //
-// function require_fn (child 0)
-//   arity 1, 0 captures
+// function <lambda> (child 0)
+//   arity 1, 1 capture
 //   slots
-//        0  h
-//        1  require_fn
+//        0  functions   capture
+//        1  i
+//        2  h
 //   constants
-//        0  "Compose requires functions, got "
+//        0  "Function compose requires Function as argument "
+//        1  ", got "
 //   code
-//        0  DefLocal      0    ; h
-//        1  DefLocal      1    ; require_fn
-//        2  LoadGlobal    114  ; assert
-//        3  LoadGlobal    8    ; is_function
-//        4  LoadLocal     0    ; h
-//        5  Call          1
-//        6  LoadConst     0    ; "Compose requires functions, got "
-//        7  LoadGlobal    14   ; type
-//        8  ConsumeLocal  0    ; h
-//        9  Call          1
-//       10  Concat        2
-//       11  TailCall      2
+//        0  DefLocal            1    ; i
+//        1  DropBelow           0
+//        2  ConsumeLocal        0    ; functions
+//        3  LoadLocal           1    ; i
+//        4  SoftIndexStructure
+//        5  DefLocal            2    ; h
+//        6  LoadGlobal          8    ; is_function
+//        7  LoadLocal           2    ; h
+//        8  Call                1
+//        9  LogicalNot
+//       10  JumpIfFalse         L0   ; +12
+//       11  LoadGlobal          102  ; error
+//       12  LoadConst           0    ; "Function compose requires Function a...
+//       13  ConsumeLocal        1    ; i
+//       14  PushInt             1
+//       15  Add
+//       16  LoadConst           1    ; ", got "
+//       17  LoadGlobal          14   ; type
+//       18  ConsumeLocal        2    ; h
+//       19  Call                1
+//       20  Concat              4
+//       21  TailCall            1
+//       22  Jump                L1   ; +1
+//   L0:
+//       23  PushNull
+//   L1:
+//       24  (end)
 //
 // function compose2 (child 1)
 //   arity 2, 0 captures
@@ -444,11 +580,30 @@ pub(super) fn functions() -> Value {
                 map([(string("DefLocal"), int(0))]),
                 map([(string("DefLocal"), int(1))]),
                 map([(string("DefLocal"), int(2))]),
+                map([(string("LoadGlobal"), int(8))]),
+                map([(string("LoadLocal"), int(1))]),
+                map([(string("Call"), int(1))]),
+                string("LogicalNot"),
+                map([(string("JumpIfFalse"), int(8))]),
+                map([(string("LoadGlobal"), int(102))]),
+                map([(string("LoadConst"), int(0))]),
+                map([(string("LoadGlobal"), int(14))]),
+                map([(string("LoadLocal"), int(1))]),
+                map([(string("Call"), int(1))]),
+                map([(string("Concat"), int(2))]),
+                map([(string("Call"), int(1))]),
+                map([(string("Jump"), int(1))]),
+                string("PushNull"),
+                map([(string("DropBelow"), int(0))]),
                 map([(string("ConsumeLocal"), int(1))]),
                 map([(string("ConsumeLocal"), int(0))]),
                 map([(string("CreateClosure"), int(0))]),
             ])),
-            (string("constants"), array([])),
+            (string("constants"), array([
+                map([
+                    (string("String"), string("Function bcurry requires Function as argument 1, got ")),
+                ]),
+            ])),
             (string("key_constants"), array([])),
             (string("name"), string("bcurry")),
             (string("name_table"), array([
@@ -484,30 +639,48 @@ pub(super) fn functions() -> Value {
                     (string("arity"), map([(string("Exact"), int(1))])),
                     (string("child_fns"), array([])),
                     (string("code"), array([
-                        map([(string("DefLocal"), int(0))]),
                         map([(string("DefLocal"), int(1))]),
-                        map([(string("LoadGlobal"), int(114))]),
-                        map([(string("LoadGlobal"), int(8))]),
-                        map([(string("LoadLocal"), int(0))]),
-                        map([(string("Call"), int(1))]),
-                        map([(string("LoadConst"), int(0))]),
-                        map([(string("LoadGlobal"), int(14))]),
+                        map([(string("DropBelow"), int(0))]),
                         map([(string("ConsumeLocal"), int(0))]),
+                        map([(string("LoadLocal"), int(1))]),
+                        string("SoftIndexStructure"),
+                        map([(string("DefLocal"), int(2))]),
+                        map([(string("LoadGlobal"), int(8))]),
+                        map([(string("LoadLocal"), int(2))]),
                         map([(string("Call"), int(1))]),
-                        map([(string("Concat"), int(2))]),
-                        map([(string("TailCall"), int(2))]),
+                        string("LogicalNot"),
+                        map([(string("JumpIfFalse"), int(12))]),
+                        map([(string("LoadGlobal"), int(102))]),
+                        map([(string("LoadConst"), int(0))]),
+                        map([(string("ConsumeLocal"), int(1))]),
+                        map([(string("PushInt"), int(1))]),
+                        string("Add"),
+                        map([(string("LoadConst"), int(1))]),
+                        map([(string("LoadGlobal"), int(14))]),
+                        map([(string("ConsumeLocal"), int(2))]),
+                        map([(string("Call"), int(1))]),
+                        map([(string("Concat"), int(4))]),
+                        map([(string("TailCall"), int(1))]),
+                        map([(string("Jump"), int(1))]),
+                        string("PushNull"),
                     ])),
-                    (string("constants"), array([map([(string("String"), string("Compose requires functions, got "))])])),
+                    (string("constants"), array([
+                        map([
+                            (string("String"), string("Function compose requires Function as argument ")),
+                        ]),
+                        map([(string("String"), string(", got "))]),
+                    ])),
                     (string("key_constants"), array([])),
-                    (string("name"), string("require_fn")),
+                    (string("name"), string("<lambda>")),
                     (string("name_table"), array([
-                        map([(string("exported"), boolean(false)), (string("name"), string("h"))]),
                         map([
                             (string("exported"), boolean(false)),
-                            (string("name"), string("require_fn")),
+                            (string("name"), string("functions")),
                         ]),
+                        map([(string("exported"), boolean(false)), (string("name"), string("i"))]),
+                        map([(string("exported"), boolean(false)), (string("name"), string("h"))]),
                     ])),
-                    (string("num_captures"), int(0)),
+                    (string("num_captures"), int(1)),
                     (string("version"), string("0.0.1")),
                 ]),
                 map([
@@ -579,15 +752,20 @@ pub(super) fn functions() -> Value {
                 map([(string("DefLocal"), int(1))]),
                 map([(string("DefLocal"), int(2))]),
                 map([(string("DefLocal"), int(3))]),
-                map([(string("CreateClosure"), int(0))]),
-                map([(string("DefLocal"), int(4))]),
-                map([(string("LoadGlobal"), int(96))]),
                 map([(string("LoadLocal"), int(2))]),
                 map([(string("LoadLocal"), int(1))]),
                 map([(string("MakeArray"), int(2))]),
                 map([(string("LoadLocal"), int(0))]),
                 string("Add"),
+                map([(string("DefLocal"), int(4))]),
+                map([(string("LoadGlobal"), int(96))]),
+                map([(string("LoadGlobal"), int(49))]),
+                map([(string("LoadGlobal"), int(48))]),
+                map([(string("LoadLocal"), int(4))]),
+                map([(string("Call"), int(1))]),
+                map([(string("Call"), int(1))]),
                 map([(string("ConsumeLocal"), int(4))]),
+                map([(string("CreateClosure"), int(0))]),
                 map([(string("Call"), int(2))]),
                 map([(string("DropBelow"), int(0))]),
                 map([(string("CreateClosure"), int(1))]),
@@ -636,7 +814,7 @@ pub(super) fn functions() -> Value {
                 map([(string("exported"), boolean(false)), (string("name"), string("g"))]),
                 map([(string("exported"), boolean(false)), (string("name"), string("f"))]),
                 map([(string("exported"), boolean(false)), (string("name"), string("compose"))]),
-                map([(string("exported"), boolean(false)), (string("name"), string("require_fn"))]),
+                map([(string("exported"), boolean(false)), (string("name"), string("functions"))]),
                 map([(string("exported"), boolean(false)), (string("name"), string("compose2"))]),
             ])),
             (string("num_captures"), int(0)),
@@ -725,11 +903,30 @@ pub(super) fn functions() -> Value {
                 map([(string("DefLocal"), int(0))]),
                 map([(string("DefLocal"), int(1))]),
                 map([(string("DefLocal"), int(2))]),
+                map([(string("LoadGlobal"), int(8))]),
+                map([(string("LoadLocal"), int(1))]),
+                map([(string("Call"), int(1))]),
+                string("LogicalNot"),
+                map([(string("JumpIfFalse"), int(8))]),
+                map([(string("LoadGlobal"), int(102))]),
+                map([(string("LoadConst"), int(0))]),
+                map([(string("LoadGlobal"), int(14))]),
+                map([(string("LoadLocal"), int(1))]),
+                map([(string("Call"), int(1))]),
+                map([(string("Concat"), int(2))]),
+                map([(string("Call"), int(1))]),
+                map([(string("Jump"), int(1))]),
+                string("PushNull"),
+                map([(string("DropBelow"), int(0))]),
                 map([(string("ConsumeLocal"), int(1))]),
                 map([(string("ConsumeLocal"), int(0))]),
                 map([(string("CreateClosure"), int(0))]),
             ])),
-            (string("constants"), array([])),
+            (string("constants"), array([
+                map([
+                    (string("String"), string("Function curry requires Function as argument 1, got ")),
+                ]),
+            ])),
             (string("key_constants"), array([])),
             (string("name"), string("curry")),
             (string("name_table"), array([
@@ -885,10 +1082,29 @@ pub(super) fn functions() -> Value {
             (string("code"), array([
                 map([(string("DefLocal"), int(0))]),
                 map([(string("DefLocal"), int(1))]),
+                map([(string("LoadGlobal"), int(8))]),
+                map([(string("LoadLocal"), int(0))]),
+                map([(string("Call"), int(1))]),
+                string("LogicalNot"),
+                map([(string("JumpIfFalse"), int(8))]),
+                map([(string("LoadGlobal"), int(102))]),
+                map([(string("LoadConst"), int(0))]),
+                map([(string("LoadGlobal"), int(14))]),
+                map([(string("LoadLocal"), int(0))]),
+                map([(string("Call"), int(1))]),
+                map([(string("Concat"), int(2))]),
+                map([(string("Call"), int(1))]),
+                map([(string("Jump"), int(1))]),
+                string("PushNull"),
+                map([(string("DropBelow"), int(0))]),
                 map([(string("ConsumeLocal"), int(0))]),
                 map([(string("CreateClosure"), int(0))]),
             ])),
-            (string("constants"), array([])),
+            (string("constants"), array([
+                map([
+                    (string("String"), string("Function inv requires Function as argument 1, got ")),
+                ]),
+            ])),
             (string("key_constants"), array([])),
             (string("name"), string("inv")),
             (string("name_table"), array([
@@ -935,10 +1151,29 @@ pub(super) fn functions() -> Value {
             (string("code"), array([
                 map([(string("DefLocal"), int(0))]),
                 map([(string("DefLocal"), int(1))]),
+                map([(string("LoadGlobal"), int(8))]),
+                map([(string("LoadLocal"), int(0))]),
+                map([(string("Call"), int(1))]),
+                string("LogicalNot"),
+                map([(string("JumpIfFalse"), int(8))]),
+                map([(string("LoadGlobal"), int(102))]),
+                map([(string("LoadConst"), int(0))]),
+                map([(string("LoadGlobal"), int(14))]),
+                map([(string("LoadLocal"), int(0))]),
+                map([(string("Call"), int(1))]),
+                map([(string("Concat"), int(2))]),
+                map([(string("Call"), int(1))]),
+                map([(string("Jump"), int(1))]),
+                string("PushNull"),
+                map([(string("DropBelow"), int(0))]),
                 map([(string("ConsumeLocal"), int(0))]),
                 map([(string("CreateClosure"), int(0))]),
             ])),
-            (string("constants"), array([])),
+            (string("constants"), array([
+                map([
+                    (string("String"), string("Function rev_args requires Function as argument 1, got ")),
+                ]),
+            ])),
             (string("key_constants"), array([])),
             (string("name"), string("rev_args")),
             (string("name_table"), array([
@@ -980,10 +1215,29 @@ pub(super) fn functions() -> Value {
             (string("code"), array([
                 map([(string("DefLocal"), int(0))]),
                 map([(string("DefLocal"), int(1))]),
+                map([(string("LoadGlobal"), int(8))]),
+                map([(string("LoadLocal"), int(0))]),
+                map([(string("Call"), int(1))]),
+                string("LogicalNot"),
+                map([(string("JumpIfFalse"), int(8))]),
+                map([(string("LoadGlobal"), int(102))]),
+                map([(string("LoadConst"), int(0))]),
+                map([(string("LoadGlobal"), int(14))]),
+                map([(string("LoadLocal"), int(0))]),
+                map([(string("Call"), int(1))]),
+                map([(string("Concat"), int(2))]),
+                map([(string("Call"), int(1))]),
+                map([(string("Jump"), int(1))]),
+                string("PushNull"),
+                map([(string("DropBelow"), int(0))]),
                 map([(string("ConsumeLocal"), int(0))]),
                 map([(string("CreateClosure"), int(0))]),
             ])),
-            (string("constants"), array([])),
+            (string("constants"), array([
+                map([
+                    (string("String"), string("Function spread requires Function as argument 1, got ")),
+                ]),
+            ])),
             (string("key_constants"), array([])),
             (string("name"), string("spread")),
             (string("name_table"), array([
@@ -1000,13 +1254,32 @@ pub(super) fn functions() -> Value {
                 map([(string("DefLocal"), int(0))]),
                 map([(string("DefLocal"), int(1))]),
                 map([(string("DefLocal"), int(2))]),
+                map([(string("LoadGlobal"), int(8))]),
+                map([(string("LoadLocal"), int(0))]),
+                map([(string("Call"), int(1))]),
+                string("LogicalNot"),
+                map([(string("JumpIfFalse"), int(8))]),
+                map([(string("LoadGlobal"), int(102))]),
+                map([(string("LoadConst"), int(0))]),
+                map([(string("LoadGlobal"), int(14))]),
+                map([(string("LoadLocal"), int(0))]),
+                map([(string("Call"), int(1))]),
+                map([(string("Concat"), int(2))]),
+                map([(string("Call"), int(1))]),
+                map([(string("Jump"), int(1))]),
+                string("PushNull"),
+                map([(string("DropBelow"), int(0))]),
                 map([(string("ConsumeLocal"), int(0))]),
                 map([(string("LoadLocal"), int(1))]),
                 map([(string("Call"), int(1))]),
                 map([(string("DropBelow"), int(0))]),
                 map([(string("ConsumeLocal"), int(1))]),
             ])),
-            (string("constants"), array([])),
+            (string("constants"), array([
+                map([
+                    (string("String"), string("Function tap requires Function as argument 2, got ")),
+                ]),
+            ])),
             (string("key_constants"), array([])),
             (string("name"), string("tap")),
             (string("name_table"), array([

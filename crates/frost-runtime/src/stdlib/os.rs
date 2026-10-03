@@ -72,7 +72,6 @@ fn sleep() -> Value {
 // --- run ---
 
 /// The options `os.run` takes in its optional third argument.
-/// An option set to Null is as if absent.
 #[derive(Default, Deserialize)]
 #[serde(default, deny_unknown_fields)]
 struct RunOptions {
@@ -184,6 +183,22 @@ fn run() -> Value {
             .stdout(Stdio::piped())
             .stderr(Stdio::piped());
         if let Some(cwd) = &options.cwd {
+            // Spawning reports a bad working directory as if the program were
+            // missing, so it is checked first, to name what is wrong.
+            match std::fs::metadata(cwd) {
+                Ok(metadata) if metadata.is_dir() => {}
+                Ok(_) => {
+                    return Err(FrostError::from_string(format!(
+                        "Function os.run requires its `cwd` option to be a directory, \
+                         but `{cwd}` is not"
+                    )));
+                }
+                Err(err) => {
+                    return Err(FrostError::from_string(format!(
+                        "Function os.run cannot use `{cwd}` as its working directory: {err}"
+                    )));
+                }
+            }
             command.current_dir(cwd);
         }
         if let Some(vars) = &options.replace_env {

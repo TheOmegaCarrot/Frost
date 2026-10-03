@@ -3,20 +3,37 @@
 # Each top-level function becomes the global of the same name.
 # A function may refer only to its parameters, its own name, and globals.
 # A function a global returns is named `<global>_fn`, for errors and backtraces.
+# A function argument is checked up front, raising as a native's type check does.
 
-defn inv(f) -> fn inv_fn(...args) -> not f @ call(args)
+defn inv(f) -> {
+    if not is_function(f): error($'Function inv requires Function as argument 1, got ${type(f)}')
+    fn inv_fn(...args) -> not f @ call(args)
+}
 
-defn curry(f, ...outer) -> fn curry_fn(...inner) -> f @ call(outer + inner)
+defn curry(f, ...outer) -> {
+    if not is_function(f): error($'Function curry requires Function as argument 1, got ${type(f)}')
+    fn curry_fn(...inner) -> f @ call(outer + inner)
+}
 
-defn bcurry(f, ...outer) -> fn bcurry_fn(...inner) -> f @ call(inner + outer)
+defn bcurry(f, ...outer) -> {
+    if not is_function(f): error($'Function bcurry requires Function as argument 1, got ${type(f)}')
+    fn bcurry_fn(...inner) -> f @ call(inner + outer)
+}
 
 defn collect(...e) -> e
 
-defn spread(f) -> fn spread_fn(arr) -> call(f, arr)
+defn spread(f) -> {
+    if not is_function(f): error($'Function spread requires Function as argument 1, got ${type(f)}')
+    fn spread_fn(arr) -> call(f, arr)
+}
 
-defn rev_args(f) -> fn rev_args_fn(...args) -> call(f, reverse(args))
+defn rev_args(f) -> {
+    if not is_function(f): error($'Function rev_args requires Function as argument 1, got ${type(f)}')
+    fn rev_args_fn(...args) -> call(f, reverse(args))
+}
 
 defn tap(a, f) -> {
+    if not is_function(f): error($'Function tap requires Function as argument 2, got ${type(f)}')
     f(a)
     a
 }
@@ -24,9 +41,11 @@ defn tap(a, f) -> {
 defn const(v) -> fn const_fn(..._) -> v
 
 defn compose(f, g, ...rest) -> {
-    defn require_fn(h) -> assert(is_function(h), $'Compose requires functions, got ${type(h)}')
-
-    foreach [f, g] + rest with require_fn
+    def functions = [f, g] + rest
+    foreach range(len(functions)) with fn i -> {
+        def h = functions[i]
+        if not is_function(h): error($'Function compose requires Function as argument ${i + 1}, got ${type(h)}')
+    }
 
     defn compose2(f1, f2) -> fn compose_fn(...args) -> f2(call(f1, args))
 

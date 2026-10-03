@@ -213,6 +213,33 @@ mod literals {
     }
 
     #[test]
+    fn int_literals_at_the_ends_of_the_range() {
+        for (source, n) in [
+            ("match x { 9223372036854775807 => true }", i64::MAX),
+            ("match x { -9223372036854775808 => true }", i64::MIN),
+        ] {
+            let expr = parse_expr(source);
+            let (_, arms) = assert_match(&expr);
+            let v = assert_value_pattern(&arms[0].node.pattern);
+            assert!(is_int(v, n), "{source:?}");
+        }
+    }
+
+    #[test]
+    fn int_literals_out_of_range() {
+        for source in [
+            "match x { 9223372036854775808 => true }",
+            "match x { -9223372036854775809 => true }",
+        ] {
+            let err = parse_err(source);
+            assert!(
+                err.contains("Int literal out of range"),
+                "{source:?}: {err}"
+            );
+        }
+    }
+
+    #[test]
     fn negative_float_literal() {
         let expr = parse_expr("match x { -3.14 => true }");
         let (_, arms) = assert_match(&expr);

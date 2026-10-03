@@ -255,19 +255,16 @@ fn call_non_array_second_arg_is_type_error() {
 
 #[test]
 fn call_non_function_first_arg_is_type_error() {
-    // call(5, []): the first arg must be callable. The error comes from
-    // DynTailCall's `not_callable`, which names the offending type.
+    // call(5, []): the first arg must be a Function.
     let err = run_main(
         vec![],
         vec![LoadGlobal(call_slot()), PushInt(5), MakeArray(0), Call(2)],
     )
     .unwrap_err();
-    assert!(
-        err.message().contains("non-function"),
-        "got: {}",
-        err.message()
+    assert_eq!(
+        err.message(),
+        "Function call requires Function as argument 1, got Int"
     );
-    assert!(err.message().contains("Int"), "got: {}", err.message());
 }
 
 #[test]

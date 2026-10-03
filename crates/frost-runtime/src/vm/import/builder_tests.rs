@@ -1,7 +1,7 @@
 //! White-box tests for the import registry builder.
 //!
 //! These inspect the builder's private registry and construct `StdlibModule`s
-//! directly, which only the crate can do.
+//! of arbitrary content directly, which only the crate can do.
 //! Resolution itself is covered in `resolve_tests`.
 
 use crate::{FrostMap, Value};
@@ -186,100 +186,9 @@ fn component_rejection_recovers_via_into_parts() {
     assert_eq!(b.registry.get("app"), Some(&content(1)));
 }
 
-// -- Stdlib --
-
-#[test]
-fn new_stdlib_has_no_modules() {
-    assert!(Stdlib::new().modules().is_empty());
-    assert!(Stdlib::default().modules().is_empty());
-}
-
-#[test]
-fn with_module_adds_modules_in_order() {
-    let stdlib = Stdlib::new()
-        .with_module(stdlib_module("math", content(1)))
-        .unwrap()
-        .with_module(stdlib_module("encoding", content(2)))
-        .unwrap();
-    let names: Vec<&str> = stdlib.modules().iter().map(StdlibModule::name).collect();
-    assert_eq!(names, ["math", "encoding"]);
-}
-
-#[test]
-fn with_module_rejects_a_name_already_present() {
-    let stdlib = Stdlib::new()
-        .with_module(stdlib_module("math", content(1)))
-        .unwrap();
-    let err = stdlib
-        .with_module(stdlib_module("math", content(2)))
-        .expect_err("a second `math` is rejected");
-    assert_eq!(
-        err.to_string(),
-        "standard library module `math` is already present"
-    );
-
-    // Both come back untouched: the library keeps only the first `math`.
-    let (stdlib, rejected) = err.into_parts();
-    assert_eq!(rejected.name(), "math");
-    assert_eq!(rejected.content(), &content(2));
-    assert_eq!(stdlib.modules().len(), 1);
-    assert_eq!(stdlib.modules()[0].content(), &content(1));
-}
-
-#[test]
-fn a_rejected_module_does_not_disturb_later_additions() {
-    let (stdlib, _) = Stdlib::new()
-        .with_module(stdlib_module("math", content(1)))
-        .unwrap()
-        .with_module(stdlib_module("math", content(2)))
-        .expect_err("a second `math` is rejected")
-        .into_parts();
-    let stdlib = stdlib
-        .with_module(stdlib_module("random", content(3)))
-        .unwrap();
-    let b = ImporterBuilder::new().with_stdlib(stdlib);
-    let std = std_submap(&b);
-    assert_eq!(std.get_str("math"), Some(&content(1)));
-    assert_eq!(std.get_str("random"), Some(&content(3)));
-}
-
-// -- Stdlib (under `std`) --
-
-#[test]
-fn an_empty_stdlib_installs_an_empty_std() {
-    let b = ImporterBuilder::new().with_stdlib(Stdlib::new());
-    assert!(std_submap(&b).is_empty());
-}
-
-#[test]
-fn stdlib_installs_modules_under_std() {
-    let stdlib = Stdlib {
-        modules: vec![
-            stdlib_module("encoding", content(1)),
-            stdlib_module("math", content(2)),
-        ],
-    };
-    let b = ImporterBuilder::new().with_stdlib(stdlib);
-    let std = std_submap(&b);
-    assert_eq!(std.get_str("encoding"), Some(&content(1)));
-    assert_eq!(std.get_str("math"), Some(&content(2)));
-}
-
-#[test]
-fn with_stdlib_replaces_wholesale() {
-    let b = ImporterBuilder::new()
-        .with_stdlib(Stdlib {
-            modules: vec![stdlib_module("a", content(1))],
-        })
-        .with_stdlib(Stdlib {
-            modules: vec![stdlib_module("b", content(2))],
-        });
-    let std = std_submap(&b);
-    assert_eq!(std.get_str("a"), None);
-    assert_eq!(std.get_str("b"), Some(&content(2)));
-}
-
 // -- Namespace partitioning --
+//
+// What a `Stdlib` installs under `std` is covered black-box in `tests/stdlib.rs`.
 
 #[test]
 fn ext_component_and_std_namespaces_are_independent() {

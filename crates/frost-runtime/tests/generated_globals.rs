@@ -17,7 +17,7 @@ use std::collections::{BTreeMap, BTreeSet};
 use std::{env, fs};
 
 use frost_compile::{CompilerOptions, OptimizationOptions, compile_in_scope};
-use frost_runtime::{CompiledFunction, GLOBAL_NAMES, MapKey, Value, to_value};
+use frost_runtime::{CompiledFunction, GLOBAL_NAMES, MapKey, Value, from_value, to_value};
 
 const SOURCE: &str = include_str!("../src/vm/globals/generated/source.frst");
 
@@ -79,6 +79,7 @@ fn generate(source: &str) -> String {
             let value = to_value(function.as_ref()).unwrap_or_else(|err| {
                 panic!("`{}` does not serialize: {}", function.name, err.message())
             });
+            check_round_trip(function, &value);
             (MapKey::from(function.name.as_str()), value)
         })
         .collect();
@@ -129,6 +130,19 @@ fn check(functions: &[std::sync::Arc<CompiledFunction>]) {
              it may refer only to its parameters, its own name, and globals"
         );
     }
+}
+
+/// Panic unless `encoded`, the serde bridge's form of `function`, decodes as the
+/// runtime decodes it into a function with the same disassembly.
+fn check_round_trip(function: &CompiledFunction, encoded: &Value) {
+    let name = &function.name;
+    let decoded = from_value::<CompiledFunction>(encoded.clone())
+        .unwrap_or_else(|err| panic!("`{name}` does not decode: {}", err.message()));
+    assert_eq!(
+        decoded.disassemble().to_string(),
+        function.disassemble().to_string(),
+        "`{name}` changes in a round trip through the serde bridge"
+    );
 }
 
 /// A Rust expression building `value` from the constructors in the runtime's

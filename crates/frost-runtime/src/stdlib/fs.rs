@@ -282,35 +282,78 @@ fn special_type(path: &Path, special: Special) -> bool {
     }
 }
 
-/// The name of `metadata`'s file type, as `stat` reports it.
-fn type_name(metadata: &Metadata) -> &'static str {
-    let kind = metadata.file_type();
-    if kind.is_symlink() {
-        return "symlink";
-    }
-    if kind.is_file() {
-        return "regular";
-    }
-    if kind.is_dir() {
-        return "directory";
-    }
-    #[cfg(unix)]
-    {
-        use std::os::unix::fs::FileTypeExt;
-        if kind.is_block_device() {
-            return "block";
+/// A file's type.
+#[derive(Clone, Copy)]
+enum FileType {
+    Symlink,
+    Regular,
+    Directory,
+    Block,
+    Character,
+    Fifo,
+    Socket,
+    Unknown,
+}
+
+impl FileType {
+    /// The type of the file `metadata` describes.
+    fn of(metadata: &Metadata) -> Self {
+        let kind = metadata.file_type();
+        if kind.is_symlink() {
+            return Self::Symlink;
         }
-        if kind.is_char_device() {
-            return "character";
+        if kind.is_file() {
+            return Self::Regular;
         }
-        if kind.is_fifo() {
-            return "fifo";
+        if kind.is_dir() {
+            return Self::Directory;
         }
-        if kind.is_socket() {
-            return "socket";
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::FileTypeExt;
+            if kind.is_block_device() {
+                return Self::Block;
+            }
+            if kind.is_char_device() {
+                return Self::Character;
+            }
+            if kind.is_fifo() {
+                return Self::Fifo;
+            }
+            if kind.is_socket() {
+                return Self::Socket;
+            }
+        }
+        Self::Unknown
+    }
+
+    /// The type's name, as `stat` reports it.
+    fn name(self) -> &'static str {
+        match self {
+            Self::Symlink => "symlink",
+            Self::Regular => "regular",
+            Self::Directory => "directory",
+            Self::Block => "block",
+            Self::Character => "character",
+            Self::Fifo => "fifo",
+            Self::Socket => "socket",
+            Self::Unknown => "unknown",
         }
     }
-    "unknown"
+
+    /// What a file of the type is, for error messages: "`path` is {phrase}".
+    fn phrase(self) -> &'static str {
+        match self {
+            Self::Symlink => "a symlink",
+            Self::Regular => "a regular file",
+            Self::Directory => "a directory",
+            Self::Block => "a block device",
+            Self::Character => "a character device",
+            Self::Fifo => "a FIFO",
+            Self::Socket => "a socket",
+            Self::Unknown => "of an unknown type",
+        }
+    }
 }
 
 /// `metadata`'s permissions, as `stat` reports them: read, write, and execute
@@ -348,7 +391,7 @@ fn stat(name: &str, path: &Path) -> FrostResult {
     // The link itself, not what it points to.
     let metadata = fs::symlink_metadata(path).map_err(|err| io_error(name, path, &err))?;
     Ok(Value::map([
-        ("type", Value::from(type_name(&metadata))),
+        ("type", Value::from(FileType::of(&metadata).name())),
         ("perms", permissions(&metadata)),
     ]))
 }
@@ -357,9 +400,9 @@ fn size(name: &str, path: &Path) -> FrostResult {
     let metadata = fs::metadata(path).map_err(|err| io_error(name, path, &err))?;
     if !metadata.is_file() {
         return Err(FrostError::from_string(format!(
-            "Function {name} requires a regular file, but `{}` is a {}",
+            "Function {name} requires a regular file, but `{}` is {}",
             path.display(),
-            type_name(&metadata)
+            FileType::of(&metadata).phrase()
         )));
     }
     Ok(Value::Int(
@@ -419,14 +462,68 @@ fn mkdir(name: &str, path: &Path) -> FrostResult {
     Ok(Value::Bool(true))
 }
 
+/// Moves `from` to `to`, replacing a file already at `to`. Within a filesystem,
+/// the replacement is atomic, so writing a new file and moving it over the old
+/// one updates the old one atomically.
 fn move_path(name: &str, from: &Path, to: &Path) -> FrostResult {
     fs::rename(from, to).map_err(|err| io_error(name, from, &err))?;
     Ok(Value::Null)
 }
 
 fn copy(name: &str, from: &Path, to: &Path) -> FrostResult {
-    copy_tree(from, to, true).map_err(|err| io_error(name, from, &err))?;
+    check_copy(from, to, true)
+        .and_then(|()| copy_tree(from, to, true))
+        .map_err(|err| io_error(name, from, &err))?;
     Ok(Value::Null)
+}
+
+/// The metadata of `from`, a path to copy: of what a symlink points to if
+/// `follow`, else of the link itself.
+fn copied_metadata(from: &Path, follow: bool) -> io::Result<Metadata> {
+    if follow {
+        fs::metadata(from)
+    } else {
+        fs::symlink_metadata(from)
+    }
+}
+
+/// Whether anything, even a broken symlink, is at `path`.
+fn occupied(path: &Path) -> bool {
+    fs::symlink_metadata(path).is_ok()
+}
+
+fn already_exists(path: &Path) -> io::Error {
+    io::Error::new(
+        io::ErrorKind::AlreadyExists,
+        format!("`{}` already exists", path.display()),
+    )
+}
+
+/// Checks that [`copy_tree`] would find nothing in its way, so that a copy
+/// that would collide fails before copying anything. Something made in the
+/// way during the copy still fails it, partway.
+fn check_copy(from: &Path, to: &Path, follow: bool) -> io::Result<()> {
+    if !copied_metadata(from, follow)?.is_dir() {
+        return if occupied(to) {
+            Err(already_exists(to))
+        } else {
+            Ok(())
+        };
+    }
+    // A directory is copied into one already there, or a link to one.
+    match fs::metadata(to) {
+        Ok(existing) if existing.is_dir() => {
+            for entry in entries(from)? {
+                let name = entry.file_name().expect("a directory entry has a name");
+                check_copy(&entry, &to.join(name), false)?;
+            }
+            Ok(())
+        }
+        Ok(_) => Err(already_exists(to)),
+        Err(_) if occupied(to) => Err(already_exists(to)),
+        // Nothing there, so nothing within it can be in the way.
+        Err(_) => Ok(()),
+    }
 }
 
 /// Copy `from` to `to`: a file's content, or a directory and all it holds.
@@ -434,11 +531,7 @@ fn copy(name: &str, from: &Path, to: &Path) -> FrostResult {
 /// a tree, so a link loop cannot make the copy endless. An existing file is
 /// never overwritten.
 fn copy_tree(from: &Path, to: &Path, follow: bool) -> io::Result<()> {
-    let metadata = if follow {
-        fs::metadata(from)?
-    } else {
-        fs::symlink_metadata(from)?
-    };
+    let metadata = copied_metadata(from, follow)?;
     if metadata.is_dir() {
         fs::create_dir_all(to)?;
         for entry in entries(from)? {
@@ -450,11 +543,8 @@ fn copy_tree(from: &Path, to: &Path, follow: bool) -> io::Result<()> {
     if metadata.file_type().is_symlink() {
         return link(&fs::read_link(from)?, to);
     }
-    if to.exists() {
-        return Err(io::Error::new(
-            io::ErrorKind::AlreadyExists,
-            format!("`{}` already exists", to.display()),
-        ));
+    if occupied(to) {
+        return Err(already_exists(to));
     }
     fs::copy(from, to).map(drop)
 }

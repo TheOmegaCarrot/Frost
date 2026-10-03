@@ -8,32 +8,10 @@
 
 mod source;
 
-use source::{Script, raises, run};
+use source::assertions::{Library, library_assertions};
+use source::{Script, raises};
 
-/// Assert each `source` runs to the value of the Frost expression `expected`.
-fn assert_values(cases: &[(&str, &str)]) {
-    for (source, expected) in cases {
-        assert_eq!(run(source), run(expected), "{source:?} is {expected}");
-    }
-}
-
-/// Assert each `source` raises exactly `message`.
-fn assert_raises(cases: &[(&str, &str)]) {
-    for (source, message) in cases {
-        assert_eq!(raises(source), *message, "{source:?} raises {message:?}");
-    }
-}
-
-/// Assert each `source` raises exactly what `equivalent` raises.
-fn assert_raises_as(cases: &[(&str, &str)]) {
-    for (source, equivalent) in cases {
-        assert_eq!(
-            raises(source),
-            raises(equivalent),
-            "{source:?} raises as {equivalent:?} does"
-        );
-    }
-}
+library_assertions!(Library::GLOBALS);
 
 /// Assert each `(source, requires, position, got)` raises `function`'s type error,
 /// where `position` is how the error names the argument, such as `argument 2`.
@@ -47,27 +25,22 @@ fn assert_type_errors(function: &str, cases: &[(&str, &str, &str, &str)]) {
     }
 }
 
-/// Assert `function` raises its arity error when called with each count in
-/// `counts`, where `expects` is how the error states its arity, such as `2` or
-/// `between 1 and 2`. The arguments are Nulls: arity is checked before types.
-fn assert_arity(function: &str, expects: &str, counts: &[usize]) {
-    for &argc in counts {
-        let source = format!("{function}({})", vec!["null"; argc].join(", "));
-        assert_eq!(
-            raises(&source),
-            format!("Function {function} expects {expects} arguments, but was called with {argc}"),
-            "{source:?}"
-        );
-    }
-}
-
-/// The text of each `print` that `source` makes.
-fn printed(source: &str) -> Vec<String> {
-    Script::new(source).printed()
-}
-
 /// The set of types a Map key may have, as type errors name it.
 const MAP_KEY: &str = "Bool or Int or Float or String or Bytes";
+
+/// A Map of 40 entries, more than the compact form for small Maps holds,
+/// as a Frost expression.
+const LARGE_MAP: &str = "map_into(range(40), fn n -> {[n]: n * 2})";
+
+/// `expression` run with `m` bound to [`LARGE_MAP`].
+fn over_large_map(expression: &str) -> String {
+    format!(
+        r"
+        def m = {LARGE_MAP}
+        {expression}
+        "
+    )
+}
 
 // --- keys, values ---
 
@@ -138,6 +111,14 @@ fn map_keys_requires_a_valid_key_from_its_function() {
             "{function}"
         );
     }
+}
+
+#[test]
+fn map_keys_raises_what_its_function_raises() {
+    assert_raises(&[("map_keys({a: 1}, fn k -> error('boom'))", "boom")]);
+    let script = script("map_keys({a: 1, b: 2}, fn k -> { print(k); error('boom') })");
+    assert_eq!(script.raises(), "boom");
+    assert_eq!(script.printed().len(), 1, "the first error ends the loop");
 }
 
 #[test]
@@ -395,10 +376,17 @@ fn range_checks_its_arguments() {
 #[test]
 fn nulls_makes_an_array_of_nulls() {
     assert_values(&[("nulls(3)", "[null, null, null]"), ("nulls(0)", "[]")]);
-    assert_raises(&[(
-        "nulls(-1)",
-        "Function nulls requires argument 1 to be at least 0, got -1",
-    )]);
+    assert_raises(&[
+        (
+            "nulls(-1)",
+            "Function nulls requires argument 1 to be at least 0, got -1",
+        ),
+        // A length past what memory can address is an error, not a crash.
+        (
+            "nulls(9223372036854775807)",
+            "Function nulls cannot make a sequence that long",
+        ),
+    ]);
     assert_type_errors("nulls", &[("nulls('3')", "Int", "argument 1", "String")]);
     assert_arity("nulls", "1", &[0, 2]);
 }
@@ -418,7 +406,7 @@ fn repeat_makes_an_array_of_copies() {
         ("repeat([1, 2], 2)", "[[1, 2], [1, 2]]"),
         ("repeat({a: 1}, 2)", "[{a: 1}, {a: 1}]"),
         ("0 @ repeat(2)", "[0, 0]"),
-        ("repeat(null, 2) == nulls(2)", "true"),
+        ("repeat(null, 2)", "nulls(2)"),
     ]);
 }
 
@@ -429,10 +417,17 @@ fn repeat_copies_a_function() {
 
 #[test]
 fn repeat_checks_its_arguments() {
-    assert_raises(&[(
-        "repeat(0, -1)",
-        "Function repeat requires argument 2 to be at least 0, got -1",
-    )]);
+    assert_raises(&[
+        (
+            "repeat(0, -1)",
+            "Function repeat requires argument 2 to be at least 0, got -1",
+        ),
+        // A length past what memory can address is an error, not a crash.
+        (
+            "repeat(0, 9223372036854775807)",
+            "Function repeat cannot make a sequence that long",
+        ),
+    ]);
     assert_type_errors(
         "repeat",
         &[
@@ -464,12 +459,23 @@ fn tile_joins_copies_of_a_sequence() {
 }
 
 #[test]
+fn tile_makes_any_number_of_copies_of_nothing_at_once() {
+    // Copying an empty sequence one copy at a time would take practically
+    // forever.
+    assert_values(&[
+        ("tile('', 9223372036854775807)", "''"),
+        ("tile(x'', 9223372036854775807)", "x''"),
+        ("tile([], 9223372036854775807)", "[]"),
+    ]);
+}
+
+#[test]
 fn tile_relates_to_repeat() {
     assert_values(&[
         // Tiling a one-element Array is repeating its element.
-        ("tile([7], 3) == repeat(7, 3)", "true"),
+        ("tile([7], 3)", "repeat(7, 3)"),
         // Tiling joins what repeating keeps apart.
-        ("flatten(repeat([1, 2], 3), 1) == tile([1, 2], 3)", "true"),
+        ("flatten(repeat([1, 2], 3), 1)", "tile([1, 2], 3)"),
     ]);
 }
 
@@ -486,7 +492,15 @@ fn tile_checks_its_arguments() {
             "Function tile cannot make a sequence that long",
         ),
         (
+            "tile(x'ff00', 9223372036854775807)",
+            "Function tile cannot make a sequence that long",
+        ),
+        (
             "tile([1], 9223372036854775807)",
+            "Function tile cannot make a sequence that long",
+        ),
+        (
+            "tile([[]], 9223372036854775807)",
             "Function tile cannot make a sequence that long",
         ),
     ]);
@@ -532,6 +546,11 @@ fn has_tests_for_an_array_index() {
         ("has([1, 2, 3], -4)", "false"),
         ("has([], 0)", "false"),
         ("has([null], 0)", "true"),
+        // The extremes of Int are out of range, not an overflow.
+        ("has([1, 2, 3], -9223372036854775807 - 1)", "false"),
+        ("has([1, 2, 3], 9223372036854775807)", "false"),
+        ("has([], -9223372036854775807 - 1)", "false"),
+        ("has([], 9223372036854775807)", "false"),
     ]);
 }
 
@@ -663,9 +682,25 @@ fn quantifiers_test_a_function_on_each_element() {
 #[test]
 fn quantifiers_stop_at_the_first_deciding_element() {
     let probe = "fn x -> { print(x); x == 2 }";
-    assert_eq!(printed(&format!("any([1, 2, 3], {probe})")), ["1", "2"]);
-    assert_eq!(printed(&format!("none([1, 2, 3], {probe})")), ["1", "2"]);
-    assert_eq!(printed(&format!("all([2, 1, 2], {probe})")), ["2", "1"]);
+    for (source, result, shown) in [
+        (format!("any([1, 2, 3], {probe})"), "true", ["1", "2"]),
+        (format!("none([1, 2, 3], {probe})"), "false", ["1", "2"]),
+        (format!("all([2, 1, 2], {probe})"), "false", ["2", "1"]),
+    ] {
+        assert_values(&[(&source, result)]);
+        assert_eq!(printed(&source), shown, "{source}");
+    }
+}
+
+#[test]
+fn quantifiers_raise_what_their_function_raises() {
+    for function in ["any", "all", "none"] {
+        let script = script(&format!(
+            "{function}([1, 2], fn x -> {{ print(x); error('boom') }})"
+        ));
+        assert_eq!(script.raises(), "boom", "{function}");
+        assert_eq!(script.printed(), ["1"], "{function} stops at the error");
+    }
 }
 
 #[test]
@@ -702,10 +737,10 @@ fn find_returns_the_first_matching_element() {
         ("find([], fn x -> true)", "null"),
         ("find([[1], [2]], fn a -> a[0] == 2)", "[2]"),
     ]);
-    assert_eq!(
-        printed("find([1, 2, 3], fn x -> { print(x); x == 2 })"),
-        ["1", "2"]
-    );
+    // It stops at the first match.
+    let probe = "find([1, 2, 3], fn x -> { print(x); x == 2 })";
+    assert_values(&[(probe, "2")]);
+    assert_eq!(printed(probe), ["1", "2"]);
     assert_type_errors(
         "find",
         &[
@@ -714,6 +749,13 @@ fn find_returns_the_first_matching_element() {
         ],
     );
     assert_arity("find", "2", &[0, 1, 3]);
+}
+
+#[test]
+fn find_raises_what_its_predicate_raises() {
+    let script = script("find([1, 2], fn x -> { print(x); error('boom') })");
+    assert_eq!(script.raises(), "boom");
+    assert_eq!(script.printed(), ["1"], "the first error ends the search");
 }
 
 // --- slice, take, drop, tail, drop_tail, stride ---
@@ -764,8 +806,6 @@ fn slice_takes_a_range_of_a_string_by_code_point() {
         ("slice('abc', 3)", "''"),
         ("slice('abc', 1, 1)", "''"),
         ("slice('', 0)", "''"),
-        // An empty range is still a String.
-        ("is_string(slice('abc', 5))", "true"),
     ]);
 }
 
@@ -1043,12 +1083,21 @@ fn take_while_and_drop_while_split_at_the_first_failure() {
 #[test]
 fn take_while_and_drop_while_test_each_element_once() {
     let probe = "fn x -> { print(x); x < 3 }";
+    for (function, result) in [("take_while", "[1, 2]"), ("drop_while", "[3, 1]")] {
+        let source = format!("{function}([1, 2, 3, 1], {probe})");
+        assert_values(&[(&source, result)]);
+        assert_eq!(printed(&source), ["1", "2", "3"], "{function}");
+    }
+}
+
+#[test]
+fn take_while_and_drop_while_raise_what_their_predicate_raises() {
     for function in ["take_while", "drop_while"] {
-        assert_eq!(
-            printed(&format!("{function}([1, 2, 3, 1], {probe})")),
-            ["1", "2", "3"],
-            "{function}"
-        );
+        let script = script(&format!(
+            "{function}([1, 2], fn x -> {{ print(x); error('boom') }})"
+        ));
+        assert_eq!(script.raises(), "boom", "{function}");
+        assert_eq!(script.printed(), ["1"], "{function} stops at the error");
     }
 }
 
@@ -1138,6 +1187,13 @@ fn flat_map_maps_then_flattens_one_level() {
     assert_arity("flat_map", "2", &[0, 1, 3]);
 }
 
+#[test]
+fn flat_map_raises_what_its_function_raises() {
+    let script = script("flat_map([1, 2], fn x -> { print(x); error('boom') })");
+    assert_eq!(script.raises(), "boom");
+    assert_eq!(script.printed(), ["1"], "the first error ends the mapping");
+}
+
 // --- reject ---
 
 #[test]
@@ -1158,6 +1214,14 @@ fn reject_is_the_complement_of_select() {
         "select([1, 2, 3, 4, 5], fn x -> x > 2) + reject([1, 2, 3, 4, 5], fn x -> x > 2)",
         "[3, 4, 5, 1, 2]",
     )]);
+}
+
+#[test]
+fn reject_raises_what_its_predicate_raises() {
+    assert_raises(&[("reject({a: 1}, fn k, v -> error('boom'))", "boom")]);
+    let script = script("reject([1, 2], fn x -> { print(x); error('boom') })");
+    assert_eq!(script.raises(), "boom");
+    assert_eq!(script.printed(), ["1"], "the first error ends the loop");
 }
 
 #[test]
@@ -1236,11 +1300,11 @@ fn sorted_orders_by_less_than() {
 #[test]
 fn sorted_orders_a_long_array() {
     assert_values(&[
-        ("sorted(reverse(range(1000))) == range(1000)", "true"),
+        ("sorted(reverse(range(1000)))", "range(1000)"),
         // A permutation of 0 to 199, as 73 and 200 are coprime.
         (
-            "sorted(map range(200) with fn i -> i * 73 % 200) == range(200)",
-            "true",
+            "sorted(map range(200) with fn i -> i * 73 % 200)",
+            "range(200)",
         ),
     ]);
 }
@@ -1285,8 +1349,8 @@ fn sorted_survives_an_inconsistent_comparator() {
             "[1, 2, 3, 4, 5]",
         ),
         (
-            "sorted(sorted(range(100), fn a, b -> (a * 7 + b * 3) % 5 < 2)) == range(100)",
-            "true",
+            "sorted(sorted(range(100), fn a, b -> (a * 7 + b * 3) % 5 < 2))",
+            "range(100)",
         ),
     ]);
 }
@@ -1297,11 +1361,8 @@ fn sorted_raises_when_elements_cannot_be_ordered() {
         ("sorted([null, null])", "Type Null is not orderable"),
         ("sorted([{}, {a: 1}])", "Type Map is not orderable"),
     ]);
-    let raised = raises("sorted([1, 'a'])");
-    assert!(
-        raised.starts_with("Cannot compare incompatible types:"),
-        "mixed types raise as `<` does: {raised}"
-    );
+    // Mixed types raise as `<` does.
+    assert_raises_as(&[("sorted([1, 'a'])", "'a' < 1")]);
 }
 
 #[test]
@@ -1352,23 +1413,30 @@ fn sort_by_orders_by_a_projection() {
 
 #[test]
 fn sort_by_projects_each_element_once() {
-    assert_eq!(
-        printed("sort_by([3, 1, 2], fn x -> { print(x); x })"),
-        ["3", "1", "2"]
-    );
+    let source = "sort_by([3, 1, 2], fn x -> { print(x); x })";
+    assert_values(&[(source, "[1, 2, 3]")]);
+    assert_eq!(printed(source), ["3", "1", "2"]);
 }
 
 #[test]
 fn sort_by_raises_when_keys_cannot_be_ordered() {
-    assert_raises(&[
-        (
-            "sort_by([1, 2], fn x -> null)",
-            "Type Null is not orderable",
-        ),
-        ("sort_by([1, 2], fn x -> error('boom'))", "boom"),
-    ]);
+    assert_raises(&[(
+        "sort_by([1, 2], fn x -> null)",
+        "Type Null is not orderable",
+    )]);
     // A single key is never compared, so it need not be orderable.
     assert_values(&[("sort_by([1], fn x -> null)", "[1]")]);
+}
+
+#[test]
+fn sort_by_raises_what_its_projection_raises() {
+    let script = script("sort_by([1, 2], fn x -> { print(x); error('boom') })");
+    assert_eq!(script.raises(), "boom");
+    assert_eq!(
+        script.printed(),
+        ["1"],
+        "the first error ends the projecting"
+    );
 }
 
 #[test]
@@ -1437,12 +1505,32 @@ fn count_by_counts_elements_by_key() {
 #[test]
 fn group_by_and_count_by_require_a_valid_key_from_their_function() {
     for function in ["group_by", "count_by"] {
-        assert_raises(&[(
-            &format!("{function}([1], fn x -> null)"),
-            &format!(
-                "Function {function} requires its function to return a valid Map key, got Null"
-            ),
-        )]);
+        for (returned, got) in [("null", "Null"), ("[x]", "Array"), ("{a: x}", "Map")] {
+            assert_raises(&[(
+                &format!("{function}([1], fn x -> {returned})"),
+                &format!(
+                    "Function {function} requires its function to return a valid Map key, \
+                     got {got}"
+                ),
+            )]);
+        }
+    }
+}
+
+#[test]
+fn group_by_and_count_by_raise_what_their_function_raises() {
+    for function in ["group_by", "count_by"] {
+        let script = script(&format!(
+            "{function}([1, 2], fn x -> {{ print(x); error('boom') }})"
+        ));
+        assert_eq!(script.raises(), "boom", "{function}");
+        assert_eq!(script.printed(), ["1"], "{function} stops at the error");
+    }
+}
+
+#[test]
+fn group_by_and_count_by_check_their_arguments() {
+    for function in ["group_by", "count_by"] {
         assert_type_errors(
             function,
             &[
@@ -1485,6 +1573,14 @@ fn scan_returns_each_running_result() {
 }
 
 #[test]
+fn scan_raises_what_its_function_raises() {
+    // The first element starts the scan, so the function first sees the second.
+    let script = script("scan([1, 2, 3], fn a, b -> { print(b); error('boom') })");
+    assert_eq!(script.raises(), "boom");
+    assert_eq!(script.printed(), ["2"], "the first error ends the scan");
+}
+
+#[test]
 fn partition_splits_by_a_predicate() {
     assert_values(&[
         (
@@ -1505,6 +1601,13 @@ fn partition_splits_by_a_predicate() {
         ],
     );
     assert_arity("partition", "2", &[0, 1, 3]);
+}
+
+#[test]
+fn partition_raises_what_its_predicate_raises() {
+    let script = script("partition([1, 2], fn x -> { print(x); error('boom') })");
+    assert_eq!(script.raises(), "boom");
+    assert_eq!(script.printed(), ["1"], "the first error ends the loop");
 }
 
 #[test]
@@ -1537,6 +1640,13 @@ fn map_into_merges_the_maps_its_function_returns() {
     assert_arity("map_into", "2", &[0, 1, 3]);
 }
 
+#[test]
+fn map_into_raises_what_its_function_raises() {
+    let script = script("map_into([1, 2], fn x -> { print(x); error('boom') })");
+    assert_eq!(script.raises(), "boom");
+    assert_eq!(script.printed(), ["1"], "the first error ends the loop");
+}
+
 // --- chunk_by ---
 
 #[test]
@@ -1559,19 +1669,26 @@ fn chunk_by_groups_runs_of_adjacent_elements() {
 
 #[test]
 fn chunk_by_asks_about_each_adjacent_pair_once() {
-    assert_eq!(
-        printed(r"chunk_by([1, 2, 3], fn a, b -> { print($'${a},${b}'); true })"),
-        ["1,2", "2,3"]
-    );
+    let source = r"chunk_by([1, 2, 3], fn a, b -> { print($'${a},${b}'); true })";
+    assert_values(&[(source, "[[1, 2, 3]]")]);
+    assert_eq!(printed(source), ["1,2", "2,3"]);
+    let source = "chunk_by([1], fn a, b -> { print('called'); true })";
+    assert_values(&[(source, "[[1]]")]);
     assert!(
-        printed("chunk_by([1], fn a, b -> { print('called'); true })").is_empty(),
+        printed(source).is_empty(),
         "a single element has no pair to ask about"
     );
 }
 
 #[test]
+fn chunk_by_raises_what_its_function_raises() {
+    let script = script("chunk_by([1, 2, 3], fn a, b -> { print(a); error('boom') })");
+    assert_eq!(script.raises(), "boom");
+    assert_eq!(script.printed(), ["1"], "the first error ends the loop");
+}
+
+#[test]
 fn chunk_by_checks_its_arguments() {
-    assert_raises(&[("chunk_by([1, 2], fn a, b -> error('boom'))", "boom")]);
     assert_type_errors(
         "chunk_by",
         &[
@@ -1612,16 +1729,12 @@ fn zip_with_combines_elements() {
             "zip_with(fn a, b, c -> a * b + c, [2, 3, 4], [10, 20, 30], [1, 1])",
             "[21, 61]",
         ),
-        (
-            "zip_with(collect, [1, 2], [3, 4]) == zip([1, 2], [3, 4])",
-            "true",
-        ),
+        ("zip_with(collect, [1, 2], [3, 4])", "zip([1, 2], [3, 4])"),
         ("zip_with(plus, [], [1])", "[]"),
     ]);
-    assert_eq!(
-        printed("zip_with(fn a, b -> print(a + b), [1, 2], [10, 20])"),
-        ["11", "22"]
-    );
+    let source = "zip_with(fn a, b -> { print(a + b); a * b }, [1, 2], [10, 20])";
+    assert_values(&[(source, "[10, 40]")]);
+    assert_eq!(printed(source), ["11", "22"]);
 }
 
 #[test]
@@ -1665,14 +1778,13 @@ fn xprod_with_combines_every_combination() {
             "['a1', 'a2', 'b1', 'b2']",
         ),
         (
-            "xprod_with(collect, [1, 2], [3], [4, 5]) == xprod([1, 2], [3], [4, 5])",
-            "true",
+            "xprod_with(collect, [1, 2], [3], [4, 5])",
+            "xprod([1, 2], [3], [4, 5])",
         ),
     ]);
-    assert!(
-        printed("xprod_with(fn a, b -> print('called'), [1], [])").is_empty(),
-        "no combination, no call"
-    );
+    let source = "xprod_with(fn a, b -> { print('called'); a }, [1], [])";
+    assert_values(&[(source, "[]")]);
+    assert!(printed(source).is_empty(), "no combination, no call");
 }
 
 #[test]
@@ -1758,4 +1870,365 @@ fn zip_with_and_xprod_with_stop_at_the_first_error() {
         .chain(["2"])
         .collect();
     assert_eq!(script.printed(), expected, "xprod_with stops at row 2001");
+}
+
+// --- id ---
+
+#[test]
+fn id_returns_its_argument() {
+    assert_values(&[
+        ("id(1)", "1"),
+        ("id(null)", "null"),
+        ("id([1])", "[1]"),
+        ("id({a: [1]})", "{a: [1]}"),
+        ("id('s')", "'s'"),
+        ("id(x'ff')", "x'ff'"),
+        ("is_function(id(id))", "true"),
+        ("id(id)(7)", "7"),
+        ("map [1, 2] with id", "[1, 2]"),
+    ]);
+    assert_arity("id", 1, &[0, 2]);
+}
+
+// --- transform, select, fold, each ---
+
+#[test]
+fn transform_maps_an_array() {
+    assert_values(&[
+        ("transform([1, 2, 3], fn x -> x * 2)", "[2, 4, 6]"),
+        ("transform([], fn x -> x)", "[]"),
+        ("[1, 2] @ transform(fn x -> [x])", "[[1], [2]]"),
+    ]);
+}
+
+#[test]
+fn transform_maps_a_map_through_the_maps_its_function_returns() {
+    assert_values(&[
+        ("transform({a: 1}, fn k, v -> {[k]: v + 1})", "{a: 2}"),
+        (
+            "transform({a: 1, b: 2}, fn k, v -> {[v]: k})",
+            "{[1]: 'a', [2]: 'b'}",
+        ),
+        ("transform({}, fn k, v -> {x: 1})", "{}"),
+        // Several entries come from one, and colliding keys leave one entry.
+        ("transform({a: 1}, fn k, v -> {x: v, y: v})", "{x: 1, y: 1}"),
+        ("len(transform({a: 1, b: 2}, fn k, v -> {same: v}))", "1"),
+        ("transform({a: 1}, fn k, v -> {})", "{}"),
+    ]);
+}
+
+#[test]
+fn transform_requires_a_map_from_a_function_over_a_map() {
+    assert_raises(&[
+        (
+            "transform({a: 1}, fn k, v -> 1)",
+            "When transforming a Map, the function must return a Map, got Int",
+        ),
+        (
+            "transform({a: 1}, fn k, v -> [k])",
+            "When transforming a Map, the function must return a Map, got Array",
+        ),
+    ]);
+}
+
+#[test]
+fn transform_raises_what_its_function_raises() {
+    let script = script("transform([1, 2], fn x -> { print(x); error('boom') })");
+    assert_eq!(script.raises(), "boom");
+    assert_eq!(script.printed(), ["1"], "the first error ends the loop");
+    assert_raises(&[("transform({a: 1}, fn k, v -> error('boom'))", "boom")]);
+}
+
+#[test]
+fn transform_checks_its_arguments() {
+    assert_type_errors(
+        "transform",
+        &[
+            ("transform(5, id)", "Structured", "argument 1", "Int"),
+            ("transform('ab', id)", "Structured", "argument 1", "String"),
+            ("transform([1], 1)", "Function", "argument 2", "Int"),
+        ],
+    );
+    assert_arity("transform", "2", &[0, 1, 3]);
+}
+
+#[test]
+fn select_keeps_what_its_predicate_accepts() {
+    assert_values(&[
+        ("select([1, 2, 3, 4], fn x -> x % 2 == 0)", "[2, 4]"),
+        ("select([], fn x -> true)", "[]"),
+        // Only Null and False are falsy.
+        ("select([0, null, false, ''], id)", "[0, '']"),
+        ("select({a: 1, b: 2}, fn k, v -> v > 1)", "{b: 2}"),
+        ("select({a: 1}, fn k, v -> false)", "{}"),
+        ("[1, 2, 3] @ select(fn x -> x > 1)", "[2, 3]"),
+    ]);
+}
+
+#[test]
+fn select_raises_what_its_predicate_raises() {
+    assert_raises(&[("select({a: 1}, fn k, v -> error('boom'))", "boom")]);
+    let script = script("select([1, 2], fn x -> { print(x); error('boom') })");
+    assert_eq!(script.raises(), "boom");
+    assert_eq!(script.printed(), ["1"], "the first error ends the loop");
+}
+
+#[test]
+fn select_checks_its_arguments() {
+    assert_type_errors(
+        "select",
+        &[
+            ("select(5, id)", "Structured", "argument 1", "Int"),
+            ("select([1], 1)", "Function", "argument 2", "Int"),
+        ],
+    );
+    assert_arity("select", "2", &[0, 1, 3]);
+}
+
+#[test]
+fn fold_combines_an_array() {
+    assert_values(&[
+        ("fold([1, 2, 3, 4], plus)", "10"),
+        // The initializer starts the fold, and the accumulator comes first.
+        ("fold([1, 2, 3], plus, 10)", "16"),
+        ("fold([1, 2, 3], minus, 10)", "4"),
+        ("fold(['a', 'b'], plus, '')", "'ab'"),
+        // Without an initializer, the first element starts the fold.
+        ("fold([10, 1, 2], minus)", "7"),
+        ("fold([5], minus)", "5"),
+        ("fold([], plus)", "null"),
+        ("fold([], plus, 0)", "0"),
+        // A Null initializer is an initializer.
+        ("fold([1], fn acc, x -> [acc, x], null)", "[null, 1]"),
+        ("[1, 2, 3] @ fold(plus, 0)", "6"),
+    ]);
+}
+
+#[test]
+fn fold_combines_a_map_from_an_initializer() {
+    assert_values(&[
+        ("fold({a: 1, b: 2}, fn acc, k, v -> acc + v, 0)", "3"),
+        ("fold({}, fn acc, k, v -> acc + v, 0)", "0"),
+        (
+            "fold({a: 1}, fn acc, k, v -> [acc, k, v], null)",
+            "[null, 'a', 1]",
+        ),
+    ]);
+    assert_raises(&[
+        (
+            "fold({a: 1}, fn acc, k, v -> acc)",
+            "Fold over a Map requires an initializer",
+        ),
+        (
+            "fold({}, fn acc, k, v -> acc)",
+            "Fold over a Map requires an initializer",
+        ),
+    ]);
+}
+
+#[test]
+fn fold_raises_what_its_function_raises() {
+    let script = script("fold([1, 2, 3], fn acc, x -> { print(x); error('boom') })");
+    assert_eq!(script.raises(), "boom");
+    assert_eq!(script.printed(), ["2"], "the first error ends the fold");
+    assert_raises(&[("fold({a: 1}, fn acc, k, v -> error('boom'), 0)", "boom")]);
+    // A single element with no initializer is never combined.
+    assert_values(&[("fold([1], fn acc, x -> error('boom'))", "1")]);
+}
+
+#[test]
+fn fold_checks_its_arguments() {
+    assert_type_errors(
+        "fold",
+        &[
+            ("fold(5, plus)", "Structured", "argument 1", "Int"),
+            ("fold([1], 1)", "Function", "argument 2", "Int"),
+        ],
+    );
+    assert_arity("fold", "between 2 and 3", &[0, 1, 4]);
+}
+
+#[test]
+fn each_calls_its_function_and_returns_the_structure() {
+    assert_values(&[
+        ("each([1, 2], fn x -> x)", "[1, 2]"),
+        ("each([], fn x -> x)", "[]"),
+        ("each({a: 1}, fn k, v -> null)", "{a: 1}"),
+        ("[3] @ each(fn x -> x)", "[3]"),
+    ]);
+    assert_eq!(printed("each([1, 2, 3], print)"), ["1", "2", "3"]);
+    assert_eq!(
+        printed("each({a: 1, b: 2}, fn k, v -> print($'${k}=${v}'))").len(),
+        2,
+        "once per entry"
+    );
+    assert_eq!(
+        printed("each({a: 1}, fn k, v -> print($'${k}=${v}'))"),
+        ["a=1"]
+    );
+}
+
+#[test]
+fn each_raises_what_its_function_raises() {
+    let script = script("each([1, 2], fn x -> { print(x); error('boom') })");
+    assert_eq!(script.raises(), "boom");
+    assert_eq!(script.printed(), ["1"], "the first error ends the loop");
+    assert_raises(&[("each({a: 1}, fn k, v -> error('boom'))", "boom")]);
+}
+
+#[test]
+fn each_checks_its_arguments() {
+    assert_type_errors(
+        "each",
+        &[
+            ("each(5, id)", "Structured", "argument 1", "Int"),
+            ("each([1], 1)", "Function", "argument 2", "Int"),
+        ],
+    );
+    assert_arity("each", "2", &[0, 1, 3]);
+}
+
+// --- shared inputs ---
+//
+// A global may edit a uniquely-owned input in place, so one that is shared
+// must come out unchanged.
+
+#[test]
+fn array_globals_leave_a_shared_input_unchanged() {
+    let source = r"
+        def a = [3, 1, [2], 4]
+        def results = [
+            reverse(a),
+            take_while(a, fn x -> is_int(x)),
+            drop_while(a, fn x -> is_int(x)),
+            drop(a, 1),
+            tail(a, 2),
+            flatten(a),
+            flat_map(a, fn x -> [x, x]),
+            find(a, is_array),
+            transform(a, fn x -> [x]),
+            select(a, is_int),
+            reject(a, is_int),
+            scan([a[0], a[1]], plus),
+            each(a, id),
+            sorted(select(a, is_int)),
+            fold(a, fn acc, x -> acc, 0),
+        ]
+        [a, len(results)]
+    ";
+    assert_values(&[(source, "[[3, 1, [2], 4], 15]")]);
+}
+
+#[test]
+fn array_globals_return_the_right_results_over_a_shared_input() {
+    let source = r"
+        def a = [3, 1, [2], 4]
+        [
+            reverse(a),
+            take_while(a, is_int),
+            drop_while(a, is_int),
+            drop(a, 1),
+            tail(a, 2),
+            flatten(a),
+            flat_map(a, fn x -> [x, x]),
+            find(a, is_array),
+            a,
+        ]
+    ";
+    assert_values(&[(
+        source,
+        r"[
+            [4, [2], 1, 3],
+            [3, 1],
+            [[2], 4],
+            [1, [2], 4],
+            [[2], 4],
+            [3, 1, 2, 4],
+            [3, 3, 1, 1, [2], [2], 4, 4],
+            [2],
+            [3, 1, [2], 4],
+        ]",
+    )]);
+}
+
+#[test]
+fn map_globals_leave_a_shared_input_unchanged() {
+    let source = r"
+        def m = {a: 1, b: 2}
+        [
+            map_values(m, fn v -> v * 10),
+            map_keys(m, to_upper),
+            dissoc(m, 'a'),
+            select(m, fn k, v -> v > 1),
+            reject(m, fn k, v -> v > 1),
+            transform(m, fn k, v -> {[k]: v}),
+            each(m, fn k, v -> v),
+            m,
+        ]
+    ";
+    assert_values(&[(
+        source,
+        r"[
+            {a: 10, b: 20},
+            {A: 1, B: 2},
+            {b: 2},
+            {b: 2},
+            {a: 1},
+            {a: 1, b: 2},
+            {a: 1, b: 2},
+            {a: 1, b: 2},
+        ]",
+    )]);
+}
+
+// --- Maps past the compact form ---
+
+#[test]
+fn large_maps_work_in_every_map_global() {
+    let ordered_values = "map range(40) with fn n -> n * 2";
+    for (expression, expected) in [
+        ("len(m)", "40"),
+        ("sorted(keys(m))", "range(40)"),
+        ("sorted(values(m))", ordered_values),
+        (
+            r"
+            def ks = keys(m)
+            def vs = values(m)
+            all(range(40), fn i -> m[ks[i]] == vs[i])
+            ",
+            "true",
+        ),
+        (
+            "[has(m, 0), has(m, 39), has(m, 40), has(m, '1')]",
+            "[true, true, false, false]",
+        ),
+        ("index(39)(m)", "78"),
+        ("len(dissoc(m, 0, 39))", "38"),
+        (
+            "[has(dissoc(m, 5), 5), has(dissoc(m, 5), 6)]",
+            "[false, true]",
+        ),
+        ("dissoc(m, 100)", LARGE_MAP),
+        (
+            "sorted(values(map_values(m, fn v -> v + 1)))",
+            "map range(40) with fn n -> n * 2 + 1",
+        ),
+        (
+            "sorted(keys(map_keys(m, fn k -> k + 100)))",
+            "range(100, 140)",
+        ),
+        ("map_values(m, id)", LARGE_MAP),
+        ("map_keys(m, id)", LARGE_MAP),
+        ("len(to_entries(m))", "40"),
+        ("from_entries(to_entries(m))", LARGE_MAP),
+        ("select(m, fn k, v -> k < 20) @ len()", "20"),
+        ("reject(m, fn k, v -> k < 20) @ len()", "20"),
+        ("transform(m, fn k, v -> {[k]: v})", LARGE_MAP),
+        ("fold(m, fn acc, k, v -> acc + v, 0)", "1560"),
+        ("each(m, fn k, v -> v)", LARGE_MAP),
+        ("len(group_by(range(40), id))", "40"),
+        ("count_by(range(40), id) @ values() @ sum()", "40"),
+    ] {
+        assert_values(&[(&over_large_map(expression), &over_large_map(expected))]);
+    }
 }

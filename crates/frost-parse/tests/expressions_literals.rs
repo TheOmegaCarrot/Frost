@@ -12,6 +12,48 @@ fn int_literal() {
 }
 
 #[test]
+fn greatest_int_literal() {
+    let expr = parse_expr("9223372036854775807");
+    assert!(is_int(&expr, i64::MAX));
+}
+
+#[test]
+fn least_int_literal() {
+    // Its magnitude is past the greatest Int, so it is a literal only negated,
+    // parsed as one negative literal rather than a negation.
+    let expr = parse_expr("-9223372036854775808");
+    assert!(is_int(&expr, i64::MIN), "{expr:?}");
+    assert_eq!((expr.span.start, expr.span.end), (0, 20));
+}
+
+#[test]
+fn least_int_literal_in_an_expression() {
+    let expr = parse_expr("1 + -9223372036854775808");
+    let (_, _, rhs) = is_binop(&expr).expect("a binary operation");
+    assert!(is_int(rhs, i64::MIN), "{rhs:?}");
+}
+
+#[test]
+fn int_literal_out_of_range() {
+    for source in [
+        "9223372036854775808",
+        "-9223372036854775809",
+        "99999999999999999999999999",
+        // The magnitude is the operand of the postfix operator, not of `-`.
+        "-9223372036854775808.x",
+        "-9223372036854775808[0]",
+        "-9223372036854775808()",
+        "- -9223372036854775808 @ f()",
+    ] {
+        let err = parse_err(source);
+        assert!(
+            err.contains("Int literal out of range"),
+            "{source:?}: {err}"
+        );
+    }
+}
+
+#[test]
 fn float_literal() {
     let expr = parse_expr("3.14");
     assert!(matches!(&expr.node, Expr::Literal(Literal::Float(f)) if *f == 3.14));

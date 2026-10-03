@@ -6,63 +6,14 @@
 
 mod source;
 
-use std::sync::Arc;
 use std::time::{Duration, Instant};
 
 use frost_runtime::stdlib::RandomConfig;
-use frost_runtime::{Importer, ImporterBuilder, Stdlib, Value, stdlib};
-use source::Script;
+use frost_runtime::{ImporterBuilder, Stdlib, Value, stdlib};
+use source::assertions::{Library, library_assertions};
+use source::{Script, UNOPTIMIZED};
 
-/// An importer providing only `std.os`.
-fn importer() -> Arc<Importer> {
-    let stdlib = Stdlib::new()
-        .with_module(stdlib::os())
-        .expect("a lone module is accepted");
-    ImporterBuilder::new().with_stdlib(stdlib).build()
-}
-
-/// `expression`, run with `std.os` bound as `os`.
-fn script(expression: &str) -> Script {
-    let source = format!(
-        r"
-        def os = import('std.os')
-        {expression}
-        "
-    );
-    Script::new(&source).importer(importer())
-}
-
-/// Assert each `expression` runs to the value of the Frost expression `expected`.
-fn assert_values(cases: &[(&str, &str)]) {
-    for (expression, expected) in cases {
-        assert_eq!(
-            script(expression).run(),
-            script(expected).run(),
-            "{expression:?} is {expected}"
-        );
-    }
-}
-
-/// Assert each `expression` raises exactly `message`.
-fn assert_raises(cases: &[(&str, &str)]) {
-    for (expression, message) in cases {
-        assert_eq!(script(expression).raises(), *message, "{expression:?}");
-    }
-}
-
-/// Assert `function` raises its arity error when called with each count in
-/// `counts`, where `expects` is how the error states its arity.
-fn assert_arity(function: &str, expects: &str, counts: &[usize]) {
-    for &argc in counts {
-        let expression = format!("os.{function}({})", vec!["null"; argc].join(", "));
-        assert_raises(&[(
-            &expression,
-            &format!(
-                "Function os.{function} expects {expects} arguments, but was called with {argc}"
-            ),
-        )]);
-    }
-}
+library_assertions!(Library::module(stdlib::os, "os"));
 
 // --- The module ---
 
@@ -119,9 +70,11 @@ fn the_module_is_not_contained() {
 
 #[test]
 fn getenv_reads_a_variable() {
-    // Cargo sets this for every test process it runs.
-    let expected = std::env::var("CARGO_PKG_NAME").map_or(Value::Null, Value::from);
-    assert_eq!(script("os.getenv('CARGO_PKG_NAME')").run(), expected);
+    let expected = std::env::var("CARGO_PKG_NAME").expect("cargo sets CARGO_PKG_NAME");
+    assert_eq!(
+        script("os.getenv('CARGO_PKG_NAME')").run(),
+        Value::from(expected)
+    );
 }
 
 #[test]
@@ -162,11 +115,14 @@ fn pid_is_this_process() {
 #[test]
 fn sleep_pauses_then_returns_null() {
     assert_eq!(script("os.sleep(0)").run(), Value::Null);
-    // The harness runs the script once per optimization permutation; every run
-    // must sleep, so the whole takes at least that many sleeps.
+    // One run, so the elapsed time bounds a single sleep.
     let started = Instant::now();
-    assert_eq!(script("os.sleep(5)").run(), Value::Null);
-    assert!(started.elapsed() >= Duration::from_millis(5));
+    assert_eq!(script("os.sleep(50)").run_under(UNOPTIMIZED), Value::Null);
+    assert!(
+        started.elapsed() >= Duration::from_millis(50),
+        "os.sleep(50) took {:?}",
+        started.elapsed()
+    );
 }
 
 #[test]
@@ -240,6 +196,22 @@ mod run {
     }
 
     #[test]
+    fn run_names_a_working_directory_it_cannot_use() {
+        // Not blamed on the program, which exists.
+        let raised = script("os.run('true', [], {cwd: '/frost-surely-no-such-dir'})").raises();
+        assert!(
+            raised.starts_with(
+                "Function os.run cannot use `/frost-surely-no-such-dir` as its working directory: "
+            ),
+            "{raised}"
+        );
+        assert_raises(&[(
+            "os.run('true', [], {cwd: '/dev/null'})",
+            "Function os.run requires its `cwd` option to be a directory, but `/dev/null` is not",
+        )]);
+    }
+
+    #[test]
     fn run_adds_to_or_replaces_the_environment() {
         assert_values(&[
             (
@@ -255,8 +227,26 @@ mod run {
         let inherited =
             script(r#"os.run('sh', ['-c', 'echo "$CARGO_PKG_NAME"'], {env: {X: 'y'}}).stdout"#)
                 .run();
-        let expected = format!("{}\n", std::env::var("CARGO_PKG_NAME").unwrap_or_default());
-        assert_eq!(inherited, Value::from(expected));
+        let name = std::env::var("CARGO_PKG_NAME").expect("cargo sets CARGO_PKG_NAME");
+        assert_eq!(inherited, Value::from(format!("{name}\n")));
+    }
+
+    #[test]
+    fn run_env_overrides_an_inherited_variable() {
+        // Cargo sets CARGO_PKG_NAME in the test process, so it is inherited.
+        assert_values(&[(
+            r#"os.run('sh', ['-c', 'echo "$CARGO_PKG_NAME"'], {env: {CARGO_PKG_NAME: 'other'}}).stdout"#,
+            r"'other\n'",
+        )]);
+    }
+
+    #[test]
+    fn run_ignores_a_child_that_exits_without_reading_its_stdin() {
+        // Far more than a pipe holds, so the write fails when the child is gone.
+        assert_values(&[(
+            "os.run('true', [], {stdin: tile('x', 1000000)})",
+            "{stdout: '', stderr: '', exit_code: 0, signal: null}",
+        )]);
     }
 
     #[test]
@@ -270,6 +260,11 @@ mod run {
         assert_values(&[(
             r#"os.run('sh', ['-c', "printf '\\377'"], {binary: true})"#,
             "{stdout: x'ff', stderr: x'', exit_code: 0, signal: null}",
+        )]);
+        assert_raises(&[(
+            r#"os.run('sh', ['-c', "printf '\\377' >&2"])"#,
+            "Function os.run got stderr from `sh` that is not UTF-8; \
+             pass `binary: true` to get Bytes",
         )]);
     }
 

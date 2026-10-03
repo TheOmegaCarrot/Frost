@@ -8,7 +8,7 @@
 use std::io::Cursor;
 use std::sync::Arc;
 
-use crate::stdlib::stream::{self, Kind};
+use crate::stdlib::stream::{self, Buffer, Kind};
 use crate::{Arity, FrostError, FrostType, Param, Params, StdlibModule, Value};
 
 /// The `std.string` module: finding and counting substrings, splitting into
@@ -25,7 +25,7 @@ pub fn string() -> StdlibModule {
             ("count", count()),
             ("chars", chars()),
             ("is_empty", is_empty()),
-            ("is_ascii", classifier("string.is_ascii", is_ascii)),
+            ("is_ascii", is_ascii()),
             ("is_digit", classifier("string.is_digit", is_digit)),
             (
                 "is_alpha",
@@ -41,11 +41,11 @@ pub fn string() -> StdlibModule {
             ),
             (
                 "is_uppercase",
-                case_classifier("string.is_uppercase", char::is_lowercase),
+                case_classifier("string.is_uppercase", char::is_uppercase),
             ),
             (
                 "is_lowercase",
-                case_classifier("string.is_lowercase", char::is_uppercase),
+                case_classifier("string.is_lowercase", char::is_lowercase),
             ),
             ("pad_left", padder("string.pad_left", Side::Left)),
             ("pad_right", padder("string.pad_right", Side::Right)),
@@ -72,7 +72,7 @@ fn buffer_reader() -> Value {
 /// `writer()`: a writer that keeps what is written, for reading back.
 fn buffer_writer() -> Value {
     Value::native("string.writer", Arity::Exact(0), |_, _| {
-        Ok(stream::writer(Cursor::new(Vec::new()), Kind::Buffer))
+        Ok(stream::writer(Buffer::default(), Kind::Buffer))
     })
 }
 
@@ -169,28 +169,50 @@ fn chars() -> Value {
     })
 }
 
-fn is_ascii(c: char) -> bool {
-    c.is_ascii()
+/// `is_ascii(text)`: whether a String holds nothing outside ASCII. Unlike the
+/// other classifiers, it passes the empty String, which holds nothing at all.
+fn is_ascii() -> Value {
+    Value::checked_native("string.is_ascii", ONE_STRING, |_, args| {
+        Ok(Value::Bool(string_arg(&args[0]).is_ascii()))
+    })
 }
 
 fn is_digit(c: char) -> bool {
     c.is_ascii_digit()
 }
 
-/// A function testing whether every character of a String passes `test`;
-/// the empty String passes.
+/// A function testing whether a String has a character, and every character
+/// passes `test`.
 fn classifier(name: &'static str, test: fn(char) -> bool) -> Value {
     Value::checked_native(name, ONE_STRING, move |_, args| {
-        Ok(Value::Bool(string_arg(&args[0]).chars().all(test)))
+        let text = string_arg(&args[0]);
+        Ok(Value::Bool(!text.is_empty() && text.chars().all(test)))
     })
 }
 
-/// A function testing whether no character of a String is of the other case,
-/// `other_case`. A character without case is ignored.
-fn case_classifier(name: &'static str, other_case: fn(char) -> bool) -> Value {
+/// A function testing whether a String has a character with case, and every
+/// such character passes `case`. A character without case is ignored. A
+/// title-case character, such as `ǅ`, has case but is neither upper nor lower.
+fn case_classifier(name: &'static str, case: fn(char) -> bool) -> Value {
     Value::checked_native(name, ONE_STRING, move |_, args| {
-        Ok(Value::Bool(!string_arg(&args[0]).chars().any(other_case)))
+        let mut cased = string_arg(&args[0])
+            .chars()
+            .filter(|&c| has_case(c))
+            .peekable();
+        Ok(Value::Bool(cased.peek().is_some() && cased.all(case)))
     })
+}
+
+/// Whether `c` is upper, lower, or title case.
+fn has_case(c: char) -> bool {
+    c.is_uppercase() || c.is_lowercase() || is_titlecase(c)
+}
+
+/// Whether `c` is title case, such as `ǅ`. The standard library has no such
+/// test, but a title-case character is the one kind that is neither upper nor
+/// lower case yet changes when mapped to either.
+fn is_titlecase(c: char) -> bool {
+    !c.is_uppercase() && !c.is_lowercase() && !c.to_uppercase().eq([c]) && !c.to_lowercase().eq([c])
 }
 
 // --- Padding ---
@@ -244,7 +266,15 @@ fn padder(name: &'static str, side: Side) -> Value {
             Side::Right => (0, padding),
             Side::Both => (padding / 2, padding - padding / 2),
         };
-        let mut padded = String::with_capacity(text.len() + padding * fill.len_utf8());
+        // Past `isize::MAX` bytes, allocating the result would panic.
+        let size = padding
+            .checked_mul(fill.len_utf8())
+            .and_then(|filled| filled.checked_add(text.len()))
+            .filter(|&size| isize::try_from(size).is_ok())
+            .ok_or_else(|| {
+                FrostError::from_string(format!("Function {name} cannot make a String that long"))
+            })?;
+        let mut padded = String::with_capacity(size);
         padded.extend(std::iter::repeat_n(fill, left));
         padded.push_str(text);
         padded.extend(std::iter::repeat_n(fill, right));

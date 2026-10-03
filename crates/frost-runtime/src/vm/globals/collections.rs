@@ -62,6 +62,21 @@ fn count_arg(function: &str, position: usize, n: i64, minimum: i64) -> Result<us
     Ok(usize::try_from(n).expect("a count at least its minimum is not negative"))
 }
 
+/// Checks that `function` can make a sequence of `count` items of `size` bytes
+/// each: past `isize::MAX` bytes, allocating it would panic.
+fn check_length(function: &str, size: usize, count: usize) -> Result<(), FrostError> {
+    let fits = size
+        .checked_mul(count)
+        .is_some_and(|total| isize::try_from(total).is_ok());
+    if fits {
+        Ok(())
+    } else {
+        Err(FrostError::from_string(format!(
+            "Function {function} cannot make a sequence that long"
+        )))
+    }
+}
+
 /// `value`, which `function`'s callback returned, as a Map key.
 fn returned_key(function: &str, value: Value) -> Result<MapKey, FrostError> {
     if !value.fits(MAP_KEY) {
@@ -232,6 +247,7 @@ pub(super) fn nulls_global() -> Value {
     const PARAMS: Params = Params::new(&[Param::of(FrostType::INT)]);
     Value::checked_native("nulls", PARAMS, |_, args| {
         let count = count_arg("nulls", 1, int_arg(&args[0]), 0)?;
+        check_length("nulls", size_of::<Value>(), count)?;
         Ok(vec![Value::Null; count].into())
     })
 }
@@ -240,6 +256,7 @@ pub(super) fn repeat_global() -> Value {
     const PARAMS: Params = Params::new(&[Param::any(), Param::of(FrostType::INT)]);
     Value::checked_native("repeat", PARAMS, |_, args| {
         let count = count_arg("repeat", 2, int_arg(&args[1]), 0)?;
+        check_length("repeat", size_of::<Value>(), count)?;
         Ok(vec![args[0].take(); count].into())
     })
 }
@@ -254,15 +271,11 @@ pub(super) fn tile_global() -> Value {
             Value::Array(array) => array.len() * size_of::<Value>(),
             other => unreachable!("type-checked, got {}", other.type_name()),
         };
-        // Past `isize::MAX` bytes, allocating the result would panic.
-        let fits = size
-            .checked_mul(count)
-            .is_some_and(|total| isize::try_from(total).is_ok());
-        if !fits {
-            return Err(FrostError::from_static(
-                "Function tile cannot make a sequence that long",
-            ));
+        // Any number of copies of nothing is nothing, made without counting them.
+        if size == 0 {
+            return Ok(args[0].take());
         }
+        check_length("tile", size, count)?;
         Ok(match args[0].take() {
             Value::String(text) => text.repeat(count).into(),
             Value::Bytes(octets) => octets.repeat(count).into(),

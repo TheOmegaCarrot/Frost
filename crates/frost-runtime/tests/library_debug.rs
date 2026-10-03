@@ -15,21 +15,10 @@
 mod source;
 
 use frost_runtime::Value;
+use source::assertions::{Library, library_assertions};
 use source::{Script, raises, run};
 
-/// Assert each `source` runs to the value of the Frost expression `expected`.
-fn assert_values(cases: &[(&str, &str)]) {
-    for (source, expected) in cases {
-        assert_eq!(run(source), run(expected), "{source:?} is {expected}");
-    }
-}
-
-/// Assert each `source` raises exactly `message`.
-fn assert_raises(cases: &[(&str, &str)]) {
-    for (source, message) in cases {
-        assert_eq!(raises(source), *message, "{source:?} raises {message:?}");
-    }
-}
+library_assertions!(Library::GLOBALS);
 
 // --- assert ---
 
@@ -126,6 +115,19 @@ fn a_passing_assert_accepts_any_error() {
         ("assert(1, {code: 3})", "1"),
         ("assert(1, fn -> 0)", "1"),
     ]);
+}
+
+#[test]
+fn assert_prints_nothing() {
+    for source in [
+        "assert(true)",
+        "assert(1, 'unused')",
+        "assert(false)",
+        "assert(null, 'no value')",
+        "assert(false, {code: 3})",
+    ] {
+        assert!(printed(source).is_empty(), "{source:?} performs no output");
+    }
 }
 
 #[test]

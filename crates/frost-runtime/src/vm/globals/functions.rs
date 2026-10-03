@@ -19,10 +19,9 @@ pub(super) fn call_global() -> Value {
             arity: Arity::Between(1, 2),
             num_captures: 0,
             // Slot-free: an empty name_table gives the frame no local slots. The body
-            // drops `call`'s own value with `DropBelow` and lets `DynTailCall`
-            // validate the operands, so no slots are needed.
+            // drops `call`'s own value with `DropBelow`, so no slots are needed.
             name_table: Vec::new(),
-            constants: Vec::new(),
+            constants: vec![call_type_check()],
             key_constants: Vec::new(),
             child_fns: Vec::new(),
             code: vec![
@@ -38,14 +37,35 @@ pub(super) fn call_global() -> Value {
                 Bytecode::MakeArray(0),       // 4: ( call_self f [] )
                 Bytecode::Jump(1),            // 5: -> idx 7 (skip idx 6)
                 Bytecode::Pop,                // 6: (have_arr) drop needEmpty -> ( call_self f a )
+                // Type-check ( f arr ): when both are right, skip to idx 18.
+                Bytecode::PeekDown(1), // 7: ( call_self f arr f )
+                Bytecode::TypeTest(FrostType::FUNCTION), // 8
+                Bytecode::JumpIfFalse(3), // 9: not a Function -> idx 13
+                Bytecode::PeekDown(0), // 10: ( call_self f arr arr )
+                Bytecode::TypeTest(FrostType::ARRAY), // 11
+                Bytecode::JumpIfTrue(5), // 12: an Array -> idx 18
+                // A wrong type: the check raises its error, naming `call`.
+                Bytecode::LoadConst(0), // 13: ( call_self f arr check )
+                Bytecode::PeekDown(2),  // 14
+                Bytecode::PeekDown(2),  // 15: ( call_self f arr check f arr )
+                Bytecode::Call(2),      // 16: raises
+                Bytecode::Pop,          // 17
                 // Drop call's own value (2 below the top) so the callee lands at
-                // this frame's base, then hand ( f arr ) to DynTailCall, which
-                // validates that arr is an Array and f is callable.
-                Bytecode::DropBelow(2), // 7: ( f arr )
-                Bytecode::DynTailCall,  // 8
+                // this frame's base, then hand ( f arr ) to DynTailCall.
+                Bytecode::DropBelow(2), // 18: ( f arr )
+                Bytecode::DynTailCall,  // 19
             ],
         }),
     }))
+}
+
+/// A native named `call` whose only work is checking `call`'s argument types,
+/// so a wrong type raises as a native's type check does. `call` runs it only
+/// once its own fast check has failed.
+fn call_type_check() -> Value {
+    const PARAMS: Params =
+        Params::new(&[Param::of(FrostType::FUNCTION), Param::of(FrostType::ARRAY)]);
+    Value::checked_native("call", PARAMS, |_, _| Ok(Value::Null))
 }
 
 /// Builds the `try_call` global: Frost's catch primitive, surfaced as a native.

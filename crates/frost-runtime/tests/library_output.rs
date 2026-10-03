@@ -16,7 +16,10 @@
 mod source;
 
 use frost_runtime::Value;
+use source::assertions::{Library, library_assertions};
 use source::{Script, raises, run};
+
+library_assertions!(Library::GLOBALS);
 
 /// The source of an `mformat` call over `template`, as a raw string, and the
 /// Frost expression `replacements`.
@@ -113,6 +116,20 @@ fn values_render_as_to_string_renders_them() {
             "{value}"
         );
     }
+}
+
+#[test]
+fn a_substituted_value_is_never_expanded() {
+    // A value is inserted as is: placeholders and escapes in it are text.
+    assert_formats(
+        r"{a: '${b}', b: 'x', c: R'(\${b} \\)', d: '${'}",
+        &[
+            ("${a}", "${b}"),
+            ("${a}${b}", "${b}x"),
+            ("${c}", r"\${b} \\"),
+            ("${d}", "${"),
+        ],
+    );
 }
 
 #[test]
@@ -357,11 +374,6 @@ fn mformat_takes_exactly_two_arguments() {
 
 // --- print ---
 
-/// The text of each `print` that `source` makes.
-fn printed(source: &str) -> Vec<String> {
-    Script::new(source).printed()
-}
-
 #[test]
 fn a_string_prints_as_its_text() {
     assert_eq!(printed(r#"print("hello")"#), ["hello"]);
@@ -407,10 +419,7 @@ c";
 
 #[test]
 fn print_takes_exactly_one_argument() {
-    for source in ["print()", "print(1, 2)"] {
-        let message = raises(source);
-        assert!(message.contains("expects"), "{source:?}: {message}");
-    }
+    assert_arity("print", 1, &[0, 2]);
     // An arity error prints nothing.
     assert_eq!(Script::new("print(1, 2)").printed(), Vec::<String>::new());
 }
@@ -425,6 +434,8 @@ fn mprint_prints_what_mformat_returns() {
     );
     assert_eq!(printed(r"mprint(R'(\${a})', {a: 1})"), ["${a}"]);
     assert_eq!(printed("mprint('', {})"), [""]);
+    // A substituted value is never expanded.
+    assert_eq!(printed("mprint('${a}', {a: '${b}', b: 'x'})"), ["${b}"]);
 }
 
 #[test]

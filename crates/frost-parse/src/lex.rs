@@ -224,9 +224,11 @@ pub enum Token<'src> {
     OpGte,
 
     // -- Literals --
-    /// An Int literal.
-    #[regex(r"[0-9]+", |lex| lex.slice().parse::<i64>().ok())]
-    IntLiteral(i64),
+    /// An Int literal's magnitude, which may be out of the Int range: the parser
+    /// checks it, since the largest negative Int's magnitude is not a positive
+    /// Int. Past `u64::MAX` it saturates, being out of range all the same.
+    #[regex(r"[0-9]+", |lex| lex.slice().parse::<u64>().unwrap_or(u64::MAX))]
+    IntLiteral(u64),
 
     /// A Float literal.
     #[regex(r"[0-9]+\.[0-9]+([eE][+-]?[0-9]+)?", |lex| lex.slice().parse::<f64>().ok())]

@@ -116,11 +116,22 @@ impl From<ValueMap> for Value {
 impl Value {
     /// The conversion behind Frost's `to_int` for Numeric and String values:
     /// Int passes through, Float truncates toward zero, String parses as an integer.
-    /// Any other type returns Null.
+    /// A Float or String outside the Int range, and any other type, returns Null.
     pub fn to_frost_int(&self) -> Value {
+        // 2^63: every Float below it in magnitude truncates into the Int range,
+        // and `-2^63` itself is `i64::MIN`.
+        const LIMIT: f64 = 9_223_372_036_854_775_808.0;
         match self {
             Value::Int(_) => self.clone(),
-            Value::Float(f) => Value::from(f.get() as i64),
+            Value::Float(f) => {
+                let truncated = f.get().trunc();
+                // An `as` cast would saturate past the range instead.
+                if (-LIMIT..LIMIT).contains(&truncated) {
+                    Value::from(truncated as i64)
+                } else {
+                    Value::Null
+                }
+            }
             Value::String(s) => s.parse::<i64>().ok().map_or(Value::Null, Value::from),
             _ => Value::Null,
         }

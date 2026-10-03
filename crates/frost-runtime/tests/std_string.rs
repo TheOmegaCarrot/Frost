@@ -7,62 +7,12 @@
 
 mod source;
 
-use std::sync::Arc;
-
-use frost_runtime::stdlib::RandomConfig;
-use frost_runtime::{Importer, ImporterBuilder, Stdlib, stdlib};
+use frost_runtime::stdlib::{self, RandomConfig};
+use frost_runtime::{ImporterBuilder, Stdlib};
 use source::Script;
+use source::assertions::{Library, library_assertions};
 
-/// An importer providing only `std.string`.
-fn importer() -> Arc<Importer> {
-    let stdlib = Stdlib::new()
-        .with_module(stdlib::string())
-        .expect("a lone module is accepted");
-    ImporterBuilder::new().with_stdlib(stdlib).build()
-}
-
-/// `expression`, run with `std.string` bound as `str`.
-fn script(expression: &str) -> Script {
-    let source = format!(
-        r"
-        def str = import('std.string')
-        {expression}
-        "
-    );
-    Script::new(&source).importer(importer())
-}
-
-/// Assert each `expression` runs to the value of the Frost expression `expected`.
-fn assert_values(cases: &[(&str, &str)]) {
-    for (expression, expected) in cases {
-        assert_eq!(
-            script(expression).run(),
-            script(expected).run(),
-            "{expression:?} is {expected}"
-        );
-    }
-}
-
-/// Assert each `expression` raises exactly `message`.
-fn assert_raises(cases: &[(&str, &str)]) {
-    for (expression, message) in cases {
-        assert_eq!(script(expression).raises(), *message, "{expression:?}");
-    }
-}
-
-/// Assert `function` raises its arity error when called with each count in
-/// `counts`, where `expects` is how the error states its arity.
-fn assert_arity(function: &str, expects: &str, counts: &[usize]) {
-    for &argc in counts {
-        let expression = format!("str.{function}({})", vec!["null"; argc].join(", "));
-        assert_raises(&[(
-            &expression,
-            &format!(
-                "Function string.{function} expects {expects} arguments, but was called with {argc}"
-            ),
-        )]);
-    }
-}
+library_assertions!(Library::module(stdlib::string, "str"));
 
 const CLASSIFIERS: [&str; 7] = [
     "is_ascii",
@@ -120,6 +70,7 @@ fn last_index_of_finds_the_last_occurrence() {
         ("str.last_index_of('abc', 'x')", "null"),
         ("str.last_index_of('abc', '')", "3"),
         (r"str.last_index_of('h\u{e9}l\u{e9}', '\u{e9}')", "3"),
+        (r"str.last_index_of('\u{e9}', '')", "1"),
     ]);
 }
 
@@ -209,9 +160,16 @@ fn chars_splits_into_code_points() {
 // --- Classifiers ---
 
 #[test]
-fn every_classifier_accepts_the_empty_string() {
+fn only_is_ascii_accepts_the_empty_string() {
+    // The rest require a character; `is_ascii` asks only that nothing is
+    // outside ASCII.
     for function in CLASSIFIERS {
-        assert_values(&[(&format!("str.{function}('')"), "true")]);
+        let expected = if function == "is_ascii" {
+            "true"
+        } else {
+            "false"
+        };
+        assert_values(&[(&format!("str.{function}('')"), expected)]);
     }
 }
 
@@ -252,16 +210,35 @@ fn case_tests_ignore_characters_without_case() {
         ("str.is_uppercase('ABC')", "true"),
         ("str.is_uppercase('ABC 123!')", "true"),
         ("str.is_uppercase('AbC')", "false"),
-        ("str.is_uppercase('123')", "true"),
         (r"str.is_uppercase('\u{c9}')", "true"),
         (r"str.is_uppercase('\u{e9}')", "false"),
         ("str.is_lowercase('abc')", "true"),
         ("str.is_lowercase('abc 123!')", "true"),
         ("str.is_lowercase('aBc')", "false"),
-        ("str.is_lowercase('123')", "true"),
         (r"str.is_lowercase('\u{e9}')", "true"),
         (r"str.is_lowercase('\u{c9}')", "false"),
     ]);
+}
+
+#[test]
+fn case_tests_require_a_character_with_case() {
+    for text in ["", "123", " !", r"\u{4e2d}"] {
+        assert_values(&[
+            (&format!("str.is_uppercase('{text}')"), "false"),
+            (&format!("str.is_lowercase('{text}')"), "false"),
+        ]);
+    }
+}
+
+#[test]
+fn a_title_case_character_is_neither_upper_nor_lower_case() {
+    // `\u{1c5}` is `Dz` with caron as one character; `\u{1f88}` is Greek.
+    for text in [r"\u{1c5}", r"\u{1f88}", r"A\u{1c5}", r"a\u{1c5}"] {
+        assert_values(&[
+            (&format!("str.is_uppercase('{text}')"), "false"),
+            (&format!("str.is_lowercase('{text}')"), "false"),
+        ]);
+    }
 }
 
 #[test]
@@ -301,6 +278,16 @@ fn padding_leaves_a_string_already_wide_enough() {
             (&format!("str.{function}('42', 0)"), "'42'"),
         ]);
     }
+    // The fill is checked even when no padding is needed.
+    for function in ["pad_left", "pad_right", "center"] {
+        assert_raises(&[(
+            &format!("str.{function}('hello', 3, 'ab')"),
+            &format!(
+                "Function string.{function} requires a single character as argument 3 \
+                 (fill), got \"ab\""
+            ),
+        )]);
+    }
 }
 
 #[test]
@@ -313,6 +300,17 @@ fn padding_counts_code_points() {
             r"'\u{b7}\u{1f600}\u{b7}'",
         ),
     ]);
+}
+
+#[test]
+fn padding_past_what_memory_can_address_is_an_error() {
+    // A two-byte fill doubles the bytes a width needs.
+    for function in ["pad_left", "pad_right", "center"] {
+        assert_raises(&[(
+            &format!(r"str.{function}('a', 9223372036854775807, '\u{{e9}}')"),
+            &format!("Function string.{function} cannot make a String that long"),
+        )]);
+    }
 }
 
 #[test]
@@ -364,7 +362,8 @@ fn padding_checks_its_arguments() {
 // --- reader, writer ---
 //
 // The buffers are streams like files and the standard streams, which share their
-// implementation; these cases cover that shared behavior in full.
+// implementation; these cases cover reading, writing, and positions. Closing and
+// flushing, which buffers lack, are covered with the files in `std_fs`.
 
 #[test]
 fn a_buffer_reader_and_writer_offer_positions_but_no_closing() {
@@ -390,6 +389,21 @@ fn read_line_reads_each_line_without_its_ending() {
     assert_values(&[
         (source, "['a', 'b', '', 'c', null]"),
         ("str.reader('').read_line()", "null"),
+        // A lone carriage return does not end a line.
+        (
+            r"
+            def r = str.reader('a\rb')
+            [r.read_line(), r.read_line()]
+            ",
+            r"['a\rb', null]",
+        ),
+        (
+            r"
+            def r = str.reader('a\r')
+            [r.read_line(), r.read_line()]
+            ",
+            r"['a\r', null]",
+        ),
         // A final line ending ends the last line; it does not start another.
         (
             r"
@@ -404,10 +418,16 @@ fn read_line_reads_each_line_without_its_ending() {
 #[test]
 fn read_one_reads_one_character() {
     let source = r"
-        def r = str.reader('\u{e9}x\u{1f600}')
-        [r.read_one(), r.read_one(), r.read_one(), r.read_one()]
+        def r = str.reader('\u{e9}x\u{20ac}\u{1f600}')
+        [r.read_one(), r.read_one(), r.read_one(), r.read_one(), r.read_one()]
     ";
-    assert_values(&[(source, r"['\u{e9}', 'x', '\u{1f600}', null]")]);
+    assert_values(&[(source, r"['\u{e9}', 'x', '\u{20ac}', '\u{1f600}', null]")]);
+    // A Bytes reader's text reads are Strings.
+    assert_values(&[
+        ("str.reader(x'6162').read_one()", "'a'"),
+        ("str.reader(x'6162').read_line()", "'ab'"),
+        ("str.reader(x'6162').read_rest()", "'ab'"),
+    ]);
 }
 
 #[test]
@@ -471,6 +491,11 @@ fn text_reads_raise_on_content_that_is_not_utf8() {
             "str.reader(x'80').read_one()",
             "Function reader.read_one read text that is not UTF-8",
         ),
+        // A lead byte followed by an invalid continuation.
+        (
+            "str.reader(x'c341').read_one()",
+            "Function reader.read_one read text that is not UTF-8",
+        ),
     ]);
 }
 
@@ -523,6 +548,19 @@ fn a_writer_writes_over_what_is_at_its_position() {
     ";
     // Writing past the end fills the gap with zero bytes.
     assert_values(&[(source, "[x'4a656c6c6f0000000000' + x'21', 11]")]);
+}
+
+#[test]
+fn a_writer_cannot_grow_past_what_memory_can_address() {
+    let source = r"
+        def w = str.writer()
+        w.seek(9223372036854775807)
+        w.write('a')
+    ";
+    assert_raises(&[(
+        source,
+        "Function writer.write failed: the buffer cannot grow that large",
+    )]);
 }
 
 #[test]
@@ -580,6 +618,18 @@ fn stream_functions_check_their_arguments() {
             "Function reader.read_bytes requires Int as argument 1, got String",
         ),
         (
+            "str.reader('a').read_bytes(1.0)",
+            "Function reader.read_bytes requires Int as argument 1, got Float",
+        ),
+        (
+            "str.reader('a').seek('1')",
+            "Function reader.seek requires Int as argument 1, got String",
+        ),
+        (
+            "str.writer().seek('1')",
+            "Function writer.seek requires Int as argument 1, got String",
+        ),
+        (
             "str.reader('a').seek(-1)",
             "Function reader.seek requires argument 1 to be at least 0, got -1",
         ),
@@ -588,32 +638,48 @@ fn stream_functions_check_their_arguments() {
             "Function writer.seek requires argument 1 to be at least 0, got -1",
         ),
     ]);
-    for (call, function, expects, argc) in [
-        ("str.reader('a', 'b')", "string.reader", "1", 2),
-        ("str.writer(1)", "string.writer", "0", 1),
-        ("str.reader('a').read_line(1)", "reader.read_line", "0", 1),
-        ("str.reader('a').read_one(1)", "reader.read_one", "0", 1),
-        ("str.reader('a').read_rest(1)", "reader.read_rest", "0", 1),
-        (
-            "str.reader('a').read_rest_bytes(1)",
-            "reader.read_rest_bytes",
-            "0",
-            1,
-        ),
-        ("str.reader('a').read_bytes()", "reader.read_bytes", "1", 0),
-        ("str.reader('a').eof(1)", "reader.eof", "0", 1),
-        ("str.reader('a').tell(1)", "reader.tell", "0", 1),
-        ("str.reader('a').seek()", "reader.seek", "1", 0),
-        ("str.writer().write()", "writer.write", "1", 0),
-        ("str.writer().writeln('a', 'b')", "writer.writeln", "1", 2),
-        ("str.writer().tell(1)", "writer.tell", "0", 1),
-        ("str.writer().seek()", "writer.seek", "1", 0),
-        ("str.writer().get(1)", "writer.get", "0", 1),
-        ("str.writer().get_bytes(1)", "writer.get_bytes", "0", 1),
+    assert_arity("reader", 1, &[0, 2]);
+    assert_arity("writer", 0, &[1]);
+    for (member, expects, counts) in [
+        ("read_line", 0, &[1][..]),
+        ("read_one", 0, &[1]),
+        ("read_rest", 0, &[1]),
+        ("read_rest_bytes", 0, &[1]),
+        ("read_bytes", 1, &[0, 2]),
+        ("eof", 0, &[1]),
+        ("tell", 0, &[1]),
+        ("seek", 1, &[0, 2]),
     ] {
-        assert_raises(&[(
-            call,
-            &format!("Function {function} expects {expects} arguments, but was called with {argc}"),
-        )]);
+        assert_arity_of(
+            &format!("str.reader('a').{member}"),
+            &format!("reader.{member}"),
+            expects,
+            counts,
+        );
     }
+    for (member, expects, counts) in [
+        ("write", 1, &[0, 2][..]),
+        ("writeln", 1, &[0, 2]),
+        ("tell", 0, &[1]),
+        ("seek", 1, &[0, 2]),
+        ("get", 0, &[1]),
+        ("get_bytes", 0, &[1]),
+    ] {
+        assert_arity_of(
+            &format!("str.writer().{member}"),
+            &format!("writer.{member}"),
+            expects,
+            counts,
+        );
+    }
+}
+
+#[test]
+fn writes_and_seeks_return_null() {
+    assert_values(&[
+        ("str.writer().write('a')", "null"),
+        ("str.writer().writeln('a')", "null"),
+        ("str.writer().seek(0)", "null"),
+        ("str.reader('a').seek(0)", "null"),
+    ]);
 }

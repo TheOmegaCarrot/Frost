@@ -6,62 +6,12 @@
 
 mod source;
 
-use std::sync::Arc;
-
 use frost_runtime::stdlib::RandomConfig;
-use frost_runtime::{Importer, ImporterBuilder, Stdlib, stdlib};
+use frost_runtime::{ImporterBuilder, Stdlib, stdlib};
 use source::Script;
+use source::assertions::{Library, library_assertions};
 
-/// An importer providing only `std.regex`.
-fn importer() -> Arc<Importer> {
-    let stdlib = Stdlib::new()
-        .with_module(stdlib::regex())
-        .expect("a lone module is accepted");
-    ImporterBuilder::new().with_stdlib(stdlib).build()
-}
-
-/// `expression`, run with `std.regex` bound as `re`.
-fn script(expression: &str) -> Script {
-    let source = format!(
-        r"
-        def re = import('std.regex')
-        {expression}
-        "
-    );
-    Script::new(&source).importer(importer())
-}
-
-/// Assert each `expression` runs to the value of the Frost expression `expected`.
-fn assert_values(cases: &[(&str, &str)]) {
-    for (expression, expected) in cases {
-        assert_eq!(
-            script(expression).run(),
-            script(expected).run(),
-            "{expression:?} is {expected}"
-        );
-    }
-}
-
-/// Assert each `expression` raises exactly `message`.
-fn assert_raises(cases: &[(&str, &str)]) {
-    for (expression, message) in cases {
-        assert_eq!(script(expression).raises(), *message, "{expression:?}");
-    }
-}
-
-/// Assert `function` raises its arity error when called with each count in
-/// `counts`, where it takes exactly `arity` arguments.
-fn assert_arity(function: &str, arity: usize, counts: &[usize]) {
-    for &argc in counts {
-        let expression = format!("re.{function}({})", vec!["null"; argc].join(", "));
-        assert_raises(&[(
-            &expression,
-            &format!(
-                "Function regex.{function} expects {arity} arguments, but was called with {argc}"
-            ),
-        )]);
-    }
-}
+library_assertions!(Library::module(stdlib::regex, "re"));
 
 // --- The module ---
 
@@ -103,6 +53,19 @@ fn matches_requires_the_whole_text_to_match() {
 }
 
 #[test]
+fn matches_takes_a_pattern_ending_in_a_verbose_comment() {
+    // A `#` comment runs to the end of the line, so it would swallow anything
+    // appended to anchor the pattern.
+    assert_values(&[
+        ("re.matches('ab', '(?x) a b # a comment')", "true"),
+        ("re.matches('abc', '(?x) a b # a comment')", "false"),
+        ("re.matches('a', '(?x)a#')", "true"),
+        ("re.compile('(?x) a b # a comment').matches('ab')", "true"),
+        ("re.compile('(?x) a b # a comment').matches('xab')", "false"),
+    ]);
+}
+
+#[test]
 fn matches_rejects_a_pattern_that_is_invalid_alone() {
     // Wrapped to anchor it, this would become a valid pattern of another meaning.
     let raised = script("re.matches('b', 'a)|(?:b')").raises();
@@ -135,6 +98,8 @@ fn replace_replaces_every_match() {
         (r"re.replace('a1b22c', R'(\d+)', '#')", "'a#b#c'"),
         ("re.replace('abc', 'x', '#')", "'abc'"),
         ("re.replace('abc', '', '-')", "'-a-b-c-'"),
+        // Empty matches fall between code points, not bytes.
+        (r"re.replace('\u{e9}', '', '-')", r"'-\u{e9}-'"),
         (r"re.replace_first('a1b2', R'(\d)', '#')", "'a#b2'"),
         ("re.replace_first('abc', 'x', '#')", "'abc'"),
     ]);
@@ -172,6 +137,10 @@ fn replace_with_replaces_each_match_by_a_function() {
         ),
         ("re.replace_with('abc', 'x', fn m -> 'never')", "'abc'"),
         ("re.replace_with('ab', '', fn m -> '-')", "'-a-b-'"),
+        (
+            r"re.replace_with('\u{e9}\u{1f600}', '', fn m -> '-')",
+            r"'-\u{e9}-\u{1f600}-'",
+        ),
         // The result is converted as `to_string` does.
         (
             "re.replace_with('a', 'a', fn m -> [m])",
@@ -200,6 +169,7 @@ fn split_splits_around_each_match() {
         (r"re.split('a1b2c3', R'(\d)')", "['a', 'b', 'c', '']"),
         ("re.split(',a', ',')", "['', 'a']"),
         ("re.split('', ',')", "['']"),
+        (r"re.split('\u{e9}x', '')", r"['', '\u{e9}', 'x', '']"),
     ]);
 }
 
@@ -289,18 +259,40 @@ fn every_function_checks_its_arguments() {
         assert_arity(function, 2, &[0, 1, 3]);
     }
     for function in ["replace", "replace_first"] {
-        assert_raises(&[(
-            &format!("re.{function}('a', 'a', 1)"),
-            &format!(
-                "Function regex.{function} requires String as argument 3 (replacement), got Int"
+        assert_raises(&[
+            (
+                &format!("re.{function}(x'61', 'a', 'b')"),
+                &format!("Function regex.{function} requires String as argument 1, got Bytes"),
             ),
-        )]);
+            (
+                &format!("re.{function}('a', 1, 'b')"),
+                &format!(
+                    "Function regex.{function} requires String as argument 2 (pattern), got Int"
+                ),
+            ),
+            (
+                &format!("re.{function}('a', 'a', 1)"),
+                &format!(
+                    "Function regex.{function} requires String as argument 3 (replacement), got Int"
+                ),
+            ),
+        ]);
         assert_arity(function, 3, &[0, 2, 4]);
     }
-    assert_raises(&[(
-        "re.replace_with('a', 'a', 'b')",
-        "Function regex.replace_with requires Function as argument 3 (callback), got String",
-    )]);
+    assert_raises(&[
+        (
+            "re.replace_with(x'61', 'a', id)",
+            "Function regex.replace_with requires String as argument 1, got Bytes",
+        ),
+        (
+            "re.replace_with('a', 1, id)",
+            "Function regex.replace_with requires String as argument 2 (pattern), got Int",
+        ),
+        (
+            "re.replace_with('a', 'a', 'b')",
+            "Function regex.replace_with requires Function as argument 3 (callback), got String",
+        ),
+    ]);
     assert_arity("replace_with", 3, &[0, 2, 4]);
 }
 
@@ -363,7 +355,28 @@ fn a_compiled_pattern_does_what_the_module_functions_do() {
             'a#b22',
             'a1b2',
             ['a', 'b', 'c'],
-            re.scan_matches('a1b22', R'((\d+))'),
+            {
+                found: true,
+                count: 2,
+                matches: [
+                    {
+                        full: '1',
+                        groups: [
+                            {matched: true, value: '1', index: 0},
+                            {matched: true, value: '1', index: 1},
+                        ],
+                        named: {},
+                    },
+                    {
+                        full: '22',
+                        groups: [
+                            {matched: true, value: '22', index: 0},
+                            {matched: true, value: '22', index: 1},
+                        ],
+                        named: {},
+                    },
+                ],
+            },
         ]]",
     )]);
 }
@@ -424,6 +437,12 @@ fn compiled_functions_check_their_arguments() {
     for function in ["replace", "replace_first"] {
         assert_raises(&[
             (
+                &format!("re.compile('a').{function}(1, 'b')"),
+                &format!(
+                    "Function compiled_regex.{function} requires String as argument 1, got Int"
+                ),
+            ),
+            (
                 &format!("re.compile('a').{function}('a', 1)"),
                 &format!(
                     "Function compiled_regex.{function} requires String as argument 2 \
@@ -441,6 +460,10 @@ fn compiled_functions_check_their_arguments() {
     }
     assert_raises(&[
         (
+            "re.compile('a').replace_with(1, id)",
+            "Function compiled_regex.replace_with requires String as argument 1, got Int",
+        ),
+        (
             "re.compile('a').replace_with('a', 'b')",
             "Function compiled_regex.replace_with requires Function as argument 2 (callback), \
              got String",
@@ -455,4 +478,20 @@ fn compiled_functions_check_their_arguments() {
         ),
     ]);
     assert_arity("compile", 1, &[0, 2]);
+    for (function, expects) in [
+        ("matches", 1),
+        ("contains", 1),
+        ("split", 1),
+        ("scan_matches", 1),
+        ("replace", 2),
+        ("replace_first", 2),
+        ("replace_with", 2),
+    ] {
+        assert_arity_of(
+            &format!("re.compile('a').{function}"),
+            &format!("compiled_regex.{function}"),
+            expects,
+            &[0, expects + 1],
+        );
+    }
 }

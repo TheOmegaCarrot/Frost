@@ -6,30 +6,12 @@
 
 mod source;
 
-use std::sync::Arc;
-
 use frost_runtime::stdlib::RandomConfig;
-use frost_runtime::{FrostFloat, Importer, ImporterBuilder, Stdlib, Value, stdlib};
+use frost_runtime::{FrostFloat, ImporterBuilder, Stdlib, Value, stdlib};
 use source::Script;
+use source::assertions::{Library, library_assertions};
 
-/// An importer providing only `std.math`.
-fn importer() -> Arc<Importer> {
-    let stdlib = Stdlib::new()
-        .with_module(stdlib::math())
-        .expect("a lone module is accepted");
-    ImporterBuilder::new().with_stdlib(stdlib).build()
-}
-
-/// `expression`, run with `std.math` bound as `math`.
-fn script(expression: &str) -> Script {
-    let source = format!(
-        r"
-        def math = import('std.math')
-        {expression}
-        "
-    );
-    Script::new(&source).importer(importer())
-}
+library_assertions!(Library::module(stdlib::math, "math"));
 
 fn run(expression: &str) -> Value {
     script(expression).run()
@@ -37,38 +19,6 @@ fn run(expression: &str) -> Value {
 
 fn float(f: f64) -> Value {
     Value::Float(FrostFloat::new(f).expect("a finite float"))
-}
-
-/// Assert each `expression` runs to the value of the Frost expression `expected`.
-fn assert_values(cases: &[(&str, &str)]) {
-    for (expression, expected) in cases {
-        assert_eq!(
-            run(expression),
-            run(expected),
-            "{expression:?} is {expected}"
-        );
-    }
-}
-
-/// Assert each `expression` raises exactly `message`.
-fn assert_raises(cases: &[(&str, &str)]) {
-    for (expression, message) in cases {
-        assert_eq!(script(expression).raises(), *message, "{expression:?}");
-    }
-}
-
-/// Assert `function` raises its arity error when called with each count in
-/// `counts`, where `expects` is how the error states its arity.
-fn assert_arity(function: &str, expects: &str, counts: &[usize]) {
-    for &argc in counts {
-        let expression = format!("math.{function}({})", vec!["null"; argc].join(", "));
-        assert_raises(&[(
-            &expression,
-            &format!(
-                "Function math.{function} expects {expects} arguments, but was called with {argc}"
-            ),
-        )]);
-    }
 }
 
 /// A one-argument floating-point function, the `f64` method it computes, and a
@@ -149,15 +99,16 @@ fn each_float_function_computes_its_f64_method() {
 
 #[test]
 fn float_functions_return_a_float_for_an_int() {
+    // Only IEEE-exact operations are compared exactly; the rest are checked
+    // against their `f64` methods in `each_float_function_computes_its_f64_method`.
     assert_values(&[
         ("math.sqrt(4)", "2.0"),
-        ("math.cbrt(-27)", "-3.0"),
-        ("math.log2(8)", "3.0"),
-        ("math.log10(1000)", "3.0"),
         ("math.exp2(10)", "1024.0"),
         ("math.cos(0)", "1.0"),
-        ("math.acosh(1)", "0.0"),
     ]);
+    for name in ["cbrt", "log2", "log10", "acosh"] {
+        assert_values(&[(&format!("is_float(math.{name}(8))"), "true")]);
+    }
 }
 
 #[test]
@@ -283,15 +234,25 @@ fn rounding_past_the_int_range_is_an_error() {
             ),
         ]);
     }
-    // 2^63 is one past the largest Int; -2^63 is the smallest.
-    assert_raises(&[(
-        "math.floor(9223372036854775808.0)",
-        &format!(
-            "Function math.floor has no Int result for {}",
-            float(9_223_372_036_854_775_808.0).to_frost_string()
-        ),
-    )]);
-    assert_values(&[("math.floor(-9223372036854775808.0)", "math.nums.minint")]);
+    // 2^63 is one past the largest Int; -2^63 is the smallest. The largest Float
+    // below 2^63 is 2^63 - 1024.
+    let past = float(9_223_372_036_854_775_808.0).to_frost_string();
+    for function in ["round", "ceil", "floor", "trunc"] {
+        assert_values(&[
+            (
+                &format!("math.{function}(9223372036854774784.0)"),
+                "9223372036854774784",
+            ),
+            (
+                &format!("math.{function}(-9223372036854775808.0)"),
+                "math.nums.minint",
+            ),
+        ]);
+        assert_raises(&[(
+            &format!("math.{function}(9223372036854775808.0)"),
+            &format!("Function math.{function} has no Int result for {past}"),
+        )]);
+    }
 }
 
 // --- abs, min, max, hypot, clamp, lerp ---
@@ -328,10 +289,14 @@ fn min_and_max_keep_an_int_of_two_ints() {
 fn hypot_takes_two_or_three_lengths() {
     assert_values(&[
         ("math.hypot(3, 4)", "5.0"),
-        ("math.hypot(2, 3, 6)", "7.0"),
         ("math.hypot(0, 0)", "0.0"),
         ("math.hypot(-3, 4)", "5.0"),
     ]);
+    // The three-length norm is not exactly representable on every platform.
+    assert_eq!(
+        run("math.hypot(2, 3, 6)"),
+        float(f64::hypot(f64::hypot(2.0, 3.0), 6.0))
+    );
 }
 
 #[test]
@@ -353,6 +318,20 @@ fn clamp_keeps_a_value_within_bounds() {
 }
 
 #[test]
+fn clamp_compares_int_bounds_exactly() {
+    // As Floats, both bounds would round to 2^63 and seem equal.
+    assert_values(&[(
+        "math.clamp(0, 9223372036854775806, 9223372036854775807)",
+        "9223372036854775806",
+    )]);
+    assert_raises(&[(
+        "math.clamp(0, 9223372036854775807, 9223372036854775806)",
+        "Function math.clamp requires argument 2 (lo) to be at most argument 3 (hi), \
+         got 9223372036854775807 and 9223372036854775806",
+    )]);
+}
+
+#[test]
 fn lerp_interpolates_and_extrapolates() {
     assert_values(&[
         ("math.lerp(0, 10, 0.5)", "5.0"),
@@ -362,6 +341,7 @@ fn lerp_interpolates_and_extrapolates() {
         ("math.lerp(0, 10, -0.5)", "-5.0"),
         ("math.lerp(10, 0, 0.25)", "7.5"),
         // The ends are exact.
+        ("math.lerp(0.1, 0.7, 0)", "0.1"),
         ("math.lerp(0.1, 0.7, 1)", "0.7"),
     ]);
 }
@@ -419,12 +399,36 @@ fn every_function_requires_numbers() {
     }
     assert_raises(&[
         (
+            "math.hypot('1', 2)",
+            "Function math.hypot requires Numeric as argument 1, got String",
+        ),
+        (
+            "math.hypot(1, '2')",
+            "Function math.hypot requires Numeric as argument 2, got String",
+        ),
+        (
             "math.hypot(1, 2, '3')",
             "Function math.hypot requires Numeric as argument 3, got String",
         ),
         (
+            "math.clamp('1', 0, 3)",
+            "Function math.clamp requires Numeric as argument 1 (value), got String",
+        ),
+        (
+            "math.clamp(1, [0], 3)",
+            "Function math.clamp requires Numeric as argument 2 (lo), got Array",
+        ),
+        (
             "math.clamp(1, 0, '3')",
             "Function math.clamp requires Numeric as argument 3 (hi), got String",
+        ),
+        (
+            "math.lerp(true, 1, 0)",
+            "Function math.lerp requires Numeric as argument 1 (a), got Bool",
+        ),
+        (
+            "math.lerp(0, {}, 0)",
+            "Function math.lerp requires Numeric as argument 2 (b), got Map",
         ),
         (
             "math.lerp(0, 1, null)",

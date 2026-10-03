@@ -2272,8 +2272,14 @@ fn call_applies_a_lambda_to_an_argument_array() {
         ("call(fn x, y -> x + y, [3, 4])", "7"),
     ]);
     assert_raises(&[
-        ("call(5, [1])", "non-function"),
-        ("call(fn -> null, 5)", "Array"),
+        (
+            "call(5, [1])",
+            "Function call requires Function as argument 1, got Int",
+        ),
+        (
+            "call(fn -> null, 5)",
+            "Function call requires Array as argument 2, got Int",
+        ),
     ]);
 }
 

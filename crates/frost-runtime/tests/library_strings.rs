@@ -13,33 +13,10 @@
 mod source;
 
 use frost_runtime::Value;
+use source::assertions::{Library, library_assertions};
 use source::{Script, raises, run};
 
-/// Assert each `source` runs to the value of the Frost expression `expected`.
-fn assert_values(cases: &[(&str, &str)]) {
-    for (source, expected) in cases {
-        assert_eq!(run(source), run(expected), "{source:?} is {expected}");
-    }
-}
-
-/// Assert each `source` raises exactly `message`.
-fn assert_raises(cases: &[(&str, &str)]) {
-    for (source, message) in cases {
-        assert_eq!(raises(source), *message, "{source:?} raises {message:?}");
-    }
-}
-
-/// Assert each call in `calls` (source, argument count) raises the arity error of
-/// `function`, which takes exactly `arity` arguments.
-fn assert_arity(function: &str, arity: usize, calls: &[(&str, usize)]) {
-    for (source, argc) in calls {
-        assert_eq!(
-            raises(source),
-            format!("Function {function} expects {arity} arguments, but was called with {argc}"),
-            "{source:?}"
-        );
-    }
-}
+library_assertions!(Library::GLOBALS);
 
 /// The type error `function` raises for an argument of type `got`, where it
 /// requires `requires` as `position` (such as `argument 2 (delimiter)`).
@@ -172,15 +149,7 @@ fn split_checks_its_argument_types() {
 
 #[test]
 fn split_takes_exactly_two_arguments() {
-    assert_arity(
-        "split",
-        2,
-        &[
-            ("split()", 0),
-            ("split('a')", 1),
-            ("split('a', ',', ',')", 3),
-        ],
-    );
+    assert_arity("split", 2, &[0, 1, 3]);
 }
 
 // --- lines ---
@@ -204,7 +173,8 @@ fn lines_treats_a_final_line_ending_as_optional() {
     assert_values(&[
         (r"lines('a\n')", "['a']"),
         (r"lines('a\r\n')", "['a']"),
-        (r"lines('a\nb')", r"lines('a\nb\n')"),
+        (r"lines('a\nb\n')", "['a', 'b']"),
+        (r"lines('a\nb\r\n')", "['a', 'b']"),
         ("lines('')", "[]"),
     ]);
 }
@@ -236,7 +206,7 @@ fn lines_checks_its_argument_type() {
 
 #[test]
 fn lines_takes_exactly_one_argument() {
-    assert_arity("lines", 1, &[("lines()", 0), ("lines('a', 'b')", 2)]);
+    assert_arity("lines", 1, &[0, 2]);
 }
 
 // --- join ---
@@ -325,16 +295,16 @@ fn join_checks_its_argument_types() {
 }
 
 #[test]
+fn join_checks_its_separator_before_its_elements() {
+    assert_raises(&[(
+        "join([1], 2)",
+        &type_error("join", "String or Bytes", "argument 2 (separator)", "Int"),
+    )]);
+}
+
+#[test]
 fn join_takes_exactly_two_arguments() {
-    assert_arity(
-        "join",
-        2,
-        &[
-            ("join()", 0),
-            ("join(['a'])", 1),
-            ("join(['a'], ',', ',')", 3),
-        ],
-    );
+    assert_arity("join", 2, &[0, 1, 3]);
 }
 
 #[test]
@@ -429,16 +399,7 @@ fn replace_checks_its_argument_types() {
 
 #[test]
 fn replace_takes_exactly_three_arguments() {
-    assert_arity(
-        "replace",
-        3,
-        &[
-            ("replace()", 0),
-            ("replace('a')", 1),
-            ("replace('a', 'b')", 2),
-            ("replace('a', 'b', 'c', 'd')", 4),
-        ],
-    );
+    assert_arity("replace", 3, &[0, 1, 2, 4]);
 }
 
 // --- trim, trim_left, trim_right ---
@@ -501,14 +462,7 @@ fn trim_checks_its_argument_type() {
 #[test]
 fn trim_takes_exactly_one_argument() {
     for function in ["trim", "trim_left", "trim_right"] {
-        assert_arity(
-            function,
-            1,
-            &[
-                (&format!("{function}()"), 0),
-                (&format!("{function}('a', 'b')"), 2),
-            ],
-        );
+        assert_arity(function, 1, &[0, 2]);
     }
 }
 
@@ -553,14 +507,7 @@ fn to_upper_and_to_lower_check_their_argument_type() {
 #[test]
 fn to_upper_and_to_lower_take_exactly_one_argument() {
     for function in ["to_upper", "to_lower"] {
-        assert_arity(
-            function,
-            1,
-            &[
-                (&format!("{function}()"), 0),
-                (&format!("{function}('a', 'b')"), 2),
-            ],
-        );
+        assert_arity(function, 1, &[0, 2]);
     }
 }
 
@@ -644,11 +591,14 @@ fn searches_search_runtime_values() {
 
 #[test]
 fn contains_points_an_array_search_at_includes() {
-    assert_raises(&[(
-        "contains(['a'], 'a')",
-        "Function contains requires String or Bytes as argument 1, got Array \
-         (use includes to search an Array)",
-    )]);
+    let message = "Function contains requires String or Bytes as argument 1, got Array \
+                   (use includes to search an Array)";
+    assert_raises(&[
+        ("contains(['a'], 'a')", message),
+        // The hint comes first, even when the second argument is also wrong.
+        ("contains(['a'], 1)", message),
+        ("contains([], null)", message),
+    ]);
 }
 
 #[test]
@@ -679,14 +629,6 @@ fn searches_check_their_argument_types() {
 #[test]
 fn searches_take_exactly_two_arguments() {
     for function in ["contains", "starts_with", "ends_with"] {
-        assert_arity(
-            function,
-            2,
-            &[
-                (&format!("{function}()"), 0),
-                (&format!("{function}('a')"), 1),
-                (&format!("{function}('a', 'b', 'c')"), 3),
-            ],
-        );
+        assert_arity(function, 2, &[0, 1, 3]);
     }
 }

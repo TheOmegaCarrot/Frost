@@ -1,7 +1,8 @@
 use crate::ast::{BinOp, Expr, Literal, LogicalOp, SourceSpan, Spanned, UnaryOp};
 use crate::lex::Token;
+use crate::parse::ParseResult;
+use crate::parse::ctx::{ParseCtx, int_literal};
 use crate::parse::strings;
-use crate::parse::{ParseResult, ctx::ParseCtx};
 
 impl<'src, 'f> ParseCtx<'src, 'f> {
     pub(crate) fn parse_expression(&mut self) -> ParseResult<Spanned<Expr>> {
@@ -205,6 +206,11 @@ impl<'src, 'f> ParseCtx<'src, 'f> {
             let op_span: SourceSpan = self.expect(token)?.span.clone().into();
             let start = op_span.start;
             self.maybe_skip_nl();
+            if op == UnaryOp::Negate
+                && let Some(min) = self.try_parse_min_int(start)
+            {
+                return Ok(min);
+            }
             let operand = self.parse_expr_bp(PREFIX_BP)?;
             let end = operand.span.end;
             return Ok(Spanned::new(
@@ -219,12 +225,44 @@ impl<'src, 'f> ParseCtx<'src, 'f> {
         self.parse_atom()
     }
 
+    /// After a `-` starting at `start`, the least Int, if the next token is a
+    /// literal of its magnitude that is the whole operand. That magnitude is
+    /// past the greatest Int, so it is a literal only when negated. Followed by
+    /// a postfix operator, the literal is the operator's operand instead, and is
+    /// left to fail as out of range.
+    fn try_parse_min_int(&mut self, start: usize) -> Option<Spanned<Expr>> {
+        let literal = self.peek()?;
+        if literal.token != Token::IntLiteral(i64::MIN.unsigned_abs()) {
+            return None;
+        }
+        let end = literal.span.end;
+        let checkpoint = self.checkpoint();
+        self.advance(1);
+        // The operators `parse_expr_bp` applies before any binary operator.
+        let postfix_follows = matches!(
+            self.peek().map(|t| &t.token),
+            Some(Token::OpenParen | Token::OpenBracket)
+        ) || matches!(
+            self.peek_past_nl().map(|t| &t.token),
+            Some(Token::OpDot | Token::OpThread)
+        );
+        if postfix_follows {
+            self.restore(checkpoint);
+            return None;
+        }
+        Some(Spanned::new(
+            Expr::Literal(Literal::Int(i64::MIN)),
+            (start..end).into(),
+        ))
+    }
+
     fn parse_atom(&mut self) -> ParseResult<Spanned<Expr>> {
         let peek = self.must_peek("expression")?;
         let span = peek.span.clone();
 
         match peek.token {
-            Token::IntLiteral(n) => {
+            Token::IntLiteral(magnitude) => {
+                let n = int_literal(magnitude, false, span.clone())?;
                 self.advance(1);
                 Ok(Spanned::new(Expr::Literal(Literal::Int(n)), span.into()))
             }
