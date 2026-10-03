@@ -11,15 +11,14 @@ use reedline::{
     Reedline, Signal, StyledText, ValidationResult, Validator,
 };
 
-use crate::syntax::{self, Class};
-use crate::{Frontend, ReplError};
+use crate::highlight::{self, Class};
+use crate::{Frontend, ReplError, complete_segment};
 
 /// A [`Frontend`] for a person at a terminal, with line editing, history, and
 /// syntax highlighting.
 ///
-/// A segment continues onto more lines while it is unfinished: while a bracket
-/// or String is open, or after a trailing `:` or `->`. A line ending in `\`
-/// continues too; the `\` is dropped and its line break kept.
+/// A segment continues onto more lines until [`complete_segment`] completes
+/// it.
 ///
 /// Ctrl-C discards the segment being typed; Ctrl-D on an empty line ends input.
 ///
@@ -74,7 +73,8 @@ impl Frontend for TerminalFrontend {
             match self.editor.read_line(&FrostPrompt)? {
                 Signal::Success(segment) if segment.trim().is_empty() => {}
                 Signal::Success(segment) => {
-                    return Ok(Some(syntax::remove_line_continuations(&segment)));
+                    // The validator submits only what completes.
+                    return Ok(Some(complete_segment(&segment).unwrap_or(segment)));
                 }
                 Signal::CtrlD => return Ok(None),
                 // Ctrl-C discards the segment, and anything else asks for no
@@ -143,10 +143,9 @@ struct FrostValidator;
 
 impl Validator for FrostValidator {
     fn validate(&self, line: &str) -> ValidationResult {
-        if syntax::is_unfinished(line) {
-            ValidationResult::Incomplete
-        } else {
-            ValidationResult::Complete
+        match complete_segment(line) {
+            Some(_) => ValidationResult::Complete,
+            None => ValidationResult::Incomplete,
         }
     }
 }
@@ -165,7 +164,7 @@ const BRACKET_COLORS: [Color; 5] = [
 impl Highlighter for FrostHighlighter {
     fn highlight(&self, line: &str, _cursor: usize) -> StyledText {
         let mut styled = StyledText::new();
-        for (span, class) in syntax::classify(line) {
+        for (span, class) in highlight::classify(line) {
             let style = match class {
                 Class::Keyword => Style::new().fg(Color::LightCyan),
                 Class::Number => Style::new().fg(Color::Yellow),

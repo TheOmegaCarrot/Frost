@@ -34,15 +34,62 @@ fn failure(source: &str) -> ReplError {
 
 // --- Reading ---
 
-#[test]
-fn each_line_is_a_segment_without_its_line_ending() {
+/// Every segment a default frontend reads from `lines`, and the prompts it
+/// wrote.
+fn reading(lines: &str) -> (Vec<String>, String) {
     let mut output = Vec::new();
     let segments = read_all(LineFrontend::new(
-        Cursor::new("1 + 2\ndef x = 1\r\n\nlast"),
+        Cursor::new(lines),
         &mut output,
         io::sink(),
     ));
+    (segments, String::from_utf8(output).unwrap())
+}
+
+#[test]
+fn each_complete_line_is_a_segment_without_its_line_ending() {
+    let (segments, _) = reading("1 + 2\ndef x = 1\r\n\nlast");
     assert_eq!(segments, ["1 + 2", "def x = 1", "", "last"]);
+}
+
+#[test]
+fn an_unfinished_segment_continues_onto_the_next_line() {
+    let (segments, _) = reading("f(1,\n2)\n[\r\n3\r\n]\r\nif x:\n1\n");
+    assert_eq!(segments, ["f(1,\n2)", "[\n3\n]", "if x:\n1"]);
+}
+
+#[test]
+fn a_line_continuation_continues_a_segment_and_is_removed() {
+    let (segments, _) = reading("1 + \\\n2\nlast\n");
+    assert_eq!(segments, ["1 + \n2", "last"]);
+}
+
+#[test]
+fn a_continuation_prompt_comes_before_each_further_line() {
+    let (_, prompts) = reading("f(\n1,\n2)\nx\n");
+    assert_eq!(prompts, "> . . > > \n");
+}
+
+#[test]
+fn the_continuation_prompt_can_be_changed() {
+    let mut output = Vec::new();
+    read_all(
+        LineFrontend::new(Cursor::new("f(\n1)\n"), &mut output, io::sink())
+            .with_prompt(">>> ")
+            .with_continuation_prompt("... "),
+    );
+    assert_eq!(String::from_utf8(output).unwrap(), ">>> ... >>> \n");
+}
+
+#[test]
+fn input_ending_mid_segment_hands_over_the_segment_as_it_is() {
+    // Unchanged, even a trailing line continuation: the compiler reports it.
+    for (lines, expected) in [("f(1,\n2", "f(1,\n2"), ("1 + \\\n", "1 + \\")] {
+        let (segments, _) = reading(lines);
+        assert_eq!(segments, [expected], "{lines:?}");
+    }
+    let (_, prompts) = reading("f(\n");
+    assert_eq!(prompts, "> . \n> \n", "each prompt's line ends");
 }
 
 #[test]
@@ -123,4 +170,11 @@ fn a_session_prompts_shows_each_outcome_and_carries_on() {
     assert_eq!(output, "> > > > 2\n> \n");
     assert!(errors.contains("`nope` is not defined"), "{errors}");
     assert!(errors.ends_with('\n'), "{errors:?}");
+}
+
+#[test]
+fn a_session_runs_a_segment_spanning_lines_as_one_input() {
+    let (output, errors) = session("defn inc(x) ->\n  x + 1\ninc(1)\n");
+    assert_eq!(output, "> . > 2\n> \n");
+    assert_eq!(errors, "");
 }

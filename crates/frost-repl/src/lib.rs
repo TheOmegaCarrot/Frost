@@ -24,14 +24,16 @@
 //!   history, and syntax highlighting.
 
 mod frontend;
-mod scripted;
 #[cfg(feature = "line-editor")]
-mod syntax;
+mod highlight;
+mod scripted;
+mod segment;
 #[cfg(feature = "line-editor")]
 mod terminal;
 
 pub use frontend::{Frontend, LineFrontend};
 pub use scripted::{ScriptedFrontend, Transcript};
+pub use segment::complete_segment;
 #[cfg(feature = "line-editor")]
 pub use terminal::TerminalFrontend;
 

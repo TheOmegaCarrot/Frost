@@ -1,6 +1,5 @@
-//! What the terminal input needs to know about source as it is typed: whether
-//! it is finished, and how to color it. Both work from the lexer's tokens, so
-//! a bracket or colon inside a String or comment never counts.
+//! How the terminal frontend colors source as it is typed. Classes come from
+//! the lexer's tokens, so a bracket inside a String or comment is no bracket.
 
 #[cfg(test)]
 mod tests;
@@ -9,58 +8,7 @@ use std::ops::Range;
 
 use frost_parse::{Token, tokens};
 
-/// Whether `source` needs more lines before it can run: it ends in a line
-/// continuation `\`, a `:`, or a `->`; leaves a bracket open; or leaves a
-/// String unclosed.
-pub(crate) fn is_unfinished(source: &str) -> bool {
-    let mut open_brackets: i64 = 0;
-    let mut last = None;
-    for (token, span) in tokens(source) {
-        match &token {
-            Ok(Token::OpenParen | Token::DollarParen | Token::OpenBracket | Token::OpenBrace) => {
-                open_brackets += 1;
-            }
-            Ok(Token::CloseParen | Token::CloseBracket | Token::CloseBrace) => open_brackets -= 1,
-            Err(_) if opens_string(&source[span.clone()]) => return true,
-            _ => {}
-        }
-        last = Some((token, span));
-    }
-    open_brackets > 0
-        || match last {
-            Some((Ok(Token::Colon | Token::SlimArrow), _)) => true,
-            Some((Err(_), span)) => is_line_continuation(source, span),
-            _ => false,
-        }
-}
-
-/// `source` with each line continuation `\` removed. The line break after it
-/// stays: the parser gives newlines meaning.
-pub(crate) fn remove_line_continuations(source: &str) -> String {
-    let mut kept = String::with_capacity(source.len());
-    let mut from = 0;
-    for (token, span) in tokens(source) {
-        if token.is_err() && is_line_continuation(source, span.clone()) {
-            kept.push_str(&source[from..span.start]);
-            from = span.end;
-        }
-    }
-    kept.push_str(&source[from..]);
-    kept
-}
-
-/// Whether the unlexable bytes at `span` are a line continuation: a `\` with
-/// nothing after it on its line but spaces.
-fn is_line_continuation(source: &str, span: Range<usize>) -> bool {
-    let rest_of_line = source[span.end..].split('\n').next().unwrap_or("");
-    &source[span] == "\\" && rest_of_line.trim().is_empty()
-}
-
-/// Whether unlexable bytes are the start of a String that continues past the
-/// end of the input. Only these kinds of String may span lines.
-fn opens_string(text: &str) -> bool {
-    text.starts_with(['\'', '"'])
-}
+use crate::segment::opens_string;
 
 /// How to color a stretch of source.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]

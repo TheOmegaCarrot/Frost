@@ -4,7 +4,7 @@ use std::io::{self, BufRead, Stderr, StdinLock, Stdout, Write};
 
 use frost_runtime::Value;
 
-use crate::ReplError;
+use crate::{ReplError, complete_segment};
 
 /// Where a [`Repl`](crate::Repl) session happens: it supplies each input and
 /// shows what became of it. A terminal, a notebook, or an in-application
@@ -22,8 +22,11 @@ pub trait Frontend {
     fn render(&mut self, outcome: Result<&Value, &ReplError>) -> io::Result<()>;
 }
 
-/// The simplest [`Frontend`]: each line is a segment, read after writing a
-/// prompt.
+/// The simplest [`Frontend`]: it reads lines, each after writing a prompt.
+///
+/// A segment continues onto more lines until [`complete_segment`] completes
+/// it, each further line after a continuation prompt. If input ends first,
+/// the unfinished segment is run as it is, for the compiler to report.
 ///
 /// Each value other than Null is written pretty-printed, as by
 /// [`Value::to_pretty_string`], after the prompts; a failure is written
@@ -33,6 +36,7 @@ pub struct LineFrontend<R, W, E> {
     output: W,
     errors: E,
     prompt: String,
+    continuation_prompt: String,
 }
 
 impl LineFrontend<StdinLock<'static>, Stdout, Stderr> {
@@ -44,27 +48,39 @@ impl LineFrontend<StdinLock<'static>, Stdout, Stderr> {
 }
 
 impl<R: BufRead, W: Write, E: Write> LineFrontend<R, W, E> {
-    /// Lines from `lines`, each prompted for with `> `; prompts and values on
-    /// `output`, and failures on `errors`.
+    /// Lines from `lines`, prompted for with `> `, and with `. ` as a segment
+    /// continues; prompts and values on `output`, and failures on `errors`.
     pub fn new(lines: R, output: W, errors: E) -> Self {
         Self {
             lines,
             output,
             errors,
             prompt: "> ".to_string(),
+            continuation_prompt: ". ".to_string(),
         }
     }
 
-    /// Set the prompt written before each line is read.
+    /// Set the prompt written before the first line of each segment.
     pub fn with_prompt(mut self, prompt: impl Into<String>) -> Self {
         self.prompt = prompt.into();
         self
     }
-}
 
-impl<R: BufRead, W: Write, E: Write> Frontend for LineFrontend<R, W, E> {
-    fn read_segment(&mut self) -> io::Result<Option<String>> {
-        write!(self.output, "{}", self.prompt)?;
+    /// Set the prompt written before each further line of a segment.
+    pub fn with_continuation_prompt(mut self, prompt: impl Into<String>) -> Self {
+        self.continuation_prompt = prompt.into();
+        self
+    }
+
+    /// The next line, without its line ending, after writing the prompt for
+    /// the first line of a segment or a further one. `None` once input ends.
+    fn read_line(&mut self, continuing: bool) -> io::Result<Option<String>> {
+        let prompt = if continuing {
+            &self.continuation_prompt
+        } else {
+            &self.prompt
+        };
+        write!(self.output, "{prompt}")?;
         self.output.flush()?;
         let mut line = String::new();
         if self.lines.read_line(&mut line)? == 0 {
@@ -75,6 +91,26 @@ impl<R: BufRead, W: Write, E: Write> Frontend for LineFrontend<R, W, E> {
         let line = line.strip_suffix('\n').unwrap_or(&line);
         let line = line.strip_suffix('\r').unwrap_or(line);
         Ok(Some(line.to_string()))
+    }
+}
+
+impl<R: BufRead, W: Write, E: Write> Frontend for LineFrontend<R, W, E> {
+    fn read_segment(&mut self) -> io::Result<Option<String>> {
+        let Some(mut source) = self.read_line(false)? else {
+            return Ok(None);
+        };
+        loop {
+            if let Some(segment) = complete_segment(&source) {
+                return Ok(Some(segment));
+            }
+            match self.read_line(true)? {
+                Some(line) => {
+                    source.push('\n');
+                    source.push_str(&line);
+                }
+                None => return Ok(Some(source)),
+            }
+        }
     }
 
     fn render(&mut self, outcome: Result<&Value, &ReplError>) -> io::Result<()> {
