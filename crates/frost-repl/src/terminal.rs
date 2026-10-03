@@ -1,19 +1,20 @@
-//! [`TerminalInput`]: line editing, history, and highlighting on a terminal.
+//! [`TerminalFrontend`]: line editing, history, and highlighting on a terminal.
 
 use std::borrow::Cow;
-use std::io;
+use std::io::{self, Write};
 use std::path::PathBuf;
 
+use frost_runtime::Value;
 use nu_ansi_term::{Color, Style};
 use reedline::{
     FileBackedHistory, HISTORY_SIZE, Highlighter, Prompt, PromptEditMode, PromptHistorySearch,
     Reedline, Signal, StyledText, ValidationResult, Validator,
 };
 
-use crate::ReplInput;
 use crate::syntax::{self, Class};
+use crate::{Frontend, ReplError};
 
-/// A [`ReplInput`] for a person at a terminal, with line editing, history, and
+/// A [`Frontend`] for a person at a terminal, with line editing, history, and
 /// syntax highlighting.
 ///
 /// A segment continues onto more lines while it is unfinished: while a bracket
@@ -21,24 +22,41 @@ use crate::syntax::{self, Class};
 /// continues too; the `\` is dropped and its line break kept.
 ///
 /// Ctrl-C discards the segment being typed; Ctrl-D on an empty line ends input.
-pub struct TerminalInput {
+///
+/// Each value other than Null is written pretty-printed, as by
+/// [`Value::to_pretty_string`], to standard output; a failure is written to
+/// standard error.
+pub struct TerminalFrontend {
     editor: Reedline,
+    color: bool,
 }
 
-impl Default for TerminalInput {
+impl Default for TerminalFrontend {
     fn default() -> Self {
         Self::new()
     }
 }
 
-impl TerminalInput {
-    /// Input from the terminal, with history kept for this session only.
+impl TerminalFrontend {
+    /// A colored frontend on the terminal, with history kept for this session
+    /// only.
     pub fn new() -> Self {
         let editor = Reedline::create()
             .with_validator(Box::new(FrostValidator))
             .with_highlighter(Box::new(FrostHighlighter))
             .use_bracketed_paste(true);
-        Self { editor }
+        Self {
+            editor,
+            color: true,
+        }
+    }
+
+    /// Set whether to color the prompt, the source being typed, and
+    /// diagnostics.
+    pub fn with_color(mut self, color: bool) -> Self {
+        self.editor = self.editor.with_ansi_colors(color);
+        self.color = color;
+        self
     }
 
     /// Keep history in the file at `path`, reading what is there already, so
@@ -50,7 +68,7 @@ impl TerminalInput {
     }
 }
 
-impl ReplInput for TerminalInput {
+impl Frontend for TerminalFrontend {
     fn read_segment(&mut self) -> io::Result<Option<String>> {
         loop {
             match self.editor.read_line(&FrostPrompt)? {
@@ -62,6 +80,27 @@ impl ReplInput for TerminalInput {
                 // Ctrl-C discards the segment, and anything else asks for no
                 // action from us: read another.
                 _ => {}
+            }
+        }
+    }
+
+    fn render(&mut self, outcome: Result<&Value, &ReplError>) -> io::Result<()> {
+        match outcome {
+            Ok(Value::Null) => Ok(()),
+            Ok(value) => {
+                let mut stdout = io::stdout().lock();
+                writeln!(stdout, "{}", value.to_pretty_string())?;
+                stdout.flush()
+            }
+            Err(ReplError::Compile(diagnostics)) if self.color => {
+                let mut stderr = io::stderr().lock();
+                write!(stderr, "{}", diagnostics.render_pretty())?;
+                stderr.flush()
+            }
+            Err(error) => {
+                let mut stderr = io::stderr().lock();
+                writeln!(stderr, "{error}")?;
+                stderr.flush()
             }
         }
     }

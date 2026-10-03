@@ -4,26 +4,27 @@ use std::collections::BTreeMap;
 use std::fmt;
 use std::sync::Arc;
 
-use frost_repl::{InvalidName, Repl, ReplInput};
+use frost_repl::{Frontend, InvalidName, Repl};
 use frost_runtime::Value;
 
-/// How a [`Driver`](crate::Driver)'s interactive sessions start: where they read
-/// their input, and what is bound before the first input.
+/// How a [`Driver`](crate::Driver)'s interactive sessions start: their
+/// [`Frontend`], and what is bound before the first input.
 ///
 /// Every session starts afresh from these settings.
 #[derive(Debug, Clone)]
 pub struct ReplSettings {
-    input: InputFactory,
+    // `None` for the default frontend, which takes the command line's color.
+    frontend: Option<FrontendFactory>,
     bindings: BTreeMap<String, Value>,
 }
 
-/// Makes the input for each session.
+/// Makes the frontend for each session.
 #[derive(Clone)]
-struct InputFactory(Arc<dyn Fn() -> Box<dyn ReplInput> + Send + Sync>);
+struct FrontendFactory(Arc<dyn Fn() -> Box<dyn Frontend> + Send + Sync>);
 
-impl fmt::Debug for InputFactory {
+impl fmt::Debug for FrontendFactory {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.debug_struct("InputFactory").finish_non_exhaustive()
+        f.debug_struct("FrontendFactory").finish_non_exhaustive()
     }
 }
 
@@ -34,21 +35,23 @@ impl Default for ReplSettings {
 }
 
 impl ReplSettings {
-    /// Sessions reading [`frost_repl::default_input`], with nothing bound.
+    /// Sessions on [`frost_repl::default_frontend`], colored as the command
+    /// line's `--color` says, with nothing bound.
     pub fn new() -> Self {
         Self {
-            input: InputFactory(Arc::new(frost_repl::default_input)),
+            frontend: None,
             bindings: BTreeMap::new(),
         }
     }
 
-    /// Set where sessions read their input: `make` is called for a new input
-    /// at the start of each session.
-    pub fn with_input(
+    /// Set the frontend sessions run on: `make` is called for a new frontend
+    /// at the start of each session. The command line's `--color` does not
+    /// apply to it.
+    pub fn with_frontend(
         mut self,
-        make: impl Fn() -> Box<dyn ReplInput> + Send + Sync + 'static,
+        make: impl Fn() -> Box<dyn Frontend> + Send + Sync + 'static,
     ) -> Self {
-        self.input = InputFactory(Arc::new(make));
+        self.frontend = Some(FrontendFactory(Arc::new(make)));
         self
     }
 
@@ -79,11 +82,16 @@ impl ReplSettings {
             })
     }
 
-    /// A new session's input, and `repl` with these settings' bindings.
-    pub(crate) fn start(&self, repl: Repl) -> (Box<dyn ReplInput>, Repl) {
+    /// A new session's frontend, colored if `color` is true and it is the
+    /// default, and `repl` with these settings' bindings.
+    pub(crate) fn start(&self, repl: Repl, color: bool) -> (Box<dyn Frontend>, Repl) {
         let repl = repl
             .with_bindings(self.bindings.clone())
             .expect("each name was checked when it was bound");
-        ((self.input.0)(), repl)
+        let frontend = match &self.frontend {
+            Some(make) => (make.0)(),
+            None => frost_repl::default_frontend(color),
+        };
+        (frontend, repl)
     }
 }

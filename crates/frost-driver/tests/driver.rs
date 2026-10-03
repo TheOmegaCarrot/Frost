@@ -1,7 +1,6 @@
 //! The driver end to end: command lines in; exit statuses, a script's printed
 //! output, and the driver's own output out.
 
-use std::collections::VecDeque;
 use std::fs;
 use std::io::{self, Write};
 use std::num::NonZeroUsize;
@@ -10,7 +9,7 @@ use std::sync::{Arc, Mutex};
 
 use frost_compile::OptimizationOptions;
 use frost_driver::{Driver, Exit, ReplSettings};
-use frost_repl::{InvalidName, ReplInput};
+use frost_repl::{Frontend, InvalidName, ReplError, ScriptedFrontend, Transcript};
 use frost_runtime::{Extension, ImporterBuilder, Value, VmRuntimeConfiguration};
 
 /// What one run produced.
@@ -419,67 +418,128 @@ fn a_script_that_is_not_text_is_a_usage_error() {
 
 // --- Interactive sessions ---
 
-/// Input that hands over prepared segments, then ends.
-struct Segments(VecDeque<String>);
+/// What one interactive session produced: the run, and each outcome its
+/// frontend was shown.
+#[derive(Debug)]
+struct Session {
+    ran: Ran,
+    outcomes: Vec<Result<Value, ReplError>>,
+}
 
-impl ReplInput for Segments {
-    fn read_segment(&mut self) -> io::Result<Option<String>> {
-        Ok(self.0.pop_front())
+impl Session {
+    /// Each outcome's value. Every input must have succeeded.
+    fn values(&self) -> Vec<Value> {
+        self.outcomes
+            .iter()
+            .map(|outcome| {
+                outcome
+                    .clone()
+                    .unwrap_or_else(|error| panic!("an input failed: {error}\n{self:?}"))
+            })
+            .collect()
     }
 }
 
-/// Settings for sessions that read `segments`.
-fn reading(segments: &[&str]) -> ReplSettings {
-    let segments: Vec<String> = segments.iter().map(ToString::to_string).collect();
-    ReplSettings::new().with_input(move || Box::new(Segments(segments.iter().cloned().collect())))
+/// Run the command line `args` on `driver`, its configuration adjusted by
+/// `configure`, with sessions starting from `settings` on a scripted frontend
+/// reading `segments`.
+fn run_session_configured(
+    driver: Driver,
+    settings: ReplSettings,
+    segments: &[&str],
+    configure: impl FnOnce(&mut VmRuntimeConfiguration),
+    args: &[&str],
+) -> Session {
+    let transcript = Transcript::default();
+    let settings = {
+        let segments: Vec<String> = segments.iter().map(ToString::to_string).collect();
+        let transcript = transcript.clone();
+        settings.with_frontend(move || {
+            Box::new(ScriptedFrontend::new(segments.clone()).with_transcript(transcript.clone()))
+        })
+    };
+    let ran = run_configured(driver.with_repl(settings), configure, args);
+    Session {
+        ran,
+        outcomes: transcript.outcomes(),
+    }
 }
 
-/// `driver`, its interactive sessions reading `segments`.
-fn with_session(driver: Driver, segments: &[&str]) -> Driver {
-    driver.with_repl(reading(segments))
+/// [`run_session_configured`] on the default driver and settings.
+fn run_session(segments: &[&str], args: &[&str]) -> Session {
+    run_session_configured(Driver::new(), ReplSettings::new(), segments, |_| {}, args)
 }
 
 #[test]
 fn no_arguments_or_repl_start_an_interactive_session() {
-    let driver = with_session(Driver::new(), &["def x = 20", "x + 1"]);
     for args in [vec![], vec!["repl"]] {
-        let ran = run_configured(driver.clone(), |_| {}, &args);
-        assert_eq!(ran.exit, Exit::Success, "{args:?}: {ran:?}");
-        assert_eq!(ran.printed(), ["21"], "{args:?}");
-        assert_eq!(ran.stderr, "", "{args:?}");
+        let session = run_session(&["def x = 20", "x + 1"], &args);
+        assert_eq!(session.ran.exit, Exit::Success, "{args:?}: {session:?}");
+        assert_eq!(session.values(), [Value::Null, Value::Int(21)], "{args:?}");
+        assert_eq!(
+            (session.ran.stdout.as_str(), session.ran.stderr.as_str()),
+            ("", ""),
+            "{args:?}: the session's outcomes go to its frontend"
+        );
     }
 }
 
 #[test]
-fn a_sessions_prints_and_results_interleave_on_stdout() {
-    let driver = with_session(Driver::new(), &["print('a')", "1", "print('b'); 2"]);
-    let ran = run_configured(driver, |_| {}, &["repl"]);
-    assert_eq!(ran.printed(), ["a", "1", "b", "2"], "{ran:?}");
+fn a_sessions_prints_go_to_stdout_and_its_results_to_the_frontend() {
+    let session = run_session(&["print('a')", "1", "print('b'); 2"], &["repl"]);
+    assert_eq!(session.ran.printed(), ["a", "b"], "{session:?}");
+    assert_eq!(
+        session.values(),
+        [Value::Null, Value::Int(1), Value::Int(2)]
+    );
 }
 
 #[test]
-fn a_failed_input_is_reported_and_the_session_carries_on() {
-    let driver = with_session(Driver::new(), &["nope", "1 / 0", "3"]);
-    let ran = run_configured(driver, |_| {}, &["repl", "--color", "never"]);
-    assert_eq!(ran.exit, Exit::Success, "{ran:?}");
-    assert_eq!(ran.printed(), ["3"]);
+fn a_failed_input_is_shown_on_the_frontend_and_the_session_carries_on() {
+    let session = run_session(&["nope", "1 / 0", "3"], &["repl"]);
+    assert_eq!(session.ran.exit, Exit::Success, "{session:?}");
+    assert_eq!(session.ran.stderr, "", "{session:?}");
     assert!(
-        ran.stderr.contains("`nope` is not defined"),
-        "{}",
-        ran.stderr
+        matches!(
+            session.outcomes.as_slice(),
+            [
+                Err(ReplError::Compile(_)),
+                Err(ReplError::Run(_)),
+                Ok(Value::Int(3)),
+            ]
+        ),
+        "{session:?}"
     );
-    assert!(ran.stderr.contains("Division by zero"), "{}", ran.stderr);
 }
 
 #[test]
 fn each_session_starts_afresh() {
-    // The input is made anew for each session, and bindings do not carry over.
-    let driver = with_session(Driver::new(), &["def x = 1; x"]);
+    // The frontend is made anew for each session, or the second would read
+    // nothing; and bindings do not carry over, or its `x` would be bound.
+    let transcript = Transcript::default();
+    let settings = {
+        let transcript = transcript.clone();
+        ReplSettings::new().with_frontend(move || {
+            Box::new(ScriptedFrontend::new(["x", "def x = 1"]).with_transcript(transcript.clone()))
+        })
+    };
+    let driver = Driver::new().with_repl(settings);
     for _ in 0..2 {
-        let ran = run_configured(driver.clone(), |_| {}, &["repl"]);
-        assert_eq!(ran.printed(), ["1"], "{ran:?}");
-        assert_eq!(ran.stderr, "", "{ran:?}");
+        run_configured(driver.clone(), |_| {}, &["repl"]);
     }
+    let outcomes = transcript.outcomes();
+    assert!(
+        matches!(
+            outcomes.as_slice(),
+            [
+                Err(ReplError::Compile(_)),
+                Ok(Value::Null),
+                Err(ReplError::Compile(_)),
+                Ok(Value::Null),
+            ]
+        ),
+        "{outcomes:?}"
+    );
 }
 
 #[test]
@@ -488,30 +548,47 @@ fn a_session_uses_the_drivers_configuration_and_the_chosen_optimizations() {
         .with_extension(Extension::new("answer", Value::Int(42)).unwrap())
         .unwrap()
         .build();
-    let driver = with_session(
-        Driver::new().with_importer(importer),
-        &["import('ext.answer')", FOLDABLE],
-    );
+    let driver = Driver::new().with_importer(importer);
+    let segments = ["import('ext.answer')", FOLDABLE];
     let small_budget = |configuration: &mut VmRuntimeConfiguration| {
         configuration.fuel = NonZeroUsize::new(5);
     };
     // Folded, FOLDABLE fits the budget; unfolded, it runs out.
-    let ran = run_configured(driver.clone(), small_budget, &["repl"]);
-    assert_eq!(ran.printed(), ["42", "0"], "{ran:?}");
-    let ran = run_configured(driver, small_budget, &["repl", "-O", "none"]);
-    assert_eq!(ran.printed(), ["42"], "{ran:?}");
-    assert!(ran.stderr.contains("fuel"), "{}", ran.stderr);
+    let folded = run_session_configured(
+        driver.clone(),
+        ReplSettings::new(),
+        &segments,
+        small_budget,
+        &["repl"],
+    );
+    assert_eq!(folded.values(), [Value::Int(42), Value::Int(0)]);
+    let unfolded = run_session_configured(
+        driver,
+        ReplSettings::new(),
+        &segments,
+        small_budget,
+        &["repl", "-O", "none"],
+    );
+    match unfolded.outcomes.as_slice() {
+        [Ok(Value::Int(42)), Err(ReplError::Run(error))] => {
+            assert!(error.message().contains("fuel"), "{}", error.message());
+        }
+        other => panic!("the budget should run out, but gave {other:?}"),
+    }
 }
 
 #[test]
-fn a_session_whose_input_fails_is_a_usage_error() {
+fn a_session_whose_frontend_fails_is_a_usage_error() {
     struct Broken;
-    impl ReplInput for Broken {
+    impl Frontend for Broken {
         fn read_segment(&mut self) -> io::Result<Option<String>> {
             Err(io::Error::other("input is gone"))
         }
+        fn render(&mut self, _: Result<&Value, &ReplError>) -> io::Result<()> {
+            panic!("nothing was read, so nothing should be rendered");
+        }
     }
-    let driver = Driver::new().with_repl(ReplSettings::new().with_input(|| Box::new(Broken)));
+    let driver = Driver::new().with_repl(ReplSettings::new().with_frontend(|| Box::new(Broken)));
     let ran = run_configured(driver, |_| {}, &["repl"]);
     assert_eq!(ran.exit, Exit::UsageError, "{ran:?}");
     assert!(ran.stderr.contains("input is gone"), "{}", ran.stderr);
@@ -521,17 +598,24 @@ fn a_session_whose_input_fails_is_a_usage_error() {
 fn every_session_starts_with_the_seeded_bindings() -> Result<(), InvalidName> {
     // A seed shadows a global, and a session may rebind it; the next session
     // starts from the seed again.
-    let settings = reading(&["[answer, id]", "def answer = answer + 1", "answer"])
+    let settings = ReplSettings::new()
         .with_binding("answer", Value::Int(41))?
         .with_bindings([("id", Value::from("seeded"))])?;
-    let driver = Driver::new().with_repl(settings);
     for _ in 0..2 {
-        let ran = run_configured(driver.clone(), |_| {}, &["repl"]);
-        assert_eq!(ran.stderr, "", "{ran:?}");
+        let session = run_session_configured(
+            Driver::new(),
+            settings.clone(),
+            &["[answer, id]", "def answer = answer + 1", "answer"],
+            |_| {},
+            &["repl"],
+        );
         assert_eq!(
-            ran.printed(),
-            ["[", "    41,", r#"    "seeded""#, "]", "42"],
-            "{ran:?}"
+            session.values(),
+            [
+                Value::array([Value::Int(41), Value::from("seeded")]),
+                Value::Null,
+                Value::Int(42),
+            ]
         );
     }
     Ok(())

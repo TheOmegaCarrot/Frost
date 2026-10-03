@@ -105,7 +105,7 @@ pub(crate) struct Options {
     )]
     disable: Vec<Optimization>,
 
-    /// When to color diagnostics
+    /// When to color diagnostics, listings, and interactive sessions
     #[arg(long, value_name = "WHEN", default_value = "auto", global = true)]
     pub(crate) color: Color,
 }

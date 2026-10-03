@@ -4,35 +4,40 @@
 //! top-level `def` an input makes stays bound for the inputs after it, and a
 //! later input may bind the same name again.
 //!
+//! A session reads its inputs from, and shows their outcomes on, a
+//! [`Frontend`].
+//!
 //! ```no_run
 //! use std::io;
 //!
 //! use frost_repl::Repl;
 //!
 //! fn main() -> io::Result<()> {
-//!     let mut input = frost_repl::default_input();
-//!     Repl::new().run(&mut *input, &mut io::stdout(), &mut io::stderr())
+//!     let mut frontend = frost_repl::default_frontend(true);
+//!     Repl::new().run(&mut *frontend)
 //! }
 //! ```
 //!
 //! # Features
 //!
-//! - `line-editor` (default): [`TerminalInput`], with line editing, history,
-//!   and syntax highlighting.
+//! - `line-editor` (default): [`TerminalFrontend`], with line editing,
+//!   history, and syntax highlighting.
 
-mod input;
+mod frontend;
+mod scripted;
 #[cfg(feature = "line-editor")]
 mod syntax;
 #[cfg(feature = "line-editor")]
 mod terminal;
 
-pub use input::{LineInput, ReplInput};
+pub use frontend::{Frontend, LineFrontend};
+pub use scripted::{ScriptedFrontend, Transcript};
 #[cfg(feature = "line-editor")]
-pub use terminal::TerminalInput;
+pub use terminal::TerminalFrontend;
 
 use std::collections::BTreeMap;
 use std::fmt;
-use std::io::{self, Write};
+use std::io;
 use std::sync::Arc;
 
 use frost_compile::{CompilerErrors, CompilerOptions, OptimizationOptions, compile_in_scope};
@@ -42,27 +47,31 @@ use frost_runtime::{FrostError, IdleVm, Importer, Value, Vm, VmRuntimeConfigurat
 /// The name diagnostics give an input.
 const INPUT_NAME: &str = "<repl>";
 
-/// The input a command-line REPL most likely wants. With the `line-editor`
+/// The frontend a command-line REPL most likely wants. With the `line-editor`
 /// feature, and a terminal on standard input and output, that is a
-/// [`TerminalInput`] keeping history in `~/.frost_history`. Otherwise it is
-/// [`LineInput::stdin`].
-pub fn default_input() -> Box<dyn ReplInput> {
+/// [`TerminalFrontend`] keeping history in `~/.frost_history`, colored if
+/// `color` is true. Otherwise it is [`LineFrontend::stdin`], and `color` is
+/// unused.
+pub fn default_frontend(color: bool) -> Box<dyn Frontend> {
     #[cfg(feature = "line-editor")]
     {
         use std::io::IsTerminal;
 
         if io::stdin().is_terminal() && io::stdout().is_terminal() {
+            let terminal = || TerminalFrontend::new().with_color(color);
             let history = std::env::var_os("HOME")
                 .map(|home| std::path::PathBuf::from(home).join(".frost_history"));
             // Without a home, or with its history unreadable, history lasts
             // the session only.
-            let input = history
-                .and_then(|path| TerminalInput::new().with_history_file(path).ok())
-                .unwrap_or_default();
-            return Box::new(input);
+            let frontend = history
+                .and_then(|path| terminal().with_history_file(path).ok())
+                .unwrap_or_else(terminal);
+            return Box::new(frontend);
         }
     }
-    Box::new(LineInput::stdin())
+    #[cfg(not(feature = "line-editor"))]
+    let _ = color;
+    Box::new(LineFrontend::stdin())
 }
 
 /// A read-eval-print loop: [`evaluate`](Self::evaluate) inputs one at a time,
@@ -191,49 +200,56 @@ impl Repl {
             .map(|(name, value)| (name.as_str(), value))
     }
 
-    /// [`evaluate`](Self::evaluate) each segment `input` reads, until it has no
-    /// more.
+    /// [`evaluate`](Self::evaluate) each segment `frontend` reads, and have it
+    /// [`render`](Frontend::render) the outcome, until it has no more. A failed
+    /// input does not end the session.
     ///
-    /// Each value other than Null is written to `output`, pretty-printed as by
-    /// [`Value::to_pretty_string`]; a failed input's diagnostics or error go to
-    /// `errors`, and the session carries on. What inputs `print` goes to the
-    /// configuration's [`print_sink`](VmRuntimeConfiguration::print_sink).
+    /// What inputs `print` goes to the configuration's
+    /// [`print_sink`](VmRuntimeConfiguration::print_sink), not the frontend.
     ///
-    /// Returns an error only if reading input or writing output fails.
-    pub fn run(
-        &mut self,
-        input: &mut dyn ReplInput,
-        output: &mut dyn Write,
-        errors: &mut dyn Write,
-    ) -> io::Result<()> {
-        while let Some(segment) = input.read_segment()? {
-            match self.evaluate(&segment) {
-                Ok(Value::Null) => {}
-                Ok(value) => writeln!(output, "{}", value.to_pretty_string())?,
-                Err(ReplError::Compile(diagnostics)) => {
-                    write!(errors, "{}", diagnostics.render())?;
-                }
-                Err(ReplError::Run(error)) => {
-                    writeln!(errors, "{error}")?;
-                    for frame in error.backtrace() {
-                        writeln!(errors, "  in {frame}")?;
-                    }
-                }
-            }
-            output.flush()?;
-            errors.flush()?;
+    /// Returns an error only if `frontend` fails.
+    pub fn run(&mut self, frontend: &mut dyn Frontend) -> io::Result<()> {
+        while let Some(segment) = frontend.read_segment()? {
+            frontend.render(self.evaluate(&segment).as_ref())?;
         }
         Ok(())
     }
 }
 
 /// Why an input failed. Either way, it left the REPL's bindings unchanged.
-#[derive(Debug)]
+///
+/// [`Display`](fmt::Display) shows it as plain text: the diagnostics, or the
+/// error and its backtrace.
+#[derive(Debug, Clone)]
 pub enum ReplError {
     /// The input did not compile.
     Compile(CompilerErrors),
     /// The input raised an error while running.
     Run(FrostError),
+}
+
+impl fmt::Display for ReplError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::Compile(diagnostics) => f.write_str(diagnostics.render_plain().trim_end()),
+            Self::Run(error) => {
+                write!(f, "{error}")?;
+                error
+                    .backtrace()
+                    .iter()
+                    .try_for_each(|frame| write!(f, "\n  in {frame}"))
+            }
+        }
+    }
+}
+
+impl std::error::Error for ReplError {
+    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+        match self {
+            Self::Compile(diagnostics) => Some(diagnostics),
+            Self::Run(error) => Some(error),
+        }
+    }
 }
 
 /// Check that Frost source can refer to `name`, so that binding it is of use:

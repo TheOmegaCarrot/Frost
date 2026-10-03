@@ -1,14 +1,14 @@
 //! A `Repl` through its public API: each input runs against the bindings of
 //! those before it, and a failed input changes nothing.
 
-use std::collections::VecDeque;
+use std::error::Error;
 use std::io;
 use std::num::NonZeroUsize;
 use std::sync::{Arc, Mutex};
 
-use frost_compile::OptimizationOptions;
-use frost_repl::{InvalidName, Repl, ReplError, ReplInput, check_name};
-use frost_runtime::{Extension, ImporterBuilder, Value, VmRuntimeConfiguration};
+use frost_compile::{CompilerErrors, OptimizationOptions};
+use frost_repl::{Frontend, InvalidName, Repl, ReplError, ScriptedFrontend, check_name};
+use frost_runtime::{Extension, FrostError, ImporterBuilder, Value, VmRuntimeConfiguration};
 
 /// Evaluate each of `inputs` in turn on a fresh REPL, returning the last
 /// value. Every input before the last must succeed.
@@ -363,80 +363,151 @@ fn inputs_compile_with_the_optimizations_chosen() {
 
 // --- A whole session ---
 
-/// Input that hands over prepared segments, then ends.
-struct Segments(VecDeque<String>);
-
-impl Segments {
-    fn of(segments: &[&str]) -> Self {
-        Self(segments.iter().map(ToString::to_string).collect())
-    }
-}
-
-impl ReplInput for Segments {
-    fn read_segment(&mut self) -> io::Result<Option<String>> {
-        Ok(self.0.pop_front())
-    }
-}
-
-/// What a session over `segments` wrote: its output and its errors.
-fn session(segments: &[&str]) -> (String, String) {
-    let (mut output, mut errors) = (Vec::new(), Vec::new());
+/// The outcomes a session over `segments` rendered, in order.
+fn session(segments: &[&str]) -> Vec<Result<Value, ReplError>> {
+    let mut frontend = ScriptedFrontend::new(segments.iter().copied());
     Repl::new()
-        .run(&mut Segments::of(segments), &mut output, &mut errors)
-        .unwrap();
-    (
-        String::from_utf8(output).unwrap(),
-        String::from_utf8(errors).unwrap(),
-    )
+        .run(&mut frontend)
+        .expect("a scripted frontend never fails");
+    frontend.transcript().outcomes()
 }
 
 #[test]
-fn a_session_pretty_prints_each_value() {
-    let (output, errors) = session(&["1 + 2", "true", "[1, 'two', {k: null}]"]);
-    let expected = r#"3
-true
-[
-    1,
-    "two",
-    {
-        k: null
-    }
-]
-"#;
-    assert_eq!(output, expected);
-    assert_eq!(errors, "");
+fn a_session_renders_every_value_in_order_null_included() {
+    let values: Vec<Value> = session(&["1 + 2", "def x = 1", "null", "[x]"])
+        .into_iter()
+        .map(|outcome| outcome.expect("every input succeeds"))
+        .collect();
+    assert_eq!(
+        values,
+        [Value::Int(3), Value::Null, Value::Null, Value::array([1])]
+    );
 }
 
 #[test]
-fn a_session_writes_nothing_for_null() {
-    // A `def`, a Null, and a call returning Null all write nothing.
-    let (output, errors) = session(&["def x = 1", "null", "print(x)", "x"]);
-    assert_eq!(output, "1\n");
-    assert_eq!(errors, "");
-}
-
-#[test]
-fn a_session_reports_failures_and_carries_on() {
-    let (output, errors) = session(&["def x = 1", "nope", "1 / 0", "x + 1"]);
-    assert_eq!(output, "2\n");
-    assert!(errors.contains("`nope` is not defined"), "{errors}");
-    assert!(errors.contains("Division by zero"), "{errors}");
+fn a_session_renders_failures_and_carries_on() {
+    let outcomes = session(&["def x = 1", "nope", "1 / 0", "x + 1"]);
+    assert!(
+        matches!(
+            outcomes.as_slice(),
+            [
+                Ok(Value::Null),
+                Err(ReplError::Compile(_)),
+                Err(ReplError::Run(_)),
+                Ok(Value::Int(2)),
+            ]
+        ),
+        "{outcomes:?}"
+    );
 }
 
 #[test]
 fn a_session_ends_when_input_does() {
-    let (output, errors) = session(&[]);
-    assert_eq!((output.as_str(), errors.as_str()), ("", ""));
+    assert!(session(&[]).is_empty());
+}
+
+#[test]
+fn a_sessions_prints_go_to_the_sink_not_the_frontend() {
+    let printed = Arc::new(Mutex::new(Vec::new()));
+    let sink = {
+        let printed = Arc::clone(&printed);
+        move |text: &str| printed.lock().unwrap().push(text.to_string())
+    };
+    let config = VmRuntimeConfiguration {
+        print_sink: Arc::new(sink),
+        ..Default::default()
+    };
+    let mut frontend = ScriptedFrontend::new(["print('a'); 1"]);
+    Repl::new()
+        .with_configuration(config)
+        .run(&mut frontend)
+        .unwrap();
+    assert_eq!(*printed.lock().unwrap(), ["a"]);
+    let outcomes = frontend.transcript().outcomes();
+    assert!(
+        matches!(outcomes.as_slice(), [Ok(Value::Int(1))]),
+        "{outcomes:?}"
+    );
 }
 
 #[test]
 fn a_session_stops_on_a_failure_to_read_input() {
     struct Broken;
-    impl ReplInput for Broken {
+    impl Frontend for Broken {
         fn read_segment(&mut self) -> io::Result<Option<String>> {
             Err(io::Error::other("input is gone"))
         }
+        fn render(&mut self, _: Result<&Value, &ReplError>) -> io::Result<()> {
+            panic!("nothing was read, so nothing should be rendered");
+        }
     }
-    let result = Repl::new().run(&mut Broken, &mut Vec::new(), &mut Vec::new());
+    let result = Repl::new().run(&mut Broken);
     assert_eq!(result.unwrap_err().to_string(), "input is gone");
+}
+
+#[test]
+fn a_session_stops_on_a_failure_to_render() {
+    /// Reads `1` for as long as it is asked, but cannot render.
+    struct Mute {
+        reads: usize,
+    }
+    impl Frontend for Mute {
+        fn read_segment(&mut self) -> io::Result<Option<String>> {
+            self.reads += 1;
+            Ok(Some("1".to_string()))
+        }
+        fn render(&mut self, _: Result<&Value, &ReplError>) -> io::Result<()> {
+            Err(io::Error::other("output is gone"))
+        }
+    }
+    let mut frontend = Mute { reads: 0 };
+    let result = Repl::new().run(&mut frontend);
+    assert_eq!(result.unwrap_err().to_string(), "output is gone");
+    assert_eq!(frontend.reads, 1, "the session should stop at the failure");
+}
+
+// --- How a failure shows ---
+
+#[test]
+fn a_compile_failure_displays_its_diagnostics_as_plain_text() {
+    let error = evaluate_all(&["nope"]).unwrap_err();
+    let ReplError::Compile(diagnostics) = &error else {
+        panic!("should not compile, but gave {error:?}");
+    };
+    let shown = error.to_string();
+    assert_eq!(shown, diagnostics.render_plain().trim_end());
+    assert!(shown.contains("`nope` is not defined"), "{shown}");
+    assert!(!shown.contains('\x1b'), "no color: {shown:?}");
+}
+
+#[test]
+fn a_runtime_failure_displays_its_error_then_each_frame_of_its_backtrace() {
+    let error = evaluate_all(&[
+        "defn inner() -> [error('boom')]",
+        "defn outer() -> [inner()]",
+        "outer()",
+    ])
+    .unwrap_err();
+    let ReplError::Run(raised) = &error else {
+        panic!("should raise, but gave {error:?}");
+    };
+    // Which frames a backtrace holds is the VM's business; how they show is ours.
+    let frames = raised.backtrace();
+    assert!(frames.len() >= 2, "{frames:?}");
+    let expected: String = frames
+        .iter()
+        .map(|frame| format!("\n  in {frame}"))
+        .collect();
+    assert_eq!(error.to_string(), format!("Error: boom{expected}"));
+}
+
+#[test]
+fn a_failures_source_is_the_error_it_holds() {
+    let compile = evaluate_all(&["nope"]).unwrap_err();
+    assert!(
+        compile.source().unwrap().is::<CompilerErrors>(),
+        "{compile:?}"
+    );
+    let run = evaluate_all(&["1 / 0"]).unwrap_err();
+    assert!(run.source().unwrap().is::<FrostError>(), "{run:?}");
 }

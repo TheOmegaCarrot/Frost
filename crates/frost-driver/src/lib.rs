@@ -41,8 +41,9 @@ use cli::{Action, Cli, Color};
 /// command line.
 ///
 /// A script's printed output goes to the `stdout` given to [`run`](Self::run),
-/// as do help and version text, and an interactive session's results; errors
-/// and diagnostics go to its `stderr`.
+/// as do help and version text; errors and diagnostics go to its `stderr`.
+/// An interactive session shows its results and failures on its
+/// [`Frontend`](frost_repl::Frontend) instead (see [`ReplSettings`]).
 #[derive(Debug, Clone)]
 pub struct Driver {
     name: String,
@@ -223,7 +224,7 @@ impl Driver {
             Action::Check(path) => session.check_file(&path),
             Action::Compile { file, output } => session.compile_file(&file, &output),
             Action::Eval(code) => session.run_source("<eval>", &code),
-            Action::Repl => session.run_repl(&self.repl, &mut Shared(Arc::clone(stdout))),
+            Action::Repl => session.run_repl(&self.repl),
             Action::List(path) => session.list_file(&path, &mut Shared(Arc::clone(stdout))),
         }
     }
@@ -384,14 +385,22 @@ impl Session<'_> {
         }
     }
 
-    fn run_repl(mut self, settings: &ReplSettings, output: &mut dyn Write) -> Exit {
-        let (mut input, mut repl) = settings.start(
-            Repl::new()
-                .with_configuration(self.configuration.clone())
-                .with_importer(Arc::clone(self.importer))
-                .with_optimization(self.options.optimization_options),
-        );
-        match repl.run(&mut *input, output, self.stderr) {
+    fn run_repl(mut self, settings: &ReplSettings) -> Exit {
+        let color = match self.color {
+            Color::Always => true,
+            Color::Never => false,
+            // A terminal frontend paints both streams.
+            Color::Auto => {
+                let no_color = std::env::var_os("NO_COLOR").is_some_and(|value| !value.is_empty());
+                self.terminals.stdout && self.terminals.stderr && !no_color
+            }
+        };
+        let repl = Repl::new()
+            .with_configuration(self.configuration.clone())
+            .with_importer(Arc::clone(self.importer))
+            .with_optimization(self.options.optimization_options);
+        let (mut frontend, mut repl) = settings.start(repl, color);
+        match repl.run(&mut *frontend) {
             Ok(()) => Exit::Success,
             Err(error) => self.usage_error(&format!("the session ended: {error}")),
         }
