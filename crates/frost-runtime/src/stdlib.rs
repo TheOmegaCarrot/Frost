@@ -28,6 +28,7 @@ mod math;
 mod os;
 mod random;
 mod regex;
+mod stream;
 mod string;
 
 pub use encoding::encoding;

@@ -1,16 +1,21 @@
 //! `std.string`: searching, splitting into characters, classifying, and padding
-//! text.
+//! text, and reading and writing in-memory buffers as streams.
 //!
 //! Positions and widths count code points. The searching functions and
 //! `is_empty` also take Bytes, in any mix with a String, as the global `contains`
 //! does; where Bytes are involved, positions count bytes instead.
 
-use crate::{FrostError, FrostType, Param, Params, StdlibModule, Value};
+use std::io::Cursor;
+use std::sync::Arc;
+
+use crate::stdlib::stream::{self, Kind};
+use crate::{Arity, FrostError, FrostType, Param, Params, StdlibModule, Value};
 
 /// The `std.string` module: finding and counting substrings, splitting into
-/// characters, classifying characters, and padding and centering text.
+/// characters, classifying characters, padding and centering text, and
+/// in-memory buffers read and written as streams.
 ///
-/// It only computes: it reads and changes nothing outside the script.
+/// It reaches nothing outside the script.
 pub fn string() -> StdlibModule {
     StdlibModule::new(
         "string",
@@ -45,8 +50,30 @@ pub fn string() -> StdlibModule {
             ("pad_left", padder("string.pad_left", Side::Left)),
             ("pad_right", padder("string.pad_right", Side::Right)),
             ("center", padder("string.center", Side::Both)),
+            ("reader", buffer_reader()),
+            ("writer", buffer_writer()),
         ]),
     )
+}
+
+/// `reader(content)`: a reader over a String or Bytes.
+fn buffer_reader() -> Value {
+    const PARAMS: Params = Params::new(&[Param::of(FrostType::FLAT)]);
+    Value::checked_native("string.reader", PARAMS, |_, args| {
+        let content: Arc<[u8]> = match args[0].take() {
+            Value::String(text) => Arc::from(text),
+            Value::Bytes(octets) => octets,
+            other => unreachable!("type-checked as Flat, got {}", other.type_name()),
+        };
+        Ok(stream::reader(Cursor::new(content), Kind::Buffer))
+    })
+}
+
+/// `writer()`: a writer that keeps what is written, for reading back.
+fn buffer_writer() -> Value {
+    Value::native("string.writer", Arity::Exact(0), |_, _| {
+        Ok(stream::writer(Cursor::new(Vec::new()), Kind::Buffer))
+    })
 }
 
 const ONE_STRING: Params = Params::new(&[Param::of(FrostType::STRING)]);

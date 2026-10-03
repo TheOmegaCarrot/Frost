@@ -82,7 +82,7 @@ fn the_module_holds_its_functions() {
         "sorted(keys(str))",
         "['center', 'chars', 'count', 'index_of', 'is_alpha', 'is_alphanumeric', 'is_ascii', \
          'is_digit', 'is_empty', 'is_lowercase', 'is_uppercase', 'is_whitespace', \
-         'last_index_of', 'pad_left', 'pad_right']",
+         'last_index_of', 'pad_left', 'pad_right', 'reader', 'writer']",
     )]);
 }
 
@@ -358,5 +358,262 @@ fn padding_checks_its_arguments() {
             ),
         ]);
         assert_arity(function, "between 2 and 3", &[0, 1, 4]);
+    }
+}
+
+// --- reader, writer ---
+//
+// The buffers are streams like files and the standard streams, which share their
+// implementation; these cases cover that shared behavior in full.
+
+#[test]
+fn a_buffer_reader_and_writer_offer_positions_but_no_closing() {
+    assert_values(&[
+        (
+            "sorted(keys(str.reader('')))",
+            "['eof', 'read_bytes', 'read_line', 'read_one', 'read_rest', 'read_rest_bytes', \
+             'seek', 'tell']",
+        ),
+        (
+            "sorted(keys(str.writer()))",
+            "['get', 'get_bytes', 'seek', 'tell', 'write', 'writeln']",
+        ),
+    ]);
+}
+
+#[test]
+fn read_line_reads_each_line_without_its_ending() {
+    let source = r"
+        def r = str.reader('a\nb\r\n\nc')
+        [r.read_line(), r.read_line(), r.read_line(), r.read_line(), r.read_line()]
+    ";
+    assert_values(&[
+        (source, "['a', 'b', '', 'c', null]"),
+        ("str.reader('').read_line()", "null"),
+        // A final line ending ends the last line; it does not start another.
+        (
+            r"
+            def r = str.reader('a\n')
+            [r.read_line(), r.read_line()]
+            ",
+            "['a', null]",
+        ),
+    ]);
+}
+
+#[test]
+fn read_one_reads_one_character() {
+    let source = r"
+        def r = str.reader('\u{e9}x\u{1f600}')
+        [r.read_one(), r.read_one(), r.read_one(), r.read_one()]
+    ";
+    assert_values(&[(source, r"['\u{e9}', 'x', '\u{1f600}', null]")]);
+}
+
+#[test]
+fn read_rest_reads_what_remains() {
+    let source = r"
+        def r = str.reader('one\ntwo\nthree')
+        [r.read_line(), r.read_rest(), r.read_rest(), r.eof()]
+    ";
+    assert_values(&[(source, r"['one', 'two\nthree', '', true]")]);
+}
+
+#[test]
+fn eof_tests_for_nothing_left() {
+    let source = r"
+        def r = str.reader('ab')
+        [r.eof(), r.read_one(), r.eof(), r.read_one(), r.eof()]
+    ";
+    assert_values(&[
+        (source, "[false, 'a', false, 'b', true]"),
+        ("str.reader('').eof()", "true"),
+    ]);
+}
+
+#[test]
+fn binary_reads_read_bytes() {
+    let source = r"
+        def r = str.reader(x'0102030405')
+        [r.read_bytes(2), r.read_bytes(0), r.read_bytes(10), r.read_bytes(1), r.read_bytes(0)]
+    ";
+    assert_values(&[
+        (source, "[x'0102', x'', x'030405', null, x'']"),
+        // A String's reader reads its UTF-8.
+        (r"str.reader('\u{e9}').read_rest_bytes()", "x'c3a9'"),
+        (
+            r"
+            def r = str.reader('ab')
+            [r.read_bytes(1), r.read_rest_bytes(), r.read_rest_bytes()]
+            ",
+            "[x'61', x'62', x'']",
+        ),
+    ]);
+}
+
+#[test]
+fn text_reads_raise_on_content_that_is_not_utf8() {
+    assert_raises(&[
+        (
+            "str.reader(x'ff').read_line()",
+            "Function reader.read_line read text that is not UTF-8",
+        ),
+        (
+            "str.reader(x'ff').read_rest()",
+            "Function reader.read_rest read text that is not UTF-8",
+        ),
+        // A character cut short.
+        (
+            "str.reader(x'c3').read_one()",
+            "Function reader.read_one read text that is not UTF-8",
+        ),
+        (
+            "str.reader(x'80').read_one()",
+            "Function reader.read_one read text that is not UTF-8",
+        ),
+    ]);
+}
+
+#[test]
+fn tell_and_seek_count_bytes() {
+    let source = r"
+        def r = str.reader('\u{e9}abc')
+        def first = r.read_one()
+        def after = r.tell()
+        r.seek(0)
+        def again = r.read_one()
+        r.seek(3)
+        [first, after, again, r.read_rest(), r.tell()]
+    ";
+    assert_values(&[(source, r"['\u{e9}', 2, '\u{e9}', 'bc', 5]")]);
+    let past_end = r"
+        def r = str.reader('ab')
+        r.seek(10)
+        [r.eof(), r.read_line(), r.tell()]
+    ";
+    assert_values(&[(past_end, "[true, null, 10]")]);
+}
+
+#[test]
+fn a_writer_keeps_what_is_written() {
+    let source = r"
+        def w = str.writer()
+        w.write('a')
+        w.writeln('b')
+        w.write(x'63')
+        w.writeln(x'')
+        [w.get(), w.get_bytes(), w.tell()]
+    ";
+    assert_values(&[
+        (source, r"['ab\nc\n', x'61620a630a', 5]"),
+        ("str.writer().get()", "''"),
+    ]);
+}
+
+#[test]
+fn a_writer_writes_over_what_is_at_its_position() {
+    let source = r"
+        def w = str.writer()
+        w.write('hello')
+        w.seek(0)
+        w.write('J')
+        w.seek(10)
+        w.write('!')
+        [w.get_bytes(), w.tell()]
+    ";
+    // Writing past the end fills the gap with zero bytes.
+    assert_values(&[(source, "[x'4a656c6c6f0000000000' + x'21', 11]")]);
+}
+
+#[test]
+fn get_raises_on_content_that_is_not_utf8() {
+    let source = r"
+        def w = str.writer()
+        w.write(x'ff')
+        w.get()
+    ";
+    assert_raises(&[(source, "Function writer.get read text that is not UTF-8")]);
+    let source = r"
+        def w = str.writer()
+        w.write(x'ff')
+        w.get_bytes()
+    ";
+    assert_values(&[(source, "x'ff'")]);
+}
+
+#[test]
+fn buffers_are_independent() {
+    let source = r"
+        def a = str.writer()
+        def b = str.writer()
+        a.write('a')
+        b.write('b')
+        def r = str.reader('xy')
+        def s = str.reader('xy')
+        r.read_one()
+        [a.get(), b.get(), r.read_one(), s.read_one()]
+    ";
+    assert_values(&[(source, "['a', 'b', 'y', 'x']")]);
+}
+
+#[test]
+fn stream_functions_check_their_arguments() {
+    assert_raises(&[
+        (
+            "str.reader(1)",
+            "Function string.reader requires String or Bytes as argument 1, got Int",
+        ),
+        (
+            "str.writer().write(1)",
+            "Function writer.write requires String or Bytes as argument 1, got Int",
+        ),
+        (
+            "str.writer().writeln([])",
+            "Function writer.writeln requires String or Bytes as argument 1, got Array",
+        ),
+        (
+            "str.reader('a').read_bytes(-1)",
+            "Function reader.read_bytes requires argument 1 to be at least 0, got -1",
+        ),
+        (
+            "str.reader('a').read_bytes('1')",
+            "Function reader.read_bytes requires Int as argument 1, got String",
+        ),
+        (
+            "str.reader('a').seek(-1)",
+            "Function reader.seek requires argument 1 to be at least 0, got -1",
+        ),
+        (
+            "str.writer().seek(-1)",
+            "Function writer.seek requires argument 1 to be at least 0, got -1",
+        ),
+    ]);
+    for (call, function, expects, argc) in [
+        ("str.reader('a', 'b')", "string.reader", "1", 2),
+        ("str.writer(1)", "string.writer", "0", 1),
+        ("str.reader('a').read_line(1)", "reader.read_line", "0", 1),
+        ("str.reader('a').read_one(1)", "reader.read_one", "0", 1),
+        ("str.reader('a').read_rest(1)", "reader.read_rest", "0", 1),
+        (
+            "str.reader('a').read_rest_bytes(1)",
+            "reader.read_rest_bytes",
+            "0",
+            1,
+        ),
+        ("str.reader('a').read_bytes()", "reader.read_bytes", "1", 0),
+        ("str.reader('a').eof(1)", "reader.eof", "0", 1),
+        ("str.reader('a').tell(1)", "reader.tell", "0", 1),
+        ("str.reader('a').seek()", "reader.seek", "1", 0),
+        ("str.writer().write()", "writer.write", "1", 0),
+        ("str.writer().writeln('a', 'b')", "writer.writeln", "1", 2),
+        ("str.writer().tell(1)", "writer.tell", "0", 1),
+        ("str.writer().seek()", "writer.seek", "1", 0),
+        ("str.writer().get(1)", "writer.get", "0", 1),
+        ("str.writer().get_bytes(1)", "writer.get_bytes", "0", 1),
+    ] {
+        assert_raises(&[(
+            call,
+            &format!("Function {function} expects {expects} arguments, but was called with {argc}"),
+        )]);
     }
 }

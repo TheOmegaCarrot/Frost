@@ -1,19 +1,20 @@
-//! `std.fs`: paths, file metadata, directory listings, and creating, copying,
-//! moving, and removing files.
+//! `std.fs`: paths, file metadata, directory listings, reading and writing
+//! files, and creating, copying, moving, and removing files.
 //!
 //! Paths are Strings. A function whose result would hold a path that is not
 //! UTF-8 raises. A relative path is resolved against the host process's working
 //! directory, which scripts can read but not change.
 
-use std::fs::{self, Metadata};
-use std::io;
+use std::fs::{self, File, Metadata, OpenOptions};
+use std::io::{self, BufReader, BufWriter, Write};
 use std::path::{Path, PathBuf};
 
+use crate::stdlib::stream::{self, Kind};
 use crate::{Arity, FrostError, FrostResult, FrostType, Param, Params, StdlibModule, Value};
 
 /// The `std.fs` module: path manipulation, file metadata and type tests,
-/// directory listing, and creating, copying, moving, linking, and removing
-/// files and directories.
+/// directory listing, reading and writing files whole or as streams, and
+/// creating, copying, moving, linking, and removing files and directories.
 ///
 /// It reaches outside the script: a script with it can read and change any
 /// file the host process can.
@@ -21,6 +22,13 @@ pub fn fs() -> StdlibModule {
     StdlibModule::new(
         "fs",
         Value::map([
+            ("read", path_function("fs.read", read)),
+            ("read_bytes", path_function("fs.read_bytes", read_bytes)),
+            ("write", content_function("fs.write", write)),
+            ("append", content_function("fs.append", append)),
+            ("open_read", path_function("fs.open_read", open_read)),
+            ("open_write", path_function("fs.open_write", open_write)),
+            ("open_append", path_function("fs.open_append", open_append)),
             ("absolute", path_function("fs.absolute", absolute)),
             ("canonical", path_function("fs.canonical", canonical)),
             ("exists", path_test("fs.exists", Path::exists)),
@@ -121,6 +129,72 @@ fn path_test(name: &'static str, test: fn(&Path) -> bool) -> Value {
     Value::checked_native(name, ONE_PATH, move |_, args| {
         Ok(Value::Bool(test(path_arg(&args[0]))))
     })
+}
+
+/// A function of a path and content to put there, a String or Bytes,
+/// computing `body`.
+fn content_function(name: &'static str, body: fn(&str, &Path, &[u8]) -> FrostResult) -> Value {
+    const PARAMS: Params = Params::new(&[
+        Param::of(FrostType::STRING).named("path"),
+        Param::of(FrostType::FLAT).named("content"),
+    ]);
+    Value::checked_native(name, PARAMS, move |_, args| {
+        let content = args[1].as_byte_slice().expect("type-checked as Flat");
+        body(name, path_arg(&args[0]), content)
+    })
+}
+
+// --- Reading and writing ---
+
+fn read(name: &str, path: &Path) -> FrostResult {
+    let content = fs::read(path).map_err(|err| io_error(name, path, &err))?;
+    String::from_utf8(content).map(Value::from).map_err(|_| {
+        FrostError::from_string(format!(
+            "Function {name} read text that is not UTF-8 from `{}`",
+            path.display()
+        ))
+    })
+}
+
+fn read_bytes(name: &str, path: &Path) -> FrostResult {
+    let content = fs::read(path).map_err(|err| io_error(name, path, &err))?;
+    Ok(Value::from(content))
+}
+
+fn write(name: &str, path: &Path, content: &[u8]) -> FrostResult {
+    fs::write(path, content).map_err(|err| io_error(name, path, &err))?;
+    Ok(Value::Null)
+}
+
+fn append(name: &str, path: &Path, content: &[u8]) -> FrostResult {
+    OpenOptions::new()
+        .append(true)
+        .create(true)
+        .open(path)
+        .and_then(|mut file| file.write_all(content))
+        .map_err(|err| io_error(name, path, &err))?;
+    Ok(Value::Null)
+}
+
+fn open_read(name: &str, path: &Path) -> FrostResult {
+    let file = File::open(path).map_err(|err| io_error(name, path, &err))?;
+    Ok(stream::reader(BufReader::new(file), Kind::File))
+}
+
+/// Opens a file for writing, emptying it first, or creating it.
+fn open_write(name: &str, path: &Path) -> FrostResult {
+    let file = File::create(path).map_err(|err| io_error(name, path, &err))?;
+    Ok(stream::writer(BufWriter::new(file), Kind::File))
+}
+
+/// Opens a file for writing at its end, creating it if need be.
+fn open_append(name: &str, path: &Path) -> FrostResult {
+    let file = OpenOptions::new()
+        .append(true)
+        .create(true)
+        .open(path)
+        .map_err(|err| io_error(name, path, &err))?;
+    Ok(stream::writer(BufWriter::new(file), Kind::AppendFile))
 }
 
 // --- Paths ---

@@ -1,20 +1,23 @@
-//! `std.os`: the process's environment variables and ID, pausing, and running
-//! other programs.
+//! `std.os`: the process's environment variables, ID, and standard streams,
+//! pausing, and running other programs.
 
 use std::collections::BTreeMap;
-use std::io::Write;
+use std::io::{self, BufReader, Write};
 use std::process::{Command, Stdio};
 use std::time::Duration;
 
 use serde::Deserialize;
 
+use crate::stdlib::stream::{self, Kind};
 use crate::{Arity, FrostError, FrostType, Param, Params, StdlibModule, Value, from_value};
 
 /// The `std.os` module: reading environment variables, the process ID,
-/// sleeping, and running programs to completion.
+/// the process's standard input, output, and error streams, sleeping, and
+/// running programs to completion.
 ///
-/// It reaches outside the script: a script with it can read the environment
-/// and run any program the host process could.
+/// It reaches outside the script: a script with it can read the environment,
+/// use the process's standard streams, and run any program the host process
+/// could.
 pub fn os() -> StdlibModule {
     StdlibModule::new(
         "os",
@@ -23,6 +26,12 @@ pub fn os() -> StdlibModule {
             ("pid", pid()),
             ("sleep", sleep()),
             ("run", run()),
+            (
+                "stdin",
+                stream::reader(BufReader::new(io::stdin()), Kind::Stream),
+            ),
+            ("stdout", stream::writer(io::stdout(), Kind::Stream)),
+            ("stderr", stream::writer(io::stderr(), Kind::Stream)),
         ]),
     )
 }

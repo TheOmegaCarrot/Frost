@@ -67,8 +67,44 @@ fn assert_arity(function: &str, expects: &str, counts: &[usize]) {
 // --- The module ---
 
 #[test]
-fn the_module_holds_its_functions() {
-    assert_values(&[("sorted(keys(os))", "['getenv', 'pid', 'run', 'sleep']")]);
+fn the_module_holds_its_functions_and_streams() {
+    assert_values(&[(
+        "sorted(keys(os))",
+        "['getenv', 'pid', 'run', 'sleep', 'stderr', 'stdin', 'stdout']",
+    )]);
+}
+
+// --- Standard streams ---
+//
+// The streams are the test process's own, so these cases read nothing and write
+// nothing visible. What streams do is tested through `std.string`'s buffers and
+// `std.fs`'s files, which share their implementation.
+
+#[test]
+fn the_standard_streams_flow_without_positions_or_closing() {
+    assert_values(&[
+        (
+            "sorted(keys(os.stdin))",
+            "['eof', 'read_bytes', 'read_line', 'read_one', 'read_rest', 'read_rest_bytes']",
+        ),
+        ("sorted(keys(os.stdout))", "['flush', 'write', 'writeln']"),
+        ("sorted(keys(os.stderr))", "['flush', 'write', 'writeln']"),
+    ]);
+}
+
+#[test]
+fn the_standard_output_streams_take_writes() {
+    for stream in ["stdout", "stderr"] {
+        assert_values(&[
+            (&format!("os.{stream}.write('')"), "null"),
+            (&format!("os.{stream}.write(x'')"), "null"),
+            (&format!("os.{stream}.flush()"), "null"),
+        ]);
+        assert_raises(&[(
+            &format!("os.{stream}.write(1)"),
+            "Function writer.write requires String or Bytes as argument 1, got Int",
+        )]);
+    }
 }
 
 #[test]

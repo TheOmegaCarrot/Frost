@@ -123,11 +123,12 @@ fn the_module_holds_its_functions() {
     assert_eq!(
         scratch.run("sorted(keys(fs))"),
         frost(
-            "['absolute', 'canonical', 'concat', 'copy', 'cwd', 'exists', 'extension', \
-             'filename', 'is_block', 'is_character', 'is_directory', 'is_fifo', 'is_file', \
-             'is_socket', 'is_symlink', 'list', 'list_recursively', 'mkdir', 'move', \
-             'parent', 'read_link', 'remove', 'remove_recursively', 'size', 'stat', 'stem', \
-             'symlink']"
+            "['absolute', 'append', 'canonical', 'concat', 'copy', 'cwd', 'exists', \
+             'extension', 'filename', 'is_block', 'is_character', 'is_directory', 'is_fifo', \
+             'is_file', 'is_socket', 'is_symlink', 'list', 'list_recursively', 'mkdir', 'move', \
+             'open_append', 'open_read', 'open_write', 'parent', 'read', 'read_bytes', \
+             'read_link', 'remove', 'remove_recursively', 'size', 'stat', 'stem', 'symlink', \
+             'write']"
         )
     );
 }
@@ -595,6 +596,207 @@ fn remove_recursively_counts_what_it_removes() {
     assert_eq!(scratch.run(source), frost("[true, false, true, 0]"));
 }
 
+// --- Reading and writing ---
+//
+// What a stream does is tested through `std.string`'s buffers, which share the
+// implementation; these cases cover what is particular to files.
+
+#[test]
+fn read_reads_a_whole_file() {
+    let scratch = Scratch::new("read");
+    scratch.file("text", "h\u{e9}llo\n");
+    fs::write(scratch.path("binary"), [0xff]).expect("the file is written");
+    let source = r"
+        def text = fs.concat(dir, 'text')
+        [fs.read(text), fs.read_bytes(text), fs.read_bytes(fs.concat(dir, 'binary'))]
+    ";
+    assert_eq!(
+        scratch.run(source),
+        frost(r"['h\u{e9}llo\n', x'68c3a96c6c6f0a', x'ff']")
+    );
+    assert_eq!(
+        scratch.raises("fs.read(fs.concat(dir, 'binary'))"),
+        format!(
+            "Function fs.read read text that is not UTF-8 from `{}`",
+            scratch.text("binary")
+        )
+    );
+    for function in ["read", "read_bytes"] {
+        assert_io_error(
+            &scratch.raises(&format!("fs.{function}(fs.concat(dir, 'missing'))")),
+            &format!("fs.{function}"),
+            &scratch.text("missing"),
+        );
+    }
+}
+
+#[test]
+fn write_replaces_and_append_extends() {
+    let scratch = Scratch::new("write");
+    let source = r"
+        def path = fs.concat(dir, 'new')
+        def written = [fs.write(path, 'one\n'), fs.read(path)]
+        def appended = [fs.append(path, x'74776f'), fs.read(path)]
+        def replaced = [fs.write(path, 'three'), fs.read(path)]
+        fs.remove(path)
+        def created = [fs.append(path, 'four'), fs.read(path)]
+        fs.remove(path)
+        [written, appended, replaced, created]
+    ";
+    assert_eq!(
+        scratch.run(source),
+        frost(r"[[null, 'one\n'], [null, 'one\ntwo'], [null, 'three'], [null, 'four']]")
+    );
+    for function in ["write", "append"] {
+        assert_io_error(
+            &scratch.raises(&format!(
+                "fs.{function}(fs.concat(dir, 'missing/file'), '')"
+            )),
+            &format!("fs.{function}"),
+            &scratch.text("missing/file"),
+        );
+    }
+}
+
+#[test]
+fn file_streams_close_and_append_streams_have_no_position() {
+    let scratch = Scratch::new("stream_keys");
+    scratch.file("file", "");
+    let source = r"
+        def path = fs.concat(dir, 'new')
+        def r = fs.open_read(fs.concat(dir, 'file'))
+        def w = fs.open_write(path)
+        def a = fs.open_append(path)
+        def shapes = [sorted(keys(r)), sorted(keys(w)), sorted(keys(a))]
+        r.close()
+        w.close()
+        a.close()
+        fs.remove(path)
+        shapes
+    ";
+    assert_eq!(
+        scratch.run(source),
+        frost(
+            "[
+                ['close', 'eof', 'is_open', 'read_bytes', 'read_line', 'read_one', 'read_rest', \
+                 'read_rest_bytes', 'seek', 'tell'],
+                ['close', 'flush', 'is_open', 'seek', 'tell', 'write', 'writeln'],
+                ['close', 'flush', 'is_open', 'write', 'writeln'],
+            ]"
+        )
+    );
+}
+
+#[test]
+fn open_read_reads_a_file_until_closed() {
+    let scratch = Scratch::new("open_read");
+    scratch.file("file", "one\ntwo\nthree");
+    let source = r"
+        def r = fs.open_read(fs.concat(dir, 'file'))
+        def first = r.read_line()
+        def position = r.tell()
+        r.seek(0)
+        def again = r.read_line()
+        def rest = r.read_rest()
+        def open = r.is_open()
+        r.close()
+        r.close()
+        [first, position, again, rest, open, r.is_open()]
+    ";
+    assert_eq!(
+        scratch.run(source),
+        frost(r"['one', 4, 'one', 'two\nthree', true, false]")
+    );
+    for call in ["read_line()", "eof()", "tell()", "seek(0)"] {
+        let function = call.split('(').next().expect("a call has a name");
+        let source = format!(
+            r"
+            def r = fs.open_read(fs.concat(dir, 'file'))
+            r.close()
+            r.{call}
+            "
+        );
+        assert_eq!(
+            scratch.raises(&source),
+            format!("Function reader.{function} requires an open stream, but it is closed")
+        );
+    }
+    assert_io_error(
+        &scratch.raises("fs.open_read(fs.concat(dir, 'missing'))"),
+        "fs.open_read",
+        &scratch.text("missing"),
+    );
+}
+
+#[test]
+fn open_write_empties_a_file_and_writes_it() {
+    let scratch = Scratch::new("open_write");
+    scratch.file("file", "old content");
+    let source = r"
+        def path = fs.concat(dir, 'file')
+        def w = fs.open_write(path)
+        def emptied = fs.read(path)
+        w.write('hello')
+        w.writeln(x'21')
+        def position = w.tell()
+        w.seek(0)
+        w.write('J')
+        w.close()
+        def written = fs.read(path)
+        fs.write(path, 'old content')
+        [emptied, position, written, w.is_open()]
+    ";
+    assert_eq!(scratch.run(source), frost(r"['', 7, 'Jello!\n', false]"));
+    let source = r"
+        def w = fs.open_write(fs.concat(dir, 'file'))
+        w.close()
+        fs.write(fs.concat(dir, 'file'), 'old content')
+        w.write('late')
+    ";
+    assert_eq!(
+        scratch.raises(source),
+        "Function writer.write requires an open stream, but it is closed"
+    );
+    assert_io_error(
+        &scratch.raises("fs.open_write(fs.concat(dir, 'missing/file'))"),
+        "fs.open_write",
+        &scratch.text("missing/file"),
+    );
+}
+
+#[test]
+fn open_append_writes_at_the_end_of_a_file() {
+    let scratch = Scratch::new("open_append");
+    scratch.file("file", "start");
+    let source = r"
+        def path = fs.concat(dir, 'file')
+        def a = fs.open_append(path)
+        a.write(' more')
+        a.flush()
+        def flushed = fs.read(path)
+        a.writeln(' end')
+        a.close()
+        def closed = fs.read(path)
+        fs.write(path, 'start')
+        def new = fs.concat(dir, 'new')
+        def b = fs.open_append(new)
+        b.write('fresh')
+        b.close()
+        def created = fs.read(new)
+        fs.remove(new)
+        [flushed, closed, created]
+    ";
+    assert_eq!(
+        scratch.run(source),
+        frost(r"['start more', 'start more end\n', 'fresh']")
+    );
+    assert_io_error(
+        &scratch.raises("fs.open_append(fs.concat(dir, 'missing/file'))"),
+        "fs.open_append",
+        &scratch.text("missing/file"),
+    );
+}
+
 // --- Arguments ---
 
 #[test]
@@ -623,6 +825,11 @@ fn every_function_checks_its_arguments() {
         "filename",
         "parent",
         "read_link",
+        "read",
+        "read_bytes",
+        "open_read",
+        "open_write",
+        "open_append",
     ];
     for function in one_path {
         assert_eq!(
@@ -646,6 +853,25 @@ fn every_function_checks_its_arguments() {
             scratch.raises(&format!("fs.{function}('a')")),
             format!("Function fs.{function} expects 2 arguments, but was called with 1")
         );
+    }
+    for function in ["write", "append"] {
+        assert_eq!(
+            scratch.raises(&format!("fs.{function}(1, 'a')")),
+            format!("Function fs.{function} requires String as argument 1 (path), got Int")
+        );
+        assert_eq!(
+            scratch.raises(&format!("fs.{function}('a', 1)")),
+            format!(
+                "Function fs.{function} requires String or Bytes as argument 2 (content), got Int"
+            )
+        );
+        for argc in [1, 3] {
+            let args = vec!["'a'"; argc].join(", ");
+            assert_eq!(
+                scratch.raises(&format!("fs.{function}({args})")),
+                format!("Function fs.{function} expects 2 arguments, but was called with {argc}")
+            );
+        }
     }
     assert_eq!(
         scratch.raises("fs.concat('a', 1)"),
