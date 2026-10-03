@@ -51,24 +51,15 @@ const INPUT_NAME: &str = "<repl>";
 
 /// The frontend a command-line REPL most likely wants. With the `line-editor`
 /// feature, and a terminal on standard input and output, that is a
-/// [`TerminalFrontend`] keeping history in `~/.frost_history`, colored if
-/// `color` is true. Otherwise it is [`LineFrontend::stdin`], and `color` is
-/// unused.
+/// [`TerminalFrontend::new`], colored if `color` is true. Otherwise it is
+/// [`LineFrontend::stdin`], and `color` is unused.
 pub fn default_frontend(color: bool) -> Box<dyn Frontend> {
     #[cfg(feature = "line-editor")]
     {
         use std::io::IsTerminal;
 
         if io::stdin().is_terminal() && io::stdout().is_terminal() {
-            let terminal = || TerminalFrontend::new().with_color(color);
-            let history = std::env::var_os("HOME")
-                .map(|home| std::path::PathBuf::from(home).join(".frost_history"));
-            // Without a home, or with its history unreadable, history lasts
-            // the session only.
-            let frontend = history
-                .and_then(|path| terminal().with_history_file(path).ok())
-                .unwrap_or_else(terminal);
-            return Box::new(frontend);
+            return Box::new(TerminalFrontend::new().with_color(color));
         }
     }
     #[cfg(not(feature = "line-editor"))]

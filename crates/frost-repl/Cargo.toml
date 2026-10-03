@@ -6,9 +6,11 @@ edition.workspace = true
 [features]
 default = ["line-editor"]
 # A terminal input with line editing, history, and highlighting.
-line-editor = ["dep:reedline", "dep:nu-ansi-term"]
+line-editor = ["dep:reedline", "dep:nu-ansi-term", "dep:dirs"]
 
 [dependencies]
+# Where the platform keeps history.
+dirs = { version = "7", optional = true }
 frost-compile = { path = "../frost-compile" }
 frost-parse = { path = "../frost-parse" }
 frost-runtime = { path = "../frost-runtime" }
