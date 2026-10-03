@@ -291,6 +291,112 @@ fn a_refused_name_explains_itself() {
     );
 }
 
+// --- Recent results ---
+
+/// Evaluate each of `inputs` in turn on `repl`, returning the last value.
+/// Every input must succeed.
+fn value_on(mut repl: Repl, inputs: &[&str]) -> Value {
+    let mut last = Value::Null;
+    for input in inputs {
+        last = repl
+            .evaluate(input)
+            .unwrap_or_else(|error| panic!("{input:?} failed: {error:?}"));
+    }
+    last
+}
+
+#[test]
+fn results_holds_recent_values_oldest_first() {
+    assert_eq!(value_of(&["1", "'two'", "results"]), value("[1, 'two']"));
+    assert_eq!(value_of(&["1", "2", "results[-1]"]), Value::Int(2));
+}
+
+#[test]
+fn results_starts_empty() {
+    assert_eq!(value("results"), value("[]"));
+}
+
+#[test]
+fn results_keeps_the_last_five_by_default() {
+    let inputs = ["1", "2", "3", "4", "5", "6", "7", "results"];
+    assert_eq!(value_of(&inputs), value("[3, 4, 5, 6, 7]"));
+}
+
+#[test]
+fn results_keeps_neither_null_nor_failures() {
+    let mut repl = Repl::new();
+    for input in ["1", "def x = 2", "null", "1 / 0", "nope"] {
+        let _ = repl.evaluate(input);
+    }
+    assert_eq!(repl.evaluate("results").unwrap(), value("[1]"));
+}
+
+#[test]
+fn a_value_of_results_is_itself_kept() {
+    assert_eq!(value_of(&["1", "results", "results"]), value("[1, [1]]"));
+}
+
+#[test]
+fn how_many_results_are_kept_can_be_set() {
+    let inputs = ["1", "2", "3", "results"];
+    for (count, expected) in [(1, "[3]"), (2, "[2, 3]"), (10, "[1, 2, 3]")] {
+        assert_eq!(
+            value_on(Repl::new().with_results_kept(count), &inputs),
+            value(expected),
+            "keeping {count}"
+        );
+    }
+}
+
+#[test]
+fn keeping_no_results_binds_no_results() {
+    let mut repl = Repl::new().with_results_kept(0);
+    repl.evaluate("1").unwrap();
+    let Err(ReplError::Compile(errors)) = repl.evaluate("results") else {
+        panic!("`results` should not be bound");
+    };
+    let rendered = errors.render_plain();
+    assert!(rendered.contains("`results` is not defined"), "{rendered}");
+}
+
+#[test]
+fn binding_results_takes_the_name_for_good() {
+    let inputs = ["1", "def results = 'mine'", "2", "3", "results"];
+    assert_eq!(value_of(&inputs), Value::from("mine"));
+    // The new binding may be made from the old; either way, no more are kept.
+    let inputs = ["1", "def results = results[-1]", "5", "results"];
+    assert_eq!(value_of(&inputs), Value::Int(1));
+    // However it is bound.
+    let inputs = ["1", "def [results] = [9]", "2", "results"];
+    assert_eq!(value_of(&inputs), Value::Int(9));
+}
+
+#[test]
+fn a_failed_input_binding_results_leaves_it_kept() {
+    let mut repl = Repl::new();
+    for input in ["1", "def results = 2; 1 / 0", "def results = nope"] {
+        let _ = repl.evaluate(input);
+    }
+    assert_eq!(repl.evaluate("results").unwrap(), value("[1]"));
+}
+
+#[test]
+fn seeding_results_takes_the_name_from_the_start() -> Result<(), InvalidName> {
+    let repl = Repl::new().with_binding("results", Value::from("seeded"))?;
+    assert_eq!(value_on(repl, &["1", "results"]), Value::from("seeded"));
+    Ok(())
+}
+
+#[test]
+fn bindings_lists_results_only_once_an_input_binds_it() {
+    let mut repl = Repl::new();
+    repl.evaluate("1").unwrap();
+    assert_eq!(repl.bindings().count(), 0);
+    repl.evaluate("def results = 2").unwrap();
+    let bindings: Vec<(&str, &Value)> = repl.bindings().collect();
+    assert_eq!(bindings, [("results", &Value::Int(2))]);
+}
+
 // --- Configuration ---
 
 #[test]

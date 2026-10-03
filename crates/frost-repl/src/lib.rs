@@ -37,7 +37,7 @@ pub use segment::complete_segment;
 #[cfg(feature = "line-editor")]
 pub use terminal::TerminalFrontend;
 
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, VecDeque};
 use std::fmt;
 use std::io;
 use std::sync::Arc;
@@ -67,13 +67,29 @@ pub fn default_frontend(color: bool) -> Box<dyn Frontend> {
     Box::new(LineFrontend::stdin())
 }
 
+/// The name inputs refer to recent results by.
+const RESULTS: &str = "results";
+
 /// A read-eval-print loop: [`evaluate`](Self::evaluate) inputs one at a time,
 /// or [`run`](Self::run) a whole session.
+///
+/// # Recent results
+///
+/// Inputs may refer to `results`: an Array of the most recent inputs' values,
+/// oldest first, so that `results[-1]` is the last. It holds the values of
+/// inputs that succeeded, other than Null, up to five by default (see
+/// [`with_results_kept`](Self::with_results_kept)).
+///
+/// `results` is an ordinary name. Once an input or a seeded binding binds it,
+/// the REPL leaves it alone and keeps no more results.
 pub struct Repl {
     configuration: VmRuntimeConfiguration,
     importer: Arc<Importer>,
     optimization: OptimizationOptions,
     bindings: BTreeMap<String, Value>,
+    results_kept: usize,
+    // Oldest first.
+    results: VecDeque<Value>,
     // The Vm the last input ran on, kept warm for the next.
     idle_vm: Option<IdleVm>,
 }
@@ -86,13 +102,16 @@ impl Default for Repl {
 
 impl Repl {
     /// A REPL with nothing bound, nothing importable, the default
-    /// [`VmRuntimeConfiguration`], and every optimization on.
+    /// [`VmRuntimeConfiguration`], every optimization on, and five recent
+    /// results kept.
     pub fn new() -> Self {
         Self {
             configuration: VmRuntimeConfiguration::default(),
             importer: Arc::default(),
             optimization: OptimizationOptions::ALL,
             bindings: BTreeMap::new(),
+            results_kept: 5,
+            results: VecDeque::new(),
             idle_vm: None,
         }
     }
@@ -112,6 +131,15 @@ impl Repl {
     /// Set the optimizations inputs compile with.
     pub fn with_optimization(mut self, optimization: OptimizationOptions) -> Self {
         self.optimization = optimization;
+        self
+    }
+
+    /// Set how many [recent results](Self#recent-results) `results` holds. With
+    /// 0, the REPL binds no `results` at all.
+    pub fn with_results_kept(mut self, count: usize) -> Self {
+        self.results_kept = count;
+        let excess = self.results.len().saturating_sub(count);
+        self.results.drain(..excess);
         self
     }
 
@@ -147,7 +175,11 @@ impl Repl {
     /// itself are kept only if it compiles and runs without error; a failed
     /// input changes nothing.
     pub fn evaluate(&mut self, source: &str) -> Result<Value, ReplError> {
-        let scope: Vec<&str> = self.bindings.keys().map(String::as_str).collect();
+        let mut bindings = self.bindings.clone();
+        if self.keeps_results() {
+            bindings.insert(RESULTS.to_string(), self.results.iter().cloned().collect());
+        }
+        let scope: Vec<&str> = bindings.keys().map(String::as_str).collect();
         let options = CompilerOptions {
             optimization_options: self.optimization,
             // Each top-level binding is exported, to be kept for later inputs.
@@ -157,7 +189,7 @@ impl Repl {
             .map_err(ReplError::Compile)?
             .code;
         let closure = program
-            .close(self.bindings.clone())
+            .close(bindings)
             .expect("every name in scope is bound");
         let vm = match self.idle_vm.take() {
             Some(idle_vm) => idle_vm.build(closure),
@@ -176,6 +208,12 @@ impl Repl {
                         .map(|(name, value)| (name.to_string(), value.clone())),
                 );
                 self.idle_vm = Some(result.into_idle_vm());
+                if self.keeps_results() && value != Value::Null {
+                    if self.results.len() == self.results_kept {
+                        self.results.pop_front();
+                    }
+                    self.results.push_back(value.clone());
+                }
                 Ok(value)
             }
             Err(failure) => {
@@ -186,11 +224,19 @@ impl Repl {
         }
     }
 
-    /// The names bound so far, with their values.
+    /// The names inputs and seeded bindings have bound so far, with their
+    /// values. The REPL's own [`results`](Self#recent-results) is not among
+    /// them.
     pub fn bindings(&self) -> impl Iterator<Item = (&str, &Value)> {
         self.bindings
             .iter()
             .map(|(name, value)| (name.as_str(), value))
+    }
+
+    /// Whether the REPL binds `results`: it keeps some, and no input or seed
+    /// has taken the name.
+    fn keeps_results(&self) -> bool {
+        self.results_kept > 0 && !self.bindings.contains_key(RESULTS)
     }
 
     /// [`evaluate`](Self::evaluate) each segment `frontend` reads, and have it

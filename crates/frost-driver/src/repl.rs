@@ -16,6 +16,8 @@ pub struct ReplSettings {
     // `None` for the default frontend, which takes the command line's color.
     frontend: Option<FrontendFactory>,
     bindings: BTreeMap<String, Value>,
+    // `None` for the `Repl`'s own default.
+    results_kept: Option<usize>,
 }
 
 /// Makes the frontend for each session.
@@ -36,12 +38,21 @@ impl Default for ReplSettings {
 
 impl ReplSettings {
     /// Sessions on [`frost_repl::default_frontend`], colored as the command
-    /// line's `--color` says, with nothing bound.
+    /// line's `--color` says, with nothing bound, and keeping as many recent
+    /// results as [`Repl::new`] does.
     pub fn new() -> Self {
         Self {
             frontend: None,
             bindings: BTreeMap::new(),
+            results_kept: None,
         }
+    }
+
+    /// Set how many recent results each session keeps, as
+    /// [`Repl::with_results_kept`] does.
+    pub fn with_results_kept(mut self, count: usize) -> Self {
+        self.results_kept = Some(count);
+        self
     }
 
     /// Set the frontend sessions run on: `make` is called for a new frontend
@@ -83,11 +94,14 @@ impl ReplSettings {
     }
 
     /// A new session's frontend, colored if `color` is true and it is the
-    /// default, and `repl` with these settings' bindings.
+    /// default, and `repl` with these settings' bindings and recent results.
     pub(crate) fn start(&self, repl: Repl, color: bool) -> (Box<dyn Frontend>, Repl) {
-        let repl = repl
+        let mut repl = repl
             .with_bindings(self.bindings.clone())
             .expect("each name was checked when it was bound");
+        if let Some(count) = self.results_kept {
+            repl = repl.with_results_kept(count);
+        }
         let frontend = match &self.frontend {
             Some(make) => (make.0)(),
             None => frost_repl::default_frontend(color),

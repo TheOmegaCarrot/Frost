@@ -622,6 +622,28 @@ fn every_session_starts_with_the_seeded_bindings() -> Result<(), InvalidName> {
 }
 
 #[test]
+fn every_session_keeps_the_chosen_number_of_recent_results() {
+    let segments = ["1", "2", "results"];
+    let chosen = run_session_configured(
+        Driver::new(),
+        ReplSettings::new().with_results_kept(1),
+        &segments,
+        |_| {},
+        &["repl"],
+    );
+    assert_eq!(
+        chosen.values(),
+        [Value::Int(1), Value::Int(2), Value::array([2])]
+    );
+    // Unchosen, sessions keep the REPL's default.
+    let default = run_session(&segments, &["repl"]);
+    assert_eq!(
+        default.values(),
+        [Value::Int(1), Value::Int(2), Value::array([1, 2])]
+    );
+}
+
+#[test]
 fn a_seed_name_frost_cannot_refer_to_is_refused() {
     for name in ["if", "and", "$1", "two words", "my-name", "1x", ""] {
         let refused = ReplSettings::new()
