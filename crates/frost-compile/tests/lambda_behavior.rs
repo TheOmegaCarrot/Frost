@@ -141,6 +141,22 @@ fn a_lambda_body_may_be_a_map_literal() {
 }
 
 #[test]
+fn a_lambda_body_may_be_a_shorthand_map_literal() {
+    // `{a}` after the arrow is the Map `{a: a}`, not a block returning `a`.
+    assert_values(&[
+        ("(fn a -> {a})(4)", "{a: 4}"),
+        ("(fn a, b -> {a, b})(1, 2)", "{a: 1, b: 2}"),
+        (
+            r"
+            def a = 3
+            (fn -> {a})()
+            ",
+            "{a: 3}",
+        ),
+    ]);
+}
+
+#[test]
 fn a_single_name_before_the_arrow_is_a_parameter() {
     // `fn f -> f` is the identity function, not a lambda named `f`.
     assert_values(&[(
@@ -231,18 +247,8 @@ fn a_parameter_list_may_end_in_a_trailing_comma() {
 
 #[test]
 fn a_braced_single_expression_is_the_body() {
-    // `{a}` holds no `key: value` pair, so it is a block, not a Map.
-    assert_values(&[
-        ("(fn -> { 42 })()", "42"),
-        (
-            r"
-            def a = 3
-            (fn -> {a})()
-            ",
-            "3",
-        ),
-        ("(fn a -> {a})(4)", "4"),
-    ]);
+    // `{42}` and `{a.b}` cannot begin a Map, so they are blocks.
+    assert_values(&[("(fn -> { 42 })()", "42"), ("(fn a -> {a.b})({b: 4})", "4")]);
 }
 
 // --- When the body runs ---

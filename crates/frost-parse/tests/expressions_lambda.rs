@@ -303,16 +303,6 @@ mod block_body {
         assert_eq!(lam.self_name, Some("f"));
         assert_eq!(lam.body.len(), 1);
     }
-
-    // A lone identifier in braces is a block body, equivalent to `fn -> a`,
-    // not the Map shorthand `{a: a}`. Wrap it in parens for the Map: `fn -> ({a})`.
-    #[test]
-    fn single_bare_identifier_is_thunk() {
-        let expr = parse_expr("fn -> {a}");
-        let lam = assert_lambda(&expr);
-        assert!(lam.body.is_empty());
-        assert!(matches!(&lam.return_expr.node, Expr::NameLookup(n) if n == "a"));
-    }
 }
 
 // ============================================================
@@ -448,7 +438,33 @@ mod map_body {
 
     // -- Shorthand entries --
     // A comma after a leading name cannot continue a block statement, so
-    // `{a, ...` is a Map. A lone `{a}` stays a block (see `block_body`).
+    // `{a, ...` is a Map. A lone `{a}` is a Map too: as a block it would only
+    // mean `fn -> a`.
+
+    #[test]
+    fn lone_shorthand() {
+        let expr = parse_expr("fn a -> {a}");
+        let lam = assert_lambda(&expr);
+        assert_eq!(map_body_len(&lam), 1);
+        let Expr::Map(entries) = &lam.return_expr.node else {
+            unreachable!("map_body_len checked for a Map");
+        };
+        assert!(
+            matches!(&entries[0].node.value.node, Expr::NameLookup(n) if n == "a"),
+            "{entries:?}"
+        );
+    }
+
+    #[test]
+    fn multiline_lone_shorthand() {
+        let source = r"
+            fn a -> {
+                a
+            }
+        ";
+        let expr = parse_expr(source);
+        assert_eq!(map_body_len(&assert_lambda(&expr)), 1);
+    }
 
     #[test]
     fn shorthand_entries() {
@@ -474,26 +490,34 @@ mod map_body {
         assert_eq!(map_body_len(&assert_lambda(&expr)), 2);
     }
 
+    // A block may still begin with a bare name, when another statement follows it.
     #[test]
-    fn parenthesized_lone_shorthand() {
-        let expr = parse_expr("fn a -> ({a})");
-        assert_eq!(map_body_len(&assert_lambda(&expr)), 1);
-    }
-
-    // Skipping newlines only changes what the lookahead sees; a block whose
-    // first statement is on the next line is still a block.
-
-    #[test]
-    fn multiline_bare_identifier_is_still_a_block() {
+    fn bare_name_then_another_statement_is_a_block() {
         let source = r"
             fn -> {
                 a
+                b
             }
         ";
         let expr = parse_expr(source);
         let lam = assert_lambda(&expr);
-        assert!(lam.body.is_empty());
-        assert!(matches!(&lam.return_expr.node, Expr::NameLookup(n) if n == "a"));
+        assert_eq!(lam.body.len(), 1);
+        assert!(matches!(&lam.return_expr.node, Expr::NameLookup(n) if n == "b"));
+    }
+
+    // Only a bare name has a shorthand entry; any other lone expression is a block.
+    #[test]
+    fn lone_non_name_expression_is_a_block() {
+        for source in ["fn -> {a.b}", "fn -> {f(a)}", "fn -> {a + 1}"] {
+            let expr = parse_expr(source);
+            let lam = assert_lambda(&expr);
+            assert!(lam.body.is_empty(), "{source}");
+            assert!(
+                !matches!(&lam.return_expr.node, Expr::Map(_)),
+                "{source}: {:?}",
+                lam.return_expr
+            );
+        }
     }
 
     // `{ [` first tries a Map with a computed key; an Array statement is not

@@ -221,10 +221,11 @@ enum BraceKind {
 }
 
 /// Disambiguate `{` after `->`:
-/// - `{ identifier :` and `{ identifier ,` are map literals (expression)
+/// - `{ identifier :`, `{ identifier ,`, and `{ identifier }` are map literals (expression);
+///   as a block, `{ identifier }` would only mean `identifier`
 /// - `{ [` is probably a map: try expression first, backtrack to block on failure
 /// - `{ }` is an empty map (the only sensible reading)
-/// - `{ <anything else>` is a block body, including `{ identifier }`
+/// - `{ <anything else>` is a block body
 /// - no `{` is a plain expression
 ///
 /// Newlines are skipped, as they are inside a Map literal.
@@ -245,7 +246,7 @@ fn brace_disambiguation(ctx: &ParseCtx) -> BraceKind {
         Some(Token::Identifier(_))
             if matches!(
                 third.map(|(_, t)| &t.token),
-                Some(Token::Colon | Token::Comma)
+                Some(Token::Colon | Token::Comma | Token::CloseBrace)
             ) =>
         {
             BraceKind::Expression
