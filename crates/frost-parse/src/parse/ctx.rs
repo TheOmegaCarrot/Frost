@@ -18,6 +18,10 @@ pub(crate) struct ParseCtx<'src, 'f> {
     /// diagnostic span is in whole-source coordinates.
     base_offset: usize,
 
+    /// For an interpolation sub-context, the `}` that closes it.
+    /// Past the context's last token, a parse finds this brace rather than the end of input.
+    closing_brace: Option<SourceSpan>,
+
     filename: &'f str,
 
     /// The full lexer result.
@@ -76,13 +80,25 @@ impl<'src, 'f> ParseCtx<'src, 'f> {
     }
 
     pub(crate) fn new(filename: &'f str, src: &'src str) -> ParseResult<Self> {
-        Self::new_with_offset(filename, src, 0)
+        Self::lex(filename, src, 0, None)
     }
 
-    pub(crate) fn new_with_offset(
+    /// A sub-context for a format-string interpolation: `src` is its text, which
+    /// starts at `base_offset` in the whole source and is closed by the `}` right after it.
+    pub(crate) fn new_interpolation(
         filename: &'f str,
         src: &'src str,
         base_offset: usize,
+    ) -> ParseResult<Self> {
+        let brace = base_offset + src.len();
+        Self::lex(filename, src, base_offset, Some((brace..brace + 1).into()))
+    }
+
+    fn lex(
+        filename: &'f str,
+        src: &'src str,
+        base_offset: usize,
+        closing_brace: Option<SourceSpan>,
     ) -> ParseResult<Self> {
         let mut lexer = Token::lexer(src);
         let mut input = Vec::new();
@@ -104,6 +120,7 @@ impl<'src, 'f> ParseCtx<'src, 'f> {
         Ok(Self {
             full_source: src,
             base_offset,
+            closing_brace,
             filename,
             input,
             state: ParseState::default(),
@@ -349,14 +366,63 @@ impl<'src, 'f> ParseCtx<'src, 'f> {
     }
 
     /// The error for running out of tokens where `expected` belongs.
+    /// Any bracket still open is labeled, since closing it is the likely fix.
     pub(crate) fn unexpected_eof(&self, expected: &str) -> Diagnostic {
-        // End of this context's tokens, in whole-source coordinates.
-        let end = self.base_offset + self.full_source.len();
-        Diagnostic::at(
-            format!("expected {expected}, but found the end of input"),
-            (end..end).into(),
-            "end of input",
-        )
+        let unclosed = self.innermost_unclosed();
+        let last = self.input.iter().rev().find(|t| t.token != Token::Newline);
+
+        let diagnostic = if let Some(brace) = self.closing_brace {
+            Diagnostic::at(
+                format!("expected {expected}, but found `}}`"),
+                brace,
+                "unexpected",
+            )
+        } else {
+            let message = format!("expected {expected}, but found the end of input");
+            match last {
+                // An unclosed opener as the last token gets just its own label.
+                Some(last) if unclosed.is_some_and(|open| open.span == last.span) => {
+                    Diagnostic::new(message)
+                }
+                Some(last) => Diagnostic::at(
+                    message,
+                    last.span.clone().into(),
+                    "the input ends after this",
+                ),
+                // No tokens, only line breaks and comments: label the end itself,
+                // though a zero-width label is not drawn.
+                None => {
+                    let end = self.base_offset + self.full_source.len();
+                    Diagnostic::at(message, (end..end).into(), "end of input")
+                }
+            }
+        };
+
+        match unclosed {
+            Some(open) => diagnostic.with_label(
+                open.span.clone().into(),
+                format!("this `{}` is not closed", open.token),
+            ),
+            None => diagnostic,
+        }
+    }
+
+    /// The innermost opening bracket in this context with no closing bracket after it.
+    /// Brackets are matched by nesting alone, which suffices to pick a label.
+    fn innermost_unclosed(&self) -> Option<&SrcToken<'src>> {
+        let mut open = Vec::new();
+        for token in &self.input {
+            match token.token {
+                Token::OpenParen | Token::DollarParen | Token::OpenBracket | Token::OpenBrace => {
+                    open.push(token);
+                }
+                Token::CloseParen | Token::CloseBracket | Token::CloseBrace => {
+                    open.pop();
+                }
+                _ => {}
+            }
+        }
+        open.pop()
     }
 
     /// `token` as a diagnostic names it: its source text in backticks, up to any line break.

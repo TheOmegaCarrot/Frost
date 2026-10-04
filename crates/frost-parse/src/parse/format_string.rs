@@ -168,7 +168,7 @@ fn parse_interpolation(
     let context = |d: Diagnostic| d.with_label(span.clone().into(), "in this format String");
 
     let mut sub_ctx =
-        ParseCtx::new_with_offset(ctx.filename(), src, base_offset).map_err(context)?;
+        ParseCtx::new_interpolation(ctx.filename(), src, base_offset).map_err(context)?;
 
     // An interpolation is lexed separately but sits lexically inside any enclosing
     // abbreviated lambda, so the sub-context parses with the outer frames in hand:

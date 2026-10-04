@@ -250,3 +250,133 @@ fn only_the_innermost_list_is_labeled() {
         ]
     );
 }
+
+// -- Running out of input --
+// The last token is labeled, since a label at the very end would not be drawn.
+// A bracket still open is labeled too, since closing it is the likely fix.
+
+#[test]
+fn the_end_of_input_labels_the_last_token() {
+    let (message, labels) = diagnosis("def g = fn x ->");
+    assert_eq!(
+        message,
+        "expected an expression, but found the end of input"
+    );
+    assert_eq!(labels, [("->", "the input ends after this".to_owned())]);
+}
+
+#[test]
+fn the_end_of_input_labels_an_unclosed_bracket() {
+    let (message, labels) = diagnosis("def x = (1");
+    assert_eq!(message, "expected `)`, but found the end of input");
+    assert_eq!(
+        labels,
+        [
+            ("1", "the input ends after this".to_owned()),
+            ("(", "this `(` is not closed".to_owned()),
+        ]
+    );
+}
+
+// Trailing line breaks and comments are not tokens to label.
+#[test]
+fn the_last_token_is_found_past_trailing_lines() {
+    let source = r"
+        def x = [1, 2
+        # a comment
+
+    ";
+    let (_, labels) = diagnosis(source);
+    assert_eq!(
+        labels,
+        [
+            ("2", "the input ends after this".to_owned()),
+            ("[", "this `[` is not closed".to_owned()),
+        ]
+    );
+}
+
+// When the unclosed bracket is itself the last token, it gets the one label.
+#[test]
+fn an_unclosed_last_token_is_labeled_once() {
+    let (message, labels) = diagnosis("f(");
+    assert_eq!(
+        message,
+        "expected an expression, but found the end of input"
+    );
+    assert_eq!(labels, [("(", "this `(` is not closed".to_owned())]);
+}
+
+#[test]
+fn the_innermost_unclosed_bracket_is_labeled() {
+    let source = r"
+        match x {
+            1 => [1, 2
+    ";
+    let (_, labels) = diagnosis(source);
+    assert_eq!(labels[1], ("[", "this `[` is not closed".to_owned()));
+}
+
+// Brackets closed before the end are passed over for the one still open.
+#[test]
+fn closed_brackets_are_not_labeled() {
+    let (_, labels) = diagnosis("[(1), {a: 2}, f(3)[0], 4");
+    assert_eq!(
+        labels,
+        [
+            ("4", "the input ends after this".to_owned()),
+            ("[", "this `[` is not closed".to_owned()),
+        ]
+    );
+}
+
+#[test]
+fn every_kind_of_opener_is_labeled() {
+    for (source, opener) in [
+        ("f(1", "("),
+        ("$($ * 2", "$("),
+        ("[1", "["),
+        ("{a: 1", "{"),
+        ("do { 1", "{"),
+    ] {
+        let (_, labels) = diagnosis(source);
+        assert_eq!(
+            labels[1],
+            (opener, format!("this `{opener}` is not closed")),
+            "{source:?}"
+        );
+    }
+}
+
+// -- Running out of an interpolation --
+// An interpolation's tokens end at its closing `}`, which is what the parse finds
+// there, not the end of input.
+
+#[test]
+fn an_empty_interpolation_finds_its_closing_brace() {
+    let source = "$'a ${}'";
+    let (message, labels) = diagnosis(source);
+    assert_eq!(message, "expected an expression, but found `}`");
+    assert_eq!(
+        labels,
+        [
+            ("}", "unexpected".to_owned()),
+            (source, "in this format String".to_owned()),
+        ]
+    );
+}
+
+#[test]
+fn an_unfinished_interpolation_labels_its_unclosed_bracket() {
+    let source = "$'a ${f(}'";
+    let (message, labels) = diagnosis(source);
+    assert_eq!(message, "expected an expression, but found `}`");
+    assert_eq!(
+        labels,
+        [
+            ("}", "unexpected".to_owned()),
+            ("(", "this `(` is not closed".to_owned()),
+            (source, "in this format String".to_owned()),
+        ]
+    );
+}
