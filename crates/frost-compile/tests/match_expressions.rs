@@ -14,13 +14,10 @@ mod common;
 use common::{
     Emitted, Script, UNOPTIMIZED, compile_errors, optimization_permutations, raises, run,
 };
-use frost_compile::OptimizationOptions;
+use frost_compile::{Optimization, OptimizationOptions};
 use frost_runtime::{Bytecode, MapKey, Value};
 
-const FOLD: OptimizationOptions = OptimizationOptions {
-    constant_fold: true,
-    ..UNOPTIMIZED
-};
+const FOLD: OptimizationOptions = UNOPTIMIZED.with(Optimization::ConstantFold, true);
 
 /// Defines `note(v)`, which appends `v` to a log and returns it, and `log()`,
 /// the values noted so far, in order. A script appends its own statements.

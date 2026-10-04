@@ -10,18 +10,12 @@
 mod common;
 
 use common::{Emitted, Script, UNOPTIMIZED, compile_errors, raises, run};
-use frost_compile::OptimizationOptions;
+use frost_compile::{Optimization, OptimizationOptions};
 use frost_runtime::{Bytecode, Value};
 
-const FOLD: OptimizationOptions = OptimizationOptions {
-    constant_fold: true,
-    ..UNOPTIMIZED
-};
+const FOLD: OptimizationOptions = UNOPTIMIZED.with(Optimization::ConstantFold, true);
 
-const FOLD_AND_PROPAGATE: OptimizationOptions = OptimizationOptions {
-    constant_propagate: true,
-    ..FOLD
-};
+const FOLD_AND_PROPAGATE: OptimizationOptions = FOLD.with(Optimization::ConstantPropagate, true);
 
 /// The code of `source`, with `x` a runtime-only capture, under exactly
 /// `optimization`.
@@ -672,10 +666,7 @@ fn a_runtime_bodys_constant_if_tail_folds_alone() {
 fn a_folded_block_may_decide_a_branch() {
     let emitted = code(
         "if do { def c = 1; c == 1 }: x else: 2",
-        OptimizationOptions {
-            branch_eliminate: true,
-            ..FOLD_AND_PROPAGATE
-        },
+        FOLD_AND_PROPAGATE.with(Optimization::BranchEliminate, true),
     );
     assert_eq!(definitions(&emitted), 0, "the block folded: {emitted:?}");
     assert_eq!(

@@ -13,7 +13,7 @@
 mod common;
 
 use common::{Emitted, Script, UNOPTIMIZED};
-use frost_compile::OptimizationOptions;
+use frost_compile::{Optimization, OptimizationOptions};
 use frost_runtime::{Arity, Bytecode, Value};
 
 /// The top-level code of `source` under exactly `optimization`, with `x` a
@@ -318,10 +318,7 @@ fn iteration_form_arguments_are_not_in_tail_position() {
 
 #[test]
 fn a_tail_call_survives_branch_elimination() {
-    let eliminate = OptimizationOptions {
-        branch_eliminate: true,
-        ..UNOPTIMIZED
-    };
+    let eliminate = UNOPTIMIZED.with(Optimization::BranchEliminate, true);
     for source in ["if true: f(1) else: f(2, 2)", "true and f(1)"] {
         let emitted = code_under(source, eliminate);
         assert_eq!(
@@ -334,11 +331,9 @@ fn a_tail_call_survives_branch_elimination() {
 
 #[test]
 fn a_tail_call_survives_propagated_elimination() {
-    let propagate_and_eliminate = OptimizationOptions {
-        constant_propagate: true,
-        branch_eliminate: true,
-        ..UNOPTIMIZED
-    };
+    let propagate_and_eliminate = UNOPTIMIZED
+        .with(Optimization::ConstantPropagate, true)
+        .with(Optimization::BranchEliminate, true);
     for source in [
         r"
         def c = true
@@ -370,20 +365,14 @@ fn a_tail_call_survives_propagated_elimination() {
 
 #[test]
 fn a_tail_call_survives_elimination_inside_a_lambda() {
-    let eliminate = OptimizationOptions {
-        branch_eliminate: true,
-        ..UNOPTIMIZED
-    };
+    let eliminate = UNOPTIMIZED.with(Optimization::BranchEliminate, true);
     let body = code_under("fn -> if true: f(1) else: f(2, 2)", eliminate).nested(0);
     assert_eq!(calls_by_arity(&body), (vec![], vec![1]), "{body:?}");
 }
 
 #[test]
 fn a_tail_call_survives_folding_around_it() {
-    let fold = OptimizationOptions {
-        constant_fold: true,
-        ..UNOPTIMIZED
-    };
+    let fold = UNOPTIMIZED.with(Optimization::ConstantFold, true);
     for source in [
         "if x: f(1) else: 1 + 2",
         r"
@@ -408,10 +397,7 @@ fn a_tail_call_survives_folding_around_it() {
     ";
     let emitted = code_under(
         folded_argument,
-        OptimizationOptions {
-            constant_propagate: true,
-            ..fold
-        },
+        fold.with(Optimization::ConstantPropagate, true),
     );
     assert_eq!(
         calls_by_arity(&emitted),
@@ -431,13 +417,7 @@ fn a_pure_tail_call_folds_to_its_value() {
         }
     ";
     assert_calls(source, &[], &[1]);
-    let emitted = code_under(
-        source,
-        OptimizationOptions {
-            constant_fold: true,
-            ..UNOPTIMIZED
-        },
-    );
+    let emitted = code_under(source, UNOPTIMIZED.with(Optimization::ConstantFold, true));
     assert_eq!(
         calls_by_arity(&emitted),
         (vec![], vec![]),

@@ -10,13 +10,10 @@
 mod common;
 
 use common::{Emitted, Script, UNOPTIMIZED, raises, run};
-use frost_compile::OptimizationOptions;
+use frost_compile::{Optimization, OptimizationOptions};
 use frost_runtime::{Bytecode, Value};
 
-const FOLD: OptimizationOptions = OptimizationOptions {
-    constant_fold: true,
-    ..UNOPTIMIZED
-};
+const FOLD: OptimizationOptions = UNOPTIMIZED.with(Optimization::ConstantFold, true);
 
 fn ints(values: &[i64]) -> Value {
     Value::from_iter(values.iter().copied().map(Value::Int))
@@ -382,10 +379,7 @@ fn a_raising_literal_is_left_for_runtime() {
 #[test]
 fn a_propagated_options_map_folds_through_field_access() {
     // A Map used as keyword arguments: bound once, read by field.
-    let fold_and_propagate = OptimizationOptions {
-        constant_propagate: true,
-        ..FOLD
-    };
+    let fold_and_propagate = FOLD.with(Optimization::ConstantPropagate, true);
     let emitted = code(
         r"
         def opts = {width: 80, height: 24}

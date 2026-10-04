@@ -915,11 +915,9 @@ fn help_and_version_go_to_stdout() {
 
 #[test]
 fn help_states_the_default_optimizations() {
-    let custom = OptimizationOptions {
-        constant_fold: true,
-        capture_hoist: true,
-        ..OptimizationOptions::NONE
-    };
+    let custom = OptimizationOptions::NONE
+        .with(Optimization::ConstantFold, true)
+        .with(Optimization::CaptureHoist, true);
     for (driver, default) in [
         (Driver::new(), "[default: all]"),
         (

@@ -11,24 +11,16 @@
 mod common;
 
 use common::{Script, UNOPTIMIZED, raises, run};
-use frost_compile::OptimizationOptions;
+use frost_compile::{Optimization, OptimizationOptions};
 use frost_runtime::{Bytecode, Value};
 
-const FOLD: OptimizationOptions = OptimizationOptions {
-    constant_fold: true,
-    ..UNOPTIMIZED
-};
+const FOLD: OptimizationOptions = UNOPTIMIZED.with(Optimization::ConstantFold, true);
 
-const PROPAGATE: OptimizationOptions = OptimizationOptions {
-    constant_propagate: true,
-    ..UNOPTIMIZED
-};
+const PROPAGATE: OptimizationOptions = UNOPTIMIZED.with(Optimization::ConstantPropagate, true);
 
-const FOLD_AND_PROPAGATE: OptimizationOptions = OptimizationOptions {
-    constant_fold: true,
-    constant_propagate: true,
-    ..UNOPTIMIZED
-};
+const FOLD_AND_PROPAGATE: OptimizationOptions = UNOPTIMIZED
+    .with(Optimization::ConstantFold, true)
+    .with(Optimization::ConstantPropagate, true);
 
 /// Whether `code` makes a call, tail or not.
 fn calls(code: &[Bytecode]) -> bool {

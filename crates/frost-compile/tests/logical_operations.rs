@@ -18,7 +18,7 @@
 mod common;
 
 use common::{Emitted, Script, UNOPTIMIZED, run};
-use frost_compile::OptimizationOptions;
+use frost_compile::{Optimization, OptimizationOptions};
 use frost_runtime::{Bytecode, Value};
 
 /// The operand that raises when evaluated, and the message it raises.
@@ -1109,10 +1109,7 @@ fn only_tests_with_a_constant_left_operand_are_eliminated() {
 
 // The remaining code-shape tests pin exactly the options they are about.
 
-const ELIMINATE: OptimizationOptions = OptimizationOptions {
-    branch_eliminate: true,
-    ..UNOPTIMIZED
-};
+const ELIMINATE: OptimizationOptions = UNOPTIMIZED.with(Optimization::BranchEliminate, true);
 
 /// The code of `source`, with `x` a runtime-only capture, under exactly
 /// `optimization`.
@@ -1152,10 +1149,7 @@ fn a_folded_constant_subtree_decides_the_test_above_it() {
     // runtime `x`, it folds to `2`, which then decides the `or`.
     let emitted = code(
         "((1 == 1) and 2) or x",
-        OptimizationOptions {
-            constant_fold: true,
-            ..ELIMINATE
-        },
+        ELIMINATE.with(Optimization::ConstantFold, true),
     );
     assert_eq!(jumps(&emitted), 0, "{emitted:?}");
     assert!(!loads_x(&emitted), "`x` is dropped: {emitted:?}");
@@ -1180,20 +1174,14 @@ fn an_effectful_right_operand_keeps_the_test_under_folding() {
     // Folding cannot evaluate a call to `print`, so the test stays for runtime.
     let emitted = code(
         "false and print(1)",
-        OptimizationOptions {
-            constant_fold: true,
-            ..UNOPTIMIZED
-        },
+        UNOPTIMIZED.with(Optimization::ConstantFold, true),
     );
     assert_eq!(jumps(&emitted), 1, "{emitted:?}");
 }
 
 #[test]
 fn a_propagated_left_operand_decides_inside_a_block() {
-    let propagate_and_eliminate = OptimizationOptions {
-        constant_propagate: true,
-        ..ELIMINATE
-    };
+    let propagate_and_eliminate = ELIMINATE.with(Optimization::ConstantPropagate, true);
     let null_constant = r"
         do {
             def t = null
@@ -1224,10 +1212,7 @@ fn a_runtime_shadow_of_a_constant_keeps_the_test() {
             t and 1
         }
         ",
-        OptimizationOptions {
-            constant_propagate: true,
-            ..ELIMINATE
-        },
+        ELIMINATE.with(Optimization::ConstantPropagate, true),
     );
     assert_eq!(jumps(&emitted), 1, "the inner `t` is runtime: {emitted:?}");
 }
@@ -1249,11 +1234,9 @@ fn a_hoisted_constant_decides_inside_a_lambda() {
         def t = false
         fn -> t and x
         ",
-        OptimizationOptions {
-            constant_propagate: true,
-            capture_hoist: true,
-            ..ELIMINATE
-        },
+        ELIMINATE
+            .with(Optimization::ConstantPropagate, true)
+            .with(Optimization::CaptureHoist, true),
     );
     let body = emitted.nested(0);
     assert_eq!(jumps(&body), 0, "{body:?}");

@@ -14,29 +14,17 @@
 mod common;
 
 use common::{Emitted, Script, UNOPTIMIZED, run};
-use frost_compile::OptimizationOptions;
+use frost_compile::{Optimization, OptimizationOptions};
 use frost_runtime::{Bytecode, Value};
 
-const FOLD: OptimizationOptions = OptimizationOptions {
-    constant_fold: true,
-    ..UNOPTIMIZED
-};
+const FOLD: OptimizationOptions = UNOPTIMIZED.with(Optimization::ConstantFold, true);
 
-const FOLD_AND_PROPAGATE: OptimizationOptions = OptimizationOptions {
-    constant_propagate: true,
-    ..FOLD
-};
+const FOLD_AND_PROPAGATE: OptimizationOptions = FOLD.with(Optimization::ConstantPropagate, true);
 
-const PROPAGATE: OptimizationOptions = OptimizationOptions {
-    constant_propagate: true,
-    ..UNOPTIMIZED
-};
+const PROPAGATE: OptimizationOptions = UNOPTIMIZED.with(Optimization::ConstantPropagate, true);
 
 /// Hoisting has effect only with propagation, which makes a capture's value known.
-const PROPAGATE_AND_HOIST: OptimizationOptions = OptimizationOptions {
-    capture_hoist: true,
-    ..PROPAGATE
-};
+const PROPAGATE_AND_HOIST: OptimizationOptions = PROPAGATE.with(Optimization::CaptureHoist, true);
 
 fn ints(values: &[i64]) -> Value {
     Value::from_iter(values.iter().copied().map(Value::Int))
@@ -438,10 +426,7 @@ fn without_hoisting_a_constant_capture_is_pushed_at_creation() {
 
 #[test]
 fn without_propagation_there_is_nothing_to_hoist() {
-    let hoist_only = OptimizationOptions {
-        capture_hoist: true,
-        ..UNOPTIMIZED
-    };
+    let hoist_only = UNOPTIMIZED.with(Optimization::CaptureHoist, true);
     let source = r"
         def k = 10
         fn v -> v * k
@@ -562,10 +547,7 @@ fn every_kind_of_constant_is_hoisted() {
         run(r#"[null, true, 1.5, "s", [1, [2]], {k: [3]}]"#),
     );
     // The structures are constants only once folded.
-    let fold_propagate_and_hoist = OptimizationOptions {
-        capture_hoist: true,
-        ..FOLD_AND_PROPAGATE
-    };
+    let fold_propagate_and_hoist = FOLD_AND_PROPAGATE.with(Optimization::CaptureHoist, true);
     let (_, lambda) = lambda_of(
         &format!(
             r"
@@ -652,11 +634,9 @@ fn a_lambda_mixes_hoisted_and_captured_names() {
 
 #[test]
 fn a_hoisted_capture_folds_within_the_lambda() {
-    let every_optimization = OptimizationOptions {
-        branch_eliminate: true,
-        capture_hoist: true,
-        ..FOLD_AND_PROPAGATE
-    };
+    let every_optimization = FOLD_AND_PROPAGATE
+        .with(Optimization::BranchEliminate, true)
+        .with(Optimization::CaptureHoist, true);
     for source in [
         r"
         def k = 2 * 3
@@ -692,14 +672,8 @@ fn a_hoisted_capture_folds_within_the_lambda() {
 
 #[test]
 fn a_hoisted_condition_eliminates_a_branch_in_the_lambda() {
-    let eliminate = OptimizationOptions {
-        branch_eliminate: true,
-        ..PROPAGATE
-    };
-    let eliminate_and_hoist = OptimizationOptions {
-        capture_hoist: true,
-        ..eliminate
-    };
+    let eliminate = PROPAGATE.with(Optimization::BranchEliminate, true);
+    let eliminate_and_hoist = eliminate.with(Optimization::CaptureHoist, true);
     let source = r"
         def c = false
         fn -> if c: 100 else: 200

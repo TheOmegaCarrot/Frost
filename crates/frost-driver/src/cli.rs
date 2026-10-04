@@ -35,8 +35,8 @@ fn describe(options: OptimizationOptions) -> String {
         return "all".to_string();
     }
     let on = Optimization::ALL
-        .into_iter()
-        .filter(|&optimization| options.get(optimization))
+        .iter()
+        .filter(|&&optimization| options.get(optimization))
         .map(|optimization| format!(",{}=true", optimization.name()));
     std::iter::once("none".to_string()).chain(on).collect()
 }

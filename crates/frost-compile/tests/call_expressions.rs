@@ -14,13 +14,10 @@ mod common;
 use std::sync::{Arc, Mutex};
 
 use common::{Emitted, Script, UNOPTIMIZED, optimization_permutations, raises, run};
-use frost_compile::OptimizationOptions;
+use frost_compile::{Optimization, OptimizationOptions};
 use frost_runtime::{Arity, Bytecode, Value};
 
-const FOLD: OptimizationOptions = OptimizationOptions {
-    constant_fold: true,
-    ..UNOPTIMIZED
-};
+const FOLD: OptimizationOptions = UNOPTIMIZED.with(Optimization::ConstantFold, true);
 
 /// A host function that records the arguments of every call and returns them
 /// as an Array.

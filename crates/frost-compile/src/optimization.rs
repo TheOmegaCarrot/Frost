@@ -1,10 +1,19 @@
 //! Which optimizations the compiler applies, and how tools name and set them.
 
+#[cfg(test)]
+mod tests;
+
 use std::fmt;
 
 /// Which optimizations the compiler applies. None changes what a program
 /// computes, only how it computes it.
+///
+/// Start from a preset, [`ALL`](Self::ALL) or [`NONE`](Self::NONE), and adjust
+/// it with [`with`](Self::with), [`set`](Self::set), or
+/// [`with_settings`](Self::with_settings). More optimizations may be added, so
+/// these options cannot be built field by field.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
 pub struct OptimizationOptions {
     /// Evaluate an expression built only from compile-time-known values and pure
     /// operations at compile time, emitting just its value.
@@ -78,14 +87,30 @@ impl OptimizationOptions {
     };
 
     /// Whether `optimization` is on.
-    pub fn get(self, optimization: Optimization) -> bool {
+    pub const fn get(self, optimization: Optimization) -> bool {
         let mut options = self;
         *options.flag(optimization)
     }
 
     /// Turn `optimization` on or off.
-    pub fn set(&mut self, optimization: Optimization, on: bool) {
+    pub const fn set(&mut self, optimization: Optimization, on: bool) {
         *self.flag(optimization) = on;
+    }
+
+    /// These options with `optimization` turned on or off.
+    ///
+    /// ```
+    /// use frost_compile::{Optimization, OptimizationOptions};
+    ///
+    /// const FOLD_ONLY: OptimizationOptions =
+    ///     OptimizationOptions::NONE.with(Optimization::ConstantFold, true);
+    /// assert!(FOLD_ONLY.get(Optimization::ConstantFold));
+    /// assert!(!FOLD_ONLY.get(Optimization::ConsumeLocals));
+    /// ```
+    #[must_use]
+    pub const fn with(mut self, optimization: Optimization, on: bool) -> Self {
+        self.set(optimization, on);
+        self
     }
 
     /// These options with `settings` applied, as tools let a person write
@@ -141,7 +166,7 @@ impl OptimizationOptions {
         })
     }
 
-    fn flag(&mut self, optimization: Optimization) -> &mut bool {
+    const fn flag(&mut self, optimization: Optimization) -> &mut bool {
         match optimization {
             Optimization::ConstantFold => &mut self.constant_fold,
             Optimization::ConstantPropagate => &mut self.constant_propagate,
@@ -156,8 +181,9 @@ impl OptimizationOptions {
 }
 
 /// One of the optimizations [`OptimizationOptions`] turns on or off, each
-/// described on its field there.
+/// described on its field there. More may be added.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub enum Optimization {
     /// [`OptimizationOptions::constant_fold`].
     ConstantFold,
@@ -179,7 +205,7 @@ pub enum Optimization {
 
 impl Optimization {
     /// Every optimization, in the order [`OptimizationOptions`] declares them.
-    pub const ALL: [Self; 8] = [
+    pub const ALL: &[Self] = &[
         Self::ConstantFold,
         Self::ConstantPropagate,
         Self::BranchEliminate,
@@ -208,7 +234,8 @@ impl Optimization {
     /// The optimization with the [`name`](Self::name) `name`, if any.
     pub fn from_name(name: &str) -> Option<Self> {
         Self::ALL
-            .into_iter()
+            .iter()
+            .copied()
             .find(|optimization| optimization.name() == name)
     }
 }
@@ -239,7 +266,7 @@ impl fmt::Display for InvalidOptimizationSetting {
                 "`{setting}` should be `<optimization>=true|false`, `preset=all|none`, `all`, or `none`"
             ),
             Self::UnknownOptimization(name) => {
-                let names: Vec<&str> = Optimization::ALL.map(Optimization::name).to_vec();
+                let names: Vec<&str> = Optimization::ALL.iter().map(|o| o.name()).collect();
                 write!(
                     f,
                     "there is no optimization `{name}`; there are {}",

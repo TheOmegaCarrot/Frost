@@ -11,13 +11,10 @@
 mod common;
 
 use common::{Emitted, Script, UNOPTIMIZED, compile_errors, raises, run};
-use frost_compile::OptimizationOptions;
+use frost_compile::{Optimization, OptimizationOptions};
 use frost_runtime::{Bytecode, Value};
 
-const FOLD: OptimizationOptions = OptimizationOptions {
-    constant_fold: true,
-    ..UNOPTIMIZED
-};
+const FOLD: OptimizationOptions = UNOPTIMIZED.with(Optimization::ConstantFold, true);
 
 /// Assert each `source` runs to the value of the Frost expression `expected`.
 fn assert_values(cases: &[(&str, &str)]) {

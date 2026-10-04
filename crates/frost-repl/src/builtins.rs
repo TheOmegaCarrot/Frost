@@ -79,13 +79,13 @@ impl Repl {
     /// Each optimization, and whether it is on.
     fn list_optimizations(&self) -> String {
         let width = Optimization::ALL
-            .into_iter()
+            .iter()
             .map(|optimization| optimization.name().len())
             .max()
             .unwrap_or(0);
         let lines: Vec<String> = Optimization::ALL
-            .into_iter()
-            .map(|optimization| {
+            .iter()
+            .map(|&optimization| {
                 let name = optimization.name();
                 format!("{name:width$}  {}", self.optimization.get(optimization))
             })

@@ -11,13 +11,10 @@
 mod common;
 
 use common::{Emitted, Script, UNOPTIMIZED, raises};
-use frost_compile::OptimizationOptions;
+use frost_compile::{Optimization, OptimizationOptions};
 use frost_runtime::{Arity, Bytecode, MapKey, Value};
 
-const FOLD: OptimizationOptions = OptimizationOptions {
-    constant_fold: true,
-    ..UNOPTIMIZED
-};
+const FOLD: OptimizationOptions = UNOPTIMIZED.with(Optimization::ConstantFold, true);
 
 /// `[10, 20, 30]`
 fn array() -> Value {
@@ -435,10 +432,7 @@ fn a_field_of_a_constant_map_folds() {
 fn a_propagated_array_constant_folds_through_indexing() {
     // An Array bound once and read by constant index: both the binding and the
     // index fold away entirely.
-    let fold_and_propagate = OptimizationOptions {
-        constant_propagate: true,
-        ..FOLD
-    };
+    let fold_and_propagate = FOLD.with(Optimization::ConstantPropagate, true);
     let source = r"
         def xs = [10, 20, 30]
         xs[0] + xs[2]

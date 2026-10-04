@@ -1,55 +1,23 @@
 //! The optimization presets on [`OptimizationOptions`].
 
-use frost_compile::OptimizationOptions;
+use frost_compile::{Optimization, OptimizationOptions};
 
 #[test]
 fn none_turns_every_optimization_off() {
-    // No `..`: a new option fails to compile here until its preset is checked.
-    let OptimizationOptions {
-        constant_fold,
-        constant_propagate,
-        branch_eliminate,
-        capture_hoist,
-        dead_store_eliminate,
-        discard_eliminate,
-        consume_locals,
-        deduplicate_constants,
-    } = OptimizationOptions::NONE;
-    let options = [
-        constant_fold,
-        constant_propagate,
-        branch_eliminate,
-        capture_hoist,
-        dead_store_eliminate,
-        discard_eliminate,
-        consume_locals,
-        deduplicate_constants,
-    ];
-    assert!(options.iter().all(|on| !on), "{options:?}");
+    for &optimization in Optimization::ALL {
+        assert!(
+            !OptimizationOptions::NONE.get(optimization),
+            "{optimization:?} is off"
+        );
+    }
 }
 
 #[test]
 fn all_turns_every_optimization_on() {
-    // No `..`: a new option fails to compile here until its preset is checked.
-    let OptimizationOptions {
-        constant_fold,
-        constant_propagate,
-        branch_eliminate,
-        capture_hoist,
-        dead_store_eliminate,
-        discard_eliminate,
-        consume_locals,
-        deduplicate_constants,
-    } = OptimizationOptions::ALL;
-    let options = [
-        constant_fold,
-        constant_propagate,
-        branch_eliminate,
-        capture_hoist,
-        dead_store_eliminate,
-        discard_eliminate,
-        consume_locals,
-        deduplicate_constants,
-    ];
-    assert!(options.iter().all(|on| *on), "{options:?}");
+    for &optimization in Optimization::ALL {
+        assert!(
+            OptimizationOptions::ALL.get(optimization),
+            "{optimization:?} is on"
+        );
+    }
 }

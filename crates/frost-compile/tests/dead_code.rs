@@ -9,24 +9,16 @@
 mod common;
 
 use common::{Script, UNOPTIMIZED, raises, run};
-use frost_compile::OptimizationOptions;
+use frost_compile::{Optimization, OptimizationOptions};
 use frost_runtime::{Bytecode, Value};
 
-const DEAD_STORE: OptimizationOptions = OptimizationOptions {
-    dead_store_eliminate: true,
-    ..UNOPTIMIZED
-};
+const DEAD_STORE: OptimizationOptions = UNOPTIMIZED.with(Optimization::DeadStoreEliminate, true);
 
-const DISCARD: OptimizationOptions = OptimizationOptions {
-    discard_eliminate: true,
-    ..UNOPTIMIZED
-};
+const DISCARD: OptimizationOptions = UNOPTIMIZED.with(Optimization::DiscardEliminate, true);
 
-const BOTH: OptimizationOptions = OptimizationOptions {
-    dead_store_eliminate: true,
-    discard_eliminate: true,
-    ..UNOPTIMIZED
-};
+const BOTH: OptimizationOptions = UNOPTIMIZED
+    .with(Optimization::DeadStoreEliminate, true)
+    .with(Optimization::DiscardEliminate, true);
 
 /// Whether `code` stores to any local.
 fn stores(code: &[Bytecode]) -> bool {

@@ -9,20 +9,15 @@
 mod common;
 
 use common::{Emitted, Script, UNOPTIMIZED, run};
-use frost_compile::OptimizationOptions;
+use frost_compile::{Optimization, OptimizationOptions};
 use frost_runtime::{Bytecode, MapKey, Value};
 
-const DEDUPLICATE: OptimizationOptions = OptimizationOptions {
-    deduplicate_constants: true,
-    ..UNOPTIMIZED
-};
+const DEDUPLICATE: OptimizationOptions = UNOPTIMIZED.with(Optimization::DeduplicateConstants, true);
 
 /// Folding builds structures into constants, giving deduplication more to share.
-const FOLD_AND_DEDUPLICATE: OptimizationOptions = OptimizationOptions {
-    constant_fold: true,
-    deduplicate_constants: true,
-    ..UNOPTIMIZED
-};
+const FOLD_AND_DEDUPLICATE: OptimizationOptions = UNOPTIMIZED
+    .with(Optimization::ConstantFold, true)
+    .with(Optimization::DeduplicateConstants, true);
 
 /// The constant-pool index of each `LoadConst` in `emitted`, in order.
 fn loads(emitted: &Emitted) -> Vec<usize> {

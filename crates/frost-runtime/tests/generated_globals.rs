@@ -16,7 +16,7 @@
 use std::collections::{BTreeMap, BTreeSet};
 use std::{env, fs};
 
-use frost_compile::{CompilerOptions, OptimizationOptions, compile_in_scope};
+use frost_compile::{CompilerOptions, Optimization, OptimizationOptions, compile_in_scope};
 use frost_runtime::{CompiledFunction, GLOBAL_NAMES, MapKey, Value, from_value, to_value};
 
 const SOURCE: &str = include_str!("../src/vm/globals/generated/source.frst");
@@ -33,10 +33,7 @@ const COMPILED_PATH: &str = concat!(
 /// Each top-level function is exported, as the global it becomes, so none is
 /// optimized away as unused.
 const OPTIONS: CompilerOptions = CompilerOptions {
-    optimization_options: OptimizationOptions {
-        constant_fold: false,
-        ..OptimizationOptions::ALL
-    },
+    optimization_options: OptimizationOptions::ALL.with(Optimization::ConstantFold, false),
     implicit_export: true,
 };
 

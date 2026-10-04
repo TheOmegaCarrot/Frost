@@ -414,7 +414,7 @@ fn optimize_sets_an_optimization_on_or_off() {
         OptimizationOptions::NONE,
         &[":optimize consume-locals=true"],
     );
-    for optimization in Optimization::ALL {
+    for &optimization in Optimization::ALL {
         let name = optimization.name();
         // Only the optimization set changes.
         let expected_off = optimization != Optimization::ConstantFold;
@@ -435,7 +435,7 @@ fn line_says(shown: &str, name: &str, on: bool) -> bool {
 fn optimize_sets_a_preset() {
     let none = optimizations_after(OptimizationOptions::ALL, &[":optimize preset = none"]);
     let all = optimizations_after(OptimizationOptions::NONE, &[":optimize preset = all"]);
-    for optimization in Optimization::ALL {
+    for &optimization in Optimization::ALL {
         assert!(line_says(&none, optimization.name(), false), "{none}");
         assert!(line_says(&all, optimization.name(), true), "{all}");
     }
@@ -447,7 +447,7 @@ fn optimize_applies_several_settings_left_to_right() {
         OptimizationOptions::ALL,
         &[":optimize preset = none, constant-fold = true ,branch-eliminate=true"],
     );
-    for optimization in Optimization::ALL {
+    for &optimization in Optimization::ALL {
         let on = matches!(
             optimization,
             Optimization::ConstantFold | Optimization::BranchEliminate
@@ -501,7 +501,7 @@ fn optimize_refuses_a_bad_setting_and_applies_none() {
 fn optimize_takes_a_bare_preset() {
     let none = optimizations_after(OptimizationOptions::ALL, &[":optimize none"]);
     let all = optimizations_after(OptimizationOptions::NONE, &[":optimize all"]);
-    for optimization in Optimization::ALL {
+    for &optimization in Optimization::ALL {
         assert!(line_says(&none, optimization.name(), false), "{none}");
         assert!(line_says(&all, optimization.name(), true), "{all}");
     }

@@ -10,13 +10,10 @@
 mod common;
 
 use common::{Emitted, Script, UNOPTIMIZED, raises, run};
-use frost_compile::OptimizationOptions;
+use frost_compile::{Optimization, OptimizationOptions};
 use frost_runtime::{Bytecode, Value};
 
-const FOLD: OptimizationOptions = OptimizationOptions {
-    constant_fold: true,
-    ..UNOPTIMIZED
-};
+const FOLD: OptimizationOptions = UNOPTIMIZED.with(Optimization::ConstantFold, true);
 
 /// The code of `source` under exactly `optimization`, with `x` a runtime-only
 /// Int.

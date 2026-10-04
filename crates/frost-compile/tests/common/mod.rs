@@ -24,18 +24,16 @@ use std::num::NonZeroUsize;
 use std::sync::{Arc, Mutex};
 
 use frost_compile::{
-    CompilerErrors, CompilerOptions, CompilerOutput, OptimizationOptions, compile_in_scope,
+    CompilerErrors, CompilerOptions, CompilerOutput, Optimization, OptimizationOptions,
+    compile_in_scope,
 };
 use frost_runtime::{
     Bytecode, CompiledFunction, Importer, MapKey, Value, Vm, VmRuntimeConfiguration,
 };
 
 /// Every optimization off. A base for picking options explicitly:
-/// `OptimizationOptions { constant_fold: true, ..UNOPTIMIZED }`.
+/// `UNOPTIMIZED.with(Optimization::ConstantFold, true)`.
 pub(crate) const UNOPTIMIZED: OptimizationOptions = OptimizationOptions::NONE;
-
-/// How many options [`OptimizationOptions`] has.
-const OPTION_COUNT: u32 = 8;
 
 /// The permutations of the optimization options a [`Script`] runs under,
 /// starting with [`UNOPTIMIZED`].
@@ -46,32 +44,26 @@ const OPTION_COUNT: u32 = 8;
 /// environment variable `EXHAUSTIVE_COMPILER_TESTS` set, to any value, they are
 /// every permutation instead, at a cost that doubles with each option.
 pub(crate) fn optimization_permutations() -> impl Iterator<Item = OptimizationOptions> {
-    let all = (1u32 << OPTION_COUNT) - 1;
-    let bits: Vec<u32> = if std::env::var_os("EXHAUSTIVE_COMPILER_TESTS").is_some() {
+    let count = Optimization::ALL.len();
+    let all: u64 = (1 << count) - 1;
+    let bits: Vec<u64> = if std::env::var_os("EXHAUSTIVE_COMPILER_TESTS").is_some() {
         (0..=all).collect()
     } else {
-        let alone = (0..OPTION_COUNT).map(|option| 1 << option);
+        let alone = (0..count).map(|index| 1 << index);
         let all_but = alone.clone().map(|bit| all & !bit);
         [0, all].into_iter().chain(alone).chain(all_but).collect()
     };
     bits.into_iter().map(options_from_bits)
 }
 
-/// The options with option `n` on where bit `n` of `bits` is set.
-fn options_from_bits(bits: u32) -> OptimizationOptions {
-    let on = |option: u32| bits & (1 << option) != 0;
-    // No `..` here: a new option fails to compile until it gets its own bit and
-    // `OPTION_COUNT` counts it.
-    OptimizationOptions {
-        constant_fold: on(0),
-        constant_propagate: on(1),
-        branch_eliminate: on(2),
-        capture_hoist: on(3),
-        dead_store_eliminate: on(4),
-        discard_eliminate: on(5),
-        consume_locals: on(6),
-        deduplicate_constants: on(7),
-    }
+/// The options with `Optimization::ALL[n]` on where bit `n` of `bits` is set.
+fn options_from_bits(bits: u64) -> OptimizationOptions {
+    Optimization::ALL
+        .iter()
+        .enumerate()
+        .fold(UNOPTIMIZED, |options, (index, &optimization)| {
+            options.with(optimization, bits & (1 << index) != 0)
+        })
 }
 
 /// A completed run: the program's tail value and its exports.
@@ -243,7 +235,7 @@ impl Script {
     /// The top-level function's code under exactly `optimization`.
     ///
     /// A code-shape test pins the options it is about and leaves the rest off,
-    /// e.g. `OptimizationOptions { branch_eliminate: true, ..UNOPTIMIZED }`, so no
+    /// e.g. `UNOPTIMIZED.with(Optimization::BranchEliminate, true)`, so no
     /// other optimization, present or future, changes the code it inspects.
     pub(crate) fn code(&self, optimization: OptimizationOptions) -> Emitted {
         Emitted::new(self.function_under(optimization), optimization)

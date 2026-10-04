@@ -10,13 +10,10 @@
 mod common;
 
 use common::{Emitted, Script, UNOPTIMIZED, run};
-use frost_compile::OptimizationOptions;
+use frost_compile::{Optimization, OptimizationOptions};
 use frost_runtime::{Arity, Bytecode, Value};
 
-const CONSUME: OptimizationOptions = OptimizationOptions {
-    consume_locals: true,
-    ..UNOPTIMIZED
-};
+const CONSUME: OptimizationOptions = UNOPTIMIZED.with(Optimization::ConsumeLocals, true);
 
 /// The local reads in `emitted`, in order: `true` for a consuming read.
 fn reads(emitted: &Emitted) -> Vec<bool> {

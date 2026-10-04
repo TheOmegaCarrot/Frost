@@ -16,7 +16,7 @@
 mod common;
 
 use common::{Emitted, Script, UNOPTIMIZED, compile_errors, raises, run};
-use frost_compile::OptimizationOptions;
+use frost_compile::{Optimization, OptimizationOptions};
 use frost_runtime::{Bytecode, Value};
 
 /// The operand that raises when evaluated, and the message it raises.
@@ -862,10 +862,7 @@ fn a_constant_if_folds_as_a_sibling() {
 // Each test pins exactly the options it is about, so no other optimization
 // changes the code it inspects.
 
-const ELIMINATE: OptimizationOptions = OptimizationOptions {
-    branch_eliminate: true,
-    ..UNOPTIMIZED
-};
+const ELIMINATE: OptimizationOptions = UNOPTIMIZED.with(Optimization::BranchEliminate, true);
 
 /// The code of `source`, with `x` a runtime-only capture, under exactly
 /// `optimization`.
@@ -978,10 +975,7 @@ fn a_taken_raising_branch_is_kept_for_runtime() {
 fn a_folded_condition_decides() {
     // A computed condition beside a runtime branch folds as a sibling, which
     // makes it a known constant.
-    let eliminate_and_fold = OptimizationOptions {
-        constant_fold: true,
-        ..ELIMINATE
-    };
+    let eliminate_and_fold = ELIMINATE.with(Optimization::ConstantFold, true);
     for (source, keeps_x) in [
         ("if 1 == 1: x else: 2", true),
         ("if 1 == 2: x else: 2", false),
@@ -995,10 +989,7 @@ fn a_folded_condition_decides() {
 
 #[test]
 fn a_propagated_condition_decides() {
-    let eliminate_and_propagate = OptimizationOptions {
-        constant_propagate: true,
-        ..ELIMINATE
-    };
+    let eliminate_and_propagate = ELIMINATE.with(Optimization::ConstantPropagate, true);
     for (source, keeps_x) in [
         (
             r"
@@ -1104,10 +1095,7 @@ fn folding_and_elimination_together_leave_only_the_taken_value() {
     // consequent folds too.
     let emitted = code(
         "if 1 == 1: 2 + 3 else: x",
-        OptimizationOptions {
-            constant_fold: true,
-            ..ELIMINATE
-        },
+        ELIMINATE.with(Optimization::ConstantFold, true),
     );
     assert_eq!(jumps(&emitted), 0, "{emitted:?}");
     assert!(!loads_x(&emitted), "{emitted:?}");
@@ -1119,13 +1107,7 @@ fn folding_and_elimination_together_leave_only_the_taken_value() {
 fn a_raising_condition_is_not_a_known_constant() {
     // The condition's fold fails, so it stays for runtime, and so does the test.
     let source = format!("if {RAISE}: x else: 2");
-    let emitted = code(
-        &source,
-        OptimizationOptions {
-            constant_fold: true,
-            ..ELIMINATE
-        },
-    );
+    let emitted = code(&source, ELIMINATE.with(Optimization::ConstantFold, true));
     assert_eq!(emitted.count(&Bytecode::Divide), 1, "{emitted:?}");
     assert_eq!(jumps(&emitted), 2, "{emitted:?}");
 }
@@ -1139,10 +1121,7 @@ fn a_propagated_condition_decides_inside_a_block() {
             if c: x else: 2
         }
         ",
-        OptimizationOptions {
-            constant_propagate: true,
-            ..ELIMINATE
-        },
+        ELIMINATE.with(Optimization::ConstantPropagate, true),
     );
     assert_eq!(jumps(&emitted), 0, "{emitted:?}");
     assert!(!loads_x(&emitted), "the consequent is dropped: {emitted:?}");
@@ -1159,10 +1138,7 @@ fn a_runtime_shadow_of_a_constant_keeps_the_test() {
             if c: 1 else: 2
         }
         ",
-        OptimizationOptions {
-            constant_propagate: true,
-            ..ELIMINATE
-        },
+        ELIMINATE.with(Optimization::ConstantPropagate, true),
     );
     assert_eq!(jumps(&emitted), 2, "the inner `c` is runtime: {emitted:?}");
 }
@@ -1174,10 +1150,7 @@ fn a_propagated_elif_condition_decides() {
         def c = 0
         if x: 1 elif c: 2 else: 3
         ",
-        OptimizationOptions {
-            constant_propagate: true,
-            ..ELIMINATE
-        },
+        ELIMINATE.with(Optimization::ConstantPropagate, true),
     );
     assert_eq!(
         jumps(&emitted),
@@ -1206,11 +1179,9 @@ fn a_hoisted_constant_decides_inside_a_lambda() {
         def c = null
         fn -> if c: x else: 2
         ",
-        OptimizationOptions {
-            constant_propagate: true,
-            capture_hoist: true,
-            ..ELIMINATE
-        },
+        ELIMINATE
+            .with(Optimization::ConstantPropagate, true)
+            .with(Optimization::CaptureHoist, true),
     );
     let body = emitted.nested(0);
     assert_eq!(jumps(&body), 0, "{body:?}");

@@ -13,7 +13,7 @@
 
 use std::collections::BTreeMap;
 
-use frost_compile::{CompilerOptions, OptimizationOptions, compile_in_scope};
+use frost_compile::{CompilerOptions, Optimization, OptimizationOptions, compile_in_scope};
 use frost_runtime::{Arity, RunError, Value, Vm};
 
 /// `unshared(structure)`: whether the Array or Map passed in is referenced by
@@ -32,10 +32,7 @@ fn unshared() -> Value {
 /// Run `source`, with `unshared` in scope, to its tail value.
 fn run(source: &str) -> Value {
     let options = CompilerOptions {
-        optimization_options: OptimizationOptions {
-            consume_locals: true,
-            ..OptimizationOptions::NONE
-        },
+        optimization_options: OptimizationOptions::NONE.with(Optimization::ConsumeLocals, true),
         implicit_export: false,
     };
     let program = compile_in_scope("test.frst", source, options, &["unshared"])
