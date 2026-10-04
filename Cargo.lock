@@ -472,6 +472,7 @@ name = "frost-cli"
 version = "0.0.1"
 dependencies = [
  "frost-driver",
+ "frost-runtime",
 ]
 
 [[package]]

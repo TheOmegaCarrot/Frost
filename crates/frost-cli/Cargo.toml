@@ -9,6 +9,7 @@ path = "src/main.rs"
 
 [dependencies]
 frost-driver = { path = "../frost-driver" }
+frost-runtime = { path = "../frost-runtime" }
 
 [lints]
 workspace = true
