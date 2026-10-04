@@ -8,9 +8,7 @@ impl<'src, 'f> ParseCtx<'src, 'f> {
         self.enter_nl_context();
 
         let (elements, close) =
-            self.parse_comma_separated(Token::CloseBracket, "Array literal", |ctx| {
-                ctx.parse_expression()
-            })?;
+            self.parse_comma_separated(Token::CloseBracket, Self::parse_expression)?;
 
         Ok(Spanned::new(
             Expr::Array(elements),
@@ -23,7 +21,7 @@ impl<'src, 'f> ParseCtx<'src, 'f> {
         self.enter_nl_context();
 
         let (entries, close) =
-            self.parse_comma_separated(Token::CloseBrace, "Map literal", Self::parse_map_entry)?;
+            self.parse_comma_separated(Token::CloseBrace, Self::parse_map_entry)?;
 
         Ok(Spanned::new(
             Expr::Map(entries),
@@ -32,7 +30,8 @@ impl<'src, 'f> ParseCtx<'src, 'f> {
     }
 
     fn parse_map_entry(&mut self) -> ParseResult<Spanned<MapEntry>> {
-        let peek = self.must_peek("Map entry")?;
+        const EXPECTED: &str = "a name or `[`";
+        let peek = self.must_peek(EXPECTED)?;
         let start = peek.span.start;
 
         let key = match peek.token {
@@ -58,7 +57,7 @@ impl<'src, 'f> ParseCtx<'src, 'f> {
 
                 Spanned::new(Expr::Literal(Literal::String(name)), span)
             }
-            _ => return Err(self.unexpected_token(peek, "Map entry key")),
+            _ => return Err(self.expected(EXPECTED, peek)),
         };
 
         self.expect(Token::Colon)?;

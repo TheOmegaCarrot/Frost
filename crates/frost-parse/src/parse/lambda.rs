@@ -7,7 +7,8 @@ impl<'src, 'f> ParseCtx<'src, 'f> {
     pub(crate) fn parse_lambda(&mut self) -> ParseResult<Spanned<Expr>> {
         let start = self.expect(Token::KwFn)?.span.start;
 
-        let peek = self.must_peek("lambda")?;
+        const EXPECTED: &str = "parameters or `->`";
+        let peek = self.must_peek(EXPECTED)?;
 
         let (self_name, params, variadic_param) = match peek.token {
             Token::SlimArrow => (None, Vec::new(), None),
@@ -19,7 +20,7 @@ impl<'src, 'f> ParseCtx<'src, 'f> {
 
             Token::DotDotDot => {
                 self.advance(1);
-                let variadic = self.parse_binding("parameter name")?;
+                let variadic = self.parse_binding("a name after `...`")?;
                 (None, Vec::new(), Some(variadic))
             }
 
@@ -43,7 +44,7 @@ impl<'src, 'f> ParseCtx<'src, 'f> {
                 }
             }
 
-            _ => return Err(self.unexpected_token(peek, "lambda")),
+            _ => return Err(self.expected(EXPECTED, peek)),
         };
 
         let (body, return_expr, end) = self.parse_fn_body()?;
@@ -74,15 +75,15 @@ impl<'src, 'f> ParseCtx<'src, 'f> {
 
                 if matches!(self.peek().map(|t| &t.token), Some(Token::DotDotDot)) {
                     self.advance(1);
-                    variadic = Some(self.parse_binding("parameter name")?);
+                    variadic = Some(self.parse_binding("a name after `...`")?);
                     self.maybe_skip_nl();
                     break;
                 }
 
-                params.push(self.parse_binding("parameter name")?);
+                params.push(self.parse_binding("a parameter name")?);
                 self.maybe_skip_nl();
 
-                let peek = self.must_peek("function parameters")?;
+                let peek = self.must_peek("`,` or `)`")?;
                 match peek.token {
                     Token::Comma => {
                         self.advance(1);
@@ -92,7 +93,7 @@ impl<'src, 'f> ParseCtx<'src, 'f> {
                         }
                     }
                     Token::CloseParen => break,
-                    _ => return Err(self.unexpected_token(peek, "function parameters")),
+                    _ => return Err(self.expected("`,` or `)`", peek)),
                 }
             }
         }
@@ -175,11 +176,11 @@ impl<'src, 'f> ParseCtx<'src, 'f> {
 
             if matches!(self.peek().map(|t| &t.token), Some(Token::DotDotDot)) {
                 self.advance(1);
-                variadic = Some(self.parse_binding("parameter name")?);
+                variadic = Some(self.parse_binding("a name after `...`")?);
                 break;
             }
 
-            params.push(self.parse_binding("parameter name")?);
+            params.push(self.parse_binding("a parameter name")?);
         }
 
         Ok((params, variadic))

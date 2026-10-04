@@ -196,7 +196,7 @@ fn a_session_reads_a_metacommand_as_one_line() {
     let (output, errors) = session("def x = 1\n:bindings\n:disassemble if x:\n2\n");
     assert_eq!(output, "> > results  Array\nx        Int\n> > 2\n> \n");
     assert!(
-        errors.contains("unexpected end of input"),
+        errors.contains("expected an expression, but found the end of input"),
         "the `:disassemble` should fail to parse: {errors}"
     );
 }

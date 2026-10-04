@@ -35,8 +35,9 @@ pub fn parse_program(filename: &str, input: &str) -> Result<ast::Program, ParseE
 type ParseResult<T> = Result<T, Diagnostic>;
 
 impl<'src, 'f> ParseCtx<'src, 'f> {
-    fn parse_binding(&mut self, context: &str) -> ParseResult<Spanned<Binding>> {
-        let peek = self.must_peek(context)?;
+    /// Parse a name or `_`; `expected` describes it for an error, as in [`ParseCtx::expected`].
+    fn parse_binding(&mut self, expected: &str) -> ParseResult<Spanned<Binding>> {
+        let peek = self.must_peek(expected)?;
         let span = peek.span.clone().into();
         match peek.token {
             Token::Identifier("_") => {
@@ -48,7 +49,7 @@ impl<'src, 'f> ParseCtx<'src, 'f> {
                 self.advance(1);
                 Ok(Spanned::new(Binding::Named(name), span))
             }
-            _ => Err(self.unexpected_token(peek, context)),
+            _ => Err(self.expected(expected, peek)),
         }
     }
 }

@@ -710,21 +710,17 @@ mod errors {
 
     #[test]
     fn missing_arrow() {
-        let err = parse_err("fn x x");
-        assert!(
-            err.contains("Expected ->") || err.contains("unexpected"),
-            "error was: {err}"
-        );
+        assert_eq!(parse_err_message("fn x x"), "expected `->`, but found `x`");
     }
 
     #[test]
     fn missing_body() {
         // Even with lines after the arrow, there must be a body.
         for source in ["fn x ->", "fn x ->\n", "fn x ->\n\n# only a comment\n"] {
-            let err = parse_err(source);
-            assert!(
-                err.contains("end of input") || err.contains("unexpected"),
-                "{source:?}: error was: {err}"
+            assert_eq!(
+                parse_err_message(source),
+                "expected an expression, but found the end of input",
+                "{source:?}"
             );
         }
     }
@@ -737,17 +733,18 @@ mod errors {
 
     #[test]
     fn unclosed_parens() {
-        let err = parse_err("fn(x, y -> x");
-        assert!(
-            err.contains("Expected )") || err.contains("unexpected"),
-            "error was: {err}"
+        assert_eq!(
+            parse_err_message("fn(x, y -> x"),
+            "expected `,` or `)`, but found `->`"
         );
     }
 
     #[test]
     fn number_as_param() {
-        let err = parse_err("fn 42 -> 42");
-        assert!(err.contains("unexpected"), "error was: {err}");
+        assert_eq!(
+            parse_err_message("fn 42 -> 42"),
+            "expected parameters or `->`, but found `42`"
+        );
     }
 
     #[test]
@@ -756,18 +753,19 @@ mod errors {
             def a = $($ + 2)
             def $3 = 2
         ";
-        let err = parse_err(source);
-        assert!(err.contains("unexpected"), "error was: {err}");
+        assert_eq!(
+            parse_err_message(source),
+            "expected a name, `[`, or `{`, but found `$3`"
+        );
     }
 
     // A block-body lambda follows top-level grammar (minus `export`):
     // adjacent expressions require a separator.
     #[test]
     fn block_body_missing_separator() {
-        let err = parse_err("fn -> { 1 2 }");
-        assert!(
-            err.contains("unexpected") || err.contains("Expected"),
-            "error was: {err}"
+        assert_eq!(
+            parse_err_message("fn -> { 1 2 }"),
+            "expected a line break or `;`, but found `2`"
         );
     }
 }
@@ -928,10 +926,9 @@ mod abbreviated {
     // An abbreviated lambda must wrap an expression; `$()` is empty.
     #[test]
     fn empty_abbreviated_is_rejected() {
-        let err = parse_err("$()");
-        assert!(
-            err.contains("unexpected") || err.contains("Expected"),
-            "error was: {err}"
+        assert_eq!(
+            parse_err_message("$()"),
+            "expected an expression, but found `)`"
         );
     }
 

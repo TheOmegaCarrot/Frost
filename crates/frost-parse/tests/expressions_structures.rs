@@ -247,38 +247,42 @@ mod array_errors {
 
     #[test]
     fn unclosed() {
-        let err = parse_err("[1, 2");
-        assert!(
-            err.contains("end of input") || err.contains("Expected ]"),
-            "error was: {err}"
+        assert_eq!(
+            parse_err_message("[1, 2"),
+            "expected `,` or `]`, but found the end of input"
         );
     }
 
     #[test]
     fn missing_comma() {
-        let err = parse_err("[1 2]");
-        assert!(
-            err.contains("unexpected") || err.contains("Expected"),
-            "error was: {err}"
+        assert_eq!(
+            parse_err_message("[1 2]"),
+            "expected `,` or `]`, but found `2`"
         );
     }
 
     #[test]
     fn double_comma() {
-        let err = parse_err("[1,, 2]");
-        assert!(err.contains("unexpected"), "error was: {err}");
+        assert_eq!(
+            parse_err_message("[1,, 2]"),
+            "expected an expression, but found `,`"
+        );
     }
 
     #[test]
     fn leading_comma() {
-        let err = parse_err("[, 1]");
-        assert!(err.contains("unexpected"), "error was: {err}");
+        assert_eq!(
+            parse_err_message("[, 1]"),
+            "expected an expression, but found `,`"
+        );
     }
 
     #[test]
     fn only_comma() {
-        let err = parse_err("[,]");
-        assert!(err.contains("unexpected"), "error was: {err}");
+        assert_eq!(
+            parse_err_message("[,]"),
+            "expected an expression, but found `,`"
+        );
     }
 }
 
@@ -431,10 +435,9 @@ mod map_literals {
     #[test]
     fn reserved_keyword_key() {
         // A reserved word cannot be an identifier map key (shorthand or `key:`).
-        let err = parse_err("{if: 1}");
-        assert!(
-            err.contains("reserved") || err.contains("unexpected") || err.contains("Expected"),
-            "error was: {err}"
+        assert_eq!(
+            parse_err_message("{if: 1}"),
+            "expected a name or `[`, but found `if`"
         );
     }
 
@@ -589,38 +592,42 @@ mod map_errors {
 
     #[test]
     fn unclosed() {
-        let err = parse_err("{foo: 1");
-        assert!(
-            err.contains("end of input") || err.contains("Expected }"),
-            "error was: {err}"
+        assert_eq!(
+            parse_err_message("{foo: 1"),
+            "expected `,` or `}`, but found the end of input"
         );
     }
 
     #[test]
     fn missing_colon() {
-        let err = parse_err("{foo 1}");
-        assert!(
-            err.contains("Expected :") || err.contains("unexpected"),
-            "error was: {err}"
+        assert_eq!(
+            parse_err_message("{foo 1}"),
+            "expected `,` or `}`, but found `1`"
         );
     }
 
     #[test]
     fn missing_value() {
-        let err = parse_err("{foo:}");
-        assert!(err.contains("unexpected"), "error was: {err}");
+        assert_eq!(
+            parse_err_message("{foo:}"),
+            "expected an expression, but found `}`"
+        );
     }
 
     #[test]
     fn double_comma() {
-        let err = parse_err("{foo: 1,, bar: 2}");
-        assert!(err.contains("unexpected"), "error was: {err}");
+        assert_eq!(
+            parse_err_message("{foo: 1,, bar: 2}"),
+            "expected a name or `[`, but found `,`"
+        );
     }
 
     #[test]
     fn bare_number_key() {
-        let err = parse_err("{42: 'x'}");
-        assert!(err.contains("unexpected"), "error was: {err}");
+        assert_eq!(
+            parse_err_message("{42: 'x'}"),
+            "expected a name or `[`, but found `42`"
+        );
     }
 }
 
@@ -693,14 +700,18 @@ mod map_shorthand {
 
     #[test]
     fn reserved_word_is_rejected() {
-        let err = parse_err("{if}");
-        assert!(err.contains("unexpected"), "error was: {err}");
+        assert_eq!(
+            parse_err_message("{if}"),
+            "expected a name or `[`, but found `if`"
+        );
     }
 
     // A dollar identifier is not a valid key name, so it has no shorthand.
     #[test]
     fn dollar_identifier_is_rejected() {
-        let err = parse_err("$({$})");
-        assert!(err.contains("unexpected"), "error was: {err}");
+        assert_eq!(
+            parse_err_message("$({$})"),
+            "expected a name or `[`, but found `$`"
+        );
     }
 }

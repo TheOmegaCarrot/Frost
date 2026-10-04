@@ -7,13 +7,13 @@ use crate::parse::{Diagnostic, ParseResult, ctx::ParseCtx};
 
 impl<'src, 'f> ParseCtx<'src, 'f> {
     pub(crate) fn parse_format_string(&mut self, quote: QuoteStyle) -> ParseResult<Spanned<Expr>> {
-        let peek = self.must_peek("format String")?;
+        let peek = self.must_peek("a format String")?;
         let span = peek.span.clone();
         let raw = match peek.token {
             Token::SingleQuoteFormatStringLiteral(s) | Token::DoubleQuoteFormatStringLiteral(s) => {
                 s.to_owned()
             }
-            _ => return Err(self.unexpected_token(peek, "format String")),
+            _ => return Err(self.expected("a format String", peek)),
         };
         self.advance(1);
 
@@ -85,14 +85,14 @@ fn split_format_segments(
                         // \u{NN..}: braces around hex digits naming a Unicode scalar.
                         // Slicing on the ASCII `{` and `}` never splits a character.
                         if bytes.get(i + 2) != Some(&b'{') {
-                            return Err(format_error(span, "\\u escape must be followed by '{'"));
+                            return Err(format_error(span, "`\\u` escape must be followed by `{`"));
                         }
                         let mut j = i + 3;
                         while j < bytes.len() && bytes[j] != b'}' {
                             j += 1;
                         }
                         if j >= bytes.len() {
-                            return Err(format_error(span, "unterminated \\u escape"));
+                            return Err(format_error(span, "unterminated `\\u` escape"));
                         }
                         let ch = crate::parse::strings::decode_unicode_escape(&raw[i + 3..j])
                             .map_err(|msg| format_error(span, msg))?;
@@ -101,9 +101,10 @@ fn split_format_segments(
                         i = j + 1;
                     }
                     _ => {
+                        let escape = raw[i + 1..].chars().next().expect("a byte follows `\\`");
                         return Err(format_error(
                             span,
-                            format!("invalid escape sequence: \\{}", escape as char),
+                            format!("invalid escape sequence `\\{escape}`"),
                         ));
                     }
                 }
@@ -181,9 +182,7 @@ fn parse_interpolation(
 
     if !sub_ctx.at_end() {
         let leftover = sub_ctx.peek().expect("not at end, so a token remains");
-        return Err(context(
-            sub_ctx.unexpected_token(leftover, "interpolation expression"),
-        ));
+        return Err(context(sub_ctx.expected("`}`", leftover)));
     }
 
     Ok(expr)

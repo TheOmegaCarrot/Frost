@@ -16,11 +16,11 @@ fn string_error(span: &Range<usize>, msg: impl Into<String>) -> Diagnostic {
 
 impl<'src, 'f> ParseCtx<'src, 'f> {
     pub(crate) fn parse_simple_string(&mut self, quote: QuoteStyle) -> ParseResult<Spanned<Expr>> {
-        let peek = self.must_peek("String literal")?;
+        let peek = self.must_peek("a String literal")?;
         let span = peek.span.clone();
         let raw = match peek.token {
             Token::SingleQuoteStringLiteral(s) | Token::DoubleQuoteStringLiteral(s) => s.to_owned(),
-            _ => return Err(self.unexpected_token(peek, "String literal")),
+            _ => return Err(self.expected("a String literal", peek)),
         };
         self.advance(1);
         let text = expand_escapes(&raw, quote).map_err(|msg| string_error(&span, msg))?;
@@ -31,10 +31,10 @@ impl<'src, 'f> ParseCtx<'src, 'f> {
     }
 
     pub(crate) fn parse_raw_string(&mut self) -> ParseResult<Spanned<Expr>> {
-        let peek = self.must_peek("raw String literal")?;
+        let peek = self.must_peek("a raw String literal")?;
         let span = peek.span.clone();
         let Token::RawStringLiteral(raw) = peek.token else {
-            return Err(self.unexpected_token(peek, "raw String literal"));
+            return Err(self.expected("a raw String literal", peek));
         };
         // A raw string is source text taken verbatim, so it is already valid UTF-8:
         // it has no escapes that could introduce anything else.
@@ -47,10 +47,10 @@ impl<'src, 'f> ParseCtx<'src, 'f> {
     }
 
     pub(crate) fn parse_bytes_literal(&mut self) -> ParseResult<Spanned<Expr>> {
-        let peek = self.must_peek("Bytes literal")?;
+        let peek = self.must_peek("a Bytes literal")?;
         let span = peek.span.clone();
         let Token::BytesLiteral(raw) = peek.token else {
-            return Err(self.unexpected_token(peek, "Bytes literal"));
+            return Err(self.expected("a Bytes literal", peek));
         };
         self.advance(1);
         Ok(Spanned::new(
@@ -60,11 +60,11 @@ impl<'src, 'f> ParseCtx<'src, 'f> {
     }
 
     pub(crate) fn parse_multiline_string(&mut self) -> ParseResult<Spanned<Expr>> {
-        let peek = self.must_peek("multiline String literal")?;
+        let peek = self.must_peek("a multiline String literal")?;
         let span = peek.span.clone();
         let raw = match peek.token {
             Token::MultilineStringLiteral(s) => s.to_owned(),
-            _ => return Err(self.unexpected_token(peek, "multiline String literal")),
+            _ => return Err(self.expected("a multiline String literal", peek)),
         };
         self.advance(1);
         // A CRLF line break is a line break like LF, and the String holds `\n` for either.
@@ -85,15 +85,16 @@ impl<'src, 'f> ParseCtx<'src, 'f> {
 /// empty body. [`char::from_u32`] rejects surrogates and values above U+10FFFF.
 pub(crate) fn decode_unicode_escape(hex: &str) -> Result<char, String> {
     if hex.is_empty() || !hex.bytes().all(|b| b.is_ascii_hexdigit()) {
-        return Err(format!("invalid \\u escape: \\u{{{hex}}}"));
+        return Err(format!("invalid `\\u` escape `\\u{{{hex}}}`"));
     }
     if hex.len() > 6 {
         return Err(format!(
-            "\\u escape has more than 6 hex digits: \\u{{{hex}}}"
+            "`\\u` escape `\\u{{{hex}}}` has more than 6 hex digits"
         ));
     }
     let code = u32::from_str_radix(hex, 16).expect("body is 1-6 hex digits");
-    char::from_u32(code).ok_or_else(|| format!("\\u{{{hex}}} is not a valid Unicode scalar value"))
+    char::from_u32(code)
+        .ok_or_else(|| format!("`\\u{{{hex}}}` is not a valid Unicode scalar value"))
 }
 
 /// Decodes the body of an `x'..'` Bytes literal into its octets. The lexer's regex
@@ -128,7 +129,7 @@ fn expand_escapes(raw: &str, quote: QuoteStyle) -> Result<String, String> {
             '\'' if matches!(quote, QuoteStyle::Single) => out.push('\''),
             '"' if matches!(quote, QuoteStyle::Double) => out.push('"'),
             'u' => out.push(take_unicode_escape(&mut chars)?),
-            _ => return Err(format!("invalid escape sequence: \\{escape}")),
+            _ => return Err(format!("invalid escape sequence `\\{escape}`")),
         }
     }
 
@@ -139,14 +140,14 @@ fn expand_escapes(raw: &str, quote: QuoteStyle) -> Result<String, String> {
 /// The next character must be `{`; digits run to the closing `}`.
 fn take_unicode_escape(chars: &mut std::str::Chars) -> Result<char, String> {
     if chars.next() != Some('{') {
-        return Err("\\u escape must be followed by '{'".into());
+        return Err("`\\u` escape must be followed by `{`".into());
     }
     let mut hex = String::new();
     loop {
         match chars.next() {
             Some('}') => break,
             Some(c) => hex.push(c),
-            None => return Err("unterminated \\u escape".into()),
+            None => return Err("unterminated `\\u` escape".into()),
         }
     }
     decode_unicode_escape(&hex)
@@ -175,7 +176,7 @@ fn expand_multiline_escapes(raw: &str) -> Result<String, String> {
             'u' => out.push(take_unicode_escape(&mut chars)?),
             _ => {
                 return Err(format!(
-                    "invalid escape sequence in multiline String: \\{escape}"
+                    "invalid escape sequence `\\{escape}` in multiline String"
                 ));
             }
         }

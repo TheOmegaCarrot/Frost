@@ -92,9 +92,11 @@ impl<'src, 'f> ParseCtx<'src, 'f> {
                 && let Some(next) = self.peek()
                 && is_non_chainable(&next.token)
             {
-                return Err(
-                    self.unexpected_token(next, "expression (cannot chain comparison operators)")
-                );
+                return Err(Diagnostic::at(
+                    "comparison operators cannot chain or mix",
+                    next.span.clone().into(),
+                    "wrap one comparison in parentheses",
+                ));
             }
         }
 
@@ -107,9 +109,7 @@ impl<'src, 'f> ParseCtx<'src, 'f> {
         self.enter_nl_context();
 
         let (args, close) =
-            self.parse_comma_separated(Token::CloseParen, "function call arguments", |ctx| {
-                ctx.parse_expr_bp(0)
-            })?;
+            self.parse_comma_separated(Token::CloseParen, |ctx| ctx.parse_expr_bp(0))?;
 
         Ok(Spanned::new(
             Expr::Call {
@@ -143,7 +143,8 @@ impl<'src, 'f> ParseCtx<'src, 'f> {
         let start = target.span.start;
         self.expect(Token::OpDot)?;
 
-        let peek = self.must_peek("dot access")?;
+        const EXPECTED: &str = "a name after `.`";
+        let peek = self.must_peek(EXPECTED)?;
         if let Token::Identifier(name) = peek.token {
             let name = name.to_owned();
             let field_span = self.next().unwrap().span.clone();
@@ -155,7 +156,7 @@ impl<'src, 'f> ParseCtx<'src, 'f> {
                 (start..field_span.end).into(),
             ))
         } else {
-            Err(self.unexpected_token(peek, "dot access (expected identifier)"))
+            Err(self.expected(EXPECTED, peek))
         }
     }
 
@@ -181,9 +182,7 @@ impl<'src, 'f> ParseCtx<'src, 'f> {
         self.enter_nl_context();
 
         let (mut args, close) =
-            self.parse_comma_separated(Token::CloseParen, "threaded call arguments", |ctx| {
-                ctx.parse_expr_bp(0)
-            })?;
+            self.parse_comma_separated(Token::CloseParen, |ctx| ctx.parse_expr_bp(0))?;
 
         args.insert(0, lhs);
 
@@ -210,7 +209,7 @@ impl<'src, 'f> ParseCtx<'src, 'f> {
     }
 
     fn parse_prefix(&mut self) -> ParseResult<Spanned<Expr>> {
-        let peek = self.must_peek("expression")?;
+        let peek = self.must_peek("an expression")?;
 
         let unary_op = match peek.token {
             Token::OpMinus => Some((Token::OpMinus, UnaryOp::Negate)),
@@ -273,7 +272,7 @@ impl<'src, 'f> ParseCtx<'src, 'f> {
     }
 
     fn parse_atom(&mut self) -> ParseResult<Spanned<Expr>> {
-        let peek = self.must_peek("expression")?;
+        let peek = self.must_peek("an expression")?;
         let span = peek.span.clone();
 
         match peek.token {
@@ -368,7 +367,7 @@ impl<'src, 'f> ParseCtx<'src, 'f> {
             Token::KwForeach => self.parse_foreach(),
             Token::KwReduce => self.parse_reduce(),
 
-            _ => Err(self.unexpected_token(peek, "expression")),
+            _ => Err(self.expected("an expression", peek)),
         }
     }
 }

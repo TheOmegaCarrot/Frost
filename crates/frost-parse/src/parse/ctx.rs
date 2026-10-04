@@ -115,8 +115,9 @@ impl<'src, 'f> ParseCtx<'src, 'f> {
         self.input.get(self.state.pos)
     }
 
-    pub(crate) fn must_peek(&self, context: &str) -> ParseResult<&SrcToken<'src>> {
-        self.peek().ok_or_else(|| self.unexpected_eof(context))
+    /// Peek the next token, or fail as [`unexpected_eof`](Self::unexpected_eof) does.
+    pub(crate) fn must_peek(&self, expected: &str) -> ParseResult<&SrcToken<'src>> {
+        self.peek().ok_or_else(|| self.unexpected_eof(expected))
     }
 
     /// Get the current token, and advance the state.
@@ -132,15 +133,10 @@ impl<'src, 'f> ParseCtx<'src, 'f> {
     }
 
     pub(crate) fn expect(&mut self, token: Token) -> ParseResult<&SrcToken<'src>> {
-        let Some(current) = self.peek() else {
-            return Err(self.unexpected_eof(format!("{token}").as_str()));
-        };
+        let expected = format!("`{token}`");
+        let current = self.must_peek(&expected)?;
         if current.token != token {
-            return Err(Diagnostic::at(
-                format!("expected {token}, but found {}", current.token),
-                current.span.clone().into(),
-                "unexpected",
-            ));
+            return Err(self.expected(&expected, current));
         }
 
         self.advance(1);
@@ -209,12 +205,12 @@ impl<'src, 'f> ParseCtx<'src, 'f> {
     pub(crate) fn parse_comma_separated<T>(
         &mut self,
         close: Token,
-        context: &str,
         mut parse_item: impl FnMut(&mut Self) -> ParseResult<T>,
     ) -> ParseResult<(Vec<T>, &SrcToken<'src>)> {
         self.maybe_skip_nl();
 
         let mut items = Vec::new();
+        let after_item = format!("`,` or `{close}`");
 
         if !matches!(self.peek().map(|t| &t.token), Some(t) if *t == close) {
             loop {
@@ -222,7 +218,7 @@ impl<'src, 'f> ParseCtx<'src, 'f> {
                 items.push(parse_item(self)?);
                 self.maybe_skip_nl();
 
-                let peek = self.must_peek(context)?;
+                let peek = self.must_peek(&after_item)?;
                 if peek.token == close {
                     break;
                 }
@@ -230,7 +226,7 @@ impl<'src, 'f> ParseCtx<'src, 'f> {
                     Token::Comma => {
                         self.expect(Token::Comma)?;
                     }
-                    _ => return Err(self.unexpected_token(peek, context)),
+                    _ => return Err(self.expected(&after_item, peek)),
                 }
 
                 self.maybe_skip_nl();
@@ -317,22 +313,37 @@ impl<'src, 'f> ParseCtx<'src, 'f> {
         &self.full_source[span.start - self.base_offset..span.end - self.base_offset]
     }
 
-    pub(crate) fn unexpected_token(&self, token: &SrcToken, tried_to_parse: &str) -> Diagnostic {
+    /// The error for finding `found` where `expected` belongs.
+    /// `expected` is a noun phrase, such as "an expression" or "`,` or `]`".
+    pub(crate) fn expected(&self, expected: &str, found: &SrcToken) -> Diagnostic {
         Diagnostic::at(
-            format!("unexpected {} while parsing {tried_to_parse}", token.token),
-            token.span.clone().into(),
+            format!("expected {expected}, but found {}", self.describe(found)),
+            found.span.clone().into(),
             "unexpected",
         )
     }
 
-    pub(crate) fn unexpected_eof(&self, tried_to_parse: &str) -> Diagnostic {
+    /// The error for running out of tokens where `expected` belongs.
+    pub(crate) fn unexpected_eof(&self, expected: &str) -> Diagnostic {
         // End of this context's tokens, in whole-source coordinates.
         let end = self.base_offset + self.full_source.len();
         Diagnostic::at(
-            format!("unexpected end of input while parsing {tried_to_parse}"),
+            format!("expected {expected}, but found the end of input"),
             (end..end).into(),
             "end of input",
         )
+    }
+
+    /// `token` as a diagnostic names it: its source text in backticks, up to any line break.
+    fn describe(&self, token: &SrcToken) -> String {
+        if token.token == Token::Newline {
+            return "a line break".to_owned();
+        }
+        let text = self.source_text(token.span.clone().into());
+        match text.split_once('\n') {
+            Some((first_line, _)) => format!("`{}...`", first_line.trim_end_matches('\r')),
+            None => format!("`{text}`"),
+        }
     }
 }
 

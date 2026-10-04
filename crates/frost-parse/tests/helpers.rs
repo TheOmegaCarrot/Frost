@@ -23,6 +23,14 @@ pub(crate) fn parse_err(src: &str) -> String {
         .to_string()
 }
 
+/// The headline message of the error `src` fails to parse with.
+pub(crate) fn parse_err_message(src: &str) -> String {
+    parse_program("test.frst", src)
+        .expect_err(&format!("expected parse error for: {src}"))
+        .message()
+        .to_owned()
+}
+
 pub(crate) fn is_int(expr: &Spanned<Expr>, n: i64) -> bool {
     matches!(&expr.node, Expr::Literal(Literal::Int(v)) if *v == n)
 }

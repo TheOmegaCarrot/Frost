@@ -266,46 +266,41 @@ mod if_errors {
 
     #[test]
     fn missing_colon_after_condition() {
-        let err = parse_err("if true 1");
-        assert!(
-            err.contains("Expected :") || err.contains("unexpected"),
-            "error was: {err}"
+        assert_eq!(
+            parse_err_message("if true 1"),
+            "expected `:`, but found `1`"
         );
     }
 
     #[test]
     fn missing_consequent() {
-        let err = parse_err("if true:");
-        assert!(
-            err.contains("end of input") || err.contains("unexpected"),
-            "error was: {err}"
+        assert_eq!(
+            parse_err_message("if true:"),
+            "expected an expression, but found the end of input"
         );
     }
 
     #[test]
     fn missing_colon_after_else() {
-        let err = parse_err("if true: 1 else 2");
-        assert!(
-            err.contains("Expected :") || err.contains("unexpected"),
-            "error was: {err}"
+        assert_eq!(
+            parse_err_message("if true: 1 else 2"),
+            "expected `:`, but found `2`"
         );
     }
 
     #[test]
     fn missing_alternate_after_else_colon() {
-        let err = parse_err("if true: 1 else:");
-        assert!(
-            err.contains("end of input") || err.contains("unexpected"),
-            "error was: {err}"
+        assert_eq!(
+            parse_err_message("if true: 1 else:"),
+            "expected an expression, but found the end of input"
         );
     }
 
     #[test]
     fn missing_colon_after_elif_condition() {
-        let err = parse_err("if true: 1 elif false 2");
-        assert!(
-            err.contains("Expected :") || err.contains("unexpected"),
-            "error was: {err}"
+        assert_eq!(
+            parse_err_message("if true: 1 elif false 2"),
+            "expected `:`, but found `2`"
         );
     }
 }
@@ -627,36 +622,32 @@ mod do_errors {
                 x
             }
         ";
-        let err = parse_err(source);
-        assert!(err.contains("unexpected"), "error was: {err}");
+        assert_eq!(
+            parse_err_message(source),
+            "expected an expression, but found `export`"
+        );
     }
 
     #[test]
     fn missing_closing_brace() {
-        let err = parse_err("do { 42");
-        assert!(
-            err.contains("end of input") || err.contains("Expected }"),
-            "error was: {err}"
+        assert_eq!(
+            parse_err_message("do { 42"),
+            "expected `}`, but found the end of input"
         );
     }
 
     #[test]
     fn missing_opening_brace() {
-        let err = parse_err("do 42");
-        assert!(
-            err.contains("Expected {") || err.contains("unexpected"),
-            "error was: {err}"
-        );
+        assert_eq!(parse_err_message("do 42"), "expected `{`, but found `42`");
     }
 
     // Block content must follow the same grammar as the top level (minus
     // `export`): adjacent expressions require a separator.
     #[test]
     fn missing_separator_between_exprs() {
-        let err = parse_err("do { 1 2 }");
-        assert!(
-            err.contains("unexpected") || err.contains("Expected"),
-            "error was: {err}"
+        assert_eq!(
+            parse_err_message("do { 1 2 }"),
+            "expected a line break or `;`, but found `2`"
         );
     }
 
@@ -671,10 +662,9 @@ mod do_errors {
                 y
             }
         ";
-        let err = parse_err(source);
-        assert!(
-            err.contains("unexpected") || err.contains("Expected"),
-            "error was: {err}"
+        assert_eq!(
+            parse_err_message(source),
+            "expected an expression, but found a line break"
         );
     }
 }

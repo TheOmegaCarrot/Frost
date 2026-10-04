@@ -68,10 +68,7 @@ impl<'src, 'f> ParseCtx<'src, 'f> {
                         self.maybe_skip_nl();
                     }
                     _ => {
-                        return Err(self.unexpected_token(
-                            peek,
-                            "expected line break or semicolon after complete statement",
-                        ));
+                        return Err(self.expected("a line break or `;`", peek));
                     }
                 };
             }
@@ -81,7 +78,7 @@ impl<'src, 'f> ParseCtx<'src, 'f> {
     }
 
     fn parse_def(&mut self, exported: bool) -> ParseResult<Spanned<Statement>> {
-        let start = self.must_peek("definition")?.span.start;
+        let start = self.must_peek("`def`")?.span.start;
 
         if exported {
             self.expect(Token::KwExport)?;
@@ -98,7 +95,7 @@ impl<'src, 'f> ParseCtx<'src, 'f> {
         {
             let defn = if exported { "export defn" } else { "defn" };
             return Err(Diagnostic::at(
-                "def takes no parameters",
+                "`def` takes no parameters",
                 open.span.clone().into(),
                 format!("to define a function, write `{defn} {name}(...) -> ...`"),
             ));
@@ -120,7 +117,7 @@ impl<'src, 'f> ParseCtx<'src, 'f> {
     }
 
     fn parse_defn(&mut self, exported: bool) -> ParseResult<Spanned<Statement>> {
-        let defn_start = self.must_peek("function definition")?.span.start;
+        let defn_start = self.must_peek("`defn`")?.span.start;
 
         if exported {
             self.expect(Token::KwExport)?;
@@ -129,13 +126,14 @@ impl<'src, 'f> ParseCtx<'src, 'f> {
         self.expect(Token::KwDefn)?;
 
         // Not yet checked to be a name, but parse_binding below will error if this isn't the case.
-        let name_span: SourceSpan = self.must_peek("defn function name")?.span.clone().into();
+        const EXPECTED: &str = "a function name";
+        let name_span: SourceSpan = self.must_peek(EXPECTED)?.span.clone().into();
 
-        let name = match self.parse_binding("function name")?.node {
+        let name = match self.parse_binding(EXPECTED)?.node {
             Binding::Named(name) => name,
             Binding::Discarded => {
                 return Err(Diagnostic::at(
-                    "defn requires a function name, not '_'",
+                    "`defn` requires a function name, not `_`",
                     name_span,
                     "expected a name",
                 ));

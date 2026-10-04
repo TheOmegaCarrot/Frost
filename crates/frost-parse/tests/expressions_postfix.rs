@@ -665,19 +665,17 @@ fn error_dot_no_identifier() {
 
 #[test]
 fn error_unclosed_index() {
-    let err = parse_err("a[0");
-    assert!(
-        err.contains("end of input") || err.contains("Expected ]"),
-        "error was: {err}"
+    assert_eq!(
+        parse_err_message("a[0"),
+        "expected `]`, but found the end of input"
     );
 }
 
 #[test]
 fn error_unclosed_call() {
-    let err = parse_err("f(1, 2");
-    assert!(
-        err.contains("end of input") || err.contains("Expected )"),
-        "error was: {err}"
+    assert_eq!(
+        parse_err_message("f(1, 2"),
+        "expected `,` or `)`, but found the end of input"
     );
 }
 

@@ -12,10 +12,12 @@ fn parse(src: &str) -> Program {
     parse_program("test.frst", src).unwrap_or_else(|e| panic!("failed to parse: {src}: {e}"))
 }
 
-fn parse_err(src: &str) -> String {
+/// The headline message of the error `src` fails to parse with.
+fn parse_err_message(src: &str) -> String {
     parse_program("test.frst", src)
         .expect_err(&format!("expected parse error for: {src}"))
-        .to_string()
+        .message()
+        .to_owned()
 }
 
 /// Extract the destructure from a `def ... = 1` statement.
@@ -316,8 +318,8 @@ fn non_export_def() {
 
 #[test]
 fn error_missing_equals() {
-    let err = parse_err("def x 1");
-    assert!(err.contains("expected ="), "error was: {err}");
+    let err = parse_program("test.frst", "def x 1").unwrap_err();
+    assert_eq!(err.message(), "expected `=`, but found `1`");
 }
 
 // -- `def` with parameters --
@@ -327,7 +329,7 @@ fn error_missing_equals() {
 /// is the `def`-with-parameters one and that it points at the `(`.
 fn def_with_params_label(src: &str) -> String {
     let err = parse_program("test.frst", src).expect_err(src);
-    assert_eq!(err.message(), "def takes no parameters", "{src}: {err}");
+    assert_eq!(err.message(), "`def` takes no parameters", "{src}: {err}");
     let open = src.find('(').unwrap();
     assert_eq!(
         err.primary_span(),
@@ -376,33 +378,41 @@ fn error_def_with_params_in_a_block() {
 // `defn` requires a name, so `def _(x)` is not offered a `defn` suggestion.
 #[test]
 fn error_def_discard_with_params_is_a_plain_error() {
-    let err = parse_err("def _(x) -> x");
-    assert!(err.contains("expected ="), "error was: {err}");
-    assert!(!err.contains("defn"), "error was: {err}");
+    let err = parse_program("test.frst", "def _(x) -> x").unwrap_err();
+    assert_eq!(err.message(), "expected `=`, but found `(`");
+    assert!(!err.to_string().contains("defn"), "error was: {err}");
 }
 
 #[test]
 fn error_unexpected_token_in_array() {
-    let err = parse_err("def [a + b] = 1");
-    assert!(err.contains("unexpected"), "error was: {err}");
+    assert_eq!(
+        parse_err_message("def [a + b] = 1"),
+        "expected `,` or `]`, but found `+`"
+    );
 }
 
 #[test]
 fn error_eof_mid_array() {
-    let err = parse_err("def [a, b");
-    assert!(err.contains("end of input"), "error was: {err}");
+    assert_eq!(
+        parse_err_message("def [a, b"),
+        "expected `,` or `]`, but found the end of input"
+    );
 }
 
 #[test]
 fn error_eof_after_def() {
-    let err = parse_err("def");
-    assert!(err.contains("end of input"), "error was: {err}");
+    assert_eq!(
+        parse_err_message("def"),
+        "expected a name, `[`, or `{`, but found the end of input"
+    );
 }
 
 #[test]
 fn error_non_identifier_binding() {
-    let err = parse_err("def 42 = 1");
-    assert!(err.contains("unexpected"), "error was: {err}");
+    assert_eq!(
+        parse_err_message("def 42 = 1"),
+        "expected a name, `[`, or `{`, but found `42`"
+    );
 }
 
 // -- Map destructuring --
@@ -616,20 +626,26 @@ fn map_nested_map_value() {
 
 #[test]
 fn error_map_eof_mid_entry() {
-    let err = parse_err("def {foo");
-    assert!(err.contains("end of input"), "error was: {err}");
+    assert_eq!(
+        parse_err_message("def {foo"),
+        "expected `:`, `,`, or `}`, but found the end of input"
+    );
 }
 
 #[test]
 fn error_map_unexpected_token() {
-    let err = parse_err("def {foo + bar} = 1");
-    assert!(err.contains("unexpected"), "error was: {err}");
+    assert_eq!(
+        parse_err_message("def {foo + bar} = 1"),
+        "expected `,` or `}`, but found `+`"
+    );
 }
 
 #[test]
 fn error_map_non_identifier_key() {
-    let err = parse_err("def {42: x} = 1");
-    assert!(err.contains("unexpected"), "error was: {err}");
+    assert_eq!(
+        parse_err_message("def {42: x} = 1"),
+        "expected a name or `[`, but found `42`"
+    );
 }
 
 // -- Nested `as` in array position --
@@ -736,46 +752,49 @@ fn empty_map_with_as() {
 
 #[test]
 fn error_trailing_comma_after_rest() {
-    let err = parse_err("def [a, ...rest,] = 1");
-    assert!(
-        err.contains("Expected ]") || err.contains("unexpected"),
-        "error was: {err}"
+    assert_eq!(
+        parse_err_message("def [a, ...rest,] = 1"),
+        "expected `]`, but found `,`"
     );
 }
 
 #[test]
 fn error_rest_not_at_end() {
-    let err = parse_err("def [...rest, a] = 1");
-    assert!(
-        err.contains("Expected ]") || err.contains("unexpected"),
-        "error was: {err}"
+    assert_eq!(
+        parse_err_message("def [...rest, a] = 1"),
+        "expected `]`, but found `,`"
     );
 }
 
 #[test]
 fn error_empty_rest() {
-    let err = parse_err("def [...] = 1");
-    assert!(err.contains("unexpected"), "error was: {err}");
+    assert_eq!(
+        parse_err_message("def [...] = 1"),
+        "expected a name after `...`, but found `]`"
+    );
 }
 
 #[test]
 fn error_eof_after_as() {
-    let err = parse_err("def {foo} as");
-    assert!(err.contains("end of input"), "error was: {err}");
+    assert_eq!(
+        parse_err_message("def {foo} as"),
+        "expected a name after `as`, but found the end of input"
+    );
 }
 
 #[test]
 fn error_eof_after_dots() {
-    let err = parse_err("def [a, ...");
-    assert!(err.contains("end of input"), "error was: {err}");
+    assert_eq!(
+        parse_err_message("def [a, ..."),
+        "expected a name after `...`, but found the end of input"
+    );
 }
 
 #[test]
 fn error_double_rest() {
-    let err = parse_err("def [a, ...b, ...c] = 1");
-    assert!(
-        err.contains("Expected ]") || err.contains("unexpected"),
-        "error was: {err}"
+    assert_eq!(
+        parse_err_message("def [a, ...b, ...c] = 1"),
+        "expected `]`, but found `,`"
     );
 }
 

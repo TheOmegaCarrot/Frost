@@ -857,19 +857,17 @@ mod errors {
 
     #[test]
     fn missing_open_brace() {
-        let err = parse_err("match x 1 => 2");
-        assert!(
-            err.contains("Expected {") || err.contains("unexpected"),
-            "error was: {err}"
+        assert_eq!(
+            parse_err_message("match x 1 => 2"),
+            "expected `{`, but found `1`"
         );
     }
 
     #[test]
     fn missing_fat_arrow() {
-        let err = parse_err("match x { 1 2 }");
-        assert!(
-            err.contains("Expected =>") || err.contains("unexpected"),
-            "error was: {err}"
+        assert_eq!(
+            parse_err_message("match x { 1 2 }"),
+            "expected `=>`, but found `2`"
         );
     }
 
@@ -877,37 +875,33 @@ mod errors {
     // so the second arm without a leading comma is an error.
     #[test]
     fn newline_is_not_an_arm_separator() {
-        let err = parse_err("match x { 1 => a\n  2 => b }");
-        assert!(
-            err.contains("Expected }") || err.contains("unexpected"),
-            "error was: {err}"
+        assert_eq!(
+            parse_err_message("match x { 1 => a\n  2 => b }"),
+            "expected `,` or `}`, but found `2`"
         );
     }
 
     #[test]
     fn missing_close_brace() {
-        let err = parse_err("match x { 1 => 2");
-        assert!(
-            err.contains("end of input") || err.contains("Expected }"),
-            "error was: {err}"
+        assert_eq!(
+            parse_err_message("match x { 1 => 2"),
+            "expected `,` or `}`, but found the end of input"
         );
     }
 
     #[test]
     fn invalid_type_constraint() {
-        let err = parse_err("match x { n is Bogus => n }");
-        assert!(
-            err.contains("unexpected") || err.contains("type constraint"),
-            "error was: {err}"
+        assert_eq!(
+            parse_err_message("match x { n is Bogus => n }"),
+            "expected a type name, but found `Bogus`"
         );
     }
 
     #[test]
     fn negative_non_literal() {
-        let err = parse_err("match x { -'hello' => 1 }");
-        assert!(
-            err.contains("unexpected") || err.contains("negative literal"),
-            "error was: {err}"
+        assert_eq!(
+            parse_err_message("match x { -'hello' => 1 }"),
+            "expected a number after `-`, but found `'hello'`"
         );
     }
 }

@@ -4,17 +4,18 @@ use crate::parse::{ParseResult, ctx::ParseCtx};
 
 impl<'src, 'f> ParseCtx<'src, 'f> {
     pub(crate) fn parse_destructure(&mut self) -> ParseResult<Spanned<Destructure>> {
-        let peek = self.must_peek("destructuring")?;
+        const EXPECTED: &str = "a name, `[`, or `{`";
+        let peek = self.must_peek(EXPECTED)?;
 
         match peek.token {
             Token::Identifier(_) => {
                 let span = peek.span.clone();
-                let binding = self.parse_binding("destructuring")?;
+                let binding = self.parse_binding(EXPECTED)?;
                 Ok(Spanned::new(Destructure::Binding(binding), span.into()))
             }
             Token::OpenBracket => self.parse_destructure_array(),
             Token::OpenBrace => self.parse_destructure_map(),
-            _ => Err(self.unexpected_token(peek, "destructuring")),
+            _ => Err(self.expected(EXPECTED, peek)),
         }
     }
 
@@ -39,14 +40,14 @@ impl<'src, 'f> ParseCtx<'src, 'f> {
 
             if matches!(self.peek().map(|t| &t.token), Some(Token::DotDotDot)) {
                 self.advance(1);
-                rest = Some(self.parse_binding("rest binding")?);
+                rest = Some(self.parse_binding("a name after `...`")?);
                 break;
             }
 
             elements.push(self.parse_destructure()?);
             self.maybe_skip_nl();
 
-            let peek = self.must_peek("Array destructuring")?;
+            let peek = self.must_peek("`,` or `]`")?;
 
             match peek.token {
                 Token::Comma => {
@@ -54,7 +55,7 @@ impl<'src, 'f> ParseCtx<'src, 'f> {
                     self.maybe_skip_nl();
                 }
                 Token::CloseBracket => break,
-                _ => return Err(self.unexpected_token(peek, "Array destructuring")),
+                _ => return Err(self.expected("`,` or `]`", peek)),
             }
 
             if matches!(self.peek().map(|t| &t.token), Some(Token::CloseBracket)) {
@@ -83,14 +84,14 @@ impl<'src, 'f> ParseCtx<'src, 'f> {
                 entries.push(self.parse_destructure_map_entry()?);
                 self.maybe_skip_nl();
 
-                let peek = self.must_peek("Map destructuring")?;
+                let peek = self.must_peek("`,` or `}`")?;
                 match peek.token {
                     Token::Comma => {
                         self.advance(1);
                         self.maybe_skip_nl();
                     }
                     Token::CloseBrace => break,
-                    _ => return Err(self.unexpected_token(peek, "Map destructuring")),
+                    _ => return Err(self.expected("`,` or `}`", peek)),
                 }
 
                 if matches!(self.peek().map(|t| &t.token), Some(Token::CloseBrace)) {
@@ -104,7 +105,7 @@ impl<'src, 'f> ParseCtx<'src, 'f> {
 
         let bind_whole = if matches!(self.peek().map(|t| &t.token), Some(Token::KwAs)) {
             self.advance(1);
-            let binding = self.parse_binding("as binding")?;
+            let binding = self.parse_binding("a name after `as`")?;
             if let Some(t) = self.get(self.here() - 1) {
                 end = t.span.end;
             }
@@ -123,7 +124,8 @@ impl<'src, 'f> ParseCtx<'src, 'f> {
     }
 
     fn parse_destructure_map_entry(&mut self) -> ParseResult<Spanned<MapDestructureEntry>> {
-        let peek = self.must_peek("Map destructuring entry")?;
+        const EXPECTED: &str = "a name or `[`";
+        let peek = self.must_peek(EXPECTED)?;
         let start = peek.span.start;
 
         match peek.token {
@@ -144,7 +146,7 @@ impl<'src, 'f> ParseCtx<'src, 'f> {
                 let name_span: SourceSpan = peek.span.clone().into();
                 self.advance(1);
 
-                let peek = self.must_peek("Map destructuring entry")?;
+                let peek = self.must_peek("`:`, `,`, or `}`")?;
                 if peek.token == Token::Colon {
                     self.advance(1);
                     self.maybe_skip_nl();
@@ -174,7 +176,7 @@ impl<'src, 'f> ParseCtx<'src, 'f> {
                     ))
                 }
             }
-            _ => Err(self.unexpected_token(peek, "Map destructuring entry")),
+            _ => Err(self.expected(EXPECTED, peek)),
         }
     }
 }

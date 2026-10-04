@@ -255,58 +255,52 @@ mod errors {
 
     #[test]
     fn missing_with() {
-        let err = parse_err("map [1, 2] fn x -> x");
-        assert!(
-            err.contains("Expected with") || err.contains("unexpected"),
-            "error was: {err}"
+        assert_eq!(
+            parse_err_message("map [1, 2] fn x -> x"),
+            "expected `with`, but found `fn`"
         );
     }
 
     #[test]
     fn missing_operation() {
-        let err = parse_err("map [1, 2] with");
-        assert!(
-            err.contains("end of input") || err.contains("unexpected"),
-            "error was: {err}"
+        assert_eq!(
+            parse_err_message("map [1, 2] with"),
+            "expected an expression, but found the end of input"
         );
     }
 
     #[test]
     fn reduce_missing_with() {
-        let err = parse_err("reduce [1, 2] init: 0 fn (a, x) -> a + x");
-        assert!(
-            err.contains("Expected with") || err.contains("unexpected"),
-            "error was: {err}"
+        assert_eq!(
+            parse_err_message("reduce [1, 2] init: 0 fn (a, x) -> a + x"),
+            "expected `with`, but found `fn`"
         );
     }
 
     // The seed clause comes before `with`, not after it.
     #[test]
     fn reduce_init_after_with() {
-        let err = parse_err("reduce xs with f init: 0");
-        assert!(
-            err.contains("unexpected") || err.contains("Expected"),
-            "error was: {err}"
+        assert_eq!(
+            parse_err_message("reduce xs with f init: 0"),
+            "expected a line break or `;`, but found `init`"
         );
     }
 
     // `init:` is a reduce-only clause; map has no seed.
     #[test]
     fn map_rejects_init() {
-        let err = parse_err("map xs init: 0 with f");
-        assert!(
-            err.contains("Expected with") || err.contains("unexpected"),
-            "error was: {err}"
+        assert_eq!(
+            parse_err_message("map xs init: 0 with f"),
+            "expected `with`, but found `init`"
         );
     }
 
     // The seed clause is `init:`; the colon is required.
     #[test]
     fn reduce_init_requires_colon() {
-        let err = parse_err("reduce xs init 0 with f");
-        assert!(
-            err.contains("Expected :") || err.contains("unexpected") || err.contains("Expected"),
-            "error was: {err}"
+        assert_eq!(
+            parse_err_message("reduce xs init 0 with f"),
+            "expected `:`, but found `0`"
         );
     }
 }

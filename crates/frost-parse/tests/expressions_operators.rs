@@ -430,19 +430,17 @@ fn newline_terminates_expression() {
 
 #[test]
 fn newline_after_prefix_is_error() {
-    let err = parse_err("not\ntrue");
-    assert!(
-        err.contains("unexpected") || err.contains("end of input"),
-        "error was: {err}"
+    assert_eq!(
+        parse_err_message("not\ntrue"),
+        "expected an expression, but found a line break"
     );
 }
 
 #[test]
 fn negate_newline_is_error() {
-    let err = parse_err("-\n5");
-    assert!(
-        err.contains("unexpected") || err.contains("end of input"),
-        "error was: {err}"
+    assert_eq!(
+        parse_err_message("-\n5"),
+        "expected an expression, but found a line break"
     );
 }
 
@@ -558,33 +556,29 @@ fn parens_allow_equality_then_relational() {
 
 #[test]
 fn error_trailing_operator() {
-    let err = parse_err("1 +");
-    assert!(
-        err.contains("end of input") || err.contains("unexpected"),
-        "error was: {err}"
+    assert_eq!(
+        parse_err_message("1 +"),
+        "expected an expression, but found the end of input"
     );
 }
 
 #[test]
 fn error_leading_infix_operator() {
-    let err = parse_err("* 2");
-    assert!(err.contains("unexpected"), "error was: {err}");
+    assert_eq!(
+        parse_err_message("* 2"),
+        "expected an expression, but found `*`"
+    );
 }
 
 #[test]
 fn error_unclosed_paren() {
-    let err = parse_err("(1 + 2");
-    assert!(
-        err.contains("end of input") || err.contains("Expected )"),
-        "error was: {err}"
+    assert_eq!(
+        parse_err_message("(1 + 2"),
+        "expected `)`, but found the end of input"
     );
 }
 
 #[test]
 fn error_mismatched_paren() {
-    let err = parse_err("(1 + 2]");
-    assert!(
-        err.contains("Expected )") || err.contains("unexpected"),
-        "error was: {err}"
-    );
+    assert_eq!(parse_err_message("(1 + 2]"), "expected `)`, but found `]`");
 }

@@ -66,7 +66,7 @@ impl<'src, 'f> ParseCtx<'src, 'f> {
 
         let Some(last) = body.pop() else {
             return Err(Diagnostic::at(
-                "do block must contain at least one expression",
+                "`do` block must contain at least one expression",
                 (start..close_end).into(),
                 "empty block",
             ));
@@ -76,7 +76,7 @@ impl<'src, 'f> ParseCtx<'src, 'f> {
             Statement::Expr(expr) => expr,
             Statement::Def { .. } => {
                 return Err(Diagnostic::at(
-                    "do block must end with an expression, not a definition",
+                    "`do` block must end with an expression, not a definition",
                     last.span,
                     "definition here",
                 ));

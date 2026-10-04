@@ -16,8 +16,7 @@ impl<'src, 'f> ParseCtx<'src, 'f> {
         self.expect(Token::OpenBrace)?;
         self.enter_nl_context();
 
-        let (arms, close) =
-            self.parse_comma_separated(Token::CloseBrace, "match expression", Self::parse_arm)?;
+        let (arms, close) = self.parse_comma_separated(Token::CloseBrace, Self::parse_arm)?;
 
         Ok(Spanned::new(
             Expr::Match {
@@ -89,7 +88,7 @@ impl<'src, 'f> ParseCtx<'src, 'f> {
 
     fn parse_single_pattern(&mut self) -> ParseResult<Spanned<MatchPattern>> {
         self.maybe_skip_nl();
-        let peek = self.must_peek("match pattern")?;
+        let peek = self.must_peek("a pattern")?;
 
         let (peek_start, peek_end) = (peek.span.start, peek.span.end);
         match peek.token {
@@ -161,7 +160,7 @@ impl<'src, 'f> ParseCtx<'src, 'f> {
 
             Token::OpMinus => {
                 self.advance(1).maybe_skip_nl();
-                let next = self.must_peek("negative literal in match pattern")?;
+                let next = self.must_peek("a number after `-`")?;
                 match next.token {
                     Token::IntLiteral(magnitude) => {
                         let end = next.span.end;
@@ -174,7 +173,7 @@ impl<'src, 'f> ParseCtx<'src, 'f> {
                         self.advance(1);
                         Ok(literal_pattern(peek_start, end, Literal::Float(-n)))
                     }
-                    _ => Err(self.unexpected_token(next, "negative literal in match pattern")),
+                    _ => Err(self.expected("a number after `-`", next)),
                 }
             }
 
@@ -184,7 +183,7 @@ impl<'src, 'f> ParseCtx<'src, 'f> {
                 self.parse_binding_pattern(name, peek_start, peek_end)
             }
 
-            _ => Err(self.unexpected_token(peek, "match pattern")),
+            _ => Err(self.expected("a pattern", peek)),
         }
     }
 
@@ -224,7 +223,7 @@ impl<'src, 'f> ParseCtx<'src, 'f> {
     }
 
     fn parse_type_constraint(&mut self) -> ParseResult<Spanned<TypeConstraint>> {
-        let peek = self.must_peek("type constraint after 'is'")?;
+        let peek = self.must_peek("a type name")?;
         let span: SourceSpan = peek.span.clone().into();
 
         let constraint = match peek.token {
@@ -243,7 +242,7 @@ impl<'src, 'f> ParseCtx<'src, 'f> {
             Token::Identifier("Structured") => TypeConstraint::Structured,
             Token::Identifier("Flat") => TypeConstraint::Flat,
             Token::Identifier("Nonnull") => TypeConstraint::Nonnull,
-            _ => return Err(self.unexpected_token(peek, "type constraint")),
+            _ => return Err(self.expected("a type name", peek)),
         };
 
         self.advance(1);
@@ -263,7 +262,7 @@ impl<'src, 'f> ParseCtx<'src, 'f> {
 
                 if matches!(self.peek().map(|t| &t.token), Some(Token::DotDotDot)) {
                     self.advance(1);
-                    rest = Some(self.parse_binding("rest binding after '...'")?);
+                    rest = Some(self.parse_binding("a name after `...`")?);
 
                     self.maybe_skip_nl();
                     break;
@@ -272,7 +271,7 @@ impl<'src, 'f> ParseCtx<'src, 'f> {
                 elements.push(self.parse_pattern_alternatives()?);
                 self.maybe_skip_nl();
 
-                let peek = self.must_peek("array pattern")?;
+                let peek = self.must_peek("`,` or `]`")?;
                 match peek.token {
                     Token::Comma => {
                         self.advance(1);
@@ -282,7 +281,7 @@ impl<'src, 'f> ParseCtx<'src, 'f> {
                         }
                     }
                     Token::CloseBracket => break,
-                    _ => return Err(self.unexpected_token(peek, "array pattern")),
+                    _ => return Err(self.expected("`,` or `]`", peek)),
                 }
             }
         }
@@ -308,7 +307,7 @@ impl<'src, 'f> ParseCtx<'src, 'f> {
                 entries.push(self.parse_map_pattern_entry()?);
                 self.maybe_skip_nl();
 
-                let peek = self.must_peek("map pattern")?;
+                let peek = self.must_peek("`,` or `}`")?;
                 match peek.token {
                     Token::Comma => {
                         self.advance(1);
@@ -318,7 +317,7 @@ impl<'src, 'f> ParseCtx<'src, 'f> {
                         }
                     }
                     Token::CloseBrace => break,
-                    _ => return Err(self.unexpected_token(peek, "map pattern")),
+                    _ => return Err(self.expected("`,` or `}`", peek)),
                 }
             }
         }
@@ -329,7 +328,7 @@ impl<'src, 'f> ParseCtx<'src, 'f> {
         self.maybe_skip_nl();
         let bind_whole = if matches!(self.peek().map(|t| &t.token), Some(Token::KwAs)) {
             self.advance(1).maybe_skip_nl();
-            let binding = self.parse_binding("as binding")?;
+            let binding = self.parse_binding("a name after `as`")?;
             if let Some(t) = self.get(self.here() - 1) {
                 end = t.span.end;
             }
@@ -348,7 +347,8 @@ impl<'src, 'f> ParseCtx<'src, 'f> {
     }
 
     fn parse_map_pattern_entry(&mut self) -> ParseResult<Spanned<MapPatternEntry>> {
-        let peek = self.must_peek("map pattern entry")?;
+        const EXPECTED: &str = "a name or `[`";
+        let peek = self.must_peek(EXPECTED)?;
         let entry_start = peek.span.start;
 
         match peek.token {
@@ -371,7 +371,7 @@ impl<'src, 'f> ParseCtx<'src, 'f> {
                 let end = peek.span.end;
                 self.advance(1);
 
-                let peek2 = self.must_peek("map pattern entry")?;
+                let peek2 = self.must_peek("`:`, `,`, or `}`")?;
 
                 let pattern = if peek2.token == Token::Colon {
                     self.advance(1);
@@ -391,7 +391,7 @@ impl<'src, 'f> ParseCtx<'src, 'f> {
                 ))
             }
 
-            _ => Err(self.unexpected_token(peek, "map pattern entry")),
+            _ => Err(self.expected(EXPECTED, peek)),
         }
     }
 }

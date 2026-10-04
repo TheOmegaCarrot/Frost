@@ -114,8 +114,7 @@ fn unicode_escape_rejects_out_of_range() {
 
 #[test]
 fn unicode_escape_rejects_an_empty_body() {
-    let err = parse_err(r"'\u{}'");
-    assert!(err.contains("\\u escape"), "error was: {err}");
+    assert_eq!(parse_err_message(r"'\u{}'"), r"invalid `\u` escape `\u{}`");
 }
 
 #[test]
@@ -129,8 +128,10 @@ fn unicode_escape_rejects_more_than_six_digits() {
 #[test]
 fn unicode_escape_rejects_a_leading_plus() {
     // `u32::from_str_radix` would tolerate `+41`; the body must be hex digits only.
-    let err = parse_err(r"'\u{+41}'");
-    assert!(err.contains("invalid \\u escape"), "error was: {err}");
+    assert_eq!(
+        parse_err_message(r"'\u{+41}'"),
+        r"invalid `\u` escape `\u{+41}`"
+    );
 }
 
 #[test]
@@ -332,8 +333,10 @@ fn escape_unicode_null() {
 
 #[test]
 fn error_unicode_invalid_digits() {
-    let err = parse_err(r"'\u{ZZ}'");
-    assert!(err.contains("\\u escape"), "error was: {err}");
+    assert_eq!(
+        parse_err_message(r"'\u{ZZ}'"),
+        r"invalid `\u` escape `\u{ZZ}`"
+    );
 }
 
 #[test]
