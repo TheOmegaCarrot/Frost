@@ -75,11 +75,33 @@ impl FrostError {
             ErrorPayload::Value(value) => value,
         }
     }
+
+    /// The error as a person reads it: as [`Display`](fmt::Display) shows it,
+    /// then a line `  in <frame>` for each frame of its
+    /// [`backtrace`](Self::backtrace), with no trailing newline.
+    pub fn with_backtrace(&self) -> WithBacktrace<'_> {
+        WithBacktrace(self)
+    }
 }
 
 impl fmt::Display for FrostError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "Error: {}", self.message())
+    }
+}
+
+/// A [`FrostError`] shown with its backtrace; see
+/// [`FrostError::with_backtrace`].
+#[derive(Debug, Clone, Copy)]
+pub struct WithBacktrace<'a>(&'a FrostError);
+
+impl fmt::Display for WithBacktrace<'_> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.0)?;
+        self.0
+            .backtrace()
+            .iter()
+            .try_for_each(|frame| write!(f, "\n  in {frame}"))
     }
 }
 

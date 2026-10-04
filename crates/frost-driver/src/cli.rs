@@ -2,56 +2,69 @@
 
 use std::path::PathBuf;
 
-use clap::builder::{PossibleValuesParser, TypedValueParser};
 use clap::{Args, Command as ClapCommand, CommandFactory, Parser, Subcommand, ValueEnum};
-use frost_compile::{Optimization, OptimizationOptions};
+use frost_compile::{InvalidOptimizationSetting, Optimization, OptimizationOptions};
 
 /// The command line for a driver called `name` at `version`, whose scripts
-/// compile with `default` optimizations unless a preset is chosen.
+/// compile with `default` optimizations unless `-O` changes them.
 pub(crate) fn command(name: &str, version: &str, default: OptimizationOptions) -> ClapCommand {
+    // Usage is written out because clap's would not show that everything
+    // after a script is its arguments.
     Cli::command()
         .name(name.to_string())
         .bin_name(name.to_string())
         .version(version.to_string())
-        .mut_arg("preset", |arg| {
+        .override_usage(format!(
+            "{name} [OPTIONS] [SCRIPT [ARGS]...]\n       \
+             {name} [OPTIONS] -e CODE [ARGS]...\n       \
+             {name} [OPTIONS] <COMMAND>"
+        ))
+        .mut_subcommand("run", |run| {
+            run.override_usage(format!("{name} run [OPTIONS] SCRIPT [ARGS]..."))
+        })
+        .mut_arg("optimize", |arg| {
             let help = arg.get_help().map(ToString::to_string).unwrap_or_default();
             arg.help(format!("{help} [default: {}]", describe(default)))
         })
 }
 
-/// `options` as the command line would name them: a preset if one matches,
-/// otherwise the optimizations that are on.
+/// `options` as `-O` settings: a preset if one matches, otherwise `none` and
+/// the optimizations that are on.
 fn describe(options: OptimizationOptions) -> String {
     if options == OptimizationOptions::ALL {
         return "all".to_string();
     }
-    if options == OptimizationOptions::NONE {
-        return "none".to_string();
-    }
-    Optimization::ALL
+    let on = Optimization::ALL
         .into_iter()
         .filter(|&optimization| options.get(optimization))
-        .map(Optimization::name)
-        .collect::<Vec<_>>()
-        .join(",")
+        .map(|optimization| format!(",{}=true", optimization.name()));
+    std::iter::once("none".to_string()).chain(on).collect()
 }
 
+/// The heading over options most people never need, which `--help` shows but
+/// `-h` does not.
+const ADVANCED: &str = "Advanced options";
+
 #[derive(Debug, Parser)]
-#[command(args_conflicts_with_subcommands = true)]
+#[command(
+    after_help = "Options go before SCRIPT: everything after it is the script's. \
+                        A SCRIPT of `-` is read from standard input."
+)]
 pub(crate) struct Cli {
     #[command(subcommand)]
     command: Option<Command>,
 
-    /// Run this script or compiled image (shorthand for `run FILE`)
-    file: Option<PathBuf>,
-
-    /// Run CODE as a script
+    /// A script or compiled image to run (shorthand for `run`), then the
+    /// arguments it gets as `args`
     #[arg(
-        short = 'e',
-        long = "eval",
-        value_name = "CODE",
-        conflicts_with = "file"
+        value_name = "SCRIPT",
+        trailing_var_arg = true,
+        allow_hyphen_values = true
     )]
+    script_and_args: Vec<String>,
+
+    /// Run CODE as a script, with any ARGS as its `args`
+    #[arg(short = 'e', long = "eval", value_name = "CODE")]
     eval: Option<String>,
 
     #[command(flatten)]
@@ -60,127 +73,169 @@ pub(crate) struct Cli {
 
 #[derive(Debug, Subcommand)]
 enum Command {
-    /// Run a script, or an image written by `compile`
+    /// Run a script, or an image written by `compile`, with ARGS as its `args`
     ///
     /// An image runs as compiled, whatever optimizations the command line
     /// selects. Run only images you trust: a damaged one may crash.
-    Run { file: PathBuf },
+    Run {
+        /// The script or image, then the arguments it gets as `args`
+        #[arg(
+            value_name = "SCRIPT",
+            required = true,
+            trailing_var_arg = true,
+            allow_hyphen_values = true
+        )]
+        script_and_args: Vec<String>,
+    },
     /// Compile a script and report its diagnostics, without running it
-    Check { file: PathBuf },
+    Check { script: String },
     /// Compile a script to an image, which `run` runs without compiling again
     ///
     /// Only the same version of Frost can run the image.
     Compile {
-        file: PathBuf,
+        script: String,
         /// Write the image here
         #[arg(short, long, value_name = "IMAGE")]
         output: PathBuf,
     },
-    /// Start an interactive session (also what no arguments do)
+    /// Start an interactive session (also what no arguments do at a terminal)
     Repl,
     /// List the bytecode a script compiles to, or an image holds
-    List { file: PathBuf },
+    List { script: String },
+    /// Show the syntax tree a script parses to
+    Ast { script: String },
 }
 
 #[derive(Debug, Args)]
 pub(crate) struct Options {
-    /// Start from these optimizations instead of the defaults, then apply any --enable and --disable
-    #[arg(short = 'O', long = "optimize", value_name = "PRESET", global = true)]
-    preset: Option<Preset>,
-
-    /// Turn these optimizations on
-    #[arg(
-        long,
-        value_name = "OPTIMIZATION",
-        value_delimiter = ',',
-        value_parser = optimization_parser(),
-        global = true
-    )]
-    enable: Vec<Optimization>,
-
-    /// Turn these optimizations off
-    #[arg(
-        long,
-        value_name = "OPTIMIZATION",
-        value_delimiter = ',',
-        value_parser = optimization_parser(),
-        global = true
-    )]
-    disable: Vec<Optimization>,
-
     /// When to color diagnostics, listings, and interactive sessions
     #[arg(long, value_name = "WHEN", default_value = "auto", global = true)]
     pub(crate) color: Color,
+
+    /// Change the optimizations: comma-separated settings, applied in order,
+    /// each `<optimization>=true|false`, `all`, or `none`. May be given more
+    /// than once.
+    #[arg(
+        short = 'O',
+        long = "optimize",
+        id = "optimize",
+        value_name = "SETTINGS",
+        global = true,
+        hide_short_help = true,
+        help_heading = ADVANCED
+    )]
+    optimize: Vec<String>,
+
+    /// Compile without `args`, leaving the name free; no ARGS may be given.
+    /// An image runs as compiled, whatever this says.
+    #[arg(long, global = true, hide_short_help = true, help_heading = ADVANCED)]
+    pub(crate) no_args: bool,
+}
+
+/// A script named on the command line.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(crate) enum Script {
+    /// The file at this path.
+    File(PathBuf),
+    /// Standard input, named by `-`.
+    Stdin,
+}
+
+impl From<String> for Script {
+    fn from(name: String) -> Self {
+        if name == "-" {
+            Self::Stdin
+        } else {
+            Self::File(PathBuf::from(name))
+        }
+    }
 }
 
 /// What the command line asks for.
 pub(crate) enum Action {
-    Run(PathBuf),
-    Check(PathBuf),
-    Compile { file: PathBuf, output: PathBuf },
-    Eval(String),
+    Run {
+        script: Script,
+        args: Vec<String>,
+    },
+    Eval {
+        code: String,
+        args: Vec<String>,
+    },
+    Check(Script),
+    Compile {
+        script: Script,
+        output: PathBuf,
+    },
     Repl,
-    List(PathBuf),
+    List(Script),
+    Ast(Script),
+    /// No arguments at all: a session at a terminal, or else the script on
+    /// standard input.
+    Nothing,
 }
 
 impl Cli {
-    pub(crate) fn action(self) -> Action {
-        match (self.command, self.file, self.eval) {
-            (Some(Command::Run { file }), ..) | (None, Some(file), _) => Action::Run(file),
-            (Some(Command::Check { file }), ..) => Action::Check(file),
-            (Some(Command::Compile { file, output }), ..) => Action::Compile { file, output },
-            (None, None, Some(code)) => Action::Eval(code),
-            (Some(Command::Repl), ..) | (None, None, None) => Action::Repl,
-            (Some(Command::List { file }), ..) => Action::List(file),
+    /// What the command line asks for, or why it asks for nothing sensible.
+    pub(crate) fn action(self) -> Result<Action, String> {
+        let Self {
+            command,
+            script_and_args,
+            eval,
+            ..
+        } = self;
+        match (command, eval) {
+            (Some(_), Some(_)) => Err("`-e` cannot be given with a subcommand".to_string()),
+            (Some(command), None) => Ok(match command {
+                Command::Run { script_and_args } => {
+                    run(script_and_args).expect("clap requires `run`'s script")
+                }
+                Command::Check { script } => Action::Check(script.into()),
+                Command::Compile { script, output } => Action::Compile {
+                    script: script.into(),
+                    output,
+                },
+                Command::Repl => Action::Repl,
+                Command::List { script } => Action::List(script.into()),
+                Command::Ast { script } => Action::Ast(script.into()),
+            }),
+            (None, Some(code)) => Ok(Action::Eval {
+                code,
+                args: script_and_args,
+            }),
+            (None, None) => Ok(run(script_and_args).unwrap_or(Action::Nothing)),
         }
     }
+}
+
+/// Running the first of `script_and_args` with the rest as its arguments, if
+/// there is a first.
+fn run(script_and_args: Vec<String>) -> Option<Action> {
+    let mut words = script_and_args.into_iter();
+    let script = words.next()?.into();
+    Some(Action::Run {
+        script,
+        args: words.collect(),
+    })
 }
 
 impl Options {
-    /// The optimizations these options select, starting from `default` when no
-    /// preset is given. Errors if an optimization is both enabled and disabled.
+    /// The optimizations these options select, starting from `default`.
     pub(crate) fn optimization(
         &self,
         default: OptimizationOptions,
-    ) -> Result<OptimizationOptions, String> {
-        if let Some(both) = self.enable.iter().find(|on| self.disable.contains(on)) {
-            return Err(format!("`{}` is both enabled and disabled", both.name()));
-        }
-        let mut options = match self.preset {
-            None => default,
-            Some(Preset::None) => OptimizationOptions::NONE,
-            Some(Preset::All) => OptimizationOptions::ALL,
-        };
-        for &optimization in &self.enable {
-            options.set(optimization, true);
-        }
-        for &optimization in &self.disable {
-            options.set(optimization, false);
-        }
-        Ok(options)
+    ) -> Result<OptimizationOptions, InvalidOptimizationSetting> {
+        self.optimize
+            .iter()
+            .try_fold(default, |options, settings| options.with_settings(settings))
     }
-}
-
-#[derive(Debug, Clone, Copy, ValueEnum)]
-enum Preset {
-    /// Every optimization off
-    None,
-    /// Every optimization on
-    All,
-}
-
-/// Parses an optimization's [name](Optimization::name), offering every name
-/// in help and errors.
-fn optimization_parser() -> impl TypedValueParser<Value = Optimization> {
-    PossibleValuesParser::new(Optimization::ALL.map(Optimization::name)).map(|name| {
-        Optimization::from_name(&name).expect("the parser accepts only optimizations' names")
-    })
 }
 
 #[derive(Debug, Clone, Copy, ValueEnum)]
 pub(crate) enum Color {
-    /// Color when writing to a terminal
+    /// Color when writing to a terminal, unless `NO_COLOR` is set
     Auto,
+    /// Always color
     Always,
+    /// Never color
     Never,
 }

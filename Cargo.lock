@@ -489,6 +489,7 @@ version = "0.0.1"
 dependencies = [
  "clap",
  "frost-compile",
+ "frost-parse",
  "frost-repl",
  "frost-runtime",
  "postcard",

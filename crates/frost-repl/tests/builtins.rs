@@ -97,7 +97,7 @@ fn help_lists_each_built_in_with_its_arguments_and_summary() {
 :undef <name>...            Remove bindings
 :disassemble <source>       Show the bytecode source compiles to, without running it
 :ast <source>               Show the syntax tree source parses to
-:optimize [<setting>, ...]  Show the optimizations, or set them: `<name> = true|false` or `preset = all|none`";
+:optimize [<setting>, ...]  Show the optimizations, or set them: `<name>=true|false`, `all`, or `none`";
     assert_eq!(help, expected);
 }
 
@@ -473,39 +473,35 @@ fn optimize_shows_nothing_when_setting() {
 
 #[test]
 fn optimize_refuses_a_bad_setting_and_applies_none() {
-    for (setting, expected) in [
-        (
-            "constant-fold",
-            "`constant-fold` should be `<optimization> = true|false` or `preset = all|none`",
-        ),
-        (
-            "constant-fold = yes",
-            "`constant-fold` is `true` or `false`, not `yes`",
-        ),
-        (
-            "constant-fold =",
-            "`constant-fold` is `true` or `false`, not ``",
-        ),
-        (
-            "constant_fold = false",
-            "there is no optimization `constant_fold`; `:optimize` lists them",
-        ),
-        (
-            "= false",
-            "there is no optimization ``; `:optimize` lists them",
-        ),
-        ("preset = some", "`preset` is `all` or `none`, not `some`"),
-        (
-            "preset = none,",
-            "` should be `<optimization> = true|false` or `preset = all|none`",
-        ),
+    // `OptimizationOptions::with_settings` reads the settings; its own tests
+    // cover what it refuses and why.
+    for setting in [
+        "constant-fold",
+        "constant-fold = yes",
+        "nope = true",
+        "preset = some",
+        "none,",
     ] {
         let invocation = format!(":optimize consume-locals = false, {setting}");
-        assert_fails(&[&invocation], expected);
+        let refusal = OptimizationOptions::ALL
+            .with_settings(&format!("consume-locals = false, {setting}"))
+            .expect_err(setting)
+            .to_string();
+        assert_fails(&[&invocation], &refusal);
         // The valid setting before the bad one was not applied either.
         let shown = optimizations_after(OptimizationOptions::ALL, &[]);
         let transcript = session(&[&invocation, ":optimize"]);
         assert_eq!(transcript.texts().last(), Some(&shown), "{setting:?}");
+    }
+}
+
+#[test]
+fn optimize_takes_a_bare_preset() {
+    let none = optimizations_after(OptimizationOptions::ALL, &[":optimize none"]);
+    let all = optimizations_after(OptimizationOptions::NONE, &[":optimize all"]);
+    for optimization in Optimization::ALL {
+        assert!(line_says(&none, optimization.name(), false), "{none}");
+        assert!(line_says(&all, optimization.name(), true), "{all}");
     }
 }
 

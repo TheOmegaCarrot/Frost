@@ -357,13 +357,7 @@ impl fmt::Display for ReplError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Self::Compile(diagnostics) => f.write_str(diagnostics.render_plain().trim_end()),
-            Self::Run(error) => {
-                write!(f, "{error}")?;
-                error
-                    .backtrace()
-                    .iter()
-                    .try_for_each(|frame| write!(f, "\n  in {frame}"))
-            }
+            Self::Run(error) => write!(f, "{}", error.with_backtrace()),
         }
     }
 }

@@ -256,7 +256,7 @@ impl Builtin {
             Self::Ast => ("<source>", "Show the syntax tree source parses to"),
             Self::Optimize => (
                 "[<setting>, ...]",
-                "Show the optimizations, or set them: `<name> = true|false` or `preset = all|none`",
+                "Show the optimizations, or set them: `<name>=true|false`, `all`, or `none`",
             ),
         };
         MetacommandSpec::new(self.name(), summary).with_arguments(arguments)

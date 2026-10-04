@@ -6,6 +6,9 @@
 //! interactive sessions start, in [`ReplSettings`].
 //! [`Driver::run`] then parses a command line and carries it out.
 //!
+//! A script run from the command line has the arguments after it as `args`,
+//! an Array of Strings.
+//!
 //! ```no_run
 //! use frost_driver::{Driver, Exit};
 //!
@@ -23,19 +26,27 @@ mod repl;
 
 pub use repl::ReplSettings;
 
+use std::collections::BTreeMap;
 use std::ffi::OsString;
 use std::fs;
-use std::io::{self, IsTerminal, Write};
-use std::path::Path;
+use std::io::{self, IsTerminal, Read, Write};
 use std::process::{ExitCode, Termination};
 use std::sync::{Arc, Mutex, MutexGuard, PoisonError};
 
 use clap::FromArgMatches;
-use frost_compile::{CompilerErrors, CompilerOptions, OptimizationOptions, compile_program};
+use frost_compile::{
+    CompilerError, CompilerErrors, CompilerOptions, OptimizationOptions, compile_in_scope,
+};
+use frost_parse::parse_program;
 use frost_repl::Repl;
-use frost_runtime::{FrostError, Importer, RunError, TrustedProgram, Vm, VmRuntimeConfiguration};
+use frost_runtime::{
+    FrostError, Importer, RunError, TrustedProgram, Value, Vm, VmRuntimeConfiguration,
+};
 
-use cli::{Action, Cli, Color};
+use cli::{Action, Cli, Color, Script};
+
+/// The name a script's arguments are bound to.
+const ARGS: &str = "args";
 
 /// A Frost command-line interface: configure it, then [`run`](Self::run) a
 /// command line.
@@ -107,8 +118,8 @@ impl Driver {
         self
     }
 
-    /// Set the optimizations scripts compile with when the command line does
-    /// not choose a preset.
+    /// Set the optimizations scripts compile with before the command line's
+    /// `-O` changes them.
     pub fn with_optimization(mut self, optimization: OptimizationOptions) -> Self {
         self.optimization = optimization;
         self
@@ -116,12 +127,17 @@ impl Driver {
 
     /// Carry out the command line `args`, whose first item is the program name,
     /// as a process's arguments are.
-    /// A script's printed output, and help and version text, go to `stdout`;
-    /// errors and diagnostics go to `stderr`. Both are flushed before this returns.
-    /// Neither is taken to be a terminal, so `--color auto` writes no color.
+    ///
+    /// A script named `-` is read from `stdin`, as is the script when there are
+    /// no arguments: `stdin` is taken not to be a terminal, so no arguments
+    /// never start an interactive session. A script's printed output, and help
+    /// and version text, go to `stdout`; errors and diagnostics go to `stderr`.
+    /// Both are flushed before this returns. Neither is taken to be a
+    /// terminal, so `--color auto` writes no color.
     pub fn run<I, T>(
         &self,
         args: I,
+        stdin: impl Read,
         stdout: impl Write + Send + 'static,
         stderr: impl Write + Send + 'static,
     ) -> Exit
@@ -130,25 +146,36 @@ impl Driver {
         T: Into<OsString> + Clone,
     {
         let terminals = Terminals {
+            stdin: false,
             stdout: false,
             stderr: false,
         };
-        self.run_on(args, stdout, stderr, terminals)
+        self.run_on(args, stdin, stdout, stderr, terminals)
     }
 
     /// [`run`](Self::run) the process's own command line, with its standard
-    /// output and error. `--color auto` colors whichever of them is a terminal.
+    /// input, output, and error. No arguments start an interactive session if
+    /// standard input is a terminal. `--color auto` colors whichever of
+    /// standard output and error is a terminal.
     pub fn run_from_env(&self) -> Exit {
         let terminals = Terminals {
+            stdin: io::stdin().is_terminal(),
             stdout: io::stdout().is_terminal(),
             stderr: io::stderr().is_terminal(),
         };
-        self.run_on(std::env::args_os(), io::stdout(), io::stderr(), terminals)
+        self.run_on(
+            std::env::args_os(),
+            io::stdin(),
+            io::stdout(),
+            io::stderr(),
+            terminals,
+        )
     }
 
     fn run_on<I, T>(
         &self,
         args: I,
+        mut stdin: impl Read,
         stdout: impl Write + Send + 'static,
         mut stderr: impl Write + Send + 'static,
         terminals: Terminals,
@@ -159,7 +186,7 @@ impl Driver {
     {
         // Shared by the print sink and the driver's own output.
         let stdout = Arc::new(Mutex::new(stdout));
-        let exit = self.carry_out(args, &stdout, &mut stderr, terminals);
+        let exit = self.carry_out(args, &mut stdin, &stdout, &mut stderr, terminals);
         let _ = lock(&stdout).flush();
         let _ = stderr.flush();
         exit
@@ -168,6 +195,7 @@ impl Driver {
     fn carry_out<I, T, W>(
         &self,
         args: I,
+        stdin: &mut dyn Read,
         stdout: &Arc<Mutex<W>>,
         stderr: &mut dyn Write,
         terminals: Terminals,
@@ -194,12 +222,18 @@ impl Driver {
             }
         };
 
+        let usage_error = |stderr: &mut dyn Write, message: &str| {
+            write_out(stderr, &format!("error: {message}\n"));
+            Exit::UsageError
+        };
         let optimization = match cli.options.optimization(self.optimization) {
             Ok(optimization) => optimization,
-            Err(message) => {
-                write_out(stderr, &format!("error: {message}\n"));
-                return Exit::UsageError;
-            }
+            Err(invalid) => return usage_error(stderr, &invalid.to_string()),
+        };
+        let (color, no_args) = (cli.options.color, cli.options.no_args);
+        let action = match cli.action() {
+            Ok(action) => action,
+            Err(message) => return usage_error(stderr, &message),
         };
         let printed = Arc::clone(stdout);
         let print_sink = move |text: &str| {
@@ -215,17 +249,23 @@ impl Driver {
                 optimization_options: optimization,
                 implicit_export: false,
             },
-            color: cli.options.color,
+            no_args,
+            color,
             terminals,
+            stdin,
             stderr,
         };
-        match cli.action() {
-            Action::Run(path) => session.run_file(&path),
-            Action::Check(path) => session.check_file(&path),
-            Action::Compile { file, output } => session.compile_file(&file, &output),
-            Action::Eval(code) => session.run_source("<eval>", &code),
+        let mut stdout = Shared(Arc::clone(stdout));
+        match action {
+            Action::Run { script, args } => session.run_file(&script, args),
+            Action::Eval { code, args } => session.run_source("<eval>", &code, args),
+            Action::Check(script) => session.check_file(&script),
+            Action::Compile { script, output } => session.compile_file(&script, &output),
             Action::Repl => session.run_repl(&self.repl),
-            Action::List(path) => session.list_file(&path, &mut Shared(Arc::clone(stdout))),
+            Action::List(script) => session.list_file(&script, &mut stdout),
+            Action::Ast(script) => session.show_ast(&script, &mut stdout),
+            Action::Nothing if terminals.stdin => session.run_repl(&self.repl),
+            Action::Nothing => session.run_file(&Script::Stdin, Vec::new()),
         }
     }
 }
@@ -258,9 +298,9 @@ pub enum Exit {
     Success,
     /// The script did not compile, or raised an error. Exit status 1.
     ScriptFailed,
-    /// The command line was invalid; a file could not be read, written, or
-    /// loaded as an image; or an interactive session's input or output failed.
-    /// Exit status 2.
+    /// The command line was invalid; a file or standard input could not be
+    /// read, a file could not be written or loaded as an image; or an
+    /// interactive session's frontend failed. Exit status 2.
     UsageError,
 }
 
@@ -281,9 +321,10 @@ impl Termination for Exit {
     }
 }
 
-/// Which of a run's output streams are terminals, for `--color auto`.
+/// Which of a run's standard streams are terminals.
 #[derive(Debug, Clone, Copy)]
 struct Terminals {
+    stdin: bool,
     stdout: bool,
     stderr: bool,
 }
@@ -293,63 +334,63 @@ struct Session<'a> {
     importer: &'a Arc<Importer>,
     configuration: VmRuntimeConfiguration,
     options: CompilerOptions,
+    no_args: bool,
     color: Color,
     terminals: Terminals,
+    stdin: &'a mut dyn Read,
     stderr: &'a mut dyn Write,
 }
 
 impl Session<'_> {
-    fn run_file(mut self, path: &Path) -> Exit {
-        let contents = match self.read(path) {
+    fn run_file(mut self, script: &Script, args: Vec<String>) -> Exit {
+        let contents = match self.read(script) {
             Ok(contents) => contents,
             Err(exit) => return exit,
         };
         if image::is_image(&contents) {
             return match image::decode(&contents) {
                 // The user chose to run this image; see `Command::Run`.
-                Ok(function) => self.run_program(Arc::new(function).assert_trusted()),
+                Ok(function) => self.run_program(Arc::new(function).assert_trusted(), args),
                 Err(reason) => {
-                    self.usage_error(&format!("cannot run {}: {reason}", path.display()))
+                    let message = format!("cannot run {}: {reason}", name(script));
+                    self.usage_error(&message)
                 }
             };
         }
-        match self.source(path, contents) {
-            Ok(source) => self.run_source(&path.to_string_lossy(), &source),
+        match self.source(script, contents) {
+            Ok(source) => self.run_source(&name(script), &source, args),
             Err(exit) => exit,
         }
     }
 
-    fn check_file(mut self, path: &Path) -> Exit {
-        let source = match self.read_source(path) {
+    fn check_file(mut self, script: &Script) -> Exit {
+        let source = match self.read_source(script) {
             Ok(source) => source,
             Err(exit) => return exit,
         };
-        match compile_program(&path.to_string_lossy(), &source, self.options) {
+        match self.compile(&name(script), &source) {
             Ok(_) => Exit::Success,
-            Err(errors) => self.report_diagnostics(&errors),
+            Err(exit) => exit,
         }
     }
 
-    fn compile_file(mut self, path: &Path, output: &Path) -> Exit {
-        let source = match self.read_source(path) {
-            Ok(source) => source,
+    fn compile_file(mut self, script: &Script, output: &std::path::Path) -> Exit {
+        let program = match self
+            .read_source(script)
+            .and_then(|source| self.compile(&name(script), &source))
+        {
+            Ok(program) => program,
             Err(exit) => return exit,
         };
-        let program = match compile_program(&path.to_string_lossy(), &source, self.options) {
-            Ok(output) => output.code,
-            Err(errors) => return self.report_diagnostics(&errors),
-        };
-        let closure = program
-            .into_closure()
-            .expect("a standalone script captures nothing");
+        let closure = close(program, Vec::new());
         match fs::write(output, image::encode(closure.inner_fn())) {
             Ok(()) => Exit::Success,
             Err(error) => self.usage_error(&format!("cannot write {}: {error}", output.display())),
         }
     }
 
-    fn list_file(mut self, path: &Path, output: &mut dyn Write) -> Exit {
-        let contents = match self.read(path) {
+    fn list_file(mut self, script: &Script, output: &mut dyn Write) -> Exit {
+        let contents = match self.read(script) {
             Ok(contents) => contents,
             Err(exit) => return exit,
         };
@@ -357,44 +398,49 @@ impl Session<'_> {
             match image::decode(&contents) {
                 Ok(function) => Arc::new(function),
                 Err(reason) => {
-                    return self.usage_error(&format!("cannot list {}: {reason}", path.display()));
+                    let message = format!("cannot list {}: {reason}", name(script));
+                    return self.usage_error(&message);
                 }
             }
         } else {
-            let source = match self.source(path, contents) {
-                Ok(source) => source,
+            let program = match self
+                .source(script, contents)
+                .and_then(|source| self.compile(&name(script), &source))
+            {
+                Ok(program) => program,
                 Err(exit) => return exit,
             };
-            match compile_program(&path.to_string_lossy(), &source, self.options) {
-                Ok(output) => output
-                    .code
-                    .into_closure()
-                    .expect("a standalone script captures nothing")
-                    .inner_fn_arc(),
-                Err(errors) => return self.report_diagnostics(&errors),
-            }
+            close(program, Vec::new()).inner_fn_arc()
         };
-        let color = match self.color {
-            Color::Always => true,
-            Color::Never => false,
-            Color::Auto => self.terminals.stdout,
-        };
+        let color = self.colors(self.terminals.stdout);
         match write!(output, "{}", function.disassemble().with_color(color)) {
             Ok(()) => Exit::Success,
             Err(error) => self.usage_error(&format!("cannot write the listing: {error}")),
         }
     }
 
-    fn run_repl(mut self, settings: &ReplSettings) -> Exit {
-        let color = match self.color {
-            Color::Always => true,
-            Color::Never => false,
-            // A terminal frontend paints both streams.
-            Color::Auto => {
-                let no_color = std::env::var_os("NO_COLOR").is_some_and(|value| !value.is_empty());
-                self.terminals.stdout && self.terminals.stderr && !no_color
+    fn show_ast(mut self, script: &Script, output: &mut dyn Write) -> Exit {
+        let source = match self.read_source(script) {
+            Ok(source) => source,
+            Err(exit) => return exit,
+        };
+        let filename = name(script);
+        let program = match parse_program(&filename, &source) {
+            Ok(program) => program,
+            Err(error) => {
+                let diagnostic = CompilerError::from_parse_error(&error, &filename, &source);
+                return self.report_diagnostics(&CompilerErrors::from(diagnostic));
             }
         };
+        match writeln!(output, "{}", program.dump()) {
+            Ok(()) => Exit::Success,
+            Err(error) => self.usage_error(&format!("cannot write the tree: {error}")),
+        }
+    }
+
+    fn run_repl(mut self, settings: &ReplSettings) -> Exit {
+        // A terminal frontend paints both streams.
+        let color = self.colors(self.terminals.stdout && self.terminals.stderr);
         let repl = Repl::new()
             .with_configuration(self.configuration.clone())
             .with_importer(Arc::clone(self.importer))
@@ -406,21 +452,21 @@ impl Session<'_> {
         }
     }
 
-    fn run_source(mut self, filename: &str, source: &str) -> Exit {
-        match compile_program(filename, source, self.options) {
-            Ok(output) => self.run_program(output.code),
-            Err(errors) => self.report_diagnostics(&errors),
+    fn run_source(mut self, filename: &str, source: &str, args: Vec<String>) -> Exit {
+        match self.compile(filename, source) {
+            Ok(program) => self.run_program(program, args),
+            Err(exit) => exit,
         }
     }
 
-    fn run_program(mut self, program: TrustedProgram) -> Exit {
-        let closure = program
-            .into_closure()
-            .expect("a standalone script captures nothing");
+    fn run_program(mut self, program: TrustedProgram, args: Vec<String>) -> Exit {
+        if self.no_args && !args.is_empty() {
+            return self.usage_error("`--no-args` takes no arguments for the script");
+        }
         let outcome = Vm::factory()
             .configuration(self.configuration.clone())
             .with_importer(Arc::clone(self.importer))
-            .build(closure)
+            .build(close(program, args))
             .and_then(|vm| vm.run().map_err(RunError::into_error));
         match outcome {
             Ok(_) => Exit::Success,
@@ -428,30 +474,56 @@ impl Session<'_> {
         }
     }
 
-    /// The contents of the file at `path`, or the exit for failing to read it.
-    fn read(&mut self, path: &Path) -> Result<Vec<u8>, Exit> {
-        fs::read(path)
-            .map_err(|error| self.usage_error(&format!("cannot read {}: {error}", path.display())))
+    /// The program `source` compiles to, with `args` in scope unless
+    /// `--no-args` says otherwise, or the exit for its diagnostics.
+    fn compile(&mut self, filename: &str, source: &str) -> Result<TrustedProgram, Exit> {
+        let scope: &[&str] = if self.no_args { &[] } else { &[ARGS] };
+        compile_in_scope(filename, source, self.options, scope)
+            .map(|output| output.code)
+            .map_err(|errors| self.report_diagnostics(&errors))
     }
 
-    /// The script at `path`, or the exit for failing to read it as one.
-    fn read_source(&mut self, path: &Path) -> Result<String, Exit> {
-        let contents = self.read(path)?;
-        if image::is_image(&contents) {
-            return Err(self.usage_error(&format!(
-                "{} is a compiled image, not a script",
-                path.display()
-            )));
+    /// Whether to color output to a stream, which is a terminal if `terminal`
+    /// is true.
+    fn colors(&self, terminal: bool) -> bool {
+        match self.color {
+            Color::Always => true,
+            Color::Never => false,
+            Color::Auto => {
+                terminal && std::env::var_os("NO_COLOR").is_none_or(|value| value.is_empty())
+            }
         }
-        self.source(path, contents)
     }
 
-    /// `contents`, read from `path`, as script source.
-    fn source(&mut self, path: &Path, contents: Vec<u8>) -> Result<String, Exit> {
+    /// The contents of `script`, or the exit for failing to read it.
+    fn read(&mut self, script: &Script) -> Result<Vec<u8>, Exit> {
+        let contents = match script {
+            Script::File(path) => fs::read(path),
+            Script::Stdin => {
+                let mut contents = Vec::new();
+                self.stdin.read_to_end(&mut contents).map(|_| contents)
+            }
+        };
+        contents
+            .map_err(|error| self.usage_error(&format!("cannot read {}: {error}", name(script))))
+    }
+
+    /// The source of `script`, or the exit for failing to read it as source.
+    fn read_source(&mut self, script: &Script) -> Result<String, Exit> {
+        let contents = self.read(script)?;
+        if image::is_image(&contents) {
+            let message = format!("{} is a compiled image, not a script", name(script));
+            return Err(self.usage_error(&message));
+        }
+        self.source(script, contents)
+    }
+
+    /// `contents`, read from `script`, as source.
+    fn source(&mut self, script: &Script, contents: Vec<u8>) -> Result<String, Exit> {
         String::from_utf8(contents).map_err(|_| {
             self.usage_error(&format!(
                 "cannot read {}: it is not UTF-8 text",
-                path.display()
+                name(script)
             ))
         })
     }
@@ -462,25 +534,35 @@ impl Session<'_> {
     }
 
     fn report_diagnostics(&mut self, errors: &CompilerErrors) -> Exit {
-        let rendered = match self.color {
-            // `render` also defers to the environment, such as `NO_COLOR`.
-            Color::Auto if self.terminals.stderr => errors.render(),
-            Color::Auto | Color::Never => errors.render_plain(),
-            Color::Always => errors.render_pretty(),
+        let rendered = if self.colors(self.terminals.stderr) {
+            errors.render_pretty()
+        } else {
+            errors.render_plain()
         };
         write_out(self.stderr, &rendered);
         Exit::ScriptFailed
     }
 
     fn report_error(&mut self, error: &FrostError) -> Exit {
-        let backtrace: String = error
-            .backtrace()
-            .iter()
-            .map(|frame| format!("  in {frame}\n"))
-            .collect();
-        write_out(self.stderr, &format!("{error}\n{backtrace}"));
+        write_out(self.stderr, &format!("{}\n", error.with_backtrace()));
         Exit::ScriptFailed
     }
+}
+
+/// How messages and diagnostics name `script`.
+fn name(script: &Script) -> String {
+    match script {
+        Script::File(path) => path.to_string_lossy().into_owned(),
+        Script::Stdin => "<stdin>".to_string(),
+    }
+}
+
+/// `program`, ready to run with `args` as its arguments.
+fn close(program: TrustedProgram, args: Vec<String>) -> Arc<frost_runtime::Closure> {
+    let args: Value = args.into_iter().map(Value::from).collect();
+    program
+        .close(BTreeMap::from([(ARGS.to_string(), args)]))
+        .expect("a script captures nothing but its arguments")
 }
 
 /// Write `text` to `out`. A failure to write is ignored: there is nowhere

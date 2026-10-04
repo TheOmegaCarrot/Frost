@@ -77,6 +77,15 @@ pub struct Program {
     pub statements: Vec<Spanned<Statement>>,
 }
 
+impl Program {
+    /// The tree as text, for a person inspecting what source parses to. Its
+    /// layout may change from one version to the next.
+    pub fn dump(&self) -> String {
+        // TODO: A more compact printer; spans make this verbose.
+        format!("{:#?}", self.statements)
+    }
+}
+
 // -- Statements --
 
 /// A statement: a definition or an expression.

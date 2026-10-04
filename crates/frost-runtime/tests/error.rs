@@ -1,9 +1,58 @@
-use frost_runtime::FrostError;
+use frost_compile::{CompilerOptions, OptimizationOptions, compile_program};
+use frost_runtime::{FrostError, RunError, Vm};
+
+/// The error running `source` raises, which it must.
+fn raised(source: &str) -> FrostError {
+    let options = CompilerOptions {
+        optimization_options: OptimizationOptions::NONE,
+        implicit_export: false,
+    };
+    let closure = compile_program("test.frst", source, options)
+        .expect("the source compiles")
+        .code
+        .into_closure()
+        .expect("the source captures nothing");
+    Vm::factory()
+        .build(closure)
+        .and_then(|vm| vm.run().map_err(RunError::into_error))
+        .expect_err("the source raises")
+}
 
 #[test]
 fn display() {
     let err = FrostError::from_static("division by zero");
     assert_eq!(err.to_string(), "Error: division by zero");
+}
+
+#[test]
+fn with_backtrace_shows_the_error_then_a_line_per_frame() {
+    let err = raised(
+        r"
+        defn inner() -> [error('boom')]
+        defn outer() -> [inner()]
+        outer()
+        ",
+    );
+    assert!(err.backtrace().len() >= 2, "{:?}", err.backtrace());
+    let frames: String = err
+        .backtrace()
+        .iter()
+        .map(|frame| format!("\n  in {frame}"))
+        .collect();
+    assert_eq!(
+        err.with_backtrace().to_string(),
+        format!("Error: boom{frames}")
+    );
+    assert!(
+        frames.contains("\n  in inner") && frames.contains("\n  in outer"),
+        "{frames}"
+    );
+}
+
+#[test]
+fn with_backtrace_of_an_error_without_frames_is_just_the_error() {
+    let err = FrostError::from_static("division by zero");
+    assert_eq!(err.with_backtrace().to_string(), "Error: division by zero");
 }
 
 #[test]

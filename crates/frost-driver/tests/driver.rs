@@ -7,7 +7,7 @@ use std::num::NonZeroUsize;
 use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
 
-use frost_compile::OptimizationOptions;
+use frost_compile::{Optimization, OptimizationOptions};
 use frost_driver::{Driver, Exit, ReplSettings};
 use frost_repl::{Frontend, InvalidName, MetacommandSpec, ReplError, ScriptedFrontend, Transcript};
 use frost_runtime::{Extension, ImporterBuilder, Value, VmRuntimeConfiguration};
@@ -47,11 +47,13 @@ impl Write for Buffer {
     }
 }
 
-/// Run `driver` on `args` (after the program name), capturing its output.
-/// `configure` adjusts the configuration it runs scripts under.
-fn run_configured(
+/// Run `driver` on `args` (after the program name), with `stdin` as its
+/// standard input, capturing its output. `configure` adjusts the
+/// configuration it runs scripts under.
+fn run_fed(
     driver: Driver,
     configure: impl FnOnce(&mut VmRuntimeConfiguration),
+    stdin: &str,
     args: &[&str],
 ) -> Ran {
     let mut configuration = VmRuntimeConfiguration::default();
@@ -59,6 +61,7 @@ fn run_configured(
     let (stdout, stderr) = (Buffer::default(), Buffer::default());
     let exit = driver.with_configuration(configuration).run(
         ["frost"].iter().chain(args),
+        stdin.as_bytes(),
         stdout.clone(),
         stderr.clone(),
     );
@@ -69,8 +72,22 @@ fn run_configured(
     }
 }
 
+/// [`run_fed`] with nothing on standard input.
+fn run_configured(
+    driver: Driver,
+    configure: impl FnOnce(&mut VmRuntimeConfiguration),
+    args: &[&str],
+) -> Ran {
+    run_fed(driver, configure, "", args)
+}
+
 fn run(args: &[&str]) -> Ran {
     run_configured(Driver::new(), |_| {}, args)
+}
+
+/// [`run`] with `stdin` as standard input.
+fn run_with_stdin(stdin: &str, args: &[&str]) -> Ran {
+    run_fed(Driver::new(), |_| {}, stdin, args)
 }
 
 /// Write `source` to a script file named `name`, returning its path.
@@ -471,17 +488,26 @@ fn run_session(segments: &[&str], args: &[&str]) -> Session {
 }
 
 #[test]
-fn no_arguments_or_repl_start_an_interactive_session() {
-    for args in [vec![], vec!["repl"]] {
-        let session = run_session(&["def x = 20", "x + 1"], &args);
-        assert_eq!(session.ran.exit, Exit::Success, "{args:?}: {session:?}");
-        assert_eq!(session.values(), [Value::Null, Value::Int(21)], "{args:?}");
-        assert_eq!(
-            (session.ran.stdout.as_str(), session.ran.stderr.as_str()),
-            ("", ""),
-            "{args:?}: the session's outcomes go to its frontend"
-        );
-    }
+fn repl_starts_an_interactive_session() {
+    let session = run_session(&["def x = 20", "x + 1"], &["repl"]);
+    assert_eq!(session.ran.exit, Exit::Success, "{session:?}");
+    assert_eq!(session.values(), [Value::Null, Value::Int(21)]);
+    assert_eq!(
+        (session.ran.stdout.as_str(), session.ran.stderr.as_str()),
+        ("", ""),
+        "the session's outcomes go to its frontend"
+    );
+}
+
+#[test]
+fn no_arguments_away_from_a_terminal_run_the_script_on_standard_input() {
+    // `Driver::run` takes standard input not to be a terminal.
+    let session = run_session_configured(Driver::new(), ReplSettings::new(), &["1"], |_| {}, &[]);
+    assert!(session.outcomes.is_empty(), "no session: {session:?}");
+    assert_eq!(session.ran.exit, Exit::Success, "{session:?}");
+    let ran = run_with_stdin("print(1 + 2)\nprint(args)", &[]);
+    assert_eq!(ran.exit, Exit::Success, "{ran:?}");
+    assert_eq!(ran.printed(), ["3", "[]"]);
 }
 
 #[test]
@@ -795,28 +821,57 @@ fn folds(args: &[&str]) -> bool {
 }
 
 #[test]
-fn optimizations_follow_the_presets_and_switches() {
+fn optimizations_follow_the_settings() {
     assert!(folds(&[]), "every optimization is on by default");
     assert!(folds(&["-O", "all"]));
     assert!(!folds(&["-O", "none"]));
     assert!(!folds(&["--optimize", "none"]));
-    assert!(folds(&["-O", "none", "--enable", "constant-fold"]));
-    assert!(!folds(&["--disable", "constant-fold"]));
-    assert!(!folds(&["--disable", "branch-eliminate,constant-fold"]));
-    assert!(folds(&[
+    assert!(!folds(&["-O", "preset=none"]));
+    assert!(folds(&["-O", "none,constant-fold=true"]));
+    assert!(!folds(&["-O", "constant-fold=false"]));
+    assert!(!folds(&[
         "-O",
-        "none",
-        "--enable",
-        "capture-hoist,constant-fold"
+        "branch-eliminate=false,constant-fold=false"
     ]));
-    // The switches apply to a subcommand too.
+    // `OptimizationOptions::with_settings` reads each `-O`; its own tests cover
+    // the settings it takes.
+}
+
+#[test]
+fn optimize_may_be_given_more_than_once_each_applying_in_turn() {
+    assert!(folds(&["-O", "none", "-O", "constant-fold=true"]));
+    assert!(!folds(&["-O", "constant-fold=true", "-O", "none"]));
+    assert!(folds(&["-O", "none", "--optimize", "all"]));
+}
+
+#[test]
+fn optimizations_apply_to_a_subcommand_and_before_it() {
     let path = script("foldable.frst", FOLDABLE);
-    let ran = run_configured(
-        Driver::new(),
-        |configuration| configuration.fuel = NonZeroUsize::new(5),
-        &["run", "-O", "none", &path],
-    );
-    assert_eq!(ran.exit, Exit::ScriptFailed, "{ran:?}");
+    for args in [["run", "-O", "none", &path], ["-O", "none", "run", &path]] {
+        let ran = run_configured(
+            Driver::new(),
+            |configuration| configuration.fuel = NonZeroUsize::new(5),
+            &args,
+        );
+        assert_eq!(ran.exit, Exit::ScriptFailed, "{args:?}: {ran:?}");
+    }
+}
+
+#[test]
+fn an_invalid_optimization_setting_is_a_usage_error() {
+    for setting in [
+        "some",
+        "constant-fold",
+        "nope=true",
+        "constant-fold=yes",
+        "preset=x",
+    ] {
+        let ran = run(&["-O", setting, "-e", "print(1)"]);
+        assert_eq!(ran.exit, Exit::UsageError, "{setting:?}: {ran:?}");
+        let refusal = OptimizationOptions::ALL.with_settings(setting).unwrap_err();
+        assert_eq!(ran.stderr, format!("error: {refusal}\n"), "{setting:?}");
+        assert!(ran.printed().is_empty(), "nothing runs: {setting:?}");
+    }
 }
 
 #[test]
@@ -830,48 +885,14 @@ fn the_drivers_default_optimizations_apply_without_a_preset() {
 }
 
 #[test]
-fn every_optimization_has_a_switch() {
-    // No `..`: a new option fails to compile here until its switch is listed.
-    let OptimizationOptions {
-        constant_fold: _,
-        constant_propagate: _,
-        branch_eliminate: _,
-        capture_hoist: _,
-        consume_locals: _,
-        deduplicate_constants: _,
-    } = OptimizationOptions::ALL;
-    for name in [
-        "constant-fold",
-        "constant-propagate",
-        "branch-eliminate",
-        "capture-hoist",
-        "consume-locals",
-        "deduplicate-constants",
-    ] {
-        for switch in ["--enable", "--disable"] {
-            let ran = run(&[switch, name, "-e", "1"]);
-            assert_eq!(ran.exit, Exit::Success, "{switch} {name}: {ran:?}");
+fn every_optimization_can_be_set_by_name() {
+    for optimization in Optimization::ALL {
+        for value in ["true", "false"] {
+            let setting = format!("{}={value}", optimization.name());
+            let ran = run(&["-O", &setting, "-e", "1"]);
+            assert_eq!(ran.exit, Exit::Success, "{setting}: {ran:?}");
         }
     }
-}
-
-#[test]
-fn an_optimization_both_enabled_and_disabled_is_a_usage_error() {
-    let ran = run(&[
-        "--enable",
-        "capture-hoist",
-        "--disable",
-        "capture-hoist",
-        "-e",
-        "1",
-    ]);
-    assert_eq!(ran.exit, Exit::UsageError);
-    assert!(
-        ran.stderr
-            .contains("`capture-hoist` is both enabled and disabled"),
-        "{}",
-        ran.stderr
-    );
 }
 
 // --- The command line itself ---
@@ -907,17 +928,74 @@ fn help_states_the_default_optimizations() {
         ),
         (
             Driver::new().with_optimization(custom),
-            "[default: constant-fold,capture-hoist]",
+            "[default: none,constant-fold=true,capture-hoist=true]",
         ),
     ] {
-        for flag in ["-h", "--help"] {
-            let help = run_configured(driver.clone(), |_| {}, &[flag]).stdout;
-            let start = help.find("--optimize").expect("the help lists --optimize");
-            let end = help.find("--enable <").expect("the help lists --enable");
-            let entry = &help[start..end];
-            assert!(entry.contains(default), "{flag}: {entry}");
-        }
+        let help = run_configured(driver.clone(), |_| {}, &["--help"]).stdout;
+        let start = help.find("--optimize").expect("the help lists --optimize");
+        let end = help.find("--no-args").expect("the help lists --no-args");
+        let entry = &help[start..end];
+        assert!(entry.contains(default), "{entry}");
+        // The default is itself a setting `-O` takes.
+        let setting = default
+            .trim_start_matches("[default: ")
+            .trim_end_matches(']');
+        let ran = run(&["-O", setting, "-e", "1"]);
+        assert_eq!(ran.exit, Exit::Success, "{setting}: {ran:?}");
     }
+}
+
+#[test]
+fn advanced_options_appear_only_in_the_long_help() {
+    let short = run(&["-h"]).stdout;
+    let long = run(&["--help"]).stdout;
+    for option in ["--optimize", "--no-args"] {
+        assert!(!short.contains(option), "`-h` hides {option}:\n{short}");
+        assert!(long.contains(option), "`--help` shows {option}:\n{long}");
+    }
+    let advanced = long
+        .find("Advanced options:")
+        .expect("`--help` has an advanced section");
+    assert!(long[advanced..].contains("--optimize"), "{long}");
+    assert!(long[advanced..].contains("--no-args"), "{long}");
+    // The rest stay in the short help.
+    for option in ["--eval", "--color"] {
+        assert!(short.contains(option), "`-h` shows {option}:\n{short}");
+    }
+}
+
+#[test]
+fn usage_names_the_driver() {
+    let ran = run_configured(Driver::new().with_name("my-frost"), |_| {}, &["--help"]);
+    let expected = "Usage: my-frost [OPTIONS] [SCRIPT [ARGS]...]
+       my-frost [OPTIONS] -e CODE [ARGS]...
+       my-frost [OPTIONS] <COMMAND>";
+    assert!(ran.stdout.contains(expected), "{}", ran.stdout);
+    let ran = run_configured(
+        Driver::new().with_name("my-frost"),
+        |_| {},
+        &["run", "--help"],
+    );
+    assert!(
+        ran.stdout
+            .contains("Usage: my-frost run [OPTIONS] SCRIPT [ARGS]..."),
+        "{}",
+        ran.stdout
+    );
+}
+
+#[test]
+fn global_options_may_come_before_a_subcommand() {
+    let path = script("before-subcommand.frst", "nope");
+    let ran = run(&["--color", "never", "check", &path]);
+    assert_eq!(ran.exit, Exit::ScriptFailed, "{ran:?}");
+    assert!(
+        ran.stderr.contains("`nope` is not defined"),
+        "{}",
+        ran.stderr
+    );
+    let ran = run(&["--color", "always", "check", &path]);
+    assert!(ran.stderr.contains('\x1b'), "colored: {:?}", ran.stderr);
 }
 
 #[test]
@@ -925,9 +1003,12 @@ fn a_bad_command_line_is_a_usage_error() {
     for args in [
         vec!["--no-such-flag"],
         vec!["-O", "some"],
-        vec!["--enable", "no-such-optimization", "-e", "1"],
-        vec!["script.frst", "-e", "1"],
+        vec!["-O", "no-such-optimization=true", "-e", "1"],
+        vec!["-e", "1", "run", "script.frst"],
         vec!["run"],
+        vec!["check"],
+        vec!["repl", "script.frst"],
+        vec!["check", "a.frst", "b.frst"],
     ] {
         let ran = run(&args);
         assert_eq!(ran.exit, Exit::UsageError, "{args:?}: {ran:?}");
@@ -941,6 +1022,220 @@ fn exit_statuses_are_conventional() {
     assert_eq!(Exit::Success.code(), 0);
     assert_eq!(Exit::ScriptFailed.code(), 1);
     assert_eq!(Exit::UsageError.code(), 2);
+}
+
+// --- A script's arguments ---
+
+#[test]
+fn a_script_gets_the_arguments_after_it_as_args() {
+    let path = script("args.frst", "print(args)");
+    for args in [
+        vec![path.as_str(), "a", "b c"],
+        vec!["run", path.as_str(), "a", "b c"],
+    ] {
+        let ran = run(&args);
+        assert_eq!(ran.exit, Exit::Success, "{args:?}: {ran:?}");
+        assert_eq!(ran.printed(), [r#"[ "a", "b c" ]"#], "{args:?}");
+    }
+}
+
+#[test]
+fn a_script_given_no_arguments_gets_an_empty_args() {
+    let path = script("no-args.frst", "print(args)");
+    assert_eq!(run(&[&path]).printed(), ["[]"]);
+    assert_eq!(run(&["-e", "print(args)"]).printed(), ["[]"]);
+}
+
+#[test]
+fn eval_gets_the_arguments_after_it_as_args() {
+    let ran = run(&["-e", "print(args)", "a", "b"]);
+    assert_eq!(ran.exit, Exit::Success, "{ran:?}");
+    assert_eq!(ran.printed(), [r#"[ "a", "b" ]"#]);
+}
+
+#[test]
+fn everything_after_the_script_is_its_even_what_looks_like_an_option() {
+    let path = script("option-like-args.frst", "print(args)");
+    for (args, expected) in [
+        (vec![path.as_str(), "-e", "1"], r#"[ "-e", "1" ]"#),
+        (
+            vec![path.as_str(), "--color", "never"],
+            r#"[ "--color", "never" ]"#,
+        ),
+        (
+            vec!["run", path.as_str(), "-O", "none", "x"],
+            r#"[ "-O", "none", "x" ]"#,
+        ),
+        (vec![path.as_str(), "run", "-"], r#"[ "run", "-" ]"#),
+    ] {
+        let ran = run(&args);
+        assert_eq!(ran.exit, Exit::Success, "{args:?}: {ran:?}");
+        assert_eq!(ran.printed(), [expected], "{args:?}");
+    }
+}
+
+#[test]
+fn a_script_may_bind_args_itself() {
+    let ran = run(&["-e", "def args = 'mine'\nprint(args)", "a"]);
+    assert_eq!(ran.exit, Exit::Success, "{ran:?}");
+    assert_eq!(ran.printed(), ["mine"]);
+}
+
+#[test]
+fn an_image_gets_its_arguments_as_args() {
+    let image = image("args-image", "print(args)", &[]);
+    let ran = run(&["run", &image, "x"]);
+    assert_eq!(ran.exit, Exit::Success, "{ran:?}");
+    assert_eq!(ran.printed(), [r#"[ "x" ]"#]);
+}
+
+#[test]
+fn no_args_leaves_the_name_unbound() {
+    let ran = run(&["--no-args", "--color", "never", "-e", "print(args)"]);
+    assert_eq!(ran.exit, Exit::ScriptFailed, "{ran:?}");
+    assert!(
+        ran.stderr.contains("`args` is not defined"),
+        "{}",
+        ran.stderr
+    );
+    // So a script may give it a meaning of its own.
+    let ran = run(&["--no-args", "-e", "def args = 1\nprint(args)"]);
+    assert_eq!(ran.printed(), ["1"], "{ran:?}");
+}
+
+#[test]
+fn no_args_refuses_arguments_for_the_script() {
+    let ran = run(&["--no-args", "-e", "print(1)", "a"]);
+    assert_eq!(ran.exit, Exit::UsageError, "{ran:?}");
+    assert_eq!(
+        ran.stderr,
+        "error: `--no-args` takes no arguments for the script\n"
+    );
+    assert!(ran.printed().is_empty(), "nothing runs");
+}
+
+#[test]
+fn an_image_runs_as_compiled_whatever_no_args_says() {
+    let image = image("no-args-image", "print(args)", &[]);
+    let ran = run(&["run", "--no-args", &image]);
+    assert_eq!(ran.exit, Exit::Success, "{ran:?}");
+    assert_eq!(ran.printed(), ["[]"]);
+}
+
+// --- Standard input ---
+
+#[test]
+fn a_script_of_dash_is_read_from_standard_input() {
+    let source = "print(1 + 2)\nprint(args)";
+    for args in [vec!["-", "a"], vec!["run", "-", "a"]] {
+        let ran = run_with_stdin(source, &args);
+        assert_eq!(ran.exit, Exit::Success, "{args:?}: {ran:?}");
+        assert_eq!(ran.printed(), ["3", r#"[ "a" ]"#], "{args:?}");
+    }
+}
+
+#[test]
+fn every_subcommand_reads_a_script_of_dash_from_standard_input() {
+    let ran = run_with_stdin("nope", &["check", "--color", "never", "-"]);
+    assert_eq!(ran.exit, Exit::ScriptFailed, "{ran:?}");
+    assert!(
+        ran.stderr.contains("<stdin>"),
+        "named `<stdin>`: {}",
+        ran.stderr
+    );
+
+    let listed = run_with_stdin("1 + 2", &["list", "-O", "none", "-"]);
+    assert_eq!(listed.exit, Exit::Success, "{listed:?}");
+    assert!(listed.stdout.contains("Add"), "{}", listed.stdout);
+
+    let tree = run_with_stdin("1 + 2", &["ast", "-"]);
+    assert_eq!(tree.exit, Exit::Success, "{tree:?}");
+    assert!(tree.stdout.contains("BinOp"), "{}", tree.stdout);
+
+    let output = scratch_path("stdin-image");
+    let compiled = run_with_stdin("print(7)", &["compile", "-", "-o", &output]);
+    assert_eq!(compiled.exit, Exit::Success, "{compiled:?}");
+    assert_eq!(run(&["run", &output]).printed(), ["7"]);
+}
+
+#[test]
+fn an_image_on_standard_input_runs() {
+    let image = image("stdin-runs-image", "print(8)", &[]);
+    let bytes = fs::read(&image).unwrap();
+    let (stdout, stderr) = (Buffer::default(), Buffer::default());
+    let exit = Driver::new().run(
+        ["frost", "-"],
+        bytes.as_slice(),
+        stdout.clone(),
+        stderr.clone(),
+    );
+    assert_eq!(exit, Exit::Success, "{}", stderr.contents());
+    assert_eq!(stdout.contents(), "8\n");
+}
+
+#[test]
+fn failing_to_read_standard_input_is_a_usage_error() {
+    struct Broken;
+    impl io::Read for Broken {
+        fn read(&mut self, _: &mut [u8]) -> io::Result<usize> {
+            Err(io::Error::other("input is gone"))
+        }
+    }
+    let (stdout, stderr) = (Buffer::default(), Buffer::default());
+    let exit = Driver::new().run(["frost", "-"], Broken, stdout.clone(), stderr.clone());
+    assert_eq!(exit, Exit::UsageError);
+    assert_eq!(
+        stderr.contents(),
+        "error: cannot read <stdin>: input is gone\n"
+    );
+}
+
+#[test]
+fn standard_input_is_read_only_for_a_script_of_dash() {
+    let path = script("ignores-stdin.frst", "print('from the file')");
+    let ran = run_with_stdin("print('from stdin')", &[&path, "-"]);
+    assert_eq!(ran.printed(), ["from the file"], "{ran:?}");
+}
+
+// --- Syntax trees ---
+
+#[test]
+fn ast_shows_a_scripts_syntax_tree_without_running_it() {
+    let path = script("ast.frst", "print(1 + 2)");
+    let ran = run(&["ast", &path]);
+    assert_eq!(ran.exit, Exit::Success, "{ran:?}");
+    assert!(ran.stdout.contains("BinOp"), "{}", ran.stdout);
+    assert!(!ran.stdout.contains("\n3\n"), "nothing ran: {}", ran.stdout);
+    assert_eq!(ran.stderr, "");
+}
+
+#[test]
+fn ast_does_not_compile_the_script() {
+    // An unbound name parses, though it would not compile.
+    let path = script("ast-unbound.frst", "nope");
+    let ran = run(&["ast", &path]);
+    assert_eq!(ran.exit, Exit::Success, "{ran:?}");
+}
+
+#[test]
+fn ast_reports_a_script_that_does_not_parse() {
+    let path = script("ast-broken.frst", "def");
+    let ran = run(&["ast", "--color", "never", &path]);
+    assert_eq!(ran.exit, Exit::ScriptFailed, "{ran:?}");
+    assert!(ran.stderr.contains("ast-broken.frst"), "{}", ran.stderr);
+    assert_eq!(ran.stdout, "");
+}
+
+#[test]
+fn ast_takes_scripts_not_images() {
+    let image = image("ast-image", "1", &[]);
+    let ran = run(&["ast", &image]);
+    assert_eq!(ran.exit, Exit::UsageError, "{ran:?}");
+    assert!(
+        ran.stderr.contains("is a compiled image, not a script"),
+        "{}",
+        ran.stderr
+    );
 }
 
 // --- The embedder's configuration ---
