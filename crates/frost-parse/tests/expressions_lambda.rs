@@ -304,9 +304,8 @@ mod block_body {
         assert_eq!(lam.body.len(), 1);
     }
 
-    // A lone identifier in braces is a thunk returning that name, not a map.
-    // Map literals always require `key: value` pairs, so `{a}` can only be a
-    // single-expression block body, equivalent to `fn -> a`.
+    // A lone identifier in braces is a block body, equivalent to `fn -> a`,
+    // not the Map shorthand `{a: a}`. Wrap it in parens for the Map: `fn -> ({a})`.
     #[test]
     fn single_bare_identifier_is_thunk() {
         let expr = parse_expr("fn -> {a}");
@@ -445,6 +444,40 @@ mod map_body {
             panic!("expected Def, got {statement:?}");
         };
         assert_eq!(map_body_len(&assert_lambda(expr)), 2);
+    }
+
+    // -- Shorthand entries --
+    // A comma after a leading name cannot continue a block statement, so
+    // `{a, ...` is a Map. A lone `{a}` stays a block (see `block_body`).
+
+    #[test]
+    fn shorthand_entries() {
+        let expr = parse_expr("fn a, b -> {a, b}");
+        assert_eq!(map_body_len(&assert_lambda(&expr)), 2);
+    }
+
+    #[test]
+    fn shorthand_then_explicit_entry() {
+        let expr = parse_expr("fn a -> {a, b: 2}");
+        assert_eq!(map_body_len(&assert_lambda(&expr)), 2);
+    }
+
+    #[test]
+    fn multiline_shorthand_entries() {
+        let source = r"
+            fn a, b -> {
+                a,
+                b
+            }
+        ";
+        let expr = parse_expr(source);
+        assert_eq!(map_body_len(&assert_lambda(&expr)), 2);
+    }
+
+    #[test]
+    fn parenthesized_lone_shorthand() {
+        let expr = parse_expr("fn a -> ({a})");
+        assert_eq!(map_body_len(&assert_lambda(&expr)), 1);
     }
 
     // Skipping newlines only changes what the lookahead sees; a block whose
@@ -708,17 +741,6 @@ mod errors {
     #[test]
     fn block_body_missing_separator() {
         let err = parse_err("fn -> { 1 2 }");
-        assert!(
-            err.contains("unexpected") || err.contains("Expected"),
-            "error was: {err}"
-        );
-    }
-
-    // `{a, b}` is neither a map (no `:` values) nor a valid block (a comma is
-    // not a statement separator), so it cannot be a lambda body.
-    #[test]
-    fn comma_separated_bare_identifiers() {
-        let err = parse_err("fn -> {a, b}");
         assert!(
             err.contains("unexpected") || err.contains("Expected"),
             "error was: {err}"

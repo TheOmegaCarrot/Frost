@@ -330,6 +330,9 @@ pub enum UnaryOp {
 // -- Map entries --
 
 /// One `key: value` entry of an [`Expr::Map`].
+///
+/// The shorthand `name` is represented as the String key `"name"`
+/// with an [`Expr::NameLookup`] of `name`.
 #[derive(Clone, Debug, PartialEq, Serialize)]
 pub struct MapEntry {
     /// The key; a bare `name` key is a String literal.

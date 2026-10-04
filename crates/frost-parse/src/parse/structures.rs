@@ -1,4 +1,4 @@
-use crate::ast::{Expr, Literal, MapEntry, Spanned};
+use crate::ast::{Expr, Literal, MapEntry, SourceSpan, Spanned};
 use crate::lex::Token;
 use crate::parse::{ParseResult, ctx::ParseCtx};
 
@@ -46,9 +46,17 @@ impl<'src, 'f> ParseCtx<'src, 'f> {
             }
             Token::Identifier(name) => {
                 let name = name.to_owned();
-                let span = peek.span.clone();
+                let span: SourceSpan = peek.span.clone().into();
                 self.advance(1);
-                Spanned::new(Expr::Literal(Literal::String(name)), span.into())
+
+                if !matches!(self.peek().map(|t| &t.token), Some(Token::Colon)) {
+                    // The shorthand `name`, for `name: name`.
+                    let key = Spanned::new(Expr::Literal(Literal::String(name.clone())), span);
+                    let value = Spanned::new(Expr::NameLookup(name), span);
+                    return Ok(Spanned::new(MapEntry { key, value }, span));
+                }
+
+                Spanned::new(Expr::Literal(Literal::String(name)), span)
             }
             _ => return Err(self.unexpected_token(peek, "Map entry key")),
         };

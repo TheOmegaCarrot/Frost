@@ -221,13 +221,13 @@ enum BraceKind {
 }
 
 /// Disambiguate `{` after `->`:
-/// - `{ identifier :` is a map literal (expression)
+/// - `{ identifier :` and `{ identifier ,` are map literals (expression)
 /// - `{ [` is probably a map: try expression first, backtrack to block on failure
 /// - `{ }` is an empty map (the only sensible reading)
-/// - `{ <anything else>` is a block body
+/// - `{ <anything else>` is a block body, including `{ identifier }`
 /// - no `{` is a plain expression
 ///
-/// Newlines after the `{` are skipped, as they are inside a Map literal.
+/// Newlines are skipped, as they are inside a Map literal.
 fn brace_disambiguation(ctx: &ParseCtx) -> BraceKind {
     let Some(peek) = ctx.peek() else {
         return BraceKind::Expression;
@@ -237,12 +237,17 @@ fn brace_disambiguation(ctx: &ParseCtx) -> BraceKind {
     }
 
     let (second, third) = match ctx.get_past_nl(ctx.here() + 1) {
-        Some((pos, second)) => (Some(second), ctx.get(pos + 1)),
+        Some((pos, second)) => (Some(second), ctx.get_past_nl(pos + 1)),
         None => (None, None),
     };
 
     match second.map(|t| &t.token) {
-        Some(Token::Identifier(_)) if matches!(third.map(|t| &t.token), Some(Token::Colon)) => {
+        Some(Token::Identifier(_))
+            if matches!(
+                third.map(|(_, t)| &t.token),
+                Some(Token::Colon | Token::Comma)
+            ) =>
+        {
             BraceKind::Expression
         }
         Some(Token::OpenBracket) => BraceKind::TryMap,

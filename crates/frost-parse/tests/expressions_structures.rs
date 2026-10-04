@@ -622,13 +622,85 @@ mod map_errors {
         let err = parse_err("{42: 'x'}");
         assert!(err.contains("unexpected"), "error was: {err}");
     }
+}
+
+// `{name}` is shorthand for `{name: name}`, as in Map destructuring and patterns.
+mod map_shorthand {
+    use super::*;
+
+    /// The name an entry's value looks up, which must be a bare name.
+    fn value_name(entry: &Spanned<MapEntry>) -> &str {
+        match &entry.node.value.node {
+            Expr::NameLookup(name) => name,
+            other => panic!("expected NameLookup value, got {other:?}"),
+        }
+    }
 
     #[test]
-    fn shorthand_not_allowed() {
-        let err = parse_err("{foo}");
-        assert!(
-            err.contains("Expected :") || err.contains("unexpected"),
-            "error was: {err}"
-        );
+    fn single() {
+        let expr = parse_expr("{foo}");
+        let entries = map_entries(&expr);
+        assert_eq!(entries.len(), 1);
+        assert_eq!(str_key(&entries[0]), "foo");
+        assert_eq!(value_name(&entries[0]), "foo");
+    }
+
+    #[test]
+    fn same_tree_as_explicit_form() {
+        assert_eq!(parse_expr("{foo, bar}"), parse_expr("{foo: foo, bar: bar}"));
+    }
+
+    // The key, the value, and the entry all span just the name.
+    #[test]
+    fn spans_cover_the_name() {
+        let expr = parse_expr("{ foo }");
+        let entry = &map_entries(&expr)[0];
+        let name = SourceSpan { start: 2, end: 5 };
+        assert_eq!(entry.span, name, "entry span");
+        assert_eq!(entry.node.key.span, name, "key span");
+        assert_eq!(entry.node.value.span, name, "value span");
+    }
+
+    #[test]
+    fn mixed_with_other_entries() {
+        let expr = parse_expr("{sku, qty: 2, [3]: 'three', price}");
+        let entries = map_entries(&expr);
+        assert_eq!(entries.len(), 4);
+        assert_eq!(value_name(&entries[0]), "sku");
+        assert!(is_int(&entries[1].node.value, 2));
+        assert!(is_int(&entries[2].node.key, 3));
+        assert_eq!(value_name(&entries[3]), "price");
+    }
+
+    #[test]
+    fn trailing_comma() {
+        let expr = parse_expr("{foo, bar,}");
+        assert_eq!(map_entries(&expr).len(), 2);
+    }
+
+    #[test]
+    fn multiline() {
+        let source = r"
+            {
+                foo,
+                bar: 2,
+                baz,
+            }
+        ";
+        let expr = parse_expr(source);
+        assert_eq!(map_entries(&expr).len(), 3);
+    }
+
+    #[test]
+    fn reserved_word_is_rejected() {
+        let err = parse_err("{if}");
+        assert!(err.contains("unexpected"), "error was: {err}");
+    }
+
+    // A dollar identifier is not a valid key name, so it has no shorthand.
+    #[test]
+    fn dollar_identifier_is_rejected() {
+        let err = parse_err("$({$})");
+        assert!(err.contains("unexpected"), "error was: {err}");
     }
 }
