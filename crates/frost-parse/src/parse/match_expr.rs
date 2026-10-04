@@ -13,10 +13,11 @@ impl<'src, 'f> ParseCtx<'src, 'f> {
 
         let target = self.parse_expression()?;
 
-        self.expect(Token::OpenBrace)?;
+        let open = self.expect(Token::OpenBrace)?.span.clone().into();
         self.enter_nl_context();
 
-        let (arms, close) = self.parse_comma_separated(Token::CloseBrace, Self::parse_arm)?;
+        let (arms, close) =
+            self.parse_comma_separated(open, "`match`", Token::CloseBrace, Self::parse_arm)?;
 
         Ok(Spanned::new(
             Expr::Match {
@@ -250,7 +251,8 @@ impl<'src, 'f> ParseCtx<'src, 'f> {
     }
 
     fn parse_array_pattern(&mut self) -> ParseResult<Spanned<MatchPattern>> {
-        let start = self.expect(Token::OpenBracket)?.span.start;
+        let open: SourceSpan = self.expect(Token::OpenBracket)?.span.clone().into();
+        let start = open.start;
         self.enter_nl_context().maybe_skip_nl();
 
         let mut elements = Vec::new();
@@ -281,7 +283,14 @@ impl<'src, 'f> ParseCtx<'src, 'f> {
                         }
                     }
                     Token::CloseBracket => break,
-                    _ => return Err(self.expected("`,` or `]`", peek)),
+                    _ => {
+                        return Err(self.expected_in_list(
+                            "`,` or `]`",
+                            peek,
+                            open,
+                            "Array pattern",
+                        ));
+                    }
                 }
             }
         }
@@ -296,7 +305,8 @@ impl<'src, 'f> ParseCtx<'src, 'f> {
     }
 
     fn parse_map_pattern(&mut self) -> ParseResult<Spanned<MatchPattern>> {
-        let start = self.expect(Token::OpenBrace)?.span.start;
+        let open: SourceSpan = self.expect(Token::OpenBrace)?.span.clone().into();
+        let start = open.start;
         self.enter_nl_context().maybe_skip_nl();
 
         let mut entries = Vec::new();
@@ -317,7 +327,9 @@ impl<'src, 'f> ParseCtx<'src, 'f> {
                         }
                     }
                     Token::CloseBrace => break,
-                    _ => return Err(self.expected("`,` or `}`", peek)),
+                    _ => {
+                        return Err(self.expected_in_list("`,` or `}`", peek, open, "Map pattern"));
+                    }
                 }
             }
         }

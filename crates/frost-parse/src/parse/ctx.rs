@@ -202,8 +202,12 @@ impl<'src, 'f> ParseCtx<'src, 'f> {
     /// Parse a comma-separated list of items inside delimiters.
     /// The opening delimiter must already be consumed and nl context entered.
     /// Consumes the closing delimiter and exits nl context.
+    /// `open` is the opening delimiter, and `list` names the list for an error, as in
+    /// [`expected_in_list`](Self::expected_in_list).
     pub(crate) fn parse_comma_separated<T>(
         &mut self,
+        open: SourceSpan,
+        list: &str,
         close: Token,
         mut parse_item: impl FnMut(&mut Self) -> ParseResult<T>,
     ) -> ParseResult<(Vec<T>, &SrcToken<'src>)> {
@@ -226,7 +230,7 @@ impl<'src, 'f> ParseCtx<'src, 'f> {
                     Token::Comma => {
                         self.expect(Token::Comma)?;
                     }
-                    _ => return Err(self.expected(&after_item, peek)),
+                    _ => return Err(self.expected_in_list(&after_item, peek, open, list)),
                 }
 
                 self.maybe_skip_nl();
@@ -321,6 +325,27 @@ impl<'src, 'f> ParseCtx<'src, 'f> {
             found.span.clone().into(),
             "unexpected",
         )
+    }
+
+    /// [`expected`](Self::expected), for a list opened at `open`.
+    /// When the list runs across lines to `found`, the opener is labeled too,
+    /// as "in this {list}", so the error shows which list it is in.
+    pub(crate) fn expected_in_list(
+        &self,
+        expected: &str,
+        found: &SrcToken,
+        open: SourceSpan,
+        list: &str,
+    ) -> Diagnostic {
+        let diagnostic = self.expected(expected, found);
+        if self
+            .source_text((open.start..found.span.start).into())
+            .contains('\n')
+        {
+            diagnostic.with_label(open, format!("in this {list}"))
+        } else {
+            diagnostic
+        }
     }
 
     /// The error for running out of tokens where `expected` belongs.

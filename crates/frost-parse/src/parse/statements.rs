@@ -68,7 +68,20 @@ impl<'src, 'f> ParseCtx<'src, 'f> {
                         self.maybe_skip_nl();
                     }
                     _ => {
-                        return Err(self.expected("a line break or `;`", peek));
+                        let statement = stmts.last().expect("a statement was just parsed").span;
+                        // A label across several lines renders as a cluttered bracket,
+                        // so a multiline statement gets its last token labeled instead.
+                        let (span, label) = if self.source_text(statement).contains('\n') {
+                            let last = self
+                                .get(self.here() - 1)
+                                .expect("the statement's last token");
+                            (last.span.clone().into(), "a complete statement ends here")
+                        } else {
+                            (statement, "this is a complete statement")
+                        };
+                        return Err(self
+                            .expected("a line break or `;`", peek)
+                            .with_label(span, label));
                     }
                 };
             }

@@ -4,11 +4,16 @@ use crate::parse::{ParseResult, ctx::ParseCtx};
 
 impl<'src, 'f> ParseCtx<'src, 'f> {
     pub(crate) fn parse_array_literal(&mut self) -> ParseResult<Spanned<Expr>> {
-        let start = self.expect(Token::OpenBracket)?.span.start;
+        let open: SourceSpan = self.expect(Token::OpenBracket)?.span.clone().into();
+        let start = open.start;
         self.enter_nl_context();
 
-        let (elements, close) =
-            self.parse_comma_separated(Token::CloseBracket, Self::parse_expression)?;
+        let (elements, close) = self.parse_comma_separated(
+            open,
+            "Array literal",
+            Token::CloseBracket,
+            Self::parse_expression,
+        )?;
 
         Ok(Spanned::new(
             Expr::Array(elements),
@@ -17,11 +22,16 @@ impl<'src, 'f> ParseCtx<'src, 'f> {
     }
 
     pub(crate) fn parse_map_literal(&mut self) -> ParseResult<Spanned<Expr>> {
-        let start = self.expect(Token::OpenBrace)?.span.start;
+        let open: SourceSpan = self.expect(Token::OpenBrace)?.span.clone().into();
+        let start = open.start;
         self.enter_nl_context();
 
-        let (entries, close) =
-            self.parse_comma_separated(Token::CloseBrace, Self::parse_map_entry)?;
+        let (entries, close) = self.parse_comma_separated(
+            open,
+            "Map literal",
+            Token::CloseBrace,
+            Self::parse_map_entry,
+        )?;
 
         Ok(Spanned::new(
             Expr::Map(entries),

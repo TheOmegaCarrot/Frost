@@ -63,7 +63,7 @@ impl<'src, 'f> ParseCtx<'src, 'f> {
 
     /// Parse `(a, b, ...rest)`. Caller has not consumed the `(`.
     pub(crate) fn parse_parenthesized_params(&mut self) -> ParseResult<Params> {
-        self.expect(Token::OpenParen)?;
+        let open: SourceSpan = self.expect(Token::OpenParen)?.span.clone().into();
         self.enter_nl_context().maybe_skip_nl();
 
         let mut params = Vec::new();
@@ -93,7 +93,14 @@ impl<'src, 'f> ParseCtx<'src, 'f> {
                         }
                     }
                     Token::CloseParen => break,
-                    _ => return Err(self.expected("`,` or `)`", peek)),
+                    _ => {
+                        return Err(self.expected_in_list(
+                            "`,` or `)`",
+                            peek,
+                            open,
+                            "parameter list",
+                        ));
+                    }
                 }
             }
         }

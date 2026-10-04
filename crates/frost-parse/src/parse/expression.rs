@@ -105,11 +105,11 @@ impl<'src, 'f> ParseCtx<'src, 'f> {
 
     fn parse_call(&mut self, callee: Spanned<Expr>) -> ParseResult<Spanned<Expr>> {
         let start = callee.span.start;
-        self.expect(Token::OpenParen)?;
+        let open = self.expect(Token::OpenParen)?.span.clone().into();
         self.enter_nl_context();
 
-        let (args, close) =
-            self.parse_comma_separated(Token::CloseParen, |ctx| ctx.parse_expr_bp(0))?;
+        let (args, close) = self
+            .parse_comma_separated(open, "call", Token::CloseParen, |ctx| ctx.parse_expr_bp(0))?;
 
         Ok(Spanned::new(
             Expr::Call {
@@ -178,11 +178,13 @@ impl<'src, 'f> ParseCtx<'src, 'f> {
         if !matches!(self.peek().map(|t| &t.token), Some(Token::OpenParen)) {
             return Err(self.thread_without_call(&callee));
         }
-        self.expect(Token::OpenParen)?;
+        let open = self.expect(Token::OpenParen)?.span.clone().into();
         self.enter_nl_context();
 
         let (mut args, close) =
-            self.parse_comma_separated(Token::CloseParen, |ctx| ctx.parse_expr_bp(0))?;
+            self.parse_comma_separated(open, "call", Token::CloseParen, |ctx| {
+                ctx.parse_expr_bp(0)
+            })?;
 
         args.insert(0, lhs);
 

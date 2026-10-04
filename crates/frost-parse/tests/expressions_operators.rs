@@ -431,7 +431,12 @@ fn newline_terminates_expression() {
 #[test]
 fn newline_after_prefix_is_error() {
     assert_eq!(
-        parse_err_message("not\ntrue"),
+        parse_err_message(
+            r"
+            not
+            true
+            "
+        ),
         "expected an expression, but found a line break"
     );
 }
@@ -439,7 +444,12 @@ fn newline_after_prefix_is_error() {
 #[test]
 fn negate_newline_is_error() {
     assert_eq!(
-        parse_err_message("-\n5"),
+        parse_err_message(
+            r"
+            -
+            5
+            "
+        ),
         "expected an expression, but found a line break"
     );
 }

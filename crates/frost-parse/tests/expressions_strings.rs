@@ -215,7 +215,15 @@ fn raw_string_preserves_backslashes() {
 
 #[test]
 fn error_line_break_in_quoted_string() {
-    for source in ["'a\nb'", "\"a\nb\""] {
+    let single = r"
+        'a
+        b'
+    ";
+    let double = r#"
+        "a
+        b"
+    "#;
+    for source in [single, double] {
         parse_err(source);
     }
 }

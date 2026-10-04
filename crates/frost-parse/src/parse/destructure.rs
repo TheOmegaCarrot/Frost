@@ -20,7 +20,8 @@ impl<'src, 'f> ParseCtx<'src, 'f> {
     }
 
     fn parse_destructure_array(&mut self) -> ParseResult<Spanned<Destructure>> {
-        let start = self.expect(Token::OpenBracket)?.span.start;
+        let open: SourceSpan = self.expect(Token::OpenBracket)?.span.clone().into();
+        let start = open.start;
         self.enter_nl_context().maybe_skip_nl();
 
         let mut elements = Vec::new();
@@ -55,7 +56,9 @@ impl<'src, 'f> ParseCtx<'src, 'f> {
                     self.maybe_skip_nl();
                 }
                 Token::CloseBracket => break,
-                _ => return Err(self.expected("`,` or `]`", peek)),
+                _ => {
+                    return Err(self.expected_in_list("`,` or `]`", peek, open, "Array pattern"));
+                }
             }
 
             if matches!(self.peek().map(|t| &t.token), Some(Token::CloseBracket)) {
@@ -73,7 +76,8 @@ impl<'src, 'f> ParseCtx<'src, 'f> {
     }
 
     fn parse_destructure_map(&mut self) -> ParseResult<Spanned<Destructure>> {
-        let start = self.expect(Token::OpenBrace)?.span.start;
+        let open: SourceSpan = self.expect(Token::OpenBrace)?.span.clone().into();
+        let start = open.start;
         self.enter_nl_context().maybe_skip_nl();
 
         let mut entries = Vec::new();
@@ -91,7 +95,9 @@ impl<'src, 'f> ParseCtx<'src, 'f> {
                         self.maybe_skip_nl();
                     }
                     Token::CloseBrace => break,
-                    _ => return Err(self.expected("`,` or `}`", peek)),
+                    _ => {
+                        return Err(self.expected_in_list("`,` or `}`", peek, open, "Map pattern"));
+                    }
                 }
 
                 if matches!(self.peek().map(|t| &t.token), Some(Token::CloseBrace)) {

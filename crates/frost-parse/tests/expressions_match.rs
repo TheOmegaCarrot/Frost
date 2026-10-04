@@ -876,7 +876,12 @@ mod errors {
     #[test]
     fn newline_is_not_an_arm_separator() {
         assert_eq!(
-            parse_err_message("match x { 1 => a\n  2 => b }"),
+            parse_err_message(
+                r"
+                match x { 1 => a
+                    2 => b }
+                "
+            ),
             "expected `,` or `}`, but found `2`"
         );
     }

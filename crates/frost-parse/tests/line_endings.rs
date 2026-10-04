@@ -122,17 +122,42 @@ fn crlf_in_a_multiline_string_becomes_lf() {
 /// Programs that fail because of where a line break falls.
 const LINE_BREAK_ERRORS: &[&str] = &[
     // A line break ends a statement mid-expression.
-    "def x = 1 +\n2",
+    r"
+        def x = 1 +
+        2
+    ",
     // Single-line String forms cannot span lines.
-    "'a\nb'",
-    "\"a\nb\"",
+    r"
+        'a
+        b'
+    ",
+    r#"
+        "a
+        b"
+    "#,
     "'a\\\nb'",
-    "$'a\nb'",
-    "R'(a\nb)'",
+    r"
+        $'a
+        b'
+    ",
+    r"
+        R'(a
+        b)'
+    ",
     // A multiline String's lines are checked against its closing delimiter.
-    "\"\"\"hello\n\"\"\"",
-    "\"\"\"\nhello\"\"\"",
-    "\"\"\"\noops\n  \"\"\"",
+    r#"
+        """hello
+        """
+    "#,
+    r#"
+        """
+        hello"""
+    "#,
+    r#"
+        """
+        oops
+          """
+    "#,
 ];
 
 #[test]
