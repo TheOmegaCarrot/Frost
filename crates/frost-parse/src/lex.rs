@@ -257,11 +257,13 @@ pub enum Token<'src> {
     // Consumer is responsible for expanding escape sequences,
     // and for complaining about invalid sequences.
     /// A String literal in single quotes.
-    #[regex(r"'([^'\\]|\\.)*'", slice_str)] // '...'
+    // A quoted String is single-line: a line break cannot appear in it,
+    // raw or after a backslash (`.` excludes `\n`).
+    #[regex(r"'([^'\\\n]|\\.)*'", slice_str)] // '...'
     SingleQuoteStringLiteral(&'src str),
 
     /// A String literal in double quotes.
-    #[regex(r#""([^"\\]|\\.)*""#, slice_str)] // "..."
+    #[regex(r#""([^"\\\n]|\\.)*""#, slice_str)] // "..."
     DoubleQuoteStringLiteral(&'src str),
 
     // Consumer is responsible for trimming indentation and expanding

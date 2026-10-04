@@ -31,8 +31,10 @@ impl<'src, 'f> ParseCtx<'src, 'f> {
     fn parse_arm(&mut self) -> ParseResult<Spanned<MatchArm>> {
         let pattern = self.parse_pattern_alternatives()?;
 
+        self.maybe_skip_nl();
         let guard = if matches!(self.peek().map(|t| &t.token), Some(Token::KwIf)) {
             self.advance(1);
+            self.maybe_skip_nl();
             self.expect(Token::Colon)?;
             Some(self.parse_expression()?)
         } else {
@@ -58,6 +60,7 @@ impl<'src, 'f> ParseCtx<'src, 'f> {
 
     fn parse_pattern_alternatives(&mut self) -> ParseResult<Spanned<MatchPattern>> {
         let first = self.parse_single_pattern()?;
+        self.maybe_skip_nl();
 
         if !matches!(self.peek().map(|t| &t.token), Some(Token::Pipe)) {
             return Ok(first);
@@ -68,8 +71,8 @@ impl<'src, 'f> ParseCtx<'src, 'f> {
 
         while matches!(self.peek().map(|t| &t.token), Some(Token::Pipe)) {
             self.advance(1);
-            self.maybe_skip_nl();
             alternatives.push(self.parse_single_pattern()?);
+            self.maybe_skip_nl();
         }
 
         let end = alternatives
@@ -157,7 +160,7 @@ impl<'src, 'f> ParseCtx<'src, 'f> {
             }
 
             Token::OpMinus => {
-                self.advance(1);
+                self.advance(1).maybe_skip_nl();
                 let next = self.must_peek("negative literal in match pattern")?;
                 match next.token {
                     Token::IntLiteral(magnitude) => {
@@ -197,8 +200,9 @@ impl<'src, 'f> ParseCtx<'src, 'f> {
         };
         let name = Spanned::new(binding, (start..end).into());
 
+        self.maybe_skip_nl();
         let type_constraint = if matches!(self.peek().map(|t| &t.token), Some(Token::KwIs)) {
-            self.advance(1);
+            self.advance(1).maybe_skip_nl();
             Some(self.parse_type_constraint()?)
         } else {
             None
@@ -322,8 +326,9 @@ impl<'src, 'f> ParseCtx<'src, 'f> {
         self.maybe_skip_nl().exit_nl_context();
         let mut end = self.expect(Token::CloseBrace)?.span.end;
 
+        self.maybe_skip_nl();
         let bind_whole = if matches!(self.peek().map(|t| &t.token), Some(Token::KwAs)) {
-            self.advance(1);
+            self.advance(1).maybe_skip_nl();
             let binding = self.parse_binding("as binding")?;
             if let Some(t) = self.get(self.here() - 1) {
                 end = t.span.end;

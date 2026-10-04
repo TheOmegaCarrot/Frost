@@ -687,6 +687,165 @@ mod newlines {
         let (entries, _) = assert_map_pattern(&arms[0].node.pattern);
         assert_eq!(entries.len(), 2);
     }
+
+    // -- A line break anywhere inside the braces --
+    // Newlines are insignificant inside match braces, so each of these parses
+    // exactly like the same arm written on one line.
+
+    /// Asserts `multiline` parses to the same tree as `one_line`.
+    fn assert_same_as_one_line(multiline: &str, one_line: &str) {
+        assert_eq!(
+            parse_expr(multiline),
+            parse_expr(one_line),
+            "expected the same tree as {one_line:?} for:\n{multiline}"
+        );
+    }
+
+    #[test]
+    fn line_break_around_is() {
+        let one_line = "match x { n is Int => n }";
+        let before = r"
+            match x {
+                n
+                    is Int => n
+            }
+        ";
+        let after = r"
+            match x {
+                n is
+                    Int => n
+            }
+        ";
+        assert_same_as_one_line(before, one_line);
+        assert_same_as_one_line(after, one_line);
+    }
+
+    #[test]
+    fn line_break_around_guard() {
+        let one_line = "match x { n if: n > 0 => n, _ => 0 }";
+        let before_if = r"
+            match x {
+                n
+                    if: n > 0 => n,
+                _ => 0
+            }
+        ";
+        let between_if_and_colon = r"
+            match x {
+                n if
+                    : n > 0 => n,
+                _ => 0
+            }
+        ";
+        let after_colon = r"
+            match x {
+                n if:
+                    n > 0 => n,
+                _ => 0
+            }
+        ";
+        assert_same_as_one_line(before_if, one_line);
+        assert_same_as_one_line(between_if_and_colon, one_line);
+        assert_same_as_one_line(after_colon, one_line);
+    }
+
+    #[test]
+    fn line_break_around_pipe() {
+        let one_line = "match x { 1 | 2 | 3 => 'low' }";
+        let leading_pipes = r"
+            match x {
+                1
+                | 2
+                | 3 => 'low'
+            }
+        ";
+        let trailing_pipes = r"
+            match x {
+                1 |
+                2 |
+                3 => 'low'
+            }
+        ";
+        assert_same_as_one_line(leading_pipes, one_line);
+        assert_same_as_one_line(trailing_pipes, one_line);
+    }
+
+    #[test]
+    fn line_break_before_pipe_in_a_nested_pattern() {
+        let one_line = "match x { [1 | 2, b] => b }";
+        let multiline = r"
+            match x {
+                [
+                    1
+                    | 2,
+                    b
+                ] => b
+            }
+        ";
+        assert_same_as_one_line(multiline, one_line);
+    }
+
+    #[test]
+    fn line_break_around_as() {
+        let one_line = "match x { {a} as m => m }";
+        let before = r"
+            match x {
+                {a}
+                    as m => m
+            }
+        ";
+        let after = r"
+            match x {
+                {a} as
+                    m => m
+            }
+        ";
+        assert_same_as_one_line(before, one_line);
+        assert_same_as_one_line(after, one_line);
+    }
+
+    #[test]
+    fn line_break_after_minus_in_a_negative_literal() {
+        let multiline = r"
+            match x {
+                -
+                    1 => 'minus one'
+            }
+        ";
+        assert_same_as_one_line(multiline, "match x { -1 => 'minus one' }");
+    }
+
+    // -- Where a line break is still an error --
+    // `...name` and a Map entry's `key:` are each kept on one line.
+
+    #[test]
+    fn line_break_after_rest_dots_is_an_error() {
+        let source = r"
+            match x {
+                [a, ...
+                    rest] => rest
+            }
+        ";
+        parse_err(source);
+    }
+
+    #[test]
+    fn line_break_before_map_entry_colon_is_an_error() {
+        let named = r"
+            match x {
+                {a
+                    : 1} => 1
+            }
+        ";
+        let computed = r"
+            match x {
+                {[k]
+                    : 1} => 1
+            }
+        ";
+        parse_err(named);
+        parse_err(computed);
+    }
 }
 
 // ============================================================

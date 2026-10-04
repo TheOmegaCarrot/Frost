@@ -67,6 +67,8 @@ impl<'src, 'f> ParseCtx<'src, 'f> {
             _ => return Err(self.unexpected_token(peek, "multiline String literal")),
         };
         self.advance(1);
+        // A CRLF line break is a line break like LF, and the String holds `\n` for either.
+        let raw = raw.replace("\r\n", "\n");
         let trimmed = trim_multiline_indentation(&raw).map_err(|msg| string_error(&span, msg))?;
         let text = expand_multiline_escapes(&trimmed).map_err(|msg| string_error(&span, msg))?;
         Ok(Spanned::new(

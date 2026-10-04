@@ -74,9 +74,15 @@ fn tokens_are_classified_by_kind() {
 #[test]
 fn a_string_still_being_typed_is_a_string() {
     assert_eq!(classes("'unclosed"), [("'unclosed", Class::String)]);
+}
+
+// A quoted String is single-line, so an unclosed one ends at its line break.
+#[test]
+fn a_string_still_being_typed_ends_at_its_line() {
+    use Class::*;
     assert_eq!(
         classes("\"unclosed\nmore"),
-        [("\"unclosed\nmore", Class::String)]
+        [("\"unclosed", String), ("\n", Plain), ("more", Plain)]
     );
 }
 

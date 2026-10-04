@@ -210,6 +210,33 @@ fn raw_string_preserves_backslashes() {
     assert_eq!(str_text(&expr), "a\\b\\c\\d");
 }
 
+// -- Quoted Strings are single-line --
+
+#[test]
+fn error_line_break_in_quoted_string() {
+    for source in ["'a\nb'", "\"a\nb\""] {
+        parse_err(source);
+    }
+}
+
+// A backslash does not continue a quoted String onto the next line.
+#[test]
+fn error_escaped_line_break_in_quoted_string() {
+    for source in ["'a\\\nb'", "\"a\\\nb\""] {
+        parse_err(source);
+    }
+}
+
+// An unclosed quote does not run on into later lines to find a closer.
+#[test]
+fn error_quote_unclosed_on_its_line() {
+    let source = r"
+        def a = 'unclosed
+        def b = 'closed'
+    ";
+    parse_err(source);
+}
+
 // -- Multiline strings --
 
 #[test]
