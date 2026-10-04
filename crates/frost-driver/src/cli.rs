@@ -2,8 +2,9 @@
 
 use std::path::PathBuf;
 
+use clap::builder::{PossibleValuesParser, TypedValueParser};
 use clap::{Args, Command as ClapCommand, CommandFactory, Parser, Subcommand, ValueEnum};
-use frost_compile::OptimizationOptions;
+use frost_compile::{Optimization, OptimizationOptions};
 
 /// The command line for a driver called `name` at `version`, whose scripts
 /// compile with `default` optimizations unless a preset is chosen.
@@ -27,10 +28,10 @@ fn describe(options: OptimizationOptions) -> String {
     if options == OptimizationOptions::NONE {
         return "none".to_string();
     }
-    Optimization::value_variants()
-        .iter()
-        .filter(|optimization| optimization.is_on(options))
-        .map(|optimization| optimization.name())
+    Optimization::ALL
+        .into_iter()
+        .filter(|&optimization| options.get(optimization))
+        .map(Optimization::name)
         .collect::<Vec<_>>()
         .join(",")
 }
@@ -92,6 +93,7 @@ pub(crate) struct Options {
         long,
         value_name = "OPTIMIZATION",
         value_delimiter = ',',
+        value_parser = optimization_parser(),
         global = true
     )]
     enable: Vec<Optimization>,
@@ -101,6 +103,7 @@ pub(crate) struct Options {
         long,
         value_name = "OPTIMIZATION",
         value_delimiter = ',',
+        value_parser = optimization_parser(),
         global = true
     )]
     disable: Vec<Optimization>,
@@ -149,10 +152,10 @@ impl Options {
             Some(Preset::All) => OptimizationOptions::ALL,
         };
         for &optimization in &self.enable {
-            *optimization.flag(&mut options) = true;
+            options.set(optimization, true);
         }
         for &optimization in &self.disable {
-            *optimization.flag(&mut options) = false;
+            options.set(optimization, false);
         }
         Ok(options)
     }
@@ -166,39 +169,12 @@ enum Preset {
     All,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, ValueEnum)]
-enum Optimization {
-    ConstantFold,
-    ConstantPropagate,
-    BranchEliminate,
-    CaptureHoist,
-    ConsumeLocals,
-    DeduplicateConstants,
-}
-
-impl Optimization {
-    /// The name the command line uses for it.
-    fn name(self) -> String {
-        self.to_possible_value()
-            .expect("no optimization is skipped")
-            .get_name()
-            .to_string()
-    }
-
-    fn is_on(self, mut options: OptimizationOptions) -> bool {
-        *self.flag(&mut options)
-    }
-
-    fn flag(self, options: &mut OptimizationOptions) -> &mut bool {
-        match self {
-            Optimization::ConstantFold => &mut options.constant_fold,
-            Optimization::ConstantPropagate => &mut options.constant_propagate,
-            Optimization::BranchEliminate => &mut options.branch_eliminate,
-            Optimization::CaptureHoist => &mut options.capture_hoist,
-            Optimization::ConsumeLocals => &mut options.consume_locals,
-            Optimization::DeduplicateConstants => &mut options.deduplicate_constants,
-        }
-    }
+/// Parses an optimization's [name](Optimization::name), offering every name
+/// in help and errors.
+fn optimization_parser() -> impl TypedValueParser<Value = Optimization> {
+    PossibleValuesParser::new(Optimization::ALL.map(Optimization::name)).map(|name| {
+        Optimization::from_name(&name).expect("the parser accepts only optimizations' names")
+    })
 }
 
 #[derive(Debug, Clone, Copy, ValueEnum)]

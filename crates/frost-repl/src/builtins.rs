@@ -1,6 +1,6 @@
 //! The REPL's own metacommands.
 
-use frost_compile::{CompilerError, CompilerErrors};
+use frost_compile::{CompilerError, CompilerErrors, Optimization, OptimizationOptions};
 use frost_parse::parse_program;
 use frost_runtime::FrostError;
 
@@ -66,7 +66,29 @@ impl Repl {
                 // TODO: A more compact printer; spans make this verbose.
                 Ok(Reply::Text(format!("{:#?}", program.statements)))
             }
+            Builtin::Optimize if argument.is_empty() => Ok(Reply::Text(self.list_optimizations())),
+            Builtin::Optimize => {
+                self.optimization = with_settings(self.optimization, argument)?;
+                Ok(Reply::Nothing)
+            }
         }
+    }
+
+    /// Each optimization, and whether it is on.
+    fn list_optimizations(&self) -> String {
+        let width = Optimization::ALL
+            .into_iter()
+            .map(|optimization| optimization.name().len())
+            .max()
+            .unwrap_or(0);
+        let lines: Vec<String> = Optimization::ALL
+            .into_iter()
+            .map(|optimization| {
+                let name = optimization.name();
+                format!("{name:width$}  {}", self.optimization.get(optimization))
+            })
+            .collect();
+        lines.join("\n")
     }
 
     /// Each name in scope but the globals, with its value's type, in name
@@ -116,6 +138,51 @@ impl Repl {
         }
         Ok(Reply::Nothing)
     }
+}
+
+/// `options` with each comma-separated setting in `settings` applied, left to
+/// right: `<optimization> = true|false`, or `preset = all|none`. If any
+/// setting is invalid, none is applied.
+fn with_settings(
+    options: OptimizationOptions,
+    settings: &str,
+) -> Result<OptimizationOptions, ReplError> {
+    settings
+        .split(',')
+        .try_fold(options, |mut options, setting| {
+            let Some((name, value)) = setting.split_once('=') else {
+                return Err(metacommand_error(format!(
+                    "`{}` should be `<optimization> = true|false` or `preset = all|none`",
+                    setting.trim()
+                )));
+            };
+            let (name, value) = (name.trim(), value.trim());
+            if name == "preset" {
+                return match value {
+                    "all" => Ok(OptimizationOptions::ALL),
+                    "none" => Ok(OptimizationOptions::NONE),
+                    _ => Err(metacommand_error(format!(
+                        "`preset` is `all` or `none`, not `{value}`"
+                    ))),
+                };
+            }
+            let Some(optimization) = Optimization::from_name(name) else {
+                return Err(metacommand_error(format!(
+                    "there is no optimization `{name}`; `:optimize` lists them"
+                )));
+            };
+            let on = match value {
+                "true" => true,
+                "false" => false,
+                _ => {
+                    return Err(metacommand_error(format!(
+                        "`{name}` is `true` or `false`, not `{value}`"
+                    )));
+                }
+            };
+            options.set(optimization, on);
+            Ok(options)
+        })
 }
 
 fn takes_no_argument(builtin: Builtin, argument: &str) -> Result<(), ReplError> {

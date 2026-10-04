@@ -1,7 +1,9 @@
 //! The REPL's own metacommands, run in sessions on a `ScriptedFrontend`.
 
+use std::num::NonZeroUsize;
 use std::sync::{Arc, Mutex};
 
+use frost_compile::{Optimization, OptimizationOptions};
 use frost_repl::{Frontend, Repl, ReplError, ScriptedFrontend, Transcript};
 use frost_runtime::{Value, VmRuntimeConfiguration};
 
@@ -89,12 +91,13 @@ fn a_metacommand_that_takes_no_argument_refuses_one() {
 #[test]
 fn help_lists_each_built_in_with_its_arguments_and_summary() {
     let help = only_text(&session(&[":help"]));
-    let expected = r":help                  List the metacommands
-:quit                  End the session
-:bindings              List the names bound, but not globals
-:undef <name>...       Remove bindings
-:disassemble <source>  Show the bytecode source compiles to, without running it
-:ast <source>          Show the syntax tree source parses to";
+    let expected = r":help                       List the metacommands
+:quit                       End the session
+:bindings                   List the names bound, but not globals
+:undef <name>...            Remove bindings
+:disassemble <source>       Show the bytecode source compiles to, without running it
+:ast <source>               Show the syntax tree source parses to
+:optimize [<setting>, ...]  Show the optimizations, or set them: `<name> = true|false` or `preset = all|none`";
     assert_eq!(help, expected);
 }
 
@@ -361,4 +364,178 @@ fn ast_of_source_that_does_not_parse_shows_its_diagnostic() {
 #[test]
 fn ast_needs_source() {
     assert_fails(&[":ast"], "`:ast` needs source to parse");
+}
+
+// --- :optimize ---
+
+/// What `:optimize` shows after `segments`, on a REPL starting from
+/// `options`.
+fn optimizations_after(options: OptimizationOptions, segments: &[&str]) -> String {
+    let mut segments = segments.to_vec();
+    segments.push(":optimize");
+    let transcript = session_on(Repl::new().with_optimization(options), &segments);
+    let texts = transcript.texts();
+    let outcomes = transcript.outcomes();
+    assert!(
+        outcomes.iter().all(Result::is_ok),
+        "every segment should succeed: {outcomes:?}"
+    );
+    texts
+        .last()
+        .expect("`:optimize` shows the settings")
+        .clone()
+}
+
+#[test]
+fn optimize_shows_each_optimization_and_whether_it_is_on() {
+    let expected = r"constant-fold          true
+constant-propagate     true
+branch-eliminate       true
+capture-hoist          true
+consume-locals         true
+deduplicate-constants  true";
+    assert_eq!(optimizations_after(OptimizationOptions::ALL, &[]), expected);
+    let mut options = OptimizationOptions::NONE;
+    options.set(Optimization::CaptureHoist, true);
+    let shown = optimizations_after(options, &[]);
+    assert!(shown.contains("capture-hoist          true"), "{shown}");
+    assert!(shown.contains("constant-fold          false"), "{shown}");
+}
+
+#[test]
+fn optimize_sets_an_optimization_on_or_off() {
+    let off = optimizations_after(
+        OptimizationOptions::ALL,
+        &[":optimize constant-fold = false"],
+    );
+    let on = optimizations_after(
+        OptimizationOptions::NONE,
+        &[":optimize consume-locals=true"],
+    );
+    for optimization in Optimization::ALL {
+        let name = optimization.name();
+        // Only the optimization set changes.
+        let expected_off = optimization != Optimization::ConstantFold;
+        let expected_on = optimization == Optimization::ConsumeLocals;
+        assert!(line_says(&off, name, expected_off), "{off}");
+        assert!(line_says(&on, name, expected_on), "{on}");
+    }
+}
+
+/// Whether `shown` says `name` is `on`.
+fn line_says(shown: &str, name: &str, on: bool) -> bool {
+    shown
+        .lines()
+        .any(|line| line.split_whitespace().eq([name, &on.to_string()]))
+}
+
+#[test]
+fn optimize_sets_a_preset() {
+    let none = optimizations_after(OptimizationOptions::ALL, &[":optimize preset = none"]);
+    let all = optimizations_after(OptimizationOptions::NONE, &[":optimize preset = all"]);
+    for optimization in Optimization::ALL {
+        assert!(line_says(&none, optimization.name(), false), "{none}");
+        assert!(line_says(&all, optimization.name(), true), "{all}");
+    }
+}
+
+#[test]
+fn optimize_applies_several_settings_left_to_right() {
+    let shown = optimizations_after(
+        OptimizationOptions::ALL,
+        &[":optimize preset = none, constant-fold = true ,branch-eliminate=true"],
+    );
+    for optimization in Optimization::ALL {
+        let on = matches!(
+            optimization,
+            Optimization::ConstantFold | Optimization::BranchEliminate
+        );
+        assert!(line_says(&shown, optimization.name(), on), "{shown}");
+    }
+    // A preset after a setting overrides it.
+    let shown = optimizations_after(
+        OptimizationOptions::ALL,
+        &[":optimize constant-fold = false, preset = all"],
+    );
+    assert!(line_says(&shown, "constant-fold", true), "{shown}");
+}
+
+#[test]
+fn optimize_shows_nothing_when_setting() {
+    let transcript = session(&[":optimize preset = none"]);
+    assert!(transcript.texts().is_empty(), "{:?}", transcript.texts());
+    assert!(
+        transcript.outcomes().is_empty(),
+        "{:?}",
+        transcript.outcomes()
+    );
+}
+
+#[test]
+fn optimize_refuses_a_bad_setting_and_applies_none() {
+    for (setting, expected) in [
+        (
+            "constant-fold",
+            "`constant-fold` should be `<optimization> = true|false` or `preset = all|none`",
+        ),
+        (
+            "constant-fold = yes",
+            "`constant-fold` is `true` or `false`, not `yes`",
+        ),
+        (
+            "constant-fold =",
+            "`constant-fold` is `true` or `false`, not ``",
+        ),
+        (
+            "constant_fold = false",
+            "there is no optimization `constant_fold`; `:optimize` lists them",
+        ),
+        (
+            "= false",
+            "there is no optimization ``; `:optimize` lists them",
+        ),
+        ("preset = some", "`preset` is `all` or `none`, not `some`"),
+        (
+            "preset = none,",
+            "` should be `<optimization> = true|false` or `preset = all|none`",
+        ),
+    ] {
+        let invocation = format!(":optimize consume-locals = false, {setting}");
+        assert_fails(&[&invocation], expected);
+        // The valid setting before the bad one was not applied either.
+        let shown = optimizations_after(OptimizationOptions::ALL, &[]);
+        let transcript = session(&[&invocation, ":optimize"]);
+        assert_eq!(transcript.texts().last(), Some(&shown), "{setting:?}");
+    }
+}
+
+#[test]
+fn optimize_applies_to_every_later_input() {
+    // Folded, `1 + 2` compiles to its value; unfolded, to an addition.
+    let transcript = session(&[
+        ":disassemble 1 + 2",
+        ":optimize constant-fold = false",
+        ":disassemble 1 + 2",
+    ]);
+    let [folded, unfolded] = transcript.texts().try_into().expect("two listings");
+    assert!(!folded.contains("Add"), "{folded}");
+    assert!(unfolded.contains("Add"), "{unfolded}");
+    // Evaluating, too: unfolded, this needs more fuel than the budget.
+    let configuration = VmRuntimeConfiguration {
+        fuel: NonZeroUsize::new(5),
+        ..Default::default()
+    };
+    let foldable = "(fn f(n) -> if n == 0: 0 else: f(n - 1))(10)";
+    let transcript = session_on(
+        Repl::new().with_configuration(configuration),
+        &[foldable, ":optimize preset = none", foldable],
+    );
+    let outcomes = transcript.outcomes();
+    assert!(
+        matches!(
+            outcomes.as_slice(),
+            [Ok(Value::Int(0)), Err(ReplError::Run(_))]
+        ),
+        "{outcomes:?}"
+    );
 }

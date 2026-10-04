@@ -57,6 +57,78 @@ impl OptimizationOptions {
         consume_locals: true,
         deduplicate_constants: true,
     };
+
+    /// Whether `optimization` is on.
+    pub fn get(self, optimization: Optimization) -> bool {
+        let mut options = self;
+        *options.flag(optimization)
+    }
+
+    /// Turn `optimization` on or off.
+    pub fn set(&mut self, optimization: Optimization, on: bool) {
+        *self.flag(optimization) = on;
+    }
+
+    fn flag(&mut self, optimization: Optimization) -> &mut bool {
+        match optimization {
+            Optimization::ConstantFold => &mut self.constant_fold,
+            Optimization::ConstantPropagate => &mut self.constant_propagate,
+            Optimization::BranchEliminate => &mut self.branch_eliminate,
+            Optimization::CaptureHoist => &mut self.capture_hoist,
+            Optimization::ConsumeLocals => &mut self.consume_locals,
+            Optimization::DeduplicateConstants => &mut self.deduplicate_constants,
+        }
+    }
+}
+
+/// One of the optimizations [`OptimizationOptions`] turns on or off, each
+/// described on its field there.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum Optimization {
+    /// [`OptimizationOptions::constant_fold`].
+    ConstantFold,
+    /// [`OptimizationOptions::constant_propagate`].
+    ConstantPropagate,
+    /// [`OptimizationOptions::branch_eliminate`].
+    BranchEliminate,
+    /// [`OptimizationOptions::capture_hoist`].
+    CaptureHoist,
+    /// [`OptimizationOptions::consume_locals`].
+    ConsumeLocals,
+    /// [`OptimizationOptions::deduplicate_constants`].
+    DeduplicateConstants,
+}
+
+impl Optimization {
+    /// Every optimization, in the order [`OptimizationOptions`] declares them.
+    pub const ALL: [Self; 6] = [
+        Self::ConstantFold,
+        Self::ConstantPropagate,
+        Self::BranchEliminate,
+        Self::CaptureHoist,
+        Self::ConsumeLocals,
+        Self::DeduplicateConstants,
+    ];
+
+    /// The name tools give it: its field's name in kebab-case, as
+    /// `constant-fold`.
+    pub const fn name(self) -> &'static str {
+        match self {
+            Self::ConstantFold => "constant-fold",
+            Self::ConstantPropagate => "constant-propagate",
+            Self::BranchEliminate => "branch-eliminate",
+            Self::CaptureHoist => "capture-hoist",
+            Self::ConsumeLocals => "consume-locals",
+            Self::DeduplicateConstants => "deduplicate-constants",
+        }
+    }
+
+    /// The optimization with the [`name`](Self::name) `name`, if any.
+    pub fn from_name(name: &str) -> Option<Self> {
+        Self::ALL
+            .into_iter()
+            .find(|optimization| optimization.name() == name)
+    }
 }
 
 /// Options for [`compile_program`] and [`compile_in_scope`].

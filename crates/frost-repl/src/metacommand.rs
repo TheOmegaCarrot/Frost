@@ -228,17 +228,19 @@ pub(crate) enum Builtin {
     Undef,
     Disassemble,
     Ast,
+    Optimize,
 }
 
 impl Builtin {
     /// Every built-in, in the order `:help` lists them.
-    const ALL: [Self; 6] = [
+    const ALL: [Self; 7] = [
         Self::Help,
         Self::Quit,
         Self::Bindings,
         Self::Undef,
         Self::Disassemble,
         Self::Ast,
+        Self::Optimize,
     ];
 
     fn spec(self) -> MetacommandSpec {
@@ -252,6 +254,10 @@ impl Builtin {
                 "Show the bytecode source compiles to, without running it",
             ),
             Self::Ast => ("<source>", "Show the syntax tree source parses to"),
+            Self::Optimize => (
+                "[<setting>, ...]",
+                "Show the optimizations, or set them: `<name> = true|false` or `preset = all|none`",
+            ),
         };
         MetacommandSpec::new(self.name(), summary).with_arguments(arguments)
     }
@@ -264,6 +270,7 @@ impl Builtin {
             Self::Undef => "undef",
             Self::Disassemble => "disassemble",
             Self::Ast => "ast",
+            Self::Optimize => "optimize",
         }
     }
 }

@@ -259,7 +259,15 @@ fn refused(specs: Vec<MetacommandSpec>) -> (String, MetacommandProblem) {
 
 #[test]
 fn a_frontend_may_not_replace_a_built_in_metacommand() {
-    for name in ["help", "quit", "bindings", "undef", "disassemble", "ast"] {
+    for name in [
+        "help",
+        "quit",
+        "bindings",
+        "undef",
+        "disassemble",
+        "ast",
+        "optimize",
+    ] {
         let specs = vec![MetacommandSpec::new(name, "Mine now")];
         assert_eq!(
             refused(specs),

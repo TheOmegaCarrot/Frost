@@ -98,7 +98,7 @@ const RESULTS: &str = "results";
 /// [argument](Invocation::argument).
 ///
 /// The REPL's own are `:help`, `:quit`, `:bindings`, `:undef`,
-/// `:disassemble`, and `:ast`. `:help` describes them, with any its frontend
+/// `:disassemble`, `:ast`, and `:optimize`. `:help` describes them, with any its frontend
 /// adds (see [`Frontend::metacommands`]). A failed metacommand is shown as a
 /// failed input is, and the session carries on.
 pub struct Repl {
