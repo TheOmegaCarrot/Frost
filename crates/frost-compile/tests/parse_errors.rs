@@ -46,8 +46,17 @@ fn parse_error_keeps_its_message() {
     // diagnostic headline (rendered on the `x` line).
     let rendered = errors("1 +").render_plain();
     assert!(
-        rendered.contains("unexpected end of input"),
+        rendered.contains("expected an expression, but found the end of input"),
         "the parser's message is preserved:\n{rendered}"
+    );
+}
+
+#[test]
+fn parse_error_keeps_its_help() {
+    let rendered = errors("let x = 5").render_plain();
+    assert!(
+        rendered.contains("help: Frost has no `let`; bind a name with `def`: `def x = ...`"),
+        "the parser's help is preserved:\n{rendered}"
     );
 }
 

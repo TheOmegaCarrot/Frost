@@ -1,7 +1,7 @@
 use std::error::Error;
 use std::fmt::{self, Display};
 
-use miette::{LabeledSpan, NamedSource, miette};
+use miette::{LabeledSpan, MietteDiagnostic, NamedSource, Report};
 
 use crate::ast::SourceSpan;
 
@@ -25,6 +25,7 @@ pub struct Label {
 pub(crate) struct Diagnostic {
     message: String,
     labels: Vec<Label>,
+    help: Option<String>,
 }
 
 impl Diagnostic {
@@ -35,6 +36,7 @@ impl Diagnostic {
         Self {
             message: message.into(),
             labels: Vec::new(),
+            help: None,
         }
     }
 
@@ -55,6 +57,15 @@ impl Diagnostic {
             span,
             text: text.into(),
         });
+        self
+    }
+
+    /// Attach help: advice on what to write instead, shown below the labeled source.
+    /// Absent help leaves the diagnostic as it is.
+    pub(crate) fn with_help(mut self, help: Option<String>) -> Self {
+        if help.is_some() {
+            self.help = help;
+        }
         self
     }
 
@@ -92,8 +103,12 @@ impl ParseError {
             .map(|l| LabeledSpan::at(l.span.start..l.span.end, l.text.clone()))
             .collect();
 
-        let report = miette!(labels = labels, "{}", diagnostic.message)
-            .with_source_code(NamedSource::new(filename, source.to_owned()));
+        let mut report = MietteDiagnostic::new(diagnostic.message.clone()).with_labels(labels);
+        if let Some(help) = &diagnostic.help {
+            report = report.with_help(help.clone());
+        }
+        let report =
+            Report::new(report).with_source_code(NamedSource::new(filename, source.to_owned()));
 
         ParseError {
             rendered: format!("{report:?}"),
@@ -115,6 +130,12 @@ impl ParseError {
     /// The primary source span (the first label), or an empty span if none.
     pub fn primary_span(&self) -> SourceSpan {
         self.diagnostic.primary_span()
+    }
+
+    /// Advice on what to write instead, when the error looks like a habit
+    /// carried over from another language.
+    pub fn help(&self) -> Option<&str> {
+        self.diagnostic.help.as_deref()
     }
 
     /// The pretty-formatted error string, intended for display.

@@ -2,7 +2,7 @@ use std::ops::Range;
 
 use crate::ast::SourceSpan;
 use crate::lex::Token;
-use crate::parse::{Diagnostic, ParseResult};
+use crate::parse::{Diagnostic, ParseResult, hints};
 
 use logos::Logos;
 
@@ -108,7 +108,8 @@ impl<'src, 'f> ParseCtx<'src, 'f> {
             let shifted = (span.start + base_offset)..(span.end + base_offset);
 
             let Ok(token) = token else {
-                return Err(lex_error(shifted));
+                let rest_of_line = src[span.start..].lines().next().unwrap_or_default();
+                return Err(lex_error(rest_of_line, shifted));
             };
 
             input.push(SrcToken {
@@ -151,9 +152,12 @@ impl<'src, 'f> ParseCtx<'src, 'f> {
 
     pub(crate) fn expect(&mut self, token: Token) -> ParseResult<&SrcToken<'src>> {
         let expected = format!("`{token}`");
-        let current = self.must_peek(&expected)?;
+        let Some(current) = self.peek() else {
+            let help = self.habit_help(self.input.len(), Some(&token));
+            return Err(self.unexpected_eof(&expected).with_help(help));
+        };
         if current.token != token {
-            return Err(self.expected(&expected, current));
+            return Err(self.expected_token(&expected, current, Some(&token)));
         }
 
         self.advance(1);
@@ -337,11 +341,27 @@ impl<'src, 'f> ParseCtx<'src, 'f> {
     /// The error for finding `found` where `expected` belongs.
     /// `expected` is a noun phrase, such as "an expression" or "`,` or `]`".
     pub(crate) fn expected(&self, expected: &str, found: &SrcToken) -> Diagnostic {
+        self.expected_token(expected, found, None)
+    }
+
+    /// [`expected`](Self::expected), knowing the one `token` that was expected, if so.
+    fn expected_token(
+        &self,
+        expected: &str,
+        found: &SrcToken,
+        token: Option<&Token>,
+    ) -> Diagnostic {
+        let help = self
+            .input
+            .iter()
+            .position(|t| t.span == found.span)
+            .and_then(|index| self.habit_help(index, token));
         Diagnostic::at(
             format!("expected {expected}, but found {}", self.describe(found)),
             found.span.clone().into(),
             "unexpected",
         )
+        .with_help(help)
     }
 
     /// [`expected`](Self::expected), for a list opened at `open`.
@@ -455,6 +475,9 @@ pub(crate) fn int_literal(magnitude: u64, negative: bool, span: Range<usize>) ->
     })
 }
 
-fn lex_error(span: Range<usize>) -> Diagnostic {
-    Diagnostic::at("unexpected character", span.into(), "unrecognized")
+/// The error for source the lexer cannot read at `span`, `rest_of_line` being the
+/// source from there to the end of its line.
+fn lex_error(rest_of_line: &str, span: Range<usize>) -> Diagnostic {
+    let (message, help) = hints::unreadable(rest_of_line);
+    Diagnostic::at(message, span.into(), "unrecognized").with_help(help)
 }

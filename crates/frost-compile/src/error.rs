@@ -148,7 +148,10 @@ impl CompilerError {
                 diagnostic.label(label.span, label.text.clone())
             };
         }
-        diagnostic
+        match error.help() {
+            Some(help) => diagnostic.help(help.to_owned()),
+            None => diagnostic,
+        }
     }
 }
 

@@ -340,7 +340,10 @@ fn a_block_binding_may_shadow_a_global() {
 #[test]
 fn a_block_may_not_export() {
     let rendered = compile_errors("do { export def y = 1; y }").render_plain();
-    assert!(rendered.contains("unexpected export"), "{rendered}");
+    assert!(
+        rendered.contains("expected an expression, but found `export`"),
+        "{rendered}"
+    );
 }
 
 #[test]

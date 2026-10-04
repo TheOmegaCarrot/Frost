@@ -8,6 +8,7 @@ mod destructure;
 mod error;
 mod expression;
 mod format_string;
+mod hints;
 mod iterative;
 mod lambda;
 mod match_expr;
