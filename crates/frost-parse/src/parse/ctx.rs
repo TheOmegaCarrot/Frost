@@ -1,5 +1,6 @@
 use std::ops::Range;
 
+use crate::ast::SourceSpan;
 use crate::lex::Token;
 use crate::parse::{Diagnostic, ParseResult};
 
@@ -308,6 +309,12 @@ impl<'src, 'f> ParseCtx<'src, 'f> {
 
     pub(crate) fn get(&self, pos: usize) -> Option<&SrcToken<'src>> {
         self.input.get(pos)
+    }
+
+    /// The source text `span` covers.
+    /// `span` is in whole-source coordinates, and must lie within this context's source.
+    pub(crate) fn source_text(&self, span: SourceSpan) -> &'src str {
+        &self.full_source[span.start - self.base_offset..span.end - self.base_offset]
     }
 
     pub(crate) fn unexpected_token(&self, token: &SrcToken, tried_to_parse: &str) -> Diagnostic {

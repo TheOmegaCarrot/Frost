@@ -681,11 +681,81 @@ fn error_unclosed_call() {
     );
 }
 
-#[test]
-fn error_thread_no_parens() {
-    let err = parse_err("a @ f");
-    assert!(
-        err.contains("Expected (") || err.contains("unexpected"),
-        "error was: {err}"
+// -- `@` without a call --
+// The right side of `@` must be a call. Without one, the error labels the
+// right side and, where adding `()` would make the call, suggests it.
+
+/// The primary label of the error `src` fails with, after checking that error
+/// is the `@`-without-a-call one and that it covers `callee`.
+fn thread_without_call_label(src: &str, callee: &str) -> String {
+    let err = parse_program("test.frst", src).expect_err(src);
+    assert_eq!(
+        err.message(),
+        "the right side of `@` must be a call",
+        "{src}: {err}"
     );
+    let start = src.rfind(callee).unwrap();
+    assert_eq!(
+        err.primary_span(),
+        SourceSpan {
+            start,
+            end: start + callee.len()
+        },
+        "{src}: the label belongs on `{callee}`: {err}"
+    );
+    err.labels()[0].text.clone()
+}
+
+#[test]
+fn error_thread_no_parens_at_end_of_input() {
+    let label = thread_without_call_label("xs @ sorted", "sorted");
+    assert_eq!(label, "try `sorted()`");
+}
+
+#[test]
+fn error_thread_no_parens_before_a_newline() {
+    let source = r"
+        def a = xs @ sorted
+        print(a)
+    ";
+    let label = thread_without_call_label(source, "sorted");
+    assert_eq!(label, "try `sorted()`");
+}
+
+#[test]
+fn error_thread_no_parens_before_another_token() {
+    let label = thread_without_call_label("f(xs @ sorted)", "sorted");
+    assert_eq!(label, "try `sorted()`");
+}
+
+#[test]
+fn error_thread_no_parens_after_dot_access() {
+    let label = thread_without_call_label("xs @ list.sorted", "list.sorted");
+    assert_eq!(label, "try `list.sorted()`");
+}
+
+#[test]
+fn error_thread_no_parens_after_index() {
+    let label = thread_without_call_label("xs @ fns[0]", "fns[0]");
+    assert_eq!(label, "try `fns[0]()`");
+}
+
+#[test]
+fn error_thread_no_parens_in_a_format_string() {
+    let label = thread_without_call_label("$'${xs @ sorted}'", "sorted");
+    assert_eq!(label, "try `sorted()`");
+}
+
+// Appending `()` to a lambda or `if` would call its last expression instead,
+// so these get no suggestion.
+#[test]
+fn error_thread_non_name_without_call_has_no_suggestion() {
+    for (source, callee) in [
+        ("xs @ fn x -> x", "fn x -> x"),
+        ("xs @ if c: f else: g", "if c: f else: g"),
+        ("xs @ 5", "5"),
+    ] {
+        let label = thread_without_call_label(source, callee);
+        assert_eq!(label, "not a call", "{source}");
+    }
 }

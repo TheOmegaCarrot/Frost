@@ -1,8 +1,8 @@
 use crate::ast::{BinOp, Expr, Literal, LogicalOp, SourceSpan, Spanned, UnaryOp};
 use crate::lex::Token;
-use crate::parse::ParseResult;
 use crate::parse::ctx::{ParseCtx, int_literal};
 use crate::parse::strings;
+use crate::parse::{Diagnostic, ParseResult};
 
 impl<'src, 'f> ParseCtx<'src, 'f> {
     pub(crate) fn parse_expression(&mut self) -> ParseResult<Spanned<Expr>> {
@@ -174,6 +174,9 @@ impl<'src, 'f> ParseCtx<'src, 'f> {
             }
         }
 
+        if !matches!(self.peek().map(|t| &t.token), Some(Token::OpenParen)) {
+            return Err(self.thread_without_call(&callee));
+        }
         self.expect(Token::OpenParen)?;
         self.enter_nl_context();
 
@@ -191,6 +194,19 @@ impl<'src, 'f> ParseCtx<'src, 'f> {
             },
             (start..close.span.end).into(),
         ))
+    }
+
+    /// The error for an `@` whose right side, `callee`, is not followed by call arguments.
+    fn thread_without_call(&self, callee: &Spanned<Expr>) -> Diagnostic {
+        // Suggest the call only where appending `()` makes one;
+        // a trailing `()` on a lambda or `if` would join its body instead.
+        let label = match callee.node {
+            Expr::NameLookup(_) | Expr::HardIndex { .. } | Expr::SoftIndex { .. } => {
+                format!("try `{}()`", self.source_text(callee.span))
+            }
+            _ => "not a call".to_owned(),
+        };
+        Diagnostic::at("the right side of `@` must be a call", callee.span, label)
     }
 
     fn parse_prefix(&mut self) -> ParseResult<Spanned<Expr>> {

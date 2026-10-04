@@ -320,6 +320,67 @@ fn error_missing_equals() {
     assert!(err.contains("expected ="), "error was: {err}");
 }
 
+// -- `def` with parameters --
+// `def f(x) -> ...` is a likely slip for `defn f(x) -> ...`; the error says so.
+
+/// The primary label of the error `src` fails with, after checking that error
+/// is the `def`-with-parameters one and that it points at the `(`.
+fn def_with_params_label(src: &str) -> String {
+    let err = parse_program("test.frst", src).expect_err(src);
+    assert_eq!(err.message(), "def takes no parameters", "{src}: {err}");
+    let open = src.find('(').unwrap();
+    assert_eq!(
+        err.primary_span(),
+        SourceSpan {
+            start: open,
+            end: open + 1
+        },
+        "{src}: the label belongs on the `(`: {err}"
+    );
+    err.labels()[0].text.clone()
+}
+
+#[test]
+fn error_def_with_params_suggests_defn() {
+    let label = def_with_params_label("def add(x, y) -> x + y");
+    assert!(
+        label.contains("`defn add(...) -> ...`"),
+        "label was: {label}"
+    );
+}
+
+#[test]
+fn error_exported_def_with_params_suggests_export_defn() {
+    let label = def_with_params_label("export def add(x, y) -> x + y");
+    assert!(
+        label.contains("`export defn add(...) -> ...`"),
+        "label was: {label}"
+    );
+}
+
+#[test]
+fn error_def_with_params_in_a_block() {
+    let source = r"
+        do {
+            def add(x) -> x + 1
+            add(1)
+        }
+    ";
+    let label = def_with_params_label(source);
+    assert!(
+        label.contains("`defn add(...) -> ...`"),
+        "label was: {label}"
+    );
+}
+
+// `defn` requires a name, so `def _(x)` is not offered a `defn` suggestion.
+#[test]
+fn error_def_discard_with_params_is_a_plain_error() {
+    let err = parse_err("def _(x) -> x");
+    assert!(err.contains("expected ="), "error was: {err}");
+    assert!(!err.contains("defn"), "error was: {err}");
+}
+
 #[test]
 fn error_unexpected_token_in_array() {
     let err = parse_err("def [a + b] = 1");

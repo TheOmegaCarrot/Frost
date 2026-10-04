@@ -91,6 +91,19 @@ impl<'src, 'f> ParseCtx<'src, 'f> {
 
         let destructure = self.parse_destructure()?;
 
+        if let Destructure::Binding(binding) = &destructure.node
+            && let Binding::Named(name) = &binding.node
+            && let Some(open) = self.peek()
+            && open.token == Token::OpenParen
+        {
+            let defn = if exported { "export defn" } else { "defn" };
+            return Err(Diagnostic::at(
+                "def takes no parameters",
+                open.span.clone().into(),
+                format!("to define a function, write `{defn} {name}(...) -> ...`"),
+            ));
+        }
+
         self.expect(Token::Assign)?;
 
         let expr = self.parse_expression()?;
