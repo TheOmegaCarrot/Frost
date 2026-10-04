@@ -268,22 +268,42 @@ fn a_binding_may_shadow_a_same_scope_hoisted_capture() {
 }
 
 #[test]
-fn with_captures_seeds_hoisted_constants_but_not_plain_captures() {
+fn with_captures_seeds_each_given_value() {
     let locals = Locals::with_captures(
-        ["plain".to_string()],
-        [("known".to_string(), Value::Int(99))],
+        [
+            ("plain".to_string(), None),
+            ("known".to_string(), Some(Value::Int(7))),
+        ],
+        [("hoisted".to_string(), Value::Int(99))],
     );
     let plain = locals
         .resolve("plain")
         .expect("a capture is live from the start");
     let known = locals
         .resolve("known")
+        .expect("a capture with a known value is live from the start");
+    let hoisted = locals
+        .resolve("hoisted")
         .expect("a hoisted capture is live from the start");
     assert!(
         locals.constant(plain).is_none(),
         "a plain capture carries no compile-time value"
     );
-    assert!(matches!(locals.constant(known), Some(Value::Int(99))));
+    assert!(
+        matches!(locals.constant(known), Some(Value::Int(7))),
+        "a capture carries the value it was given"
+    );
+    assert!(matches!(locals.constant(hoisted), Some(Value::Int(99))));
+}
+
+#[test]
+fn a_capture_with_a_known_value_is_still_seated() {
+    // Only hoisting builds a value in; a known value on a capture is for folds.
+    let locals = Locals::with_captures([("known".to_string(), Some(Value::Int(7)))], []);
+    let known = locals.resolve("known").unwrap();
+    let plan = locals.plan_slots(&[]);
+    assert_eq!(plan.num_captures(), 1);
+    assert_eq!(plan.slot_of(known), 0);
 }
 
 #[test]
@@ -442,16 +462,34 @@ fn capture(locals: &mut Locals, name: &str) -> LocalId {
         .unwrap()
 }
 
+/// Define a binding whose value is compile-time known.
+fn bind_known(locals: &mut Locals, name: &str, value: Value) -> LocalId {
+    locals
+        .define(LocalInfo {
+            name: name.to_string(),
+            span: span(0),
+            exported: false,
+            constant: Some(value),
+            kind: LocalKind::Binding,
+        })
+        .unwrap()
+}
+
+fn load(id: LocalId) -> Ir {
+    Ir::LoadLocal(id)
+}
+
 #[test]
-fn a_fragment_plan_seats_no_captures() {
-    // A fragment evaluated alone (a constant fold) has no closure to seat
-    // captures from, so only the locals it defines get slots, starting at 0.
+fn a_fragment_plan_seats_only_what_the_fragment_uses() {
+    // A capture of the function the fragment does not read is no capture of the
+    // fragment: only the locals the fragment defines get slots, from 0.
     let mut locals = Locals::new();
     capture(&mut locals, "captured");
     let a = bind(&mut locals, "a", span(1)).unwrap();
 
-    let plan = locals.plan_fragment_slots(&[def(a)]);
+    let (plan, captures) = locals.plan_fragment_slots(&[def(a)]);
     assert_eq!(plan.num_captures(), 0);
+    assert!(captures.is_empty(), "nothing to seat");
     assert_eq!(plan.slot_of(a), 0, "the fragment's own local leads");
     let table = plan.into_name_table();
     let names: Vec<&str> = table.iter().map(|e| e.name.as_str()).collect();
@@ -460,11 +498,10 @@ fn a_fragment_plan_seats_no_captures() {
 
 #[test]
 #[should_panic(expected = "no slot")]
-fn a_fragment_plan_gives_a_capture_no_slot() {
-    // A fragment reading a capture cannot be evaluated alone; that is a bug.
+fn a_fragment_plan_gives_an_unread_capture_no_slot() {
     let mut locals = Locals::new();
     let captured = capture(&mut locals, "captured");
-    locals.plan_fragment_slots(&[]).slot_of(captured);
+    locals.plan_fragment_slots(&[]).0.slot_of(captured);
 }
 
 #[test]
@@ -475,11 +512,61 @@ fn a_fragment_plan_orders_locals_by_first_definition() {
     let unused = bind(&mut locals, "unused", span(2)).unwrap();
 
     // `b` is defined first, and twice; `unused` is never defined.
-    let plan = locals.plan_fragment_slots(&[def(b), def(a), def(b)]);
+    let (plan, _) = locals.plan_fragment_slots(&[def(b), def(a), def(b)]);
     assert_eq!(plan.slot_of(b), 0);
     assert_eq!(plan.slot_of(a), 1);
     assert_eq!(plan.into_name_table().len(), 2, "one slot each, no hole");
     let _ = unused;
+}
+
+#[test]
+fn a_fragment_plan_seats_each_known_outer_local_it_reads() {
+    // An outer local the fragment reads is a capture, seated with its known
+    // value; the captures lead, in first-read order, and are seated once each.
+    let mut locals = Locals::new();
+    let f = bind_known(&mut locals, "f", Value::Int(1));
+    let g = bind_known(&mut locals, "g", Value::Int(2));
+    let unread = bind_known(&mut locals, "unread", Value::Int(3));
+    let own = bind(&mut locals, "own", span(1)).unwrap();
+
+    let (plan, captures) =
+        locals.plan_fragment_slots(&[load(g), def(own), load(f), load(g), load(own)]);
+    assert_eq!(plan.num_captures(), 2, "f and g, not the unread local");
+    assert_eq!(plan.slot_of(g), 0, "g is read first");
+    assert_eq!(plan.slot_of(f), 1);
+    assert_eq!(plan.slot_of(own), 2, "a defined local follows the captures");
+    assert_eq!(
+        captures.into_iter().collect::<Vec<_>>(),
+        vec![
+            ("f".to_string(), Value::Int(1)),
+            ("g".to_string(), Value::Int(2)),
+        ],
+        "each capture is seated with its known value, by name"
+    );
+    let names: Vec<String> = plan.into_name_table().into_iter().map(|e| e.name).collect();
+    assert_eq!(names, vec!["g", "f", "own"]);
+    let _ = unread;
+}
+
+#[test]
+fn a_local_the_fragment_defines_is_not_a_capture_even_if_read_first() {
+    // Reading a local the fragment also defines reads the fragment's own slot.
+    let mut locals = Locals::new();
+    let known = bind_known(&mut locals, "known", Value::Int(1));
+
+    let (plan, captures) = locals.plan_fragment_slots(&[load(known), def(known)]);
+    assert_eq!(plan.num_captures(), 0);
+    assert!(captures.is_empty());
+    assert_eq!(plan.slot_of(known), 0);
+}
+
+#[test]
+#[should_panic(expected = "reads only known outer locals")]
+fn a_fragment_reading_an_unknown_outer_local_panics() {
+    // Such a fragment is never foldable, so planning one is a compiler bug.
+    let mut locals = Locals::new();
+    let unknown = bind(&mut locals, "unknown", span(0)).unwrap();
+    locals.plan_fragment_slots(&[load(unknown)]);
 }
 
 #[test]

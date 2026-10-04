@@ -133,7 +133,8 @@ impl FunctionBuilder<'_> {
         // The push that seats each capture, in the same order the child seats
         // them. A captured constant is pushed directly, so a lambda over
         // constants can still be evaluated in a fold; hoisted, it is built into
-        // the child instead and not pushed at all.
+        // the child instead and not pushed at all. A known value that cannot be
+        // a constant is pushed from its local, and known to the child's folds.
         let hoist = self.options.optimization_options.capture_hoist;
         let mut captures = Vec::new();
         let mut capture_pushes = Vec::new();
@@ -143,7 +144,11 @@ impl FunctionBuilder<'_> {
             match constant_of(&push.code) {
                 Some(value) if hoist => hoisted.push((name, value)),
                 _ => {
-                    captures.push(name);
+                    let known = match push.code.as_slice() {
+                        [Ir::LoadLocal(id)] => self.locals.constant(*id).cloned(),
+                        _ => None,
+                    };
+                    captures.push((name, known));
                     capture_pushes.push(push);
                 }
             }

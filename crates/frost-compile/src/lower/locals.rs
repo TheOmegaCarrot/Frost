@@ -13,6 +13,8 @@
 #[cfg(test)]
 mod tests;
 
+use std::collections::{BTreeMap, HashSet};
+
 use frost_parse::ast::SourceSpan;
 use frost_runtime::{NameEntry, Value};
 
@@ -47,6 +49,8 @@ pub(super) struct LocalInfo {
     pub(super) name: String,
     pub(super) span: SourceSpan,
     pub(super) exported: bool,
+    // Any known value, including one the constant pool cannot hold, such as a
+    // function: `compile_name_lookup` decides how a lookup uses it.
     pub(super) constant: Option<Value>,
     pub(super) kind: LocalKind,
 }
@@ -64,16 +68,17 @@ impl Locals {
         Self::default()
     }
 
-    /// The locals of a function whose captures are `names`, live from the start
-    /// and seated in this order (see [`plan_slots`](Self::plan_slots)), and whose
-    /// `hoisted` captures are built in as constants.
+    /// The locals of a function whose `captures` are live from the start and
+    /// seated in this order (see [`plan_slots`](Self::plan_slots)), each with its
+    /// value if compile-time known, and whose `hoisted` captures are built in as
+    /// constants.
     pub(super) fn with_captures(
-        names: impl IntoIterator<Item = String>,
+        captures: impl IntoIterator<Item = (String, Option<Value>)>,
         hoisted: impl IntoIterator<Item = (String, Value)>,
     ) -> Self {
-        let captured = names
+        let captured = captures
             .into_iter()
-            .map(|name| (name, None, LocalKind::Capture));
+            .map(|(name, constant)| (name, constant, LocalKind::Capture));
         let hoisted = hoisted
             .into_iter()
             .map(|(name, value)| (name, Some(value), LocalKind::Hoisted));
@@ -123,7 +128,7 @@ impl Locals {
             .find(|id| self.info(*id).name == name)
     }
 
-    /// The compile-time value of a local, if the binding is a known constant.
+    /// The compile-time value of a local, if it is known.
     pub(super) fn constant(&self, id: LocalId) -> Option<&Value> {
         self.info(id).constant.as_ref()
     }
@@ -195,14 +200,46 @@ impl Locals {
     }
 
     /// [`plan_slots`](Self::plan_slots) for a fragment evaluated on its own, as
-    /// in a constant fold: no captures, since there is no closure to seat them,
-    /// so only the locals the fragment itself defines get a slot. A fragment that
-    /// reads a local it does not define has no business being evaluated alone,
-    /// and [`SlotPlan::slot_of`] will catch it.
-    pub(super) fn plan_fragment_slots(&self, code: &[Ir]) -> SlotPlan {
+    /// in a constant fold, along with the value to seat in each of its captures,
+    /// by name.
+    ///
+    /// The fragment's captures are the locals it reads but does not define, in
+    /// first-read order. A fragment is evaluated alone only if each such local's
+    /// value is compile-time known, and that value is what is seated. The locals
+    /// the fragment defines follow.
+    pub(super) fn plan_fragment_slots(&self, code: &[Ir]) -> (SlotPlan, BTreeMap<String, Value>) {
+        let defined: HashSet<LocalId> = code
+            .iter()
+            .filter_map(|ir| match ir {
+                Ir::DefLocal(id) => Some(*id),
+                _ => None,
+            })
+            .collect();
         let mut plan = SlotPlan::sized(self.infos.len());
+        let mut captures = BTreeMap::new();
+        for ir in code {
+            if let Ir::LoadLocal(id) = ir
+                && !defined.contains(id)
+                && plan.slots[id.0].is_none()
+            {
+                let info = self.info(*id);
+                let value = info
+                    .constant
+                    .clone()
+                    .expect("a fragment evaluated alone reads only known outer locals");
+                // The outer locals a fragment reads are among those in view where
+                // it starts, which have distinct names.
+                let clash = captures.insert(info.name.clone(), value);
+                assert!(
+                    clash.is_none(),
+                    "two outer locals a fragment reads share a name"
+                );
+                plan.assign(*id, info);
+            }
+        }
+        plan.num_captures = plan.name_table.len();
         self.assign_defined(&mut plan, code);
-        plan
+        (plan, captures)
     }
 
     /// Give each local `code` defines, and that has no slot yet, the next slot,

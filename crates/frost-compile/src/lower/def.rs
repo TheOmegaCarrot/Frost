@@ -2,7 +2,7 @@ use frost_parse::ast::{Destructure, Expr, Spanned};
 
 use crate::{
     CompilerErrors,
-    lower::{FunctionBuilder, Position, StatementFragment, fold::constant_of},
+    lower::{FunctionBuilder, Position, StatementFragment},
 };
 
 impl FunctionBuilder<'_> {
@@ -16,18 +16,14 @@ impl FunctionBuilder<'_> {
         let exported = exported || self.exports_implicitly();
 
         // The rhs is a fold point: a def whose value is compile-time known binds
-        // a folded constant.
+        // a folded constant. With propagation on, the binding also records that
+        // value so name lookups can propagate it.
         let expr_fragment = self.compile_expression(expr, Position::Inner)?;
-        let expr_fragment = self.fold_if_eligible(expr_fragment);
-
-        // With propagation on, a binding whose rhs is compile-time known records
-        // its value so name lookups can propagate it.
-        let constant = self
-            .options
-            .optimization_options
-            .constant_propagate
-            .then(|| constant_of(&expr_fragment.code))
-            .flatten();
+        let (expr_fragment, constant) = if self.options.optimization_options.constant_propagate {
+            self.fold_binding_value(expr_fragment)
+        } else {
+            (self.fold_if_eligible(expr_fragment), None)
+        };
         let destructure_fragment = self.compile_destructure(destructure, exported, constant)?;
 
         Ok(StatementFragment {

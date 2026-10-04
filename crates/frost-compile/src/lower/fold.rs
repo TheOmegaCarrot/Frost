@@ -3,7 +3,9 @@
 //!
 //! A fragment marked `foldable` computes its value from no runtime inputs using
 //! only pure operations, so it can be evaluated now, on the real VM, and its
-//! code replaced by a push of the result. Evaluating on the VM (rather than a
+//! code replaced by a push of the result. It may read a local whose value is
+//! compile-time known but cannot be a constant, such as a function: the
+//! evaluation seats that value as a capture. Evaluating on the VM (rather than a
 //! separate interpreter) keeps folding bit-for-bit consistent with runtime.
 //!
 //! Each maximal foldable subtree is folded exactly once, at its root. A node
@@ -21,6 +23,7 @@
 mod tests;
 
 use std::cell::RefCell;
+use std::collections::BTreeMap;
 use std::num::NonZeroUsize;
 use std::sync::Arc;
 
@@ -64,10 +67,14 @@ impl FoldVm {
         }
     }
 
-    /// Run a self-contained fold program, returning its value, or `None` if it
-    /// errors or exhausts fuel.
-    fn evaluate(&self, function: Arc<CompiledFunction>) -> Option<Value> {
-        let closure = function.assert_trusted().into_closure().ok()?;
+    /// Run a fold program with `captures` seated, returning its value, or `None`
+    /// if it errors or exhausts fuel.
+    fn evaluate(
+        &self,
+        function: Arc<CompiledFunction>,
+        captures: BTreeMap<String, Value>,
+    ) -> Option<Value> {
+        let closure = function.assert_trusted().close(captures).ok()?;
         let vm = match self.parked.borrow_mut().take() {
             Some(core) => core.build(closure),
             None => self.factory.build(closure).ok()?,
@@ -164,6 +171,33 @@ impl FunctionBuilder<'_> {
         }
     }
 
+    /// Fold a binding's value as [`fold_if_eligible`](Self::fold_if_eligible)
+    /// does, also returning the value if it is compile-time known, for the
+    /// binding to record. A value that cannot be a constant, such as a function,
+    /// is still returned: a later fold can use it through the binding.
+    pub(super) fn fold_binding_value(
+        &self,
+        fragment: ExprFragment,
+    ) -> (ExprFragment, Option<Value>) {
+        if let Some(value) = constant_of(&fragment.code) {
+            return (fragment, Some(value));
+        }
+        if !self.options.optimization_options.constant_fold || !fragment.foldable {
+            return (fragment, None);
+        }
+        let Some(value) = self.evaluate(fragment.code.clone()) else {
+            return (fragment, None);
+        };
+        let fragment = match value_to_ir(value.clone()) {
+            Some(ir) => ExprFragment {
+                code: vec![ir],
+                foldable: true,
+            },
+            None => fragment,
+        };
+        (fragment, Some(value))
+    }
+
     /// Apply the folding rule (see the module doc) to one node's children: if any
     /// is not foldable, fold each that is. Also returns whether all are foldable.
     pub(super) fn fold_siblings<const N: usize>(
@@ -204,9 +238,7 @@ impl FunctionBuilder<'_> {
         // which the leading Pop discards; the fragment then leaves the value.
         let mut wrapped = vec![Ir::Ready(Bytecode::Pop)];
         wrapped.extend(code);
-        // A foldable fragment reads only locals it defines itself (e.g. a `do`
-        // block's bindings), so those are the only ones it needs slots for.
-        let plan = self.locals.plan_fragment_slots(&wrapped);
+        let (plan, captures) = self.locals.plan_fragment_slots(&wrapped);
         let function = assemble_code(
             &wrapped,
             self.next_label.0,
@@ -216,6 +248,6 @@ impl FunctionBuilder<'_> {
             // Run once and discarded: a smaller pool would save nothing.
             false,
         );
-        self.fold_vm?.evaluate(function)
+        self.fold_vm?.evaluate(function, captures)
     }
 }

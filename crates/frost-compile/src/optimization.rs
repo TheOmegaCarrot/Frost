@@ -9,8 +9,13 @@ pub struct OptimizationOptions {
     /// Evaluate an expression built only from compile-time-known values and pure
     /// operations at compile time, emitting just its value.
     pub constant_fold: bool,
-    /// Propagate a binding whose value is compile-time known: a lookup of it loads
-    /// the value directly, so it is itself fold-eligible.
+    /// Propagate a binding whose value is compile-time known, so a lookup of it
+    /// is itself fold-eligible. The lookup loads the value directly, unless it
+    /// cannot be a constant, as a function cannot: then the lookup still loads
+    /// the binding, but a [constant fold](Self::constant_fold) can use the
+    /// value, as by calling the function. A value that only a fold can compute,
+    /// rather than a literal, is known only alongside
+    /// [`constant_fold`](Self::constant_fold).
     pub constant_propagate: bool,
     /// Resolve a branch whose condition is compile-time known, emitting only the
     /// path taken.

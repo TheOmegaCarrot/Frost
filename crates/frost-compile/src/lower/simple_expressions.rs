@@ -55,19 +55,16 @@ impl FunctionBuilder<'_> {
         // win over globals; a name that is neither is a compile error.
         let name = canonical_name(name);
         if let Some(id) = self.locals.resolve(name) {
-            // A compile-time-known binding is propagated as its constant, and so
-            // is itself fold-eligible; otherwise it is an ordinary local load.
-            return Ok(match self.locals.constant(id) {
-                Some(value) => ExprFragment {
-                    code: vec![
-                        value_to_ir(value.clone()).expect("a stored constant is representable"),
-                    ],
-                    foldable: true,
-                },
-                None => ExprFragment {
-                    code: vec![Ir::LoadLocal(id)],
-                    foldable: false,
-                },
+            // A compile-time-known binding is fold-eligible, and propagated as its
+            // constant. A known value that cannot be a constant, such as a
+            // function, is still loaded from the local, but a fold can use it.
+            let constant = self.locals.constant(id);
+            let load = constant
+                .and_then(|value| value_to_ir(value.clone()))
+                .unwrap_or(Ir::LoadLocal(id));
+            return Ok(ExprFragment {
+                code: vec![load],
+                foldable: constant.is_some(),
             });
         }
         if let Some(slot) = global_slot(name) {
