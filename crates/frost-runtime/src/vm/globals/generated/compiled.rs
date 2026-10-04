@@ -6,14 +6,13 @@
 //   arity 1, 0 captures
 //   slots
 //        0  f
-//        1  inv
 //   constants
 //        0  "Function inv requires Function as argument 1, got "
 //   children
 //        0  inv_fn (child 0)
 //   code
 //        0  DefLocal       0    ; f
-//        1  DefLocal       1    ; inv
+//        1  DropBelow      0
 //        2  LoadGlobal     8    ; is_function
 //        3  LoadLocal      0    ; f
 //        4  Call           1
@@ -39,10 +38,9 @@
 //   slots
 //        0  f           capture
 //        1  args
-//        2  inv_fn
 //   code
 //        0  DefLocal      1    ; args
-//        1  DefLocal      2    ; inv_fn
+//        1  DropBelow     0
 //        2  LoadGlobal    101  ; call
 //        3  ConsumeLocal  0    ; f
 //        4  ConsumeLocal  1    ; args
@@ -54,7 +52,6 @@
 //   slots
 //        0  outer
 //        1  f
-//        2  curry
 //   constants
 //        0  "Function curry requires Function as argument 1, got "
 //   children
@@ -62,7 +59,7 @@
 //   code
 //        0  DefLocal       0    ; outer
 //        1  DefLocal       1    ; f
-//        2  DefLocal       2    ; curry
+//        2  DropBelow      0
 //        3  LoadGlobal     8    ; is_function
 //        4  LoadLocal      1    ; f
 //        5  Call           1
@@ -90,10 +87,9 @@
 //        0  f           capture
 //        1  outer       capture
 //        2  inner
-//        3  curry_fn
 //   code
 //        0  DefLocal      2    ; inner
-//        1  DefLocal      3    ; curry_fn
+//        1  DropBelow     0
 //        2  LoadGlobal    101  ; call
 //        3  ConsumeLocal  0    ; f
 //        4  ConsumeLocal  1    ; outer
@@ -106,7 +102,6 @@
 //   slots
 //        0  outer
 //        1  f
-//        2  bcurry
 //   constants
 //        0  "Function bcurry requires Function as argument 1, got "
 //   children
@@ -114,7 +109,7 @@
 //   code
 //        0  DefLocal       0    ; outer
 //        1  DefLocal       1    ; f
-//        2  DefLocal       2    ; bcurry
+//        2  DropBelow      0
 //        3  LoadGlobal     8    ; is_function
 //        4  LoadLocal      1    ; f
 //        5  Call           1
@@ -142,10 +137,9 @@
 //        0  f           capture
 //        1  outer       capture
 //        2  inner
-//        3  bcurry_fn
 //   code
 //        0  DefLocal      2    ; inner
-//        1  DefLocal      3    ; bcurry_fn
+//        1  DropBelow     0
 //        2  LoadGlobal    101  ; call
 //        3  ConsumeLocal  0    ; f
 //        4  ConsumeLocal  2    ; inner
@@ -157,24 +151,22 @@
 //   arity 0 or more, 0 captures
 //   slots
 //        0  e
-//        1  collect
 //   code
 //        0  DefLocal      0  ; e
-//        1  DefLocal      1  ; collect
+//        1  DropBelow     0
 //        2  ConsumeLocal  0  ; e
 //
 // function spread
 //   arity 1, 0 captures
 //   slots
 //        0  f
-//        1  spread
 //   constants
 //        0  "Function spread requires Function as argument 1, got "
 //   children
 //        0  spread_fn (child 0)
 //   code
 //        0  DefLocal       0    ; f
-//        1  DefLocal       1    ; spread
+//        1  DropBelow      0
 //        2  LoadGlobal     8    ; is_function
 //        3  LoadLocal      0    ; f
 //        4  Call           1
@@ -200,10 +192,9 @@
 //   slots
 //        0  f           capture
 //        1  arr
-//        2  spread_fn
 //   code
 //        0  DefLocal      1    ; arr
-//        1  DefLocal      2    ; spread_fn
+//        1  DropBelow     0
 //        2  LoadGlobal    101  ; call
 //        3  ConsumeLocal  0    ; f
 //        4  ConsumeLocal  1    ; arr
@@ -213,14 +204,13 @@
 //   arity 1, 0 captures
 //   slots
 //        0  f
-//        1  rev_args
 //   constants
 //        0  "Function rev_args requires Function as argument 1, got "
 //   children
 //        0  rev_args_fn (child 0)
 //   code
 //        0  DefLocal       0    ; f
-//        1  DefLocal       1    ; rev_args
+//        1  DropBelow      0
 //        2  LoadGlobal     8    ; is_function
 //        3  LoadLocal      0    ; f
 //        4  Call           1
@@ -246,10 +236,9 @@
 //   slots
 //        0  f           capture
 //        1  args
-//        2  rev_args_fn
 //   code
 //        0  DefLocal      1    ; args
-//        1  DefLocal      2    ; rev_args_fn
+//        1  DropBelow     0
 //        2  LoadGlobal    101  ; call
 //        3  ConsumeLocal  0    ; f
 //        4  LoadGlobal    67   ; reverse
@@ -262,13 +251,12 @@
 //   slots
 //        0  f
 //        1  a
-//        2  tap
 //   constants
 //        0  "Function tap requires Function as argument 2, got "
 //   code
 //        0  DefLocal      0    ; f
 //        1  DefLocal      1    ; a
-//        2  DefLocal      2    ; tap
+//        2  DropBelow     0
 //        3  LoadGlobal    8    ; is_function
 //        4  LoadLocal     0    ; f
 //        5  Call          1
@@ -296,12 +284,11 @@
 //   arity 1, 0 captures
 //   slots
 //        0  v
-//        1  const
 //   children
 //        0  const_fn (child 0)
 //   code
 //        0  DefLocal       0  ; v
-//        1  DefLocal       1  ; const
+//        1  DropBelow      0
 //        2  ConsumeLocal   0  ; v
 //        3  CreateClosure  0  ; const_fn, 1 capture
 //
@@ -309,10 +296,9 @@
 //   arity 0 or more, 1 capture
 //   slots
 //        0  v           capture
-//        1  const_fn
 //   code
 //        0  DropBelow     0
-//        1  DefLocal      1  ; const_fn
+//        1  DropBelow     0
 //        2  ConsumeLocal  0  ; v
 //
 // function compose
@@ -364,32 +350,30 @@
 //       31  ConsumeLocal       2    ; f
 //       32  ConsumeLocal       1    ; g
 //       33  TailCall           2
-//       34  Jump               L1   ; +22
+//       34  Jump               L1   ; +20
 //   L0:
 //       35  RewindToMark
 //       36  MarkStack
-//       37  PeekDown           0
+//       37  DropMark
 //       38  DropBelow          0
-//       39  DropMark
-//       40  DropBelow          0
-//       41  LoadGlobal         101  ; call
-//       42  ConsumeLocal       3    ; compose
-//       43  ConsumeLocal       5    ; compose2
-//       44  ConsumeLocal       2    ; f
-//       45  ConsumeLocal       1    ; g
-//       46  Call               2
-//       47  MakeArray          1
-//       48  ConsumeLocal       0    ; rest
-//       49  Add
-//       50  TailCall           2
-//       51  Jump               L1   ; +5
-//       52  RewindToMark
-//       53  LoadConst          0    ; "No match arm matches the value: "
-//       54  PeekDown           1
-//       55  Concat             2
-//       56  ProduceError
+//       39  LoadGlobal         101  ; call
+//       40  ConsumeLocal       3    ; compose
+//       41  ConsumeLocal       5    ; compose2
+//       42  ConsumeLocal       2    ; f
+//       43  ConsumeLocal       1    ; g
+//       44  Call               2
+//       45  MakeArray          1
+//       46  ConsumeLocal       0    ; rest
+//       47  Add
+//       48  TailCall           2
+//       49  Jump               L1   ; +5
+//       50  RewindToMark
+//       51  LoadConst          0    ; "No match arm matches the value: "
+//       52  PeekDown           1
+//       53  Concat             2
+//       54  ProduceError
 //   L1:
-//       57  (end)
+//       55  (end)
 //
 // function <lambda> (child 0)
 //   arity 1, 1 capture
@@ -434,13 +418,12 @@
 //   slots
 //        0  f2
 //        1  f1
-//        2  compose2
 //   children
 //        0  compose_fn (child 1.0)
 //   code
 //        0  DefLocal       0  ; f2
 //        1  DefLocal       1  ; f1
-//        2  DefLocal       2  ; compose2
+//        2  DropBelow      0
 //        3  ConsumeLocal   0  ; f2
 //        4  ConsumeLocal   1  ; f1
 //        5  CreateClosure  0  ; compose_fn, 2 captures
@@ -451,10 +434,9 @@
 //        0  f2          capture
 //        1  f1          capture
 //        2  args
-//        3  compose_fn
 //   code
 //        0  DefLocal      2    ; args
-//        1  DefLocal      3    ; compose_fn
+//        1  DropBelow     0
 //        2  ConsumeLocal  0    ; f2
 //        3  LoadGlobal    101  ; call
 //        4  ConsumeLocal  1    ; f1
@@ -466,12 +448,11 @@
 //   arity 1, 0 captures
 //   slots
 //        0  key
-//        1  index
 //   children
 //        0  index_fn (child 0)
 //   code
 //        0  DefLocal       0  ; key
-//        1  DefLocal       1  ; index
+//        1  DropBelow      0
 //        2  ConsumeLocal   0  ; key
 //        3  CreateClosure  0  ; index_fn, 1 capture
 //
@@ -480,10 +461,9 @@
 //   slots
 //        0  key         capture
 //        1  structure
-//        2  index_fn
 //   code
 //        0  DefLocal            1  ; structure
-//        1  DefLocal            2  ; index_fn
+//        1  DropBelow           0
 //        2  ConsumeLocal        1  ; structure
 //        3  ConsumeLocal        0  ; key
 //        4  SoftIndexStructure
@@ -493,19 +473,18 @@
 //   slots
 //        0  keys
 //        1  structure
-//        2  dig
-//        3  step
+//        2  step
 //   children
 //        0  step (child 0)
 //   code
 //        0  DefLocal       0   ; keys
 //        1  DefLocal       1   ; structure
-//        2  DefLocal       2   ; dig
+//        2  DropBelow      0
 //        3  CreateClosure  0   ; step, 0 captures
-//        4  DefLocal       3   ; step
+//        4  DefLocal       2   ; step
 //        5  LoadGlobal     80  ; fold
 //        6  ConsumeLocal   0   ; keys
-//        7  ConsumeLocal   3   ; step
+//        7  ConsumeLocal   2   ; step
 //        8  ConsumeLocal   1   ; structure
 //        9  TailCall       3
 //
@@ -514,11 +493,10 @@
 //   slots
 //        0  key
 //        1  found
-//        2  step
 //   code
 //        0  DefLocal            0   ; key
 //        1  DefLocal            1   ; found
-//        2  DefLocal            2   ; step
+//        2  DropBelow           0
 //        3  LoadGlobal          0   ; is_null
 //        4  LoadLocal           1   ; found
 //        5  Call                1
@@ -546,7 +524,7 @@ pub(super) fn functions() -> Value {
                     (string("child_fns"), array([])),
                     (string("code"), array([
                         map([(string("DefLocal"), int(2))]),
-                        map([(string("DefLocal"), int(3))]),
+                        map([(string("DropBelow"), int(0))]),
                         map([(string("LoadGlobal"), int(101))]),
                         map([(string("ConsumeLocal"), int(0))]),
                         map([(string("ConsumeLocal"), int(2))]),
@@ -567,10 +545,6 @@ pub(super) fn functions() -> Value {
                             (string("exported"), boolean(false)),
                             (string("name"), string("inner")),
                         ]),
-                        map([
-                            (string("exported"), boolean(false)),
-                            (string("name"), string("bcurry_fn")),
-                        ]),
                     ])),
                     (string("num_captures"), int(2)),
                     (string("version"), string("0.0.1")),
@@ -579,7 +553,7 @@ pub(super) fn functions() -> Value {
             (string("code"), array([
                 map([(string("DefLocal"), int(0))]),
                 map([(string("DefLocal"), int(1))]),
-                map([(string("DefLocal"), int(2))]),
+                map([(string("DropBelow"), int(0))]),
                 map([(string("LoadGlobal"), int(8))]),
                 map([(string("LoadLocal"), int(1))]),
                 map([(string("Call"), int(1))]),
@@ -609,7 +583,6 @@ pub(super) fn functions() -> Value {
             (string("name_table"), array([
                 map([(string("exported"), boolean(false)), (string("name"), string("outer"))]),
                 map([(string("exported"), boolean(false)), (string("name"), string("f"))]),
-                map([(string("exported"), boolean(false)), (string("name"), string("bcurry"))]),
             ])),
             (string("num_captures"), int(0)),
             (string("version"), string("0.0.1")),
@@ -619,16 +592,13 @@ pub(super) fn functions() -> Value {
             (string("child_fns"), array([])),
             (string("code"), array([
                 map([(string("DefLocal"), int(0))]),
-                map([(string("DefLocal"), int(1))]),
+                map([(string("DropBelow"), int(0))]),
                 map([(string("ConsumeLocal"), int(0))]),
             ])),
             (string("constants"), array([])),
             (string("key_constants"), array([])),
             (string("name"), string("collect")),
-            (string("name_table"), array([
-                map([(string("exported"), boolean(false)), (string("name"), string("e"))]),
-                map([(string("exported"), boolean(false)), (string("name"), string("collect"))]),
-            ])),
+            (string("name_table"), array([map([(string("exported"), boolean(false)), (string("name"), string("e"))])])),
             (string("num_captures"), int(0)),
             (string("version"), string("0.0.1")),
         ])),
@@ -691,7 +661,7 @@ pub(super) fn functions() -> Value {
                             (string("child_fns"), array([])),
                             (string("code"), array([
                                 map([(string("DefLocal"), int(2))]),
-                                map([(string("DefLocal"), int(3))]),
+                                map([(string("DropBelow"), int(0))]),
                                 map([(string("ConsumeLocal"), int(0))]),
                                 map([(string("LoadGlobal"), int(101))]),
                                 map([(string("ConsumeLocal"), int(1))]),
@@ -715,10 +685,6 @@ pub(super) fn functions() -> Value {
                                     (string("exported"), boolean(false)),
                                     (string("name"), string("args")),
                                 ]),
-                                map([
-                                    (string("exported"), boolean(false)),
-                                    (string("name"), string("compose_fn")),
-                                ]),
                             ])),
                             (string("num_captures"), int(2)),
                             (string("version"), string("0.0.1")),
@@ -727,7 +693,7 @@ pub(super) fn functions() -> Value {
                     (string("code"), array([
                         map([(string("DefLocal"), int(0))]),
                         map([(string("DefLocal"), int(1))]),
-                        map([(string("DefLocal"), int(2))]),
+                        map([(string("DropBelow"), int(0))]),
                         map([(string("ConsumeLocal"), int(0))]),
                         map([(string("ConsumeLocal"), int(1))]),
                         map([(string("CreateClosure"), int(0))]),
@@ -738,10 +704,6 @@ pub(super) fn functions() -> Value {
                     (string("name_table"), array([
                         map([(string("exported"), boolean(false)), (string("name"), string("f2"))]),
                         map([(string("exported"), boolean(false)), (string("name"), string("f1"))]),
-                        map([
-                            (string("exported"), boolean(false)),
-                            (string("name"), string("compose2")),
-                        ]),
                     ])),
                     (string("num_captures"), int(0)),
                     (string("version"), string("0.0.1")),
@@ -782,11 +744,9 @@ pub(super) fn functions() -> Value {
                 map([(string("ConsumeLocal"), int(2))]),
                 map([(string("ConsumeLocal"), int(1))]),
                 map([(string("TailCall"), int(2))]),
-                map([(string("Jump"), int(22))]),
+                map([(string("Jump"), int(20))]),
                 string("RewindToMark"),
                 string("MarkStack"),
-                map([(string("PeekDown"), int(0))]),
-                map([(string("DropBelow"), int(0))]),
                 string("DropMark"),
                 map([(string("DropBelow"), int(0))]),
                 map([(string("LoadGlobal"), int(101))]),
@@ -828,7 +788,7 @@ pub(super) fn functions() -> Value {
                     (string("child_fns"), array([])),
                     (string("code"), array([
                         map([(string("DropBelow"), int(0))]),
-                        map([(string("DefLocal"), int(1))]),
+                        map([(string("DropBelow"), int(0))]),
                         map([(string("ConsumeLocal"), int(0))]),
                     ])),
                     (string("constants"), array([])),
@@ -836,10 +796,6 @@ pub(super) fn functions() -> Value {
                     (string("name"), string("const_fn")),
                     (string("name_table"), array([
                         map([(string("exported"), boolean(false)), (string("name"), string("v"))]),
-                        map([
-                            (string("exported"), boolean(false)),
-                            (string("name"), string("const_fn")),
-                        ]),
                     ])),
                     (string("num_captures"), int(1)),
                     (string("version"), string("0.0.1")),
@@ -847,17 +803,14 @@ pub(super) fn functions() -> Value {
             ])),
             (string("code"), array([
                 map([(string("DefLocal"), int(0))]),
-                map([(string("DefLocal"), int(1))]),
+                map([(string("DropBelow"), int(0))]),
                 map([(string("ConsumeLocal"), int(0))]),
                 map([(string("CreateClosure"), int(0))]),
             ])),
             (string("constants"), array([])),
             (string("key_constants"), array([])),
             (string("name"), string("const")),
-            (string("name_table"), array([
-                map([(string("exported"), boolean(false)), (string("name"), string("v"))]),
-                map([(string("exported"), boolean(false)), (string("name"), string("const"))]),
-            ])),
+            (string("name_table"), array([map([(string("exported"), boolean(false)), (string("name"), string("v"))])])),
             (string("num_captures"), int(0)),
             (string("version"), string("0.0.1")),
         ])),
@@ -869,7 +822,7 @@ pub(super) fn functions() -> Value {
                     (string("child_fns"), array([])),
                     (string("code"), array([
                         map([(string("DefLocal"), int(2))]),
-                        map([(string("DefLocal"), int(3))]),
+                        map([(string("DropBelow"), int(0))]),
                         map([(string("LoadGlobal"), int(101))]),
                         map([(string("ConsumeLocal"), int(0))]),
                         map([(string("ConsumeLocal"), int(1))]),
@@ -890,10 +843,6 @@ pub(super) fn functions() -> Value {
                             (string("exported"), boolean(false)),
                             (string("name"), string("inner")),
                         ]),
-                        map([
-                            (string("exported"), boolean(false)),
-                            (string("name"), string("curry_fn")),
-                        ]),
                     ])),
                     (string("num_captures"), int(2)),
                     (string("version"), string("0.0.1")),
@@ -902,7 +851,7 @@ pub(super) fn functions() -> Value {
             (string("code"), array([
                 map([(string("DefLocal"), int(0))]),
                 map([(string("DefLocal"), int(1))]),
-                map([(string("DefLocal"), int(2))]),
+                map([(string("DropBelow"), int(0))]),
                 map([(string("LoadGlobal"), int(8))]),
                 map([(string("LoadLocal"), int(1))]),
                 map([(string("Call"), int(1))]),
@@ -932,7 +881,6 @@ pub(super) fn functions() -> Value {
             (string("name_table"), array([
                 map([(string("exported"), boolean(false)), (string("name"), string("outer"))]),
                 map([(string("exported"), boolean(false)), (string("name"), string("f"))]),
-                map([(string("exported"), boolean(false)), (string("name"), string("curry"))]),
             ])),
             (string("num_captures"), int(0)),
             (string("version"), string("0.0.1")),
@@ -946,7 +894,7 @@ pub(super) fn functions() -> Value {
                     (string("code"), array([
                         map([(string("DefLocal"), int(0))]),
                         map([(string("DefLocal"), int(1))]),
-                        map([(string("DefLocal"), int(2))]),
+                        map([(string("DropBelow"), int(0))]),
                         map([(string("LoadGlobal"), int(0))]),
                         map([(string("LoadLocal"), int(1))]),
                         map([(string("Call"), int(1))]),
@@ -966,10 +914,6 @@ pub(super) fn functions() -> Value {
                             (string("exported"), boolean(false)),
                             (string("name"), string("found")),
                         ]),
-                        map([
-                            (string("exported"), boolean(false)),
-                            (string("name"), string("step")),
-                        ]),
                     ])),
                     (string("num_captures"), int(0)),
                     (string("version"), string("0.0.1")),
@@ -978,12 +922,12 @@ pub(super) fn functions() -> Value {
             (string("code"), array([
                 map([(string("DefLocal"), int(0))]),
                 map([(string("DefLocal"), int(1))]),
-                map([(string("DefLocal"), int(2))]),
+                map([(string("DropBelow"), int(0))]),
                 map([(string("CreateClosure"), int(0))]),
-                map([(string("DefLocal"), int(3))]),
+                map([(string("DefLocal"), int(2))]),
                 map([(string("LoadGlobal"), int(80))]),
                 map([(string("ConsumeLocal"), int(0))]),
-                map([(string("ConsumeLocal"), int(3))]),
+                map([(string("ConsumeLocal"), int(2))]),
                 map([(string("ConsumeLocal"), int(1))]),
                 map([(string("TailCall"), int(3))]),
             ])),
@@ -993,7 +937,6 @@ pub(super) fn functions() -> Value {
             (string("name_table"), array([
                 map([(string("exported"), boolean(false)), (string("name"), string("keys"))]),
                 map([(string("exported"), boolean(false)), (string("name"), string("structure"))]),
-                map([(string("exported"), boolean(false)), (string("name"), string("dig"))]),
                 map([(string("exported"), boolean(false)), (string("name"), string("step"))]),
             ])),
             (string("num_captures"), int(0)),
@@ -1007,7 +950,7 @@ pub(super) fn functions() -> Value {
                     (string("child_fns"), array([])),
                     (string("code"), array([
                         map([(string("DefLocal"), int(1))]),
-                        map([(string("DefLocal"), int(2))]),
+                        map([(string("DropBelow"), int(0))]),
                         map([(string("ConsumeLocal"), int(1))]),
                         map([(string("ConsumeLocal"), int(0))]),
                         string("SoftIndexStructure"),
@@ -1021,10 +964,6 @@ pub(super) fn functions() -> Value {
                             (string("exported"), boolean(false)),
                             (string("name"), string("structure")),
                         ]),
-                        map([
-                            (string("exported"), boolean(false)),
-                            (string("name"), string("index_fn")),
-                        ]),
                     ])),
                     (string("num_captures"), int(1)),
                     (string("version"), string("0.0.1")),
@@ -1032,17 +971,14 @@ pub(super) fn functions() -> Value {
             ])),
             (string("code"), array([
                 map([(string("DefLocal"), int(0))]),
-                map([(string("DefLocal"), int(1))]),
+                map([(string("DropBelow"), int(0))]),
                 map([(string("ConsumeLocal"), int(0))]),
                 map([(string("CreateClosure"), int(0))]),
             ])),
             (string("constants"), array([])),
             (string("key_constants"), array([])),
             (string("name"), string("index")),
-            (string("name_table"), array([
-                map([(string("exported"), boolean(false)), (string("name"), string("key"))]),
-                map([(string("exported"), boolean(false)), (string("name"), string("index"))]),
-            ])),
+            (string("name_table"), array([map([(string("exported"), boolean(false)), (string("name"), string("key"))])])),
             (string("num_captures"), int(0)),
             (string("version"), string("0.0.1")),
         ])),
@@ -1054,7 +990,7 @@ pub(super) fn functions() -> Value {
                     (string("child_fns"), array([])),
                     (string("code"), array([
                         map([(string("DefLocal"), int(1))]),
-                        map([(string("DefLocal"), int(2))]),
+                        map([(string("DropBelow"), int(0))]),
                         map([(string("LoadGlobal"), int(101))]),
                         map([(string("ConsumeLocal"), int(0))]),
                         map([(string("ConsumeLocal"), int(1))]),
@@ -1070,10 +1006,6 @@ pub(super) fn functions() -> Value {
                             (string("exported"), boolean(false)),
                             (string("name"), string("args")),
                         ]),
-                        map([
-                            (string("exported"), boolean(false)),
-                            (string("name"), string("inv_fn")),
-                        ]),
                     ])),
                     (string("num_captures"), int(1)),
                     (string("version"), string("0.0.1")),
@@ -1081,7 +1013,7 @@ pub(super) fn functions() -> Value {
             ])),
             (string("code"), array([
                 map([(string("DefLocal"), int(0))]),
-                map([(string("DefLocal"), int(1))]),
+                map([(string("DropBelow"), int(0))]),
                 map([(string("LoadGlobal"), int(8))]),
                 map([(string("LoadLocal"), int(0))]),
                 map([(string("Call"), int(1))]),
@@ -1107,10 +1039,7 @@ pub(super) fn functions() -> Value {
             ])),
             (string("key_constants"), array([])),
             (string("name"), string("inv")),
-            (string("name_table"), array([
-                map([(string("exported"), boolean(false)), (string("name"), string("f"))]),
-                map([(string("exported"), boolean(false)), (string("name"), string("inv"))]),
-            ])),
+            (string("name_table"), array([map([(string("exported"), boolean(false)), (string("name"), string("f"))])])),
             (string("num_captures"), int(0)),
             (string("version"), string("0.0.1")),
         ])),
@@ -1122,7 +1051,7 @@ pub(super) fn functions() -> Value {
                     (string("child_fns"), array([])),
                     (string("code"), array([
                         map([(string("DefLocal"), int(1))]),
-                        map([(string("DefLocal"), int(2))]),
+                        map([(string("DropBelow"), int(0))]),
                         map([(string("LoadGlobal"), int(101))]),
                         map([(string("ConsumeLocal"), int(0))]),
                         map([(string("LoadGlobal"), int(67))]),
@@ -1139,10 +1068,6 @@ pub(super) fn functions() -> Value {
                             (string("exported"), boolean(false)),
                             (string("name"), string("args")),
                         ]),
-                        map([
-                            (string("exported"), boolean(false)),
-                            (string("name"), string("rev_args_fn")),
-                        ]),
                     ])),
                     (string("num_captures"), int(1)),
                     (string("version"), string("0.0.1")),
@@ -1150,7 +1075,7 @@ pub(super) fn functions() -> Value {
             ])),
             (string("code"), array([
                 map([(string("DefLocal"), int(0))]),
-                map([(string("DefLocal"), int(1))]),
+                map([(string("DropBelow"), int(0))]),
                 map([(string("LoadGlobal"), int(8))]),
                 map([(string("LoadLocal"), int(0))]),
                 map([(string("Call"), int(1))]),
@@ -1176,10 +1101,7 @@ pub(super) fn functions() -> Value {
             ])),
             (string("key_constants"), array([])),
             (string("name"), string("rev_args")),
-            (string("name_table"), array([
-                map([(string("exported"), boolean(false)), (string("name"), string("f"))]),
-                map([(string("exported"), boolean(false)), (string("name"), string("rev_args"))]),
-            ])),
+            (string("name_table"), array([map([(string("exported"), boolean(false)), (string("name"), string("f"))])])),
             (string("num_captures"), int(0)),
             (string("version"), string("0.0.1")),
         ])),
@@ -1191,7 +1113,7 @@ pub(super) fn functions() -> Value {
                     (string("child_fns"), array([])),
                     (string("code"), array([
                         map([(string("DefLocal"), int(1))]),
-                        map([(string("DefLocal"), int(2))]),
+                        map([(string("DropBelow"), int(0))]),
                         map([(string("LoadGlobal"), int(101))]),
                         map([(string("ConsumeLocal"), int(0))]),
                         map([(string("ConsumeLocal"), int(1))]),
@@ -1203,10 +1125,6 @@ pub(super) fn functions() -> Value {
                     (string("name_table"), array([
                         map([(string("exported"), boolean(false)), (string("name"), string("f"))]),
                         map([(string("exported"), boolean(false)), (string("name"), string("arr"))]),
-                        map([
-                            (string("exported"), boolean(false)),
-                            (string("name"), string("spread_fn")),
-                        ]),
                     ])),
                     (string("num_captures"), int(1)),
                     (string("version"), string("0.0.1")),
@@ -1214,7 +1132,7 @@ pub(super) fn functions() -> Value {
             ])),
             (string("code"), array([
                 map([(string("DefLocal"), int(0))]),
-                map([(string("DefLocal"), int(1))]),
+                map([(string("DropBelow"), int(0))]),
                 map([(string("LoadGlobal"), int(8))]),
                 map([(string("LoadLocal"), int(0))]),
                 map([(string("Call"), int(1))]),
@@ -1240,10 +1158,7 @@ pub(super) fn functions() -> Value {
             ])),
             (string("key_constants"), array([])),
             (string("name"), string("spread")),
-            (string("name_table"), array([
-                map([(string("exported"), boolean(false)), (string("name"), string("f"))]),
-                map([(string("exported"), boolean(false)), (string("name"), string("spread"))]),
-            ])),
+            (string("name_table"), array([map([(string("exported"), boolean(false)), (string("name"), string("f"))])])),
             (string("num_captures"), int(0)),
             (string("version"), string("0.0.1")),
         ])),
@@ -1253,7 +1168,7 @@ pub(super) fn functions() -> Value {
             (string("code"), array([
                 map([(string("DefLocal"), int(0))]),
                 map([(string("DefLocal"), int(1))]),
-                map([(string("DefLocal"), int(2))]),
+                map([(string("DropBelow"), int(0))]),
                 map([(string("LoadGlobal"), int(8))]),
                 map([(string("LoadLocal"), int(0))]),
                 map([(string("Call"), int(1))]),
@@ -1285,7 +1200,6 @@ pub(super) fn functions() -> Value {
             (string("name_table"), array([
                 map([(string("exported"), boolean(false)), (string("name"), string("f"))]),
                 map([(string("exported"), boolean(false)), (string("name"), string("a"))]),
-                map([(string("exported"), boolean(false)), (string("name"), string("tap"))]),
             ])),
             (string("num_captures"), int(0)),
             (string("version"), string("0.0.1")),

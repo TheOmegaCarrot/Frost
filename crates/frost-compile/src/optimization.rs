@@ -26,6 +26,24 @@ pub struct OptimizationOptions {
     /// [`constant_propagate`](Self::constant_propagate), so this has effect only
     /// alongside it.
     pub capture_hoist: bool,
+    /// Discard a binding's value rather than store it, when nothing reads the
+    /// binding afterward. The value is still computed; with
+    /// [`discard_eliminate`](Self::discard_eliminate), one that takes no
+    /// computation, such as a constant, is not. An exported binding is always
+    /// stored.
+    ///
+    /// A binding the script does read can still go unread once compiled: with
+    /// [`constant_propagate`](Self::constant_propagate), a lookup of a known
+    /// constant loads the constant instead, and with
+    /// [`constant_fold`](Self::constant_fold) as well, an expression using a
+    /// known value, such as a call to a known function, becomes its result.
+    pub dead_store_eliminate: bool,
+    /// Skip loading a value that would only be discarded, when loading it takes
+    /// no computation: a constant, a binding's value, or a function that
+    /// captures nothing. Such a value is discarded when a statement's value goes
+    /// unused, or, with [`dead_store_eliminate`](Self::dead_store_eliminate),
+    /// when a binding is never read.
+    pub discard_eliminate: bool,
     /// Move a local's value out on its last use, rather than copying it, so a
     /// structure held only by that local can be updated in place.
     pub consume_locals: bool,
@@ -41,6 +59,8 @@ impl OptimizationOptions {
         constant_propagate: false,
         branch_eliminate: false,
         capture_hoist: false,
+        dead_store_eliminate: false,
+        discard_eliminate: false,
         consume_locals: false,
         deduplicate_constants: false,
     };
@@ -51,6 +71,8 @@ impl OptimizationOptions {
         constant_propagate: true,
         branch_eliminate: true,
         capture_hoist: true,
+        dead_store_eliminate: true,
+        discard_eliminate: true,
         consume_locals: true,
         deduplicate_constants: true,
     };
@@ -125,6 +147,8 @@ impl OptimizationOptions {
             Optimization::ConstantPropagate => &mut self.constant_propagate,
             Optimization::BranchEliminate => &mut self.branch_eliminate,
             Optimization::CaptureHoist => &mut self.capture_hoist,
+            Optimization::DeadStoreEliminate => &mut self.dead_store_eliminate,
+            Optimization::DiscardEliminate => &mut self.discard_eliminate,
             Optimization::ConsumeLocals => &mut self.consume_locals,
             Optimization::DeduplicateConstants => &mut self.deduplicate_constants,
         }
@@ -143,6 +167,10 @@ pub enum Optimization {
     BranchEliminate,
     /// [`OptimizationOptions::capture_hoist`].
     CaptureHoist,
+    /// [`OptimizationOptions::dead_store_eliminate`].
+    DeadStoreEliminate,
+    /// [`OptimizationOptions::discard_eliminate`].
+    DiscardEliminate,
     /// [`OptimizationOptions::consume_locals`].
     ConsumeLocals,
     /// [`OptimizationOptions::deduplicate_constants`].
@@ -151,11 +179,13 @@ pub enum Optimization {
 
 impl Optimization {
     /// Every optimization, in the order [`OptimizationOptions`] declares them.
-    pub const ALL: [Self; 6] = [
+    pub const ALL: [Self; 8] = [
         Self::ConstantFold,
         Self::ConstantPropagate,
         Self::BranchEliminate,
         Self::CaptureHoist,
+        Self::DeadStoreEliminate,
+        Self::DiscardEliminate,
         Self::ConsumeLocals,
         Self::DeduplicateConstants,
     ];
@@ -168,6 +198,8 @@ impl Optimization {
             Self::ConstantPropagate => "constant-propagate",
             Self::BranchEliminate => "branch-eliminate",
             Self::CaptureHoist => "capture-hoist",
+            Self::DeadStoreEliminate => "dead-store-eliminate",
+            Self::DiscardEliminate => "discard-eliminate",
             Self::ConsumeLocals => "consume-locals",
             Self::DeduplicateConstants => "deduplicate-constants",
         }

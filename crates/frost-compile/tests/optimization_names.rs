@@ -16,6 +16,8 @@ fn each_optimization_switches_its_own_field() {
             constant_propagate,
             branch_eliminate,
             capture_hoist,
+            dead_store_eliminate,
+            discard_eliminate,
             consume_locals,
             deduplicate_constants,
         } = options;
@@ -24,6 +26,8 @@ fn each_optimization_switches_its_own_field() {
             ("constant_propagate", constant_propagate),
             ("branch_eliminate", branch_eliminate),
             ("capture_hoist", capture_hoist),
+            ("dead_store_eliminate", dead_store_eliminate),
+            ("discard_eliminate", discard_eliminate),
             ("consume_locals", consume_locals),
             ("deduplicate_constants", deduplicate_constants),
         ]
@@ -79,6 +83,8 @@ fn names_are_kebab_case_and_distinct() {
             "constant-propagate",
             "branch-eliminate",
             "capture-hoist",
+            "dead-store-eliminate",
+            "discard-eliminate",
             "consume-locals",
             "deduplicate-constants",
         ]
@@ -250,7 +256,8 @@ fn a_refusal_explains_itself() {
         (
             UnknownOptimization("x".to_string()),
             "there is no optimization `x`; there are constant-fold, constant-propagate, \
-             branch-eliminate, capture-hoist, consume-locals, deduplicate-constants",
+             branch-eliminate, capture-hoist, dead-store-eliminate, discard-eliminate, \
+             consume-locals, deduplicate-constants",
         ),
         (
             InvalidValue {

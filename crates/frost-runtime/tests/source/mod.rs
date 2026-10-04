@@ -40,7 +40,7 @@ use frost_runtime::{
 pub(crate) const UNOPTIMIZED: OptimizationOptions = OptimizationOptions::NONE;
 
 /// How many options [`OptimizationOptions`] has.
-const OPTION_COUNT: u32 = 6;
+const OPTION_COUNT: u32 = 8;
 
 /// Every permutation of the optimization options, starting with [`UNOPTIMIZED`].
 pub(crate) fn every_optimization() -> impl Iterator<Item = OptimizationOptions> {
@@ -53,8 +53,10 @@ pub(crate) fn every_optimization() -> impl Iterator<Item = OptimizationOptions> 
             constant_propagate: on(1),
             branch_eliminate: on(2),
             capture_hoist: on(3),
-            consume_locals: on(4),
-            deduplicate_constants: on(5),
+            dead_store_eliminate: on(4),
+            discard_eliminate: on(5),
+            consume_locals: on(6),
+            deduplicate_constants: on(7),
         }
     })
 }

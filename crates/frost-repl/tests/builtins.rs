@@ -392,6 +392,8 @@ fn optimize_shows_each_optimization_and_whether_it_is_on() {
 constant-propagate     true
 branch-eliminate       true
 capture-hoist          true
+dead-store-eliminate   true
+discard-eliminate      true
 consume-locals         true
 deduplicate-constants  true";
     assert_eq!(optimizations_after(OptimizationOptions::ALL, &[]), expected);

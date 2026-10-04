@@ -2,23 +2,28 @@
 //! before assembly.
 //!
 //! Lowering emits correct IR on its own; every pass here is an optional
-//! optimization, gated by its own [`OptimizationOptions`] flag, that returns
+//! optimization, gated by its own [`OptimizationOptions`] flags, that returns
 //! IR computing the same result.
 
 mod consume_locals;
+mod dead_code;
 
 use crate::OptimizationOptions;
 use crate::lower::LoweredFunction;
-
-/// A pass: takes a function and returns it rewritten.
-type Pass = fn(LoweredFunction) -> LoweredFunction;
 
 /// Run every pass `options` enables over `function`, in order.
 pub(super) fn run_passes(
     function: LoweredFunction,
     options: &OptimizationOptions,
 ) -> LoweredFunction {
-    let passes: [(bool, Pass); 1] = [(options.consume_locals, consume_locals::consume_locals)];
+    let passes: [(bool, &dyn Fn(LoweredFunction) -> LoweredFunction); 2] = [
+        // Before consuming locals: removing a read can change which read is last.
+        (
+            options.dead_store_eliminate || options.discard_eliminate,
+            &|function| dead_code::eliminate_dead_code(function, options),
+        ),
+        (options.consume_locals, &consume_locals::consume_locals),
+    ];
     passes
         .into_iter()
         .filter(|&(enabled, _)| enabled)

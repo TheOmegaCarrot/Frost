@@ -29,12 +29,15 @@ const COMPILED_PATH: &str = concat!(
 /// Every optimization but constant folding. Folding runs calls to globals at
 /// compile time, and those include the globals generated here: the output would
 /// depend on the previous `compiled.rs`, and a stale one cannot even be loaded.
+///
+/// Each top-level function is exported, as the global it becomes, so none is
+/// optimized away as unused.
 const OPTIONS: CompilerOptions = CompilerOptions {
     optimization_options: OptimizationOptions {
         constant_fold: false,
         ..OptimizationOptions::ALL
     },
-    implicit_export: false,
+    implicit_export: true,
 };
 
 /// The line width the rendered Rust aims to stay within.
