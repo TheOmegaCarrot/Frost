@@ -227,23 +227,12 @@ impl<'src, 'f> ParseCtx<'src, 'f> {
         let peek = self.must_peek("a type name")?;
         let span: SourceSpan = peek.span.clone().into();
 
-        let constraint = match peek.token {
-            Token::Identifier("Null") => TypeConstraint::Null,
-            Token::Identifier("Int") => TypeConstraint::Int,
-            Token::Identifier("Float") => TypeConstraint::Float,
-            Token::Identifier("Bool") => TypeConstraint::Bool,
-            Token::Identifier("String") => TypeConstraint::String,
-            Token::Identifier("Bytes") => TypeConstraint::Bytes,
-            Token::Identifier("Array") => TypeConstraint::Array,
-            Token::Identifier("Map") => TypeConstraint::Map,
-            Token::Identifier("Function") => TypeConstraint::Function,
-            Token::Identifier("Opaque") => TypeConstraint::Opaque,
-            Token::Identifier("Primitive") => TypeConstraint::Primitive,
-            Token::Identifier("Numeric") => TypeConstraint::Numeric,
-            Token::Identifier("Structured") => TypeConstraint::Structured,
-            Token::Identifier("Flat") => TypeConstraint::Flat,
-            Token::Identifier("Nonnull") => TypeConstraint::Nonnull,
-            _ => return Err(self.expected("a type name", peek)),
+        let named = match peek.token {
+            Token::Identifier(name) => TYPE_CONSTRAINTS.iter().find(|(n, _)| *n == name),
+            _ => None,
+        };
+        let Some(&(_, constraint)) = named else {
+            return Err(self.expected("a type name", peek));
         };
 
         self.advance(1);
@@ -407,6 +396,25 @@ impl<'src, 'f> ParseCtx<'src, 'f> {
         }
     }
 }
+
+/// Each type a constraint can name after `is`, by its name.
+pub(crate) const TYPE_CONSTRAINTS: &[(&str, TypeConstraint)] = &[
+    ("Null", TypeConstraint::Null),
+    ("Int", TypeConstraint::Int),
+    ("Float", TypeConstraint::Float),
+    ("Bool", TypeConstraint::Bool),
+    ("String", TypeConstraint::String),
+    ("Bytes", TypeConstraint::Bytes),
+    ("Array", TypeConstraint::Array),
+    ("Map", TypeConstraint::Map),
+    ("Function", TypeConstraint::Function),
+    ("Opaque", TypeConstraint::Opaque),
+    ("Primitive", TypeConstraint::Primitive),
+    ("Numeric", TypeConstraint::Numeric),
+    ("Structured", TypeConstraint::Structured),
+    ("Flat", TypeConstraint::Flat),
+    ("Nonnull", TypeConstraint::Nonnull),
+];
 
 fn expr_match_pattern(expr: Spanned<Expr>) -> Spanned<MatchPattern> {
     let span = expr.span;

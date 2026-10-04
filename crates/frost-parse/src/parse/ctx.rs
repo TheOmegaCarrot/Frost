@@ -418,13 +418,14 @@ impl<'src, 'f> ParseCtx<'src, 'f> {
             }
         };
 
-        match unclosed {
+        let diagnostic = match unclosed {
             Some(open) => diagnostic.with_label(
                 open.span.clone().into(),
                 format!("this `{}` is not closed", open.token),
             ),
             None => diagnostic,
-        }
+        };
+        diagnostic.with_help(self.habit_help(self.input.len(), None))
     }
 
     /// The innermost opening bracket in this context with no closing bracket after it.

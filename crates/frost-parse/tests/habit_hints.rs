@@ -438,6 +438,261 @@ fn unreadable_source() {
     }
 }
 
+// -- Definitions where an expression belongs --
+
+#[test]
+fn definitions_inside_expressions() {
+    let indented_body = r"
+        defn f(a) ->
+            def y = a
+            y
+    ";
+    let block_help = "a definition is a statement; for statements inside an expression, use a block: \
+         `do { ... }`";
+    assert_help(&[
+        (
+            indented_body,
+            "a function body with statements goes in braces: `-> { ... }`",
+        ),
+        ("if true: def x = 1", block_help),
+        ("f(defn g(x) -> x)", block_help),
+        (
+            "do { export def x = 1; x }",
+            "`export` is only allowed at the top level",
+        ),
+        (
+            "export fn x -> x",
+            "`export` takes a definition: `export def x = ...` or `export defn f(...) -> ...`",
+        ),
+    ]);
+}
+
+// -- Operators Frost lacks, by their touching tokens --
+
+#[test]
+fn multi_character_operators() {
+    assert_help(&[
+        (
+            "2 ** 3",
+            "Frost has no `**`; for powers, the `std.math` module has `pow`",
+        ),
+        ("1 === 1", "Frost's equality is `==`"),
+        ("1 !== 1", "Frost's inequality is `!=`"),
+        ("1 << 2", "Frost has no shift operators"),
+        ("8 >> 1", "Frost has no shift operators"),
+    ]);
+}
+
+#[test]
+fn comments_from_other_languages() {
+    assert_help(&[
+        ("7 // a note", "a comment starts with `#`"),
+        ("1 /* a note */ + 2", "a comment starts with `#`"),
+    ]);
+}
+
+// Operator characters separated by a space are not one foreign operator.
+#[test]
+fn spaced_operators_get_no_operator_help() {
+    for source in ["2 * * 3", "1 == = 1", "1 < < 2", "7 / / 2"] {
+        let (message, help) = diagnosis(source);
+        assert_eq!(help, None, "{source:?} failed with {message:?}");
+    }
+}
+
+// -- Numbers and indexing --
+
+#[test]
+fn number_forms_frost_lacks() {
+    assert_help(&[
+        ("0xFF", "Frost number literals are decimal only"),
+        ("0b101", "Frost number literals are decimal only"),
+        ("0o17", "Frost number literals are decimal only"),
+        ("1_000", "Frost number literals have no `_` separators"),
+        ("1.", "a Float needs digits after its point, like `1.0`"),
+    ]);
+}
+
+#[test]
+fn tuple_style_indexing() {
+    assert_help(&[
+        ("t.0", "index an Array with brackets, like `xs[0]`"),
+        ("xs.10", "index an Array with brackets, like `xs[0]`"),
+    ]);
+}
+
+#[test]
+fn range_syntax() {
+    assert_help(&[(
+        "1..5",
+        "Frost has no range operator; for a range of Ints, use `range(start, stop)`",
+    )]);
+}
+
+// -- Keywords where a name belongs --
+
+#[test]
+fn keywords_as_fields() {
+    assert_help(&[
+        (
+            "xs.map(f)",
+            "`map` is a keyword, not a method; write `map xs with f`, or `xs @ transform(f)`",
+        ),
+        (
+            "xs.filter(f)",
+            "`filter` is a keyword, not a method; write `filter xs with f`, or \
+             `xs @ select(f)`",
+        ),
+        (
+            "x.init",
+            "`init` is a keyword; index with brackets instead: `x[\"init\"]`",
+        ),
+    ]);
+}
+
+#[test]
+fn keywords_as_map_keys() {
+    assert_help(&[
+        (
+            "{map: 1}",
+            "`map` is a keyword; write the key in brackets: `[\"map\"]: ...`",
+        ),
+        (
+            "{a: 1, if: 2}",
+            "`if` is a keyword; write the key in brackets: `[\"if\"]: ...`",
+        ),
+    ]);
+}
+
+#[test]
+fn keywords_as_names() {
+    assert_help(&[
+        ("def map = 1", "`map` is a keyword, so it cannot be a name"),
+        (
+            "def init = 1",
+            "`init` is a keyword, so it cannot be a name",
+        ),
+        (
+            "defn with(x) -> x",
+            "`with` is a keyword, so it cannot be a name",
+        ),
+        (
+            "defn f(map) -> map",
+            "`map` is a keyword, so it cannot be a name",
+        ),
+        (
+            "defn f(a, do) -> a",
+            "`do` is a keyword, so it cannot be a name",
+        ),
+        (
+            "fn filter -> 1",
+            "`filter` is a keyword, so it cannot be a name",
+        ),
+    ]);
+}
+
+// -- Braces read as a Map --
+
+#[test]
+fn braces_meant_as_a_block() {
+    let help = "`{` starts a Map here; for a block of statements, use `do { ... }`";
+    assert_help(&[
+        ("if a: { def x = 1; x } else: 2", help),
+        ("match x { _ => { def y = 1; y } }", help),
+        ("def x = { 1 }", help),
+        ("def x = { y + 1 }", help),
+        ("def x = { f(y) }", help),
+    ]);
+}
+
+#[test]
+fn quoted_map_keys() {
+    assert_help(&[
+        (
+            "{\"a\": 1}",
+            "a Map key that is not a name goes in brackets: `{[\"a\"]: ...}`",
+        ),
+        (
+            "{1: 2}",
+            "a Map key that is not a name goes in brackets: `{[1]: ...}`",
+        ),
+        (
+            "{b: 1, 'a': 2}",
+            "a Map key that is not a name goes in brackets: `{['a']: ...}`",
+        ),
+        (
+            "fn -> { \"a\": 1 }",
+            "a Map key that is not a name goes in brackets: `{[\"a\"]: ...}`",
+        ),
+        (
+            "match x { {'a': v} => v }",
+            "a Map key that is not a name goes in brackets: `{['a']: ...}`",
+        ),
+    ]);
+}
+
+// -- Patterns --
+
+#[test]
+fn type_names() {
+    let all_types = "the types are `Null`, `Int`, `Float`, `Bool`, `String`, `Bytes`, \
+                     `Array`, `Map`, `Function`, `Opaque`, `Primitive`, `Numeric`, \
+                     `Structured`, `Flat`, `Nonnull`";
+    assert_help(&[
+        ("match x { n is int => n }", "did you mean `Int`?"),
+        ("match x { n is STRING => n }", "did you mean `String`?"),
+        ("match x { n is nonnull => n }", "did you mean `Nonnull`?"),
+        ("match x { n is Number => n }", all_types),
+    ]);
+}
+
+#[test]
+fn rest_bindings() {
+    let last_help = "a `...rest` binding comes last, with nothing after it";
+    assert_help(&[
+        ("def [a, ...rest, b] = xs", last_help),
+        ("match x { [...a, b] => b }", last_help),
+        ("defn f(...r, x) -> r", last_help),
+        ("fn (...r,) -> 1", last_help),
+        (
+            "match x { [a, ..rest] => a }",
+            "a rest binding is written `...name`",
+        ),
+    ]);
+}
+
+#[test]
+fn spread() {
+    assert_help(&[
+        (
+            "[...xs, 4]",
+            "Frost has no spread; combine with `+`, like `xs + ys` or `m + {k: v}`",
+        ),
+        (
+            "{...m, k: 1}",
+            "Frost has no spread; combine with `+`, like `xs + ys` or `m + {k: v}`",
+        ),
+        (
+            "f(...args)",
+            "Frost has no spread; to pass an Array's elements as arguments, use `call(f, args)`",
+        ),
+    ]);
+}
+
+// -- Placeholders --
+
+#[test]
+fn placeholders() {
+    let names_help = "the placeholders are `$`, `$1` to `$9`, and `$$`";
+    let outside_help = "`$` placeholders work only inside `$( ... )`, like `$($ * 2)`";
+    assert_help(&[
+        ("fn x -> $ * 2", outside_help),
+        ("def $ = 1", outside_help),
+        ("$($0)", names_help),
+        ("$($10)", names_help),
+    ]);
+}
+
 // -- No hint --
 // Errors that match no habit get no help.
 
