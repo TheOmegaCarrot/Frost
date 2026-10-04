@@ -11,7 +11,9 @@
 
 mod common;
 
-use common::{Emitted, Script, UNOPTIMIZED, compile_errors, every_optimization, raises, run};
+use common::{
+    Emitted, Script, UNOPTIMIZED, compile_errors, optimization_permutations, raises, run,
+};
 use frost_compile::OptimizationOptions;
 use frost_runtime::{Bytecode, MapKey, Value};
 
@@ -1278,7 +1280,7 @@ fn tail_recursion_through_a_match_runs_in_bounded_depth() {
 fn only_an_arms_result_is_in_tail_position() {
     // The target, value, and guard calls are ordinary; each result's is a tail call.
     let source = "fn f(n) -> match f(n) { (f(n)) => f(n), x if: f(x) => f(x), _ => f(n) }";
-    for optimization in every_optimization() {
+    for optimization in optimization_permutations() {
         let lambda = Script::new(source).code(optimization).nested(0);
         assert_eq!(
             calls_by_kind(&lambda),

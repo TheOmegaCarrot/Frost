@@ -13,7 +13,7 @@ mod common;
 
 use std::sync::{Arc, Mutex};
 
-use common::{Emitted, Script, UNOPTIMIZED, every_optimization, raises, run};
+use common::{Emitted, Script, UNOPTIMIZED, optimization_permutations, raises, run};
 use frost_compile::OptimizationOptions;
 use frost_runtime::{Arity, Bytecode, Value};
 
@@ -48,7 +48,7 @@ impl Probe {
     /// permutation, so every run must have made exactly the same calls.
     fn calls_per_run(&self) -> Vec<Vec<Value>> {
         let calls = self.calls.lock().unwrap();
-        let runs = every_optimization().count();
+        let runs = optimization_permutations().count();
         assert_eq!(
             calls.len() % runs,
             0,

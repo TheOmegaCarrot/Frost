@@ -1,9 +1,10 @@
 //! Shared harness for the compiler's integration tests.
 //!
-//! The core of it is [`every_optimization`]: a [`Script`] compiles and runs under
-//! every permutation of the optimization options, and its checks require every
-//! permutation to agree. Optimization must never change what a program does, so
-//! most tests get that assurance for free just by going through [`Script`].
+//! The core of it is [`optimization_permutations`]: a [`Script`] compiles and
+//! runs under many permutations of the optimization options, or every one with
+//! `EXHAUSTIVE_COMPILER_TESTS` set, and its checks require them all to agree.
+//! Optimization must never change what a program does, so most tests get that
+//! assurance for free just by going through [`Script`].
 //!
 //! Runs are unmetered. Fuel use and call depth are the things optimization may
 //! change (it may lower either, e.g. by folding or inlining a call), so under a
@@ -36,23 +37,41 @@ pub(crate) const UNOPTIMIZED: OptimizationOptions = OptimizationOptions::NONE;
 /// How many options [`OptimizationOptions`] has.
 const OPTION_COUNT: u32 = 8;
 
-/// Every permutation of the optimization options, starting with [`UNOPTIMIZED`].
-pub(crate) fn every_optimization() -> impl Iterator<Item = OptimizationOptions> {
-    (0..1u32 << OPTION_COUNT).map(|bits| {
-        let on = |option: u32| bits & (1 << option) != 0;
-        // No `..` here: a new option fails to compile until it gets its own bit
-        // and `OPTION_COUNT` counts it.
-        OptimizationOptions {
-            constant_fold: on(0),
-            constant_propagate: on(1),
-            branch_eliminate: on(2),
-            capture_hoist: on(3),
-            dead_store_eliminate: on(4),
-            discard_eliminate: on(5),
-            consume_locals: on(6),
-            deduplicate_constants: on(7),
-        }
-    })
+/// The permutations of the optimization options a [`Script`] runs under,
+/// starting with [`UNOPTIMIZED`].
+///
+/// By default, these are no optimization, every optimization, each one alone,
+/// and all but each one: every optimization is checked on its own and beside
+/// all the others, at a cost that grows with the number of options. With the
+/// environment variable `EXHAUSTIVE_COMPILER_TESTS` set, to any value, they are
+/// every permutation instead, at a cost that doubles with each option.
+pub(crate) fn optimization_permutations() -> impl Iterator<Item = OptimizationOptions> {
+    let all = (1u32 << OPTION_COUNT) - 1;
+    let bits: Vec<u32> = if std::env::var_os("EXHAUSTIVE_COMPILER_TESTS").is_some() {
+        (0..=all).collect()
+    } else {
+        let alone = (0..OPTION_COUNT).map(|option| 1 << option);
+        let all_but = alone.clone().map(|bit| all & !bit);
+        [0, all].into_iter().chain(alone).chain(all_but).collect()
+    };
+    bits.into_iter().map(options_from_bits)
+}
+
+/// The options with option `n` on where bit `n` of `bits` is set.
+fn options_from_bits(bits: u32) -> OptimizationOptions {
+    let on = |option: u32| bits & (1 << option) != 0;
+    // No `..` here: a new option fails to compile until it gets its own bit and
+    // `OPTION_COUNT` counts it.
+    OptimizationOptions {
+        constant_fold: on(0),
+        constant_propagate: on(1),
+        branch_eliminate: on(2),
+        capture_hoist: on(3),
+        dead_store_eliminate: on(4),
+        discard_eliminate: on(5),
+        consume_locals: on(6),
+        deduplicate_constants: on(7),
+    }
 }
 
 /// A completed run: the program's tail value and its exports.
@@ -151,7 +170,7 @@ impl Script {
     }
 
     fn observe(&self) -> Observed {
-        let mut permutations = every_optimization();
+        let mut permutations = optimization_permutations();
         let first = permutations
             .next()
             .expect("there is always one permutation");
@@ -205,7 +224,7 @@ impl Script {
     /// The diagnostics of a script that must not compile. Every optimization
     /// permutation must reject it with the same diagnostics.
     pub(crate) fn compile_errors(&self) -> CompilerErrors {
-        let mut permutations = every_optimization();
+        let mut permutations = optimization_permutations();
         let first = permutations
             .next()
             .expect("there is always one permutation");
@@ -233,7 +252,7 @@ impl Script {
     /// The top-level function's code under each optimization permutation that
     /// `select` accepts.
     pub(crate) fn code_where(&self, select: impl Fn(&OptimizationOptions) -> bool) -> Vec<Emitted> {
-        let emitted: Vec<Emitted> = every_optimization()
+        let emitted: Vec<Emitted> = optimization_permutations()
             .filter(select)
             .map(|optimization| Emitted::new(self.function_under(optimization), optimization))
             .collect();
