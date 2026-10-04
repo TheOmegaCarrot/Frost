@@ -357,6 +357,126 @@ mod map_body {
         assert!(lam.body.is_empty());
         assert!(matches!(&lam.return_expr.node, Expr::Map(entries) if entries.is_empty()));
     }
+
+    // -- A multiline Map body --
+    // A Map literal ignores newlines inside its braces, so a body whose first
+    // entry starts on the line after `{` is still a Map, not a block.
+
+    /// The entry count of `lam`'s body, which must be a bare Map.
+    fn map_body_len(lam: &LambdaParts) -> usize {
+        assert!(lam.body.is_empty(), "a Map body has no statements");
+        match &lam.return_expr.node {
+            Expr::Map(entries) => entries.len(),
+            other => panic!("expected Map body, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn multiline_map() {
+        let source = r"
+            fn x -> {
+                a: x,
+                b: x
+            }
+        ";
+        let expr = parse_expr(source);
+        assert_eq!(map_body_len(&assert_lambda(&expr)), 2);
+    }
+
+    #[test]
+    fn multiline_map_with_trailing_comma() {
+        let source = r"
+            fn x -> {
+                a: x,
+                b: x,
+            }
+        ";
+        let expr = parse_expr(source);
+        assert_eq!(map_body_len(&assert_lambda(&expr)), 2);
+    }
+
+    #[test]
+    fn multiline_map_after_blank_lines_and_a_comment() {
+        let source = r"
+            fn x -> { # a note
+
+                a: x
+            }
+        ";
+        let expr = parse_expr(source);
+        assert_eq!(map_body_len(&assert_lambda(&expr)), 1);
+    }
+
+    #[test]
+    fn multiline_map_with_computed_key() {
+        let source = r"
+            fn x -> {
+                [x]: 1,
+                b: 2
+            }
+        ";
+        let expr = parse_expr(source);
+        assert_eq!(map_body_len(&assert_lambda(&expr)), 2);
+    }
+
+    #[test]
+    fn multiline_empty_map() {
+        let source = r"
+            fn -> {
+            }
+        ";
+        let expr = parse_expr(source);
+        assert_eq!(map_body_len(&assert_lambda(&expr)), 0);
+    }
+
+    #[test]
+    fn multiline_map_in_defn() {
+        let source = r"
+            defn f(x) -> {
+                a: x,
+                b: x
+            }
+        ";
+        let program = parse(source);
+        let [statement] = program.statements.as_slice() else {
+            panic!("expected one statement, got {program:?}");
+        };
+        let Statement::Def { expr, .. } = &statement.node else {
+            panic!("expected Def, got {statement:?}");
+        };
+        assert_eq!(map_body_len(&assert_lambda(expr)), 2);
+    }
+
+    // Skipping newlines only changes what the lookahead sees; a block whose
+    // first statement is on the next line is still a block.
+
+    #[test]
+    fn multiline_bare_identifier_is_still_a_block() {
+        let source = r"
+            fn -> {
+                a
+            }
+        ";
+        let expr = parse_expr(source);
+        let lam = assert_lambda(&expr);
+        assert!(lam.body.is_empty());
+        assert!(matches!(&lam.return_expr.node, Expr::NameLookup(n) if n == "a"));
+    }
+
+    // `{ [` first tries a Map with a computed key; an Array statement is not
+    // one, so the body falls back to a block.
+    #[test]
+    fn multiline_block_starting_with_an_array_is_still_a_block() {
+        let source = r"
+            fn -> {
+                [1, 2]
+            }
+        ";
+        let expr = parse_expr(source);
+        let lam = assert_lambda(&expr);
+        assert!(lam.body.is_empty());
+        assert!(matches!(&lam.return_expr.node, Expr::Array(elements) if elements.len() == 2));
+    }
 }
 
 // ============================================================

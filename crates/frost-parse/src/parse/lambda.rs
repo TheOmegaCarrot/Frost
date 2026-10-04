@@ -226,6 +226,8 @@ enum BraceKind {
 /// - `{ }` is an empty map (the only sensible reading)
 /// - `{ <anything else>` is a block body
 /// - no `{` is a plain expression
+///
+/// Newlines after the `{` are skipped, as they are inside a Map literal.
 fn brace_disambiguation(ctx: &ParseCtx) -> BraceKind {
     let Some(peek) = ctx.peek() else {
         return BraceKind::Expression;
@@ -234,9 +236,10 @@ fn brace_disambiguation(ctx: &ParseCtx) -> BraceKind {
         return BraceKind::Expression;
     }
 
-    let pos = ctx.here();
-    let second = ctx.get(pos + 1);
-    let third = ctx.get(pos + 2);
+    let (second, third) = match ctx.get_past_nl(ctx.here() + 1) {
+        Some((pos, second)) => (Some(second), ctx.get(pos + 1)),
+        None => (None, None),
+    };
 
     match second.map(|t| &t.token) {
         Some(Token::Identifier(_)) if matches!(third.map(|t| &t.token), Some(Token::Colon)) => {

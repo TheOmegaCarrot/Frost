@@ -181,11 +181,15 @@ impl<'src, 'f> ParseCtx<'src, 'f> {
     /// Peek the next significant token, skipping any newlines, without
     /// advancing. Like `peek`, but sees past line breaks.
     pub(crate) fn peek_past_nl(&self) -> Option<&SrcToken<'src>> {
-        let mut pos = self.state.pos;
+        self.get_past_nl(self.state.pos).map(|(_, token)| token)
+    }
+
+    /// The first token at or after `pos` that is not a newline, with its position.
+    pub(crate) fn get_past_nl(&self, mut pos: usize) -> Option<(usize, &SrcToken<'src>)> {
         while matches!(self.input.get(pos).map(|t| &t.token), Some(Token::Newline)) {
             pos += 1;
         }
-        self.input.get(pos)
+        self.input.get(pos).map(|token| (pos, token))
     }
 
     /// Advance past any run of newlines, regardless of `nl_depth`. The
