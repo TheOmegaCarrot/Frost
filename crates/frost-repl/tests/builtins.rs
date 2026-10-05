@@ -4,7 +4,7 @@ use std::num::NonZeroUsize;
 use std::sync::{Arc, Mutex};
 
 use frost_compile::{Optimization, OptimizationOptions};
-use frost_repl::{Frontend, Repl, ReplError, ScriptedFrontend, Transcript};
+use frost_repl::{Frontend, MetacommandError, Repl, ReplError, ScriptedFrontend, Transcript};
 use frost_runtime::{Value, VmRuntimeConfiguration};
 
 /// The transcript of a session over `segments` on `repl`, with text unstyled.
@@ -28,31 +28,32 @@ fn only_text(transcript: &Transcript) -> String {
     }
 }
 
-/// Assert that `segments`' last segment fails with a message containing
-/// `expected`, and that the session carries on to evaluate `1` after it.
-fn assert_fails(segments: &[&str], expected: &str) {
+/// Assert that `segments`' last segment fails as `expected` says, and that the
+/// session carries on to evaluate `1` after it.
+fn assert_fails(segments: &[&str], expected: MetacommandError) {
     let mut with_next = segments.to_vec();
     with_next.push("1");
     let transcript = session(&with_next);
     let outcomes = transcript.outcomes();
-    let [.., Err(ReplError::Run(error)), Ok(Value::Int(1))] = outcomes.as_slice() else {
+    let [.., Err(ReplError::Metacommand(error)), Ok(Value::Int(1))] = outcomes.as_slice() else {
         panic!("{segments:?} should fail, then the session carry on, but gave {outcomes:?}");
     };
-    assert!(
-        error.message().contains(expected),
-        "{segments:?}: {}",
-        error.message()
-    );
+    assert_eq!(*error, expected, "{segments:?}");
+}
+
+/// `metacommand` refusing its argument, for `reason`.
+fn invalid(metacommand: &str, reason: &str) -> MetacommandError {
+    MetacommandError::InvalidArgument {
+        metacommand: metacommand.to_string(),
+        reason: reason.to_string(),
+    }
 }
 
 // --- Any metacommand ---
 
 #[test]
 fn an_unknown_metacommand_fails_and_the_session_carries_on() {
-    assert_fails(
-        &[":nope"],
-        "there is no metacommand `:nope`; `:help` lists them",
-    );
+    assert_fails(&[":nope"], MetacommandError::Unknown("nope".to_string()));
 }
 
 #[test]
@@ -81,7 +82,7 @@ fn a_metacommand_that_takes_no_argument_refuses_one() {
     for name in ["help", "quit", "bindings"] {
         assert_fails(
             &[&format!(":{name} please")],
-            &format!("`:{name}` takes no argument"),
+            invalid(name, "takes no argument"),
         );
     }
 }
@@ -202,7 +203,10 @@ fn undef_may_take_names_across_lines() {
 
 #[test]
 fn undef_of_a_name_not_bound_unbinds_nothing() {
-    assert_fails(&["def a = 1", ":undef a nope"], "`nope` is not bound");
+    assert_fails(
+        &["def a = 1", ":undef a nope"],
+        invalid("undef", "`nope` is not bound"),
+    );
     let transcript = session(&["def a = 1", ":undef a nope", "a"]);
     let outcomes = transcript.outcomes();
     assert!(
@@ -213,19 +217,22 @@ fn undef_of_a_name_not_bound_unbinds_nothing() {
 
 #[test]
 fn undef_of_a_global_is_refused() {
-    assert_fails(&[":undef len"], "`len` is not bound");
+    assert_fails(&[":undef len"], invalid("undef", "`len` is not bound"));
 }
 
 #[test]
 fn undef_needs_a_name() {
-    assert_fails(&[":undef"], "`:undef` needs the names to remove");
+    assert_fails(&[":undef"], invalid("undef", "needs the names to remove"));
 }
 
 #[test]
 fn undef_may_not_remove_the_repls_results() {
     assert_fails(
         &["1", ":undef results"],
-        "`results` holds recent results, and cannot be removed",
+        invalid(
+            "undef",
+            "`results` holds recent results, and cannot be removed",
+        ),
     );
 }
 
@@ -327,7 +334,7 @@ fn disassemble_of_source_that_does_not_compile_shows_its_diagnostics() {
 fn disassemble_needs_source() {
     assert_fails(
         &[":disassemble"],
-        "`:disassemble` needs source to disassemble",
+        invalid("disassemble", "needs source to disassemble"),
     );
 }
 
@@ -363,7 +370,7 @@ fn ast_of_source_that_does_not_parse_shows_its_diagnostic() {
 
 #[test]
 fn ast_needs_source() {
-    assert_fails(&[":ast"], "`:ast` needs source to parse");
+    assert_fails(&[":ast"], invalid("ast", "needs source to parse"));
 }
 
 // --- :optimize ---
@@ -489,7 +496,7 @@ fn optimize_refuses_a_bad_setting_and_applies_none() {
             .with_settings(&format!("consume-locals = false, {setting}"))
             .expect_err(setting)
             .to_string();
-        assert_fails(&[&invocation], &refusal);
+        assert_fails(&[&invocation], invalid("optimize", &refusal));
         // The valid setting before the bad one was not applied either.
         let shown = optimizations_after(OptimizationOptions::ALL, &[]);
         let transcript = session(&[&invocation, ":optimize"]);

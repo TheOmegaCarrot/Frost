@@ -6,8 +6,8 @@ use std::io;
 use std::sync::LazyLock;
 
 use frost_repl::{
-    Frontend, Invocation, MetacommandProblem, MetacommandSpec, MetacommandTable, Repl, ReplError,
-    ScriptedFrontend, SessionError,
+    Frontend, Invocation, MetacommandError, MetacommandProblem, MetacommandSpec, MetacommandTable,
+    Repl, ReplError, ScriptedFrontend, SessionError,
 };
 use frost_runtime::Value;
 
@@ -331,12 +331,53 @@ fn a_frontend_without_metacommands_of_its_own_has_only_the_repls() {
     let mut frontend = ScriptedFrontend::new([":greet"]);
     Repl::new().run(&mut frontend).unwrap();
     let outcomes = frontend.transcript().outcomes();
-    let [Err(ReplError::Run(error))] = outcomes.as_slice() else {
+    let [Err(ReplError::Metacommand(error))] = outcomes.as_slice() else {
         panic!("`:greet` should fail, but gave {outcomes:?}");
     };
-    assert!(
-        error.message().contains("there is no metacommand `:greet`"),
-        "{}",
-        error.message()
+    assert_eq!(*error, MetacommandError::Unknown("greet".to_string()));
+}
+
+// --- How a failure shows ---
+
+#[test]
+fn a_metacommand_error_explains_itself() {
+    let cases = [
+        (
+            MetacommandError::Unknown("nope".to_string()),
+            "there is no metacommand `:nope`; `:help` lists them",
+        ),
+        (
+            MetacommandError::InvalidArgument {
+                metacommand: "undef".to_string(),
+                reason: "`x` is not bound".to_string(),
+            },
+            "`:undef`: `x` is not bound",
+        ),
+        (
+            MetacommandError::Failed {
+                metacommand: "history".to_string(),
+                reason: "cannot read the history".to_string(),
+            },
+            "`:history`: cannot read the history",
+        ),
+    ];
+    for (error, expected) in cases {
+        assert_eq!(error.to_string(), expected);
+        // A REPL failure shows it as it shows a runtime error.
+        assert_eq!(
+            ReplError::Metacommand(error).to_string(),
+            format!("Error: {expected}")
+        );
+    }
+}
+
+#[test]
+fn a_metacommand_failures_source_is_the_metacommand_error() {
+    use std::error::Error;
+    let error = ReplError::Metacommand(MetacommandError::Unknown("nope".to_string()));
+    let source = error.source().expect("a source");
+    assert_eq!(
+        source.downcast_ref::<MetacommandError>(),
+        Some(&MetacommandError::Unknown("nope".to_string()))
     );
 }

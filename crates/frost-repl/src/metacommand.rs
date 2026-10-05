@@ -219,6 +219,47 @@ impl fmt::Display for InvalidMetacommand {
 
 impl std::error::Error for InvalidMetacommand {}
 
+/// Why a metacommand failed, the REPL's own or a frontend's.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum MetacommandError {
+    /// No metacommand has this name.
+    Unknown(String),
+    /// The metacommand cannot take the argument it was given.
+    InvalidArgument {
+        /// The metacommand's name, without its `:`.
+        metacommand: String,
+        /// What is wrong with the argument.
+        reason: String,
+    },
+    /// The metacommand understood its argument, but could not carry it out.
+    Failed {
+        /// The metacommand's name, without its `:`.
+        metacommand: String,
+        /// What went wrong.
+        reason: String,
+    },
+}
+
+impl fmt::Display for MetacommandError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::Unknown(name) => {
+                write!(f, "there is no metacommand `:{name}`; `:help` lists them")
+            }
+            Self::InvalidArgument {
+                metacommand,
+                reason,
+            }
+            | Self::Failed {
+                metacommand,
+                reason,
+            } => write!(f, "`:{metacommand}`: {reason}"),
+        }
+    }
+}
+
+impl std::error::Error for MetacommandError {}
+
 /// One of the REPL's own metacommands.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum Builtin {

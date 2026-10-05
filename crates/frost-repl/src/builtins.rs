@@ -2,10 +2,9 @@
 
 use frost_compile::{CompilerError, CompilerErrors, Optimization};
 use frost_parse::parse_program;
-use frost_runtime::FrostError;
 
 use crate::metacommand::{Builtin, Registry};
-use crate::{INPUT_NAME, Invocation, RESULTS, Repl, ReplError};
+use crate::{INPUT_NAME, Invocation, MetacommandError, RESULTS, Repl, ReplError};
 
 /// What comes of a built-in metacommand.
 pub(crate) enum Reply {
@@ -17,9 +16,12 @@ pub(crate) enum Reply {
     Quit,
 }
 
-/// A metacommand's failure, reported as `message`.
-pub(crate) fn metacommand_error(message: String) -> ReplError {
-    ReplError::Run(FrostError::from(message))
+/// `builtin` refusing its argument, for `reason`.
+fn invalid_argument(builtin: Builtin, reason: impl Into<String>) -> ReplError {
+    ReplError::Metacommand(MetacommandError::InvalidArgument {
+        metacommand: builtin.name().to_string(),
+        reason: reason.into(),
+    })
 }
 
 impl Repl {
@@ -46,7 +48,7 @@ impl Repl {
                 takes_no_argument(builtin, argument)?;
                 Ok(self.list_bindings())
             }
-            Builtin::Undef => self.undefine(argument),
+            Builtin::Undef => self.undefine(builtin, argument),
             Builtin::Disassemble => {
                 let source = needs_argument(builtin, argument, "source to disassemble")?;
                 let closure = self.compile(source)?;
@@ -70,7 +72,7 @@ impl Repl {
                 self.optimization = self
                     .optimization
                     .with_settings(argument)
-                    .map_err(|invalid| metacommand_error(invalid.to_string()))?;
+                    .map_err(|invalid| invalid_argument(builtin, invalid.to_string()))?;
                 Ok(Reply::Nothing)
             }
         }
@@ -116,23 +118,20 @@ impl Repl {
         Reply::Text(lines.join("\n"))
     }
 
-    /// Unbind each name in `argument`: all of them, or, if any is not bound,
-    /// none.
-    fn undefine(&mut self, argument: &str) -> Result<Reply, ReplError> {
-        let names: Vec<&str> = argument.split_whitespace().collect();
-        if names.is_empty() {
-            return Err(metacommand_error(
-                "`:undef` needs the names to remove".to_string(),
-            ));
-        }
+    /// Unbind each name in `argument`, as `builtin` asks: all of them, or, if
+    /// any is not bound, none.
+    fn undefine(&mut self, builtin: Builtin, argument: &str) -> Result<Reply, ReplError> {
+        let names: Vec<&str> = needs_argument(builtin, argument, "the names to remove")?
+            .split_whitespace()
+            .collect();
         for name in &names {
             if !self.bindings.contains_key(*name) {
-                let message = if *name == RESULTS && self.keeps_results() {
+                let reason = if *name == RESULTS && self.keeps_results() {
                     "`results` holds recent results, and cannot be removed".to_string()
                 } else {
                     format!("`{name}` is not bound")
                 };
-                return Err(metacommand_error(message));
+                return Err(invalid_argument(builtin, reason));
             }
         }
         for name in names {
@@ -146,10 +145,7 @@ fn takes_no_argument(builtin: Builtin, argument: &str) -> Result<(), ReplError> 
     if argument.is_empty() {
         Ok(())
     } else {
-        Err(metacommand_error(format!(
-            "`:{}` takes no argument",
-            builtin.name()
-        )))
+        Err(invalid_argument(builtin, "takes no argument"))
     }
 }
 
@@ -159,10 +155,7 @@ fn needs_argument<'a>(
     what: &str,
 ) -> Result<&'a str, ReplError> {
     if argument.is_empty() {
-        Err(metacommand_error(format!(
-            "`:{}` needs {what}",
-            builtin.name()
-        )))
+        Err(invalid_argument(builtin, format!("needs {what}")))
     } else {
         Ok(argument)
     }

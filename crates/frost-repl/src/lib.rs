@@ -33,8 +33,8 @@ mod terminal;
 
 pub use frontend::{Frontend, LineFrontend};
 pub use metacommand::{
-    InvalidMetacommand, Invocation, MetacommandHandler, MetacommandProblem, MetacommandSpec,
-    MetacommandTable,
+    InvalidMetacommand, Invocation, MetacommandError, MetacommandHandler, MetacommandProblem,
+    MetacommandSpec, MetacommandTable,
 };
 pub use scripted::{ScriptedFrontend, Transcript};
 pub use segment::complete_segment;
@@ -50,7 +50,7 @@ use frost_compile::{CompilerErrors, CompilerOptions, OptimizationOptions, compil
 use frost_parse::{Token, tokens};
 use frost_runtime::{Closure, FrostError, IdleVm, Importer, Value, Vm, VmRuntimeConfiguration};
 
-use builtins::{Reply, metacommand_error};
+use builtins::Reply;
 use metacommand::{Handler, Registry};
 
 /// The name diagnostics give an input.
@@ -263,9 +263,8 @@ impl Repl {
                     frontend.metacommand(&invocation)?;
                     continue;
                 }
-                None => Err(metacommand_error(format!(
-                    "there is no metacommand `:{}`; `:help` lists them",
-                    invocation.name()
+                None => Err(ReplError::Metacommand(MetacommandError::Unknown(
+                    invocation.name().to_string(),
                 ))),
             };
             match reply {
@@ -340,17 +339,19 @@ impl std::error::Error for SessionError {
     }
 }
 
-/// Why an input failed. Either way, it left the REPL's bindings unchanged.
+/// Why an input failed. Whatever the reason, it left the REPL's bindings
+/// unchanged.
 ///
-/// [`Display`](fmt::Display) shows it as plain text: the diagnostics, or the
-/// error and its backtrace.
+/// [`Display`](fmt::Display) shows it as plain text: the diagnostics, the
+/// error and its backtrace, or the metacommand's failure.
 #[derive(Debug, Clone)]
 pub enum ReplError {
     /// The input did not compile.
     Compile(CompilerErrors),
-    /// The input raised an error while running, or the metacommand it invoked
-    /// failed.
+    /// The input raised an error while running.
     Run(FrostError),
+    /// The input was a [metacommand](Repl#metacommands), which failed.
+    Metacommand(MetacommandError),
 }
 
 impl fmt::Display for ReplError {
@@ -358,6 +359,7 @@ impl fmt::Display for ReplError {
         match self {
             Self::Compile(diagnostics) => f.write_str(diagnostics.render_plain().trim_end()),
             Self::Run(error) => write!(f, "{}", error.with_backtrace()),
+            Self::Metacommand(error) => write!(f, "Error: {error}"),
         }
     }
 }
@@ -367,6 +369,7 @@ impl std::error::Error for ReplError {
         match self {
             Self::Compile(diagnostics) => Some(diagnostics),
             Self::Run(error) => Some(error),
+            Self::Metacommand(error) => Some(error),
         }
     }
 }

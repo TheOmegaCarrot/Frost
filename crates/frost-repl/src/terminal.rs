@@ -7,7 +7,7 @@ use std::path::PathBuf;
 use std::process::{self, Command};
 use std::sync::LazyLock;
 
-use frost_runtime::{FrostError, Value};
+use frost_runtime::Value;
 use nu_ansi_term::{Color, Style};
 use reedline::{
     FileBackedHistory, HISTORY_SIZE, Highlighter, Prompt, PromptEditMode, PromptHistorySearch,
@@ -15,7 +15,10 @@ use reedline::{
 };
 
 use crate::highlight::{self, Class};
-use crate::{Frontend, Invocation, MetacommandSpec, MetacommandTable, ReplError, complete_segment};
+use crate::{
+    Frontend, Invocation, MetacommandError, MetacommandSpec, MetacommandTable, ReplError,
+    complete_segment,
+};
 
 /// A [`Frontend`] for a person at a terminal, with line editing, history, and
 /// syntax highlighting.
@@ -214,7 +217,12 @@ fn show_history(frontend: &mut TerminalFrontend, invocation: &Invocation) -> io:
     let query = SearchQuery::everything(SearchDirection::Forward, None);
     let entries = match frontend.editor().history().search(query) {
         Ok(entries) => entries,
-        Err(error) => return frontend.fail(&format!("cannot read the history: {error}")),
+        Err(error) => {
+            return frontend.fail(MetacommandError::Failed {
+                metacommand: invocation.name().to_string(),
+                reason: format!("cannot read the history: {error}"),
+            });
+        }
     };
     // Each entry is numbered, its further lines aligned under its first.
     let width = entries.len().to_string().len();
@@ -241,7 +249,10 @@ fn clear_history(frontend: &mut TerminalFrontend, invocation: &Invocation) -> io
         .and_then(|()| history.clear().map_err(|error| error.to_string()));
     match cleared {
         Ok(()) => Ok(()),
-        Err(error) => frontend.fail(&format!("cannot clear the history: {error}")),
+        Err(error) => frontend.fail(MetacommandError::Failed {
+            metacommand: invocation.name().to_string(),
+            reason: format!("cannot clear the history: {error}"),
+        }),
     }
 }
 
@@ -251,16 +262,17 @@ fn takes_no_argument(frontend: &mut TerminalFrontend, invocation: &Invocation) -
     if invocation.argument().is_empty() {
         return Ok(true);
     }
-    frontend.fail(&format!("`:{}` takes no argument", invocation.name()))?;
+    frontend.fail(MetacommandError::InvalidArgument {
+        metacommand: invocation.name().to_string(),
+        reason: "takes no argument".to_string(),
+    })?;
     Ok(false)
 }
 
 impl TerminalFrontend {
-    /// Show that a metacommand failed, as `message` explains, the way a failed
-    /// input is shown.
-    fn fail(&mut self, message: &str) -> io::Result<()> {
-        let error = ReplError::Run(FrostError::from(message.to_string()));
-        self.render(Err(&error))
+    /// Show `error` the way a failed input is shown.
+    fn fail(&mut self, error: MetacommandError) -> io::Result<()> {
+        self.render(Err(&ReplError::Metacommand(error)))
     }
 }
 
