@@ -1,0 +1,22 @@
+[package]
+name = "frostlang-repl"
+version = "0.0.1"
+edition.workspace = true
+
+[features]
+default = ["line-editor"]
+# A terminal input with line editing, history, and highlighting.
+line-editor = ["dep:reedline", "dep:nu-ansi-term", "dep:dirs"]
+
+[dependencies]
+# Where the platform keeps history.
+dirs = { version = "7", optional = true }
+frostlang-compile.workspace = true
+frostlang-parse.workspace = true
+frostlang-runtime.workspace = true
+# The version reedline uses, for the styles its highlighter takes.
+nu-ansi-term = { version = "0.50", optional = true }
+reedline = { version = "0.52", optional = true }
+
+[lints]
+workspace = true

@@ -1,0 +1,16 @@
+[package]
+name = "frostlang"
+version = "0.0.1"
+edition.workspace = true
+
+[features]
+default = ["compile"]
+# Compiling Frost source.
+compile = ["dep:frostlang-compile"]
+
+[dependencies]
+frostlang-compile = { workspace = true, optional = true }
+frostlang-runtime.workspace = true
+
+[lints]
+workspace = true

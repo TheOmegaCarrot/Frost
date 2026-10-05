@@ -24,8 +24,8 @@ rather than assuming a version. Edition 2024.
 cargo build                       # debug build
 cargo build --release             # release build
 cargo test                        # run the whole workspace's tests
-cargo test -p frost-parse         # test a single crate
-cargo run -p frost-cli -- file.frst   # run a Frost script
+cargo test -p frostlang-parse     # test a single crate
+cargo run -p frostlang-cli -- file.frst   # run a Frost script
 cargo doc --no-deps --workspace   # build RustDoc (intra-doc links must resolve clean)
 cargo clippy --workspace --all-targets
 cargo fmt
@@ -33,23 +33,25 @@ cargo fmt
 
 ## Architecture
 
-A workspace of focused crates:
+A monorepo workspace of focused crates, each in `crates/<crate name>/` and versioned
+independently:
 
 | Crate | Purpose |
 |---|---|
-| `frost-parse` | Source text to AST: lexer, recursive-descent parser, diagnostics. Grammar only; semantics belong to the compiler. Intentionally lax in what it accepts, deferring many errors to the compiler. |
-| `frost-runtime` | The `core` (the `Value` type, its variants, operators, conversions, serde bridge), the `vm` (bytecode execution, globals, native functions, arity/type params, import, serialization), and the `stdlib` (the `std.*` modules a host opts into). |
-| `frost-compile` | AST to bytecode: scope resolution, capture discovery, constant folding and propagation, assembly. |
-| `frost-driver` | A complete command-line interface built around a host's configuration: importer, runtime limits, optimizations. |
-| `frost-repl` | An interactive read-eval-print loop. |
-| `frost-cli` | The `frost` binary, built on `frost-driver`. |
-| `frost-astviz` | AST visualization; compiles the tree-sitter Frost grammar from `editor/`. |
+| `frostlang` | The facade for host applications: re-exports the runtime and (behind the default `compile` feature) the compiler. Nothing in the workspace depends on it; extensions and optional pieces depend on `frostlang-runtime` directly. |
+| `frostlang-parse` | Source text to AST: lexer, recursive-descent parser, diagnostics. Grammar only; semantics belong to the compiler. Intentionally lax in what it accepts, deferring many errors to the compiler. |
+| `frostlang-runtime` | The `core` (the `Value` type, its variants, operators, conversions, serde bridge), the `vm` (bytecode execution, globals, native functions, arity/type params, import, serialization), and the `stdlib` (the `std.*` modules a host opts into). |
+| `frostlang-compile` | AST to bytecode: scope resolution, capture discovery, constant folding and propagation, assembly. |
+| `frostlang-driver` | A complete command-line interface built around a host's configuration: importer, runtime limits, optimizations. |
+| `frostlang-repl` | An interactive read-eval-print loop. |
+| `frostlang-cli` | The `frost` binary, built on `frostlang-driver`. |
+| `frostlang-astviz` | AST visualization; compiles the tree-sitter Frost grammar from `editor/`. Unpublished. |
 
 Design documents and working scratch live in `tmp/` (git-ignored) at the repo root.
 
 ## Frost Syntax
 
-`crates/frost-parse/tests/` is the authoritative behavior spec for syntax. The following is
+`crates/frostlang-parse/tests/` is the authoritative behavior spec for syntax. The following is
 a quick guard against common mistakes, not an exhaustive reference.
 
 ### Comments

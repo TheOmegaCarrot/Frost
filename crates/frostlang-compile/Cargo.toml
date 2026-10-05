@@ -1,0 +1,12 @@
+[package]
+name = "frostlang-compile"
+version = "0.0.1"
+edition.workspace = true
+
+[dependencies]
+frostlang-parse.workspace = true
+frostlang-runtime.workspace = true
+miette = { version = "7", features = ["fancy"] }
+
+[lints]
+workspace = true

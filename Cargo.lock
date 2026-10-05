@@ -455,11 +455,19 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3f9eec918d3f24069decb9af1554cad7c880e2da24a9afd88aca000531ab82c1"
 
 [[package]]
-name = "frost-astviz"
+name = "frostlang"
+version = "0.0.1"
+dependencies = [
+ "frostlang-compile",
+ "frostlang-runtime",
+]
+
+[[package]]
+name = "frostlang-astviz"
 version = "0.0.1"
 dependencies = [
  "cc",
- "frost-parse",
+ "frostlang-parse",
  "serde",
  "serde_json",
  "tree-sitter",
@@ -468,36 +476,36 @@ dependencies = [
 ]
 
 [[package]]
-name = "frost-cli"
+name = "frostlang-cli"
 version = "0.0.1"
 dependencies = [
- "frost-driver",
- "frost-runtime",
+ "frostlang-driver",
+ "frostlang-runtime",
 ]
 
 [[package]]
-name = "frost-compile"
+name = "frostlang-compile"
 version = "0.0.1"
 dependencies = [
- "frost-parse",
- "frost-runtime",
+ "frostlang-parse",
+ "frostlang-runtime",
  "miette",
 ]
 
 [[package]]
-name = "frost-driver"
+name = "frostlang-driver"
 version = "0.0.1"
 dependencies = [
  "clap",
- "frost-compile",
- "frost-parse",
- "frost-repl",
- "frost-runtime",
+ "frostlang-compile",
+ "frostlang-parse",
+ "frostlang-repl",
+ "frostlang-runtime",
  "postcard",
 ]
 
 [[package]]
-name = "frost-parse"
+name = "frostlang-parse"
 version = "0.0.1"
 dependencies = [
  "logos",
@@ -506,24 +514,24 @@ dependencies = [
 ]
 
 [[package]]
-name = "frost-repl"
+name = "frostlang-repl"
 version = "0.0.1"
 dependencies = [
  "dirs",
- "frost-compile",
- "frost-parse",
- "frost-runtime",
+ "frostlang-compile",
+ "frostlang-parse",
+ "frostlang-runtime",
  "nu-ansi-term",
  "reedline",
 ]
 
 [[package]]
-name = "frost-runtime"
+name = "frostlang-runtime"
 version = "0.0.1"
 dependencies = [
  "enumset",
  "fastrand",
- "frost-compile",
+ "frostlang-compile",
  "glob",
  "itertools",
  "postcard",

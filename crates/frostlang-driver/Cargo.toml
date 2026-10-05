@@ -1,0 +1,15 @@
+[package]
+name = "frostlang-driver"
+version = "0.0.1"
+edition.workspace = true
+
+[dependencies]
+clap = { version = "4.6", features = ["derive", "string"] }
+frostlang-compile.workspace = true
+frostlang-parse.workspace = true
+frostlang-repl.workspace = true
+frostlang-runtime.workspace = true
+postcard = { version = "1", features = ["alloc"] }
+
+[lints]
+workspace = true

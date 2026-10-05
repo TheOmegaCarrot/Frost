@@ -1,0 +1,15 @@
+[package]
+name = "frostlang-cli"
+version = "0.0.1"
+edition.workspace = true
+
+[[bin]]
+name = "frost"
+path = "src/main.rs"
+
+[dependencies]
+frostlang-driver.workspace = true
+frostlang-runtime.workspace = true
+
+[lints]
+workspace = true
