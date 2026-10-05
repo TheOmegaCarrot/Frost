@@ -1,6 +1,7 @@
 use crate::ast::{Binding, Destructure, Expr, Literal, MapDestructureEntry, SourceSpan, Spanned};
 use crate::lex::Token;
-use crate::parse::{ParseResult, ctx::ParseCtx};
+use crate::parse::ParseResult;
+use crate::parse::ctx::{Bracket, ParseCtx};
 
 impl<'src, 'f> ParseCtx<'src, 'f> {
     pub(crate) fn parse_destructure(&mut self) -> ParseResult<Spanned<Destructure>> {
@@ -20,94 +21,48 @@ impl<'src, 'f> ParseCtx<'src, 'f> {
     }
 
     fn parse_destructure_array(&mut self) -> ParseResult<Spanned<Destructure>> {
-        let open: SourceSpan = self.expect(Token::OpenBracket)?.span.clone().into();
-        let start = open.start;
-        self.enter_nl_context().maybe_skip_nl();
+        let ((elements, rest), span) = self.delimited(Bracket::ArrayPattern, |ctx| {
+            let mut elements = Vec::new();
 
-        let mut elements = Vec::new();
-        let mut rest = None;
-
-        if matches!(self.peek().map(|t| &t.token), Some(Token::CloseBracket)) {
-            self.exit_nl_context();
-            let close = self.expect(Token::CloseBracket)?;
-            return Ok(Spanned::new(
-                Destructure::Array { elements, rest },
-                (start..close.span.end).into(),
-            ));
-        }
-
-        loop {
-            self.maybe_skip_nl();
-
-            if matches!(self.peek().map(|t| &t.token), Some(Token::DotDotDot)) {
-                self.advance(1);
-                rest = Some(self.parse_binding("a name after `...`")?);
-                break;
+            if matches!(ctx.peek().map(|t| &t.token), Some(Token::CloseBracket)) {
+                return Ok((elements, None));
             }
+            loop {
+                ctx.maybe_skip_nl();
 
-            elements.push(self.parse_destructure()?);
-            self.maybe_skip_nl();
-
-            let peek = self.must_peek("`,` or `]`")?;
-
-            match peek.token {
-                Token::Comma => {
-                    self.advance(1);
-                    self.maybe_skip_nl();
+                if matches!(ctx.peek().map(|t| &t.token), Some(Token::DotDotDot)) {
+                    ctx.advance(1);
+                    let rest = ctx.parse_binding("a name after `...`")?;
+                    return Ok((elements, Some(rest)));
                 }
-                Token::CloseBracket => break,
-                _ => {
-                    return Err(self.expected_in_list("`,` or `]`", peek, open, "Array pattern"));
+
+                elements.push(ctx.parse_destructure()?);
+                ctx.maybe_skip_nl();
+
+                let peek = ctx.must_peek("`,` or `]`")?;
+                match peek.token {
+                    Token::Comma => {
+                        ctx.advance(1);
+                        ctx.maybe_skip_nl();
+                    }
+                    Token::CloseBracket => return Ok((elements, None)),
+                    _ => return Err(ctx.expected_in_list("`,` or `]`", peek)),
+                }
+
+                if matches!(ctx.peek().map(|t| &t.token), Some(Token::CloseBracket)) {
+                    return Ok((elements, None));
                 }
             }
+        })?;
 
-            if matches!(self.peek().map(|t| &t.token), Some(Token::CloseBracket)) {
-                break;
-            }
-        }
-
-        self.maybe_skip_nl().exit_nl_context();
-        let close = self.expect(Token::CloseBracket)?;
-
-        Ok(Spanned::new(
-            Destructure::Array { elements, rest },
-            (start..close.span.end).into(),
-        ))
+        Ok(Spanned::new(Destructure::Array { elements, rest }, span))
     }
 
     fn parse_destructure_map(&mut self) -> ParseResult<Spanned<Destructure>> {
-        let open: SourceSpan = self.expect(Token::OpenBrace)?.span.clone().into();
-        let start = open.start;
-        self.enter_nl_context().maybe_skip_nl();
-
-        let mut entries = Vec::new();
-
-        if !matches!(self.peek().map(|t| &t.token), Some(Token::CloseBrace)) {
-            loop {
-                self.maybe_skip_nl();
-                entries.push(self.parse_destructure_map_entry()?);
-                self.maybe_skip_nl();
-
-                let peek = self.must_peek("`,` or `}`")?;
-                match peek.token {
-                    Token::Comma => {
-                        self.advance(1);
-                        self.maybe_skip_nl();
-                    }
-                    Token::CloseBrace => break,
-                    _ => {
-                        return Err(self.expected_in_list("`,` or `}`", peek, open, "Map pattern"));
-                    }
-                }
-
-                if matches!(self.peek().map(|t| &t.token), Some(Token::CloseBrace)) {
-                    break;
-                }
-            }
-        }
-
-        self.maybe_skip_nl().exit_nl_context();
-        let mut end = self.expect(Token::CloseBrace)?.span.end;
+        let (entries, span) =
+            self.parse_comma_separated(Bracket::MapPattern, Self::parse_destructure_map_entry)?;
+        let start = span.start;
+        let mut end = span.end;
 
         let bind_whole = if matches!(self.peek().map(|t| &t.token), Some(Token::KwAs)) {
             self.advance(1);
@@ -136,11 +91,7 @@ impl<'src, 'f> ParseCtx<'src, 'f> {
 
         match peek.token {
             Token::OpenBracket => {
-                self.advance(1);
-                self.enter_nl_context().maybe_skip_nl();
-                let key = self.parse_expression()?;
-                self.maybe_skip_nl().exit_nl_context();
-                self.expect(Token::CloseBracket)?;
+                let (key, _) = self.delimited(Bracket::ComputedKey, Self::parse_expression)?;
                 self.expect(Token::Colon)?;
                 self.maybe_skip_nl();
                 let destructure = self.parse_destructure()?;
@@ -182,7 +133,7 @@ impl<'src, 'f> ParseCtx<'src, 'f> {
                     ))
                 }
             }
-            _ => Err(self.expected(EXPECTED, peek)),
+            _ => Err(self.expected_in_list(EXPECTED, peek)),
         }
     }
 }

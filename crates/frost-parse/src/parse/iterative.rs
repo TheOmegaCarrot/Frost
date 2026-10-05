@@ -1,4 +1,4 @@
-use crate::ast::{Expr, Spanned};
+use crate::ast::{Expr, SourceSpan, Spanned};
 use crate::lex::Token;
 use crate::parse::{ParseResult, ctx::ParseCtx};
 
@@ -14,15 +14,15 @@ impl<'src, 'f> ParseCtx<'src, 'f> {
         keyword: Token,
         kind: IterativeKind,
     ) -> ParseResult<Spanned<Expr>> {
-        let start = self.expect(keyword)?.span.start;
+        let keyword_span: SourceSpan = self.expect(keyword)?.span.clone().into();
 
         let structure = self.parse_expression()?;
         self.skip_nl();
-        self.expect(Token::KwWith)?;
+        self.expect_with(keyword_span, structure.span.end)?;
         self.skip_nl();
         let operation = self.parse_expression()?;
 
-        let end = operation.span.end;
+        let span = keyword_span.start..operation.span.end;
         let node = match kind {
             IterativeKind::Map => Expr::MapIter {
                 structure: Box::new(structure),
@@ -38,7 +38,25 @@ impl<'src, 'f> ParseCtx<'src, 'f> {
             },
         };
 
-        Ok(Spanned::new(node, (start..end).into()))
+        Ok(Spanned::new(node, span.into()))
+    }
+
+    /// Expect the `with` of the expression that `keyword` starts, whose operand
+    /// ends at `operand_end`.
+    /// When what is found instead is on a later line than the operand's end, the
+    /// keyword is labeled too, since the line the error points at may hold nothing wrong.
+    fn expect_with(&mut self, keyword: SourceSpan, operand_end: usize) -> ParseResult<()> {
+        let on_a_later_line = self
+            .next_start()
+            .is_some_and(|found| self.source_text((operand_end..found).into()).contains('\n'));
+        let keyword_label =
+            on_a_later_line.then(|| format!("this `{}` needs `with`", self.source_text(keyword)));
+        self.expect(Token::KwWith)
+            .map_err(|diagnostic| match keyword_label {
+                Some(label) => diagnostic.with_label(keyword, label),
+                None => diagnostic,
+            })?;
+        Ok(())
     }
 
     pub(crate) fn parse_map_iter(&mut self) -> ParseResult<Spanned<Expr>> {
@@ -54,7 +72,7 @@ impl<'src, 'f> ParseCtx<'src, 'f> {
     }
 
     pub(crate) fn parse_reduce(&mut self) -> ParseResult<Spanned<Expr>> {
-        let start = self.expect(Token::KwReduce)?.span.start;
+        let keyword_span: SourceSpan = self.expect(Token::KwReduce)?.span.clone().into();
 
         let structure = self.parse_expression()?;
         self.skip_nl();
@@ -70,10 +88,13 @@ impl<'src, 'f> ParseCtx<'src, 'f> {
             None
         };
 
-        self.expect(Token::KwWith)?;
+        let operand_end = init
+            .as_ref()
+            .map_or(structure.span.end, |init| init.span.end);
+        self.expect_with(keyword_span, operand_end)?;
         self.skip_nl();
         let operation = self.parse_expression()?;
-        let end = operation.span.end;
+        let span = keyword_span.start..operation.span.end;
 
         Ok(Spanned::new(
             Expr::Reduce {
@@ -81,7 +102,7 @@ impl<'src, 'f> ParseCtx<'src, 'f> {
                 operation: Box::new(operation),
                 init,
             },
-            (start..end).into(),
+            span.into(),
         ))
     }
 }

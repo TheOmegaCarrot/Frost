@@ -1,7 +1,8 @@
 use crate::ast::{Expr, Spanned, Statement};
 use crate::lex::Token;
+use crate::parse::ctx::ParseCtx;
 use crate::parse::statements::StatementContext;
-use crate::parse::{Diagnostic, ParseResult, ctx::ParseCtx};
+use crate::parse::{Diagnostic, ParseResult};
 
 impl<'src, 'f> ParseCtx<'src, 'f> {
     pub(crate) fn parse_if(&mut self) -> ParseResult<Spanned<Expr>> {
@@ -58,11 +59,8 @@ impl<'src, 'f> ParseCtx<'src, 'f> {
 
     pub(crate) fn parse_do(&mut self) -> ParseResult<Spanned<Expr>> {
         let start = self.expect(Token::KwDo)?.span.start;
-        self.expect(Token::OpenBrace)?;
-
-        let mut body = self.parse_statements(StatementContext::Scope)?;
-
-        let close_end = self.expect(Token::CloseBrace)?.span.end;
+        let (mut body, braces) = self.block(|ctx| ctx.parse_statements(StatementContext::Scope))?;
+        let close_end = braces.end;
 
         let Some(last) = body.pop() else {
             return Err(Diagnostic::at(

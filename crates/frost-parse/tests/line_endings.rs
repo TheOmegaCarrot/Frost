@@ -194,3 +194,54 @@ fn cr_before_a_crlf_line_break_is_kept() {
     let expr = parse_expr("\"\"\"\r\na\r\r\nb\r\n\"\"\"");
     assert_eq!(str_text(&expr), "a\r\nb");
 }
+
+// -- Escapes in multiline Strings --
+// A line loses its indentation before its escapes are decoded, so an escape at a
+// line's start or end decodes the same under either line ending.
+
+#[test]
+fn escapes_at_line_starts_and_ends_decode_under_either_line_ending() {
+    let source = r"
+        '''
+            \tstart
+            end\\
+            letter\u{41}
+              \tdeeper
+            '''
+    ";
+    let expected = "\tstart\nend\\\nletterA\n  \tdeeper";
+    for source in [source.to_owned(), crlf(source)] {
+        assert_eq!(str_text(&parse_expr(&source)), expected, "{source:?}");
+    }
+}
+
+// An escape is text, not indentation, even when it decodes to a tab.
+#[test]
+fn an_escape_inside_the_indentation_is_under_indented() {
+    let source = r"
+        '''
+            ok
+          \t  x
+            '''
+    ";
+    for source in [source.to_owned(), crlf(source)] {
+        let err = parse_program("test.frst", &source).expect_err(&source);
+        assert_eq!(
+            err.message(),
+            "multiline String content is indented less than the closing delimiter",
+            "{source:?}"
+        );
+    }
+}
+
+#[test]
+fn a_lone_cr_beside_escapes_in_an_indented_multiline_string_is_kept() {
+    let source = "'''\n    a\rb\\t\n    \\\\\rc\n    '''";
+    for source in [source.to_owned(), crlf(source)] {
+        assert_eq!(
+            str_text(&parse_expr(&source)),
+            "a\rb\t\n\\\rc",
+            "{source:?}"
+        );
+    }
+}

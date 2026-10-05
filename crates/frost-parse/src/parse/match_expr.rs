@@ -4,7 +4,7 @@ use crate::ast::{
 };
 use crate::lex::Token;
 use crate::parse::ParseResult;
-use crate::parse::ctx::{ParseCtx, int_literal};
+use crate::parse::ctx::{Bracket, ParseCtx, int_literal};
 use crate::parse::strings::QuoteStyle;
 
 impl<'src, 'f> ParseCtx<'src, 'f> {
@@ -13,18 +13,14 @@ impl<'src, 'f> ParseCtx<'src, 'f> {
 
         let target = self.parse_expression()?;
 
-        let open = self.expect(Token::OpenBrace)?.span.clone().into();
-        self.enter_nl_context();
-
-        let (arms, close) =
-            self.parse_comma_separated(open, "`match`", Token::CloseBrace, Self::parse_arm)?;
+        let (arms, span) = self.parse_comma_separated(Bracket::MatchArms, Self::parse_arm)?;
 
         Ok(Spanned::new(
             Expr::Match {
                 target: Box::new(target),
                 arms,
             },
-            (start..close.span.end).into(),
+            (start..span.end).into(),
         ))
     }
 
@@ -97,15 +93,8 @@ impl<'src, 'f> ParseCtx<'src, 'f> {
             Token::OpenBrace => self.parse_map_pattern(),
 
             Token::OpenParen => {
-                self.advance(1);
-                self.enter_nl_context().maybe_skip_nl();
-                let expr = self.parse_expression()?;
-                self.maybe_skip_nl().exit_nl_context();
-                let close = self.expect(Token::CloseParen)?;
-                Ok(Spanned::new(
-                    MatchPattern::Value(expr),
-                    (peek_start..close.span.end).into(),
-                ))
+                let (expr, span) = self.delimited(Bracket::Group, Self::parse_expression)?;
+                Ok(Spanned::new(MatchPattern::Value(expr), span))
             }
 
             Token::IntLiteral(magnitude) => {
@@ -240,91 +229,47 @@ impl<'src, 'f> ParseCtx<'src, 'f> {
     }
 
     fn parse_array_pattern(&mut self) -> ParseResult<Spanned<MatchPattern>> {
-        let open: SourceSpan = self.expect(Token::OpenBracket)?.span.clone().into();
-        let start = open.start;
-        self.enter_nl_context().maybe_skip_nl();
+        let ((elements, rest), span) = self.delimited(Bracket::ArrayPattern, |ctx| {
+            let mut elements = Vec::new();
 
-        let mut elements = Vec::new();
-        let mut rest = None;
-
-        if !matches!(self.peek().map(|t| &t.token), Some(Token::CloseBracket)) {
+            if matches!(ctx.peek().map(|t| &t.token), Some(Token::CloseBracket)) {
+                return Ok((elements, None));
+            }
             loop {
-                self.maybe_skip_nl();
+                ctx.maybe_skip_nl();
 
-                if matches!(self.peek().map(|t| &t.token), Some(Token::DotDotDot)) {
-                    self.advance(1);
-                    rest = Some(self.parse_binding("a name after `...`")?);
-
-                    self.maybe_skip_nl();
-                    break;
+                if matches!(ctx.peek().map(|t| &t.token), Some(Token::DotDotDot)) {
+                    ctx.advance(1);
+                    let rest = ctx.parse_binding("a name after `...`")?;
+                    return Ok((elements, Some(rest)));
                 }
 
-                elements.push(self.parse_pattern_alternatives()?);
-                self.maybe_skip_nl();
+                elements.push(ctx.parse_pattern_alternatives()?);
+                ctx.maybe_skip_nl();
 
-                let peek = self.must_peek("`,` or `]`")?;
+                let peek = ctx.must_peek("`,` or `]`")?;
                 match peek.token {
                     Token::Comma => {
-                        self.advance(1);
-                        self.maybe_skip_nl();
-                        if matches!(self.peek().map(|t| &t.token), Some(Token::CloseBracket)) {
-                            break;
+                        ctx.advance(1);
+                        ctx.maybe_skip_nl();
+                        if matches!(ctx.peek().map(|t| &t.token), Some(Token::CloseBracket)) {
+                            return Ok((elements, None));
                         }
                     }
-                    Token::CloseBracket => break,
-                    _ => {
-                        return Err(self.expected_in_list(
-                            "`,` or `]`",
-                            peek,
-                            open,
-                            "Array pattern",
-                        ));
-                    }
+                    Token::CloseBracket => return Ok((elements, None)),
+                    _ => return Err(ctx.expected_in_list("`,` or `]`", peek)),
                 }
             }
-        }
+        })?;
 
-        self.maybe_skip_nl().exit_nl_context();
-        let close = self.expect(Token::CloseBracket)?;
-
-        Ok(Spanned::new(
-            MatchPattern::Array { elements, rest },
-            (start..close.span.end).into(),
-        ))
+        Ok(Spanned::new(MatchPattern::Array { elements, rest }, span))
     }
 
     fn parse_map_pattern(&mut self) -> ParseResult<Spanned<MatchPattern>> {
-        let open: SourceSpan = self.expect(Token::OpenBrace)?.span.clone().into();
-        let start = open.start;
-        self.enter_nl_context().maybe_skip_nl();
-
-        let mut entries = Vec::new();
-
-        if !matches!(self.peek().map(|t| &t.token), Some(Token::CloseBrace)) {
-            loop {
-                self.maybe_skip_nl();
-                entries.push(self.parse_map_pattern_entry()?);
-                self.maybe_skip_nl();
-
-                let peek = self.must_peek("`,` or `}`")?;
-                match peek.token {
-                    Token::Comma => {
-                        self.advance(1);
-                        self.maybe_skip_nl();
-                        if matches!(self.peek().map(|t| &t.token), Some(Token::CloseBrace)) {
-                            break;
-                        }
-                    }
-                    Token::CloseBrace => break,
-                    _ => {
-                        return Err(self.expected_in_list("`,` or `}`", peek, open, "Map pattern"));
-                    }
-                }
-            }
-        }
-
-        self.maybe_skip_nl().exit_nl_context();
-        let mut end = self.expect(Token::CloseBrace)?.span.end;
+        let (entries, span) =
+            self.parse_comma_separated(Bracket::MapPattern, Self::parse_map_pattern_entry)?;
+        let start = span.start;
+        let mut end = span.end;
 
         self.maybe_skip_nl();
         let bind_whole = if matches!(self.peek().map(|t| &t.token), Some(Token::KwAs)) {
@@ -354,11 +299,7 @@ impl<'src, 'f> ParseCtx<'src, 'f> {
 
         match peek.token {
             Token::OpenBracket => {
-                self.advance(1);
-                self.enter_nl_context().maybe_skip_nl();
-                let key = self.parse_expression()?;
-                self.maybe_skip_nl().exit_nl_context();
-                self.expect(Token::CloseBracket)?;
+                let (key, _) = self.delimited(Bracket::ComputedKey, Self::parse_expression)?;
                 self.expect(Token::Colon)?;
                 self.maybe_skip_nl();
                 let pattern = self.parse_pattern_alternatives()?;
@@ -392,7 +333,7 @@ impl<'src, 'f> ParseCtx<'src, 'f> {
                 ))
             }
 
-            _ => Err(self.expected(EXPECTED, peek)),
+            _ => Err(self.expected_in_list(EXPECTED, peek)),
         }
     }
 }

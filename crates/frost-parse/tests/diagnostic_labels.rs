@@ -215,6 +215,70 @@ fn a_multiline_list_names_the_found_token() {
     );
 }
 
+// An entry that cannot start labels its list's opener as an item without its comma does.
+#[test]
+fn a_multiline_entry_start_labels_its_opener() {
+    // (source, the found token, the source from the innermost `{` on, the `{`'s label)
+    let cases = [
+        (
+            r"
+                def y = match x {
+                    1 => {a: 1,
+                    3 => 4
+                }
+            ",
+            "3",
+            "{a: 1,",
+            "in this Map literal",
+        ),
+        (
+            r"
+                def a = {a: 1,
+                ...b}
+            ",
+            "...",
+            "{a: 1,",
+            "in this Map literal",
+        ),
+        (
+            r"
+                def {
+                    a,
+                    1
+                } = m
+            ",
+            "1",
+            "{",
+            "in this Map pattern",
+        ),
+        (
+            r"
+                match m {
+                    {a,
+                    1} => a
+                }
+            ",
+            "1",
+            "{a,",
+            "in this Map pattern",
+        ),
+    ];
+    for (source, found, from_opener, label) in cases {
+        let (_, labels) = diagnosis(source);
+        assert_eq!(
+            labels,
+            [(found, "unexpected".to_owned()), ("{", label.to_owned())],
+            "{source:?}"
+        );
+        let err = parse_program("test.frst", source).expect_err(source);
+        assert_eq!(
+            Some(err.labels()[1].span.start),
+            source.find(from_opener),
+            "{source:?}: the label is on another `{{`"
+        );
+    }
+}
+
 // On one line, the opener is in view beside the error; labeling it adds clutter.
 #[test]
 fn a_one_line_list_labels_only_the_found_token() {
@@ -354,29 +418,245 @@ fn every_kind_of_opener_is_labeled() {
 
 #[test]
 fn an_empty_interpolation_finds_its_closing_brace() {
-    let source = "$'a ${}'";
-    let (message, labels) = diagnosis(source);
+    let (message, labels) = diagnosis("$'a ${}'");
     assert_eq!(message, "expected an expression, but found `}`");
     assert_eq!(
         labels,
         [
             ("}", "unexpected".to_owned()),
-            (source, "in this format String".to_owned()),
+            ("${", "in this interpolation".to_owned()),
         ]
     );
 }
 
+// The format String's closing quote is there, but the interpolation before it never
+// closes, so the interpolation's `${` is labeled rather than the String's opening.
+#[test]
+fn an_unclosed_interpolation_labels_its_opener() {
+    for source in ["def a = $'${ {a: 1 }'", "def b = $'x ${'}'"] {
+        let (message, labels) = diagnosis(source);
+        assert_eq!(
+            message, "unclosed interpolation in format String",
+            "{source:?}"
+        );
+        assert_eq!(
+            labels,
+            [("${", "this `${` is not closed".to_owned())],
+            "{source:?}"
+        );
+    }
+}
+
 #[test]
 fn an_unfinished_interpolation_labels_its_unclosed_bracket() {
-    let source = "$'a ${f(}'";
-    let (message, labels) = diagnosis(source);
+    let (message, labels) = diagnosis("$'a ${f(}'");
     assert_eq!(message, "expected an expression, but found `}`");
     assert_eq!(
         labels,
         [
             ("}", "unexpected".to_owned()),
             ("(", "this `(` is not closed".to_owned()),
-            (source, "in this format String".to_owned()),
+            ("${", "in this interpolation".to_owned()),
+        ]
+    );
+}
+
+// -- Errors inside an interpolation --
+// The interpolation's `${` is labeled, not the whole format String: a label holding
+// the error's own labels on one line does not render reliably.
+
+#[test]
+fn an_interpolation_error_labels_its_opener() {
+    // (source, the error's own labels, which the `${` label follows)
+    let cases = [
+        (
+            "def a = $'hi ${ (1 }'",
+            vec![("}", "unexpected"), ("(", "this `(` is not closed")],
+        ),
+        ("def a = $'x ${a b} y'", vec![("b", "unexpected")]),
+        // The interpolation's text is lexed on its own.
+        ("def a = $'x ${1 ~ 2} y'", vec![("~", "unrecognized")]),
+        // A String nested in the interpolation
+        (r"def a = $'x ${ 'a\qb' }'", vec![(r"\q", "unrecognized")]),
+        (r"def a = $'x ${ x'0g' }'", vec![("g", "not a hex digit")]),
+    ];
+    for (source, inner) in cases {
+        let (_, labels) = diagnosis(source);
+        let mut expected: Vec<(&str, String)> = inner
+            .into_iter()
+            .map(|(text, label)| (text, label.to_owned()))
+            .collect();
+        expected.push(("${", "in this interpolation".to_owned()));
+        assert_eq!(labels, expected, "{source:?}");
+    }
+}
+
+#[test]
+fn an_interpolation_across_lines_labels_its_opener() {
+    let source = r"
+        def a = $'${[1,
+        2}'
+    ";
+    let (message, labels) = diagnosis(source);
+    assert_eq!(message, "expected `,` or `]`, but found `}`");
+    assert_eq!(
+        labels,
+        [
+            ("}", "unexpected".to_owned()),
+            ("[", "this `[` is not closed".to_owned()),
+            ("${", "in this interpolation".to_owned()),
+        ]
+    );
+}
+
+// Identical labels on each enclosing `${` would stack on one line; only the
+// innermost interpolation, the one holding the error, is labeled.
+#[test]
+fn only_the_innermost_interpolation_is_labeled() {
+    let source = "def a = $'${$'${$'${ + }'}'}'";
+    let err = parse_program("test.frst", source).expect_err(source);
+    let (message, labels) = diagnosis(source);
+    assert_eq!(message, "expected an expression, but found `+`");
+    assert_eq!(
+        labels,
+        [
+            ("+", "unexpected".to_owned()),
+            ("${", "in this interpolation".to_owned()),
+        ]
+    );
+    assert_eq!(
+        Some(err.labels()[1].span.start),
+        source.rfind("${"),
+        "the label is on an outer `${{`"
+    );
+}
+
+// An interpolation nested in one that never closes is labeled as the enclosing one.
+#[test]
+fn an_unclosed_nested_interpolation_labels_both_openers() {
+    let source = r#"def a = $'${ $"${ {a: 1 }" }'"#;
+    let err = parse_program("test.frst", source).expect_err(source);
+    let (message, labels) = diagnosis(source);
+    assert_eq!(message, "unclosed interpolation in format String");
+    assert_eq!(
+        labels,
+        [
+            ("${", "this `${` is not closed".to_owned()),
+            ("${", "in this interpolation".to_owned()),
+        ]
+    );
+    let starts: Vec<usize> = err.labels().iter().map(|label| label.span.start).collect();
+    assert_eq!(
+        starts,
+        [source.rfind("${").unwrap(), source.find("${").unwrap()],
+        "the inner `${{` is the unclosed one"
+    );
+}
+
+// -- A missing `with` --
+// When the token found in its place is on a later line, that line may hold nothing
+// wrong, so the keyword missing its `with` is labeled too.
+
+#[test]
+fn a_with_missing_at_line_end_labels_the_keyword() {
+    // (source, the found token, the keyword)
+    let cases = [
+        (
+            r"
+                def s = xs @ filter(fn x -> x > 2)
+                print(s)
+            ",
+            "print",
+            "filter",
+        ),
+        (
+            r"
+                def s = map xs
+
+                # a comment
+                def y = 2
+            ",
+            "def",
+            "map",
+        ),
+        (
+            r"
+                def s = reduce xs init: 0
+                print(s)
+            ",
+            "print",
+            "reduce",
+        ),
+        (
+            r"
+                foreach [
+                    1,
+                    2
+                ]
+                print(1)
+            ",
+            "print",
+            "foreach",
+        ),
+    ];
+    for (source, found, keyword) in cases {
+        let (message, labels) = diagnosis(source);
+        assert_eq!(
+            message,
+            format!("expected `with`, but found `{found}`"),
+            "{source:?}"
+        );
+        assert_eq!(
+            labels,
+            [
+                (found, "unexpected".to_owned()),
+                (keyword, format!("this `{keyword}` needs `with`")),
+            ],
+            "{source:?}"
+        );
+    }
+}
+
+// On the line where the operand ends, the error is where `with` belongs, so the
+// keyword needs no label, even when the operand starts lines above.
+#[test]
+fn a_with_missing_on_the_operand_line_labels_only_the_found_token() {
+    let multiline_operand = r"
+        def s = map [
+            1
+        ] f
+    ";
+    let multiline_init = r"
+        def s = reduce xs init: [
+            0
+        ] f
+    ";
+    for source in [
+        "def s = map xs f",
+        "def s = reduce xs init: 0 f",
+        multiline_operand,
+        multiline_init,
+    ] {
+        let (_, labels) = diagnosis(source);
+        assert_eq!(labels, [("f", "unexpected".to_owned())], "{source:?}");
+    }
+}
+
+// Inside an interpolation, what is found past the last token is its closing `}`.
+#[test]
+fn a_with_missing_at_an_interpolation_line_end_labels_the_keyword() {
+    let source = r"
+        def a = $'${map xs
+        }'
+    ";
+    let (message, labels) = diagnosis(source);
+    assert_eq!(message, "expected `with`, but found `}`");
+    assert_eq!(
+        labels,
+        [
+            ("}", "unexpected".to_owned()),
+            ("map", "this `map` needs `with`".to_owned()),
+            ("${", "in this interpolation".to_owned()),
         ]
     );
 }

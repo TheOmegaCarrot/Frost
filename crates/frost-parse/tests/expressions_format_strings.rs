@@ -421,7 +421,7 @@ fn format_x_escape_is_no_longer_valid() {
 
 #[test]
 fn error_points_at_format_string() {
-    // Errors should reference the format String literal
+    // The error names the kind of String, whose escapes differ from other Strings'
     let err = parse_err("$'bad\\q'");
     assert!(err.contains("format String"), "error was: {err}");
 }
@@ -457,13 +457,14 @@ fn interpolation_leftover_token_points_at_token() {
 }
 
 #[test]
-fn interpolation_error_labels_the_format_string() {
-    let err = frost_parse::parse_program("test.frst", "$'${x +}'").unwrap_err();
+fn interpolation_error_labels_the_interpolation() {
+    let src = "$'${x +}'";
+    let err = frost_parse::parse_program("test.frst", src).unwrap_err();
     assert!(
         err.labels()
             .iter()
-            .any(|l| l.text == "in this format String"),
-        "expected a context label; labels: {:?}",
+            .any(|l| l.text == "in this interpolation" && &src[l.span.start..l.span.end] == "${"),
+        "expected a context label on the `${{`; labels: {:?}",
         err.labels()
     );
 }
@@ -511,4 +512,19 @@ fn format_unicode_escape_survives_an_interpolation_boundary() {
     assert_eq!(segs.len(), 3);
     assert_literal_seg(&segs[0], "é");
     assert_literal_seg(&segs[2], "é");
+}
+
+#[test]
+fn format_escapes_on_both_sides_of_an_interpolation_decode() {
+    for (source, quote) in [
+        (r"$'a\t\'${x}\\\$\n\u{41}'", "'"),
+        (r#"$"a\t\"${x}\\\$\n\u{41}""#, "\""),
+    ] {
+        let expr = parse_expr(source);
+        let segs = segments(&expr);
+        assert_eq!(segs.len(), 3, "{source:?}");
+        assert_literal_seg(&segs[0], &format!("a\t{quote}"));
+        assert_interp_name(&segs[1], "x");
+        assert_literal_seg(&segs[2], "\\$\nA");
+    }
 }

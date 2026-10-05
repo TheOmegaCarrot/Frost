@@ -69,6 +69,32 @@ fn bytes_that_begin_no_token_are_an_error_and_lexing_resumes() {
             (Ok(Token::Identifier("b")), "b"),
         ]
     );
+    // A point with an exponent and no digits: one malformed number, not the field `e3`
+    // of `1`. Other names after an Int's point are fields.
+    for number in ["1.e3", "1.E-3", "1.e+3", "12.e3"] {
+        assert_eq!(lexed(number), [(Err(LexError), number)], "{number:?}");
+    }
+    assert_eq!(
+        lexed("1.ex 1.e"),
+        [
+            (Ok(Token::IntLiteral(1)), "1"),
+            (Ok(Token::OpDot), "."),
+            (Ok(Token::Identifier("ex")), "ex"),
+            (Ok(Token::IntLiteral(1)), "1"),
+            (Ok(Token::OpDot), "."),
+            (Ok(Token::Identifier("e")), "e"),
+        ]
+    );
+    // After a name, `.1` is a Float, so `.e3` is a field again.
+    assert_eq!(
+        lexed("x.1.e3"),
+        [
+            (Ok(Token::Identifier("x")), "x"),
+            (Ok(Token::FloatLiteral(0.1)), ".1"),
+            (Ok(Token::OpDot), "."),
+            (Ok(Token::Identifier("e3")), "e3"),
+        ]
+    );
     // An unclosed String: the error covers its opening quote onward.
     assert_eq!(
         lexed("f('abc"),

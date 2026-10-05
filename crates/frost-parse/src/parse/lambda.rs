@@ -1,7 +1,8 @@
 use crate::ast::{Binding, Expr, SourceSpan, Spanned, Statement};
 use crate::lex::Token;
+use crate::parse::ctx::{Bracket, ParseCtx};
 use crate::parse::statements::StatementContext;
-use crate::parse::{Diagnostic, ParseResult, ctx::ParseCtx};
+use crate::parse::{Diagnostic, ParseResult};
 
 impl<'src, 'f> ParseCtx<'src, 'f> {
     pub(crate) fn parse_lambda(&mut self) -> ParseResult<Spanned<Expr>> {
@@ -63,52 +64,39 @@ impl<'src, 'f> ParseCtx<'src, 'f> {
 
     /// Parse `(a, b, ...rest)`. Caller has not consumed the `(`.
     pub(crate) fn parse_parenthesized_params(&mut self) -> ParseResult<Params> {
-        let open: SourceSpan = self.expect(Token::OpenParen)?.span.clone().into();
-        self.enter_nl_context().maybe_skip_nl();
+        let (params, _) = self.delimited(Bracket::Parameters, |ctx| {
+            let mut params = Vec::new();
 
-        let mut params = Vec::new();
-        let mut variadic = None;
-
-        if !matches!(self.peek().map(|t| &t.token), Some(Token::CloseParen)) {
+            if matches!(ctx.peek().map(|t| &t.token), Some(Token::CloseParen)) {
+                return Ok((params, None));
+            }
             loop {
-                self.maybe_skip_nl();
+                ctx.maybe_skip_nl();
 
-                if matches!(self.peek().map(|t| &t.token), Some(Token::DotDotDot)) {
-                    self.advance(1);
-                    variadic = Some(self.parse_binding("a name after `...`")?);
-                    self.maybe_skip_nl();
-                    break;
+                if matches!(ctx.peek().map(|t| &t.token), Some(Token::DotDotDot)) {
+                    ctx.advance(1);
+                    let variadic = ctx.parse_binding("a name after `...`")?;
+                    return Ok((params, Some(variadic)));
                 }
 
-                params.push(self.parse_binding("a parameter name")?);
-                self.maybe_skip_nl();
+                params.push(ctx.parse_binding("a parameter name")?);
+                ctx.maybe_skip_nl();
 
-                let peek = self.must_peek("`,` or `)`")?;
+                let peek = ctx.must_peek("`,` or `)`")?;
                 match peek.token {
                     Token::Comma => {
-                        self.advance(1);
-                        self.maybe_skip_nl();
-                        if matches!(self.peek().map(|t| &t.token), Some(Token::CloseParen)) {
-                            break;
+                        ctx.advance(1);
+                        ctx.maybe_skip_nl();
+                        if matches!(ctx.peek().map(|t| &t.token), Some(Token::CloseParen)) {
+                            return Ok((params, None));
                         }
                     }
-                    Token::CloseParen => break,
-                    _ => {
-                        return Err(self.expected_in_list(
-                            "`,` or `)`",
-                            peek,
-                            open,
-                            "parameter list",
-                        ));
-                    }
+                    Token::CloseParen => return Ok((params, None)),
+                    _ => return Err(ctx.expected_in_list("`,` or `)`", peek)),
                 }
             }
-        }
-
-        self.maybe_skip_nl().exit_nl_context();
-        self.expect(Token::CloseParen)?;
-
-        Ok((params, variadic))
+        })?;
+        Ok(params)
     }
 
     /// Parse `-> expr` or `-> { stmts; expr }`.
@@ -144,16 +132,12 @@ impl<'src, 'f> ParseCtx<'src, 'f> {
     }
 
     fn parse_block_body(&mut self) -> ParseResult<(Vec<Spanned<Statement>>, Spanned<Expr>, usize)> {
-        let open_start = self.expect(Token::OpenBrace)?.span.start;
-
-        let mut body = self.parse_statements(StatementContext::Scope)?;
-
-        let close_end = self.expect(Token::CloseBrace)?.span.end;
+        let (mut body, span) = self.block(|ctx| ctx.parse_statements(StatementContext::Scope))?;
 
         let Some(last) = body.pop() else {
             return Err(Diagnostic::at(
                 "lambda block body must contain at least one expression",
-                (open_start..close_end).into(),
+                span,
                 "empty block",
             ));
         };
@@ -169,7 +153,7 @@ impl<'src, 'f> ParseCtx<'src, 'f> {
             }
         };
 
-        Ok((body, return_expr, close_end))
+        Ok((body, return_expr, span.end))
     }
 
     /// Parse the tail of a bare param list: `[, param]* [, ...rest]`.
@@ -196,17 +180,11 @@ impl<'src, 'f> ParseCtx<'src, 'f> {
     // -- Abbreviated lambdas: $(expr) --
 
     pub(crate) fn parse_abbreviated_lambda(&mut self) -> ParseResult<Spanned<Expr>> {
-        let start = self.expect(Token::DollarParen)?.span.start;
-        self.enter_nl_context()
-            .maybe_skip_nl()
-            .enter_abbreviated_lambda();
-
-        let body = self.parse_expression()?;
-
-        let usage = self.exit_abbreviated_lambda();
-        self.maybe_skip_nl().exit_nl_context();
-
-        let close = self.expect(Token::CloseParen)?;
+        let ((body, usage), span) = self.delimited(Bracket::AbbreviatedLambda, |ctx| {
+            ctx.enter_abbreviated_lambda();
+            let body = ctx.parse_expression()?;
+            Ok((body, ctx.exit_abbreviated_lambda()))
+        })?;
 
         Ok(Spanned::new(
             Expr::AbbreviatedLambda {
@@ -214,7 +192,7 @@ impl<'src, 'f> ParseCtx<'src, 'f> {
                 uses_rest: usage.rest,
                 body: Box::new(body),
             },
-            (start..close.span.end).into(),
+            span,
         ))
     }
 }

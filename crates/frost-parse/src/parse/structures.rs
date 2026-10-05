@@ -1,42 +1,19 @@
 use crate::ast::{Expr, Literal, MapEntry, SourceSpan, Spanned};
 use crate::lex::Token;
-use crate::parse::{ParseResult, ctx::ParseCtx};
+use crate::parse::ParseResult;
+use crate::parse::ctx::{Bracket, ParseCtx};
 
 impl<'src, 'f> ParseCtx<'src, 'f> {
     pub(crate) fn parse_array_literal(&mut self) -> ParseResult<Spanned<Expr>> {
-        let open: SourceSpan = self.expect(Token::OpenBracket)?.span.clone().into();
-        let start = open.start;
-        self.enter_nl_context();
-
-        let (elements, close) = self.parse_comma_separated(
-            open,
-            "Array literal",
-            Token::CloseBracket,
-            Self::parse_expression,
-        )?;
-
-        Ok(Spanned::new(
-            Expr::Array(elements),
-            (start..close.span.end).into(),
-        ))
+        let (elements, span) =
+            self.parse_comma_separated(Bracket::ArrayLiteral, Self::parse_expression)?;
+        Ok(Spanned::new(Expr::Array(elements), span))
     }
 
     pub(crate) fn parse_map_literal(&mut self) -> ParseResult<Spanned<Expr>> {
-        let open: SourceSpan = self.expect(Token::OpenBrace)?.span.clone().into();
-        let start = open.start;
-        self.enter_nl_context();
-
-        let (entries, close) = self.parse_comma_separated(
-            open,
-            "Map literal",
-            Token::CloseBrace,
-            Self::parse_map_entry,
-        )?;
-
-        Ok(Spanned::new(
-            Expr::Map(entries),
-            (start..close.span.end).into(),
-        ))
+        let (entries, span) =
+            self.parse_comma_separated(Bracket::MapLiteral, Self::parse_map_entry)?;
+        Ok(Spanned::new(Expr::Map(entries), span))
     }
 
     fn parse_map_entry(&mut self) -> ParseResult<Spanned<MapEntry>> {
@@ -46,11 +23,7 @@ impl<'src, 'f> ParseCtx<'src, 'f> {
 
         let key = match peek.token {
             Token::OpenBracket => {
-                self.expect(Token::OpenBracket)?;
-                self.enter_nl_context().maybe_skip_nl();
-                let key = self.parse_expression()?;
-                self.maybe_skip_nl().exit_nl_context();
-                self.expect(Token::CloseBracket)?;
+                let (key, _) = self.delimited(Bracket::ComputedKey, Self::parse_expression)?;
                 key
             }
             Token::Identifier(name) => {
@@ -67,7 +40,7 @@ impl<'src, 'f> ParseCtx<'src, 'f> {
 
                 Spanned::new(Expr::Literal(Literal::String(name)), span)
             }
-            _ => return Err(self.expected(EXPECTED, peek)),
+            _ => return Err(self.expected_in_list(EXPECTED, peek)),
         };
 
         self.expect(Token::Colon)?;

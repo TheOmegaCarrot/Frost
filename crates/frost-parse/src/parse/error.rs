@@ -26,6 +26,9 @@ pub(crate) struct Diagnostic {
     message: String,
     labels: Vec<Label>,
     help: Option<String>,
+    /// Whether the interpolation holding the error has its label yet;
+    /// see [`Diagnostic::in_interpolation`].
+    interpolation_labeled: bool,
 }
 
 impl Diagnostic {
@@ -37,6 +40,21 @@ impl Diagnostic {
             message: message.into(),
             labels: Vec::new(),
             help: None,
+            interpolation_labeled: false,
+        }
+    }
+
+    /// Label `open`, the `${` of a format String interpolation the error is in,
+    /// unless an interpolation nested in that one is labeled already:
+    /// identical labels on each enclosing `${` would only stack up, so only the
+    /// innermost interpolation is labeled.
+    pub(crate) fn in_interpolation(self, open: SourceSpan) -> Self {
+        if self.interpolation_labeled {
+            return self;
+        }
+        Self {
+            interpolation_labeled: true,
+            ..self.with_label(open, "in this interpolation")
         }
     }
 

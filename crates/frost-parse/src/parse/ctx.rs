@@ -49,6 +49,92 @@ pub(crate) struct ParseState {
     /// permitted while non-empty and record into the innermost frame.
     /// Lives in the checkpointed state so backtracking discards speculative marks.
     pub abbrev_lambdas: Vec<DollarUsage>,
+
+    /// The brackets open at `pos`, innermost last, each as the parser read it.
+    /// Diagnostics read it to say where an error sits.
+    /// Lives in the checkpointed state so backtracking discards speculative brackets.
+    pub brackets: Vec<OpenBracket>,
+}
+
+/// A bracket the parser has opened and not yet closed.
+#[derive(Clone, Copy, Debug)]
+pub(crate) struct OpenBracket {
+    pub kind: Bracket,
+    /// The index of its opening token.
+    pub pos: usize,
+}
+
+/// What a bracket holds, as the parser read it.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(crate) enum Bracket {
+    /// The `{` of a block of statements: `do { ... }` or a lambda's `-> { ... }`.
+    Block,
+    MapLiteral,
+    /// A Map pattern's `{`, in a `match` arm or a `def`.
+    MapPattern,
+    ArrayLiteral,
+    /// An Array pattern's `[`, in a `match` arm or a `def`.
+    ArrayPattern,
+    /// The `{` holding a `match`'s arms.
+    MatchArms,
+    /// A call's `(`, holding its arguments.
+    Call,
+    /// A lambda's or `defn`'s parenthesized parameter list.
+    Parameters,
+    /// Parentheses around an expression, including a `match` value pattern `(x)`.
+    Group,
+    /// An index's `[`, as in `xs[0]`.
+    Index,
+    /// A computed Map key's `[`, as in `{[k]: v}`.
+    ComputedKey,
+    /// An abbreviated lambda's `$(`.
+    AbbreviatedLambda,
+}
+
+impl Bracket {
+    fn opener(self) -> Token<'static> {
+        match self {
+            Self::Block | Self::MapLiteral | Self::MapPattern | Self::MatchArms => Token::OpenBrace,
+            Self::ArrayLiteral | Self::ArrayPattern | Self::Index | Self::ComputedKey => {
+                Token::OpenBracket
+            }
+            Self::Call | Self::Parameters | Self::Group => Token::OpenParen,
+            Self::AbbreviatedLambda => Token::DollarParen,
+        }
+    }
+
+    fn closer(self) -> Token<'static> {
+        match self {
+            Self::Block | Self::MapLiteral | Self::MapPattern | Self::MatchArms => {
+                Token::CloseBrace
+            }
+            Self::ArrayLiteral | Self::ArrayPattern | Self::Index | Self::ComputedKey => {
+                Token::CloseBracket
+            }
+            Self::Call | Self::Parameters | Self::Group | Self::AbbreviatedLambda => {
+                Token::CloseParen
+            }
+        }
+    }
+
+    /// The list this bracket holds, as an error names it ("in this Map literal"),
+    /// if it holds a comma-separated list.
+    fn list_name(self) -> Option<&'static str> {
+        match self {
+            Self::MapLiteral => Some("Map literal"),
+            Self::MapPattern => Some("Map pattern"),
+            Self::ArrayLiteral => Some("Array literal"),
+            Self::ArrayPattern => Some("Array pattern"),
+            Self::MatchArms => Some("`match`"),
+            Self::Call => Some("call"),
+            Self::Parameters => Some("parameter list"),
+            Self::Block
+            | Self::Group
+            | Self::Index
+            | Self::ComputedKey
+            | Self::AbbreviatedLambda => None,
+        }
+    }
 }
 
 /// Dollar-identifier usage collected for one abbreviated lambda.
@@ -108,8 +194,7 @@ impl<'src, 'f> ParseCtx<'src, 'f> {
             let shifted = (span.start + base_offset)..(span.end + base_offset);
 
             let Ok(token) = token else {
-                let rest_of_line = src[span.start..].lines().next().unwrap_or_default();
-                return Err(lex_error(rest_of_line, shifted));
+                return Err(hints::unreadable(src, span, base_offset));
             };
 
             input.push(SrcToken {
@@ -162,6 +247,74 @@ impl<'src, 'f> ParseCtx<'src, 'f> {
 
         self.advance(1);
         Ok(&self.input[self.state.pos - 1])
+    }
+
+    /// Parse `parse` inside a `kind` bracket, from its opener through its closer,
+    /// recording the bracket as open meanwhile.
+    /// Returns what `parse` returns and the span from the opener through the closer.
+    fn bracketed<T>(
+        &mut self,
+        kind: Bracket,
+        parse: impl FnOnce(&mut Self) -> ParseResult<T>,
+    ) -> ParseResult<(T, SourceSpan)> {
+        let pos = self.here();
+        let start = self.expect(kind.opener())?.span.start;
+        self.state.brackets.push(OpenBracket { kind, pos });
+        let value = parse(self)?;
+        let end = self.expect(kind.closer())?.span.end;
+        self.state.brackets.pop();
+        Ok((value, (start..end).into()))
+    }
+
+    /// [`bracketed`](Self::bracketed), with newlines insignificant inside the bracket.
+    pub(crate) fn delimited<T>(
+        &mut self,
+        kind: Bracket,
+        parse: impl FnOnce(&mut Self) -> ParseResult<T>,
+    ) -> ParseResult<(T, SourceSpan)> {
+        self.bracketed(kind, |ctx| {
+            ctx.enter_nl_context().maybe_skip_nl();
+            let value = parse(ctx)?;
+            ctx.maybe_skip_nl().exit_nl_context();
+            Ok(value)
+        })
+    }
+
+    /// Parse `parse` inside the braces of a block, as [`bracketed`](Self::bracketed) does.
+    pub(crate) fn block<T>(
+        &mut self,
+        parse: impl FnOnce(&mut Self) -> ParseResult<T>,
+    ) -> ParseResult<(T, SourceSpan)> {
+        self.bracketed(Bracket::Block, parse)
+    }
+
+    /// The innermost bracket open where the parse is.
+    /// An interpolation's sub-context records only the brackets opened inside it.
+    pub(crate) fn innermost_bracket(&self) -> Option<OpenBracket> {
+        self.state.brackets.last().copied()
+    }
+
+    /// The bracket open just outside the innermost one.
+    pub(crate) fn outer_bracket(&self) -> Option<OpenBracket> {
+        self.state.brackets.iter().rev().nth(1).copied()
+    }
+
+    /// Whether a `kind` bracket is open where the parse is, at any depth.
+    pub(crate) fn is_inside(&self, kind: Bracket) -> bool {
+        self.state.brackets.iter().any(|open| open.kind == kind)
+    }
+
+    /// Where what the parse finds next starts: the next token, or past the last
+    /// token, an interpolation's closing `}`. `None` at the end of input.
+    pub(crate) fn next_start(&self) -> Option<usize> {
+        self.peek()
+            .map(|token| token.span.start)
+            .or(self.closing_brace.map(|brace| brace.start))
+    }
+
+    /// Whether this context parses a format String's interpolation.
+    pub(crate) fn in_interpolation(&self) -> bool {
+        self.closing_brace.is_some()
     }
 
     pub(crate) fn enter_nl_context(&mut self) -> &mut Self {
@@ -220,50 +373,42 @@ impl<'src, 'f> ParseCtx<'src, 'f> {
         self
     }
 
-    /// Parse a comma-separated list of items inside delimiters.
-    /// The opening delimiter must already be consumed and nl context entered.
-    /// Consumes the closing delimiter and exits nl context.
-    /// `open` is the opening delimiter, and `list` names the list for an error, as in
-    /// [`expected_in_list`](Self::expected_in_list).
+    /// Parse a comma-separated list of items in a `kind` bracket, as
+    /// [`delimited`](Self::delimited) does.
     pub(crate) fn parse_comma_separated<T>(
         &mut self,
-        open: SourceSpan,
-        list: &str,
-        close: Token,
+        kind: Bracket,
         mut parse_item: impl FnMut(&mut Self) -> ParseResult<T>,
-    ) -> ParseResult<(Vec<T>, &SrcToken<'src>)> {
-        self.maybe_skip_nl();
-
-        let mut items = Vec::new();
+    ) -> ParseResult<(Vec<T>, SourceSpan)> {
+        let close = kind.closer();
         let after_item = format!("`,` or `{close}`");
-
-        if !matches!(self.peek().map(|t| &t.token), Some(t) if *t == close) {
+        self.delimited(kind, |ctx| {
+            let mut items = Vec::new();
+            if matches!(ctx.peek().map(|t| &t.token), Some(t) if *t == close) {
+                return Ok(items);
+            }
             loop {
-                self.maybe_skip_nl();
-                items.push(parse_item(self)?);
-                self.maybe_skip_nl();
+                ctx.maybe_skip_nl();
+                items.push(parse_item(ctx)?);
+                ctx.maybe_skip_nl();
 
-                let peek = self.must_peek(&after_item)?;
+                let peek = ctx.must_peek(&after_item)?;
                 if peek.token == close {
-                    break;
+                    return Ok(items);
                 }
                 match peek.token {
                     Token::Comma => {
-                        self.expect(Token::Comma)?;
+                        ctx.expect(Token::Comma)?;
                     }
-                    _ => return Err(self.expected_in_list(&after_item, peek, open, list)),
+                    _ => return Err(ctx.expected_in_list(&after_item, peek)),
                 }
 
-                self.maybe_skip_nl();
-                if matches!(self.peek().map(|t| &t.token), Some(t) if *t == close) {
-                    break;
+                ctx.maybe_skip_nl();
+                if matches!(ctx.peek().map(|t| &t.token), Some(t) if *t == close) {
+                    return Ok(items);
                 }
             }
-        }
-
-        self.maybe_skip_nl().exit_nl_context();
-        let close_token = self.expect(close)?;
-        Ok((items, close_token))
+        })
     }
 
     pub(crate) fn filename(&self) -> &'f str {
@@ -320,10 +465,6 @@ impl<'src, 'f> ParseCtx<'src, 'f> {
         self.state.abbrev_lambdas = frames;
     }
 
-    pub(crate) fn at_end(&self) -> bool {
-        self.peek().is_none()
-    }
-
     pub(crate) fn here(&self) -> usize {
         self.state.pos
     }
@@ -364,31 +505,31 @@ impl<'src, 'f> ParseCtx<'src, 'f> {
         .with_help(help)
     }
 
-    /// [`expected`](Self::expected), for a list opened at `open`.
-    /// When the list runs across lines to `found`, the opener is labeled too,
-    /// as "in this {list}", so the error shows which list it is in.
-    pub(crate) fn expected_in_list(
-        &self,
-        expected: &str,
-        found: &SrcToken,
-        open: SourceSpan,
-        list: &str,
-    ) -> Diagnostic {
+    /// [`expected`](Self::expected), inside the innermost open bracket.
+    /// When that bracket holds a list that runs across lines to `found`, its opener is
+    /// labeled too, as "in this Map literal", so the error shows which list it is in.
+    pub(crate) fn expected_in_list(&self, expected: &str, found: &SrcToken) -> Diagnostic {
         let diagnostic = self.expected(expected, found);
-        if self
-            .source_text((open.start..found.span.start).into())
-            .contains('\n')
-        {
-            diagnostic.with_label(open, format!("in this {list}"))
-        } else {
-            diagnostic
+        let Some(open) = self.innermost_bracket() else {
+            return diagnostic;
+        };
+        let open_span = &self.input[open.pos].span;
+        match open.kind.list_name() {
+            Some(list)
+                if self
+                    .source_text((open_span.start..found.span.start).into())
+                    .contains('\n') =>
+            {
+                diagnostic.with_label(open_span.clone().into(), format!("in this {list}"))
+            }
+            _ => diagnostic,
         }
     }
 
     /// The error for running out of tokens where `expected` belongs.
     /// Any bracket still open is labeled, since closing it is the likely fix.
     pub(crate) fn unexpected_eof(&self, expected: &str) -> Diagnostic {
-        let unclosed = self.innermost_unclosed();
+        let unclosed = self.innermost_bracket().map(|open| &self.input[open.pos]);
         let last = self.input.iter().rev().find(|t| t.token != Token::Newline);
 
         let diagnostic = if let Some(brace) = self.closing_brace {
@@ -428,24 +569,6 @@ impl<'src, 'f> ParseCtx<'src, 'f> {
         diagnostic.with_help(self.habit_help(self.input.len(), None))
     }
 
-    /// The innermost opening bracket in this context with no closing bracket after it.
-    /// Brackets are matched by nesting alone, which suffices to pick a label.
-    fn innermost_unclosed(&self) -> Option<&SrcToken<'src>> {
-        let mut open = Vec::new();
-        for token in &self.input {
-            match token.token {
-                Token::OpenParen | Token::DollarParen | Token::OpenBracket | Token::OpenBrace => {
-                    open.push(token);
-                }
-                Token::CloseParen | Token::CloseBracket | Token::CloseBrace => {
-                    open.pop();
-                }
-                _ => {}
-            }
-        }
-        open.pop()
-    }
-
     /// `token` as a diagnostic names it: its source text in backticks, up to any line break.
     fn describe(&self, token: &SrcToken) -> String {
         if token.token == Token::Newline {
@@ -474,11 +597,4 @@ pub(crate) fn int_literal(magnitude: u64, negative: bool, span: Range<usize>) ->
             "an Int is from -9223372036854775808 to 9223372036854775807",
         )
     })
-}
-
-/// The error for source the lexer cannot read at `span`, `rest_of_line` being the
-/// source from there to the end of its line.
-fn lex_error(rest_of_line: &str, span: Range<usize>) -> Diagnostic {
-    let (message, help) = hints::unreadable(rest_of_line);
-    Diagnostic::at(message, span.into(), "unrecognized").with_help(help)
 }

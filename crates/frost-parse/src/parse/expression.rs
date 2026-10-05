@@ -1,6 +1,6 @@
 use crate::ast::{BinOp, Expr, Literal, LogicalOp, SourceSpan, Spanned, UnaryOp};
 use crate::lex::Token;
-use crate::parse::ctx::{ParseCtx, int_literal};
+use crate::parse::ctx::{Bracket, ParseCtx, int_literal};
 use crate::parse::strings;
 use crate::parse::{Diagnostic, ParseResult};
 
@@ -105,37 +105,27 @@ impl<'src, 'f> ParseCtx<'src, 'f> {
 
     fn parse_call(&mut self, callee: Spanned<Expr>) -> ParseResult<Spanned<Expr>> {
         let start = callee.span.start;
-        let open = self.expect(Token::OpenParen)?.span.clone().into();
-        self.enter_nl_context();
-
-        let (args, close) = self
-            .parse_comma_separated(open, "call", Token::CloseParen, |ctx| ctx.parse_expr_bp(0))?;
+        let (args, span) = self.parse_comma_separated(Bracket::Call, |ctx| ctx.parse_expr_bp(0))?;
 
         Ok(Spanned::new(
             Expr::Call {
                 callee: Box::new(callee),
                 args,
             },
-            (start..close.span.end).into(),
+            (start..span.end).into(),
         ))
     }
 
     fn parse_index(&mut self, target: Spanned<Expr>) -> ParseResult<Spanned<Expr>> {
         let start = target.span.start;
-        self.expect(Token::OpenBracket)?;
-        self.enter_nl_context().maybe_skip_nl();
-
-        let key = self.parse_expr_bp(0)?;
-
-        self.maybe_skip_nl().exit_nl_context();
-        let close = self.expect(Token::CloseBracket)?;
+        let (key, span) = self.delimited(Bracket::Index, |ctx| ctx.parse_expr_bp(0))?;
 
         Ok(Spanned::new(
             Expr::SoftIndex {
                 target: Box::new(target),
                 key: Box::new(key),
             },
-            (start..close.span.end).into(),
+            (start..span.end).into(),
         ))
     }
 
@@ -178,13 +168,8 @@ impl<'src, 'f> ParseCtx<'src, 'f> {
         if !matches!(self.peek().map(|t| &t.token), Some(Token::OpenParen)) {
             return Err(self.thread_without_call(&callee));
         }
-        let open = self.expect(Token::OpenParen)?.span.clone().into();
-        self.enter_nl_context();
-
-        let (mut args, close) =
-            self.parse_comma_separated(open, "call", Token::CloseParen, |ctx| {
-                ctx.parse_expr_bp(0)
-            })?;
+        let (mut args, span) =
+            self.parse_comma_separated(Bracket::Call, |ctx| ctx.parse_expr_bp(0))?;
 
         args.insert(0, lhs);
 
@@ -193,7 +178,7 @@ impl<'src, 'f> ParseCtx<'src, 'f> {
                 callee: Box::new(callee),
                 args,
             },
-            (start..close.span.end).into(),
+            (start..span.end).into(),
         ))
     }
 
@@ -318,19 +303,11 @@ impl<'src, 'f> ParseCtx<'src, 'f> {
             }
 
             Token::OpenParen => {
-                let start = peek.span.start;
-
-                self.advance(1).enter_nl_context().maybe_skip_nl();
-
-                let expr = self.parse_expr_bp(0)?;
-
-                self.maybe_skip_nl().exit_nl_context();
-
-                let close = self.expect(Token::CloseParen)?;
+                let (expr, span) = self.delimited(Bracket::Group, |ctx| ctx.parse_expr_bp(0))?;
 
                 // Parenthesized expression inherits the inner expression's node,
                 // but gets the outer span (including parens).
-                Ok(Spanned::new(expr.node, (start..close.span.end).into()))
+                Ok(Spanned::new(expr.node, span))
             }
 
             // -- Atoms: strings --

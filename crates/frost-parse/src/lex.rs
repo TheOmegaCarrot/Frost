@@ -8,7 +8,8 @@ use logos::Logos;
 ///
 /// Whitespace other than newlines, and comments, produce no tokens. An `Err`
 /// covers bytes that begin no token, such as a string missing its closing
-/// quote or a character Frost does not use; tokens resume after it.
+/// quote, a number written `1.e3`, or a character Frost does not use; tokens
+/// resume after it.
 pub fn tokens(source: &str) -> impl Iterator<Item = (Result<Token<'_>, LexError>, Range<usize>)> {
     Token::lexer(source)
         .spanned()
@@ -234,6 +235,8 @@ pub enum Token<'src> {
     #[regex(r"[0-9]+\.[0-9]+([eE][+-]?[0-9]+)?", |lex| lex.slice().parse::<f64>().ok())]
     #[regex(r"[0-9]+[eE][+-]?[0-9]+", |lex| lex.slice().parse::<f64>().ok())]
     #[regex(r"\.[0-9]+([eE][+-]?[0-9]+)?", |lex| lex.slice().parse::<f64>().ok())]
+    // `1.e3` is an error, not the field `e3` of the Int `1`.
+    #[regex(r"[0-9]+\.[eE][+-]?[0-9]+", |_| None::<f64>)]
     FloatLiteral(f64),
 
     // -- Identifiers --
@@ -331,46 +334,61 @@ fn lex_multiline_single<'src>(lex: &mut logos::Lexer<'src, Token<'src>>) -> Opti
 }
 
 fn lex_format_str<'src>(lex: &mut logos::Lexer<'src, Token<'src>>, quote: u8) -> Option<&'src str> {
-    let bytes = lex.remainder().as_bytes();
-    let mut i = 0;
+    let FormatStringEnd::Closed(end) = scan_format_string(lex.remainder().as_bytes(), quote) else {
+        return None;
+    };
+    let content = &lex.remainder()[..end];
+    lex.bump(end + 1); // consume content + closing quote
+    Some(content)
+}
 
+/// Where a format String's scan ends.
+pub(crate) enum FormatStringEnd {
+    /// At its closing quote, at this index.
+    Closed(usize),
+    /// At an interpolation that has no closing `}`, whose `${` is at this index.
+    UnclosedInterpolation(usize),
+    /// At a line break or the end of input: format Strings are single-line.
+    Unclosed,
+}
+
+/// Scans a format String's text, `bytes`, from just past its opening `$'` or `$"`,
+/// `quote` being its quote character.
+pub(crate) fn scan_format_string(bytes: &[u8], quote: u8) -> FormatStringEnd {
+    let mut i = 0;
     while i < bytes.len() {
         match bytes[i] {
             // Escaped character: skip both the backslash and the next byte
             b'\\' if i + 1 < bytes.len() => i += 2,
 
-            b'$' if i + 1 < bytes.len() && bytes[i + 1] == b'{' => {
-                i = skip_interpolation(bytes, i + 2)?;
-            }
+            b'$' if bytes.get(i + 1) == Some(&b'{') => match skip_interpolation(bytes, i + 2) {
+                Ok(end) => i = end,
+                Err(_) => return FormatStringEnd::UnclosedInterpolation(i),
+            },
 
-            // Closing quote: done
-            c if c == quote => {
-                let content = &lex.remainder()[..i];
-                lex.bump(i + 1); // consume content + closing quote
-                return Some(content);
-            }
+            c if c == quote => return FormatStringEnd::Closed(i),
 
-            // Newline: format strings are single-line
-            b'\n' => return None,
+            b'\n' => return FormatStringEnd::Unclosed,
 
-            // Any other byte
             _ => i += 1,
         }
     }
-
-    None // unclosed string
+    FormatStringEnd::Unclosed
 }
 
 /// Scans a format-string interpolation, starting at `i`, just past its `${`.
-/// Returns the index just past the matching `}`, or `None` if the interpolation is unclosed.
+/// Returns the index just past the matching `}`. If the interpolation is unclosed,
+/// returns instead the quote of the last String opened inside it, if any.
 /// Braces inside a quoted string within the interpolation do not count.
-pub(crate) fn skip_interpolation(bytes: &[u8], mut i: usize) -> Option<usize> {
+pub(crate) fn skip_interpolation(bytes: &[u8], mut i: usize) -> Result<usize, Option<u8>> {
     let mut depth = 1u32;
+    let mut last_quote = None;
     while depth > 0 {
-        match *bytes.get(i)? {
+        match *bytes.get(i).ok_or(last_quote)? {
             b'{' => depth += 1,
             b'}' => depth -= 1,
             q @ (b'\'' | b'"') => {
+                last_quote = Some(q);
                 i += 1;
                 while i < bytes.len() {
                     match bytes[i] {
@@ -388,7 +406,7 @@ pub(crate) fn skip_interpolation(bytes: &[u8], mut i: usize) -> Option<usize> {
         }
         i += 1;
     }
-    Some(i)
+    Ok(i)
 }
 
 impl<'src> std::fmt::Display for Token<'src> {
