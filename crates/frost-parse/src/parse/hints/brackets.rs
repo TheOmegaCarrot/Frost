@@ -1,15 +1,15 @@
 //! Rules for what brackets hold: braces read as one thing where another was meant,
 //! lists missing their commas, and parentheses holding what Frost writes otherwise.
 
-use crate::lex::Token;
+use crate::lex::{Token, tokens};
 use crate::parse::ctx::{Bracket, OpenBracket};
 use crate::parse::hints::site::{
-    ends_an_expression, infix_or_postfix, is_literal, starts_a_pattern, starts_an_expression,
-    starts_an_expression_not_a_key,
+    ends_an_expression, infix_or_postfix, is_closer, is_literal, is_opener, starts_a_pattern,
+    starts_an_expression, starts_an_expression_not_a_key,
 };
 use crate::parse::hints::{
-    BLOCK_HELP, CATCH_ALL_HELP, LAMBDA_HELP, MAP_ENTRY_HELP, REST_HELP, SPREAD_HELP, Site,
-    destructure_help, is_iterative_keyword, iterative_help,
+    BLOCK_HELP, CATCH_ALL_HELP, LAMBDA_HELP, MAP_ENTRY_HELP, MAP_REST_HELP, REST_HELP, SPREAD_HELP,
+    Site, destructure_help, is_iterative_keyword, iterative_help,
 };
 
 impl<'src> Site<'_, 'src, '_> {
@@ -54,8 +54,7 @@ impl<'src> Site<'_, 'src, '_> {
                     Some(Token::Colon) => return Some(key_help(key)),
                     // `{"a" => 1}`
                     Some(Token::FatArrow) => {
-                        return (!self.may_be_next_arm(self.found))
-                            .then(|| MAP_ENTRY_HELP.to_owned());
+                        return (!self.may_be_next_arm(self.found)).then(|| key_help(key));
                     }
                     // `{1, 2, 3}`
                     Some(Token::Comma) if is_map_literal && first => {
@@ -71,9 +70,14 @@ impl<'src> Site<'_, 'src, '_> {
                 Token::Colon if matches!(next, Some(Token::Identifier(_))) => {
                     return Some(MAP_ENTRY_HELP.to_owned());
                 }
-                // `{**m, a: 1}`
+                // `{**m, a: 1}`, or `def {a, **r} = m`
                 Token::OpTimes if self.abutting_next() == Some(&Token::OpTimes) => {
-                    return Some(SPREAD_HELP.to_owned());
+                    let help = if is_map_literal {
+                        SPREAD_HELP
+                    } else {
+                        MAP_REST_HELP
+                    };
+                    return Some(help.to_owned());
                 }
                 // `{,}`
                 Token::Comma if first && next == Some(&Token::CloseBrace) => {
@@ -87,12 +91,43 @@ impl<'src> Site<'_, 'src, '_> {
         let meant_as_block = if first {
             starts_an_expression_not_a_key(found)
         } else {
-            self.first_inside(open) == self.found.checked_sub(1)
+            let continues_a_name = self.first_inside(open) == self.found.checked_sub(1)
                 && matches!(self.token_at(-1), Some(Token::Identifier(_)))
-                && infix_or_postfix(found)
+                && infix_or_postfix(found);
+            // `{a.b: 1}`, whose colon shows a Map
+            if continues_a_name && let Some(key) = self.unbracketed_key(open) {
+                return Some(format!(
+                    "a computed key goes in brackets, like `{{[{key}]: ...}}`"
+                ));
+            }
+            continues_a_name
         };
         (is_map_literal && meant_as_block && self.block_could_stand(open))
             .then(|| BLOCK_HELP.to_owned())
+    }
+
+    /// The source of an expression written as a key without its brackets, from the
+    /// first token in the braces opened at `open` to a `:` after the error on its line,
+    /// as `a.b` is in `{a.b: 1}`. An `if` or a `,` before the `:` ends the search.
+    fn unbracketed_key(&self, open: OpenBracket) -> Option<&'src str> {
+        let first = self.first_inside(open)?;
+        let mut depth = 0usize;
+        for index in self.found.. {
+            match &self.ctx.get(index)?.token {
+                Token::Colon if depth == 0 => {
+                    let span = self.ctx.get(first)?.span.start..self.ctx.get(index - 1)?.span.end;
+                    return Some(self.ctx.source_text(span.into()));
+                }
+                token if is_opener(token) => depth += 1,
+                token if is_closer(token) => depth = depth.checked_sub(1)?,
+                Token::Newline | Token::Semicolon => return None,
+                Token::Comma | Token::KwIf | Token::KwElif | Token::KwElse if depth == 0 => {
+                    return None;
+                }
+                _ => {}
+            }
+        }
+        None
     }
 
     /// Help for a literal key that starts the block opened at `open`, as in
@@ -104,7 +139,17 @@ impl<'src> Site<'_, 'src, '_> {
         let first = self.first_inside(open)?;
         let (key, length) = self.literal_key(first)?;
         let after_key = self.ctx.get_past_nl(first + length).map(|(index, _)| index);
-        (after_key == Some(self.found)).then(|| key_help(key))
+        if after_key != Some(self.found) {
+            return None;
+        }
+        // After `do`, braces are always a block's.
+        if self.token_before(open.pos) == Some(&Token::KwDo) {
+            return Some(format!(
+                "a `do` block holds statements; a Map is written without `do`, like `{}`",
+                entry_example(key)
+            ));
+        }
+        Some(key_help(key))
     }
 
     /// Help for list items separated by something other than a comma: a line break, as
@@ -119,8 +164,9 @@ impl<'src> Site<'_, 'src, '_> {
             return None;
         }
         if *found == Token::Semicolon && self.follows_an_operand(0) {
-            // `1 => f(); g()`, where the arm's result was meant as statements
-            if open.kind == Bracket::MatchArms && !self.arrow_ends_arm() {
+            // `1 => f(); g()`, where the arm's result was meant as statements; in
+            // `1 => 2; 3 => 4`, the next arm's `=>` follows.
+            if open.kind == Bracket::MatchArms && !self.follows_in_item(&Token::FatArrow) {
                 return Some(
                     "a `match` arm's result is one expression; for several statements, \
                      use `do { ... }`"
@@ -171,32 +217,6 @@ impl<'src> Site<'_, 'src, '_> {
             return Some(format!("{help}; {CATCH_ALL_HELP}"));
         }
         Some(help)
-    }
-
-    /// Whether a `=>` follows the error before the next comma or the closing brace, as
-    /// the next arm's does after the `;` in `1 => 2; 3 => 4`.
-    fn arrow_ends_arm(&self) -> bool {
-        let mut depth = 0usize;
-        for index in self.found + 1.. {
-            match self.ctx.get(index).map(|t| &t.token) {
-                Some(Token::FatArrow) if depth == 0 => return true,
-                Some(
-                    Token::OpenParen | Token::OpenBracket | Token::OpenBrace | Token::DollarParen,
-                ) => {
-                    depth += 1;
-                }
-                Some(Token::CloseParen | Token::CloseBracket | Token::CloseBrace) => {
-                    match depth.checked_sub(1) {
-                        Some(outer) => depth = outer,
-                        None => return false,
-                    }
-                }
-                Some(Token::Comma) if depth == 0 => return false,
-                None => return false,
-                _ => {}
-            }
-        }
-        false
     }
 
     /// Help for a comma in parentheses around an expression, as in `(a, b)`, where the
@@ -266,7 +286,14 @@ impl<'src> Site<'_, 'src, '_> {
                     Token::CloseBracket | Token::CloseParen | Token::Comma | Token::SlimArrow
                 )
                 && self.binds_names();
-            return is_unnamed_rest.then(|| REST_HELP.to_owned());
+            return is_unnamed_rest.then(|| {
+                // `[..., a]`, where naming the rest would leave it out of place
+                if *found == Token::Comma {
+                    format!("{REST_HELP}, and comes last")
+                } else {
+                    REST_HELP.to_owned()
+                }
+            });
         }
         match found {
             Token::OpenBrace | Token::OpenBracket => {
@@ -369,7 +396,32 @@ fn is_plain_string(token: &Token) -> bool {
     )
 }
 
-/// Help for a Map key, `key`, that is not a name.
+/// Help for a literal Map key, `key`, written as Frost does not write one.
 fn key_help(key: &str) -> String {
-    format!("a Map key that is not a name goes in brackets: `{{[{key}]: ...}}`")
+    let example = entry_example(key);
+    if quoted_name(key).is_some() {
+        format!("a Map key that is a name needs no quotes, like `{example}`")
+    } else {
+        format!("a Map key that is not a name goes in brackets: `{example}`")
+    }
+}
+
+/// A Map with the literal key `key`, written as Frost writes it.
+fn entry_example(key: &str) -> String {
+    match quoted_name(key) {
+        Some(name) => format!("{{{name}: ...}}"),
+        None => format!("{{[{key}]: ...}}"),
+    }
+}
+
+/// The name that `key` quotes, when it is a String in plain quotes holding only a
+/// name, as `'a'` does.
+fn quoted_name(key: &str) -> Option<&str> {
+    let quote = key.chars().next().filter(|c| matches!(c, '\'' | '"'))?;
+    let text = key.strip_prefix(quote)?.strip_suffix(quote)?;
+    let mut tokens = tokens(text);
+    match (tokens.next(), tokens.next()) {
+        (Some((Ok(Token::Identifier(name)), _)), None) if name == text => Some(text),
+        _ => None,
+    }
 }

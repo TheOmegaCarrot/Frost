@@ -65,6 +65,22 @@ const REST_HELP: &str = "a rest binding is written `...name`";
 const IN_HELP: &str = "Frost has no `in` operator; use `includes(xs, x)` for an Array, \
                        `has(m, k)` for a Map, or `contains(s, part)` for a String";
 
+const IMMUTABLE_HELP: &str =
+    "Frost values are immutable; bind an updated value to a new name with `def`";
+
+const GUARD_HELP: &str = "a guard is written `if:` before its condition, like `n if: n > 0 => ...`";
+
+const CATCH_ALL_HELP: &str = "a catch-all arm is `_ => ...`";
+
+const SLICE_HELP: &str = "Frost has no slice syntax; use `slice(xs, start, end)`";
+
+const PATTERN_RANGE_HELP: &str =
+    "a pattern cannot be a range; use a guard, like `n if: n >= 1 and n <= 3 => ...`";
+
+const MAP_REST_HELP: &str = "a Map pattern takes no rest binding; it ignores keys it does not name";
+
+const PATTERN_DEFAULTS_HELP: &str = "Frost patterns have no default values";
+
 // -- Binding and statements --
 
 #[test]
@@ -148,6 +164,25 @@ fn assignment() {
     ]);
 }
 
+// A name bound already cannot be bound again with `def`, so the help names no `def`.
+#[test]
+fn reassignment() {
+    let after_its_def = r"
+        def x = 1
+        x = x + 1
+    ";
+    let a_parameter_in_a_body = r"
+        defn f(x) -> {
+            x = x + 1
+        }
+    ";
+    assert_help(&[
+        (after_its_def, IMMUTABLE_HELP),
+        ("fn (x) -> { x = 1 }", IMMUTABLE_HELP),
+        (a_parameter_in_a_body, IMMUTABLE_HELP),
+    ]);
+}
+
 #[test]
 fn a_function_defined_by_assignment() {
     assert_help(&[
@@ -192,7 +227,8 @@ fn equals_inside_brackets() {
         ("{a = 1}", MAP_ENTRY_HELP),
         ("def m = {a = 1}", MAP_ENTRY_HELP),
         ("{a: 1, b = 2}", MAP_ENTRY_HELP),
-        ("def {a = 1} = m", MAP_ENTRY_HELP),
+        // In a `match`, `{a: 1}` matches a value.
+        ("match x { {a = 1} => 2 }", MAP_ENTRY_HELP),
         // The parser reads a Map after `->` when it starts `name:`.
         ("def f = fn x -> { a: 1, b = 2 }", MAP_ENTRY_HELP),
         (
@@ -209,6 +245,19 @@ fn equals_inside_brackets() {
             "Frost parameters have no default values",
         ),
     ]);
+}
+
+// A default value for a name a pattern binds, as JavaScript writes one
+#[test]
+fn pattern_default_values() {
+    assert_help(&[
+        ("def {a = 1} = m", PATTERN_DEFAULTS_HELP),
+        ("def {a: b = 1} = m", PATTERN_DEFAULTS_HELP),
+        ("match x { {a: b = 1} => 2 }", PATTERN_DEFAULTS_HELP),
+        ("def [a = 1] = m", PATTERN_DEFAULTS_HELP),
+    ]);
+    // Left unclosed, the pattern is missing its closer, not holding a default.
+    assert_help_or_none(&[("def [a, b = [1, 2]", None)]);
 }
 
 #[test]
@@ -428,6 +477,43 @@ fn logical_operators() {
         ("a && b", "Frost's \"and\" is `and`"),
         ("a || b", "Frost's \"or\" is `or`"),
         ("!a", "Frost's \"not\" is `not`"),
+        ("if a && b: 1", "Frost's \"and\" is `and`"),
+    ]);
+}
+
+// `||` starting a line continues nothing; with no operand before it at all, it is
+// Rust's lambda without parameters.
+#[test]
+fn double_pipe_without_an_operand_before_it() {
+    const NO_PARAMETERS_HELP: &str = "a lambda without parameters is written `fn -> ...`";
+    let on_the_next_line = r"
+        def x = a
+            || b
+    ";
+    assert_help(&[
+        (
+            on_the_next_line,
+            "Frost's \"or\" is `or`; a line continues only when the next line starts with `.` \
+             or `@`; otherwise, wrap the expression in parentheses",
+        ),
+        ("|| 1", NO_PARAMETERS_HELP),
+        ("f(|| 1)", NO_PARAMETERS_HELP),
+        ("||", NO_PARAMETERS_HELP),
+    ]);
+}
+
+// In a `match` arm's pattern, `&&` before the `=>` starts a guard.
+#[test]
+fn double_ampersand_in_a_pattern() {
+    assert_help(&[
+        ("match x { n is Int && n > 1 => 2 }", GUARD_HELP),
+        ("match v { x && y => 1 }", GUARD_HELP),
+        // In the guard, or outside a `match`, it is a condition's "and".
+        ("match v { x if: x && y => 1 }", "Frost's \"and\" is `and`"),
+        (
+            "def f = fn x -> { x && y => 1 }",
+            "Frost's \"and\" is `and`",
+        ),
     ]);
 }
 
@@ -481,6 +567,8 @@ fn question_and_exclamation_marks() {
         ("f()?", None),
         ("xs[0]!", None),
         ("f(!a)", Some("Frost's \"not\" is `not`")),
+        // A conditional needs a condition before its `?`.
+        ("match x { ? => 1 }", None),
     ]);
 }
 
@@ -717,7 +805,7 @@ fn control_words_from_other_languages() {
         if a: 1
         elsif b: 2
     ";
-    let unless_help = "Frost has no `unless`; write `if not x: ...`";
+    let unless_help = "Frost has no `unless`; write `if not cond: ...`";
     let switch_help = "Frost has no `switch`; use `match x { ... }`";
     assert_help(&[
         ("if a: 1 elsif b: 2", ELIF_HELP),
@@ -726,6 +814,10 @@ fn control_words_from_other_languages() {
         ("x unless a", unless_help),
         ("def y = x unless a", unless_help),
         ("unless x: 1", unless_help),
+        (
+            "match 1 { _ unless: false => 1 }",
+            "a guard is written `if:`; negate it with `not`, like `_ if: not cond => ...`",
+        ),
         ("switch x {}", switch_help),
         ("switch (x) { case 1: 2 }", switch_help),
         (
@@ -803,6 +895,12 @@ fn a_condition_without_its_colon() {
         // A bracket opened before the `if` holds it, so the colon is still the `if`'s.
         ("{a: if x 1}", if_help),
         ("f(if x 1)", if_help),
+        // The `if` in the condition has its colon; the `elif` owes one.
+        (
+            "if x: 1 elif if y: 2",
+            "`elif` takes a colon after its condition: `elif x: ...`",
+        ),
+        ("if a: 1 else: if b 2", if_help),
     ]);
 }
 
@@ -897,6 +995,53 @@ fn guards_from_other_languages() {
     ]);
 }
 
+// An `if` out of place in an arm is a guard: after the result, a second guard, or one
+// with no pattern.
+#[test]
+fn guards_out_of_place() {
+    let help = "an arm takes one guard, between its pattern and `=>`, like `n if: n > 0 => ...`; \
+                combine conditions with `and`";
+    assert_help(&[
+        ("match 1 { _ => 1 if: true }", help),
+        ("match x { 1 => 2 if y }", help),
+        ("match 1 { n if: n > 0 if: true => 1 }", help),
+        ("match 1 { if: true => 1 }", help),
+        // Python's conditional in a result, and an `if` after the `match`
+        ("match x { 1 => b if a else c }", CONDITIONAL_HELP),
+        ("match x { 1 => 2 } if y", CONDITIONAL_HELP),
+    ]);
+}
+
+// A declaration where a pattern starts: a bare name binds there.
+#[test]
+fn declarations_as_patterns() {
+    let help = "a bare name binds in a pattern, like `y => ...`";
+    assert_help(&[
+        ("match x { let y => 1 }", help),
+        ("match 1 { def y = 1 => 2 }", help),
+    ]);
+}
+
+// Parentheses where a pattern starts, or around the arms, hold no lambda.
+#[test]
+fn arrows_in_parentheses_in_a_match() {
+    let unclosed_group = r"
+        match x {
+            (y => 1,
+        }
+    ";
+    assert_help_or_none(&[
+        (unclosed_group, None),
+        (
+            "match x ( _ => 1 )",
+            Some("`match` arms go in braces: `match x { ... }`"),
+        ),
+        ("match v { |x| => 1 }", None),
+        // A `{` after the call shows it is the value to match.
+        ("match f(x => 1) { _ => 1 }", Some(LAMBDA_HELP)),
+    ]);
+}
+
 #[test]
 fn pattern_alternatives_from_other_languages() {
     let help = "pattern alternatives are separated by `|`, like `1 | 2 => ...`";
@@ -928,6 +1073,11 @@ fn type_tests_from_other_languages() {
             "match x { n is not Null => 1 }",
             "to exclude a type, use a guard: `n if: not is_null(n) => ...`",
         ),
+        // `_` binds nothing for the guard to test.
+        (
+            "match 1 { _ is not Int => 1 }",
+            "to exclude a type, use a guard: `n if: not is_int(n) => ...`",
+        ),
         ("match x { n is null => 1 }", "did you mean `Null`?"),
         ("match x { n is None => 1 }", "did you mean `Null`?"),
         ("match x { n is map => 1 }", "did you mean `Map`?"),
@@ -958,10 +1108,45 @@ fn type_tests_outside_a_match() {
             "def ok = n is String",
             "`is` works only in a `match` pattern; elsewhere, use `is_string(n)`",
         ),
+        // The name before `is` is echoed only when it is the whole value tested.
         (
-            "a is b",
+            "if m.k is Int: 1",
+            "`is` works only in a `match` pattern; elsewhere, use `is_int(x)`",
+        ),
+        (
+            "def r = m.k is Int",
+            "`is` works only in a `match` pattern; elsewhere, use `is_int(x)`",
+        ),
+        (
+            "if a + b is Int: 1",
+            "`is` works only in a `match` pattern; elsewhere, use `is_int(x)`",
+        ),
+        // `and`, `or`, and `not` bind loosely, so the name after one is the whole value.
+        (
+            "if x and a is Int: 1",
+            "`is` works only in a `match` pattern; elsewhere, use `is_int(a)`",
+        ),
+        (
+            "if not a is Int: 1",
+            "`is` works only in a `match` pattern; elsewhere, use `is_int(a)`",
+        ),
+        (
+            "if a or b is Int: 1",
+            "`is` works only in a `match` pattern; elsewhere, use `is_int(b)`",
+        ),
+        (
+            "x is Number",
             "`is` works only in a `match` pattern; elsewhere, test a type with a function \
              like `is_int(x)`",
+        ),
+        // Python's identity test
+        (
+            "a is b",
+            "`is` works only in a `match` pattern; to compare values, use `==` or `!=`",
+        ),
+        (
+            "if a is not b: 1",
+            "`is` works only in a `match` pattern; to compare values, use `==` or `!=`",
         ),
     ]);
 }
@@ -978,8 +1163,8 @@ fn match_bodies_get_no_map_or_block_help() {
         ("match x { a.b => 2 }", None),
         ("match x { Some(y) => 2 }", None),
         (multiline, None),
-        // `$` is a placeholder anywhere outside `$( ... )`.
-        ("match v { $ => 1 }", Some(PLACEHOLDER_HELP)),
+        // `$` starting a pattern stands for any value.
+        ("match v { $ => 1 }", Some(CATCH_ALL_HELP)),
     ]);
 }
 
@@ -994,13 +1179,14 @@ fn keywords_starting_other_patterns_get_no_name_help() {
     ]);
 }
 
+// Before an arm's `=>`, `=` is a comparison; after it, the result is an expression.
 #[test]
 fn equals_in_a_match() {
     let help = "Frost's equality is `==`";
     assert_help(&[
         ("match x { n if: n = 1 => 2 }", help),
-        ("match x { 1 => y = 2 }", help),
         ("match x { n = 1 => 2 }", help),
+        ("match x { 1 => y = 2 }", IMMUTABLE_HELP),
     ]);
 }
 
@@ -1049,6 +1235,8 @@ fn as_outside_a_map_pattern() {
             "rename a Map entry with `key: name`, like `{a: b}`",
         ),
     ]);
+    // An entry written `key: name` renames already.
+    assert_help_or_none(&[("def {a: b as c} = x", None)]);
 }
 
 // -- Functions --
@@ -1068,6 +1256,8 @@ fn type_annotations() {
     let help = "Frost parameters have no type annotations";
     assert_help(&[
         ("fn x: Int -> x", help),
+        ("fn x: Int = 1 -> x", help),
+        ("fn x: List[Int] -> x", help),
         ("fn (x: Int) -> x", help),
         ("defn f(x: Int) -> x", help),
         (
@@ -1078,6 +1268,29 @@ fn type_annotations() {
             "defn f(x): Int { x }",
             "Frost has no return types; a function body follows `->`",
         ),
+    ]);
+}
+
+// An arrow after a lambda's body name is a curried lambda missing its inner `fn`.
+#[test]
+fn curried_lambdas_without_their_inner_fn() {
+    let help = "each lambda takes its own `fn`: `fn x -> fn y -> ...`";
+    assert_help(&[
+        ("def f = fn x -> y -> z", help),
+        ("defn add(x) -> y -> x + y", help),
+        ("map xs with fn x -> y -> 1", help),
+        ("f(fn x -> y -> 1)", help),
+    ]);
+}
+
+// A colon after the parameters, with a body rather than a type after it, is Python's
+// lambda.
+#[test]
+fn a_python_lambda_written_with_fn() {
+    assert_help(&[
+        ("fn x: x + 1", LAMBDA_HELP),
+        ("fn x, y: x + y", LAMBDA_HELP),
+        ("def f = fn x: x", LAMBDA_HELP),
     ]);
 }
 
@@ -1167,8 +1380,12 @@ fn rest_bindings_without_names() {
         ("match v { [a, ...] => 1 }", REST_HELP),
         ("match v { [...] => 1 }", REST_HELP),
         ("def [a, ...] = xs", REST_HELP),
-        ("def [..., a] = xs", REST_HELP),
         ("fn (...) -> x", REST_HELP),
+        // Named, the rest would still be out of place.
+        (
+            "def [..., a] = xs",
+            "a rest binding is written `...name`, and comes last",
+        ),
     ]);
 }
 
@@ -1525,14 +1742,27 @@ fn arrows_after_other_things_get_no_lambda_help() {
         def y = [1, 2,
             3 => 4
     ";
+    let an_arm_after_a_match = r"
+        match x {
+            1 => 2
+        }
+        y => 3
+    ";
     assert_help_or_none(&[
         ("1 => 2 => 3", None),
         (in_an_array, None),
         // A Map entry's value is no lambda's parameter list.
         ("def m = {a: x -> 1}", None),
         ("{ x => x + 1 }", Some(MAP_ENTRY_HELP)),
-        // Another language's Map entry, passed as an argument
-        (r#"f("a" => 1)"#, Some(MAP_ENTRY_HELP)),
+        // Ruby's and PHP's named argument
+        (
+            r#"f("a" => 1)"#,
+            Some("Frost has no named arguments; pass arguments in order"),
+        ),
+        // After a complete lambda, or after a `match`'s arms
+        ("fn x -> x => 1", None),
+        ("defn f(x) -> x => y", None),
+        (an_arm_after_a_match, None),
     ]);
 }
 
@@ -1557,16 +1787,29 @@ fn format_strings_from_other_languages() {
 #[test]
 fn string_prefixes_from_other_languages() {
     let bytes_help = "a Bytes literal is written in hex, like `x'00ff'`; for a String's bytes, use `to_bytes(s)`";
+    // Raw Strings take one line.
     let raw_on_lines = r#"
         def x = R"""(
         abc
         )"""
     "#;
+    let raw_on_lines_in_single_quotes = r"
+        def x = r'''(
+        abc
+        )'''
+    ";
     assert_help(&[
         ("r'abc'", "a raw String is written `R'(...)'`"),
         ("R'a'", "a raw String is written `R'(...)'`"),
         ("def x = r\"abc\"", r#"a raw String is written `R"(...)"`"#),
-        (raw_on_lines, r#"a raw String is written `R"(...)"`"#),
+        (
+            raw_on_lines,
+            r#"Frost has no multiline raw String; use a multiline String, `"""..."""`"#,
+        ),
+        (
+            raw_on_lines_in_single_quotes,
+            "Frost has no multiline raw String; use a multiline String, `'''...'''`",
+        ),
         ("b'abc'", bytes_help),
         ("B'68'", bytes_help),
         ("X'00ff'", bytes_help),
@@ -1627,7 +1870,33 @@ fn backslash_line_continuation() {
         def x = 1 + \
             2
     ";
-    assert_help(&[(source, LINE_CONTINUATION_HELP)]);
+    // Trailing spaces and a tab after the `\`
+    let trailing_whitespace = "def x = 1 + \\  \t\n    2";
+    assert_help(&[
+        (source, LINE_CONTINUATION_HELP),
+        (trailing_whitespace, LINE_CONTINUATION_HELP),
+    ]);
+}
+
+// A backslash outside a String is a lambda only before parameters and an arrow; before
+// an escape's letter, it is an escape, often after a quote that ended the String early.
+#[test]
+fn backslashes_outside_strings() {
+    let escape_help = "a backslash escape works only inside a String";
+    assert_help_or_none(&[
+        (r"\x -> x", Some(LAMBDA_HELP)),
+        (r"\(x) -> x", Some(LAMBDA_HELP)),
+        (r"\(a, b) -> a + b", Some(LAMBDA_HELP)),
+        (r"x\n", Some(escape_help)),
+        (r"print(\n)", Some(escape_help)),
+        (r#""C:" + \\ + "x""#, Some(escape_help)),
+        (r#"def a = "a' "t\""#, Some(escape_help)),
+        (r"def a = $'${\n1\n}'", Some(escape_help)),
+        (r"[1, 2\]", None),
+        // At the end of an interpolation or the input, no line follows to continue.
+        (r"def b = $'${a\}'", None),
+        (r"def a = 1 + \", None),
+    ]);
 }
 
 // -- Source the lexer cannot read --
@@ -1755,6 +2024,12 @@ fn unreadable_source() {
             "unexpected character `~`",
             Some("Frost has no bitwise operators"),
         ),
+        // A backtick in backticks would read as noise.
+        (
+            "`ls`",
+            "unexpected backtick",
+            Some("a format String is written `$'...${x}...'`"),
+        ),
         (
             "def caf\u{e9} = 1",
             "unexpected character `\u{e9}` (U+00E9)",
@@ -1875,7 +2150,8 @@ fn comments_from_other_languages() {
 // After an operand, `//` may be floor division or a comment.
 #[test]
 fn double_slash_after_an_operand() {
-    let help = "Frost has no `//` operator; a comment starts with `#`";
+    let help = "Frost has no `//`; `/` on Ints already gives an Int, rounding toward zero; \
+                a comment starts with `#`";
     assert_help(&[
         ("def q = 7 // 2", help),
         ("print(10 // 3)", help),
@@ -1923,21 +2199,73 @@ fn tuple_style_indexing() {
     assert_help_or_none(&[("def a = 1.2.3", None)]);
 }
 
-// `..` and `...` between operands, in expressions or patterns, or before one in an
-// expression, are a range habit.
+// `..` and `...` between operands, or before one in an expression, are a range habit.
 #[test]
 fn range_syntax() {
     assert_help(&[
         ("1..5", RANGE_HELP),
+        ("def r = 1..10", RANGE_HELP),
         ("def r = 1..n", RANGE_HELP),
         ("0..=n", RANGE_HELP),
-        ("xs[2..]", RANGE_HELP),
         ("a..b", RANGE_HELP),
+        ("a .. b", RANGE_HELP),
         ("f(..x)", RANGE_HELP),
-        ("match x { 1..3 => 2 }", RANGE_HELP),
-        ("match x { a..b => 2 }", RANGE_HELP),
+        ("print(1..3)", RANGE_HELP),
         ("def r = 1...5", RANGE_HELP),
-        ("match x { 1 ... 3 => 2 }", RANGE_HELP),
+        // A number after the dots makes a range, however they are spaced.
+        ("1 ...5", RANGE_HELP),
+        ("1... 5", RANGE_HELP),
+        // An arm's result is an expression.
+        ("match x { 1 => 1..3 }", RANGE_HELP),
+    ]);
+}
+
+// In an index, a range is a slice.
+#[test]
+fn ranges_in_an_index() {
+    assert_help(&[
+        ("xs[1..5]", SLICE_HELP),
+        ("xs[2..]", SLICE_HELP),
+        ("xs[..3]", SLICE_HELP),
+        ("xs[a..b]", SLICE_HELP),
+    ]);
+}
+
+// A range where a pattern belongs is tested in a guard.
+#[test]
+fn ranges_as_patterns() {
+    assert_help(&[
+        ("match x { 1..3 => 2 }", PATTERN_RANGE_HELP),
+        ("match x { 1...3 => 2 }", PATTERN_RANGE_HELP),
+        ("match x { 1 ... 3 => 2 }", PATTERN_RANGE_HELP),
+        ("match x { 1 .. 3 => 2 }", PATTERN_RANGE_HELP),
+        ("match x { 1..=3 => 2 }", PATTERN_RANGE_HELP),
+        ("match x { 'a'..'z' => 1 }", PATTERN_RANGE_HELP),
+    ]);
+    // Between names, the dots are no clear range.
+    assert_help_or_none(&[("match x { a..b => 2 }", None)]);
+}
+
+// In an Array pattern, dots after a name are a rest binding's, which takes no guard.
+#[test]
+fn dots_after_a_name_in_an_array_pattern() {
+    let after_comma = "a `...rest` binding follows a comma, as in `a, ...rest`";
+    assert_help(&[
+        ("def [a..b] = xs", after_comma),
+        ("def [first..rest] = xs", after_comma),
+        ("match x { [h..t] => 1 }", after_comma),
+        ("match x { [a..] => 1 }", REST_HELP),
+    ]);
+}
+
+// `..` beside a String is Lua's join.
+#[test]
+fn dots_joining_strings() {
+    let help = "Frost joins Strings with `+`";
+    assert_help(&[
+        ("def s = 'a' .. 'b'", help),
+        ("def s = 'a' .. name", help),
+        ("def s = name .. 'b'", help),
     ]);
 }
 
@@ -1981,6 +2309,18 @@ fn keywords_as_map_keys() {
         (
             "def {with: w} = m",
             "`with` is a keyword; write the key in brackets: `[\"with\"]: ...`",
+        ),
+    ]);
+}
+
+// A shorthand entry names a variable, which a keyword cannot.
+#[test]
+fn keywords_as_shorthand_map_entries() {
+    assert_help(&[
+        ("{map}", "`map` is a keyword, so it cannot be a name"),
+        (
+            "{filter, x}",
+            "`filter` is a keyword, so it cannot be a name",
         ),
     ]);
 }
@@ -2053,13 +2393,22 @@ fn keywords_as_names_in_patterns_and_parameters() {
 }
 
 // A declaration word from another language is followed by a name, so a keyword there
-// is a name too.
+// is a name too; both habits are named.
 #[test]
 fn keywords_as_names_after_declaration_words() {
     assert_help(&[
-        ("var if = 1", "`if` is a keyword, so it cannot be a name"),
-        ("let map = 1", "`map` is a keyword, so it cannot be a name"),
-        ("const fn = 1", "`fn` is a keyword, so it cannot be a name"),
+        (
+            "var if = 1",
+            "Frost has no `var`; bind with `def`, and `if` is a keyword, so it cannot be a name",
+        ),
+        (
+            "let map = 1",
+            "Frost has no `let`; bind with `def`, and `map` is a keyword, so it cannot be a name",
+        ),
+        (
+            "const fn = 1",
+            "Frost has no `const`; bind with `def`, and `fn` is a keyword, so it cannot be a name",
+        ),
         (
             "function filter(x) {}",
             "`filter` is a keyword, so it cannot be a name",
@@ -2093,6 +2442,8 @@ fn braces_meant_as_a_block() {
         ("def x = { y + 1 }", BLOCK_HELP),
         ("def x = { f(y) }", BLOCK_HELP),
         ("{ y + 1 }", BLOCK_HELP),
+        ("{ x.y }", BLOCK_HELP),
+        ("def x = { y + if c: 1 else: 2 }", BLOCK_HELP),
         ("if a: { if b: 1 else: 2 }", BLOCK_HELP),
         (if_on_lines, BLOCK_HELP),
         (def_on_lines, BLOCK_HELP),
@@ -2126,6 +2477,25 @@ fn braces_not_meant_as_a_block() {
     ]);
 }
 
+// An expression before a `:` in braces is a computed key missing its brackets.
+#[test]
+fn computed_keys_without_brackets() {
+    assert_help(&[
+        (
+            "def a = {a.b: 1}",
+            "a computed key goes in brackets, like `{[a.b]: ...}`",
+        ),
+        (
+            "{x + y: 1}",
+            "a computed key goes in brackets, like `{[x + y]: ...}`",
+        ),
+        (
+            "{ f(x): 1 }",
+            "a computed key goes in brackets, like `{[f(x)]: ...}`",
+        ),
+    ]);
+}
+
 #[test]
 fn set_literals() {
     let help = "Frost has no set literal; use an Array, like `[1, 2, 3]`";
@@ -2140,12 +2510,23 @@ fn map_entries_from_other_languages() {
         }
     ";
     assert_help(&[
-        (r#"{"a" => 1}"#, MAP_ENTRY_HELP),
         ("{:a => 1}", MAP_ENTRY_HELP),
         ("def x = {a => 1}", MAP_ENTRY_HELP),
         ("{a: 1, b => 2}", MAP_ENTRY_HELP),
-        (r#"match x { 1 => {"a" => 1} }"#, MAP_ENTRY_HELP),
         (multiline, MAP_ENTRY_HELP),
+        // A literal key is written as it would be before a `:`.
+        (
+            r#"{"a" => 1}"#,
+            "a Map key that is a name needs no quotes, like `{a: ...}`",
+        ),
+        (
+            r#"match x { 1 => {"a" => 1} }"#,
+            "a Map key that is a name needs no quotes, like `{a: ...}`",
+        ),
+        (
+            "{1 => 'x'}",
+            "a Map key that is not a name goes in brackets: `{[1]: ...}`",
+        ),
     ]);
 }
 
@@ -2175,6 +2556,20 @@ fn other_map_habits() {
             "Frost has no spread; combine with `+`, like `xs + ys` or `m + {k: v}`",
         ),
         ("def m = {,}", "an empty Map is written `{}`"),
+        // After `do`, braces are a block's.
+        (
+            r#"def x = do { "a": 1 }"#,
+            "a `do` block holds statements; a Map is written without `do`, like `{a: ...}`",
+        ),
+        (
+            "do { 'k': 1 }",
+            "a `do` block holds statements; a Map is written without `do`, like `{k: ...}`",
+        ),
+        (
+            "do { 'a b': 1 }",
+            "a `do` block holds statements; a Map is written without `do`, like \
+             `{['a b']: ...}`",
+        ),
     ]);
 }
 
@@ -2202,52 +2597,41 @@ fn quoted_map_keys() {
             : 1
         }
     "#;
-    assert_help(&[
-        (
-            r#"{"a": 1}"#,
-            r#"a Map key that is not a name goes in brackets: `{["a"]: ...}`"#,
-        ),
-        (
-            "{1: 2}",
-            "a Map key that is not a name goes in brackets: `{[1]: ...}`",
-        ),
-        (
-            "{b: 1, 'a': 2}",
-            "a Map key that is not a name goes in brackets: `{['a']: ...}`",
-        ),
-        (
-            r#"fn -> { "a": 1 }"#,
-            r#"a Map key that is not a name goes in brackets: `{["a"]: ...}`"#,
-        ),
-        (
-            "match x { {'a': v} => v }",
-            "a Map key that is not a name goes in brackets: `{['a']: ...}`",
-        ),
-        (
-            r#"fn -> { a: 1, "b": 2 }"#,
-            r#"a Map key that is not a name goes in brackets: `{["b"]: ...}`"#,
-        ),
-        (
-            "do { 'k': 1 }",
-            "a Map key that is not a name goes in brackets: `{['k']: ...}`",
-        ),
-        (
-            multiline_block,
-            r#"a Map key that is not a name goes in brackets: `{["k"]: ...}`"#,
-        ),
-        (
-            multiline_map,
-            r#"a Map key that is not a name goes in brackets: `{["a"]: ...}`"#,
-        ),
-        (
-            colon_on_its_own_line,
-            r#"a Map key that is not a name goes in brackets: `{["a"]: ...}`"#,
-        ),
-        (
-            block_colon_on_its_own_line,
-            r#"a Map key that is not a name goes in brackets: `{["a"]: ...}`"#,
-        ),
-    ]);
+    let not_a_name_on_its_own_line = r#"
+        def m = {
+            "a b"
+            : 1
+        }
+    "#;
+    let name_help =
+        |name: &str| format!("a Map key that is a name needs no quotes, like `{{{name}: ...}}`");
+    let bracket_help =
+        |key: &str| format!("a Map key that is not a name goes in brackets: `{{[{key}]: ...}}`");
+    let cases = [
+        // JSON's quoted names
+        (r#"{"a": 1}"#, name_help("a")),
+        (r#"{"name": "x"}"#, name_help("name")),
+        ("{'a': 1}", name_help("a")),
+        ("{b: 1, 'a': 2}", name_help("a")),
+        (r#"fn -> { "a": 1 }"#, name_help("a")),
+        ("match x { {'a': v} => v }", name_help("a")),
+        ("def {'a': v} = m", name_help("a")),
+        (r#"fn -> { a: 1, "b": 2 }"#, name_help("b")),
+        (multiline_block, name_help("k")),
+        (multiline_map, name_help("a")),
+        (colon_on_its_own_line, name_help("a")),
+        (block_colon_on_its_own_line, name_help("a")),
+        // A String that is no name, or is a keyword, keeps its quotes in brackets.
+        ("{'a b': 1}", bracket_help("'a b'")),
+        (r#"{"if": 1}"#, bracket_help(r#""if""#)),
+        ("{'1a': 1}", bracket_help("'1a'")),
+        ("{1: 2}", bracket_help("1")),
+        (r#"fn -> { "a-b": 1 }"#, bracket_help(r#""a-b""#)),
+        (not_a_name_on_its_own_line, bracket_help(r#""a b""#)),
+    ];
+    for (source, help) in cases {
+        assert_help(&[(source, &help)]);
+    }
 }
 
 #[test]
@@ -2262,7 +2646,7 @@ fn literal_map_keys_of_every_kind() {
         ("{true: 1}", "true"),
         ("{a: 1, false: 2}", "false"),
         ("fn -> { -1: 2 }", "-1"),
-        ("def {'a': v} = m", "'a'"),
+        ("def {'a b': v} = m", "'a b'"),
     ] {
         let (message, help) = diagnosis(source);
         assert_eq!(
@@ -2280,7 +2664,7 @@ fn literal_map_keys_of_every_kind() {
 fn braces_inside_an_interpolation() {
     assert_help(&[(
         r#"$'${ {"a": 1} }'"#,
-        r#"a Map key that is not a name goes in brackets: `{["a"]: ...}`"#,
+        "a Map key that is a name needs no quotes, like `{a: ...}`",
     )]);
     // An interpolation holds an expression, not statements.
     assert_help_or_none(&[("$'${x = 1}'", None)]);
@@ -2352,11 +2736,22 @@ fn a_rest_binding_without_its_comma() {
 fn rest_bindings_outside_array_patterns() {
     let help = "only Array patterns take a rest binding: `[a, ...rest]`";
     assert_help(&[
-        ("def {a, ...r} = m", help),
-        ("match v { {a, ...r} => 1 }", help),
         ("match x { ...a => 2 }", help),
         ("match x { 1 | ...a => 2 }", help),
-        ("def {a, ..} = m", help),
+    ]);
+}
+
+// A Map pattern matches a Map with other keys, so it needs no rest in any spelling.
+#[test]
+fn rest_bindings_in_map_patterns() {
+    assert_help(&[
+        ("def {a, ...r} = m", MAP_REST_HELP),
+        ("match v { {a, ...r} => 1 }", MAP_REST_HELP),
+        ("match v { {a: 1, ...} => 1 }", MAP_REST_HELP),
+        ("def {a, ...} = m", MAP_REST_HELP),
+        ("def {a, ..} = m", MAP_REST_HELP),
+        ("match x { {a, ..} => 1 }", MAP_REST_HELP),
+        ("def {a, **r} = m", MAP_REST_HELP),
     ]);
 }
 
@@ -2379,6 +2774,19 @@ fn spread() {
             "f(...args)",
             "Frost has no spread; to pass an Array's elements as arguments, use `call(f, args)`",
         ),
+    ]);
+}
+
+// A `...` with nothing after it to spread is an ellipsis standing for code left out.
+#[test]
+fn ellipses_spreading_nothing() {
+    assert_help_or_none(&[
+        ("x...", None),
+        ("...", None),
+        ("fn -> ...", None),
+        ("def x = ...", None),
+        ("[...]", None),
+        ("f(a, ...)", None),
     ]);
 }
 
@@ -2415,6 +2823,11 @@ fn placeholders() {
             "print $ 1 + 2",
             "Frost has no `$` operator; call a function with parentheses: `f(x)`",
         ),
+        // A name with another language's sigil
+        ("$x = 1", "Frost names have no `$` sigil; write `x`"),
+        ("$a", "Frost names have no `$` sigil; write `a`"),
+        // `_` is no name to read.
+        ("$_", PLACEHOLDER_HELP),
     ]);
 }
 

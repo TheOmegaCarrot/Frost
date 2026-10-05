@@ -108,6 +108,26 @@ fn an_escape_of_another_kind_of_string_says_what_to_write() {
     }
 }
 
+// A space or control character after the `\` is named by its code point, since in
+// backticks it would print as itself.
+#[test]
+fn an_escape_of_an_invisible_character_names_its_code_point() {
+    let cases = [
+        ("def a = $\"\\\t\"", "\\\t", "U+0009", DOUBLE_FORMAT_ESCAPES),
+        ("def a = '\\ '", "\\ ", "U+0020", SINGLE_QUOTED_ESCAPES),
+        (
+            "def a = '\\\u{7}'",
+            "\\\u{7}",
+            "U+0007",
+            SINGLE_QUOTED_ESCAPES,
+        ),
+    ];
+    for (source, escape, code_point, help) in cases {
+        let message = format!(r"invalid escape sequence: `\` followed by {code_point}");
+        assert_error(source, &message, escape, "unrecognized", Some(help));
+    }
+}
+
 #[test]
 fn an_invalid_escape_after_a_valid_one_is_labeled() {
     assert_error(
@@ -318,6 +338,8 @@ fn a_bytes_literal_with_a_non_hex_digit_labels_it() {
             "invalid character `'` in Bytes literal",
             "'",
         ),
+        // A backtick in backticks would read as noise.
+        ("def b = x'0`'", "invalid backtick in Bytes literal", "`"),
     ];
     for (source, message, character) in cases {
         assert_error(
@@ -403,6 +425,63 @@ fn an_unclosed_bytes_literal_labels_its_opener() {
             Some(&format!(
                 "a Bytes literal ends with `{quote}` on the same line"
             )),
+        );
+    }
+}
+
+// -- Unclosed Strings --
+// As for a Bytes literal, the label names the opener left unclosed.
+
+#[test]
+fn an_unclosed_string_labels_its_opener() {
+    let multiline = r#"
+        def x = """
+        abc
+    "#;
+    let backslash_at_line_end = r#"
+        def a = "abc\
+        def"
+    "#;
+    // (source, message, the opener, the help)
+    let cases = [
+        (
+            "print('abc)",
+            "unclosed String",
+            "'",
+            "a String ends with `'` on the same line",
+        ),
+        (
+            backslash_at_line_end,
+            "unclosed String",
+            "\"",
+            "a String ends with `\"` on the same line",
+        ),
+        (
+            "print($'total: ${n)",
+            "unclosed format String",
+            "$'",
+            "a format String ends with `'` on the same line",
+        ),
+        (
+            "def a = R'(abc",
+            "unclosed raw String",
+            "R'",
+            "a raw String ends with `)'` on the same line",
+        ),
+        (
+            multiline,
+            "unclosed multiline String",
+            "\"\"\"",
+            "a multiline String ends with `\"\"\"`",
+        ),
+    ];
+    for (source, message, opener, help) in cases {
+        assert_error(
+            source,
+            message,
+            opener,
+            &format!("this `{opener}` is not closed"),
+            Some(help),
         );
     }
 }

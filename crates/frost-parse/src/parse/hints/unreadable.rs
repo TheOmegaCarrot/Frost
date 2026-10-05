@@ -6,10 +6,11 @@ use crate::ast::SourceSpan;
 use crate::lex::{FormatStringEnd, scan_format_string, skip_interpolation};
 use crate::parse::Diagnostic;
 use crate::parse::hints::{
-    BITWISE_HELP, CONDITIONAL_HELP, FORMAT_STRING_HELP, INEQUALITY_HELP, LAMBDA_HELP,
+    BITWISE_HELP, CONDITIONAL_HELP, FORMAT_STRING_HELP, GUARD_HELP, INEQUALITY_HELP, LAMBDA_HELP,
     LINE_CONTINUATION_HELP, POWER_HELP, float_point_help, raw_string_help,
 };
 use crate::parse::match_expr::TYPE_CONSTRAINTS;
+use crate::parse::strings::ESCAPES;
 
 const FALLBACK_HELP: &str = "for a fallback when a value is null, use `or`: `a or b`";
 
@@ -45,12 +46,29 @@ pub(crate) fn unreadable(src: &str, span: Range<usize>, base_offset: usize) -> D
         return diagnostic;
     }
     let starts_file = span.start + base_offset == 0;
-    let (message, help) = unreadable_on_line(
+    let line_breaks = line_end < src.len();
+    let reading = unreadable_on_line(
         line,
         span.start - line_start..span.end - line_start,
         starts_file,
+        line_breaks,
     );
-    Diagnostic::at(message, shifted(span), "unrecognized").with_help(help)
+    let (span, label) = match reading.unclosed {
+        Some(opener) => (
+            span.start..span.start + opener.len(),
+            format!("this `{opener}` is not closed"),
+        ),
+        None => (span, "unrecognized".to_owned()),
+    };
+    Diagnostic::at(reading.message, shifted(span), label).with_help(reading.help)
+}
+
+/// What an error says of source the lexer could not read.
+struct Reading<'a> {
+    message: String,
+    /// The opener of a literal the source leaves unclosed, as written
+    unclosed: Option<&'a str>,
+    help: Option<String>,
 }
 
 /// For `rest`, the source from a format String's `$` onward, the index of an
@@ -135,13 +153,13 @@ fn invalid_bytes(literal: &str, start: usize) -> Option<Diagnostic> {
             NO_SPACES_HELP.to_owned(),
         ),
         Some((i, c)) if c.is_ascii_whitespace() => (
-            format!("invalid character {} in Bytes literal", describe_char(c)),
+            format!("invalid {} in Bytes literal", describe_char(c)),
             at(i..i + 1),
             "not a hex digit".to_owned(),
             NO_SPACES_HELP.to_owned(),
         ),
         Some((i, c)) => (
-            format!("invalid character {} in Bytes literal", describe_char(c)),
+            format!("invalid {} in Bytes literal", describe_char(c)),
             at(i..i + c.len_utf8()),
             "not a hex digit".to_owned(),
             PAIRS_HELP.to_owned(),
@@ -150,9 +168,15 @@ fn invalid_bytes(literal: &str, start: usize) -> Option<Diagnostic> {
     Some(Diagnostic::at(message, span, label).with_help(Some(help)))
 }
 
-/// The message and any help for source the lexer could not read at `at`, a range of
-/// `line`, the line holding it; `starts_file` when that source starts the whole file.
-fn unreadable_on_line(line: &str, at: Range<usize>, starts_file: bool) -> (String, Option<String>) {
+/// What an error says of source the lexer could not read at `at`, a range of `line`,
+/// the line holding it; `starts_file` when that source starts the whole file, and
+/// `line_breaks` when a line break ends `line`.
+fn unreadable_on_line(
+    line: &str,
+    at: Range<usize>,
+    starts_file: bool,
+    line_breaks: bool,
+) -> Reading<'_> {
     let (before, rest) = line.split_at(at.start);
     let text = &rest[..at.len().min(rest.len())];
     let mut chars = rest.chars();
@@ -175,49 +199,49 @@ fn unreadable_on_line(line: &str, at: Range<usize>, starts_file: bool) -> (Strin
         && whole.bytes().all(|byte| byte.is_ascii_digit())
         && exponent.starts_with(['e', 'E'])
     {
-        return (
-            format!("invalid number `{text}`"),
-            Some(float_point_help(&format!("{whole}.0{exponent}"))),
-        );
+        return Reading {
+            message: format!("invalid number `{text}`"),
+            unclosed: None,
+            help: Some(float_point_help(&format!("{whole}.0{exponent}"))),
+        };
     }
 
-    let unclosed = |what: &str, closer: &str| {
-        (
-            format!("unclosed {what}"),
-            Some(format!("a {what} ends with `{closer}` on the same line")),
-        )
+    let unclosed = |what: &str, opener: usize, help: String| Reading {
+        message: format!("unclosed {what}"),
+        unclosed: Some(&rest[..opener]),
+        help: Some(help),
     };
+    let same_line =
+        |what: &str, closer: &str| format!("a {what} ends with `{closer}` on the same line");
     match (first, second) {
         ('\'' | '"', _) if rest.starts_with("'''") || rest.starts_with(r#"""""#) => {
-            return (
-                "unclosed multiline String".to_owned(),
-                Some(format!("a multiline String ends with `{}`", &rest[..3])),
-            );
+            let help = format!("a multiline String ends with `{}`", &rest[..3]);
+            return unclosed("multiline String", 3, help);
         }
         // `$'''`, read as the empty format String `$''` and then a quote
         ('\'' | '"', _) if before.ends_with(&format!("${first}{first}")) => {
-            return (
-                "unclosed String".to_owned(),
-                Some(format!(
-                    "Frost has no multiline format String; a format String ends with \
-                     `{first}` on the same line"
-                )),
+            let help = format!(
+                "Frost has no multiline format String; a format String ends with `{first}` \
+                 on the same line"
             );
+            return unclosed("String", 1, help);
         }
         // `R'abc`, read as the name `R` and then a String
         ('\'' | '"', _) if touched_word == "R" => {
-            return ("unclosed String".to_owned(), Some(raw_string_help(first)));
+            return unclosed("String", 1, raw_string_help(first));
         }
-        ('\'', _) => return unclosed("String", "'"),
-        ('"', _) => return unclosed("String", "\""),
-        ('$', Some('\'')) => return unclosed("format String", "'"),
-        ('$', Some('"')) => return unclosed("format String", "\""),
-        ('R', Some('\'')) => return unclosed("raw String", ")'"),
-        ('R', Some('"')) => return unclosed("raw String", ")\""),
+        ('\'', _) => return unclosed("String", 1, same_line("String", "'")),
+        ('"', _) => return unclosed("String", 1, same_line("String", "\"")),
+        ('$', Some('\'')) => return unclosed("format String", 2, same_line("format String", "'")),
+        ('$', Some('"')) => return unclosed("format String", 2, same_line("format String", "\"")),
+        ('R', Some('\'')) => return unclosed("raw String", 2, same_line("raw String", ")'")),
+        ('R', Some('"')) => return unclosed("raw String", 2, same_line("raw String", ")\"")),
         _ => {}
     }
 
     let help = match (first, second) {
+        // `n is Int && n > 1 => 2`, a guard written as a condition
+        ('&', Some('&')) if writes_a_guard(before, rest) => Some(GUARD_HELP.to_owned()),
         ('&', Some('&')) => Some("Frost's \"and\" is `and`".to_owned()),
         // `a & b`; a `&` before its operand alone, as in `&x`, is no bitwise operator.
         // In a pattern's type test, as in `n is Int & Float`, no operator would serve.
@@ -234,7 +258,10 @@ fn unreadable_on_line(line: &str, at: Range<usize>, starts_file: bool) -> (Strin
             Some("Frost has no optional chaining; use `x and x.k`".to_owned())
         }
         // `a ? b : c`, or `a?b:c`
-        ('?', _) if colon_at_this_level(rest) || !(touches_word || touches_closer) => {
+        ('?', _)
+            if follows_operand
+                && (colon_at_this_level(rest) || !(touches_word || touches_closer)) =>
+        {
             Some(CONDITIONAL_HELP.to_owned())
         }
         ('?', _)
@@ -249,8 +276,16 @@ fn unreadable_on_line(line: &str, at: Range<usize>, starts_file: bool) -> (Strin
         ('?' | '!', _) if touches_closer => None,
         ('!', _) => Some("Frost's \"not\" is `not`".to_owned()),
         ('`', _) => Some(FORMAT_STRING_HELP.to_owned()),
-        ('\\', None) => Some(LINE_CONTINUATION_HELP.to_owned()),
-        ('\\', _) => Some(LAMBDA_HELP.to_owned()),
+        // `\x -> x` or `\(a, b) -> a`, Haskell's lambda
+        ('\\', _) if writes_a_lambda(&rest[1..]) => Some(LAMBDA_HELP.to_owned()),
+        // `\` ending its line, perhaps before trailing spaces
+        ('\\', _) if line_breaks && rest[1..].trim_matches([' ', '\t']).is_empty() => {
+            Some(LINE_CONTINUATION_HELP.to_owned())
+        }
+        // `x\n`, often after a quote that ended a String early
+        ('\\', Some(c)) if c == 'u' || ESCAPES.iter().any(|&(escape, _)| escape == c) => {
+            Some("a backslash escape works only inside a String".to_owned())
+        }
         ('\u{201c}' | '\u{201d}' | '\u{2018}' | '\u{2019}', _) => {
             Some("Frost Strings use straight quotes, `'` or `\"`".to_owned())
         }
@@ -260,10 +295,11 @@ fn unreadable_on_line(line: &str, at: Range<usize>, starts_file: bool) -> (Strin
         }
         _ => unicode_help(first, starts_file),
     };
-    (
-        format!("unexpected character {}", describe_char(first)),
+    Reading {
+        message: format!("unexpected {}", describe_char(first)),
+        unclosed: None,
         help,
-    )
+    }
 }
 
 /// Help for `c`, a character outside ASCII where Frost reads only ASCII, as pasted text
@@ -304,11 +340,34 @@ fn follows_a_type_test(before: &str) -> bool {
         .is_some_and(|rest| rest.is_empty() || rest.ends_with([' ', '\t']))
 }
 
-/// Whether `text`, following a `λ`, holds a lambda's parameters and then its `.` or
-/// `->`, as in `x. x` or ` x, y -> x`.
+/// Whether `rest`, from a `&&` to the end of its line, and `before`, the text before
+/// it, seem to place the `&&` in a `match` arm's pattern: a `=>` ends the arm after
+/// it; neither a `=>` nor an `if` stands between it and the arm's start, a `{`, a
+/// `,`, or the line's start; and a `{` or `,` there follows a `match` on the line.
+/// The lexer's error comes with no tokens, so this reads only the line's text.
+fn writes_a_guard(before: &str, rest: &str) -> bool {
+    let has_word = |text: &str, word: &str| {
+        text.split(|c: char| !(c.is_ascii_alphanumeric() || c == '_'))
+            .any(|written| written == word)
+    };
+    let (arm_start, in_a_match) = match before.rfind(['{', ',']) {
+        Some(start) => (start + 1, has_word(&before[..start], "match")),
+        // An arm on a line of its own
+        None => (0, true),
+    };
+    let arm_so_far = &before[arm_start..];
+    let arm_rest = rest.split([',', '}']).next().unwrap_or_default();
+    in_a_match
+        && arm_rest.contains("=>")
+        && !arm_so_far.contains("=>")
+        && !has_word(arm_so_far, "if")
+}
+
+/// Whether `text`, following a `λ` or `\`, holds a lambda's parameters, perhaps in
+/// parentheses, and then its `.` or `->`, as in `x. x`, ` x, y -> x`, or `(a, b) -> a`.
 fn writes_a_lambda(text: &str) -> bool {
     let after_parameters = text.trim_start_matches(|c: char| {
-        c.is_ascii_alphanumeric() || matches!(c, '_' | ',' | ' ' | '\t')
+        c.is_ascii_alphanumeric() || matches!(c, '_' | ',' | ' ' | '\t' | '(' | ')')
     });
     after_parameters.len() < text.len()
         && (after_parameters.starts_with('.') || after_parameters.starts_with("->"))
@@ -350,16 +409,22 @@ fn colon_at_this_level(text: &str) -> bool {
     false
 }
 
-/// A character as an error names it: in backticks, with its code point when it is
-/// not plain visible ASCII.
+/// A character as an error names it: a backtick in words, which in backticks would
+/// read as noise, and any other in backticks, with its code point when it is not
+/// plain visible ASCII.
 fn describe_char(c: char) -> String {
     if c == '`' {
-        "`` ` ``".to_owned()
+        "backtick".to_owned()
     } else if c.is_ascii_graphic() {
-        format!("`{c}`")
+        format!("character `{c}`")
     } else if c.is_whitespace() || c.is_control() || c == '\u{feff}' {
-        format!("U+{:04X}", u32::from(c))
+        format!("character {}", code_point(c))
     } else {
-        format!("`{c}` (U+{:04X})", u32::from(c))
+        format!("character `{c}` ({})", code_point(c))
     }
+}
+
+/// The code point of `c`, as in `U+0009`.
+pub(crate) fn code_point(c: char) -> String {
+    format!("U+{:04X}", u32::from(c))
 }

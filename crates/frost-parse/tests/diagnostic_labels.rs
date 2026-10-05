@@ -67,6 +67,45 @@ fn a_multiline_statement_is_labeled_at_its_end() {
     );
 }
 
+// A token touching the statement's last name or literal makes one malformed token with
+// it, not a statement after a complete one, so only the token is labeled.
+#[test]
+fn a_token_touching_the_statement_is_labeled_alone() {
+    // (source, the found token)
+    let cases = [
+        ("def x = 0b101", "b101"),
+        ("def x = 1__0", "__0"),
+        ("def a = 'it''s'", "'s'"),
+        (r#"def x = r"abc""#, r#""abc""#),
+    ];
+    for (source, found) in cases {
+        let (_, labels) = diagnosis(source);
+        assert_eq!(labels, [(found, "unexpected".to_owned())], "{source:?}");
+    }
+}
+
+// After a closer, a touching token starts the next statement, so the complete one is
+// still labeled.
+#[test]
+fn a_token_touching_a_closer_still_labels_the_statement() {
+    // (source, the found token, the statement)
+    let cases = [
+        (r#"print("a")print("b")"#, "print", r#"print("a")"#),
+        ("def x = [1, 2]x", "x", "def x = [1, 2]"),
+    ];
+    for (source, found, statement) in cases {
+        let (_, labels) = diagnosis(source);
+        assert_eq!(
+            labels,
+            [
+                (found, "unexpected".to_owned()),
+                (statement, "this is a complete statement".to_owned()),
+            ],
+            "{source:?}"
+        );
+    }
+}
+
 // -- A list item followed by something other than `,` or the closer --
 // A list that runs across lines gets its opener labeled with the kind of list.
 

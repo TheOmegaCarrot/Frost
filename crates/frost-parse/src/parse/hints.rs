@@ -18,7 +18,7 @@ mod symbols;
 mod unreadable;
 mod words;
 
-pub(crate) use unreadable::unreadable;
+pub(crate) use unreadable::{code_point, unreadable};
 
 use crate::lex::Token;
 use crate::parse::ctx::{Bracket, ParseCtx};
@@ -37,6 +37,11 @@ const ELIF_HELP: &str = "use `elif` for another condition";
 
 const CATCH_ALL_HELP: &str = "a catch-all arm is `_ => ...`";
 
+const GUARD_HELP: &str = "a guard is written `if:` before its condition, like `n if: n > 0 => ...`";
+
+const ARM_GUARD_HELP: &str = "an arm takes one guard, between its pattern and `=>`, like \
+                              `n if: n > 0 => ...`; combine conditions with `and`";
+
 const ANNOTATION_HELP: &str = "Frost parameters have no type annotations";
 
 const RETURN_TYPE_HELP: &str = "Frost has no return types; a function body follows `->`";
@@ -54,6 +59,8 @@ const MAP_ENTRY_HELP: &str = "a Map entry is written `key: value`";
 const BLOCK_HELP: &str = "`{` starts a Map here; for a block of statements, use `do { ... }`";
 
 const SPREAD_HELP: &str = "Frost has no spread; combine with `+`, like `xs + ys` or `m + {k: v}`";
+
+const MAP_REST_HELP: &str = "a Map pattern takes no rest binding; it ignores keys it does not name";
 
 const ALTERNATIVES_HELP: &str = "pattern alternatives are separated by `|`, like `1 | 2 => ...`";
 
@@ -129,10 +136,32 @@ impl Site<'_, '_, '_> {
             token if self.token_at(-1) == Some(&Token::KwIs) => {
                 return self.type_test_help(token);
             }
+            // `_ => 1 if: c` or `if: c => 1`, a guard out of place, but not
+            // `_ => b if a else c`, Python's conditional
+            Token::KwIf
+                if kind == Some(Bracket::MatchArms) && !self.follows_in_item(&Token::KwElse) =>
+            {
+                ARM_GUARD_HELP
+            }
             Token::KwIf => CONDITIONAL_HELP,
             Token::KwElse | Token::KwElif => return self.stray_branch_help(),
-            Token::KwAs if kind == Some(Bracket::MapPattern) => {
+            // `{a as b}`, but not `{a: b as c}`, which renames already
+            Token::KwAs
+                if kind == Some(Bracket::MapPattern)
+                    && self.token_at(-2) != Some(&Token::Colon) =>
+            {
                 "rename a Map entry with `key: name`, like `{a: b}`"
+            }
+            // `def y = 1 => 2` as a pattern, where a bare name binds
+            Token::KwDef | Token::KwDefn
+                if kind == Some(Bracket::MatchArms) && self.at_a_pattern_start() =>
+            {
+                return match self.token_at(1) {
+                    Some(Token::Identifier(name)) if *token == Token::KwDef => {
+                        Some(bare_name_help(name))
+                    }
+                    _ => None,
+                };
             }
             // `def a = 1 def b = 2`
             Token::KwDef | Token::KwDefn | Token::KwExport
@@ -169,6 +198,12 @@ fn define_function_help(name: &str) -> String {
 /// Help for `name :=`, another language's declaration.
 fn walrus_help(name: &str) -> String {
     format!("Frost has no `:=`; bind a name with `def`: `def {name} = ...`")
+}
+
+/// Help for a declaration of `name` where a `match` pattern belongs, as in
+/// `match x { let y => 1 }`.
+fn bare_name_help(name: &str) -> String {
+    format!("a bare name binds in a pattern, like `{name} => ...`")
 }
 
 /// Help for several names bound at once, as `pattern` binds them.

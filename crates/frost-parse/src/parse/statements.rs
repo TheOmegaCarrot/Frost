@@ -69,6 +69,19 @@ impl<'src, 'f> ParseCtx<'src, 'f> {
                     }
                     _ => {
                         let statement = stmts.last().expect("a statement was just parsed").span;
+                        // A token touching the statement's last name or literal, as
+                        // `b101` touches the `0` of `0b101`, makes one malformed token
+                        // with it, not a statement after a complete one. After a
+                        // closer, as in `print("a")print("b")`, it is the next statement.
+                        let last_closes = self.get(self.here() - 1).is_some_and(|last| {
+                            matches!(
+                                last.token,
+                                Token::CloseParen | Token::CloseBracket | Token::CloseBrace
+                            )
+                        });
+                        if statement.end == peek.span.start && !last_closes {
+                            return Err(self.expected("a line break or `;`", peek));
+                        }
                         // A label across several lines renders as a cluttered bracket,
                         // so a multiline statement gets its last token labeled instead.
                         let (span, label) = if self.source_text(statement).contains('\n') {

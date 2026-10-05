@@ -2,6 +2,7 @@ use std::ops::Range;
 
 use crate::ast::{Expr, Literal, SourceSpan, Spanned};
 use crate::lex::Token;
+use crate::parse::hints::code_point;
 use crate::parse::{Diagnostic, ParseResult, ctx::ParseCtx};
 
 #[derive(Clone, Copy)]
@@ -29,7 +30,7 @@ pub(crate) enum EscapingString {
 
 /// Every escape but `\u{...}`: the character after the `\`, and the character the
 /// escape stands for. Which Strings accept each is [`EscapingString::accepts`].
-const ESCAPES: [(char, char); 8] = [
+pub(crate) const ESCAPES: [(char, char); 8] = [
     ('n', '\n'),
     ('r', '\r'),
     ('t', '\t'),
@@ -218,8 +219,17 @@ pub(crate) fn decode_escape(
                 Some(instead) => format!("{}; {instead}", kind.escapes_help()),
                 None => kind.escapes_help(),
             };
+            // A space or control character in backticks would print as itself.
+            let message = if c.is_whitespace() || c.is_control() {
+                format!(
+                    r"invalid escape sequence: `\` followed by {}",
+                    code_point(c)
+                )
+            } else {
+                format!(r"invalid escape sequence `\{c}`")
+            };
             Err(Diagnostic::at(
-                format!(r"invalid escape sequence `\{c}`"),
+                message,
                 in_source(text_start, at..after_backslash + c.len_utf8()),
                 if known { "this escape" } else { "unrecognized" },
             )

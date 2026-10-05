@@ -122,11 +122,30 @@ impl<'src> Site<'_, 'src, '_> {
         self.token_at(offset - 1).is_some_and(ends_an_expression)
     }
 
+    /// The index of the token that starts the statement holding the token at `index`.
+    pub(super) fn statement_start(&self, index: usize) -> usize {
+        (0..=index)
+            .rev()
+            .find(|&start| self.starts_statement(start))
+            .unwrap_or(0)
+    }
+
+    /// Whether `name` is written as a name before the token at `index`, as `x` is
+    /// before `x = x + 1` in `def x = 1`.
+    pub(super) fn named_before(&self, index: usize, name: &str) -> bool {
+        (0..index).any(|before| {
+            matches!(
+                self.ctx.get(before).map(|t| &t.token),
+                Some(Token::Identifier(written)) if *written == name
+            )
+        })
+    }
+
     /// The nearest token before the error and on its line that `wanted` accepts, with
-    /// its index. A `;` ends the search as a line break does.
+    /// its index, offered nearest first. A `;` ends the search as a line break does.
     pub(super) fn nearest_on_line(
         &self,
-        wanted: impl Fn(&Token) -> bool,
+        mut wanted: impl FnMut(&Token) -> bool,
     ) -> Option<(usize, &Token<'_>)> {
         // When the error starts a line, or is the end of input, the line meant is the
         // last one before it with a token on it.
@@ -230,6 +249,45 @@ impl<'src> Site<'_, 'src, '_> {
         false
     }
 
+    /// Whether `wanted` follows the error at its depth before the next comma or the
+    /// closer of the bracket around it, as the next arm's `=>` does after the `;` in
+    /// `1 => 2; 3 => 4`.
+    pub(super) fn follows_in_item(&self, wanted: &Token) -> bool {
+        let mut depth = 0usize;
+        for index in self.found + 1.. {
+            match self.ctx.get(index).map(|t| &t.token) {
+                Some(token) if depth == 0 && token == wanted => return true,
+                Some(token) if is_opener(token) => depth += 1,
+                Some(token) if is_closer(token) => match depth.checked_sub(1) {
+                    Some(outer) => depth = outer,
+                    None => return false,
+                },
+                Some(Token::Comma) if depth == 0 => return false,
+                None => return false,
+                _ => {}
+            }
+        }
+        false
+    }
+
+    /// Whether the brace opened at `open`, now closed, held a `match`'s arms: a `match`
+    /// stands before it in its statement, outside other brackets.
+    pub(super) fn opened_match_arms(&self, open: usize) -> bool {
+        let mut depth = 0usize;
+        for index in (self.statement_start(open)..open).rev() {
+            match self.ctx.get(index).map(|t| &t.token) {
+                Some(Token::KwMatch) if depth == 0 => return true,
+                Some(token) if is_closer(token) => depth += 1,
+                Some(token) if is_opener(token) => match depth.checked_sub(1) {
+                    Some(outer) => depth = outer,
+                    None => return false,
+                },
+                _ => {}
+            }
+        }
+        false
+    }
+
     /// The commas directly inside the bracket opened at `open`, not inside a bracket
     /// within it, when the bracket closes.
     pub(super) fn commas_inside(&self, open: usize) -> Option<usize> {
@@ -312,10 +370,40 @@ impl<'src> Site<'_, 'src, '_> {
 
     /// Whether the error starts a `match` arm's pattern, or one of its alternatives.
     pub(super) fn at_a_pattern_start(&self) -> bool {
+        self.pattern_starts_at(self.found)
+    }
+
+    /// Whether the token at `index` starts a `match` arm's pattern, or one of its
+    /// alternatives.
+    pub(super) fn pattern_starts_at(&self, index: usize) -> bool {
         matches!(
-            self.token_before(self.found),
+            self.token_before(index),
             Some(Token::OpenBrace | Token::Comma | Token::Pipe)
         )
+    }
+
+    /// The part of a `match` arm the error is in, when the innermost bracket holds
+    /// `match` arms.
+    pub(super) fn arm_part(&self) -> Option<ArmPart> {
+        let open = self
+            .ctx
+            .innermost_bracket()
+            .filter(|open| open.kind == Bracket::MatchArms)?;
+        // The brackets between the arms' `{` and the error are closed.
+        let mut depth = 0usize;
+        let mut part = ArmPart::Pattern;
+        for index in (open.pos + 1..self.found).rev() {
+            match &self.ctx.get(index)?.token {
+                token if is_closer(token) => depth += 1,
+                token if is_opener(token) => depth = depth.saturating_sub(1),
+                _ if depth > 0 => {}
+                Token::Comma => break,
+                Token::FatArrow => return Some(ArmPart::Result),
+                Token::KwIf => part = ArmPart::Guard,
+                _ => {}
+            }
+        }
+        Some(part)
     }
 
     /// Whether the innermost bracket holds patterns: a `match`'s arms, or an Array or
@@ -419,14 +507,27 @@ impl<'src> Site<'_, 'src, '_> {
     }
 }
 
-fn is_opener(token: &Token) -> bool {
+/// A part of a `match` arm.
+#[derive(Clone, Copy, PartialEq, Eq)]
+pub(super) enum ArmPart {
+    /// The pattern, before any guard
+    Pattern,
+    /// The guard, from its `if` to the `=>`
+    Guard,
+    /// The result, after the `=>`
+    Result,
+}
+
+/// Whether `token` opens a bracket.
+pub(super) fn is_opener(token: &Token) -> bool {
     matches!(
         token,
         Token::OpenParen | Token::DollarParen | Token::OpenBracket | Token::OpenBrace
     )
 }
 
-fn is_closer(token: &Token) -> bool {
+/// Whether `token` closes a bracket.
+pub(super) fn is_closer(token: &Token) -> bool {
     matches!(
         token,
         Token::CloseParen | Token::CloseBracket | Token::CloseBrace

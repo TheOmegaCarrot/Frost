@@ -2,13 +2,15 @@
 
 use crate::lex::Token;
 use crate::parse::ctx::{Bracket, OpenBracket};
-use crate::parse::hints::site::{ends_an_expression, is_binary_operator, starts_an_expression};
+use crate::parse::hints::site::{
+    ArmPart, ends_an_expression, is_binary_operator, is_literal, starts_an_expression,
+};
 use crate::parse::hints::{
-    ALTERNATIVES_HELP, ANNOTATION_HELP, BITWISE_HELP, BLOCK_HELP, CALL_HELP, DEFAULTS_HELP,
-    EQUALITY_HELP, FORMAT_STRING_HELP, INEQUALITY_HELP, LAMBDA_HELP, LINE_CONTINUATION_HELP,
-    MAP_ENTRY_HELP, NAMED_ARGUMENTS_HELP, POWER_HELP, REST_HELP, SLICE_HELP, SPREAD_HELP, Site,
-    define_function_help, destructure_help, float_point_help, is_iterative_keyword,
-    raw_string_help, rebind_help, walrus_help,
+    ALTERNATIVES_HELP, ANNOTATION_HELP, BITWISE_HELP, BLOCK_HELP, CALL_HELP, CATCH_ALL_HELP,
+    DEFAULTS_HELP, EQUALITY_HELP, FORMAT_STRING_HELP, INEQUALITY_HELP, LAMBDA_HELP,
+    LINE_CONTINUATION_HELP, MAP_ENTRY_HELP, MAP_REST_HELP, NAMED_ARGUMENTS_HELP, POWER_HELP,
+    REST_HELP, SLICE_HELP, SPREAD_HELP, Site, define_function_help, destructure_help,
+    float_point_help, is_iterative_keyword, raw_string_help, rebind_help, walrus_help,
 };
 
 const PATH_HELP: &str = "Frost has no `::`; reach a module's entries with `.`, like `math.sqrt(x)`";
@@ -20,6 +22,11 @@ const RANGE_HELP: &str =
 
 const COMMENT_HELP: &str = "a comment starts with `#`";
 
+const OR_HELP: &str = "Frost's \"or\" is `or`";
+
+const IMMUTABLE_HELP: &str =
+    "Frost values are immutable; bind an updated value to a new name with `def`";
+
 const ARRAY_REST_HELP: &str = "only Array patterns take a rest binding: `[a, ...rest]`";
 
 const REST_AFTER_COMMA_HELP: &str = "a `...rest` binding follows a comma, as in `a, ...rest`";
@@ -29,16 +36,23 @@ const CALL_SPREAD_HELP: &str =
 
 impl Site<'_, '_, '_> {
     /// Help for `..` or `...` written as a range, as in `1..n`, `xs[2..]`, or `1...5`,
-    /// or for `..` written for a rest binding, as in `[a, ..rest]`.
+    /// or as Lua joins Strings, as in `'a' .. b`, or for `..` written for a rest
+    /// binding, as in `[a, ..rest]`.
     pub(super) fn dots_help(&self) -> Option<String> {
-        let is_range = match self.token_at(0)? {
+        // The offsets of the operands before and after the dots
+        let (before, after) = match self.token_at(0)? {
             // `a..b`, `0..=n`, or `xs[2..]`, failing at the second `.`
             Token::OpDot if self.abutting_previous() == Some(&Token::OpDot) => {
-                self.follows_an_operand(-1)
+                if !self.follows_an_operand(-1) {
+                    return None;
+                }
+                (-2, 1)
             }
             // `1..5`, whose second `.` starts the Float `.5`
-            Token::FloatLiteral(_) => {
-                self.abutting_previous() == Some(&Token::OpDot) && self.is_point_float(0)
+            Token::FloatLiteral(_)
+                if self.abutting_previous() == Some(&Token::OpDot) && self.is_point_float(0) =>
+            {
+                (-2, 0)
             }
             // `..`, failing at the first `.`: after an operand in a pattern, as in
             // `1..3 => 2`, or with no operand before it
@@ -52,28 +66,57 @@ impl Site<'_, '_, '_> {
                         return None;
                     }
                     let in_map = self.innermost_kind() == Some(Bracket::MapPattern);
-                    return Some(if in_map { ARRAY_REST_HELP } else { REST_HELP }.to_owned());
+                    return Some(if in_map { MAP_REST_HELP } else { REST_HELP }.to_owned());
                 }
-                true
+                (-1, if self.is_point_float(1) { 1 } else { 2 })
             }
-            // `1...5` or `1 ... 3`. A `...` touching only what follows it, as in
-            // `[a ...rest]`, is a spread or rest missing its comma.
-            Token::DotDotDot => {
-                self.follows_an_operand(0)
-                    && self.abutting_previous().is_some() == self.abutting_next().is_some()
-                    && matches!(
-                        self.token_at(1),
-                        Some(
-                            Token::Identifier(_)
-                                | Token::IntLiteral(_)
-                                | Token::FloatLiteral(_)
-                                | Token::OpenParen
-                        )
-                    )
+            // `1...5`, `1 ...5`, or `a ... b`. A `...` touching only a name after it,
+            // as in `[a ...rest]`, is a spread or rest missing its comma.
+            Token::DotDotDot
+                if self.follows_an_operand(0)
+                    && match self.token_at(1) {
+                        Some(Token::IntLiteral(_) | Token::FloatLiteral(_)) => true,
+                        Some(Token::Identifier(_) | Token::OpenParen) => {
+                            self.abutting_previous().is_some() == self.abutting_next().is_some()
+                        }
+                        _ => false,
+                    } =>
+            {
+                (-1, 1)
             }
-            _ => false,
+            _ => return None,
         };
-        is_range.then(|| RANGE_HELP.to_owned())
+        let operand_before = self.token_at(before);
+        // `[first..rest]` or `[h..]`, a rest binding written with dots between
+        if self.innermost_kind() == Some(Bracket::ArrayPattern) {
+            if !matches!(operand_before, Some(Token::Identifier(_))) {
+                return None;
+            }
+            let help = match self.token_at(after) {
+                Some(Token::Identifier(_)) => REST_AFTER_COMMA_HELP,
+                _ => REST_HELP,
+            };
+            return Some(help.to_owned());
+        }
+        // `1..3 => 2`. With a name, as in `a..b => 2`, the pattern is no clear range.
+        let in_arm_pattern = self.arm_part() == Some(ArmPart::Pattern);
+        if in_arm_pattern || self.innermost_kind() == Some(Bracket::MapPattern) {
+            return (in_arm_pattern && operand_before.is_some_and(is_literal)).then(|| {
+                "a pattern cannot be a range; use a guard, like `n if: n >= 1 and n <= 3 => ...`"
+                    .to_owned()
+            });
+        }
+        let joins_strings = [before, after]
+            .into_iter()
+            .any(|offset| self.token_at(offset).is_some_and(is_string));
+        let help = if joins_strings {
+            "Frost joins Strings with `+`"
+        } else if self.innermost_kind() == Some(Bracket::Index) {
+            SLICE_HELP
+        } else {
+            RANGE_HELP
+        };
+        Some(help.to_owned())
     }
 
     /// Help for `1.`, an Int with a point but no digits after it, which may end the input.
@@ -108,7 +151,8 @@ impl Site<'_, '_, '_> {
         let help = match (self.abutting_previous(), found) {
             // `7 // 2`, failing at the second `/`
             (Some(Token::OpDiv), Token::OpDiv) if self.follows_an_operand(-1) => {
-                "Frost has no `//` operator; a comment starts with `#`"
+                "Frost has no `//`; `/` on Ints already gives an Int, rounding toward zero; \
+                 a comment starts with `#`"
             }
             (Some(Token::OpDiv), Token::OpDiv | Token::OpTimes) => COMMENT_HELP,
             // `// note`, failing at the first `/`: no operand came before it.
@@ -232,7 +276,10 @@ impl Site<'_, '_, '_> {
             return None;
         }
         if self.at_statement_level(open) {
-            if let Some(name) = self.statement_word() {
+            // `x = 1`, but not where `x` may be bound already, as after `def x = 1`
+            if let Some(name) = self.statement_word()
+                && !self.named_before(self.found - 1, name)
+            {
                 return Some(format!(
                     "Frost has no assignment; bind a new name with `def`: `def {name} = ...`"
                 ));
@@ -245,10 +292,7 @@ impl Site<'_, '_, '_> {
             if let Some(pattern) = self.pattern_starting_statement() {
                 return Some(destructure_help(pattern));
             }
-            return Some(
-                "Frost values are immutable; bind an updated value to a new name with `def`"
-                    .to_owned(),
-            );
+            return Some(IMMUTABLE_HELP.to_owned());
         }
         let open = open?;
         let help = match open.kind {
@@ -259,7 +303,20 @@ impl Site<'_, '_, '_> {
             {
                 BLOCK_HELP
             }
-            Bracket::MapLiteral | Bracket::MapPattern => MAP_ENTRY_HELP,
+            Bracket::MapLiteral => MAP_ENTRY_HELP,
+            // `{a = 1} => ...`, where `{a: 1}` matches a value
+            Bracket::MapPattern
+                if self.ctx.outer_bracket().map(|outer| outer.kind) == Some(Bracket::MatchArms)
+                    && matches!(self.token_at(-2), Some(Token::OpenBrace | Token::Comma)) =>
+            {
+                MAP_ENTRY_HELP
+            }
+            // `def {a = 1} = m` or `def [a = 1] = xs`, but not `def [a, b = [1, 2]`,
+            // where the pattern's closer is what is missing
+            Bracket::MapPattern | Bracket::ArrayPattern if self.closes_in_kind(open.pos) => {
+                "Frost patterns have no default values"
+            }
+            Bracket::MatchArms if self.arm_part() == Some(ArmPart::Result) => IMMUTABLE_HELP,
             Bracket::MatchArms => EQUALITY_HELP,
             Bracket::Call => NAMED_ARGUMENTS_HELP,
             Bracket::Parameters => DEFAULTS_HELP,
@@ -276,6 +333,18 @@ impl Site<'_, '_, '_> {
         // `fn x, -> x`
         if previous == Some(&Token::Comma) && self.in_bare_parameters() {
             return Some("parameters without parentheses take no trailing comma".to_owned());
+        }
+        // `match x ( _ => 1 )`, read as a call of `x`; with a `{` after the call,
+        // the call is the value to match.
+        if let Some(open) = open
+            && open.kind == Bracket::Call
+            && self.token_before(open.pos.checked_sub(1)?) == Some(&Token::KwMatch)
+            && self
+                .matching_close(open.pos)
+                .and_then(|close| self.ctx.get(close + 1))
+                .is_none_or(|t| t.token != Token::OpenBrace)
+        {
+            return Some("`match` arms go in braces: `match x { ... }`".to_owned());
         }
         let help = match (arrow, previous) {
             // `{a => 1}`, unless the entry may be the next arm after an unclosed Map
@@ -298,20 +367,29 @@ impl Site<'_, '_, '_> {
             {
                 LAMBDA_HELP
             }
-            // `f("a" => 1)`, a Map entry written as another language writes one
+            // `f("a" => 1)`, a named argument as Ruby and PHP write one
             (
                 Token::FatArrow,
                 Some(Token::SingleQuoteStringLiteral(_) | Token::DoubleQuoteStringLiteral(_)),
-            ) if kind == Some(Bracket::Call) => MAP_ENTRY_HELP,
+            ) if kind == Some(Bracket::Call) => NAMED_ARGUMENTS_HELP,
+            // `fn x -> y -> x + y`, a curried lambda missing its inner `fn`
+            (Token::SlimArrow, Some(Token::Identifier(_) | Token::CloseParen))
+                if self.operand_follows_an_arrow() =>
+            {
+                "each lambda takes its own `fn`: `fn x -> fn y -> ...`"
+            }
             // `x => x + 1` or `(x) => x + 1`, where the name or parentheses could be
             // parameters. In a pattern or a Map, the arrow is not a lambda's.
             (_, Some(Token::Identifier(_) | Token::CloseParen))
-                if matches!(
-                    kind,
-                    None | Some(
-                        Bracket::Block | Bracket::Call | Bracket::Group | Bracket::ArrayLiteral
-                    )
-                ) =>
+                if match open {
+                    None => self.may_start_a_lambda(arrow),
+                    Some(open) => match open.kind {
+                        Bracket::Block => self.may_start_a_lambda(arrow),
+                        Bracket::Group => !self.opens_a_pattern(open),
+                        Bracket::Call | Bracket::ArrayLiteral => true,
+                        _ => false,
+                    },
+                } =>
             {
                 LAMBDA_HELP
             }
@@ -320,14 +398,50 @@ impl Site<'_, '_, '_> {
         Some(help.to_owned())
     }
 
+    /// Whether the operand just before the error, a name or parentheses, follows `->`,
+    /// as `y` does in `fn x -> y -> 1`.
+    fn operand_follows_an_arrow(&self) -> bool {
+        let Some(last) = self.found.checked_sub(1) else {
+            return false;
+        };
+        let start = match self.ctx.get(last).map(|t| &t.token) {
+            Some(Token::CloseParen) => self.matching_open(last),
+            _ => Some(last),
+        };
+        start.is_some_and(|start| self.token_before(start) == Some(&Token::SlimArrow))
+    }
+
+    /// Whether `arrow`, found in a statement, may make a lambda of what is before it:
+    /// for a `=>`, no lambda's `fn` or `defn` is there already, as in `fn x -> x => 1`;
+    /// and it is no name after `match` arms, as `y` is in `match x { 1 => 2 }` then
+    /// `y => 3`.
+    fn may_start_a_lambda(&self, arrow: &Token) -> bool {
+        let start = self.statement_start(self.found);
+        let in_a_lambda = *arrow == Token::FatArrow
+            && (start..self.found).any(|index| {
+                matches!(
+                    self.ctx.get(index).map(|t| &t.token),
+                    Some(Token::KwFn | Token::KwDefn)
+                )
+            });
+        let arm_after_match = start + 1 == self.found
+            && self
+                .index_before(start)
+                .filter(|&close| self.ctx.get(close).map(|t| &t.token) == Some(&Token::CloseBrace))
+                .and_then(|close| self.matching_open(close))
+                .is_some_and(|open| self.opened_match_arms(open));
+        !in_a_lambda && !arm_after_match
+    }
+
     /// Help for `|` where Frost takes none: `||`, `|>`, `|x| ...`, or a bitwise or.
     pub(super) fn pipe_help(&self) -> Option<String> {
         let help = match self.abutting_next() {
-            Some(Token::Pipe) => "Frost's \"or\" is `or`",
+            Some(Token::Pipe) => return self.double_pipe_help(),
             Some(Token::OpGt) => THREAD_HELP,
-            // `|x| ...` or `|x, y| ...`
+            // `|x| ...` or `|x, y| ...`, but not in a pattern, which no lambda is
             Some(Token::Identifier(_))
-                if matches!(self.token_at(2), Some(Token::Pipe | Token::Comma)) =>
+                if matches!(self.token_at(2), Some(Token::Pipe | Token::Comma))
+                    && !self.binds_names() =>
             {
                 LAMBDA_HELP
             }
@@ -355,6 +469,25 @@ impl Site<'_, '_, '_> {
             _ => return None,
         };
         Some(help.to_owned())
+    }
+
+    /// Help for `||`: another language's "or", or Rust's lambda without parameters.
+    fn double_pipe_help(&self) -> Option<String> {
+        // `a || b`
+        if self.follows_an_operand(0) {
+            return Some(OR_HELP.to_owned());
+        }
+        // `def x = a`, then `|| b` on the next line
+        if self.token_at(-1) == Some(&Token::Newline)
+            && self
+                .token_before(self.found)
+                .is_some_and(ends_an_expression)
+        {
+            return Some(format!("{OR_HELP}; {LINE_CONTINUATION_HELP}"));
+        }
+        // `|| 1`, with no operand before it
+        (!self.binds_names())
+            .then(|| "a lambda without parameters is written `fn -> ...`".to_owned())
     }
 
     /// Whether the innermost bracket holds an expression where `|` could be a bitwise
@@ -433,6 +566,18 @@ impl Site<'_, '_, '_> {
         if self.ctx.in_abbreviated_lambda() || self.ctx.is_inside(Bracket::AbbreviatedLambda) {
             return None;
         }
+        if name == "$" {
+            // `$x = 1`, a name with another language's sigil; `_` is no name to read
+            if let Some(Token::Identifier(word)) = self.abutting_next()
+                && *word != "_"
+            {
+                return Some(format!("Frost names have no `$` sigil; write `{word}`"));
+            }
+            // `match v { $ => 1 }`
+            if self.innermost_kind() == Some(Bracket::MatchArms) && self.at_a_pattern_start() {
+                return Some(CATCH_ALL_HELP.to_owned());
+            }
+        }
         // `print $ x`, a `$` between a function and its argument
         if name == "$"
             && self.follows_an_operand(0)
@@ -454,10 +599,12 @@ impl Site<'_, '_, '_> {
             None if self.follows_an_operand(0) && self.token_at(-2) == Some(&Token::KwFn) => {
                 REST_AFTER_COMMA_HELP
             }
-            Some(Bracket::Call) => CALL_SPREAD_HELP,
-            Some(Bracket::MapPattern) => ARRAY_REST_HELP,
+            Some(Bracket::MapPattern) => MAP_REST_HELP,
             // `match x { ...a => 1 }`
             Some(Bracket::MatchArms) if self.at_a_pattern_start() => ARRAY_REST_HELP,
+            // `f(a, ...)` or `def x = ...`, a placeholder spreading nothing
+            _ if !self.token_at(1).is_some_and(starts_an_expression) => return None,
+            Some(Bracket::Call) => CALL_SPREAD_HELP,
             _ => SPREAD_HELP,
         };
         Some(help.to_owned())
@@ -475,6 +622,14 @@ impl Site<'_, '_, '_> {
                 .next()?;
             return match *prefix {
                 "f" | "F" => Some(FORMAT_STRING_HELP.to_owned()),
+                // `R"""(...)"""`
+                "r" | "R" if matches!(found.token, Token::MultilineStringLiteral(_)) => {
+                    let quotes = quote.to_string().repeat(3);
+                    Some(format!(
+                        "Frost has no multiline raw String; use a multiline String, \
+                         `{quotes}...{quotes}`"
+                    ))
+                }
                 "r" | "R" => Some(raw_string_help(quote)),
                 "b" | "B" | "X" => Some(
                     "a Bytes literal is written in hex, like `x'00ff'`; for a String's bytes, \
@@ -554,4 +709,17 @@ impl Site<'_, '_, '_> {
             "Frost has no operator sections; use an abbreviated lambda, like `$($ + 1)`".to_owned()
         })
     }
+}
+
+/// Whether `token` is a String literal of any kind.
+fn is_string(token: &Token) -> bool {
+    matches!(
+        token,
+        Token::SingleQuoteStringLiteral(_)
+            | Token::DoubleQuoteStringLiteral(_)
+            | Token::RawStringLiteral(_)
+            | Token::MultilineStringLiteral(_)
+            | Token::SingleQuoteFormatStringLiteral(_)
+            | Token::DoubleQuoteFormatStringLiteral(_)
+    )
 }

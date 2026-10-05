@@ -2,15 +2,13 @@
 
 use crate::lex::Token;
 use crate::parse::ctx::Bracket;
-use crate::parse::hints::site::starts_an_expression;
-use crate::parse::hints::words::type_named;
+use crate::parse::hints::site::{is_closer, is_opener, starts_an_expression};
+use crate::parse::hints::words::{is_type_like, type_named};
 use crate::parse::hints::{
-    ALTERNATIVES_HELP, ANNOTATION_HELP, DEFAULTS_HELP, ELIF_HELP, EQUALITY_HELP, MAP_ENTRY_HELP,
-    RETURN_TYPE_HELP, SLICE_HELP, Site, destructure_help, is_iterative_keyword, iterative_help,
-    walrus_help,
+    ALTERNATIVES_HELP, ANNOTATION_HELP, DEFAULTS_HELP, ELIF_HELP, EQUALITY_HELP, GUARD_HELP,
+    LAMBDA_HELP, MAP_ENTRY_HELP, RETURN_TYPE_HELP, SLICE_HELP, Site, destructure_help,
+    is_iterative_keyword, iterative_help, walrus_help,
 };
-
-const GUARD_HELP: &str = "a guard is written `if:` before its condition, like `n if: n > 0 => ...`";
 
 const ARM_HELP: &str = "a `match` arm is written `pattern => result`";
 
@@ -73,7 +71,30 @@ impl Site<'_, '_, '_> {
                 }
                 // `fn x = 1 -> x`
                 Token::Assign => DEFAULTS_HELP,
-                Token::Colon => ANNOTATION_HELP,
+                // `fn x: Int -> x`, `fn x: Int = 1 -> x`, or `fn x: List[Int] -> x`, but
+                // not `fn x: x + 1`, Python's lambda
+                Token::Colon
+                    if let Some(Token::Identifier(name)) = self.token_at(1)
+                        && is_type_like(name)
+                        && match self.token_at(2) {
+                            None
+                            | Some(
+                                Token::SlimArrow
+                                | Token::Comma
+                                | Token::CloseParen
+                                | Token::Assign
+                                | Token::Newline
+                                | Token::Semicolon,
+                            ) => true,
+                            Some(Token::OpenBracket) => {
+                                name.starts_with(|c: char| c.is_ascii_uppercase())
+                            }
+                            _ => false,
+                        } =>
+                {
+                    ANNOTATION_HELP
+                }
+                Token::Colon => LAMBDA_HELP,
                 // `fn x y -> x`
                 Token::Identifier(_)
                     if matches!(previous, Some(Token::Identifier(_)))
@@ -148,7 +169,7 @@ impl Site<'_, '_, '_> {
         // still open.
         let open = self.ctx.innermost_bracket();
         let keyword = self
-            .nearest_on_line(|t| matches!(t, Token::KwIf | Token::KwElif))
+            .keyword_owing_colon()
             .filter(|&(index, _)| open.is_none_or(|open| open.pos < index));
         let help = match (keyword, open.map(|open| open.kind)) {
             // `if x = 1: 2`, where the colon is there
@@ -170,6 +191,34 @@ impl Site<'_, '_, '_> {
             (None, _) => return None,
         };
         Some(help.to_owned())
+    }
+
+    /// The nearest `if` or `elif` before the error on its line whose condition's colon
+    /// is not there, with its index. Read backward, each colon outside brackets is
+    /// taken by the nearest `if`, `elif`, or `else` before it, as `y`'s is in
+    /// `elif if y: 2`, where the `elif` owes the colon.
+    fn keyword_owing_colon(&self) -> Option<(usize, &Token<'_>)> {
+        let mut colons = 0usize;
+        let mut depth = 0usize;
+        self.nearest_on_line(|token| {
+            match token {
+                token if is_closer(token) => depth += 1,
+                // An opener with nothing to close holds the error: the search ends there.
+                token if is_opener(token) => match depth.checked_sub(1) {
+                    Some(outer) => depth = outer,
+                    None => return true,
+                },
+                _ if depth > 0 => {}
+                Token::Colon => colons += 1,
+                Token::KwIf | Token::KwElif | Token::KwElse => match colons.checked_sub(1) {
+                    Some(fewer) => colons = fewer,
+                    None => return *token != Token::KwElse,
+                },
+                _ => {}
+            }
+            false
+        })
+        .filter(|(_, token)| matches!(token, Token::KwIf | Token::KwElif))
     }
 
     /// Help for `n: Int` in a pattern, a type written as another language writes one.

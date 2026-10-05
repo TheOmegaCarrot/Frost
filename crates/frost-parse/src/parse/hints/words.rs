@@ -3,11 +3,12 @@
 use crate::lex::Token;
 use crate::parse::ctx::Bracket;
 use crate::parse::hints::site::{
-    ends_an_expression, is_literal, is_word_keyword, starts_an_expression,
+    ArmPart, ends_an_expression, is_binary_operator, is_literal, is_word_keyword,
+    starts_an_expression,
 };
 use crate::parse::hints::{
     CALL_HELP, CATCH_ALL_HELP, CONDITIONAL_HELP, ELIF_HELP, LAMBDA_HELP, RETURN_TYPE_HELP, Site,
-    define_function_help, function_form, is_iterative_keyword,
+    bare_name_help, define_function_help, function_form, is_iterative_keyword,
 };
 use crate::parse::match_expr::TYPE_CONSTRAINTS;
 
@@ -38,7 +39,7 @@ const LOWERCASE_TYPE_NAMES: &[&str] = &[
     "int", "str", "void", "double", "i32", "i64", "u8", "u32", "u64", "usize", "f32", "f64",
 ];
 
-const UNLESS_HELP: &str = "Frost has no `unless`; write `if not x: ...`";
+const UNLESS_HELP: &str = "Frost has no `unless`; write `if not cond: ...`";
 
 const IN_HELP: &str = "Frost has no `in` operator; use `includes(xs, x)` for an Array, \
                        `has(m, k)` for a Map, or `contains(s, part)` for a String";
@@ -92,6 +93,18 @@ impl<'src> Site<'_, 'src, '_> {
     /// Help for a word from another language read as a whole statement, as in
     /// `let x = 1` or `import math`, or as a whole expression, as in `fn x -> return x`.
     pub(super) fn statement_word_help(&self) -> Option<String> {
+        // `match x { let y => 1 }`, where a pattern starts and no statement can
+        if let Some(word) = self.expression_word()
+            && self.innermost_kind() == Some(Bracket::MatchArms)
+            && self.pattern_starts_at(self.found - 1)
+        {
+            return match self.token_at(0)? {
+                Token::Identifier(name) if DECLARATION_WORDS.contains(&word) => {
+                    Some(bare_name_help(name))
+                }
+                _ => None,
+            };
+        }
         if let Some(help) = self.expression_word_help() {
             return Some(help);
         }
@@ -242,6 +255,18 @@ impl<'src> Site<'_, 'src, '_> {
                 "`{found}` is a keyword; write the key in brackets: `[\"{found}\"]: ...`"
             ));
         }
+        // `{map}` or `{filter, x}`, a keyword as a shorthand entry. Braces of `true`,
+        // `false`, or `null`, as in `{true, null}`, are another language's set literal.
+        if is_map
+            && matches!(next, Some(Token::Comma | Token::CloseBrace))
+            && matches!(
+                self.token_before(self.found),
+                Some(Token::OpenBrace | Token::Comma)
+            )
+            && !matches!(found, Token::KwTrue | Token::KwFalse | Token::KwNull)
+        {
+            return Some(keyword_name_help(found));
+        }
         // A keyword starting a pattern is a name only when a name's pattern ends after it.
         let pattern_name = || {
             matches!(
@@ -265,9 +290,19 @@ impl<'src> Site<'_, 'src, '_> {
                 Token::KwElse if next == Some(&Token::Colon) || pattern_name() => {
                     Some(CATCH_ALL_HELP.to_owned())
                 }
-                _ => pattern_name()
-                    .then(|| format!("`{found}` is a keyword, so it cannot be a name")),
+                _ => pattern_name().then(|| keyword_name_help(found)),
             };
+        }
+        // `let map = 1`, both another language's declaration and a keyword as a name;
+        // other words may be variables, as in `val if c else 2`.
+        if let Some(word) = self.statement_word()
+            && DECLARATION_WORDS.contains(&word)
+            && next == Some(&Token::Assign)
+        {
+            return Some(format!(
+                "Frost has no `{word}`; bind with `def`, and {}",
+                keyword_name_help(found)
+            ));
         }
         let in_destructure = matches!(kind, Some(Bracket::MapPattern | Bracket::ArrayPattern))
             && matches!(
@@ -283,13 +318,11 @@ impl<'src> Site<'_, 'src, '_> {
             || (matches!(previous, Some(Token::OpenParen | Token::Comma))
                 && kind == Some(Bracket::Parameters))
             || self.in_bare_parameters()
-            // `let map = 1` or `function filter(x)`; other words may be variables, as in
-            // `val if c else 2`.
+            // `function filter(x)`
             || self.statement_word().is_some_and(|word| {
-                (DECLARATION_WORDS.contains(&word) && next == Some(&Token::Assign))
-                    || (FUNCTION_WORDS.contains(&word) && next == Some(&Token::OpenParen))
+                FUNCTION_WORDS.contains(&word) && next == Some(&Token::OpenParen)
             });
-        names_here.then(|| format!("`{found}` is a keyword, so it cannot be a name"))
+        names_here.then(|| keyword_name_help(found))
     }
 
     /// Help for a word from another language after an operand, as in `x in xs`,
@@ -304,6 +337,10 @@ impl<'src> Site<'_, 'src, '_> {
             Token::OpNot if self.token_at(1) == Some(&Token::Identifier("in")) => IN_HELP,
             // `x is None`; in a pattern, `is` is Frost's own.
             Token::KwIs if !self.in_patterns() => return Some(self.type_test_outside_a_match()),
+            // `_ unless: c => 1`
+            Token::Identifier("unless") if self.arm_part() == Some(ArmPart::Pattern) => {
+                "a guard is written `if:`; negate it with `not`, like `_ if: not cond => ...`"
+            }
             Token::Identifier("unless") => UNLESS_HELP,
             Token::Identifier("elsif" | "elseif") => ELIF_HELP,
             // `fn x -> x end`
@@ -335,20 +372,35 @@ impl<'src> Site<'_, 'src, '_> {
     /// Help for `is` outside a `match` pattern, as in `x is None` or `x is not Int`.
     fn type_test_outside_a_match(&self) -> String {
         let negated = self.token_at(1) == Some(&Token::OpNot);
-        let type_name = self
-            .at(if negated { 2 } else { 1 })
-            .and_then(|t| match t.token {
-                Token::Identifier(name) => type_named(name),
-                ref keyword if is_word_keyword(keyword) => type_named(&keyword.to_string()),
-                _ => None,
-            });
+        let tested = self.token_at(if negated { 2 } else { 1 });
+        let type_name = tested.and_then(|token| match token {
+            Token::Identifier(name) => type_named(name),
+            keyword if is_word_keyword(keyword) => type_named(&keyword.to_string()),
+            _ => None,
+        });
         let Some(type_name) = type_name else {
+            // `a is b`, Python's identity test
+            if matches!(tested, Some(Token::Identifier(name)) if !is_type_like(name)) {
+                return "`is` works only in a `match` pattern; to compare values, use `==` \
+                        or `!=`"
+                    .to_owned();
+            }
             return "`is` works only in a `match` pattern; elsewhere, test a type with a \
                     function like `is_int(x)`"
                 .to_owned();
         };
-        let value = match self.token_at(-1) {
-            Some(Token::Identifier(name)) => name,
+        // The name before `is` is the value tested only when it is the whole operand,
+        // not the end of one, as `k` is in `m.k` and `b` is in `a + b`. `and`, `or`, and
+        // `not` bind looser than `is` would, so the name after one is the whole operand.
+        let value = match (self.token_at(-2), self.token_at(-1)) {
+            (before, Some(Token::Identifier(name)))
+                if !before.is_some_and(|before| {
+                    (is_binary_operator(before) && !matches!(before, Token::OpAnd | Token::OpOr))
+                        || matches!(before, Token::OpDot | Token::OpMinus | Token::OpThread)
+                }) =>
+            {
+                name
+            }
             _ => "x",
         };
         let not = if negated { "not " } else { "" };
@@ -363,8 +415,9 @@ impl<'src> Site<'_, 'src, '_> {
         match token {
             // `n is not Int`
             Token::OpNot => {
+                // `_` binds nothing for the guard to test.
                 let name = match self.token_at(-2) {
-                    Some(Token::Identifier(name)) => name,
+                    Some(Token::Identifier(name)) if *name != "_" => name,
                     _ => "n",
                 };
                 let test = match self.token_at(1) {
@@ -472,6 +525,11 @@ impl<'src> Site<'_, 'src, '_> {
     }
 }
 
+/// Help for `keyword` written where a name belongs.
+fn keyword_name_help(keyword: &Token) -> String {
+    format!("`{keyword}` is a keyword, so it cannot be a name")
+}
+
 /// Help for `word`, another language's declaration, declaring `name`.
 fn declaration_help(word: &str, name: &str) -> String {
     format!("Frost has no `{word}`; bind a name with `def`: `def {name} = ...`")
@@ -505,7 +563,7 @@ fn type_name_help(name: &str) -> String {
 
 /// Whether `name` looks like a type's name in another language: capitalized, a Frost
 /// type's name in another case, or a common lowercase type name.
-fn is_type_like(name: &str) -> bool {
+pub(super) fn is_type_like(name: &str) -> bool {
     name.starts_with(|c: char| c.is_ascii_uppercase())
         || type_named(name).is_some()
         || LOWERCASE_TYPE_NAMES.contains(&name)
