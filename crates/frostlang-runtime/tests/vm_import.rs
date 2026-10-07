@@ -279,6 +279,87 @@ fn an_unidentified_script_imports_with_no_module_id() {
     assert_eq!(value, Value::Null);
 }
 
+/// A Vm identified as `caller-module`, running `program` under [`EchoesImporter`].
+fn identified_echo_vm(program: Arc<CompiledFunction>) -> Vm {
+    let closure = program.assert_trusted().into_closure().unwrap();
+    Vm::factory()
+        .with_importer(
+            ImporterBuilder::new()
+                .append_resolver(Arc::new(EchoesImporter))
+                .build(),
+        )
+        .build(closure)
+        .unwrap()
+        .with_module_id(ModuleId::new("caller-module"))
+}
+
+/// The importing module's id as the resolver sees it, imported by `vm`.
+fn echoed_id(vm: Vm) -> Value {
+    vm.run().unwrap().tail().clone()
+}
+
+fn echoing_closure() -> Arc<frostlang_runtime::Closure> {
+    importing_program("anything")
+        .assert_trusted()
+        .into_closure()
+        .unwrap()
+}
+
+#[test]
+fn a_recycled_vm_forgets_the_previous_scripts_module_id() {
+    // A recycled Vm runs a different script, so the previous script's identity
+    // must not reach that script's imports. Every way of recycling is checked.
+    let succeeded = identified_echo_vm(importing_program("anything"))
+        .run()
+        .unwrap();
+    assert_eq!(succeeded.tail(), &Value::from("caller-module"));
+    assert_eq!(
+        echoed_id(succeeded.reset(echoing_closure())),
+        Value::Null,
+        "reset after success"
+    );
+
+    let succeeded = identified_echo_vm(importing_program("anything"))
+        .run()
+        .unwrap();
+    assert_eq!(
+        echoed_id(succeeded.into_idle_vm().build(echoing_closure())),
+        Value::Null,
+        "rebuilt after success"
+    );
+
+    let raises = || {
+        Arc::new(CompiledFunction {
+            code: vec![Pop, PushNull, ProduceError],
+            ..(*importing_program("anything")).clone()
+        })
+    };
+    let failed = identified_echo_vm(raises()).run().unwrap_err();
+    assert_eq!(
+        echoed_id(failed.reset(echoing_closure())),
+        Value::Null,
+        "reset after failure"
+    );
+
+    let failed = identified_echo_vm(raises()).run().unwrap_err();
+    assert_eq!(
+        echoed_id(failed.into_idle_vm().build(echoing_closure())),
+        Value::Null,
+        "rebuilt after failure"
+    );
+}
+
+#[test]
+fn a_recycled_vm_can_be_identified_again() {
+    let succeeded = identified_echo_vm(importing_program("anything"))
+        .run()
+        .unwrap();
+    let vm = succeeded
+        .reset(echoing_closure())
+        .with_module_id(ModuleId::new("next-module"));
+    assert_eq!(echoed_id(vm), Value::from("next-module"));
+}
+
 // ============================================================
 // The `imported()` global
 // ============================================================

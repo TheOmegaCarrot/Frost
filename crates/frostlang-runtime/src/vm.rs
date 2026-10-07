@@ -276,6 +276,7 @@ impl Vm {
     /// Identifies the script this Vm runs, for resolvers that care who is importing.
     /// Set by whatever loaded the script;
     /// a resolver stamps the id it assigned the module.
+    /// Recycling the Vm for another script clears it.
     pub fn with_module_id(mut self, id: ModuleId) -> Self {
         self.module_id = Some(id);
         self
@@ -304,7 +305,8 @@ impl Vm {
 
     /// Scrub a spent Vm back to a runnable state for `closure`, keeping its allocations.
     /// Clears the operand stack, frames, marks, and local slots (a failed run leaves them
-    /// dirty), the fuel meter, and the abort latch.
+    /// dirty), the fuel meter, the abort latch, and the module id, which identified
+    /// the previous script.
     fn rearm(mut self, closure: Arc<Closure>) -> Vm {
         self.stack.clear();
         self.stack_frames.clear();
@@ -313,6 +315,7 @@ impl Vm {
         self.top_level = closure;
         self.fuel_used = 0;
         self.abort = None;
+        self.module_id = None;
         self
     }
 
