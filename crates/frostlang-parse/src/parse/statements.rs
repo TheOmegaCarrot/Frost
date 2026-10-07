@@ -9,7 +9,7 @@ pub(crate) enum StatementContext {
     Scope,
 }
 
-impl<'src, 'f> ParseCtx<'src, 'f> {
+impl<'src> ParseCtx<'src> {
     pub(crate) fn parse_statements(
         &mut self,
         kind: StatementContext,

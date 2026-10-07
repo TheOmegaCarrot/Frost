@@ -1,13 +1,13 @@
-//! The fixed render styles of `CompilerErrors`: each says the same thing, and
+//! The fixed render styles of `Diagnostics`: each says the same thing, and
 //! differs only in the characters it may use.
 
 mod common;
 
 use common::Script;
-use frostlang_compile::CompilerErrors;
+use frostlang_compile::Diagnostics;
 
 /// Diagnostics for a script with an unbound name, whose snippet every style shows.
-fn errors() -> CompilerErrors {
+fn errors() -> Diagnostics {
     Script::new("undefined_name + 1")
         .filename("script.frst")
         .compile_errors()

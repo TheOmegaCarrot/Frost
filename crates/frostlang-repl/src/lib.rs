@@ -46,7 +46,7 @@ use std::fmt;
 use std::io;
 use std::sync::Arc;
 
-use frostlang_compile::{CompilerErrors, CompilerOptions, OptimizationOptions, compile_in_scope};
+use frostlang_compile::{CompilerOptions, Diagnostics, OptimizationOptions, compile_in_scope};
 use frostlang_parse::{Token, tokens};
 use frostlang_runtime::{Closure, FrostError, IdleVm, Importer, Value, Vm, VmRuntimeConfiguration};
 
@@ -347,7 +347,7 @@ impl std::error::Error for SessionError {
 #[derive(Debug, Clone)]
 pub enum ReplError {
     /// The input did not compile.
-    Compile(CompilerErrors),
+    Compile(Diagnostics),
     /// The input raised an error while running.
     Run(FrostError),
     /// The input was a [metacommand](Repl#metacommands), which failed.
@@ -358,7 +358,7 @@ impl fmt::Display for ReplError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Self::Compile(diagnostics) => f.write_str(diagnostics.render_plain().trim_end()),
-            Self::Run(error) => write!(f, "{}", error.with_backtrace()),
+            Self::Run(error) => write!(f, "Error: {}", error.with_backtrace()),
             Self::Metacommand(error) => write!(f, "Error: {error}"),
         }
     }

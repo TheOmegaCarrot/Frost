@@ -2,7 +2,7 @@ use frostlang_parse::ast::{BinOp, Expr, LogicalOp, Spanned};
 use frostlang_runtime::Bytecode;
 
 use crate::{
-    CompilerErrors,
+    Diagnostics,
     lower::{ExprFragment, FunctionBuilder, Ir, JumpType, Position, fold::constant_of},
 };
 
@@ -12,7 +12,7 @@ impl FunctionBuilder<'_> {
         left: &Spanned<Expr>,
         op: &Spanned<BinOp>,
         right: &Spanned<Expr>,
-    ) -> Result<ExprFragment, CompilerErrors> {
+    ) -> Result<ExprFragment, Diagnostics> {
         let lhs = self.compile_expression(left, Position::Inner)?;
         let rhs = self.compile_expression(right, Position::Inner)?;
         let ([lhs, rhs], foldable) = self.fold_siblings([lhs, rhs]);
@@ -48,7 +48,7 @@ impl FunctionBuilder<'_> {
         op: &Spanned<LogicalOp>,
         right: &Spanned<Expr>,
         position: Position,
-    ) -> Result<ExprFragment, CompilerErrors> {
+    ) -> Result<ExprFragment, Diagnostics> {
         // When the right operand runs, its value is the result: nothing follows
         // it but the join label.
         let lhs = self.compile_expression(left, Position::Inner)?;

@@ -1,7 +1,10 @@
 use std::error::Error;
 use std::fmt::{self, Display};
 
-use miette::{LabeledSpan, MietteDiagnostic, NamedSource, Report};
+use miette::{
+    Diagnostic as MietteDiagnostic, GraphicalReportHandler, GraphicalTheme, LabeledSpan,
+    NamedSource, SourceCode,
+};
 
 use crate::ast::SourceSpan;
 
@@ -17,10 +20,10 @@ pub struct Label {
 
 /// A diagnostic as it flows through parsing: a message plus zero or more
 /// labeled spans, with no source text attached. The source is attached exactly
-/// once, at the parse boundary, when the diagnostic is rendered into a
-/// [`ParseError`]. Keeping the source out of the diagnostic avoids copying the
-/// whole script on every error and lets sub-parsers (e.g. format-string
-/// interpolations) propagate labels in whole-source coordinates.
+/// once, at the parse boundary, when the diagnostic becomes a [`ParseError`].
+/// Keeping the source out of the diagnostic avoids copying the whole script on
+/// every error and lets sub-parsers (e.g. format-string interpolations)
+/// propagate labels in whole-source coordinates.
 ///
 /// Boxed so that a `ParseResult` stays small: the recursive descent holds
 /// several on the stack per nesting level, so their size limits how deeply a program can nest.
@@ -112,69 +115,134 @@ impl Diagnostic {
     }
 }
 
-/// A parse error: a message plus labeled source spans, and a pretty-printed report of them.
-/// Inspect it with [`message`](Self::message) and [`labels`](Self::labels);
-/// display it with [`rendered`](Self::rendered) or `Display`.
+/// A parse error: a message, labeled spans into the source, and optional help.
+///
+/// Inspect it with [`message`](Self::message), [`labels`](Self::labels), and
+/// [`help`](Self::help). Render it against the source through
+/// [`Display`](fmt::Display) (the same as [`render`](Self::render)), or through
+/// [`render_pretty`](Self::render_pretty), [`render_unicode`](Self::render_unicode),
+/// or [`render_plain`](Self::render_plain) for a fixed style.
 #[derive(Clone, Debug)]
-pub struct ParseError {
+pub struct ParseError(Report);
+
+/// The data behind a [`ParseError`], and its `miette` view.
+///
+/// This is the type that implements [`MietteDiagnostic`]. Its [`Display`] is
+/// the bare message: the graphical handler uses it for the block header, so it
+/// must not itself invoke rendering. The whole-report rendering lives on
+/// [`ParseError`], keeping the two roles on distinct types.
+#[derive(Clone, Debug)]
+struct Report {
     diagnostic: Diagnostic,
-    rendered: String,
+    source: NamedSource<String>,
 }
 
 impl ParseError {
-    /// Render a diagnostic against the full source, attaching the source once.
-    pub(crate) fn from_diag(diagnostic: Diagnostic, filename: &str, source: &str) -> Self {
-        let labels: Vec<LabeledSpan> = diagnostic
-            .labels()
-            .iter()
-            .map(|l| LabeledSpan::at(l.span.start..l.span.end, l.text.clone()))
-            .collect();
-
-        let mut report = MietteDiagnostic::new(diagnostic.message()).with_labels(labels);
-        if let Some(help) = diagnostic.help() {
-            report = report.with_help(help);
-        }
-        let report =
-            Report::new(report).with_source_code(NamedSource::new(filename, source.to_owned()));
-
-        ParseError {
-            rendered: format!("{report:?}"),
+    /// `diagnostic`, from parsing `source` as `filename`.
+    pub(crate) fn new(diagnostic: Diagnostic, filename: &str, source: &str) -> Self {
+        Self(Report {
             diagnostic,
-        }
+            source: NamedSource::new(filename, source.to_owned()),
+        })
     }
 
     /// The primary, human-readable error message.
     pub fn message(&self) -> &str {
-        self.diagnostic.message()
+        self.0.diagnostic.message()
     }
 
     /// All labeled spans, in the order they were attached. The first is the
     /// primary location; later labels add context.
     pub fn labels(&self) -> &[Label] {
-        self.diagnostic.labels()
+        self.0.diagnostic.labels()
     }
 
     /// The primary source span (the first label), or an empty span if none.
     pub fn primary_span(&self) -> SourceSpan {
-        self.diagnostic.primary_span()
+        self.0.diagnostic.primary_span()
     }
 
     /// Advice on what to write instead, when the error looks like a habit
     /// carried over from another language.
     pub fn help(&self) -> Option<&str> {
-        self.diagnostic.help()
+        self.0.diagnostic.help()
     }
 
-    /// The pretty-formatted error string, intended for display.
-    pub fn rendered(&self) -> &str {
-        &self.rendered
+    /// Render for humans, adapting to the output:
+    /// unicode and color at a terminal (monochrome under `NO_COLOR`), monochrome ASCII otherwise.
+    /// This is what [`Display`](fmt::Display) uses.
+    pub fn render(&self) -> String {
+        self.0.render_themed(GraphicalTheme::default())
+    }
+
+    /// Render with color and unicode box-drawing unconditionally.
+    pub fn render_pretty(&self) -> String {
+        self.0.render_themed(GraphicalTheme::unicode())
+    }
+
+    /// Render with unicode box-drawing but no color: free of terminal escapes,
+    /// so it reads well wherever the text ends up.
+    pub fn render_unicode(&self) -> String {
+        self.0.render_themed(GraphicalTheme::unicode_nocolor())
+    }
+
+    /// Render as monochrome ASCII: deterministic, terminal-independent, and the
+    /// right choice for logs and test snapshots.
+    pub fn render_plain(&self) -> String {
+        self.0.render_themed(GraphicalTheme::none())
     }
 }
 
 impl Display for ParseError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", self.rendered)
+        f.write_str(&self.render())
     }
 }
 
 impl Error for ParseError {}
+
+impl Report {
+    fn render_themed(&self, theme: GraphicalTheme) -> String {
+        let mut out = String::new();
+        // Writing to a String is infallible.
+        let _ = GraphicalReportHandler::new_themed(theme).render_report(&mut out, self);
+        out
+    }
+}
+
+impl Display for Report {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_str(self.diagnostic.message())
+    }
+}
+
+impl Error for Report {}
+
+impl MietteDiagnostic for Report {
+    fn help<'a>(&'a self) -> Option<Box<dyn Display + 'a>> {
+        self.diagnostic
+            .help()
+            .map(|help| Box::new(help) as Box<dyn Display + 'a>)
+    }
+
+    fn source_code(&self) -> Option<&dyn SourceCode> {
+        Some(&self.source)
+    }
+
+    // The first label is primary: the one the snippet is framed around.
+    fn labels(&self) -> Option<Box<dyn Iterator<Item = LabeledSpan> + '_>> {
+        let labels = self.diagnostic.labels();
+        if labels.is_empty() {
+            return None;
+        }
+        Some(Box::new(labels.iter().enumerate().map(|(i, label)| {
+            let span = (label.span.start, label.span.end - label.span.start);
+            let text = Some(label.text.clone());
+            if i == 0 {
+                LabeledSpan::new_primary_with_span(text, span)
+            } else {
+                LabeledSpan::new_with_span(text, span)
+            }
+        })))
+    }
+}

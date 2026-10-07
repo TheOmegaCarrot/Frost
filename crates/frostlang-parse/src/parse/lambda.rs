@@ -4,7 +4,7 @@ use crate::parse::ctx::{Bracket, ParseCtx};
 use crate::parse::statements::StatementContext;
 use crate::parse::{Diagnostic, ParseResult};
 
-impl<'src, 'f> ParseCtx<'src, 'f> {
+impl<'src> ParseCtx<'src> {
     pub(crate) fn parse_lambda(&mut self) -> ParseResult<Spanned<Expr>> {
         let start = self.expect(Token::KwFn)?.span.start;
 

@@ -101,7 +101,7 @@ fn a_backtrace_through_a_module_names_each_file() {
     .error();
     assert_eq!(
         error.with_backtrace().to_string(),
-        "Error: boom\n  \
+        "boom\n  \
          in error\n  \
          in boom (lib.frst)\n  \
          in go (main.frst)\n  \

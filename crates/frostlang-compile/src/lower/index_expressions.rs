@@ -2,7 +2,7 @@ use frostlang_parse::ast::{Expr, Spanned};
 use frostlang_runtime::{Bytecode, MapKey};
 
 use crate::{
-    CompilerErrors,
+    Diagnostics,
     lower::{ConstKeyOp, ExprFragment, FunctionBuilder, Ir, Position},
 };
 
@@ -12,7 +12,7 @@ impl FunctionBuilder<'_> {
         &mut self,
         target: &Spanned<Expr>,
         key: &Spanned<Expr>,
-    ) -> Result<ExprFragment, CompilerErrors> {
+    ) -> Result<ExprFragment, Diagnostics> {
         let target = self.compile_expression(target, Position::Inner)?;
         let key = self.compile_expression(key, Position::Inner)?;
 
@@ -34,7 +34,7 @@ impl FunctionBuilder<'_> {
         &mut self,
         target: &Spanned<Expr>,
         key: &Spanned<String>,
-    ) -> Result<ExprFragment, CompilerErrors> {
+    ) -> Result<ExprFragment, Diagnostics> {
         let target = self.compile_expression(target, Position::Inner)?;
 
         Ok(ExprFragment {

@@ -6,7 +6,7 @@ use std::io;
 use std::num::NonZeroUsize;
 use std::sync::{Arc, Mutex};
 
-use frostlang_compile::{CompilerErrors, OptimizationOptions};
+use frostlang_compile::{Diagnostics, OptimizationOptions};
 use frostlang_repl::{
     Frontend, InvalidName, Repl, ReplError, ScriptedFrontend, SessionError, check_name,
 };
@@ -622,10 +622,7 @@ fn a_runtime_failure_displays_its_error_then_each_frame_of_its_backtrace() {
 #[test]
 fn a_failures_source_is_the_error_it_holds() {
     let compile = evaluate_all(&["nope"]).unwrap_err();
-    assert!(
-        compile.source().unwrap().is::<CompilerErrors>(),
-        "{compile:?}"
-    );
+    assert!(compile.source().unwrap().is::<Diagnostics>(), "{compile:?}");
     let run = evaluate_all(&["1 / 0"]).unwrap_err();
     assert!(run.source().unwrap().is::<FrostError>(), "{run:?}");
 }

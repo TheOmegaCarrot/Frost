@@ -30,7 +30,7 @@ use std::num::NonZeroUsize;
 use std::sync::{Arc, Mutex};
 
 use frostlang_compile::{
-    CompilerErrors, CompilerOptions, CompilerOutput, Optimization, OptimizationOptions,
+    CompilerOptions, CompilerOutput, Diagnostics, Optimization, OptimizationOptions,
     compile_in_scope,
 };
 use frostlang_runtime::{
@@ -229,7 +229,7 @@ impl Script {
 
     /// The diagnostics of a script that must not compile. Every optimization
     /// permutation must reject it with the same diagnostics.
-    pub(crate) fn compile_errors(&self) -> CompilerErrors {
+    pub(crate) fn compile_errors(&self) -> Diagnostics {
         let mut permutations = optimization_permutations();
         let first = permutations
             .next()
@@ -284,7 +284,7 @@ impl Script {
         Arc::new(closure.inner_fn().clone())
     }
 
-    fn compile(&self, optimization: OptimizationOptions) -> Result<CompilerOutput, CompilerErrors> {
+    fn compile(&self, optimization: OptimizationOptions) -> Result<CompilerOutput, Diagnostics> {
         let options = CompilerOptions {
             optimization_options: optimization,
             implicit_export: self.implicit_export,
@@ -334,7 +334,7 @@ impl Script {
         Observed { outcome, printed }
     }
 
-    fn compile_error_under(&self, optimization: OptimizationOptions) -> CompilerErrors {
+    fn compile_error_under(&self, optimization: OptimizationOptions) -> Diagnostics {
         match self.compile(optimization) {
             Ok(_) => panic!(
                 "{:?} should not compile, but did under {optimization:?}",
@@ -356,7 +356,7 @@ pub(crate) fn raises(source: &str) -> String {
 }
 
 /// [`Script::compile_errors`] for a script with no enclosing scope.
-pub(crate) fn compile_errors(source: &str) -> CompilerErrors {
+pub(crate) fn compile_errors(source: &str) -> Diagnostics {
     Script::new(source).compile_errors()
 }
 

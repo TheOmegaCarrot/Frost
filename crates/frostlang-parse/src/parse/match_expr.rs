@@ -7,7 +7,7 @@ use crate::parse::ParseResult;
 use crate::parse::ctx::{Bracket, ParseCtx, int_literal};
 use crate::parse::strings::QuoteStyle;
 
-impl<'src, 'f> ParseCtx<'src, 'f> {
+impl<'src> ParseCtx<'src> {
     pub(crate) fn parse_match(&mut self) -> ParseResult<Spanned<Expr>> {
         let start = self.expect(Token::KwMatch)?.span.start;
 

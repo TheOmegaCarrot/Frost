@@ -7,7 +7,7 @@ use frostlang_parse::ast::{Expr, Literal, SourceSpan, Spanned, UnaryOp};
 use frostlang_runtime::{Bytecode, FrostError, FrostFloat};
 
 use crate::{
-    CompilerErrors,
+    Diagnostics,
     lower::{
         ExprFragment, FunctionBuilder, Ir, Position, canonical_name,
         fold::value_to_ir,
@@ -20,7 +20,7 @@ impl FunctionBuilder<'_> {
         &self,
         literal: &Literal,
         span: SourceSpan,
-    ) -> Result<ExprFragment, CompilerErrors> {
+    ) -> Result<ExprFragment, Diagnostics> {
         Ok(ExprFragment {
             code: vec![match literal {
                 Literal::Null => Ir::Ready(Bytecode::PushNull),
@@ -37,7 +37,7 @@ impl FunctionBuilder<'_> {
         })
     }
 
-    fn validate_float(&self, f: f64, span: SourceSpan) -> Result<FrostFloat, CompilerErrors> {
+    fn validate_float(&self, f: f64, span: SourceSpan) -> Result<FrostFloat, Diagnostics> {
         FrostFloat::new(f).map_err(|err| {
             self.error(err.message().into())
                 .code("invalid float".into())
@@ -50,7 +50,7 @@ impl FunctionBuilder<'_> {
         &mut self,
         name: &str,
         span: SourceSpan,
-    ) -> Result<ExprFragment, CompilerErrors> {
+    ) -> Result<ExprFragment, Diagnostics> {
         // Locals (including a function's captures, and shadowing any global)
         // win over globals; a name that is neither is a compile error.
         let name = canonical_name(name);
@@ -93,7 +93,7 @@ impl FunctionBuilder<'_> {
         &mut self,
         op: &Spanned<UnaryOp>,
         operand: &Spanned<Expr>,
-    ) -> Result<ExprFragment, CompilerErrors> {
+    ) -> Result<ExprFragment, Diagnostics> {
         let operand = self.compile_expression(operand, Position::Inner)?;
 
         let operation = Ir::Ready(match op.node {

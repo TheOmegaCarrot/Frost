@@ -7,7 +7,7 @@
 //!
 //! This does bookkeeping only: no IR, no diagnostics. It returns ids and a
 //! bookkeeping-level error (the original binding's span); the lowering code turns
-//! those into opcodes and `CompilerError`s. Concrete frame slots are assigned
+//! those into opcodes and `Diagnostic`s. Concrete frame slots are assigned
 //! only at assembly, by [`Locals::plan_slots`].
 
 #[cfg(test)]

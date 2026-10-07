@@ -7,7 +7,7 @@ mod error;
 mod lower;
 mod optimization;
 
-pub use error::{CompilerError, CompilerErrors};
+pub use error::{Diagnostic, Diagnostics};
 use frostlang_runtime::TrustedProgram;
 pub use lower::{compile_in_scope, compile_program};
 pub use optimization::{InvalidOptimizationSetting, Optimization, OptimizationOptions};

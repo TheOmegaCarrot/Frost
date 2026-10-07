@@ -120,9 +120,11 @@ impl FrostError {
     }
 }
 
+/// Shows the [`message`](FrostError::message) alone, with no label such as
+/// `Error:`; adding one is the presenter's choice.
 impl fmt::Display for FrostError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "Error: {}", self.message())
+        f.write_str(&self.message())
     }
 }
 

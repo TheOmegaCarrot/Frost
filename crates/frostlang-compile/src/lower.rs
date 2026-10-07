@@ -22,7 +22,7 @@ use std::ffi::OsStr;
 use std::path::Path;
 use std::sync::Arc;
 
-use crate::{CompilerError, CompilerErrors, CompilerOptions, CompilerOutput, OptimizationOptions};
+use crate::{CompilerOptions, CompilerOutput, Diagnostic, Diagnostics, OptimizationOptions};
 
 use frostlang_parse::{
     ast::{Expr, SourceSpan, Spanned, Statement},
@@ -207,23 +207,18 @@ impl<'a> FunctionBuilder<'a> {
 
     /// Start a hard-error diagnostic already carrying this function's source.
     /// Routing every error through here keeps any from being emitted sourceless.
-    fn error(&self, message: String) -> CompilerError {
-        CompilerError::error(message).source(self.filename.to_owned(), self.source.to_owned())
+    fn error(&self, message: String) -> Diagnostic {
+        Diagnostic::error(message).source(self.filename.to_owned(), self.source.to_owned())
     }
 
     /// The error for binding `name` at `span` in a scope that already binds it
     /// at `original`.
-    fn duplicate_binding(
-        &self,
-        name: &str,
-        span: SourceSpan,
-        original: SourceSpan,
-    ) -> CompilerError {
+    fn duplicate_binding(&self, name: &str, span: SourceSpan, original: SourceSpan) -> Diagnostic {
         self.error(format!("`{name}` is already bound"))
             .code("duplicate binding".into())
             .label_primary(span, "redefined here".into())
             .related(
-                CompilerError::advice(format!("`{name}` was first bound here"))
+                Diagnostic::advice(format!("`{name}` was first bound here"))
                     .label(original, "original binding".into()),
             )
     }
@@ -238,7 +233,7 @@ pub fn compile_program(
     filename: &str,
     script: &str,
     options: CompilerOptions,
-) -> Result<CompilerOutput, CompilerErrors> {
+) -> Result<CompilerOutput, Diagnostics> {
     compile_in_scope(filename, script, options, &[])
 }
 
@@ -253,9 +248,9 @@ pub fn compile_in_scope(
     script: &str,
     options: CompilerOptions,
     outer_scope: &[&str],
-) -> Result<CompilerOutput, CompilerErrors> {
+) -> Result<CompilerOutput, Diagnostics> {
     let ast = parse_program(filename, script)
-        .map_err(|err| CompilerError::from_parse_error(&err, filename, script))?;
+        .map_err(|err| Diagnostic::from_parse_error(&err, filename, script))?;
 
     // A free name the enclosing scope supplies becomes a capture. Only names
     // actually used are captured; any other free name is left to resolve as a
@@ -327,7 +322,7 @@ impl FunctionBuilder<'_> {
         &mut self,
         stmt: &Spanned<Statement>,
         position: Position,
-    ) -> Result<StatementFragment, CompilerErrors> {
+    ) -> Result<StatementFragment, Diagnostics> {
         match &stmt.node {
             Statement::Def {
                 exported,
@@ -359,7 +354,7 @@ impl FunctionBuilder<'_> {
         &mut self,
         expr: &Spanned<Expr>,
         position: Position,
-    ) -> Result<ExprFragment, CompilerErrors> {
+    ) -> Result<ExprFragment, Diagnostics> {
         match &expr.node {
             Expr::Literal(literal) => self.compile_literal(literal, expr.span),
             Expr::NameLookup(name) => self.compile_name_lookup(name, expr.span),

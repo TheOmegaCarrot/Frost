@@ -8,7 +8,7 @@ enum IterativeKind {
     Foreach,
 }
 
-impl<'src, 'f> ParseCtx<'src, 'f> {
+impl<'src> ParseCtx<'src> {
     fn parse_iterative(
         &mut self,
         keyword: Token,

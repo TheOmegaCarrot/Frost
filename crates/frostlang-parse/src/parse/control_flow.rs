@@ -4,7 +4,7 @@ use crate::parse::ctx::ParseCtx;
 use crate::parse::statements::StatementContext;
 use crate::parse::{Diagnostic, ParseResult};
 
-impl<'src, 'f> ParseCtx<'src, 'f> {
+impl<'src> ParseCtx<'src> {
     pub(crate) fn parse_if(&mut self) -> ParseResult<Spanned<Expr>> {
         self.parse_if_or_elif(Token::KwIf)
     }

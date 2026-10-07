@@ -98,6 +98,14 @@ impl RunError {
         self.error
     }
 
+    /// Whether the program raised the error or the run was aborted.
+    pub fn kind(&self) -> RunErrorKind {
+        match self.vm.abort_reason() {
+            Some(reason) => RunErrorKind::Aborted(reason),
+            None => RunErrorKind::Raised,
+        }
+    }
+
     /// The number of function calls the program made before it failed.
     pub fn fuel_consumed(&self) -> usize {
         self.vm.fuel_used
@@ -108,6 +116,26 @@ impl RunError {
     pub fn reset(self, closure: Arc<Closure>) -> Vm {
         self.vm.rearm(closure)
     }
+}
+
+/// How a run failed; see [`RunError::kind`].
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum RunErrorKind {
+    /// The program raised an error that nothing caught. Frost code could have
+    /// caught it with `try_call`.
+    Raised,
+    /// The run was stopped, for the given reason. No Frost code can catch an
+    /// abort.
+    Aborted(AbortReason),
+}
+
+/// Why a run was aborted; see [`RunErrorKind::Aborted`].
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[non_exhaustive]
+pub enum AbortReason {
+    /// The run made more function calls than its
+    /// [`fuel`](super::VmRuntimeConfiguration::fuel) allows.
+    FuelExhausted,
 }
 
 /// A warm [`Vm`] with no program loaded: its allocations are kept for reuse,

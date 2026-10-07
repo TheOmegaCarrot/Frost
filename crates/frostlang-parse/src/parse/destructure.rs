@@ -3,7 +3,7 @@ use crate::lex::Token;
 use crate::parse::ParseResult;
 use crate::parse::ctx::{Bracket, ParseCtx};
 
-impl<'src, 'f> ParseCtx<'src, 'f> {
+impl<'src> ParseCtx<'src> {
     pub(crate) fn parse_destructure(&mut self) -> ParseResult<Spanned<Destructure>> {
         const EXPECTED: &str = "a name, `[`, or `{`";
         let peek = self.must_peek(EXPECTED)?;

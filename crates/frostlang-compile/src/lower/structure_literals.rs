@@ -2,7 +2,7 @@ use frostlang_parse::ast::{Expr, MapEntry, Spanned};
 use frostlang_runtime::Bytecode;
 
 use crate::{
-    CompilerErrors,
+    Diagnostics,
     lower::{ExprFragment, FunctionBuilder, Ir, Position},
 };
 
@@ -11,7 +11,7 @@ impl FunctionBuilder<'_> {
     pub(super) fn compile_array_literal(
         &mut self,
         elements: &[Spanned<Expr>],
-    ) -> Result<ExprFragment, CompilerErrors> {
+    ) -> Result<ExprFragment, Diagnostics> {
         let count = elements.len();
 
         let elements = elements
@@ -34,7 +34,7 @@ impl FunctionBuilder<'_> {
     pub(super) fn compile_map_literal(
         &mut self,
         entries: &[Spanned<MapEntry>],
-    ) -> Result<ExprFragment, CompilerErrors> {
+    ) -> Result<ExprFragment, Diagnostics> {
         let pair_count = entries.len();
 
         let exprs = entries

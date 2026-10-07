@@ -34,7 +34,7 @@ const REST_AFTER_COMMA_HELP: &str = "a `...rest` binding follows a comma, as in 
 const CALL_SPREAD_HELP: &str =
     "Frost has no spread; to pass an Array's elements as arguments, use `call(f, args)`";
 
-impl Site<'_, '_, '_> {
+impl Site<'_, '_> {
     /// Help for `..` or `...` written as a range, as in `1..n`, `xs[2..]`, or `1...5`,
     /// or as Lua joins Strings, as in `'a' .. b`, or for `..` written for a rest
     /// binding, as in `[a, ..rest]`.

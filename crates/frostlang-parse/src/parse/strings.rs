@@ -110,7 +110,7 @@ fn string_error(span: &Range<usize>, msg: impl Into<String>) -> Diagnostic {
     Diagnostic::at(msg, span.clone().into(), "in this String literal")
 }
 
-impl<'src, 'f> ParseCtx<'src, 'f> {
+impl<'src> ParseCtx<'src> {
     pub(crate) fn parse_simple_string(&mut self, quote: QuoteStyle) -> ParseResult<Spanned<Expr>> {
         let peek = self.must_peek("a String literal")?;
         let span = peek.span.clone();

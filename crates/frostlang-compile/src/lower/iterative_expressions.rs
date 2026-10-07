@@ -1,7 +1,7 @@
 use frostlang_parse::ast::{Expr, Spanned};
 
 use crate::{
-    CompilerErrors,
+    Diagnostics,
     lower::{ExprFragment, FunctionBuilder, Position, globals::global_slot},
 };
 
@@ -42,7 +42,7 @@ impl FunctionBuilder<'_> {
         operation: &Spanned<Expr>,
         init: Option<&Spanned<Expr>>,
         position: Position,
-    ) -> Result<ExprFragment, CompilerErrors> {
+    ) -> Result<ExprFragment, Diagnostics> {
         let slot = global_slot(iteration.global())
             .unwrap_or_else(|| panic!("`{}` is a global", iteration.global()));
         let callee = self.load_global(slot);

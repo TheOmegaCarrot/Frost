@@ -4,7 +4,7 @@ use frostlang_parse::ast::FormatSegment;
 use frostlang_runtime::{Bytecode, Value};
 
 use crate::{
-    CompilerErrors,
+    Diagnostics,
     lower::{ExprFragment, FunctionBuilder, Ir, Position},
 };
 
@@ -13,7 +13,7 @@ impl FunctionBuilder<'_> {
     pub(super) fn compile_format_string(
         &mut self,
         segments: &[FormatSegment],
-    ) -> Result<ExprFragment, CompilerErrors> {
+    ) -> Result<ExprFragment, Diagnostics> {
         let segment_count = segments.len();
 
         if segment_count == 0 {

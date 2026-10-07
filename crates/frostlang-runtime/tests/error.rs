@@ -1,5 +1,5 @@
 use frostlang_compile::{CompilerOptions, OptimizationOptions, compile_program};
-use frostlang_runtime::{FrostError, RunError, Vm};
+use frostlang_runtime::{FrostError, RunError, Value, Vm};
 
 /// The error running `source` raises, which it must.
 fn raised(source: &str) -> FrostError {
@@ -19,9 +19,16 @@ fn raised(source: &str) -> FrostError {
 }
 
 #[test]
-fn display() {
+fn display_shows_the_message_alone() {
+    // No `Error:` label: that is the presenter's to add.
     let err = FrostError::from_static("division by zero");
-    assert_eq!(err.to_string(), "Error: division by zero");
+    assert_eq!(err.to_string(), "division by zero");
+}
+
+#[test]
+fn display_of_a_thrown_value_shows_the_value() {
+    let err = FrostError::from_value(Value::from(vec![Value::Int(1), Value::Int(2)]));
+    assert_eq!(err.to_string(), "[ 1, 2 ]");
 }
 
 #[test]
@@ -39,10 +46,7 @@ fn with_backtrace_shows_the_error_then_a_line_per_frame() {
         .iter()
         .map(|frame| format!("\n  in {frame}"))
         .collect();
-    assert_eq!(
-        err.with_backtrace().to_string(),
-        format!("Error: boom{frames}")
-    );
+    assert_eq!(err.with_backtrace().to_string(), format!("boom{frames}"));
     assert!(
         frames.contains("\n  in inner") && frames.contains("\n  in outer"),
         "{frames}"
@@ -52,7 +56,7 @@ fn with_backtrace_shows_the_error_then_a_line_per_frame() {
 #[test]
 fn with_backtrace_of_an_error_without_frames_is_just_the_error() {
     let err = FrostError::from_static("division by zero");
-    assert_eq!(err.with_backtrace().to_string(), "Error: division by zero");
+    assert_eq!(err.with_backtrace().to_string(), "division by zero");
 }
 
 #[test]

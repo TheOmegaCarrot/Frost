@@ -1,6 +1,6 @@
 //! The compiler parses its own source, so a parse failure surfaces through the
 //! compiler's error channel: the parser's diagnostic is lifted into a
-//! `CompilerErrors` and rendered with the compiler's own formatting.
+//! `Diagnostics` and rendered with the compiler's own formatting.
 //!
 //! These drive that path black-box through the public compile API. They assert
 //! structural facts (one diagnostic, filename attached, the offending snippet
@@ -10,10 +10,10 @@
 mod common;
 
 use common::Script;
-use frostlang_compile::CompilerErrors;
+use frostlang_compile::Diagnostics;
 
 /// Compile `source`, expecting a failure, and return the diagnostics.
-fn errors(source: &str) -> CompilerErrors {
+fn errors(source: &str) -> Diagnostics {
     Script::new(source).filename("script.frst").compile_errors()
 }
 
@@ -48,6 +48,18 @@ fn parse_error_keeps_its_message() {
     assert!(
         rendered.contains("expected an expression, but found the end of input"),
         "the parser's message is preserved:\n{rendered}"
+    );
+}
+
+#[test]
+fn an_interpolation_error_renders_a_single_diagram() {
+    // The error inside `${ ... }` labels the whole source once, not as a
+    // diagram of its own nested inside the outer one.
+    let rendered = errors("$'${x +}'").render_pretty();
+    assert_eq!(
+        rendered.matches("╭─[").count(),
+        1,
+        "expected exactly one source diagram; rendered:\n{rendered}"
     );
 }
 

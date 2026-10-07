@@ -76,12 +76,12 @@ const LINE_CONTINUATION_HELP: &str = "a line continues only when the next line s
                                       or `@`; otherwise, wrap the expression in parentheses";
 
 /// The tokens around an error, at index `found`.
-struct Site<'c, 'src, 'f> {
-    ctx: &'c ParseCtx<'src, 'f>,
+struct Site<'c, 'src> {
+    ctx: &'c ParseCtx<'src>,
     found: usize,
 }
 
-impl<'src, 'f> ParseCtx<'src, 'f> {
+impl<'src> ParseCtx<'src> {
     /// Help for the error at the token at `found`, an index into this context's tokens
     /// (its length at the end of input), when `expected` was expected, if one token was.
     ///
@@ -111,7 +111,7 @@ impl<'src, 'f> ParseCtx<'src, 'f> {
     }
 }
 
-impl Site<'_, '_, '_> {
+impl Site<'_, '_> {
     /// Help for the found token alone, read in the brackets around it.
     fn found_token_help(&self) -> Option<String> {
         let token = &self.at(0)?.token;

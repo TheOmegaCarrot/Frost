@@ -7,7 +7,7 @@ use crate::parse::{Diagnostic, ParseResult, hints};
 use logos::Logos;
 
 #[derive(Debug)]
-pub(crate) struct ParseCtx<'src, 'f> {
+pub(crate) struct ParseCtx<'src> {
     /// The source this context was lexed from. For a sub-context (a
     /// format-string interpolation) this is only the interpolation substring;
     /// `base_offset` maps its positions back into the whole source.
@@ -21,8 +21,6 @@ pub(crate) struct ParseCtx<'src, 'f> {
     /// For an interpolation sub-context, the `}` that closes it.
     /// Past the context's last token, a parse finds this brace rather than the end of input.
     closing_brace: Option<SourceSpan>,
-
-    filename: &'f str,
 
     /// The full lexer result.
     input: Vec<SrcToken<'src>>,
@@ -156,7 +154,7 @@ impl DollarUsage {
     }
 }
 
-impl<'src, 'f> ParseCtx<'src, 'f> {
+impl<'src> ParseCtx<'src> {
     pub(crate) fn checkpoint(&self) -> ParseState {
         self.state.clone()
     }
@@ -165,23 +163,18 @@ impl<'src, 'f> ParseCtx<'src, 'f> {
         self.state = state;
     }
 
-    pub(crate) fn new(filename: &'f str, src: &'src str) -> ParseResult<Self> {
-        Self::lex(filename, src, 0, None)
+    pub(crate) fn new(src: &'src str) -> ParseResult<Self> {
+        Self::lex(src, 0, None)
     }
 
     /// A sub-context for a format-string interpolation: `src` is its text, which
     /// starts at `base_offset` in the whole source and is closed by the `}` right after it.
-    pub(crate) fn new_interpolation(
-        filename: &'f str,
-        src: &'src str,
-        base_offset: usize,
-    ) -> ParseResult<Self> {
+    pub(crate) fn new_interpolation(src: &'src str, base_offset: usize) -> ParseResult<Self> {
         let brace = base_offset + src.len();
-        Self::lex(filename, src, base_offset, Some((brace..brace + 1).into()))
+        Self::lex(src, base_offset, Some((brace..brace + 1).into()))
     }
 
     fn lex(
-        filename: &'f str,
         src: &'src str,
         base_offset: usize,
         closing_brace: Option<SourceSpan>,
@@ -207,7 +200,6 @@ impl<'src, 'f> ParseCtx<'src, 'f> {
             full_source: src,
             base_offset,
             closing_brace,
-            filename,
             input,
             state: ParseState::default(),
         })
@@ -409,10 +401,6 @@ impl<'src, 'f> ParseCtx<'src, 'f> {
                 }
             }
         })
-    }
-
-    pub(crate) fn filename(&self) -> &'f str {
-        self.filename
     }
 
     pub(crate) fn in_abbreviated_lambda(&self) -> bool {

@@ -13,8 +13,8 @@ mod common;
 
 use common::Pop;
 use frostlang_runtime::{
-    Arity, Bytecode, CompiledFunction, FormatVersion, FrostError, NameEntry, ProgramResult, Value,
-    Vm, VmRuntimeConfiguration,
+    AbortReason, Arity, Bytecode, CompiledFunction, FormatVersion, FrostError, NameEntry,
+    ProgramResult, RunError, RunErrorKind, Value, Vm, VmRuntimeConfiguration,
 };
 
 use Bytecode::*;
@@ -37,6 +37,16 @@ fn run(
     code: Vec<Bytecode>,
     config: VmRuntimeConfiguration,
 ) -> Result<ProgramResult, FrostError> {
+    run_keeping_vm(caps, code, config).map_err(RunError::into_error)
+}
+
+/// [`run`], keeping a failed run's whole [`RunError`].
+#[allow(clippy::result_large_err)]
+fn run_keeping_vm(
+    caps: Vec<(&str, Value)>,
+    code: Vec<Bytecode>,
+    config: VmRuntimeConfiguration,
+) -> Result<ProgramResult, RunError> {
     let name_table = caps.iter().map(|(n, _)| entry(n)).collect();
     let main = Arc::new(CompiledFunction {
         version: FormatVersion,
@@ -57,7 +67,6 @@ fn run(
         .build(main.assert_trusted().close(captures).unwrap())
         .unwrap()
         .run()
-        .map_err(frostlang_runtime::RunError::into_error)
 }
 
 fn unlimited() -> VmRuntimeConfiguration {
@@ -226,4 +235,79 @@ fn recursion_within_the_depth_limit_succeeds() {
 #[test]
 fn recursion_past_the_depth_limit_halts() {
     assert!(run(vec![("r", recurse())], recurse_to(100), with_depth(8)).is_err());
+}
+
+// ============================================================
+// Telling an abort from a raised error
+// ============================================================
+
+/// The kind of a run that must fail.
+fn failure_kind(
+    caps: Vec<(&str, Value)>,
+    code: Vec<Bytecode>,
+    config: VmRuntimeConfiguration,
+) -> RunErrorKind {
+    run_keeping_vm(caps, code, config)
+        .expect_err("the run should fail")
+        .kind()
+}
+
+#[test]
+fn an_uncaught_error_is_raised() {
+    let kind = failure_kind(
+        vec![("f", boom())],
+        vec![Pop, LoadLocal(0), Call(0)],
+        unlimited(),
+    );
+    assert_eq!(kind, RunErrorKind::Raised);
+}
+
+#[test]
+fn running_out_of_fuel_aborts() {
+    let kind = failure_kind(vec![("f", noop())], call_n_times(4), with_fuel(3));
+    assert_eq!(kind, RunErrorKind::Aborted(AbortReason::FuelExhausted));
+}
+
+#[test]
+fn running_out_of_fuel_aborts_even_when_a_native_swallows_it() {
+    let kind = failure_kind(
+        vec![("c", catcher()), ("f", noop())],
+        catch_call(),
+        with_fuel(1),
+    );
+    assert_eq!(kind, RunErrorKind::Aborted(AbortReason::FuelExhausted));
+}
+
+#[test]
+fn exceeding_the_call_depth_is_raised() {
+    // Frost code can catch a call-depth error, so it is not an abort.
+    let kind = failure_kind(vec![("r", recurse())], recurse_to(100), with_depth(8));
+    assert_eq!(kind, RunErrorKind::Raised);
+}
+
+#[test]
+fn a_recycled_vm_forgets_a_previous_abort() {
+    let aborted = run_keeping_vm(vec![("f", noop())], call_n_times(4), with_fuel(3))
+        .expect_err("the first run should run out of fuel");
+    let raises = Arc::new(CompiledFunction {
+        version: FormatVersion,
+        name: "main".to_string(),
+        origin: None,
+        code: vec![Pop, PushNull, ProduceError],
+        child_fns: Vec::new(),
+        constants: Vec::new(),
+        key_constants: Vec::new(),
+        name_table: Vec::new(),
+        num_captures: 0,
+        arity: Arity::Exact(0),
+    })
+    .assert_trusted()
+    .into_closure()
+    .unwrap();
+    let kind = aborted
+        .reset(raises)
+        .run()
+        .expect_err("the second run should raise")
+        .kind();
+    assert_eq!(kind, RunErrorKind::Raised);
 }

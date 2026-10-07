@@ -4,7 +4,7 @@ use frostlang_parse::ast::{Expr, Spanned};
 use frostlang_runtime::Bytecode;
 
 use crate::{
-    CompilerErrors,
+    Diagnostics,
     lower::{ExprFragment, FunctionBuilder, Ir, Position},
 };
 
@@ -14,7 +14,7 @@ impl FunctionBuilder<'_> {
         callee: &Spanned<Expr>,
         args: &[Spanned<Expr>],
         position: Position,
-    ) -> Result<ExprFragment, CompilerErrors> {
+    ) -> Result<ExprFragment, Diagnostics> {
         let callee = self.compile_expression(callee, Position::Inner)?;
         let args = args
             .iter()

@@ -36,7 +36,7 @@ use std::sync::{Arc, Mutex, MutexGuard, PoisonError};
 
 use clap::FromArgMatches;
 use frostlang_compile::{
-    CompilerError, CompilerErrors, CompilerOptions, OptimizationOptions, compile_in_scope,
+    CompilerOptions, Diagnostic, Diagnostics, OptimizationOptions, compile_in_scope,
 };
 use frostlang_parse::parse_program;
 use frostlang_repl::Repl;
@@ -469,8 +469,8 @@ impl Session<'_> {
         let program = match parse_program(&filename, &source) {
             Ok(program) => program,
             Err(error) => {
-                let diagnostic = CompilerError::from_parse_error(&error, &filename, &source);
-                return self.report_diagnostics(&CompilerErrors::from(diagnostic));
+                let diagnostic = Diagnostic::from_parse_error(&error, &filename, &source);
+                return self.report_diagnostics(&Diagnostics::from(diagnostic));
             }
         };
         match writeln!(output, "{}", program.dump()) {
@@ -574,7 +574,7 @@ impl Session<'_> {
         Exit::UsageError
     }
 
-    fn report_diagnostics(&mut self, errors: &CompilerErrors) -> Exit {
+    fn report_diagnostics(&mut self, errors: &Diagnostics) -> Exit {
         let rendered = if self.colors(self.terminals.stderr) {
             errors.render_pretty()
         } else {
@@ -585,7 +585,7 @@ impl Session<'_> {
     }
 
     fn report_error(&mut self, error: &FrostError) -> Exit {
-        write_out(self.stderr, &format!("{}\n", error.with_backtrace()));
+        write_out(self.stderr, &format!("Error: {}\n", error.with_backtrace()));
         Exit::ScriptFailed
     }
 }

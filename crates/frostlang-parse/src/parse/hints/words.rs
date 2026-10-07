@@ -44,7 +44,7 @@ const UNLESS_HELP: &str = "Frost has no `unless`; write `if not cond: ...`";
 const IN_HELP: &str = "Frost has no `in` operator; use `includes(xs, x)` for an Array, \
                        `has(m, k)` for a Map, or `contains(s, part)` for a String";
 
-impl<'src> Site<'_, 'src, '_> {
+impl<'src> Site<'_, 'src> {
     /// The word from another language that starts the error's statement, when it is in
     /// `words` and the error is in or just after its header: `for x in xs`,
     /// `for (i = 0; ...)`, or `while (x) { ... }`.

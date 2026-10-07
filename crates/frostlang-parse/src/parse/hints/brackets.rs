@@ -12,7 +12,7 @@ use crate::parse::hints::{
     Site, destructure_help, is_iterative_keyword, iterative_help,
 };
 
-impl<'src> Site<'_, 'src, '_> {
+impl<'src> Site<'_, 'src> {
     /// Help for braces whose contents were read as one thing where another was meant:
     /// a Map where a block was meant, a block where a Map was, or a Map key not written
     /// as Frost writes one.

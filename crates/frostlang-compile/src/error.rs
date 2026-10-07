@@ -1,13 +1,13 @@
 //! Compiler diagnostics.
 //!
-//! A [`CompilerError`] is one diagnostic: a message, a severity, and any number
+//! A [`Diagnostic`] is one diagnostic: a message, a severity, and any number
 //! of labeled spans into a source, plus optional related sub-diagnostics that
 //! render as their own separate blocks (the "this is wrong because of that over
 //! there" shape, where "that" may even live in a different file). Because a
 //! diagnostic carries its severity, the same type expresses both hard errors
 //! and warnings.
 //!
-//! [`CompilerErrors`] is the plural: the set returned on the error channel when
+//! [`Diagnostics`] is the plural: the set returned on the error channel when
 //! compilation fails.
 
 #![allow(unused)] // Some builders have no consumer yet
@@ -21,8 +21,8 @@ use std::fmt;
 use frostlang_parse::ParseError;
 use frostlang_parse::ast::SourceSpan;
 use miette::{
-    Diagnostic, GraphicalReportHandler, GraphicalTheme, LabeledSpan, NamedSource, Severity,
-    SourceCode,
+    Diagnostic as MietteDiagnostic, GraphicalReportHandler, GraphicalTheme, LabeledSpan,
+    NamedSource, Severity, SourceCode,
 };
 
 /// A single compiler diagnostic: an error, a warning, or advice.
@@ -32,14 +32,14 @@ use miette::{
 /// or through [`render_pretty`](Self::render_pretty), [`render_unicode`](Self::render_unicode),
 /// or [`render_plain`](Self::render_plain) for a fixed style.
 #[derive(Clone, Debug)]
-pub struct CompilerError(Diag);
+pub struct Diagnostic(Diag);
 
-/// The data behind a [`CompilerError`], and its `miette` view.
+/// The data behind a [`Diagnostic`], and its `miette` view.
 ///
-/// This is the type that implements [`Diagnostic`]. Its [`Display`](fmt::Display)
+/// This is the type that implements [`MietteDiagnostic`]. Its [`Display`](fmt::Display)
 /// is the bare headline: the graphical handler uses it for the block header, so
 /// it must not itself invoke rendering. The pretty, whole-report rendering lives
-/// on [`CompilerError`], keeping the two roles on distinct types.
+/// on [`Diagnostic`], keeping the two roles on distinct types.
 #[derive(Clone, Debug)]
 struct Diag {
     severity: Severity,
@@ -54,7 +54,7 @@ struct Diag {
     /// source; set it when the diagnostic points into a different source.
     source: Option<NamedSource<String>>,
     /// Labeled spans, all resolved against `source`. A primary label (see
-    /// [`CompilerError::label_primary`]) frames the snippet.
+    /// [`Diagnostic::label_primary`]) frames the snippet.
     labels: Vec<LabeledSpan>,
     /// Sub-diagnostics, each rendered as its own block.
     related: Vec<Diag>,
@@ -62,7 +62,7 @@ struct Diag {
 
 // -- Construction (crate-internal) --
 
-impl CompilerError {
+impl Diagnostic {
     /// A diagnostic at the given severity.
     pub(crate) fn new(severity: Severity, message: String) -> Self {
         Self(Diag {
@@ -130,7 +130,7 @@ impl CompilerError {
     }
 
     /// Add a related sub-diagnostic, rendered as its own block.
-    pub(crate) fn related(mut self, related: CompilerError) -> Self {
+    pub(crate) fn related(mut self, related: Diagnostic) -> Self {
         self.0.related.push(related.0);
         self
     }
@@ -158,7 +158,7 @@ impl CompilerError {
 
 // -- Consumption (public) --
 
-impl CompilerError {
+impl Diagnostic {
     /// Render for humans, adapting to the output:
     /// unicode and color at a terminal (monochrome under `NO_COLOR`), monochrome ASCII otherwise.
     /// This is what [`Display`](fmt::Display) uses.
@@ -184,13 +184,13 @@ impl CompilerError {
     }
 }
 
-impl fmt::Display for CompilerError {
+impl fmt::Display for Diagnostic {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.write_str(&self.render())
     }
 }
 
-impl std::error::Error for CompilerError {}
+impl std::error::Error for Diagnostic {}
 
 impl Diag {
     fn render_themed(&self, theme: GraphicalTheme) -> String {
@@ -209,7 +209,7 @@ impl fmt::Display for Diag {
 
 impl std::error::Error for Diag {}
 
-impl Diagnostic for Diag {
+impl MietteDiagnostic for Diag {
     fn severity(&self) -> Option<Severity> {
         Some(self.severity)
     }
@@ -237,11 +237,13 @@ impl Diagnostic for Diag {
         Some(Box::new(self.labels.clone().into_iter()))
     }
 
-    fn related<'a>(&'a self) -> Option<Box<dyn Iterator<Item = &'a dyn Diagnostic> + 'a>> {
+    fn related<'a>(&'a self) -> Option<Box<dyn Iterator<Item = &'a dyn MietteDiagnostic> + 'a>> {
         if self.related.is_empty() {
             return None;
         }
-        Some(Box::new(self.related.iter().map(|d| d as &dyn Diagnostic)))
+        Some(Box::new(
+            self.related.iter().map(|d| d as &dyn MietteDiagnostic),
+        ))
     }
 }
 
@@ -250,33 +252,33 @@ impl Diagnostic for Diag {
 /// Held on the error channel of the compiler's result. Ordinarily a single hard
 /// error, but the type is plural so a pass can report several at once.
 #[derive(Clone, Debug, Default)]
-pub struct CompilerErrors(pub Vec<CompilerError>);
+pub struct Diagnostics(Vec<Diagnostic>);
 
 // -- Construction (crate-internal) --
 
-impl CompilerErrors {
+impl Diagnostics {
     /// An empty set.
     pub(crate) fn new() -> Self {
         Self::default()
     }
 
     /// Append a diagnostic.
-    pub(crate) fn push(&mut self, error: CompilerError) {
-        self.0.push(error);
+    pub(crate) fn push(&mut self, diagnostic: Diagnostic) {
+        self.0.push(diagnostic);
     }
 }
 
-impl From<CompilerError> for CompilerErrors {
-    /// A single diagnostic is a set of one: lets a leaf `CompilerError`
-    /// propagate through `?` where a `CompilerErrors` is expected.
-    fn from(error: CompilerError) -> Self {
-        Self(vec![error])
+impl From<Diagnostic> for Diagnostics {
+    /// A single diagnostic is a set of one: lets a leaf `Diagnostic`
+    /// propagate through `?` where a `Diagnostics` is expected.
+    fn from(diagnostic: Diagnostic) -> Self {
+        Self(vec![diagnostic])
     }
 }
 
 // -- Consumption (public) --
 
-impl CompilerErrors {
+impl Diagnostics {
     /// Whether the set holds no diagnostics.
     pub fn is_empty(&self) -> bool {
         self.0.is_empty()
@@ -288,52 +290,52 @@ impl CompilerErrors {
     }
 
     /// Iterate over the diagnostics.
-    pub fn iter(&self) -> std::slice::Iter<'_, CompilerError> {
+    pub fn iter(&self) -> std::slice::Iter<'_, Diagnostic> {
         self.0.iter()
     }
 
-    /// Render every diagnostic for humans (see [`CompilerError::render`]),
+    /// Render every diagnostic for humans (see [`Diagnostic::render`]),
     /// back to back. This is what [`Display`](fmt::Display) uses.
     pub fn render(&self) -> String {
-        self.render_each(CompilerError::render)
+        self.render_each(Diagnostic::render)
     }
 
     /// Render every diagnostic with color and unicode (see
-    /// [`CompilerError::render_pretty`]), back to back.
+    /// [`Diagnostic::render_pretty`]), back to back.
     pub fn render_pretty(&self) -> String {
-        self.render_each(CompilerError::render_pretty)
+        self.render_each(Diagnostic::render_pretty)
     }
 
     /// Render every diagnostic with unicode but no color (see
-    /// [`CompilerError::render_unicode`]), back to back.
+    /// [`Diagnostic::render_unicode`]), back to back.
     pub fn render_unicode(&self) -> String {
-        self.render_each(CompilerError::render_unicode)
+        self.render_each(Diagnostic::render_unicode)
     }
 
     /// Render every diagnostic as monochrome ASCII (see
-    /// [`CompilerError::render_plain`]), back to back.
+    /// [`Diagnostic::render_plain`]), back to back.
     pub fn render_plain(&self) -> String {
-        self.render_each(CompilerError::render_plain)
+        self.render_each(Diagnostic::render_plain)
     }
 
-    fn render_each(&self, render: impl Fn(&CompilerError) -> String) -> String {
+    fn render_each(&self, render: impl Fn(&Diagnostic) -> String) -> String {
         self.0.iter().map(render).collect::<Vec<_>>().join("\n")
     }
 }
 
-impl IntoIterator for CompilerErrors {
-    type Item = CompilerError;
-    type IntoIter = std::vec::IntoIter<CompilerError>;
+impl IntoIterator for Diagnostics {
+    type Item = Diagnostic;
+    type IntoIter = std::vec::IntoIter<Diagnostic>;
 
     fn into_iter(self) -> Self::IntoIter {
         self.0.into_iter()
     }
 }
 
-impl fmt::Display for CompilerErrors {
+impl fmt::Display for Diagnostics {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.write_str(&self.render())
     }
 }
 
-impl std::error::Error for CompilerErrors {}
+impl std::error::Error for Diagnostics {}

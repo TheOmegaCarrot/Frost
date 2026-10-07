@@ -14,7 +14,7 @@ const ARM_HELP: &str = "a `match` arm is written `pattern => result`";
 
 const AS_HELP: &str = "`as` binds a whole Map pattern, like `{name} as person`";
 
-impl Site<'_, '_, '_> {
+impl Site<'_, '_> {
     /// Help for the error, given the one token that was expected there.
     pub(super) fn expected_token_help(&self, expected: &Token) -> Option<String> {
         let found = self.token_at(0);

@@ -16,10 +16,10 @@ pub use core::{
 };
 
 pub use vm::{
-    Arity, Bytecode, Closure, CompiledFunction, Disassembly, Extension, ExtensionError,
-    FormatVersion, GLOBAL_NAMES, GLOBAL_PURITY, HostComponent, HostComponentError, IdleVm,
-    ImportCtx, ImportResolver, Importer, ImporterBuilder, InvalidComponentName, InvalidParams,
-    MissingCaptures, ModuleId, NameEntry, NativeCtx, NativeFn, NativeFunction, Param, Params,
-    PrintSink, ProgramResult, Purity, RunError, Stdlib, StdlibError, StdlibModule, StdoutSink,
-    TrustedProgram, Vm, VmFactory, VmRuntimeConfiguration,
+    AbortReason, Arity, Bytecode, Closure, CompiledFunction, Disassembly, Extension,
+    ExtensionError, FormatVersion, GLOBAL_NAMES, GLOBAL_PURITY, HostComponent, HostComponentError,
+    IdleVm, ImportCtx, ImportResolver, Importer, ImporterBuilder, InvalidComponentName,
+    InvalidParams, MissingCaptures, ModuleId, NameEntry, NativeCtx, NativeFn, NativeFunction,
+    Param, Params, PrintSink, ProgramResult, Purity, RunError, RunErrorKind, Stdlib, StdlibError,
+    StdlibModule, StdoutSink, TrustedProgram, Vm, VmFactory, VmRuntimeConfiguration,
 };

@@ -83,7 +83,7 @@ fn with_backtrace_names_the_files_when_frames_span_several() {
     let err = error_across_files();
     assert_eq!(
         err.with_backtrace().to_string(),
-        "Error: boom\n  \
+        "boom\n  \
          in error\n  \
          in boom (lib.frst)\n  \
          in go (main.frst)\n  \
@@ -104,7 +104,7 @@ fn with_backtrace_omits_the_file_when_every_frame_shares_it() {
     .expect_err("main raises");
     assert_eq!(
         err.with_backtrace().to_string(),
-        "Error: boom\n  in error\n  in inner\n  in <main>"
+        "boom\n  in error\n  in inner\n  in <main>"
     );
 }
 

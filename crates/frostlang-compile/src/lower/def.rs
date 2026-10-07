@@ -1,7 +1,7 @@
 use frostlang_parse::ast::{Destructure, Expr, Spanned};
 
 use crate::{
-    CompilerErrors,
+    Diagnostics,
     lower::{FunctionBuilder, Position, StatementFragment},
 };
 
@@ -11,7 +11,7 @@ impl FunctionBuilder<'_> {
         expr: &Spanned<Expr>,
         destructure: &Spanned<Destructure>,
         exported: bool,
-    ) -> Result<StatementFragment, CompilerErrors> {
+    ) -> Result<StatementFragment, Diagnostics> {
         // A top-level binding is implicitly exported when the option is on.
         let exported = exported || self.exports_implicitly();
 

@@ -82,7 +82,7 @@ use std::path::{Path, PathBuf};
 use std::sync::{Mutex, MutexGuard, PoisonError};
 use std::{fs, io};
 
-use frostlang_compile::{CompilerErrors, CompilerOptions, OptimizationOptions, compile_program};
+use frostlang_compile::{CompilerOptions, Diagnostics, OptimizationOptions, compile_program};
 use frostlang_runtime::{
     FrostError, ImportCtx, ImportResolver, MapKey, ModuleId, RunError, Value, ValueMap,
 };
@@ -112,10 +112,10 @@ pub struct FsResolver {
 /// How an import error renders a module's compile errors.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum DiagnosticStyle {
-    /// Monochrome ASCII; see [`CompilerErrors::render_plain`].
+    /// Monochrome ASCII; see [`Diagnostics::render_plain`].
     #[default]
     Plain,
-    /// Unicode box-drawing without color; see [`CompilerErrors::render_unicode`].
+    /// Unicode box-drawing without color; see [`Diagnostics::render_unicode`].
     Unicode,
 }
 
@@ -243,7 +243,7 @@ impl FsResolver {
         Ok(Value::Map(exports.into()))
     }
 
-    fn render(&self, errors: &CompilerErrors) -> String {
+    fn render(&self, errors: &Diagnostics) -> String {
         match self.diagnostics {
             DiagnosticStyle::Plain => errors.render_plain(),
             DiagnosticStyle::Unicode => errors.render_unicode(),

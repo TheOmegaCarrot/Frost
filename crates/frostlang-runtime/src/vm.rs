@@ -18,7 +18,7 @@ pub use import::{
     Importer, ImporterBuilder, InvalidComponentName, ModuleId, Stdlib, StdlibError, StdlibModule,
 };
 pub use native::{NativeCtx, NativeFn, NativeFunction};
-pub use outcome::{IdleVm, ProgramResult, RunError};
+pub use outcome::{AbortReason, IdleVm, ProgramResult, RunError, RunErrorKind};
 pub use params::{InvalidParams, Param, Params};
 pub use print_sink::{PrintSink, StdoutSink};
 pub use serialize::FormatVersion;
@@ -86,7 +86,7 @@ pub struct Vm {
     // The unrecoverable-error channel.
     // Once set (e.g. fuel exhaustion) the run is fatally aborting:
     // unlike an ordinary error this cannot be caught.
-    abort: Option<FrostError>,
+    abort: Option<Abort>,
 
     // Identity of the module this Vm runs, as assigned by the resolver that loaded it.
     // `None` for a top-level script the host did not identify.
@@ -227,6 +227,14 @@ impl VmFactory {
             slots: Vec::new(),
         })
     }
+}
+
+/// A latched unrecoverable error: why the run is aborting, and the error that
+/// propagates for it.
+#[derive(Debug)]
+struct Abort {
+    reason: AbortReason,
+    error: FrostError,
 }
 
 #[derive(Debug)]
@@ -1034,8 +1042,8 @@ impl Vm {
         // Otherwise grow the ordinary propagating error as it unwinds.
         match self.abort.as_mut() {
             Some(abort) => {
-                abort.backtrace.extend(frames);
-                abort.clone()
+                abort.error.backtrace.extend(frames);
+                abort.error.clone()
             }
             None => {
                 err.backtrace.extend(frames);
@@ -1093,22 +1101,33 @@ impl Vm {
             && self.fuel_used > budget.get()
         {
             // Exhaustion is unrecoverable, not an ordinary error: latch it.
-            return Err(self.abort_with(Self::fuel_exhausted(budget.get())));
+            return Err(self.abort_with(
+                AbortReason::FuelExhausted,
+                Self::fuel_exhausted(budget.get()),
+            ));
         }
         Ok(())
     }
 
-    /// Latch `err` into the unrecoverable-error channel and hand it back to propagate.
+    /// Latch `error` into the unrecoverable-error channel and hand it back to propagate.
     /// Once latched, `run_native`/`invoke` refuse to let any native resume Frost code.
-    fn abort_with(&mut self, err: FrostError) -> FrostError {
-        self.abort = Some(err.clone());
-        err
+    fn abort_with(&mut self, reason: AbortReason, error: FrostError) -> FrostError {
+        self.abort = Some(Abort {
+            reason,
+            error: error.clone(),
+        });
+        error
     }
 
     /// The latched abort error if the run is fatally aborting, else `None`.
     /// Returns a clone: the slot stays latched so every enclosing native re-asserts it.
     fn abort_error(&self) -> Option<FrostError> {
-        self.abort.clone()
+        self.abort.as_ref().map(|abort| abort.error.clone())
+    }
+
+    /// Why the run aborted, if it did.
+    fn abort_reason(&self) -> Option<AbortReason> {
+        self.abort.as_ref().map(|abort| abort.reason)
     }
 
     /// Fail if pushing another frame would exceed the configured call-depth limit.
@@ -1304,9 +1323,10 @@ impl Vm {
         // full trace to wherever the run aborted.
         if let Some(abort) = self.abort.as_mut() {
             abort
+                .error
                 .backtrace
                 .push(BacktraceFrame::new(native.name.to_string(), None));
-            return Err(abort.clone());
+            return Err(abort.error.clone());
         }
 
         // A native that ran and failed contributes its own name to the backtrace.

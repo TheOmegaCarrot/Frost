@@ -1,7 +1,7 @@
 //! A hand-built tour of the diagnostic API.
 //!
 //! This is a demonstration, not a behavioral spec: it constructs one
-//! [`CompilerErrors`] set that exercises every builder and every consumption
+//! [`Diagnostics`] set that exercises every builder and every consumption
 //! path, then prints it both ways. To see the two renderings:
 //!
 //! ```text
@@ -17,7 +17,7 @@
 
 use miette::Severity;
 
-use crate::{CompilerError, CompilerErrors};
+use crate::{Diagnostic, Diagnostics};
 use frostlang_parse::ast::SourceSpan;
 
 /// The span of the `occurrence`-th (0-based) match of `needle` in `src`.
@@ -37,7 +37,7 @@ fn span(src: &str, needle: &str, occurrence: usize) -> SourceSpan {
 
 /// Build the demonstration set: three diagnostics that between them use every
 /// part of the API.
-fn demo_errors() -> CompilerErrors {
+fn demo_errors() -> Diagnostics {
     let main = r"def {foo} = import('other')
 def x = 1
 def x = 2
@@ -46,25 +46,25 @@ print(foo)
 ";
     let other = "def foo = 1";
 
-    let mut errors = CompilerErrors::new();
+    let mut errors = Diagnostics::new();
 
     // 1. A hard error with a same-file related note. The related diagnostic
     //    omits its own source, so it inherits `main.frst` from the parent.
     errors.push(
-        CompilerError::error("`x` is already bound".to_string())
+        Diagnostic::error("`x` is already bound".to_string())
             .code("duplicate binding".to_string())
             .source("main.frst".to_string(), main.to_string())
             .label_primary(span(main, "x", 1), "`x` redefined here".to_string())
             .help("bindings are immutable; choose a different name".to_string())
             .related(
-                CompilerError::advice("the first binding of `x`".to_string())
+                Diagnostic::advice("the first binding of `x`".to_string())
                     .label(span(main, "x", 0), "originally bound here".to_string()),
             ),
     );
 
     // 2. A warning: one label, a code and a help, no related block.
     errors.push(
-        CompilerError::warning("`y` is never used".to_string())
+        Diagnostic::warning("`y` is never used".to_string())
             .code("unused binding".to_string())
             .source("main.frst".to_string(), main.to_string())
             .label(span(main, "y", 0), "bound but never read".to_string())
@@ -75,7 +75,7 @@ print(foo)
     //    related diagnostic carries its own `source`, so it renders its own
     //    snippet from `other.frst`.
     errors.push(
-        CompilerError::new(
+        Diagnostic::new(
             Severity::Error,
             "`foo` is not exported by module `other`".to_string(),
         )
@@ -87,7 +87,7 @@ print(foo)
         )
         .help("add `export` to the definition in `other`".to_string())
         .related(
-            CompilerError::advice("`foo` is defined here, but not exported".to_string())
+            Diagnostic::advice("`foo` is defined here, but not exported".to_string())
                 .source("other.frst".to_string(), other.to_string())
                 .label(
                     span(other, "foo", 0),
@@ -103,7 +103,7 @@ print(foo)
 fn every_part_of_the_api() {
     let errors = demo_errors();
 
-    // -- CompilerErrors inspection --
+    // -- Diagnostics inspection --
     assert!(!errors.is_empty(), "the set holds diagnostics");
     assert_eq!(errors.len(), 3, "three top-level diagnostics");
     assert_eq!(errors.iter().count(), 3, "iter walks all three");

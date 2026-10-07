@@ -9,7 +9,7 @@ use frostlang_parse::ast::{Binding, Destructure, MapDestructureEntry, Spanned};
 use frostlang_runtime::{Bytecode, FrostArray, FrostType, Value};
 
 use crate::{
-    CompilerErrors,
+    Diagnostics,
     lower::{
         ConstKeyOp, FunctionBuilder, Ir, JumpType, Label, Position,
         fold::constant_key_of,
@@ -42,7 +42,7 @@ impl FunctionBuilder<'_> {
         destructure: &Spanned<Destructure>,
         exported: bool,
         constant: Option<Value>,
-    ) -> Result<DestructureFragment, CompilerErrors> {
+    ) -> Result<DestructureFragment, Diagnostics> {
         match &destructure.node {
             Destructure::Binding(binding) => self.compile_binding(binding, exported, constant),
             Destructure::Array { elements, rest } => {
@@ -91,7 +91,7 @@ impl FunctionBuilder<'_> {
         binding: &Spanned<Binding>,
         exported: bool,
         constant: Option<Value>,
-    ) -> Result<DestructureFragment, CompilerErrors> {
+    ) -> Result<DestructureFragment, Diagnostics> {
         let store = match &binding.node {
             Binding::Named(name) => {
                 let id = self
@@ -138,7 +138,7 @@ impl FunctionBuilder<'_> {
         rest: Option<&Spanned<Binding>>,
         exported: bool,
         constant: Option<Value>,
-    ) -> Result<DestructureFragment, CompilerErrors> {
+    ) -> Result<DestructureFragment, Diagnostics> {
         let count = elements.len();
         // A known value of the wrong shape raises, so its parts are never bound.
         let known = constant
@@ -191,7 +191,7 @@ impl FunctionBuilder<'_> {
         bind_whole: Option<&Spanned<Binding>>,
         exported: bool,
         constant: Option<Value>,
-    ) -> Result<DestructureFragment, CompilerErrors> {
+    ) -> Result<DestructureFragment, Diagnostics> {
         // A known value that is not a Map raises, so its parts are never bound.
         let known = constant.filter(|value| value.as_map().is_some());
         let mut code = self.check_shape(

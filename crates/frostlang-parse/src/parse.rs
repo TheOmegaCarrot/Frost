@@ -23,19 +23,17 @@ pub use error::{Label, ParseError};
 
 /// Parses `input`, the source of a whole Frost program, into an [`ast::Program`].
 ///
-/// `filename` labels the source in [`ParseError::rendered`]; it is used only for display.
+/// `filename` names the source when a [`ParseError`] is rendered; it is used only for display.
 pub fn parse_program(filename: &str, input: &str) -> Result<ast::Program, ParseError> {
-    let mut ctx =
-        ParseCtx::new(filename, input).map_err(|d| ParseError::from_diag(d, filename, input))?;
-
-    ctx.parse_statements(StatementContext::TopLevel)
+    ParseCtx::new(input)
+        .and_then(|mut ctx| ctx.parse_statements(StatementContext::TopLevel))
         .map(|statements| ast::Program { statements })
-        .map_err(|d| ParseError::from_diag(d, filename, input))
+        .map_err(|diagnostic| ParseError::new(diagnostic, filename, input))
 }
 
 type ParseResult<T> = Result<T, Diagnostic>;
 
-impl<'src, 'f> ParseCtx<'src, 'f> {
+impl<'src> ParseCtx<'src> {
     /// Parse a name or `_`; `expected` describes it for an error, as in [`ParseCtx::expected`].
     fn parse_binding(&mut self, expected: &str) -> ParseResult<Spanned<Binding>> {
         let peek = self.must_peek(expected)?;

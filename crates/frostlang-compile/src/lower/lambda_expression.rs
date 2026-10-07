@@ -6,7 +6,7 @@ use frostlang_parse::ast::{Binding, Expr, SourceSpan, Spanned, Statement};
 use frostlang_runtime::{Arity, Bytecode};
 
 use crate::{
-    CompilerErrors,
+    Diagnostics,
     lower::{
         ExprFragment, FunctionBuilder, Ir, Position,
         fold::constant_of,
@@ -120,7 +120,7 @@ impl FunctionBuilder<'_> {
     pub(super) fn compile_lambda(
         &mut self,
         lambda: &Spanned<Expr>,
-    ) -> Result<ExprFragment, CompilerErrors> {
+    ) -> Result<ExprFragment, Diagnostics> {
         // A free name this function binds is a capture, seated in the order
         // `free_names` finds them; the order is arbitrary, but both sides of the
         // closure must agree on it. Any other free name is the child's to

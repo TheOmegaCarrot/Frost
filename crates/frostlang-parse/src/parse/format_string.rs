@@ -3,7 +3,7 @@ use crate::lex::{Token, skip_interpolation};
 use crate::parse::strings::{EscapingString, QuoteStyle, decode_escape};
 use crate::parse::{Diagnostic, ParseResult, ctx::ParseCtx};
 
-impl<'src, 'f> ParseCtx<'src, 'f> {
+impl<'src> ParseCtx<'src> {
     pub(crate) fn parse_format_string(&mut self, quote: QuoteStyle) -> ParseResult<Spanned<Expr>> {
         let peek = self.must_peek("a format String")?;
         let span = peek.span.clone();
@@ -100,8 +100,7 @@ fn parse_interpolation(
     // reliably.
     let context = |d: Diagnostic| d.in_interpolation(open);
 
-    let mut sub_ctx =
-        ParseCtx::new_interpolation(ctx.filename(), src, open.end).map_err(context)?;
+    let mut sub_ctx = ParseCtx::new_interpolation(src, open.end).map_err(context)?;
 
     // An interpolation is lexed separately but sits lexically inside any enclosing
     // abbreviated lambda, so the sub-context parses with the outer frames in hand:

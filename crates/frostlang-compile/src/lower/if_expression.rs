@@ -2,7 +2,7 @@ use frostlang_parse::ast::{Expr, Spanned};
 use frostlang_runtime::Bytecode;
 
 use crate::{
-    CompilerErrors,
+    Diagnostics,
     lower::{ExprFragment, FunctionBuilder, Ir, JumpType, Position, fold::constant_of},
 };
 
@@ -13,7 +13,7 @@ impl FunctionBuilder<'_> {
         consequent: &Spanned<Expr>,
         alternate: &Option<Box<Spanned<Expr>>>,
         position: Position,
-    ) -> Result<ExprFragment, CompilerErrors> {
+    ) -> Result<ExprFragment, Diagnostics> {
         // Each branch is the last code its path runs: the consequent is followed
         // only by the jump past the alternate, the alternate only by the end.
         let condition = self.compile_expression(condition, Position::Inner)?;

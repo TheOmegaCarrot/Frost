@@ -1,7 +1,7 @@
 use frostlang_parse::ast::{Expr, Spanned, Statement};
 
 use crate::{
-    CompilerErrors,
+    Diagnostics,
     lower::{ExprFragment, FunctionBuilder, Position},
 };
 
@@ -11,7 +11,7 @@ impl FunctionBuilder<'_> {
         body: &[Spanned<Statement>],
         value: &Spanned<Expr>,
         position: Position,
-    ) -> Result<ExprFragment, CompilerErrors> {
+    ) -> Result<ExprFragment, Diagnostics> {
         self.in_scope(|this| {
             let statements = body
                 .iter()

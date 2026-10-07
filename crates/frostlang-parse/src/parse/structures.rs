@@ -3,7 +3,7 @@ use crate::lex::Token;
 use crate::parse::ParseResult;
 use crate::parse::ctx::{Bracket, ParseCtx};
 
-impl<'src, 'f> ParseCtx<'src, 'f> {
+impl<'src> ParseCtx<'src> {
     pub(crate) fn parse_array_literal(&mut self) -> ParseResult<Spanned<Expr>> {
         let (elements, span) =
             self.parse_comma_separated(Bracket::ArrayLiteral, Self::parse_expression)?;

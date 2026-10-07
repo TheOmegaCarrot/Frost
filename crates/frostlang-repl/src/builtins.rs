@@ -1,6 +1,6 @@
 //! The REPL's own metacommands.
 
-use frostlang_compile::{CompilerError, CompilerErrors, Optimization};
+use frostlang_compile::{Diagnostic, Diagnostics, Optimization};
 use frostlang_parse::parse_program;
 
 use crate::metacommand::{Builtin, Registry};
@@ -62,8 +62,8 @@ impl Repl {
             Builtin::Ast => {
                 let source = needs_argument(builtin, argument, "source to parse")?;
                 let program = parse_program(INPUT_NAME, source).map_err(|error| {
-                    let diagnostic = CompilerError::from_parse_error(&error, INPUT_NAME, source);
-                    ReplError::Compile(CompilerErrors::from(diagnostic))
+                    let diagnostic = Diagnostic::from_parse_error(&error, INPUT_NAME, source);
+                    ReplError::Compile(Diagnostics::from(diagnostic))
                 })?;
                 Ok(Reply::Text(program.dump()))
             }

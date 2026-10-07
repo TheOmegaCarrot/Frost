@@ -4,7 +4,7 @@ use crate::lex::Token;
 use crate::parse::ctx::{Bracket, OpenBracket, SrcToken};
 use crate::parse::hints::Site;
 
-impl<'src> Site<'_, 'src, '_> {
+impl<'src> Site<'_, 'src> {
     // -- Tokens and statements --
 
     /// The token `offset` places from the error's.

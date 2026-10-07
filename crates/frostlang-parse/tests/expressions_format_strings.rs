@@ -475,7 +475,7 @@ fn interpolation_error_renders_a_single_diagram() {
     // that would produce two source diagrams and an "in interpolation:" prefix.
     let rendered = frostlang_parse::parse_program("test.frst", "$'${x +}'")
         .unwrap_err()
-        .to_string();
+        .render_unicode();
     assert_eq!(
         rendered.matches("╭─[").count(),
         1,

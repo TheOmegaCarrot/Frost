@@ -21,7 +21,7 @@ use frostlang_parse::ast::{
 use frostlang_runtime::{Bytecode, FrostType, Value};
 
 use crate::{
-    CompilerError, CompilerErrors,
+    Diagnostic, Diagnostics,
     lower::{
         ConstKeyOp, ExprFragment, FunctionBuilder, Ir, JumpType, Label, LocalId, Position,
         destructure::Mismatch,
@@ -110,7 +110,7 @@ impl FunctionBuilder<'_> {
         target: &Spanned<Expr>,
         arms: &[Spanned<MatchArm>],
         position: Position,
-    ) -> Result<ExprFragment, CompilerErrors> {
+    ) -> Result<ExprFragment, Diagnostics> {
         let target = self.compile_expression(target, Position::Inner)?;
         let arms = arms
             .iter()
@@ -162,7 +162,7 @@ impl FunctionBuilder<'_> {
         &mut self,
         arm: &MatchArm,
         position: Position,
-    ) -> Result<ArmFragment, CompilerErrors> {
+    ) -> Result<ArmFragment, Diagnostics> {
         let fail = self.next_label();
         let pattern =
             self.compile_pattern(&arm.pattern, fail, BindMode::Define, &mut Vec::new())?;
@@ -188,7 +188,7 @@ impl FunctionBuilder<'_> {
         fail: Label,
         mode: BindMode,
         bound: &mut Vec<Bound>,
-    ) -> Result<PatternFragment, CompilerErrors> {
+    ) -> Result<PatternFragment, Diagnostics> {
         match &pattern.node {
             MatchPattern::Binding {
                 name,
@@ -267,7 +267,7 @@ impl FunctionBuilder<'_> {
         fail: Label,
         mode: BindMode,
         bound: &mut Vec<Bound>,
-    ) -> Result<PatternFragment, CompilerErrors> {
+    ) -> Result<PatternFragment, Diagnostics> {
         let mut code = self.check_shape(
             [
                 Ir::Ready(Bytecode::Dup),
@@ -328,7 +328,7 @@ impl FunctionBuilder<'_> {
         fail: Label,
         mode: BindMode,
         bound: &mut Vec<Bound>,
-    ) -> Result<PatternFragment, CompilerErrors> {
+    ) -> Result<PatternFragment, Diagnostics> {
         let (first, _) = branches
             .split_first()
             .expect("an alternative has at least one branch");
@@ -393,7 +393,7 @@ impl FunctionBuilder<'_> {
         binding: &Spanned<Binding>,
         mode: BindMode,
         bound: &mut Vec<Bound>,
-    ) -> Result<Ir, CompilerErrors> {
+    ) -> Result<Ir, Diagnostics> {
         let Binding::Named(name) = &binding.node else {
             return Ok(Ir::Ready(Bytecode::Pop));
         };
@@ -423,7 +423,7 @@ impl FunctionBuilder<'_> {
                         return Err(self
                             .alternative_mismatch(name, binding.span, "bound only here".into())
                             .related(
-                                CompilerError::advice(format!(
+                                Diagnostic::advice(format!(
                                     "the first alternative does not bind `{name}`"
                                 ))
                                 .label(span, "first alternative".into()),
@@ -447,7 +447,7 @@ impl FunctionBuilder<'_> {
         first: &[Bound],
         branch: &[Bound],
         span: SourceSpan,
-    ) -> Result<(), CompilerErrors> {
+    ) -> Result<(), Diagnostics> {
         match first
             .iter()
             .find(|original| !branch.iter().any(|bound| bound.name == original.name))
@@ -459,11 +459,8 @@ impl FunctionBuilder<'_> {
                     format!("does not bind `{}`", missing.name),
                 )
                 .related(
-                    CompilerError::advice(format!(
-                        "the first alternative binds `{}`",
-                        missing.name
-                    ))
-                    .label(missing.span, "bound here".into()),
+                    Diagnostic::advice(format!("the first alternative binds `{}`", missing.name))
+                        .label(missing.span, "bound here".into()),
                 )
                 .into()),
             None => Ok(()),
@@ -471,7 +468,7 @@ impl FunctionBuilder<'_> {
     }
 
     /// The error for alternatives that bind different names, `name` among them.
-    fn alternative_mismatch(&self, name: &str, span: SourceSpan, label: String) -> CompilerError {
+    fn alternative_mismatch(&self, name: &str, span: SourceSpan, label: String) -> Diagnostic {
         self.error(format!(
             "every alternative must bind the same names, but only some bind `{name}`"
         ))
