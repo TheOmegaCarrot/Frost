@@ -10,12 +10,11 @@ use std::{
     vec,
 };
 
-use itertools::{Either, Itertools};
-
 use crate::core::{FrostFloat, MapKey, Value};
 
 /// Most entries a Map holds in its compact form, beyond which it switches to a
 /// form that stays fast as it grows.
+// TODO: Rebenchmark this limit now that the compact form is kept sorted.
 const COMPACT_LIMIT: usize = 16;
 
 /// A Frost Map that you own outright and may change: the mutable form of a
@@ -26,7 +25,8 @@ const COMPACT_LIMIT: usize = 16;
 /// then turn it into a `FrostMap` or [`Value`] to hand to Frost; take one back out
 /// with [`FrostMap::try_into_map`](crate::FrostMap::try_into_map).
 ///
-/// Entries iterate in an arbitrary order.
+/// Entries iterate in ascending key order (see [`MapKey`]), so Maps that are
+/// equal iterate alike, however each was built.
 ///
 /// ```
 /// use frostlang_runtime::{MapKey, Value, ValueMap};
@@ -44,8 +44,8 @@ pub struct ValueMap(Repr);
 
 #[derive(Clone)]
 enum Repr {
-    // Insertion order, searched linearly: for the many small Maps a script makes,
-    // one allocation and a short scan beat any tree or table.
+    // Sorted by key and binary searched: for the many small Maps a script makes,
+    // one allocation and a short search beat any tree or table.
     // Never holds more than `COMPACT_LIMIT` entries.
     Compact(Vec<(MapKey, Value)>),
     // Entered once the Map would hold more than `COMPACT_LIMIT` entries. Removing
@@ -86,10 +86,10 @@ impl ValueMap {
     /// The stored key and its value for `key`, if present.
     pub fn get_key_value(&self, key: &MapKey) -> Option<(&MapKey, &Value)> {
         match &self.0 {
-            Repr::Compact(entries) => entries
-                .iter()
-                .find(|(candidate, _)| candidate == key)
-                .map(|(key, value)| (key, value)),
+            Repr::Compact(entries) => {
+                let (key, value) = &entries[search(entries, key).ok()?];
+                Some((key, value))
+            }
             Repr::Tree(tree) => tree.get_key_value(key),
         }
     }
@@ -122,10 +122,10 @@ impl ValueMap {
     /// A mutable reference to the value at `key`, if present.
     pub fn get_mut(&mut self, key: &MapKey) -> Option<&mut Value> {
         match &mut self.0 {
-            Repr::Compact(entries) => entries
-                .iter_mut()
-                .find(|(candidate, _)| candidate == key)
-                .map(|(_, value)| value),
+            Repr::Compact(entries) => {
+                let index = search(entries, key).ok()?;
+                Some(&mut entries[index].1)
+            }
             Repr::Tree(tree) => tree.get_mut(key),
         }
     }
@@ -159,8 +159,8 @@ impl ValueMap {
     pub fn remove_entry(&mut self, key: &MapKey) -> Option<(MapKey, Value)> {
         match &mut self.0 {
             Repr::Compact(entries) => {
-                let at = entries.iter().position(|(candidate, _)| candidate == key)?;
-                Some(entries.remove(at))
+                let index = search(entries, key).ok()?;
+                Some(entries.remove(index))
             }
             Repr::Tree(tree) => tree.remove_entry(key),
         }
@@ -188,19 +188,21 @@ impl ValueMap {
         // compact entry always has room.
         if let Repr::Compact(entries) = &mut self.0
             && entries.len() == COMPACT_LIMIT
-            && !entries.iter().any(|(candidate, _)| *candidate == key)
+            && search(entries, &key).is_err()
         {
             self.0 = Repr::Tree(std::mem::take(entries).into_iter().collect());
         }
         match &mut self.0 {
-            Repr::Compact(entries) => {
-                match entries.iter().position(|(candidate, _)| *candidate == key) {
-                    Some(index) => {
-                        Entry::Occupied(OccupiedEntry(OccupiedRepr::Compact { entries, index }))
-                    }
-                    None => Entry::Vacant(VacantEntry(VacantRepr::Compact { entries, key })),
+            Repr::Compact(entries) => match search(entries, &key) {
+                Ok(index) => {
+                    Entry::Occupied(OccupiedEntry(OccupiedRepr::Compact { entries, index }))
                 }
-            }
+                Err(index) => Entry::Vacant(VacantEntry(VacantRepr::Compact {
+                    entries,
+                    index,
+                    key,
+                })),
+            },
             Repr::Tree(tree) => match tree.entry(key) {
                 btree_map::Entry::Occupied(entry) => {
                     Entry::Occupied(OccupiedEntry(OccupiedRepr::Tree(entry)))
@@ -252,32 +254,19 @@ impl ValueMap {
     pub fn into_values(self) -> IntoValues {
         IntoValues(self.into_iter())
     }
+}
 
-    /// The entries in key order, for output that depends only on what the Map holds.
-    pub(crate) fn iter_by_key(&self) -> impl Iterator<Item = (&MapKey, &Value)> {
-        match &self.0 {
-            Repr::Compact(entries) => Either::Left(
-                entries
-                    .iter()
-                    .map(|(key, value)| (key, value))
-                    .sorted_unstable_by_key(|&(key, _)| key),
-            ),
-            Repr::Tree(tree) => Either::Right(tree.iter()),
-        }
-    }
+/// Where `key` is in the compact form's `entries`: `Ok` with its index if
+/// present, else `Err` with the index that keeps the entries sorted if it were
+/// inserted there.
+fn search(entries: &[(MapKey, Value)], key: &MapKey) -> Result<usize, usize> {
+    entries.binary_search_by(|(candidate, _)| candidate.cmp(key))
 }
 
 impl PartialEq for ValueMap {
     fn eq(&self, other: &Self) -> bool {
-        match (&self.0, &other.0) {
-            (Repr::Tree(tree), Repr::Tree(other_tree)) => tree == other_tree,
-            _ => {
-                self.len() == other.len()
-                    && self
-                        .iter()
-                        .all(|(key, value)| other.get(key) == Some(value))
-            }
-        }
+        // Both forms iterate in key order, so equal Maps iterate alike.
+        self.len() == other.len() && self.iter().eq(other.iter())
     }
 }
 
@@ -486,6 +475,8 @@ pub struct VacantEntry<'a>(VacantRepr<'a>);
 enum VacantRepr<'a> {
     Compact {
         entries: &'a mut Vec<(MapKey, Value)>,
+        // Where `key` goes to keep the entries sorted.
+        index: usize,
         key: MapKey,
     },
     Tree(btree_map::VacantEntry<'a, MapKey, Value>),
@@ -511,7 +502,14 @@ impl<'a> VacantEntry<'a> {
     /// Insert `value` under the entry's key, returning it mutably.
     pub fn insert(self, value: Value) -> &'a mut Value {
         match self.0 {
-            VacantRepr::Compact { entries, key } => &mut entries.push_mut((key, value)).1,
+            VacantRepr::Compact {
+                entries,
+                index,
+                key,
+            } => {
+                entries.insert(index, (key, value));
+                &mut entries[index].1
+            }
             VacantRepr::Tree(entry) => entry.insert(value),
         }
     }

@@ -522,6 +522,113 @@ fn a_map_iterates_in_the_same_order_every_time() {
     }
 }
 
+/// The keys `map_of(size)` holds, in ascending key order.
+fn sorted_keys(size: i64) -> Vec<MapKey> {
+    entries_of(size).into_keys().collect()
+}
+
+/// A Map of the same entries as `map_of(size)`, inserted alternately from
+/// either end (`0`, `size - 1`, `1`, `size - 2`, ...) rather than in a
+/// monotonic order.
+fn scattered_map_of(size: i64) -> ValueMap {
+    let mut map = ValueMap::new();
+    for i in 0..size {
+        let index = if i % 2 == 0 { i / 2 } else { size - 1 - i / 2 };
+        map.insert(key(index), Value::Int(index));
+    }
+    map
+}
+
+#[test]
+fn every_iterator_goes_in_key_order() {
+    for size in SIZES {
+        let expected_keys = sorted_keys(size);
+        // Each value is its key's index, so the values follow the keys.
+        let expected_values: Vec<Value> = entries_of(size).into_values().collect();
+        for (how, mut map) in [
+            ("descending", map_of(size)),
+            ("scattered", scattered_map_of(size)),
+        ] {
+            let iter: Vec<MapKey> = map.iter().map(|(key, _)| key.clone()).collect();
+            assert_eq!(iter, expected_keys, "size {size}, {how}: iter");
+            let keys: Vec<MapKey> = map.keys().cloned().collect();
+            assert_eq!(keys, expected_keys, "size {size}, {how}: keys");
+            let values: Vec<Value> = map.values().cloned().collect();
+            assert_eq!(values, expected_values, "size {size}, {how}: values");
+            let iter_mut: Vec<MapKey> = map.iter_mut().map(|(key, _)| key.clone()).collect();
+            assert_eq!(iter_mut, expected_keys, "size {size}, {how}: iter_mut");
+            let into_iter: Vec<MapKey> = map.clone().into_iter().map(|(key, _)| key).collect();
+            assert_eq!(into_iter, expected_keys, "size {size}, {how}: into_iter");
+            let into_keys: Vec<MapKey> = map.clone().into_keys().collect();
+            assert_eq!(into_keys, expected_keys, "size {size}, {how}: into_keys");
+            let into_values: Vec<Value> = map.into_values().collect();
+            assert_eq!(
+                into_values, expected_values,
+                "size {size}, {how}: into_values"
+            );
+        }
+    }
+}
+
+#[test]
+fn key_order_holds_across_growth_and_shrinking() {
+    // Checked after every insertion and removal, so the order is seen on both
+    // sides of wherever the form changes.
+    let mut map = ValueMap::new();
+    for size in 1..=40 {
+        map.insert(key(size - 1), Value::Int(size - 1));
+        let keys: Vec<_> = map.keys().cloned().collect();
+        assert_eq!(keys, sorted_keys(size), "growing to {size}");
+    }
+    for size in (0..40).rev() {
+        map.remove(&key(size));
+        let keys: Vec<_> = map.keys().cloned().collect();
+        assert_eq!(keys, sorted_keys(size), "shrinking to {size}");
+    }
+}
+
+#[test]
+fn keys_of_different_types_order_by_type_first() {
+    // Bool < Int < Float < String < Bytes, inserted here in reverse.
+    let ordered = [
+        MapKey::from(false),
+        MapKey::from(true),
+        MapKey::from(-1),
+        MapKey::from(1),
+        MapKey::from(FrostFloat::new(-0.5).unwrap()),
+        MapKey::from(FrostFloat::new(0.5).unwrap()),
+        MapKey::from("a"),
+        MapKey::from("b"),
+        MapKey::from(&b"a"[..]),
+        MapKey::from(&b"b"[..]),
+    ];
+    let map: ValueMap = ordered
+        .iter()
+        .rev()
+        .map(|key| (key.clone(), Value::Null))
+        .collect();
+    let keys: Vec<_> = map.keys().cloned().collect();
+    assert_eq!(keys, ordered);
+}
+
+#[test]
+fn equal_maps_iterate_alike_however_they_were_built() {
+    for size in SIZES {
+        let mut shrunk = map_of(100);
+        shrunk.retain(|key, _| entries_of(size).contains_key(key));
+        let built = [
+            ("descending", map_of(size)),
+            ("scattered", scattered_map_of(size)),
+            ("collected", entries_of(size).into_iter().collect()),
+            ("shrunk", shrunk),
+        ];
+        let first: Vec<_> = built[0].1.iter().collect();
+        for (how, map) in &built[1..] {
+            assert_eq!(map.iter().collect::<Vec<_>>(), first, "size {size}, {how}");
+        }
+    }
+}
+
 #[test]
 fn owning_iterators_give_up_every_entry() {
     for size in SIZES {

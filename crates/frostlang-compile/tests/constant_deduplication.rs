@@ -169,6 +169,18 @@ fn opposite_zeros_keep_printing_differently() {
 }
 
 #[test]
+fn equal_maps_built_in_different_orders_list_their_keys_alike() {
+    // The two literals share a pool entry when deduplicating, so each must
+    // list its keys as the other would.
+    let source = r"
+        def f = fn x -> [x, {b: 1, a: 2}, {a: 2, b: 1}]
+        def [_, first, second] = f(0)
+        [keys(first), keys(second)]
+    ";
+    assert_eq!(run(source), run(r#"[["a", "b"], ["a", "b"]]"#));
+}
+
+#[test]
 fn a_shared_constant_is_never_changed_through_one_of_its_uses() {
     // Each use builds on the constant; a use that changed it in place would
     // change what the others see.

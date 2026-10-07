@@ -56,12 +56,11 @@ impl Constant for Value {
             }
             (Value::Map(a), Value::Map(b)) => {
                 a.len() == b.len()
-                    && a.iter().all(|(key, value)| {
-                        b.get_key_value(key)
-                            .is_some_and(|(other_key, other_value)| {
-                                key.is_same(other_key) && value.is_same(other_value)
-                            })
-                    })
+                    && a.iter()
+                        .zip(b.iter())
+                        .all(|((a_key, a_value), (b_key, b_value))| {
+                            a_key.is_same(b_key) && a_value.is_same(b_value)
+                        })
             }
             _ => self == other,
         }
