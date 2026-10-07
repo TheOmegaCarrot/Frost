@@ -43,6 +43,7 @@ independently:
 | `frostlang-runtime` | The `core` (the `Value` type, its variants, operators, conversions, serde bridge), the `vm` (bytecode execution, globals, native functions, arity/type params, import, serialization), and the `stdlib` (the `std.*` modules a host opts into). |
 | `frostlang-compile` | AST to bytecode: scope resolution, capture discovery, constant folding and propagation, assembly. |
 | `frostlang-driver` | A complete command-line interface built around a host's configuration: importer, runtime limits, optimizations. |
+| `frostlang-fs-resolver` | An optional `ImportResolver` serving `import('a.b.c')` from `a/b/c.frst` under host-configured roots, with caching and cycle detection. |
 | `frostlang-repl` | An interactive read-eval-print loop. |
 | `frostlang-cli` | The `frost` binary, built on `frostlang-driver`. |
 | `frostlang-astviz` | AST visualization; compiles the tree-sitter Frost grammar from `editor/`. Unpublished. |

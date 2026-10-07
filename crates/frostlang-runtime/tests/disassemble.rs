@@ -19,6 +19,7 @@ fn function(name: &str, code: Vec<Bytecode>) -> CompiledFunction {
     CompiledFunction {
         version: FormatVersion,
         name: name.to_string(),
+        origin: None,
         code,
         child_fns: Vec::new(),
         constants: Vec::new(),

@@ -15,6 +15,7 @@ fn program(code: Vec<Bytecode>) -> Arc<Closure> {
     Arc::new(CompiledFunction {
         version: FormatVersion,
         name: "main".to_string(),
+        origin: None,
         code: [Bytecode::Pop].into_iter().chain(code).collect(),
         child_fns: Vec::new(),
         constants: Vec::new(),

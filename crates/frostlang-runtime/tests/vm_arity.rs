@@ -37,6 +37,7 @@ fn call_native(native: Value, argc: usize) -> Result<ProgramResult, FrostError> 
     let program = Arc::new(CompiledFunction {
         version: FormatVersion,
         name: "<test>".to_string(),
+        origin: None,
         code,
         child_fns: Vec::new(),
         constants: Vec::new(),
@@ -137,6 +138,7 @@ fn omitted_vs_present_probe() -> Arc<CompiledFunction> {
     Arc::new(CompiledFunction {
         version: FormatVersion,
         name: "probe".to_string(),
+        origin: None,
         // Stack on entry: [ closure, (x?), argc ].
         code: vec![
             PushInt(1),        //  0: [.., argc, 1]
@@ -197,6 +199,7 @@ fn between_closure_seating_works_through_call() {
         let wrapper = Arc::new(CompiledFunction {
             version: FormatVersion,
             name: "wrapper".to_string(),
+            origin: None,
             code,
             child_fns: Vec::new(),
             constants: Vec::new(),

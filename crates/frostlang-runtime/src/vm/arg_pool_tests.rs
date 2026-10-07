@@ -33,6 +33,7 @@ fn func(
     Arc::new(CompiledFunction {
         version: FormatVersion,
         name: name.to_string(),
+        origin: None,
         code,
         child_fns: children,
         constants: Vec::new(),

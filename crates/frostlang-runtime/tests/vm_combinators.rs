@@ -14,8 +14,8 @@ mod common;
 
 use common::{Pop, global_slot};
 use frostlang_runtime::{
-    Arity, Bytecode, CompiledFunction, FormatVersion, FrostError, FrostResult, MapKey, NameEntry,
-    NativeCtx, NativeFunction, Value, Vm,
+    Arity, BacktraceFrame, Bytecode, CompiledFunction, FormatVersion, FrostError, FrostResult,
+    MapKey, NameEntry, NativeCtx, NativeFunction, Value, Vm,
 };
 
 use Bytecode::*;
@@ -36,6 +36,7 @@ fn func(name: &str, code: Vec<Bytecode>, arity: Arity, names: &[&str]) -> Value 
     let f = Arc::new(CompiledFunction {
         version: FormatVersion,
         name: name.to_string(),
+        origin: None,
         code,
         child_fns: Vec::new(),
         constants: Vec::new(),
@@ -91,6 +92,7 @@ fn run_main(caps: Vec<(&str, Value)>, body: Vec<Bytecode>) -> Result<Value, Fros
     let main = Arc::new(CompiledFunction {
         version: FormatVersion,
         name: "main".to_string(),
+        origin: None,
         code,
         child_fns: Vec::new(),
         constants: Vec::new(),
@@ -158,7 +160,7 @@ fn error_raises_with_the_string_as_message() {
 #[test]
 fn error_contributes_its_frame_to_the_backtrace() {
     let err = raise(Value::from("boom"));
-    let frames: Vec<&str> = err.backtrace().iter().map(String::as_str).collect();
+    let frames: Vec<&str> = err.backtrace().iter().map(BacktraceFrame::name).collect();
     assert_eq!(frames, vec!["error", "main"]);
 }
 

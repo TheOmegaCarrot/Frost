@@ -16,6 +16,7 @@ pub(super) fn call_global() -> Value {
         function: Arc::new(CompiledFunction {
             version: FormatVersion,
             name: "call".to_string(),
+            origin: None,
             arity: Arity::Between(1, 2),
             num_captures: 0,
             // Slot-free: an empty name_table gives the frame no local slots. The body
@@ -102,7 +103,7 @@ fn try_call(mut ctx: NativeCtx<'_>, args: &mut [Value]) -> FrostResult {
             let trace = err
                 .backtrace
                 .iter()
-                .map(|name| Value::from(name.as_str()))
+                .map(|frame| Value::from(frame.name()))
                 .collect::<Vec<_>>();
             Ok(result_map([
                 (string_key("ok"), Value::Bool(false)),

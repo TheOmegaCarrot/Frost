@@ -14,6 +14,7 @@
 //! holds, and how the runtime loads it.
 
 use std::collections::{BTreeMap, BTreeSet};
+use std::sync::Arc;
 use std::{env, fs};
 
 use frostlang_compile::{CompilerOptions, Optimization, OptimizationOptions, compile_in_scope};
@@ -70,13 +71,18 @@ fn generate(source: &str) -> String {
         .code
         .close(BTreeMap::new())
         .expect("the source's top level captures nothing");
-    let functions = &program.inner_fn().child_fns;
-    check(functions);
+    let functions: Vec<CompiledFunction> = program
+        .inner_fn()
+        .child_fns
+        .iter()
+        .map(|function| without_origin(function))
+        .collect();
+    check(&functions);
 
     let tree: Value = functions
         .iter()
         .map(|function| {
-            let value = to_value(function.as_ref()).unwrap_or_else(|err| {
+            let value = to_value(function).unwrap_or_else(|err| {
                 panic!("`{}` does not serialize: {}", function.name, err.message())
             });
             check_round_trip(function, &value);
@@ -112,9 +118,23 @@ pub(super) fn functions() -> Value {{
     )
 }
 
+/// `function` and every function nested in it, without an origin: a global is
+/// the runtime's own, not code from a script file.
+fn without_origin(function: &CompiledFunction) -> CompiledFunction {
+    CompiledFunction {
+        origin: None,
+        child_fns: function
+            .child_fns
+            .iter()
+            .map(|child| Arc::new(without_origin(child)))
+            .collect(),
+        ..function.clone()
+    }
+}
+
 /// Panic unless each of `functions` can be a global: named for a global, named
 /// once, and without captures.
-fn check(functions: &[std::sync::Arc<CompiledFunction>]) {
+fn check(functions: &[CompiledFunction]) {
     let mut seen = BTreeSet::new();
     for function in functions {
         let name = function.name.as_str();

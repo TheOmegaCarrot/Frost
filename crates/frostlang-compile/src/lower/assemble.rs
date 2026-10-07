@@ -32,6 +32,7 @@ impl FunctionBuilder<'_> {
     pub(super) fn finish(self, code: Vec<Ir>) -> LoweredFunction {
         let function = LoweredFunction {
             name: self.name,
+            origin: self.origin,
             arity: self.arity,
             code,
             locals: self.locals,
@@ -57,6 +58,7 @@ impl LoweredFunction {
             &self.code,
             self.num_labels,
             self.name.clone(),
+            self.origin.clone(),
             self.arity,
             plan,
             self.deduplicate_constants,
@@ -73,6 +75,7 @@ pub(super) fn assemble_code(
     code: &[Ir],
     num_labels: usize,
     name: String,
+    origin: Option<Arc<str>>,
     arity: Arity,
     plan: SlotPlan,
     deduplicate_constants: bool,
@@ -127,6 +130,7 @@ pub(super) fn assemble_code(
     Arc::new(CompiledFunction {
         version: FormatVersion,
         name,
+        origin,
         code: out,
         child_fns,
         constants: constants.into_entries(),

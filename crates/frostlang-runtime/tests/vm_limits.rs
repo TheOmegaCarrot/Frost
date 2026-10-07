@@ -41,6 +41,7 @@ fn run(
     let main = Arc::new(CompiledFunction {
         version: FormatVersion,
         name: "main".to_string(),
+        origin: None,
         code,
         child_fns: Vec::new(),
         constants: Vec::new(),
@@ -194,12 +195,14 @@ fn fuel_exhaustion_carries_the_full_backtrace() {
     .unwrap_err();
     assert!(err.message().contains("fuel"), "message: {}", err.message());
     assert!(
-        err.backtrace().contains(&"catcher".to_string()),
+        err.backtrace()
+            .iter()
+            .any(|frame| frame.name() == "catcher"),
         "backtrace must reach the swallowing native: {:?}",
         err.backtrace()
     );
     assert!(
-        err.backtrace().contains(&"main".to_string()),
+        err.backtrace().iter().any(|frame| frame.name() == "main"),
         "backtrace must reach the top level: {:?}",
         err.backtrace()
     );

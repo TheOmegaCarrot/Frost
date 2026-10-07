@@ -30,6 +30,7 @@ use std::collections::BTreeMap;
 use std::ffi::OsString;
 use std::fs;
 use std::io::{self, IsTerminal, Read, Write};
+use std::path::Path;
 use std::process::{ExitCode, Termination};
 use std::sync::{Arc, Mutex, MutexGuard, PoisonError};
 
@@ -59,7 +60,7 @@ const ARGS: &str = "args";
 pub struct Driver {
     name: String,
     version: String,
-    importer: Arc<Importer>,
+    importer: ImporterFor,
     configuration: VmRuntimeConfiguration,
     optimization: OptimizationOptions,
     repl: ReplSettings,
@@ -79,7 +80,7 @@ impl Driver {
         Self {
             name: "frost".to_string(),
             version: env!("CARGO_PKG_VERSION").to_string(),
-            importer: Arc::default(),
+            importer: ImporterFor::fixed(Arc::default()),
             configuration: VmRuntimeConfiguration::default(),
             optimization: OptimizationOptions::ALL,
             repl: ReplSettings::new(),
@@ -104,9 +105,22 @@ impl Driver {
         self
     }
 
-    /// Set what scripts may import.
+    /// Set what scripts may import, the same for every script.
     pub fn with_importer(mut self, importer: Arc<Importer>) -> Self {
-        self.importer = importer;
+        self.importer = ImporterFor::fixed(importer);
+        self
+    }
+
+    /// Set what scripts may import, chosen for each command line: `importer` is
+    /// given the path of the script file to run, as the command line names it,
+    /// or `None` when there is none, as for a script from standard input or
+    /// `-e`, or an interactive session.
+    /// Replaces an importer set with [`with_importer`](Self::with_importer).
+    pub fn with_importer_for(
+        mut self,
+        importer: impl Fn(Option<&Path>) -> Arc<Importer> + Send + Sync + 'static,
+    ) -> Self {
+        self.importer = ImporterFor(Arc::new(importer));
         self
     }
 
@@ -239,8 +253,16 @@ impl Driver {
         let print_sink = move |text: &str| {
             let _ = writeln!(lock(&printed), "{text}");
         };
+        let script_file = match &action {
+            Action::Run {
+                script: Script::File(path),
+                ..
+            } => Some(path.as_path()),
+            _ => None,
+        };
+        let importer = (self.importer.0)(script_file);
         let session = Session {
-            importer: &self.importer,
+            importer: &importer,
             configuration: VmRuntimeConfiguration {
                 print_sink: Arc::new(print_sink),
                 ..self.configuration.clone()
@@ -322,6 +344,25 @@ impl Termination for Exit {
 }
 
 /// Which of a run's standard streams are terminals.
+/// Chooses the importer for a command line from the path of its script file.
+#[derive(Clone)]
+struct ImporterFor(Arc<ChooseImporter>);
+
+type ChooseImporter = dyn Fn(Option<&Path>) -> Arc<Importer> + Send + Sync;
+
+impl ImporterFor {
+    /// `importer`, whatever the script.
+    fn fixed(importer: Arc<Importer>) -> Self {
+        Self(Arc::new(move |_| Arc::clone(&importer)))
+    }
+}
+
+impl std::fmt::Debug for ImporterFor {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str("ImporterFor(..)")
+    }
+}
+
 #[derive(Debug, Clone, Copy)]
 struct Terminals {
     stdin: bool,

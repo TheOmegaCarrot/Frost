@@ -9,9 +9,10 @@ mod vm;
 pub use enumset::{EnumSet, enum_set};
 
 pub use core::{
-    FrostArray, FrostError, FrostFloat, FrostMap, FrostOpaque, FrostResult, FrostType, KEYWORDS,
-    MapKey, SpecialFloat, Value, ValueMap, WithBacktrace, from_value, is_identifier_like,
-    is_identifier_like_and_not_keyword, is_reserved_keyword, to_value, value_map,
+    BacktraceFrame, FrostArray, FrostError, FrostFloat, FrostMap, FrostOpaque, FrostResult,
+    FrostType, KEYWORDS, MapKey, SpecialFloat, Value, ValueMap, WithBacktrace, from_value,
+    is_identifier_like, is_identifier_like_and_not_keyword, is_reserved_keyword, to_value,
+    value_map,
 };
 
 pub use vm::{

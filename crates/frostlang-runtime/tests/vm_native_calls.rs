@@ -42,6 +42,7 @@ fn run_with(
     let program = Arc::new(CompiledFunction {
         version: FormatVersion,
         name: "<test>".to_string(),
+        origin: None,
         code: body,
         child_fns: children,
         constants: Vec::new(),

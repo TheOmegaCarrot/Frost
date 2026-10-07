@@ -30,6 +30,7 @@ fn compiled(
     Arc::new(CompiledFunction {
         version: FormatVersion,
         name: "<closure-test>".to_string(),
+        origin: None,
         code,
         child_fns: Vec::new(),
         constants: Vec::new(),

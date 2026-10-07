@@ -243,6 +243,7 @@ impl FunctionBuilder<'_> {
             &wrapped,
             self.next_label.0,
             "<fold>".to_string(),
+            self.origin.clone(),
             Arity::Exact(0),
             plan,
             // Run once and discarded: a smaller pool would save nothing.

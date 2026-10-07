@@ -95,6 +95,7 @@ pub(crate) struct Script {
     captures: BTreeMap<String, Value>,
     implicit_export: bool,
     max_call_depth: Option<NonZeroUsize>,
+    max_import_depth: Option<NonZeroUsize>,
     importer: Arc<Importer>,
 }
 
@@ -107,6 +108,7 @@ impl Script {
             captures: BTreeMap::new(),
             implicit_export: false,
             max_call_depth: None,
+            max_import_depth: None,
             importer: Arc::default(),
         }
     }
@@ -120,6 +122,12 @@ impl Script {
     /// Run with the VM's call depth limited to `depth` frames.
     pub(crate) fn max_call_depth(mut self, depth: usize) -> Self {
         self.max_call_depth = Some(NonZeroUsize::new(depth).expect("a depth limit is positive"));
+        self
+    }
+
+    /// Run with imports limited to nesting `depth` deep.
+    pub(crate) fn max_import_depth(mut self, depth: usize) -> Self {
+        self.max_import_depth = Some(NonZeroUsize::new(depth).expect("a depth limit is positive"));
         self
     }
 
@@ -304,6 +312,7 @@ impl Script {
         };
         let config = VmRuntimeConfiguration {
             max_call_depth: self.max_call_depth,
+            max_import_depth: self.max_import_depth,
             print_sink: Arc::new(sink),
             ..Default::default()
         };

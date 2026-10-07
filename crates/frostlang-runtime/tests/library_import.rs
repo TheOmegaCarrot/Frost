@@ -1,4 +1,4 @@
-//! The `imported` global, from Frost source.
+//! The `import` and `imported` globals, from Frost source.
 //!
 //! `imported()` is true while the script running it was imported by another,
 //! and false while it was run directly.
@@ -13,7 +13,9 @@ use std::collections::BTreeMap;
 use std::sync::Arc;
 
 use frostlang_compile::{CompilerOptions, OptimizationOptions, compile_in_scope};
-use frostlang_runtime::{FrostError, ImportCtx, ImportResolver, ImporterBuilder, RunError, Value};
+use frostlang_runtime::{
+    FrostError, HostComponent, ImportCtx, ImportResolver, ImporterBuilder, RunError, Value,
+};
 use source::Script;
 use source::assertions::{Library, library_assertions};
 
@@ -93,6 +95,34 @@ fn imported_lets_a_script_run_only_when_run_directly() {
     assert_eq!(script.run(), Value::from("ran"));
     let script = with_modules("import('module')", &[("module", module)]);
     assert_eq!(script.run(), Value::from("skipped"));
+}
+
+#[test]
+fn the_import_depth_limit_stops_a_module_nesting_too_deep() {
+    // One level is allowed: the top level may import `outer`, but `outer` may
+    // not import `inner`, which would run a level deeper.
+    let script = with_modules(
+        "import('outer')",
+        &[("outer", "import('inner')"), ("inner", "1")],
+    )
+    .max_import_depth(1);
+    assert_eq!(script.raises(), "Import depth limit of 1 exceeded");
+}
+
+#[test]
+fn a_registry_import_succeeds_at_the_import_depth_limit() {
+    // `outer` runs at the limit. Importing from the registry runs no module, so
+    // it nests no deeper and is allowed.
+    let resolver = SourceModules(BTreeMap::from([("outer", "import('host')")]));
+    let importer = ImporterBuilder::new()
+        .with_component(HostComponent::new("host", Value::Int(42)).expect("a valid name"))
+        .expect("an unclaimed name")
+        .append_resolver(Arc::new(resolver))
+        .build();
+    let script = Script::new("import('outer')")
+        .importer(importer)
+        .max_import_depth(1);
+    assert_eq!(script.run(), Value::Int(42));
 }
 
 #[test]

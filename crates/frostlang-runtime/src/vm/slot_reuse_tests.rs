@@ -30,6 +30,7 @@ fn three_locals() -> Arc<CompiledFunction> {
     Arc::new(CompiledFunction {
         version: FormatVersion,
         name: "three_locals".to_string(),
+        origin: None,
         code: vec![
             Bytecode::Pop,
             Bytecode::PushInt(1),
@@ -79,6 +80,7 @@ fn calls_then_probes(calls: usize, probe: Value) -> Arc<Closure> {
     Arc::new(CompiledFunction {
         version: FormatVersion,
         name: "main".to_string(),
+        origin: None,
         code,
         child_fns: vec![three_locals()],
         constants: Vec::new(),

@@ -18,6 +18,8 @@ mod prewalk;
 mod simple_expressions;
 mod structure_literals;
 
+use std::ffi::OsStr;
+use std::path::Path;
 use std::sync::Arc;
 
 use crate::{CompilerError, CompilerErrors, CompilerOptions, CompilerOutput, OptimizationOptions};
@@ -111,6 +113,7 @@ impl Ir {
 #[derive(Debug)]
 struct LoweredFunction {
     name: String,
+    origin: Option<Arc<str>>,
     arity: Arity,
     code: Vec<Ir>,
     locals: Locals,
@@ -155,6 +158,8 @@ struct FunctionBuilder<'a> {
     arity: Arity,
     source: &'a str,
     filename: &'a str,
+    // Every function of one compilation shares its origin.
+    origin: Option<Arc<str>>,
     options: &'a CompilerOptions,
     // The warm VM for constant-folding, shared across the whole compilation.
     // `None` when there is no folding (e.g. a test that only assembles).
@@ -170,8 +175,8 @@ struct FunctionBuilder<'a> {
 impl<'a> FunctionBuilder<'a> {
     /// A builder for a function nested in this one, with `captures` seated in
     /// order and `hoisted` captures built in (see [`Locals::with_captures`]). It
-    /// shares this builder's source, options, and fold VM, but holds no borrow of
-    /// this builder itself.
+    /// shares this builder's source, origin, options, and fold VM, but holds no
+    /// borrow of this builder itself.
     fn child(
         &self,
         name: String,
@@ -186,6 +191,7 @@ impl<'a> FunctionBuilder<'a> {
             arity,
             source: self.source,
             filename: self.filename,
+            origin: self.origin.clone(),
             options: self.options,
             fold_vm: self.fold_vm,
             top_level: false,
@@ -225,6 +231,9 @@ impl<'a> FunctionBuilder<'a> {
 
 /// Compile a standalone script: a top-level with no enclosing scope, so every
 /// free name must resolve to a global or is an error.
+///
+/// `filename` names the script in diagnostics, and its base name is every
+/// compiled function's [`origin`](CompiledFunction::origin).
 pub fn compile_program(
     filename: &str,
     script: &str,
@@ -265,6 +274,10 @@ pub fn compile_in_scope(
         arity: Arity::Exact(0),
         source: script,
         filename,
+        origin: Path::new(filename)
+            .file_name()
+            .and_then(OsStr::to_str)
+            .map(Arc::from),
         options: &options,
         fold_vm: Some(&fold_vm),
         top_level: true,

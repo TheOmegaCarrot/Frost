@@ -227,6 +227,7 @@ fn bytecode_global(name: &'static str, arity: Arity, code: Vec<Bytecode>) -> Val
         function: Arc::new(CompiledFunction {
             version: FormatVersion,
             name: name.to_string(),
+            origin: None,
             arity,
             num_captures: 0,
             name_table: Vec::new(),

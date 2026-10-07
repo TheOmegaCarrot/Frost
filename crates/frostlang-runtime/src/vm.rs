@@ -27,7 +27,9 @@ use std::{debug_assert_matches, num::NonZeroUsize, sync::Arc};
 
 use itertools::Itertools;
 
-use crate::{FrostArray, FrostError, FrostMap, FrostResult, MapKey, Value, ValueMap};
+use crate::{
+    BacktraceFrame, FrostArray, FrostError, FrostMap, FrostResult, MapKey, Value, ValueMap,
+};
 
 use globals::GlobalSet;
 
@@ -91,7 +93,6 @@ pub struct Vm {
     module_id: Option<ModuleId>,
 
     // How many imports deep this Vm is: 0 for a top-level script, 1 for a module it imported.
-    // Checked against `config.max_import_depth` before importing.
     import_depth: usize,
 
     // Stack heights saved by `MarkStack`, for every frame: each frame's own marks
@@ -143,6 +144,10 @@ pub struct VmRuntimeConfiguration {
     /// a module imported by a module imported by the top-level script is at depth 2.
     /// `None` leaves import nesting unbounded.
     ///
+    /// The limit applies where a Vm is built to run an imported module.
+    /// An import that builds none, such as one from the [`Importer`]'s registry,
+    /// succeeds at any depth.
+    ///
     /// Each level runs in its own Vm, so [`max_call_depth`](Self::max_call_depth)
     /// bounds each of them separately but not the nesting.
     /// This is the backstop for an [`ImportResolver`] that does not detect cycles.
@@ -172,8 +177,8 @@ impl Default for VmRuntimeConfiguration {
 pub struct VmFactory {
     config: VmRuntimeConfiguration,
     importer: Arc<Importer>,
-    // Import nesting level for the Vms this factory builds. Non-zero only for a
-    // factory obtained from `Vm::child_factory`.
+    // Import nesting level for the Vms this factory builds, checked by `build`.
+    // Non-zero only for a factory obtained from `Vm::child_factory`.
     import_depth: usize,
 }
 
@@ -194,7 +199,18 @@ impl VmFactory {
     }
 
     /// Build a [`Vm`] to run `closure` under this factory's configuration.
+    ///
+    /// Fails for a factory from [`ImportCtx::child_factory`] when the Vm would
+    /// nest deeper than [`max_import_depth`](VmRuntimeConfiguration::max_import_depth).
     pub fn build(&self, closure: Arc<Closure>) -> Result<Vm, FrostError> {
+        if let Some(limit) = self.config.max_import_depth
+            && self.import_depth > limit.get()
+        {
+            return Err(FrostError::from_string(format!(
+                "Import depth limit of {} exceeded",
+                limit.get()
+            )));
+        }
         Ok(Vm {
             stack: Vec::new(),
             stack_frames: Vec::new(),
@@ -281,18 +297,9 @@ impl Vm {
         }
     }
 
-    /// Guard the nesting level a child Vm would run at,
-    /// then package what a resolver needs to build one.
-    fn import_ctx(&self) -> Result<ImportCtx<'_>, FrostError> {
-        if let Some(limit) = self.config.max_import_depth
-            && self.import_depth + 1 > limit.get()
-        {
-            return Err(FrostError::from_string(format!(
-                "Import depth limit of {} exceeded",
-                limit.get()
-            )));
-        }
-        Ok(ImportCtx::new(self.child_factory(), self.module_id.clone()))
+    /// Package what a resolver needs to build a child Vm.
+    fn import_ctx(&self) -> ImportCtx<'_> {
+        ImportCtx::new(self.child_factory(), self.module_id.clone())
     }
 
     /// Scrub a spent Vm back to a runnable state for `closure`, keeping its allocations.
@@ -777,7 +784,7 @@ impl Vm {
                                 spec_value.type_name()
                             )));
                         };
-                        let ctx = self.import_ctx()?;
+                        let ctx = self.import_ctx();
                         let importer = self.importer.clone();
                         let module = importer.import(spec, &ctx)?;
                         self.stack.push(module);
@@ -1005,27 +1012,30 @@ impl Vm {
             self.marks.truncate(surviving_marks);
             self.slots.truncate(surviving_slots);
         }
-        let names: Vec<String> = self
+        let frames: Vec<BacktraceFrame> = self
             .stack_frames
             .drain(floor..)
             .rev()
             .filter_map(|frame| match frame {
-                StackFrame::VmFrame(vm_frame) => Some(vm_frame.this_fn.name.clone()),
+                StackFrame::VmFrame(vm_frame) => Some(BacktraceFrame::new(
+                    vm_frame.this_fn.name.clone(),
+                    vm_frame.this_fn.origin.clone(),
+                )),
                 StackFrame::NativeFrame => None,
             })
             .collect();
         self.debug_assert_slots_fit_frames();
         // During an abort the latch is the authoritative fatal error:
-        // append the frame names to it and hand back a copy,
+        // append the frames to it and hand back a copy,
         // so a native above that swallows this copy can't drop the accumulated trace.
         // Otherwise grow the ordinary propagating error as it unwinds.
         match self.abort.as_mut() {
             Some(abort) => {
-                abort.backtrace.extend(names);
+                abort.backtrace.extend(frames);
                 abort.clone()
             }
             None => {
-                err.backtrace.extend(names);
+                err.backtrace.extend(frames);
                 err
             }
         }
@@ -1290,7 +1300,9 @@ impl Vm {
         // frame to the latched fatal error and re-assert it, so the host still sees the
         // full trace to wherever the run aborted.
         if let Some(abort) = self.abort.as_mut() {
-            abort.backtrace.push(native.name.to_string());
+            abort
+                .backtrace
+                .push(BacktraceFrame::new(native.name.to_string(), None));
             return Err(abort.clone());
         }
 
@@ -1298,7 +1310,8 @@ impl Vm {
         // Its only call-stack presence is a nameless `NativeFrame` marker,
         // so the frame-walk in `unwind_frames` cannot record it: do it here.
         result.map_err(|mut err| {
-            err.backtrace.push(native.name.to_string());
+            err.backtrace
+                .push(BacktraceFrame::new(native.name.to_string(), None));
             err
         })
     }

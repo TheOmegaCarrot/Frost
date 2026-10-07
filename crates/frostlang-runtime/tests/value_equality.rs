@@ -223,6 +223,7 @@ fn a_closure() -> Arc<Closure> {
     let f = Arc::new(CompiledFunction {
         version: FormatVersion,
         name: "f".to_string(),
+        origin: None,
         code: Vec::new(),
         child_fns: Vec::new(),
         constants: Vec::new(),

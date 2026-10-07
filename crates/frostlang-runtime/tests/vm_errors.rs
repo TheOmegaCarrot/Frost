@@ -17,8 +17,8 @@ use std::sync::Arc;
 
 use common::{entry, global_slot};
 use frostlang_runtime::{
-    Arity, Bytecode, CompiledFunction, FormatVersion, FrostError, FrostMap, FrostResult, NameEntry,
-    NativeCtx, NativeFunction, ProgramResult, Value, Vm,
+    Arity, BacktraceFrame, Bytecode, CompiledFunction, FormatVersion, FrostError, FrostMap,
+    FrostResult, NameEntry, NativeCtx, NativeFunction, ProgramResult, Value, Vm,
 };
 
 // ============================================================
@@ -36,6 +36,7 @@ fn named(
     Arc::new(CompiledFunction {
         version: FormatVersion,
         name: name.to_string(),
+        origin: None,
         code,
         child_fns: children,
         constants: Vec::new(),
@@ -148,7 +149,7 @@ fn trace_of(map: &FrostMap) -> Vec<String> {
 
 /// A backtrace as `&str`s, for ergonomic comparison.
 fn backtrace(err: &FrostError) -> Vec<&str> {
-    err.backtrace().iter().map(String::as_str).collect()
+    err.backtrace().iter().map(BacktraceFrame::name).collect()
 }
 
 // ============================================================
@@ -1167,6 +1168,7 @@ fn raiser_fn(message: &str) -> Arc<CompiledFunction> {
     Arc::new(CompiledFunction {
         version: FormatVersion,
         name: "raiser".to_string(),
+        origin: None,
         code: vec![
             Bytecode::Pop,
             Bytecode::LoadConst(0),
@@ -1187,6 +1189,7 @@ fn produce_error_with_string_raises_that_message() {
     let program = Arc::new(CompiledFunction {
         version: FormatVersion,
         name: "main".to_string(),
+        origin: None,
         code: vec![Bytecode::LoadConst(0), Bytecode::ProduceError],
         child_fns: Vec::new(),
         constants: vec![Value::from("boom")],
@@ -1246,6 +1249,7 @@ fn produce_error_with_non_string_value_still_raises() {
     let program = Arc::new(CompiledFunction {
         version: FormatVersion,
         name: "main".to_string(),
+        origin: None,
         code: vec![Bytecode::PushInt(42), Bytecode::ProduceError],
         child_fns: Vec::new(),
         constants: Vec::new(),

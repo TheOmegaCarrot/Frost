@@ -29,7 +29,8 @@ use miette::{
 ///
 /// Constructed by the compiler; consume one by rendering it,
 /// through [`Display`](fmt::Display) (the same as [`render`](Self::render)),
-/// or through [`render_pretty`](Self::render_pretty) or [`render_plain`](Self::render_plain) for a fixed style.
+/// or through [`render_pretty`](Self::render_pretty), [`render_unicode`](Self::render_unicode),
+/// or [`render_plain`](Self::render_plain) for a fixed style.
 #[derive(Clone, Debug)]
 pub struct CompilerError(Diag);
 
@@ -170,6 +171,12 @@ impl CompilerError {
         self.0.render_themed(GraphicalTheme::unicode())
     }
 
+    /// Render with unicode box-drawing but no color: free of terminal escapes,
+    /// so it reads well wherever the text ends up.
+    pub fn render_unicode(&self) -> String {
+        self.0.render_themed(GraphicalTheme::unicode_nocolor())
+    }
+
     /// Render as monochrome ASCII: deterministic, terminal-independent, and the
     /// right choice for logs and test snapshots.
     pub fn render_plain(&self) -> String {
@@ -295,6 +302,12 @@ impl CompilerErrors {
     /// [`CompilerError::render_pretty`]), back to back.
     pub fn render_pretty(&self) -> String {
         self.render_each(CompilerError::render_pretty)
+    }
+
+    /// Render every diagnostic with unicode but no color (see
+    /// [`CompilerError::render_unicode`]), back to back.
+    pub fn render_unicode(&self) -> String {
+        self.render_each(CompilerError::render_unicode)
     }
 
     /// Render every diagnostic as monochrome ASCII (see

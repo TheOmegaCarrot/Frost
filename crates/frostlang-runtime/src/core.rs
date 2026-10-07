@@ -11,7 +11,7 @@ mod types;
 pub(crate) mod util;
 mod value;
 
-pub use error::{FrostError, FrostResult, WithBacktrace};
+pub use error::{BacktraceFrame, FrostError, FrostResult, WithBacktrace};
 pub use serde::{from_value, to_value};
 pub use types::array::FrostArray;
 pub use types::float::FrostFloat;

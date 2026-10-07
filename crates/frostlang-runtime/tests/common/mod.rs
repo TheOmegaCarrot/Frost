@@ -36,6 +36,7 @@ pub(crate) fn empty_fn(code: Vec<Bytecode>) -> Arc<CompiledFunction> {
     Arc::new(CompiledFunction {
         version: FormatVersion,
         name: "<test>".to_string(),
+        origin: None,
         code,
         child_fns: Vec::new(),
         constants: Vec::new(),
@@ -53,6 +54,7 @@ pub(crate) fn fn_with_locals(code: Vec<Bytecode>, names: Vec<NameEntry>) -> Arc<
     Arc::new(CompiledFunction {
         version: FormatVersion,
         name: "<test>".to_string(),
+        origin: None,
         code,
         child_fns: Vec::new(),
         constants: Vec::new(),
@@ -89,6 +91,7 @@ pub(crate) fn func_with_captures(
     Arc::new(CompiledFunction {
         version: FormatVersion,
         name: "<test>".to_string(),
+        origin: None,
         code,
         child_fns,
         constants: Vec::new(),
@@ -141,6 +144,7 @@ pub(crate) fn closure(code: Vec<Bytecode>, names: Vec<NameEntry>) -> Arc<Closure
     Arc::new(CompiledFunction {
         version: FormatVersion,
         name: "<test>".to_string(),
+        origin: None,
         code: body,
         child_fns: Vec::new(),
         constants: Vec::new(),

@@ -9,6 +9,7 @@ path = "src/main.rs"
 
 [dependencies]
 frostlang-driver.workspace = true
+frostlang-fs-resolver.workspace = true
 frostlang-runtime.workspace = true
 
 [lints]

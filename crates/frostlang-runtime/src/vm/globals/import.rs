@@ -19,6 +19,7 @@ pub(super) fn import_global() -> Value {
         function: Arc::new(CompiledFunction {
             version: FormatVersion,
             name: "import".to_string(),
+            origin: None,
             arity: Arity::Exact(1),
             num_captures: 0,
             name_table: Vec::new(),

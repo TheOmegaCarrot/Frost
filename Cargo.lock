@@ -480,6 +480,7 @@ name = "frostlang-cli"
 version = "0.0.1"
 dependencies = [
  "frostlang-driver",
+ "frostlang-fs-resolver",
  "frostlang-runtime",
 ]
 
@@ -502,6 +503,14 @@ dependencies = [
  "frostlang-repl",
  "frostlang-runtime",
  "postcard",
+]
+
+[[package]]
+name = "frostlang-fs-resolver"
+version = "0.0.1"
+dependencies = [
+ "frostlang-compile",
+ "frostlang-runtime",
 ]
 
 [[package]]

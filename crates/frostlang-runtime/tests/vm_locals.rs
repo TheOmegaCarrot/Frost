@@ -94,6 +94,7 @@ fn passed_unshared(load: Bytecode) -> Value {
     let program = Arc::new(CompiledFunction {
         version: FormatVersion,
         name: "<test>".to_string(),
+        origin: None,
         code: vec![
             Bytecode::Pop,
             Bytecode::PushInt(1),

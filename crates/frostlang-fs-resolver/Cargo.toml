@@ -1,0 +1,11 @@
+[package]
+name = "frostlang-fs-resolver"
+version = "0.0.1"
+edition.workspace = true
+
+[dependencies]
+frostlang-compile.workspace = true
+frostlang-runtime.workspace = true
+
+[lints]
+workspace = true

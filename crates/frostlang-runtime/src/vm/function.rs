@@ -17,6 +17,10 @@ pub struct CompiledFunction {
     pub version: serialize::FormatVersion,
     /// The function's name, as reported in errors and backtraces.
     pub name: String,
+    /// The base name of the file the function was compiled from, such as `util.frst`,
+    /// as reported in backtraces. `None` when there is no such file.
+    // An `Arc` because every function from one compilation shares it.
+    pub origin: Option<Arc<str>>,
     /// The function body.
     pub code: Vec<Bytecode>,
     /// Functions defined in this function's body, indexed by [`Bytecode::CreateClosure`].

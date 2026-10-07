@@ -1,18 +1,52 @@
 use std::borrow::Cow;
 use std::fmt;
+use std::sync::Arc;
+
+use itertools::Itertools;
 
 use crate::core::Value;
 
 /// A runtime error produced by Frost code.
 ///
 /// Catchable by Frost's `try_call`. As the error propagates through call frames the VM
-/// accumulates function names, readable via [`backtrace`](Self::backtrace).
+/// accumulates the functions it passes through, readable via [`backtrace`](Self::backtrace).
 #[derive(Clone, Debug)]
 pub struct FrostError {
     payload: ErrorPayload,
     // Crate-internal: the VM appends frames as the error unwinds. External callers get
     // read-only access via `backtrace()`.
-    pub(crate) backtrace: Vec<String>,
+    pub(crate) backtrace: Vec<BacktraceFrame>,
+}
+
+/// One function a [`FrostError`] passed through as it propagated.
+/// [`Display`](fmt::Display) shows its name.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct BacktraceFrame {
+    name: String,
+    origin: Option<Arc<str>>,
+}
+
+impl BacktraceFrame {
+    pub(crate) fn new(name: String, origin: Option<Arc<str>>) -> Self {
+        Self { name, origin }
+    }
+
+    /// The function's name.
+    pub fn name(&self) -> &str {
+        &self.name
+    }
+
+    /// The file the function was compiled from, by base name;
+    /// see [`CompiledFunction::origin`](crate::CompiledFunction::origin).
+    pub fn origin(&self) -> Option<&str> {
+        self.origin.as_deref()
+    }
+}
+
+impl fmt::Display for BacktraceFrame {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_str(&self.name)
+    }
 }
 
 /// An error's payload: a message (the common case) *xor* an arbitrary thrown value.
@@ -54,8 +88,8 @@ impl FrostError {
         }
     }
 
-    /// The accumulated call-frame names, outermost last.
-    pub fn backtrace(&self) -> &[String] {
+    /// The accumulated call frames, outermost last.
+    pub fn backtrace(&self) -> &[BacktraceFrame] {
         &self.backtrace
     }
 
@@ -79,6 +113,8 @@ impl FrostError {
     /// The error as a person reads it: as [`Display`](fmt::Display) shows it,
     /// then a line `  in <frame>` for each frame of its
     /// [`backtrace`](Self::backtrace), with no trailing newline.
+    /// When the frames come from more than one file, each frame with an
+    /// [`origin`](BacktraceFrame::origin) also names it: `  in <frame> (<origin>)`.
     pub fn with_backtrace(&self) -> WithBacktrace<'_> {
         WithBacktrace(self)
     }
@@ -98,10 +134,12 @@ pub struct WithBacktrace<'a>(&'a FrostError);
 impl fmt::Display for WithBacktrace<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}", self.0)?;
-        self.0
-            .backtrace()
-            .iter()
-            .try_for_each(|frame| write!(f, "\n  in {frame}"))
+        let frames = self.0.backtrace();
+        let mixed = !frames.iter().filter_map(BacktraceFrame::origin).all_equal();
+        frames.iter().try_for_each(|frame| match frame.origin() {
+            Some(origin) if mixed => write!(f, "\n  in {frame} ({origin})"),
+            _ => write!(f, "\n  in {frame}"),
+        })
     }
 }
 

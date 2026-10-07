@@ -33,6 +33,7 @@ fn eval_keyed(
     let program = Arc::new(CompiledFunction {
         version: FormatVersion,
         name: "<index>".to_string(),
+        origin: None,
         code: body,
         child_fns: Vec::new(),
         constants,

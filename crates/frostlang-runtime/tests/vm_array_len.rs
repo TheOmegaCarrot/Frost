@@ -15,6 +15,7 @@ fn eval(constants: Vec<Value>, code: Vec<Bytecode>) -> Result<Value, FrostError>
     let program = Arc::new(CompiledFunction {
         version: FormatVersion,
         name: "<array-len>".to_string(),
+        origin: None,
         code: body,
         child_fns: Vec::new(),
         constants,

@@ -26,6 +26,7 @@ fn builder(options: &CompilerOptions) -> FunctionBuilder<'_> {
         arity: Arity::Exact(0),
         source: "",
         filename: "",
+        origin: None,
         options,
         fold_vm: None,
         top_level: false,

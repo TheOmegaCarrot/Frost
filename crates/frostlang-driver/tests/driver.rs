@@ -4,7 +4,7 @@
 use std::fs;
 use std::io::{self, Write};
 use std::num::NonZeroUsize;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
 
 use frostlang_compile::{Optimization, OptimizationOptions};
@@ -1272,4 +1272,79 @@ fn scripts_import_from_the_drivers_importer() {
     // The default driver can import nothing.
     let ran = run(&["-e", "import('ext.answer')"]);
     assert_eq!(ran.exit, Exit::ScriptFailed, "{ran:?}");
+}
+
+/// A driver whose importer, chosen per command line, offers `ext.answer` and
+/// records the script path it was chosen for.
+fn recording_importer() -> (Driver, Arc<Mutex<Vec<Option<PathBuf>>>>) {
+    let chosen_for = Arc::new(Mutex::new(Vec::new()));
+    let driver = Driver::new().with_importer_for({
+        let chosen_for = Arc::clone(&chosen_for);
+        move |script: Option<&Path>| {
+            chosen_for
+                .lock()
+                .unwrap()
+                .push(script.map(Path::to_path_buf));
+            ImporterBuilder::new()
+                .with_extension(Extension::new("answer", Value::Int(42)).unwrap())
+                .unwrap()
+                .build()
+        }
+    });
+    (driver, chosen_for)
+}
+
+#[test]
+fn a_per_script_importer_is_given_the_script_files_path() {
+    let (driver, chosen_for) = recording_importer();
+    let path = script("per_script_importer.frst", "print(import('ext.answer'))");
+    let ran = run_configured(driver, |_| {}, &[path.as_str()]);
+    assert_eq!(ran.exit, Exit::Success, "{ran:?}");
+    assert_eq!(ran.printed(), ["42"]);
+    assert_eq!(*chosen_for.lock().unwrap(), [Some(PathBuf::from(path))]);
+}
+
+#[test]
+fn a_per_script_importer_is_given_no_path_without_a_script_file() {
+    let (driver, chosen_for) = recording_importer();
+    let from_eval = run_configured(
+        driver.clone(),
+        |_| {},
+        &["-e", "print(import('ext.answer'))"],
+    );
+    let from_stdin = run_fed(driver, |_| {}, "print(import('ext.answer'))", &["-"]);
+    for ran in [from_eval, from_stdin] {
+        assert_eq!(ran.exit, Exit::Success, "{ran:?}");
+        assert_eq!(ran.printed(), ["42"]);
+    }
+    assert_eq!(*chosen_for.lock().unwrap(), [None, None]);
+}
+
+#[test]
+fn the_importer_set_last_is_the_one_used() {
+    let answering = |answer: i64| {
+        ImporterBuilder::new()
+            .with_extension(Extension::new("answer", Value::Int(answer)).unwrap())
+            .unwrap()
+            .build()
+    };
+    let answer = ["-e", "print(import('ext.answer'))"];
+    let driver = Driver::new()
+        .with_importer_for(move |_| answering(1))
+        .with_importer(answering(2));
+    let ran = run_configured(driver, |_| {}, &answer);
+    assert_eq!(
+        ran.printed(),
+        ["2"],
+        "a fixed importer replaces a per-script one"
+    );
+    let driver = Driver::new()
+        .with_importer(answering(1))
+        .with_importer_for(move |_| answering(2));
+    let ran = run_configured(driver, |_| {}, &answer);
+    assert_eq!(
+        ran.printed(),
+        ["2"],
+        "a per-script importer replaces a fixed one"
+    );
 }

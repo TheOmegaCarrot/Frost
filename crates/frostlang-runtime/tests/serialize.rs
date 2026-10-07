@@ -20,6 +20,7 @@ fn sample() -> CompiledFunction {
     let child = Arc::new(CompiledFunction {
         version: FormatVersion,
         name: "child".into(),
+        origin: None,
         code: vec![Bytecode::Pop, Bytecode::PushInt(1)],
         child_fns: Vec::new(),
         constants: Vec::new(),
@@ -34,6 +35,7 @@ fn sample() -> CompiledFunction {
     CompiledFunction {
         version: FormatVersion,
         name: "main".into(),
+        origin: None,
         code: vec![
             Bytecode::Pop,
             Bytecode::LoadConst(0),
@@ -89,6 +91,7 @@ fn a_closure_value() -> Value {
     let f = Arc::new(CompiledFunction {
         version: FormatVersion,
         name: "f".into(),
+        origin: None,
         code: Vec::new(),
         child_fns: Vec::new(),
         constants: Vec::new(),
@@ -135,6 +138,7 @@ fn a_function_valued_constant_cannot_be_serialized() {
     let cf = CompiledFunction {
         version: FormatVersion,
         name: "bad".into(),
+        origin: None,
         code: Vec::new(),
         child_fns: Vec::new(),
         constants: vec![a_closure_value()],

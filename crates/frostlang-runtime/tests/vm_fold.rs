@@ -83,6 +83,7 @@ fn run_main(caps: Vec<(&str, Value)>, body: Vec<Bytecode>) -> Result<Value, Fros
     let main = Arc::new(CompiledFunction {
         version: FormatVersion,
         name: "main".to_string(),
+        origin: None,
         code,
         child_fns: Vec::new(),
         constants: Vec::new(),

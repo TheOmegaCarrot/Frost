@@ -22,6 +22,7 @@ fn eval(
     let program = Arc::new(CompiledFunction {
         version: FormatVersion,
         name: "<extract-const-key>".to_string(),
+        origin: None,
         code: body,
         child_fns: Vec::new(),
         constants,

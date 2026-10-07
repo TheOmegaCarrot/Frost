@@ -35,6 +35,7 @@ fn func(name: &str, code: Vec<Bytecode>, arity: Arity, names: &[&str]) -> Value 
     let f = Arc::new(CompiledFunction {
         version: FormatVersion,
         name: name.to_string(),
+        origin: None,
         code,
         child_fns: Vec::new(),
         constants: Vec::new(),
@@ -55,6 +56,7 @@ fn run_main(caps: Vec<(&str, Value)>, body: Vec<Bytecode>) -> Result<ProgramResu
     let main = Arc::new(CompiledFunction {
         version: FormatVersion,
         name: "main".to_string(),
+        origin: None,
         code,
         child_fns: Vec::new(),
         constants: Vec::new(),

@@ -44,6 +44,7 @@ fn with_name(options: &CompilerOptions, name: String, arity: Arity) -> FunctionB
         arity,
         source: "",
         filename: "",
+        origin: None,
         options,
         fold_vm: None,
         top_level: false,
