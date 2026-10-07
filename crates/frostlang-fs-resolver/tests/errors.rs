@@ -7,8 +7,8 @@ mod common;
 use std::sync::Arc;
 
 use common::{Tree, importer, run};
+use frostlang::{FrostError, ImportCtx, ImportResolver, ImporterBuilder, ModuleId, Value};
 use frostlang_fs_resolver::DiagnosticStyle;
-use frostlang_runtime::{FrostError, ImportCtx, ImportResolver, ImporterBuilder, ModuleId, Value};
 
 #[test]
 fn a_compile_error_names_the_specification_and_file_and_shows_the_diagnostic() {

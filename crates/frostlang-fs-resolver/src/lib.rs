@@ -5,7 +5,7 @@
 //! use std::sync::Arc;
 //!
 //! use frostlang_fs_resolver::FsResolver;
-//! use frostlang_runtime::ImporterBuilder;
+//! use frostlang::ImporterBuilder;
 //!
 //! let resolver = FsResolver::new(["/usr/share/my-app/frost", "scripts"])?;
 //! let importer = ImporterBuilder::new()
@@ -27,7 +27,7 @@
 //!
 //! An import receives a Map of the module's `export`ed bindings.
 //!
-//! An [`Importer`](frostlang_runtime::Importer)'s registry is consulted before
+//! An [`Importer`](frostlang::Importer)'s registry is consulted before
 //! any resolver, so a file whose first name is one the registry claims, such as
 //! `std/math.frst`, is never imported.
 //!
@@ -60,7 +60,7 @@
 //! A module that imports itself, however indirectly, is an import cycle: the
 //! import that closes it is an error naming the chain.
 //!
-//! One `FsResolver` may serve many [`Vm`](frostlang_runtime::Vm)s, on many
+//! One `FsResolver` may serve many [`Vm`](frostlang::Vm)s, on many
 //! threads, and an import never waits for another thread. When threads import
 //! a module that is not yet cached at the same time, each runs it, and the first
 //! to finish supplies the exports they all receive. A module's top level may
@@ -78,7 +78,7 @@
 //!   that draw a module's compile errors as source snippets with their labels,
 //!   and makes one of them the default. Without it, an import error narrates
 //!   them as plain text. If you show Frost compiler errors to people, you
-//!   probably want it. It turns on the same feature of `frostlang-compile`.
+//!   probably want it. It turns on the same feature of `frostlang`.
 
 mod loading;
 mod lookup;
@@ -90,8 +90,8 @@ use std::path::{Path, PathBuf};
 use std::sync::{Mutex, MutexGuard, PoisonError};
 use std::{fs, io};
 
-use frostlang_compile::{CompilerOptions, Diagnostics, OptimizationOptions, compile_program};
-use frostlang_runtime::{
+use frostlang::compile::{CompilerOptions, Diagnostics, OptimizationOptions, compile_program};
+use frostlang::{
     FrostError, ImportCtx, ImportResolver, MapKey, ModuleId, RunError, Value, ValueMap,
 };
 
@@ -101,7 +101,7 @@ use loading::{Loading, ResolverId};
 /// See the [crate documentation](crate) for how.
 ///
 /// Configure it, then register it with
-/// [`ImporterBuilder::append_resolver`](frostlang_runtime::ImporterBuilder::append_resolver).
+/// [`ImporterBuilder::append_resolver`](frostlang::ImporterBuilder::append_resolver).
 /// Registering it grants scripts every module under its roots.
 #[derive(Debug)]
 pub struct FsResolver {

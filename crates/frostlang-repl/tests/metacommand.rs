@@ -5,11 +5,11 @@ use std::collections::VecDeque;
 use std::io;
 use std::sync::LazyLock;
 
+use frostlang::Value;
 use frostlang_repl::{
     Frontend, Invocation, MetacommandError, MetacommandProblem, MetacommandSpec, MetacommandTable,
     Repl, ReplError, ScriptedFrontend, SessionError,
 };
-use frostlang_runtime::Value;
 
 // --- Reading an invocation ---
 

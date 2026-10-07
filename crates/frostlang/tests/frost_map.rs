@@ -1,0 +1,342 @@
+use std::sync::Arc;
+
+use frostlang::{FrostFloat, FrostMap, MapKey, Value, ValueMap};
+
+fn str_key(s: &str) -> MapKey {
+    MapKey::String(Arc::from(s))
+}
+
+fn sample_map() -> FrostMap {
+    vec![
+        (str_key("name"), Value::from("alice")),
+        (str_key("age"), Value::from(30i64)),
+        (MapKey::Bool(true), Value::from("yes")),
+    ]
+    .into_iter()
+    .collect()
+}
+
+// -- Construction --
+
+#[test]
+fn empty_map() {
+    let map = FrostMap::empty();
+    assert!(map.is_empty());
+    assert_eq!(map.len(), 0);
+}
+
+#[test]
+fn default_is_empty() {
+    let map = FrostMap::default();
+    assert!(map.is_empty());
+}
+
+#[test]
+fn from_value_map() {
+    let mut entries = ValueMap::new();
+    entries.insert(MapKey::Int(1), Value::from("one"));
+    entries.insert(MapKey::Int(2), Value::from("two"));
+    let map = FrostMap::from(entries.clone());
+    assert_eq!(*map, entries);
+}
+
+#[test]
+fn from_arc_value_map() {
+    let mut entries = ValueMap::new();
+    entries.insert(MapKey::Int(1), Value::from("one"));
+    let map = FrostMap::from(Arc::new(entries));
+    assert_eq!(map.len(), 1);
+    assert!(map.get(&MapKey::Int(1)).is_some());
+}
+
+#[test]
+fn collect_from_iterator() {
+    let map: FrostMap = (0..5).map(|i| (MapKey::Int(i), Value::from(i))).collect();
+    assert_eq!(map.len(), 5);
+}
+
+#[test]
+fn collect_duplicate_keys_last_wins() {
+    let map: FrostMap = vec![
+        (MapKey::Int(1), Value::from("first")),
+        (MapKey::Int(1), Value::from("second")),
+    ]
+    .into_iter()
+    .collect();
+    assert_eq!(map.len(), 1);
+    assert_eq!(map.get_int(1), Some(&Value::from("second")));
+}
+
+// -- Access --
+
+#[test]
+fn get_existing_key() {
+    let map = sample_map();
+    assert!(map.get(&str_key("name")).is_some());
+}
+
+#[test]
+fn get_missing_key() {
+    let map = sample_map();
+    assert!(map.get(&str_key("missing")).is_none());
+}
+
+#[test]
+fn get_non_string_key() {
+    let map = sample_map();
+    assert!(map.get(&MapKey::Bool(true)).is_some());
+}
+
+#[test]
+fn contains_key_true() {
+    let map = sample_map();
+    assert!(map.contains_key(&str_key("age")));
+}
+
+#[test]
+fn contains_key_false() {
+    let map = sample_map();
+    assert!(!map.contains_key(&str_key("missing")));
+}
+
+// -- String convenience access --
+
+#[test]
+fn get_str_existing() {
+    let map = sample_map();
+    assert!(map.get_str("name").is_some());
+}
+
+#[test]
+fn get_str_missing() {
+    let map = sample_map();
+    assert!(map.get_str("missing").is_none());
+}
+
+#[test]
+fn get_str_does_not_find_non_string_keys() {
+    let map: FrostMap = vec![(MapKey::Int(42), Value::from("val"))]
+        .into_iter()
+        .collect();
+    assert!(map.get_str("42").is_none());
+}
+
+// -- Typed convenience access --
+
+/// One key of each kind, so cross-kind lookups have a decoy to (not) find.
+fn typed_map() -> FrostMap {
+    vec![
+        (MapKey::Int(1), Value::from("int")),
+        (MapKey::Bool(true), Value::from("bool")),
+        (
+            MapKey::Float(FrostFloat::new(1.5).unwrap()),
+            Value::from("float"),
+        ),
+        (str_key("1"), Value::from("string")),
+    ]
+    .into_iter()
+    .collect()
+}
+
+#[test]
+fn get_int_existing() {
+    assert_eq!(typed_map().get_int(1), Some(&Value::from("int")));
+}
+
+#[test]
+fn get_int_missing() {
+    assert!(typed_map().get_int(2).is_none());
+}
+
+#[test]
+fn get_bool_existing() {
+    assert_eq!(typed_map().get_bool(true), Some(&Value::from("bool")));
+}
+
+#[test]
+fn get_bool_missing() {
+    assert!(typed_map().get_bool(false).is_none());
+}
+
+#[test]
+fn get_float_existing() {
+    let key = FrostFloat::new(1.5).unwrap();
+    assert_eq!(typed_map().get_float(key), Some(&Value::from("float")));
+}
+
+#[test]
+fn get_float_missing() {
+    let key = FrostFloat::new(2.5).unwrap();
+    assert!(typed_map().get_float(key).is_none());
+}
+
+#[test]
+fn typed_getters_do_not_cross_kinds() {
+    let map = typed_map();
+    // Int(1), String("1"), Bool(true), and Float(1.5) are four distinct keys:
+    // each getter finds only its own kind.
+    assert_eq!(map.get_str("1"), Some(&Value::from("string")));
+    assert_eq!(map.get_int(1), Some(&Value::from("int")));
+    assert!(map.get_str("true").is_none());
+    assert!(map.get_int(0).is_none()); // not found via Bool(true) or Float coercion
+}
+
+// -- Size --
+
+#[test]
+fn len() {
+    let map = sample_map();
+    assert_eq!(map.len(), 3);
+}
+
+#[test]
+fn is_empty_false() {
+    let map = sample_map();
+    assert!(!map.is_empty());
+}
+
+// -- Iteration --
+
+#[test]
+fn iter_yields_all_pairs() {
+    let map = sample_map();
+    let pairs: Vec<_> = map.iter().collect();
+    assert_eq!(pairs.len(), 3);
+}
+
+#[test]
+fn keys_yields_all_keys() {
+    let map = sample_map();
+    let keys: Vec<_> = map.keys().collect();
+    assert_eq!(keys.len(), 3);
+}
+
+#[test]
+fn values_yields_all_values() {
+    let map = sample_map();
+    let values: Vec<_> = map.values().collect();
+    assert_eq!(values.len(), 3);
+}
+
+#[test]
+fn for_loop_borrows() {
+    let map = sample_map();
+    let mut count = 0;
+    for (_, _) in &map {
+        count += 1;
+    }
+    assert_eq!(count, 3);
+    assert_eq!(map.len(), 3);
+}
+
+// -- Order --
+//
+// The iteration order is unspecified, but the same every time for a given Map.
+
+#[test]
+fn a_map_iterates_in_the_same_order_every_time() {
+    for size in [3, 30] {
+        let map: FrostMap = (0..size)
+            .rev()
+            .map(|i| (str_key(&format!("k{i}")), Value::from(i)))
+            .collect();
+        let first: Vec<_> = map.keys().collect();
+        let again: Vec<_> = map.keys().collect();
+        let shared = map.clone();
+        let through_clone: Vec<_> = shared.keys().collect();
+        assert_eq!(first, again, "size {size}");
+        assert_eq!(first, through_clone, "size {size}");
+    }
+}
+
+#[test]
+fn equality_does_not_depend_on_order() {
+    let entries = [
+        (str_key("z"), Value::from("str")),
+        (MapKey::Bool(false), Value::from("bool")),
+        (MapKey::Int(99), Value::from("int")),
+        (
+            MapKey::Float(FrostFloat::new(1.5).unwrap()),
+            Value::from("float"),
+        ),
+    ];
+    let forward: FrostMap = entries.iter().cloned().collect();
+    let backward: FrostMap = entries.iter().rev().cloned().collect();
+    assert_eq!(forward, backward);
+}
+
+// -- Clone semantics --
+
+#[test]
+fn clone_shares_data() {
+    let map = sample_map();
+    let cloned = map.clone();
+    assert_eq!(cloned.len(), map.len());
+    assert!(map.get_str("name").is_some());
+    assert!(cloned.get_str("name").is_some());
+}
+
+// -- Stealing / extraction --
+
+#[test]
+fn try_into_map_unique_succeeds() {
+    let map = sample_map();
+    let entries = map.try_into_map().expect("unique map should extract");
+    assert_eq!(entries.len(), 3);
+    assert!(entries.contains_key(&str_key("name")));
+}
+
+#[test]
+fn try_into_map_shared_fails() {
+    let map = sample_map();
+    let _alias = map.clone();
+    let result = map.try_into_map();
+    assert!(result.is_err());
+    let recovered = result.unwrap_err();
+    assert_eq!(recovered.len(), 3);
+}
+
+#[test]
+fn try_into_map_shared_then_dropped_succeeds() {
+    let map = sample_map();
+    let alias = map.clone();
+    drop(alias);
+    let entries = map
+        .try_into_map()
+        .expect("should succeed after alias dropped");
+    assert_eq!(entries.len(), 3);
+}
+
+#[test]
+fn into_map_unique_steals() {
+    let map = sample_map();
+    let entries = map.into_map();
+    assert_eq!(entries.len(), 3);
+}
+
+#[test]
+fn into_map_shared_clones() {
+    let map = sample_map();
+    let _alias = map.clone();
+    let entries = map.into_map();
+    assert_eq!(entries.len(), 3);
+    assert!(entries.contains_key(&str_key("name")));
+}
+
+#[test]
+fn into_map_is_mutable() {
+    let map = sample_map();
+    let mut entries = map.into_map();
+    entries.insert(str_key("new_key"), Value::from(99i64));
+    assert_eq!(entries.len(), 4);
+}
+
+#[test]
+fn try_into_map_then_rebuild() {
+    let map = sample_map();
+    let mut entries = map.try_into_map().unwrap();
+    entries.insert(str_key("extra"), Value::from("added"));
+    let map2 = FrostMap::from(entries);
+    assert_eq!(map2.len(), 4);
+    assert!(map2.get_str("extra").is_some());
+}

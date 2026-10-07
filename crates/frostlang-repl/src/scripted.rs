@@ -4,7 +4,7 @@ use std::collections::VecDeque;
 use std::io;
 use std::sync::{Arc, Mutex, MutexGuard, PoisonError};
 
-use frostlang_runtime::Value;
+use frostlang::Value;
 
 use crate::{Frontend, ReplError};
 
@@ -13,7 +13,7 @@ use crate::{Frontend, ReplError};
 ///
 /// ```
 /// use frostlang_repl::{Repl, ScriptedFrontend};
-/// use frostlang_runtime::Value;
+/// use frostlang::Value;
 ///
 /// let mut frontend = ScriptedFrontend::new(["def x = 20", "x + 1"]);
 /// Repl::new().run(&mut frontend).unwrap();

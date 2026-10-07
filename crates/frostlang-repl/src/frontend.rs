@@ -2,7 +2,7 @@
 
 use std::io::{self, BufRead, Stderr, StdinLock, Stdout, Write};
 
-use frostlang_runtime::Value;
+use frostlang::Value;
 
 use crate::{Invocation, MetacommandSpec, ReplError, complete_segment};
 

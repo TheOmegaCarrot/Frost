@@ -4,7 +4,7 @@
 mod common;
 
 use common::{Tree, importer, run};
-use frostlang_runtime::Value;
+use frostlang::Value;
 
 #[test]
 fn a_module_importing_itself_is_a_cycle() {

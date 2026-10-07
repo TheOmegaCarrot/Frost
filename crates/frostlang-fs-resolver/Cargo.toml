@@ -5,11 +5,10 @@ edition.workspace = true
 
 [features]
 # Graphical styles for a module's compile errors in an import error.
-graphical-diagnostics = ["frostlang-compile/graphical-diagnostics"]
+graphical-diagnostics = ["frostlang/graphical-diagnostics"]
 
 [dependencies]
-frostlang-compile.workspace = true
-frostlang-runtime.workspace = true
+frostlang.workspace = true
 
 [dev-dependencies]
 # The tests assert on the graphical rendering.

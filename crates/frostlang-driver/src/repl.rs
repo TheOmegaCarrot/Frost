@@ -4,8 +4,8 @@ use std::collections::BTreeMap;
 use std::fmt;
 use std::sync::Arc;
 
+use frostlang::Value;
 use frostlang_repl::{Frontend, InvalidName, Repl};
-use frostlang_runtime::Value;
 
 /// How a [`Driver`](crate::Driver)'s interactive sessions start: their
 /// [`Frontend`], and what is bound before the first input.

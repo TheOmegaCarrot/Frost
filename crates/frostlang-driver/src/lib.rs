@@ -28,7 +28,6 @@
 //!   wants it.
 
 mod cli;
-mod image;
 mod repl;
 
 pub use repl::ReplSettings;
@@ -42,14 +41,15 @@ use std::process::{ExitCode, Termination};
 use std::sync::{Arc, Mutex, MutexGuard, PoisonError};
 
 use clap::FromArgMatches;
-use frostlang_compile::{
+use frostlang::compile::{
     CompilerOptions, Diagnostic, Diagnostics, OptimizationOptions, compile_in_scope,
+};
+use frostlang::image::{self, ImageError};
+use frostlang::{
+    FrostError, Importer, RunError, TrustedProgram, Value, Vm, VmRuntimeConfiguration,
 };
 use frostlang_parse::parse_program;
 use frostlang_repl::Repl;
-use frostlang_runtime::{
-    FrostError, Importer, RunError, TrustedProgram, Value, Vm, VmRuntimeConfiguration,
-};
 
 use cli::{Action, Cli, Color, Script};
 
@@ -396,8 +396,8 @@ impl Session<'_> {
             return match image::decode(&contents) {
                 // The user chose to run this image; see `Command::Run`.
                 Ok(function) => self.run_program(Arc::new(function).assert_trusted(), args),
-                Err(reason) => {
-                    let message = format!("cannot run {}: {reason}", name(script));
+                Err(error) => {
+                    let message = format!("cannot run {}: {}", name(script), unloadable(&error));
                     self.usage_error(&message)
                 }
             };
@@ -427,8 +427,7 @@ impl Session<'_> {
             Ok(program) => program,
             Err(exit) => return exit,
         };
-        let closure = close(program, Vec::new());
-        match fs::write(output, image::encode(closure.inner_fn())) {
+        match fs::write(output, image::encode(&program)) {
             Ok(()) => Exit::Success,
             Err(error) => self.usage_error(&format!("cannot write {}: {error}", output.display())),
         }
@@ -442,8 +441,8 @@ impl Session<'_> {
         let function = if image::is_image(&contents) {
             match image::decode(&contents) {
                 Ok(function) => Arc::new(function),
-                Err(reason) => {
-                    let message = format!("cannot list {}: {reason}", name(script));
+                Err(error) => {
+                    let message = format!("cannot list {}: {}", name(script), unloadable(&error));
                     return self.usage_error(&message);
                 }
             }
@@ -597,6 +596,17 @@ impl Session<'_> {
     }
 }
 
+/// Why an image cannot load, as the end of a sentence about it.
+fn unloadable(error: &ImageError) -> String {
+    match error {
+        ImageError::VersionMismatch { found } => {
+            format!("it was compiled by Frost {found}; compile it again with this Frost")
+        }
+        ImageError::Damaged => "it is damaged".to_string(),
+        other => other.to_string(),
+    }
+}
+
 /// How messages and diagnostics name `script`.
 fn name(script: &Script) -> String {
     match script {
@@ -606,7 +616,7 @@ fn name(script: &Script) -> String {
 }
 
 /// `program`, ready to run with `args` as its arguments.
-fn close(program: TrustedProgram, args: Vec<String>) -> Arc<frostlang_runtime::Closure> {
+fn close(program: TrustedProgram, args: Vec<String>) -> Arc<frostlang::Closure> {
     let args: Value = args.into_iter().map(Value::from).collect();
     program
         .close(BTreeMap::from([(ARGS.to_string(), args)]))

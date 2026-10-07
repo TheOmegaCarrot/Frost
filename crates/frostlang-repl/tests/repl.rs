@@ -6,11 +6,11 @@ use std::io;
 use std::num::NonZeroUsize;
 use std::sync::{Arc, Mutex};
 
-use frostlang_compile::{Diagnostics, OptimizationOptions};
+use frostlang::compile::{Diagnostics, OptimizationOptions};
+use frostlang::{Extension, FrostError, ImporterBuilder, Value, VmRuntimeConfiguration};
 use frostlang_repl::{
     Frontend, InvalidName, Repl, ReplError, ScriptedFrontend, SessionError, check_name,
 };
-use frostlang_runtime::{Extension, FrostError, ImporterBuilder, Value, VmRuntimeConfiguration};
 
 /// Evaluate each of `inputs` in turn on a fresh REPL, returning the last
 /// value. Every input before the last must succeed.

@@ -419,8 +419,19 @@ checksum = "3f9eec918d3f24069decb9af1554cad7c880e2da24a9afd88aca000531ab82c1"
 name = "frostlang"
 version = "0.0.1"
 dependencies = [
- "frostlang-compile",
- "frostlang-runtime",
+ "enumset",
+ "fastrand",
+ "frostlang",
+ "frostlang-parse",
+ "glob",
+ "itertools",
+ "miette",
+ "postcard",
+ "regex-lite",
+ "ryu",
+ "serde",
+ "serde_json",
+ "strsim",
 ]
 
 [[package]]
@@ -440,19 +451,9 @@ dependencies = [
 name = "frostlang-cli"
 version = "0.0.1"
 dependencies = [
+ "frostlang",
  "frostlang-driver",
  "frostlang-fs-resolver",
- "frostlang-runtime",
-]
-
-[[package]]
-name = "frostlang-compile"
-version = "0.0.1"
-dependencies = [
- "frostlang-compile",
- "frostlang-parse",
- "frostlang-runtime",
- "miette",
 ]
 
 [[package]]
@@ -460,21 +461,18 @@ name = "frostlang-driver"
 version = "0.0.1"
 dependencies = [
  "clap",
- "frostlang-compile",
+ "frostlang",
  "frostlang-driver",
  "frostlang-parse",
  "frostlang-repl",
- "frostlang-runtime",
- "postcard",
 ]
 
 [[package]]
 name = "frostlang-fs-resolver"
 version = "0.0.1"
 dependencies = [
- "frostlang-compile",
+ "frostlang",
  "frostlang-fs-resolver",
- "frostlang-runtime",
 ]
 
 [[package]]
@@ -492,29 +490,11 @@ name = "frostlang-repl"
 version = "0.0.1"
 dependencies = [
  "dirs",
- "frostlang-compile",
+ "frostlang",
  "frostlang-parse",
  "frostlang-repl",
- "frostlang-runtime",
  "nu-ansi-term",
  "reedline",
-]
-
-[[package]]
-name = "frostlang-runtime"
-version = "0.0.1"
-dependencies = [
- "enumset",
- "fastrand",
- "frostlang-compile",
- "glob",
- "itertools",
- "postcard",
- "regex-lite",
- "ryu",
- "serde",
- "serde_json",
- "strsim",
 ]
 
 [[package]]

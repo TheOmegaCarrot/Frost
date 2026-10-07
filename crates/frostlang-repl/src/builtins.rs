@@ -1,6 +1,6 @@
 //! The REPL's own metacommands.
 
-use frostlang_compile::{Diagnostic, Diagnostics, Optimization};
+use frostlang::compile::{Diagnostic, Diagnostics, Optimization};
 use frostlang_parse::parse_program;
 
 use crate::metacommand::{Builtin, Registry};

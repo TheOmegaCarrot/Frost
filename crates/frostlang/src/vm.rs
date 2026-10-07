@@ -1,0 +1,1394 @@
+mod bytecode;
+mod disassemble;
+mod function;
+mod globals;
+mod import;
+mod native;
+mod outcome;
+mod params;
+mod print_sink;
+pub(crate) mod serialize;
+
+pub use bytecode::Bytecode;
+pub use disassemble::Disassembly;
+pub use function::{Arity, Closure, CompiledFunction, MissingCaptures, NameEntry, TrustedProgram};
+pub use globals::{GLOBAL_NAMES, GLOBAL_PURITY, Purity};
+pub use import::{
+    Extension, ExtensionError, HostComponent, HostComponentError, ImportCtx, ImportResolver,
+    Importer, ImporterBuilder, InvalidComponentName, ModuleId, Stdlib, StdlibError, StdlibModule,
+};
+pub use native::{NativeCtx, NativeFn, NativeFunction};
+pub use outcome::{AbortReason, IdleVm, ProgramResult, RunError, RunErrorKind};
+pub use params::{InvalidParams, Param, Params};
+pub use print_sink::{PrintSink, StdoutSink};
+pub use serialize::FormatVersion;
+
+use std::{debug_assert_matches, num::NonZeroUsize, sync::Arc};
+
+use itertools::Itertools;
+
+use crate::{
+    BacktraceFrame, FrostArray, FrostError, FrostMap, FrostResult, MapKey, Value, ValueMap,
+};
+
+use globals::GlobalSet;
+
+// White-box tests for native-arg-pool recycling.
+#[cfg(test)]
+mod arg_pool_tests;
+
+// White-box tests for the marks and slots a failed or recycled Vm is left with.
+#[cfg(test)]
+mod rearm_tests;
+
+// White-box tests for reuse of the local-slot allocation.
+#[cfg(test)]
+mod slot_reuse_tests;
+
+// ============================================================
+// VM Types
+// ============================================================
+
+/// Runs one Frost program: a top-level [`Closure`].
+/// Build one with [`Vm::factory`] and [`VmFactory::build`], then [`run`](Vm::run) it.
+#[derive(Debug)]
+pub struct Vm {
+    // The working stack of the Vm
+    stack: Vec<Value>,
+
+    // The call stack. Empty until `run`/`run_with_args` seats the top-level closure's frame;
+    // a Frost call pushes a `VmFrame`, a native call a `NativeFrame` marker.
+    // After a run, `stack_frames[0]` is the top-level frame, whose locals are the script's bindings/exports.
+    stack_frames: Vec<StackFrame>,
+
+    // Used to hold the args of a native function call.
+    // A native call acquires a Vec from this pool, moves args from the stack to that Vec (or makes a new one), then clears it and returns it.
+    // This allows for re-use of allocations for native args, while allowing a native call to hold mutable references to their args AND the Vm separately.
+    native_arg_pool: Vec<Vec<Value>>,
+
+    globals: Arc<GlobalSet>,
+
+    // The module importer backing the `Import` opcode.
+    // Fixed at build time; persists across `reset`.
+    importer: Arc<Importer>,
+
+    // The top-level closure to run. Its captures (host + Frost-internal) are already bound;
+    // `run`/`run_with_args` invoke it like any other closure.
+    top_level: Arc<Closure>,
+
+    // Runtime resource limits. Fixed at build time; persists across `reset`.
+    config: VmRuntimeConfiguration,
+
+    // Function calls made so far (the fuel meter). Incremented on every call and
+    // compared against `config.fuel`; zeroed on `reset`.
+    fuel_used: usize,
+
+    // The unrecoverable-error channel.
+    // Once set (e.g. fuel exhaustion) the run is fatally aborting:
+    // unlike an ordinary error this cannot be caught.
+    abort: Option<Abort>,
+
+    // Identity of the module this Vm runs, as assigned by the resolver that loaded it.
+    // `None` for a top-level script the host did not identify.
+    module_id: Option<ModuleId>,
+
+    // How many imports deep this Vm is: 0 for a top-level script, 1 for a module it imported.
+    import_depth: usize,
+
+    // Stack heights saved by `MarkStack`, for every frame: each frame's own marks
+    // sit above its `mark_base`.
+    marks: Vec<usize>,
+
+    // The local slots of every Frost frame, contiguous: each frame's run from its
+    // `slot_base`, one per entry of its function's name table. A frame's slots are
+    // truncated away as it ends, so later calls reuse the allocation.
+    slots: Vec<Option<Value>>,
+}
+
+/// Runtime configuration for a [`Vm`]: its resource limits, and where its printed
+/// output goes.
+/// The [`Default`] imposes no limits and prints to standard output.
+///
+/// ```
+/// use std::num::NonZeroUsize;
+///
+/// use frostlang::VmRuntimeConfiguration;
+///
+/// let config = VmRuntimeConfiguration::default().with_fuel(NonZeroUsize::new(1_000_000));
+/// assert_eq!(config.fuel, NonZeroUsize::new(1_000_000));
+/// ```
+///
+/// Each limit bounds how much work a program may do,
+/// so that a mistake in a script you trust becomes a recoverable [`RunError`]
+/// rather than a hung or crashed process.
+/// Every limit is optional, and unset means unbounded.
+///
+/// The limits bound how much a script runs, never what it can reach,
+/// so they are not a security boundary:
+/// that is decided by what the host grants it, on [`Importer`].
+#[derive(Debug, Clone)]
+#[non_exhaustive]
+pub struct VmRuntimeConfiguration {
+    /// Maximum call-stack depth (number of frames) before execution fails with a
+    /// recoverable error.
+    /// Native calls and non-tail Vm calls contribute to the depth; tail calls do not.
+    /// `None` leaves depth unbounded.
+    pub max_call_depth: Option<NonZeroUsize>,
+
+    /// Call budget ("fuel"): execution fails once this many function calls have been made.
+    /// `None` leaves execution unmetered.
+    ///
+    /// Fuel is the limit that catches runaway execution: all iteration in Frost is built
+    /// from function calls (higher-order functions and tail recursion),
+    /// so bounding calls bounds total execution.
+    /// That includes unbounded tail recursion, which is depth-flat and therefore never trips
+    /// [`max_call_depth`](Self::max_call_depth).
+    /// A native function that loops forever without returning or re-entering the Vm is not covered.
+    ///
+    /// Because iteration is function calls, a Frost script makes many more calls than
+    /// comparable code in a more procedural language like Lua.
+    /// Consider setting this value higher than your intuition may lead you.
+    pub fuel: Option<NonZeroUsize>,
+
+    /// How deeply imports may nest:
+    /// a module imported by a module imported by the top-level script is at depth 2.
+    /// `None` leaves import nesting unbounded.
+    ///
+    /// The limit applies where a Vm is built to run an imported module.
+    /// An import that builds none, such as one from the [`Importer`]'s registry,
+    /// succeeds at any depth.
+    ///
+    /// Each level runs in its own Vm, so [`max_call_depth`](Self::max_call_depth)
+    /// bounds each of them separately but not the nesting.
+    /// This is the backstop for an [`ImportResolver`] that does not detect cycles.
+    pub max_import_depth: Option<NonZeroUsize>,
+
+    /// Receives the text of each `print`,
+    /// in this Vm and in every Vm that runs a module it imports.
+    pub print_sink: Arc<dyn PrintSink>,
+}
+
+impl Default for VmRuntimeConfiguration {
+    fn default() -> Self {
+        Self {
+            max_call_depth: None,
+            fuel: None,
+            max_import_depth: None,
+            print_sink: Arc::new(StdoutSink),
+        }
+    }
+}
+
+impl VmRuntimeConfiguration {
+    /// This configuration with [`max_call_depth`](Self::max_call_depth) set to `limit`.
+    #[must_use]
+    pub fn with_max_call_depth(mut self, limit: Option<NonZeroUsize>) -> Self {
+        self.max_call_depth = limit;
+        self
+    }
+
+    /// This configuration with [`fuel`](Self::fuel) set to `budget`.
+    #[must_use]
+    pub fn with_fuel(mut self, budget: Option<NonZeroUsize>) -> Self {
+        self.fuel = budget;
+        self
+    }
+
+    /// This configuration with [`max_import_depth`](Self::max_import_depth) set to `limit`.
+    #[must_use]
+    pub fn with_max_import_depth(mut self, limit: Option<NonZeroUsize>) -> Self {
+        self.max_import_depth = limit;
+        self
+    }
+
+    /// This configuration with [`print_sink`](Self::print_sink) set to `sink`.
+    #[must_use]
+    pub fn with_print_sink(mut self, sink: Arc<dyn PrintSink>) -> Self {
+        self.print_sink = sink;
+        self
+    }
+}
+
+/// Fixed configuration from which [`Vm`]s are built. Obtain one from [`Vm::factory`].
+///
+/// The final [build](VmFactory::build) is what binds the script to execute.
+/// This factory is well-suited to creating several identically-configured Vms.
+#[derive(Debug, Clone, Default)]
+pub struct VmFactory {
+    config: VmRuntimeConfiguration,
+    importer: Arc<Importer>,
+    // Import nesting level for the Vms this factory builds, checked by `build`.
+    // Non-zero only for a factory obtained from `Vm::child_factory`.
+    import_depth: usize,
+}
+
+impl VmFactory {
+    /// Set the runtime configuration (limits, print sink) for the Vms this factory builds.
+    /// See [`VmRuntimeConfiguration`] for the defaults,
+    /// which are used if this method is not invoked.
+    pub fn configuration(mut self, config: VmRuntimeConfiguration) -> Self {
+        self.config = config;
+        self
+    }
+
+    /// Set the [`Importer`] that resolves imports for the Vms this factory builds.
+    /// Without one, every import fails.
+    pub fn with_importer(mut self, importer: Arc<Importer>) -> Self {
+        self.importer = importer;
+        self
+    }
+
+    /// Build a [`Vm`] to run `closure` under this factory's configuration.
+    ///
+    /// Fails for a factory from [`ImportCtx::child_factory`] when the Vm would
+    /// nest deeper than [`max_import_depth`](VmRuntimeConfiguration::max_import_depth).
+    pub fn build(&self, closure: Arc<Closure>) -> Result<Vm, FrostError> {
+        if let Some(limit) = self.config.max_import_depth
+            && self.import_depth > limit.get()
+        {
+            return Err(FrostError::from_string(format!(
+                "Import depth limit of {} exceeded",
+                limit.get()
+            )));
+        }
+        Ok(Vm {
+            stack: Vec::new(),
+            stack_frames: Vec::new(),
+            native_arg_pool: Vec::new(),
+            globals: GlobalSet::defaults(),
+            importer: self.importer.clone(),
+            top_level: closure,
+            config: self.config.clone(),
+            fuel_used: 0,
+            abort: None,
+            module_id: None,
+            import_depth: self.import_depth,
+            marks: Vec::new(),
+            slots: Vec::new(),
+        })
+    }
+}
+
+/// A latched unrecoverable error: why the run is aborting, and the error that
+/// propagates for it.
+#[derive(Debug)]
+struct Abort {
+    reason: AbortReason,
+    error: FrostError,
+}
+
+#[derive(Debug)]
+enum StackFrame {
+    NativeFrame,
+    VmFrame(VmFrame),
+}
+
+#[derive(Debug)]
+struct VmFrame {
+    // Absolute stack index of the base of a frame
+    base_idx: usize,
+    // Index in the Vm's `slots` of this frame's first local; local N is at
+    // `slot_base + N`.
+    slot_base: usize,
+    // Index into the code of the calling function which should be jumped back to.
+    // The instruction _after_ the Call that pushed this StackFrame.
+    return_address: Option<NonZeroUsize>,
+    // The function represented by this StackFrame.
+    this_fn: Arc<CompiledFunction>,
+    // How many marks the Vm held when this frame was entered; the frame's own marks
+    // are those above it, and unwinding the frame truncates back to it.
+    mark_base: usize,
+}
+
+/// Control-flow outcome of a tail call.
+enum TailFlow {
+    /// Closure callee: the loop must re-enter at the callee's frame (`pc = 0`).
+    Reenter,
+    /// Native callee: it ran inline, so fall through to the next instruction.
+    FellThrough,
+}
+
+// ============================================================
+// Vm Methods
+// ============================================================
+
+impl Vm {
+    /// A default-configured [`VmFactory`].
+    ///
+    /// A Vm runs a single program; reuse a warm Vm via [`ProgramResult::reset`], or stamp
+    /// out fresh identically-configured Vms by reusing one factory.
+    pub fn factory() -> VmFactory {
+        VmFactory::default()
+    }
+
+    /// Identifies the script this Vm runs, for resolvers that care who is importing.
+    /// Set by whatever loaded the script;
+    /// a resolver stamps the id it assigned the module.
+    /// Recycling the Vm for another script clears it.
+    pub fn with_module_id(mut self, id: ModuleId) -> Self {
+        self.module_id = Some(id);
+        self
+    }
+
+    /// Whether the running script is being imported by another module (import
+    /// depth above zero) rather than run directly. Backs the `imported()` global.
+    pub(crate) fn is_imported(&self) -> bool {
+        self.import_depth > 0
+    }
+
+    /// A factory for Vms nested inside this one: same configuration and importer,
+    /// one import level deeper.
+    pub(crate) fn child_factory(&self) -> VmFactory {
+        VmFactory {
+            config: self.config.clone(),
+            importer: self.importer.clone(),
+            import_depth: self.import_depth + 1,
+        }
+    }
+
+    /// Package what a resolver needs to build a child Vm.
+    fn import_ctx(&self) -> ImportCtx<'_> {
+        ImportCtx::new(self.child_factory(), self.module_id.clone())
+    }
+
+    /// Scrub a spent Vm back to a runnable state for `closure`, keeping its allocations.
+    /// Clears the operand stack, frames, marks, and local slots (a failed run leaves them
+    /// dirty), the fuel meter, the abort latch, and the module id, which identified
+    /// the previous script.
+    fn rearm(mut self, closure: Arc<Closure>) -> Vm {
+        self.stack.clear();
+        self.stack_frames.clear();
+        self.marks.clear();
+        self.slots.clear();
+        self.top_level = closure;
+        self.fuel_used = 0;
+        self.abort = None;
+        self.module_id = None;
+        self
+    }
+
+    fn this_frame(&self) -> &VmFrame {
+        match self.stack_frames.last() {
+            Some(StackFrame::VmFrame(vm_frame)) => vm_frame,
+            Some(StackFrame::NativeFrame) => panic!("IMPOSSIBLE: current Vm frame is native frame"),
+            None => panic!("IMPOSSIBLE: Vm has no frame"),
+        }
+    }
+
+    fn base_frame(&self) -> &VmFrame {
+        match self.stack_frames.first() {
+            Some(StackFrame::VmFrame(vm_frame)) => vm_frame,
+            Some(StackFrame::NativeFrame) => panic!("IMPOSSIBLE: base Vm frame is native frame"),
+            None => panic!("IMPOSSIBLE: Vm has no frame"),
+        }
+    }
+
+    /// The index in `slots` of the running frame's local `idx`.
+    fn local_slot(&self, idx: usize) -> usize {
+        let frame = self.this_frame();
+        debug_assert!(
+            idx < frame.this_fn.name_table.len(),
+            "local {idx} is outside `{}`'s {} slots",
+            frame.this_fn.name,
+            frame.this_fn.name_table.len()
+        );
+        frame.slot_base + idx
+    }
+
+    /// `frame`'s local slots, in name-table order.
+    fn frame_slots(&self, frame: &VmFrame) -> &[Option<Value>] {
+        &self.slots[frame.slot_base..][..frame.this_fn.name_table.len()]
+    }
+
+    /// End the innermost frame, which must be a Frost frame: pop it and release
+    /// its local slots.
+    fn pop_vm_frame(&mut self) -> VmFrame {
+        let Some(StackFrame::VmFrame(frame)) = self.stack_frames.pop() else {
+            panic!("IMPOSSIBLE: the innermost frame is not a Frost frame");
+        };
+        debug_assert_eq!(
+            frame.mark_base,
+            self.marks.len(),
+            "a frame must have balanced every stack mark it saved before it ends"
+        );
+        self.slots.truncate(frame.slot_base);
+        self.debug_assert_slots_fit_frames();
+        frame
+    }
+
+    /// Check that `slots` ends exactly where the innermost Frost frame's slots do:
+    /// no ended frame has left slots behind, and no live frame has lost any.
+    fn debug_assert_slots_fit_frames(&self) {
+        let end = self
+            .stack_frames
+            .iter()
+            .rev()
+            .find_map(|frame| match frame {
+                StackFrame::VmFrame(vm_frame) => {
+                    Some(vm_frame.slot_base + vm_frame.this_fn.name_table.len())
+                }
+                StackFrame::NativeFrame => None,
+            })
+            .unwrap_or(0);
+        debug_assert_eq!(
+            self.slots.len(),
+            end,
+            "the local slots must end where the innermost Frost frame's do"
+        );
+    }
+
+    fn execute_function(&mut self) -> Result<(), FrostError> {
+        let mut pc: usize = 0;
+        let floor = self.stack_frames.len(); // 1 for run(), or more for native -> Vm re-entrancy
+
+        loop {
+            while let Some(&op) = self.this_frame().this_fn.code.get(pc) {
+                match op {
+                    Bytecode::PushNull => {
+                        self.stack.push(Value::Null);
+                    }
+                    Bytecode::PushTrue => {
+                        self.stack.push(Value::Bool(true));
+                    }
+                    Bytecode::PushFalse => {
+                        self.stack.push(Value::Bool(false));
+                    }
+                    Bytecode::PushInt(i) => self.stack.push(Value::Int(i)),
+                    Bytecode::PushFloat(f) => self.stack.push(Value::Float(f)),
+                    Bytecode::PeekDown(idx) => {
+                        let from = self
+                            .stack
+                            .len()
+                            .checked_sub(idx + 1)
+                            .expect("FROST STACK UNDERFLOW");
+                        self.debug_assert_own_operand(from, "PeekDown");
+                        self.stack.push(self.stack[from].clone());
+                    }
+                    Bytecode::DropBelow(idx) => {
+                        let at = self
+                            .stack
+                            .len()
+                            .checked_sub(idx + 1)
+                            .expect("FROST STACK UNDERFLOW");
+                        self.debug_assert_own_operand(at, "DropBelow");
+                        self.stack.remove(at);
+                    }
+                    Bytecode::DefLocal(idx) => {
+                        let slot = self.local_slot(idx);
+                        self.slots[slot] = Some(self.stack_pop());
+                    }
+                    Bytecode::LoadLocal(idx) => {
+                        let slot = self.local_slot(idx);
+                        let value = self.slots[slot]
+                            .as_ref()
+                            .expect("IMPOSSIBLE: local value is undefined")
+                            .clone();
+                        self.stack.push(value);
+                    }
+                    Bytecode::ConsumeLocal(idx) => {
+                        let slot = self.local_slot(idx);
+                        let value = self.slots[slot]
+                            .take()
+                            .expect("IMPOSSIBLE: local value is undefined");
+                        self.stack.push(value);
+                    }
+                    Bytecode::LoadConst(idx) => self
+                        .stack
+                        .push(self.this_frame().this_fn.constants[idx].clone()),
+                    Bytecode::LoadGlobal(idx) => self.stack.push(self.globals.get(idx).clone()),
+                    // Arithmetic delegates to the operators defined on `Value`;
+                    // a type error or division by zero surfaces as an `Err` that `?` propagates straight out of this activation (see `unwind_frames`).
+                    Bytecode::Add => self.do_add()?,
+                    Bytecode::Subtract => self.binary_op(Value::subtract)?,
+                    Bytecode::Multiply => self.binary_op(Value::multiply)?,
+                    Bytecode::Divide => self.binary_op(Value::divide)?,
+                    Bytecode::Modulus => self.binary_op(Value::modulus)?,
+                    // Equality is infallible (`Value: Eq`).
+                    // Ordering delegates to `Value::compare`, where an unorderable pair is a type error.
+                    Bytecode::CompareEqual => self.binary_op(|l, r| Ok(Value::Bool(l == r)))?,
+                    Bytecode::CompareNotEqual => self.binary_op(|l, r| Ok(Value::Bool(l != r)))?,
+                    Bytecode::CompareLessThan => {
+                        self.binary_op(|l, r| Ok(Value::Bool(l.compare(r)?.is_lt())))?;
+                    }
+                    Bytecode::CompareLessThanOrEqual => {
+                        self.binary_op(|l, r| Ok(Value::Bool(l.compare(r)?.is_le())))?;
+                    }
+                    Bytecode::CompareGreaterThan => {
+                        self.binary_op(|l, r| Ok(Value::Bool(l.compare(r)?.is_gt())))?;
+                    }
+                    Bytecode::CompareGreaterThanOrEqual => {
+                        self.binary_op(|l, r| Ok(Value::Bool(l.compare(r)?.is_ge())))?;
+                    }
+                    Bytecode::LogicalNot => {
+                        let operand = self.stack_pop();
+                        self.stack.push(Value::from(!operand.is_truthy()));
+                    }
+                    Bytecode::Negate => {
+                        let operand = self.stack_pop();
+                        self.stack.push(operand.negate()?);
+                    }
+                    Bytecode::Concat(n) => {
+                        let base = self.stack.len() - n.get();
+                        let result =
+                            self.stack
+                                .iter()
+                                .skip(base)
+                                .fold(String::new(), |mut acc, v| {
+                                    acc.push_str(&v.to_frost_string());
+                                    acc
+                                });
+
+                        self.stack.truncate(base);
+
+                        self.stack.push(Value::from(result));
+                    }
+                    // `pc += n` composes with the shared `pc += 1` below:
+                    // the offset counts skipped instructions, not an absolute target.
+                    Bytecode::Jump(n) => {
+                        pc += n;
+                        self.debug_assert_jump_target(pc);
+                    }
+                    // Consuming conditional jumps: pop the tested value.
+                    Bytecode::JumpIfTrue(n) => {
+                        if self.stack_pop().is_truthy() {
+                            pc += n;
+                            self.debug_assert_jump_target(pc);
+                        }
+                    }
+                    Bytecode::JumpIfFalse(n) => {
+                        if !self.stack_pop().is_truthy() {
+                            pc += n;
+                            self.debug_assert_jump_target(pc);
+                        }
+                    }
+                    // Non-consuming conditional jumps: peek the tested value, leaving it.
+                    Bytecode::PeekJumpIfTrue(n) => {
+                        self.debug_assert_own_top("PeekJumpIfTrue");
+                        let operand = self.stack.last().expect("FROST STACK UNDERFLOW");
+                        if operand.is_truthy() {
+                            pc += n;
+                            self.debug_assert_jump_target(pc);
+                        }
+                    }
+                    Bytecode::PeekJumpIfFalse(n) => {
+                        self.debug_assert_own_top("PeekJumpIfFalse");
+                        let operand = self.stack.last().expect("FROST STACK UNDERFLOW");
+                        if !operand.is_truthy() {
+                            pc += n;
+                            self.debug_assert_jump_target(pc);
+                        }
+                    }
+                    Bytecode::Call(argc) => {
+                        self.expend_fuel()?;
+                        let base = self
+                            .stack
+                            .len()
+                            .checked_sub(argc + 1)
+                            .expect("FROST STACK UNDERFLOW");
+                        // The callee and its arguments must be operands this frame
+                        // pushed; reaching lower would call one of the caller's values.
+                        self.debug_assert_own_operand(base, "Call");
+
+                        // Errors `?` straight out of `execute_function`;
+                        // the abandoned frames and operands are the entry boundary's to clean up.
+                        match &self.stack[base] {
+                            Value::NativeFunction(_) => self.native_call(argc)?,
+                            Value::Closure(closure) => {
+                                Self::check_arity(
+                                    closure.function.arity,
+                                    argc,
+                                    &closure.function.name,
+                                )?;
+                                // The next loop iteration runs the closure.
+                                self.push_closure_frame(base, NonZeroUsize::new(pc + 1))?;
+                                pc = 0;
+                                continue;
+                            }
+                            function => return Err(Self::not_callable(function)),
+                        }
+                    }
+                    Bytecode::TailCall(argc) => {
+                        match self.tail_call(argc, NonZeroUsize::new(pc + 1))? {
+                            TailFlow::Reenter => {
+                                pc = 0;
+                                continue;
+                            }
+                            TailFlow::FellThrough => {}
+                        }
+                    }
+                    // Spread the args array on top, then tail-call the function beneath it.
+                    // Both operands are user values: a non-Array args operand is a recoverable error,
+                    // as is a non-callable callee (caught by `tail_call`).
+                    Bytecode::DynTailCall => {
+                        self.debug_assert_own_top("DynTailCall");
+                        let args = self.stack.last().expect("FROST STACK UNDERFLOW");
+                        if !args.is_array() {
+                            return Err(FrostError::from_string(format!(
+                                "Spread call expects an Array of arguments, but got {}",
+                                args.type_name()
+                            )));
+                        }
+                        // Spread the args array in call order: arg 0 deepest, last on top.
+                        let Value::Array(arr) = self.stack_pop() else {
+                            unreachable!("DynTailCall operand checked as Array above")
+                        };
+                        let before = self.stack.len();
+                        match arr.try_into_vec() {
+                            Ok(vec) => self.stack.extend(vec),
+                            Err(arr) => self.stack.extend(arr.iter().cloned()),
+                        }
+                        let argc = self.stack.len() - before;
+                        match self.tail_call(argc, NonZeroUsize::new(pc + 1))? {
+                            TailFlow::Reenter => {
+                                pc = 0;
+                                continue;
+                            }
+                            TailFlow::FellThrough => {}
+                        }
+                    }
+                    Bytecode::ExplodeArray => {
+                        let Value::Array(arr) = self.stack_pop() else {
+                            panic!("IMPOSSIBLE: ExplodeArray operand is not an Array");
+                        };
+                        // Pattern order: first element ends on top, last deepest.
+                        match arr.try_into_vec() {
+                            Ok(vec) => self.stack.extend(vec.into_iter().rev()),
+                            Err(arr) => self.stack.extend(arr.iter().rev().cloned()),
+                        }
+                    }
+                    Bytecode::CreateClosure(function) => {
+                        let function = self.this_frame().this_fn.child_fns[function].clone();
+                        let split_point = self
+                            .stack
+                            .len()
+                            .checked_sub(function.num_captures)
+                            .expect("FROST STACK UNDERFLOW");
+                        self.debug_assert_own_operand(split_point, "CreateClosure");
+                        let captures = self.stack.split_off(split_point);
+
+                        self.stack
+                            .push(Value::Closure(Arc::new(Closure { function, captures })));
+                    }
+                    Bytecode::MakeArray(num_elems) => {
+                        let split_point = self
+                            .stack
+                            .len()
+                            .checked_sub(num_elems)
+                            .expect("FROST STACK UNDERFLOW");
+                        self.debug_assert_own_operand(split_point, "MakeArray");
+                        let arr: FrostArray = self.stack.split_off(split_point).into();
+                        self.stack.push(arr.into());
+                    }
+                    Bytecode::MakeMap(num_pairs) => {
+                        let split_point = self
+                            .stack
+                            .len()
+                            .checked_sub(2 * num_pairs)
+                            .expect("FROST STACK UNDERFLOW");
+                        self.debug_assert_own_operand(split_point, "MakeMap");
+
+                        // Pairs move straight off the stack into the Map. A plain loop:
+                        // collecting through a `Result` measured markedly slower here.
+                        let mut map = ValueMap::new();
+                        for (key, value) in self.stack.drain(split_point..).tuples() {
+                            map.insert(MapKey::try_from(key)?, value);
+                        }
+
+                        self.stack.push(Value::from(map));
+                    }
+                    Bytecode::SplitArray(n) => {
+                        let arr = self.stack_pop().try_into_array().map_err(|v| {
+                            FrostError::from_string(format!(
+                                "Expected Array, got {}",
+                                v.type_name()
+                            ))
+                        })?;
+
+                        if arr.len() < n {
+                            return Err(FrostError::from_string(format!(
+                                "Array split expected length {n}, but got Array of length {}",
+                                arr.len()
+                            )));
+                        }
+
+                        let mut head = arr.into_vec();
+                        let tail = head.split_off(n);
+                        self.stack.push(Value::from(tail));
+                        self.stack.push(Value::from(head));
+                    }
+                    Bytecode::SoftIndexStructure => {
+                        let index = self.stack_pop();
+                        let structure = self.stack_pop();
+
+                        let result = match (&structure, &index) {
+                            (Value::Array(arr), Value::Int(i)) => {
+                                arr.frost_get(*i).unwrap_or(&Value::Null)
+                            }
+                            (Value::Array(_), _) => {
+                                return Err(FrostError::from_string(format!(
+                                    "Cannot index Array with value of type {}",
+                                    index.type_name()
+                                )));
+                            }
+                            (Value::Map(map), _) => {
+                                let key = MapKey::try_from(index)?;
+                                map.get(&key).unwrap_or(&Value::Null)
+                            }
+                            _ => {
+                                return Err(FrostError::from_string(format!(
+                                    "Cannot index value of type {}",
+                                    structure.type_name()
+                                )));
+                            }
+                        }
+                        .clone();
+
+                        self.stack.push(result);
+                    }
+                    Bytecode::HardIndexMap(const_pool_idx_of_key) => {
+                        let val = self.stack_pop();
+                        let Value::Map(map) = val else {
+                            return Err(FrostError::from_string(format!(
+                                "Cannot index value of type {}",
+                                val.type_name()
+                            )));
+                        };
+
+                        let key = &self.this_frame().this_fn.key_constants[const_pool_idx_of_key];
+
+                        match map.get(key) {
+                            Some(result) => self.stack.push(result.clone()),
+                            None => return Err(missing_key(&map, key)),
+                        }
+                    }
+                    Bytecode::TestKey => {
+                        let m = &self.stack[self.stack.len() - 2];
+
+                        let has = match m.as_map() {
+                            None => false,
+                            Some(m) => {
+                                let k = self.stack[self.stack.len() - 1].clone();
+                                let k = MapKey::try_from(k)?;
+                                m.contains_key(&k)
+                            }
+                        };
+
+                        self.stack.push(Value::from(has));
+                    }
+                    Bytecode::ExtractKey => {
+                        let k: MapKey = self.stack_pop().try_into()?;
+
+                        let m = self.stack.last().expect("FROST STACK UNDERFLOW");
+                        let m = m.as_map().ok_or_else(|| {
+                            FrostError::from_string(format!("Expected Map, got {}", m.type_name()))
+                        })?;
+
+                        let v = m.get(&k).ok_or_else(|| missing_key(m, &k))?.clone();
+
+                        self.stack.push(v);
+                    }
+                    Bytecode::TestConstKey(const_pool_idx_of_key) => {
+                        let m = self.stack.last().expect("FROST STACK UNDERFLOW");
+                        let key = &self.this_frame().this_fn.key_constants[const_pool_idx_of_key];
+                        let has = m.as_map().is_some_and(|m| m.contains_key(key));
+                        self.stack.push(Value::from(has));
+                    }
+                    Bytecode::ExtractConstKey(const_pool_idx_of_key) => {
+                        let m = self.stack.last().expect("FROST STACK UNDERFLOW");
+                        let m = m.as_map().ok_or_else(|| {
+                            FrostError::from_string(format!("Expected Map, got {}", m.type_name()))
+                        })?;
+                        let key = &self.this_frame().this_fn.key_constants[const_pool_idx_of_key];
+                        let v = m.get(key).ok_or_else(|| missing_key(m, key))?.clone();
+                        self.stack.push(v);
+                    }
+                    Bytecode::TestArrayLenExact(size) => {
+                        self.test_array_len(|len| len == size);
+                    }
+                    Bytecode::TestArrayLenAtLeast(size) => {
+                        self.test_array_len(|len| len >= size);
+                    }
+                    Bytecode::TypeTest(types) => {
+                        let operand = self.stack_pop();
+                        self.stack.push(operand.fits(types).into());
+                    }
+                    Bytecode::MarkStack => {
+                        let len = self.stack.len();
+                        self.marks.push(len);
+                    }
+                    Bytecode::DropMark => {
+                        self.marks.pop().expect("MARKS UNDERFLOW");
+                    }
+                    Bytecode::RewindToMark => {
+                        let mark = self.marks.pop().expect("MARKS UNDERFLOW");
+                        debug_assert!(mark <= self.stack.len());
+                        self.stack.truncate(mark);
+                    }
+                    Bytecode::ProduceError => {
+                        return Err(FrostError::from_value(self.stack_pop()));
+                    }
+                    Bytecode::Import => {
+                        let spec_value = self.stack_pop();
+                        let Some(spec) = spec_value.as_str() else {
+                            return Err(FrostError::from_string(format!(
+                                "import expects a String module spec, got {}",
+                                spec_value.type_name()
+                            )));
+                        };
+                        let ctx = self.import_ctx();
+                        let importer = self.importer.clone();
+                        let module = importer.import(spec, &ctx)?;
+                        self.stack.push(module);
+                    }
+                };
+                pc += 1;
+            }
+
+            if self.stack_frames.len() == floor {
+                // The entry frame finished: return to `run_with_args` or `NativeCtx::invoke`.
+                return Ok(());
+            }
+
+            // Vm function return path
+
+            let frame = self.pop_vm_frame();
+
+            debug_assert_eq!(
+                self.stack.len(),
+                frame.base_idx + 1,
+                "a returning function must leave exactly its result at its frame base"
+            );
+
+            pc = frame
+                .return_address
+                .expect("IMPOSSIBLE: Callee lacks return address")
+                .get();
+        }
+    }
+
+    /// Run the top-level closure with no arguments.
+    /// Equivalent to [`run_with_args`](Self::run_with_args) with an empty list.
+    // Both variants carry the warm Vm by design (that is the whole point), so the
+    // `Result` is large regardless of the Err; boxing would only add an allocation.
+    #[allow(clippy::result_large_err)]
+    pub fn run(self) -> Result<ProgramResult, RunError> {
+        self.run_with_args(std::iter::empty())
+    }
+
+    /// Run the top-level closure, passing `args` as its call arguments.
+    ///
+    /// Success yields a [`ProgramResult`] (tail value + exports); failure a [`RunError`].
+    /// Either outcome still owns the warm Vm (recyclable via [`reset`](ProgramResult::reset)
+    /// or [`into_idle_vm`](ProgramResult::into_idle_vm)); an arity mismatch is a recoverable failure.
+    #[allow(clippy::result_large_err)]
+    pub fn run_with_args(
+        mut self,
+        args: impl IntoIterator<Item = Value>,
+    ) -> Result<ProgramResult, RunError> {
+        let closure = self.top_level.clone();
+        self.stack.push(Value::Closure(closure.clone()));
+        self.stack.extend(args);
+        let argc = self.stack.len() - 1;
+        if let Err(error) = Self::check_arity(closure.function.arity, argc, &closure.function.name)
+        {
+            return Err(RunError { vm: self, error });
+        }
+        // The top-level frame is seated at depth 0, so this never trips the depth cap;
+        // it does not consume fuel (the program has not made a call yet).
+        if let Err(error) = self.push_closure_frame(0, None) {
+            return Err(RunError { vm: self, error });
+        }
+
+        match self.execute_function() {
+            Ok(()) => {
+                #[cfg(debug_assertions)]
+                self.debug_verify_terminal_state();
+                Ok(ProgramResult(self))
+            }
+            // No `NativeFrame` exists above the top level, so the error has nowhere to be
+            // caught: accumulate the backtrace across every remaining frame and surface it.
+            // The (now spent, dirty) Vm rides along in the `RunError` for reuse via `reset`.
+            Err(err) => {
+                let error = self.unwind_frames(0, err);
+                Err(RunError { vm: self, error })
+            }
+        }
+    }
+
+    /// Debug-only sanity check that a successful run unwound to a valid terminal state.
+    /// A malformed program that trips one of these has violated an invariant the public
+    /// API (`tail`, `exports`) then relies on, so we catch it at the boundary in debug builds.
+    #[cfg(debug_assertions)]
+    fn debug_verify_terminal_state(&self) {
+        // The operand stack holds at most the tail value: nothing for a program of
+        // only `def`/`export def` statements (whose tail is null).
+        debug_assert!(
+            self.stack.len() <= 1,
+            "a completed program must leave at most one value on the stack, found {}",
+            self.stack.len()
+        );
+        // Exactly the top-level frame remains: every call has returned, and the
+        // bottom frame is preserved rather than popped.
+        debug_assert_eq!(
+            self.stack_frames.len(),
+            1,
+            "a completed program must leave exactly the top-level frame, found {}",
+            self.stack_frames.len()
+        );
+        // That frame is the pristine top-level closure's frame (base_frame panics if
+        // it is a native frame): based at 0, no caller to return to, right function.
+        let base = self.base_frame();
+        debug_assert_eq!(
+            base.base_idx, 0,
+            "the top-level frame must be based at stack index 0"
+        );
+        debug_assert!(
+            base.return_address.is_none(),
+            "the top-level frame must have no return address"
+        );
+        debug_assert!(
+            Arc::ptr_eq(&base.this_fn, &self.top_level.function),
+            "the top-level frame must belong to the top-level closure"
+        );
+        // Every exported binding was assigned: the invariant `exports`/`get_export` trust.
+        self.debug_assert_slots_fit_frames();
+        for (entry, slot) in base.this_fn.name_table.iter().zip(self.frame_slots(base)) {
+            debug_assert!(
+                !entry.exported || slot.is_some(),
+                "exported binding `{}` was left unfilled after execution",
+                entry.name
+            );
+        }
+    }
+
+    /// The running frame's operand floor, or `None` while a native frame is on top
+    /// (a native's stack use is its own, not bounded by a Frost frame).
+    fn frame_base(&self) -> Option<usize> {
+        match self.stack_frames.last() {
+            Some(StackFrame::VmFrame(frame)) => Some(frame.base_idx),
+            _ => None,
+        }
+    }
+
+    /// Debug-only check that operands from `lowest` upward belong to the running frame.
+    /// Below the frame base sit the caller's operands, which the running function must
+    /// not read, consume, or displace: doing so corrupts a frame it cannot see, and
+    /// nothing downstream would attribute the damage to this instruction.
+    ///
+    /// A frame may consume down to its base, where its own function value sits.
+    fn debug_assert_own_operand(&self, lowest: usize, op: &str) {
+        debug_assert!(
+            self.frame_base().is_none_or(|base| lowest >= base),
+            "{op} reached stack index {lowest}, below the running frame's base {}",
+            self.frame_base().unwrap_or(0)
+        );
+    }
+
+    /// Debug-only check that the top of the stack belongs to the running frame,
+    /// for the operations that read it without consuming it.
+    fn debug_assert_own_top(&self, op: &str) {
+        self.debug_assert_own_operand(self.stack.len().saturating_sub(1), op);
+    }
+
+    /// Debug-only check that a jump landed inside the running function.
+    /// One past the end is the return position: a function whose control flow falls
+    /// off the end returns, so a jump there is how a branch reaches the exit.
+    fn debug_assert_jump_target(&self, pc: usize) {
+        debug_assert!(
+            pc <= self.this_frame().this_fn.code.len(),
+            "jump to {pc} leaves the function, whose code ends at {}",
+            self.this_frame().this_fn.code.len()
+        );
+    }
+
+    /// Pop the top of the operand stack.
+    /// A missing operand is a compiler/bytecode bug, not a recoverable error, so underflow panics.
+    ///
+    /// The single choke point for consuming one operand, so the frame floor is
+    /// checked here on behalf of every instruction that pops.
+    fn stack_pop(&mut self) -> Value {
+        self.debug_assert_own_top("pop");
+        self.stack.pop().expect("FROST STACK UNDERFLOW")
+    }
+
+    /// Pop the top two operands (rhs on top, lhs below) and push `op(lhs, rhs)`.
+    /// On an operator error the operands are dropped, not restored: the error abandons the whole activation.
+    fn binary_op(
+        &mut self,
+        op: impl FnOnce(&Value, &Value) -> Result<Value, FrostError>,
+    ) -> Result<(), FrostError> {
+        let rhs = self.stack_pop();
+        let lhs = self.stack_pop();
+        self.stack.push(op(&lhs, &rhs)?);
+        Ok(())
+    }
+
+    /// The `TestArrayLen*` opcodes: peek the top operand and push whether it is an
+    /// Array whose length satisfies `matches`. Non-consuming (the operand stays
+    /// beneath the pushed bool); a non-Array operand pushes false.
+    fn test_array_len(&mut self, matches: impl FnOnce(usize) -> bool) {
+        let operand = self.stack.last().expect("FROST STACK UNDERFLOW");
+        let ok = match operand {
+            Value::Array(arr) => matches(arr.len()),
+            _ => false,
+        };
+        self.stack.push(Value::from(ok));
+    }
+
+    /// The `Add` opcode: pops both operands into the owned [`Value::add_owned`].
+    fn do_add(&mut self) -> Result<(), FrostError> {
+        let rhs = self.stack_pop();
+        let lhs = self.stack_pop();
+        self.stack.push(Value::add_owned(lhs, rhs)?);
+        Ok(())
+    }
+
+    /// Append the names of the `VmFrame`s in `stack_frames[floor..]` to `err`'s backtrace,
+    /// innermost (top of the frame stack) first, then discard those frames and the marks
+    /// and local slots they still held.
+    ///
+    /// This is the only place a Frost frame's name reaches the backtrace: `?` propagation has no hook,
+    /// so the trace is built here as the abandoned frames are dropped.
+    /// `NativeFrame` markers carry no name; a native's own name is recorded by [`Vm::run_native`] instead.
+    fn unwind_frames(&mut self, floor: usize, mut err: FrostError) -> FrostError {
+        // The outermost abandoned frame entered with every surviving mark and slot
+        // in place.
+        let outermost = self.stack_frames[floor..]
+            .iter()
+            .find_map(|frame| match frame {
+                StackFrame::VmFrame(vm_frame) => Some((vm_frame.mark_base, vm_frame.slot_base)),
+                StackFrame::NativeFrame => None,
+            });
+        if let Some((surviving_marks, surviving_slots)) = outermost {
+            self.marks.truncate(surviving_marks);
+            self.slots.truncate(surviving_slots);
+        }
+        let frames: Vec<BacktraceFrame> = self
+            .stack_frames
+            .drain(floor..)
+            .rev()
+            .filter_map(|frame| match frame {
+                StackFrame::VmFrame(vm_frame) => Some(BacktraceFrame::new(
+                    vm_frame.this_fn.name.clone(),
+                    vm_frame.this_fn.origin.clone(),
+                )),
+                StackFrame::NativeFrame => None,
+            })
+            .collect();
+        self.debug_assert_slots_fit_frames();
+        // During an abort the latch is the authoritative fatal error:
+        // append the frames to it and hand back a copy,
+        // so a native above that swallows this copy can't drop the accumulated trace.
+        // Otherwise grow the ordinary propagating error as it unwinds.
+        match self.abort.as_mut() {
+            Some(abort) => {
+                abort.error.backtrace.extend(frames);
+                abort.error.clone()
+            }
+            None => {
+                err.backtrace.extend(frames);
+                err
+            }
+        }
+    }
+
+    /// Returns an arity-mismatch error if `argc` does not satisfy `arity`, or `Ok(())` if it does.
+    /// `name` is the called function's name, for the error message.
+    fn check_arity(arity: Arity, argc: usize, name: &str) -> Result<(), FrostError> {
+        let ok = match arity {
+            Arity::Exact(n) => argc == n,
+            Arity::Between(lo, hi) => (lo..=hi).contains(&argc),
+            Arity::AtLeast(n) => argc >= n,
+        };
+        if ok {
+            return Ok(());
+        }
+        Err(FrostError::from_string(match arity {
+            Arity::Exact(n) => {
+                format!("Function {name} expects {n} arguments, but was called with {argc}")
+            }
+            Arity::Between(lo, hi) => {
+                format!(
+                    "Function {name} expects between {lo} and {hi} arguments, but was called with {argc}"
+                )
+            }
+            Arity::AtLeast(n) => {
+                format!(
+                    "Function {name} expects at least {n} arguments, but was called with {argc}"
+                )
+            }
+        }))
+    }
+
+    /// The error produced when a non-callable value is called.
+    fn not_callable(value: &Value) -> FrostError {
+        FrostError::from_string(format!(
+            "Attempt to call non-function value of type {}",
+            value.type_name()
+        ))
+    }
+
+    // ----- Resource limits (`VmRuntimeConfiguration`) -----
+    // Centralized guards + error messages, called from the several call/frame-push sites.
+
+    /// Count one function call against the fuel budget, failing if it is exhausted.
+    /// Called at every call site (`Call`, tail calls, and native re-entry via `invoke`).
+    fn expend_fuel(&mut self) -> Result<(), FrostError> {
+        // Counted unconditionally: `fuel_consumed` reports call counts whether or not
+        // a budget is set, so the increment is not skippable when unmetered.
+        self.fuel_used = self.fuel_used.saturating_add(1);
+        if let Some(budget) = self.config.fuel
+            && self.fuel_used > budget.get()
+        {
+            // Exhaustion is unrecoverable, not an ordinary error: latch it.
+            return Err(self.abort_with(
+                AbortReason::FuelExhausted,
+                Self::fuel_exhausted(budget.get()),
+            ));
+        }
+        Ok(())
+    }
+
+    /// Latch `error` into the unrecoverable-error channel and hand it back to propagate.
+    /// Once latched, `run_native`/`invoke` refuse to let any native resume Frost code.
+    fn abort_with(&mut self, reason: AbortReason, error: FrostError) -> FrostError {
+        self.abort = Some(Abort {
+            reason,
+            error: error.clone(),
+        });
+        error
+    }
+
+    /// The latched abort error if the run is fatally aborting, else `None`.
+    /// Returns a clone: the slot stays latched so every enclosing native re-asserts it.
+    fn abort_error(&self) -> Option<FrostError> {
+        self.abort.as_ref().map(|abort| abort.error.clone())
+    }
+
+    /// Why the run aborted, if it did.
+    fn abort_reason(&self) -> Option<AbortReason> {
+        self.abort.as_ref().map(|abort| abort.reason)
+    }
+
+    /// Fail if pushing another frame would exceed the configured call-depth limit.
+    /// Called by the frame-push primitives; tail-call frame reuse is net-neutral so it
+    /// never trips, and the top-level frame (depth 0 at entry) is always admitted.
+    fn check_call_depth(&self) -> Result<(), FrostError> {
+        match self.config.max_call_depth {
+            Some(max) if self.stack_frames.len() >= max.get() => {
+                Err(Self::call_depth_exceeded(max.get()))
+            }
+            _ => Ok(()),
+        }
+    }
+
+    fn fuel_exhausted(limit: usize) -> FrostError {
+        FrostError::from_string(format!(
+            "Execution exceeded its fuel limit of {limit} function calls"
+        ))
+    }
+
+    fn call_depth_exceeded(limit: usize) -> FrostError {
+        FrostError::from_string(format!(
+            "Execution exceeded the maximum call depth of {limit}"
+        ))
+    }
+
+    /// Push a [VmFrame] to enter the closure at stack index `base`, its frame base,
+    /// per the calling convention (see [`Bytecode`]).
+    /// `return_address` is where the callee returns to.
+    /// Arity must already be checked.
+    fn push_closure_frame(
+        &mut self,
+        base: usize,
+        return_address: Option<NonZeroUsize>,
+    ) -> Result<(), FrostError> {
+        self.check_call_depth()?;
+        self.debug_assert_slots_fit_frames();
+
+        let Value::Closure(closure) = &self.stack[base] else {
+            panic!("IMPOSSIBLE: the frame base holds no closure");
+        };
+
+        // The frame's slots go on the end: its captures seated first, the rest empty
+        // until the body defines them.
+        let slot_base = self.slots.len();
+        self.slots
+            .extend(closure.captures.iter().cloned().map(Some));
+        self.slots
+            .resize(slot_base + closure.function.name_table.len(), None);
+        let this_fn = Arc::clone(&closure.function);
+        let arity = this_fn.arity;
+
+        self.stack_frames.push(StackFrame::VmFrame(VmFrame {
+            base_idx: base,
+            slot_base,
+            return_address,
+            this_fn,
+            mark_base: self.marks.len(),
+        }));
+
+        // The incoming argument count: everything on the operand stack above the
+        // function value at `base`, captured before the rearrangement below.
+        let argc = self.stack.len() - (base + 1);
+
+        match arity {
+            Arity::AtLeast(fixed_argc) => {
+                let varargs = self.stack.split_off(base + 1 + fixed_argc);
+                self.stack.push(Value::Array(varargs.into()));
+            }
+            // Only hand-written bytecode has a `Between` closure; the compiler never emits one.
+            Arity::Between(..) => {
+                self.stack.push(Value::Int(argc as i64));
+            }
+            Arity::Exact(_) => {}
+        }
+        Ok(())
+    }
+
+    /// Dispatch a tail call: with the callee and its `argc` operands on top of the stack,
+    /// run a native inline or set up a closure frame for tail-call reuse. The returned [`TailFlow`] tells the caller whether
+    /// to re-enter the loop in the callee's frame (closure) or fall through (native).
+    ///
+    /// `return_address` is consulted only by the bottom-frame guard: the top-level
+    /// frame backs `exports`, so a tail call from it is degraded to a normal call
+    /// that returns into the preserved frame rather than eliding it. (Re-entrant
+    /// `invoke` activations always run with >= 2 frames, so TCO holds everywhere else.)
+    fn tail_call(
+        &mut self,
+        argc: usize,
+        return_address: Option<NonZeroUsize>,
+    ) -> Result<TailFlow, FrostError> {
+        self.expend_fuel()?;
+        let base = self
+            .stack
+            .len()
+            .checked_sub(argc + 1)
+            .expect("FROST STACK UNDERFLOW");
+        self.debug_assert_own_operand(base, "TailCall");
+
+        match &self.stack[base] {
+            // A native callee adds no VM frame: run it inline like a plain Call.
+            // Its result is left on the stack; in tail position the enclosing
+            // function returns it via the normal end-of-code path next turn.
+            Value::NativeFunction(_) => {
+                self.native_call(argc)?;
+                Ok(TailFlow::FellThrough)
+            }
+            Value::Closure(closure) => {
+                // Check arity before popping the caller frame, so an arity error
+                // does not destroy the frame the error path still needs.
+                Self::check_arity(closure.function.arity, argc, &closure.function.name)?;
+
+                // A tail call reuses the current frame, except the bottom frame,
+                // which is preserved (see the doc comment).
+                if self.stack_frames.len() == 1 {
+                    self.push_closure_frame(base, return_address)?;
+                } else {
+                    // The callee's operands are all on the operand stack, so the
+                    // ending frame's slots can go first: the callee's take their place.
+                    let gone_frame = self.pop_vm_frame();
+
+                    // The reused frame inherits gone_frame.base_idx below, so the two
+                    // must already agree: a mismatch means a stray operand sits above
+                    // the callee, which would silently corrupt a variadic rest array.
+                    debug_assert_eq!(
+                        base, gone_frame.base_idx,
+                        "tail call base must match the reused frame's base"
+                    );
+
+                    // Reuse the popped frame's place, inheriting its base and return
+                    // address so the callee returns to the original caller.
+                    self.push_closure_frame(gone_frame.base_idx, gone_frame.return_address)?;
+                }
+                Ok(TailFlow::Reenter)
+            }
+            function => Err(Self::not_callable(function)),
+        }
+    }
+
+    /// Call the native function beneath the top `argc` operands, replacing it and
+    /// them with its result.
+    fn native_call(&mut self, argc: usize) -> Result<(), FrostError> {
+        let mut buf = self.native_arg_pool.pop().unwrap_or_default();
+        buf.extend(self.stack.drain((self.stack.len() - argc)..));
+        let Value::NativeFunction(function) = self.stack_pop() else {
+            panic!("IMPOSSIBLE: no native function beneath its arguments");
+        };
+
+        let result = self.run_native(&function, buf)?;
+        self.stack.push(result);
+        Ok(())
+    }
+
+    /// Invoke `native` with its args already collected in `buf`.
+    /// Checks arity, brackets the call with a `NativeFrame` marker, and returns the native's result.
+    /// `buf` is reclaimed to the pool on every path.
+    fn run_native(&mut self, native: &NativeFunction, mut buf: Vec<Value>) -> FrostResult {
+        let reclaim = |vm: &mut Self, mut buf: Vec<Value>| {
+            buf.clear();
+            vm.native_arg_pool.push(buf);
+        };
+
+        if let Err(err) = Self::check_arity(native.arity, buf.len(), native.name) {
+            reclaim(self, buf);
+            return Err(err);
+        }
+        // The `NativeFrame` we are about to push is the Rust-stack growth vector.
+        if let Err(err) = self.check_call_depth() {
+            reclaim(self, buf);
+            return Err(err);
+        }
+
+        self.stack_frames.push(StackFrame::NativeFrame);
+        let result = native.function.invoke(
+            NativeCtx {
+                vm: self,
+                function: native,
+            },
+            &mut buf,
+        );
+        reclaim(self, buf);
+
+        let popped = self.stack_frames.pop();
+        debug_assert_matches!(
+            popped,
+            Some(StackFrame::NativeFrame),
+            "run_native must pop the NativeFrame it pushed"
+        );
+
+        // Unrecoverable abort (e.g. fuel exhaustion) is uncatchable: even if this native
+        // swallowed the error and returned `Ok`, override its result. Append this native's
+        // frame to the latched fatal error and re-assert it, so the host still sees the
+        // full trace to wherever the run aborted.
+        if let Some(abort) = self.abort.as_mut() {
+            abort
+                .error
+                .backtrace
+                .push(BacktraceFrame::new(native.name.to_string(), None));
+            return Err(abort.error.clone());
+        }
+
+        // A native that ran and failed contributes its own name to the backtrace.
+        // Its only call-stack presence is a nameless `NativeFrame` marker,
+        // so the frame-walk in `unwind_frames` cannot record it: do it here.
+        result.map_err(|mut err| {
+            err.backtrace
+                .push(BacktraceFrame::new(native.name.to_string(), None));
+            err
+        })
+    }
+}
+
+/// The error for `map` having no value at `key`, suggesting the key a mistyped
+/// String most likely meant.
+fn missing_key(map: &FrostMap, key: &MapKey) -> FrostError {
+    let similar = match key {
+        MapKey::String(name) => map.closest_string_key(name),
+        _ => None,
+    };
+    FrostError::from_string(match similar {
+        Some(similar) => format!("Map has no value at key '{key}'; did you mean '{similar}'?"),
+        None => format!("Map has no value at key '{key}'"),
+    })
+}

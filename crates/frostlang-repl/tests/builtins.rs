@@ -3,9 +3,9 @@
 use std::num::NonZeroUsize;
 use std::sync::{Arc, Mutex};
 
-use frostlang_compile::{Optimization, OptimizationOptions};
+use frostlang::compile::{Optimization, OptimizationOptions};
+use frostlang::{Value, VmRuntimeConfiguration};
 use frostlang_repl::{Frontend, MetacommandError, Repl, ReplError, ScriptedFrontend, Transcript};
-use frostlang_runtime::{Value, VmRuntimeConfiguration};
 
 /// The transcript of a session over `segments` on `repl`, with text unstyled.
 fn session_on(mut repl: Repl, segments: &[&str]) -> Transcript {

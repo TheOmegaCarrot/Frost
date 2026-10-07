@@ -4,7 +4,7 @@ use std::fs::{self, Metadata};
 use std::io;
 use std::path::{Path, PathBuf};
 
-use frostlang_runtime::{FrostError, is_identifier_like};
+use frostlang::{FrostError, is_identifier_like};
 
 use crate::{FsResolver, cannot_import};
 

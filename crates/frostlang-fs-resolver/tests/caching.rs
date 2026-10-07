@@ -8,7 +8,7 @@ use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
 
 use common::{Tree, count, importer, run};
-use frostlang_runtime::{Arity, HostComponent, ImporterBuilder, Value};
+use frostlang::{Arity, HostComponent, ImporterBuilder, Value};
 
 /// A module that prints `ran <name>` when it runs, and exports a function, whose
 /// identity tells one run's exports from another's.

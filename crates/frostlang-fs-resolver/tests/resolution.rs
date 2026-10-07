@@ -6,10 +6,8 @@ mod common;
 use std::sync::Arc;
 
 use common::{Tree, importer, run};
+use frostlang::{FrostError, HostComponent, ImportCtx, ImportResolver, ImporterBuilder, Value};
 use frostlang_fs_resolver::FsResolver;
-use frostlang_runtime::{
-    FrostError, HostComponent, ImportCtx, ImportResolver, ImporterBuilder, Value,
-};
 
 #[test]
 fn an_import_receives_the_modules_exports() {

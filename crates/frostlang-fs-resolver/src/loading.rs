@@ -5,7 +5,7 @@ use std::marker::PhantomData;
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicU64, Ordering};
 
-use frostlang_runtime::FrostError;
+use frostlang::FrostError;
 
 /// Tells one resolver's loads from another's.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

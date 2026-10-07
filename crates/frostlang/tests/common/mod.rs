@@ -1,0 +1,157 @@
+//! Shared helpers for the VM integration tests.
+//!
+//! The bytecode-level tests of globals (`vm_*`) predate the compiler. New tests
+//! of globals are written from Frost source (`library_*`), with the `source` harness.
+//!
+//! Lives in `common/mod.rs` (not `common.rs`) so Cargo does not compile it as its own test binary.
+//! `allow(dead_code)` because each test binary pulls in the whole module but uses only the helpers it needs.
+#![allow(dead_code)]
+
+use std::sync::Arc;
+
+use frostlang::bytecode::{Bytecode, CompiledFunction, FormatVersion, GLOBAL_NAMES, NameEntry};
+use frostlang::{Arity, Closure, ProgramResult, Vm};
+
+/// Free-const re-export of the `Bytecode::Pop` alias.
+/// The alias is an associated constant, which `use Bytecode::*` cannot import;
+/// this lets test bodies keep writing `Pop` bare.
+#[allow(non_upper_case_globals)]
+pub(crate) const Pop: Bytecode = Bytecode::Pop;
+
+/// The `LoadGlobal` slot index of a predefined global, by name. Panics if `name` is not
+/// a predefined global. (The runtime exposes only the ordered [`GLOBAL_NAMES`]; a slot is
+/// just its position.)
+pub(crate) fn global_slot(name: &str) -> usize {
+    GLOBAL_NAMES
+        .iter()
+        .position(|&n| n == name)
+        .unwrap_or_else(|| panic!("`{name}` is not a predefined global"))
+}
+
+/// A nameless compiled function with no locals, constants, or child functions.
+/// Arity `Exact(0)`: suitable for a top-level / thunk.
+pub(crate) fn empty_fn(code: Vec<Bytecode>) -> Arc<CompiledFunction> {
+    Arc::new(CompiledFunction {
+        version: FormatVersion,
+        name: "<test>".to_string(),
+        origin: None,
+        code,
+        child_fns: Vec::new(),
+        constants: Vec::new(),
+        key_constants: Vec::new(),
+        name_table: Vec::new(),
+        num_captures: 0,
+        arity: Arity::Exact(0),
+    })
+}
+
+/// A nameless compiled function with an explicit name table.
+/// Each entry's position in `names` is its slot index.
+/// Arity `Exact(0)`, no captures.
+pub(crate) fn fn_with_locals(code: Vec<Bytecode>, names: Vec<NameEntry>) -> Arc<CompiledFunction> {
+    Arc::new(CompiledFunction {
+        version: FormatVersion,
+        name: "<test>".to_string(),
+        origin: None,
+        code,
+        child_fns: Vec::new(),
+        constants: Vec::new(),
+        key_constants: Vec::new(),
+        name_table: names,
+        num_captures: 0,
+        arity: Arity::Exact(0),
+    })
+}
+
+/// A fully-specified compiled function, for call tests: explicit `arity`,
+/// a `names` table sizing the local slots, and `child_fns` reachable by `CreateClosure`.
+/// No captures. For a callee that a `CreateClosure` site should actually capture
+/// values into, use [`func_with_captures`] instead: `CreateClosure` pops as many
+/// stack values as the callee's own `num_captures` names.
+pub(crate) fn func(
+    code: Vec<Bytecode>,
+    arity: Arity,
+    names: Vec<NameEntry>,
+    child_fns: Vec<Arc<CompiledFunction>>,
+) -> Arc<CompiledFunction> {
+    func_with_captures(code, arity, names, child_fns, 0)
+}
+
+/// Like [`func`], but with an explicit `num_captures`, for a callee that a
+/// `CreateClosure` site should capture values into.
+pub(crate) fn func_with_captures(
+    code: Vec<Bytecode>,
+    arity: Arity,
+    names: Vec<NameEntry>,
+    child_fns: Vec<Arc<CompiledFunction>>,
+    num_captures: usize,
+) -> Arc<CompiledFunction> {
+    Arc::new(CompiledFunction {
+        version: FormatVersion,
+        name: "<test>".to_string(),
+        origin: None,
+        code,
+        child_fns,
+        constants: Vec::new(),
+        key_constants: Vec::new(),
+        name_table: names,
+        num_captures,
+        arity,
+    })
+}
+
+/// Build a name-table entry.
+/// Its index in the slice passed to `fn_with_locals` / `func` is its slot.
+pub(crate) fn entry(name: &str, exported: bool) -> NameEntry {
+    NameEntry {
+        name: name.to_string(),
+        exported,
+    }
+}
+
+/// Run a nameless, local-less program to completion.
+pub(crate) fn run(code: Vec<Bytecode>) -> ProgramResult {
+    run_fn(empty_fn(code))
+}
+
+/// Run a pre-built top-level program (e.g. one carrying `child_fns`) to completion.
+///
+/// The top-level is invoked like any other closure, so the runner pushes its closure
+/// value and the body must `Pop` it first.
+/// Test programs are written without that leading `Pop`, so it is spliced in here.
+pub(crate) fn run_fn(program: Arc<CompiledFunction>) -> ProgramResult {
+    let top = CompiledFunction {
+        code: std::iter::once(Bytecode::Pop)
+            .chain(program.code.iter().copied())
+            .collect(),
+        ..(*program).clone()
+    };
+    let closure = Arc::new(top)
+        .assert_trusted()
+        .into_closure()
+        .expect("test top-level captures nothing");
+    Vm::factory().build(closure).unwrap().run().unwrap()
+}
+
+/// Build a runnable top-level [`Closure`] (no captures) from `code` plus a name
+/// table, splicing in the leading fn-value `Pop`.
+/// For tests that need the closure itself (e.g. `reset`, or building a `Vm` directly).
+pub(crate) fn closure(code: Vec<Bytecode>, names: Vec<NameEntry>) -> Arc<Closure> {
+    let mut body = vec![Bytecode::Pop];
+    body.extend(code);
+    Arc::new(CompiledFunction {
+        version: FormatVersion,
+        name: "<test>".to_string(),
+        origin: None,
+        code: body,
+        child_fns: Vec::new(),
+        constants: Vec::new(),
+        key_constants: Vec::new(),
+        name_table: names,
+        num_captures: 0,
+        arity: Arity::Exact(0),
+    })
+    .assert_trusted()
+    .into_closure()
+    .expect("no captures")
+}

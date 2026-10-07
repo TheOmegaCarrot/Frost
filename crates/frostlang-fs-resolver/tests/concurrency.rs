@@ -13,7 +13,7 @@ use std::thread;
 use std::time::Duration;
 
 use common::{Run, Tree, count, run};
-use frostlang_runtime::{Arity, HostComponent, Importer, ImporterBuilder, Value};
+use frostlang::{Arity, HostComponent, Importer, ImporterBuilder, Value};
 
 /// Far longer than any case takes when it does not hang.
 const WATCHDOG: Duration = Duration::from_secs(30);

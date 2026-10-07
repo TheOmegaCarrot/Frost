@@ -49,9 +49,9 @@ use std::fmt;
 use std::io;
 use std::sync::Arc;
 
-use frostlang_compile::{CompilerOptions, Diagnostics, OptimizationOptions, compile_in_scope};
+use frostlang::compile::{CompilerOptions, Diagnostics, OptimizationOptions, compile_in_scope};
+use frostlang::{Closure, FrostError, IdleVm, Importer, Value, Vm, VmRuntimeConfiguration};
 use frostlang_parse::{Token, tokens};
-use frostlang_runtime::{Closure, FrostError, IdleVm, Importer, Value, Vm, VmRuntimeConfiguration};
 
 use builtins::Reply;
 use metacommand::{Handler, Registry};

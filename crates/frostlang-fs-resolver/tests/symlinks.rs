@@ -6,8 +6,8 @@
 mod common;
 
 use common::{Tree, count, importer, run};
+use frostlang::Value;
 use frostlang_fs_resolver::FsResolver;
-use frostlang_runtime::Value;
 
 /// A tree whose root `modules` reaches `real/m.frst` through a linked file and
 /// a linked directory.

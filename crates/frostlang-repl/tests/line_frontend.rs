@@ -2,8 +2,8 @@
 
 use std::io::{self, Cursor};
 
+use frostlang::Value;
 use frostlang_repl::{Frontend, LineFrontend, Repl, ReplError};
-use frostlang_runtime::Value;
 
 /// Every segment `frontend` reads, until it ends.
 fn read_all(mut frontend: impl Frontend) -> Vec<String> {

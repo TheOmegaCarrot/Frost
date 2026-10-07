@@ -38,10 +38,8 @@ independently:
 
 | Crate | Purpose |
 |---|---|
-| `frostlang` | The facade for host applications: re-exports the runtime and (behind the default `compile` feature) the compiler. Nothing in the workspace depends on it; extensions and optional pieces depend on `frostlang-runtime` directly. |
+| `frostlang` | What a host embeds. The `core` (the `Value` type, its variants, operators, conversions, serde bridge), the `vm` (bytecode execution, globals, native functions, arity/type params, import, serialization), the `stdlib` (the `std.*` modules a host opts into), and, behind the default `compile` feature, the `compile` module: AST to bytecode (scope resolution, capture discovery, constant folding and propagation, assembly). Extensions depend on it with `default-features = false`. |
 | `frostlang-parse` | Source text to AST: lexer, recursive-descent parser, diagnostics. Grammar only; semantics belong to the compiler. Intentionally lax in what it accepts, deferring many errors to the compiler. |
-| `frostlang-runtime` | The `core` (the `Value` type, its variants, operators, conversions, serde bridge), the `vm` (bytecode execution, globals, native functions, arity/type params, import, serialization), and the `stdlib` (the `std.*` modules a host opts into). |
-| `frostlang-compile` | AST to bytecode: scope resolution, capture discovery, constant folding and propagation, assembly. |
 | `frostlang-driver` | A complete command-line interface built around a host's configuration: importer, runtime limits, optimizations. |
 | `frostlang-fs-resolver` | An optional `ImportResolver` serving `import('a.b.c')` from `a/b/c.frst` under host-configured roots, with caching and cycle detection. |
 | `frostlang-repl` | An interactive read-eval-print loop. |

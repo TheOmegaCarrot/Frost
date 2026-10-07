@@ -3,7 +3,7 @@
 use std::path::PathBuf;
 
 use clap::{Args, Command as ClapCommand, CommandFactory, Parser, Subcommand, ValueEnum};
-use frostlang_compile::{InvalidOptimizationSetting, Optimization, OptimizationOptions};
+use frostlang::compile::{InvalidOptimizationSetting, Optimization, OptimizationOptions};
 
 /// The command line for a driver called `name` at `version`, whose scripts
 /// compile with `default` optimizations unless `-O` changes them.

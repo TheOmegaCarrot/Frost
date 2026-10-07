@@ -5,11 +5,9 @@ use std::num::NonZeroUsize;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
+use frostlang::{Importer, ImporterBuilder, Stdlib, VmRuntimeConfiguration, stdlib::RandomConfig};
 use frostlang_driver::{Driver, Exit};
 use frostlang_fs_resolver::{DiagnosticStyle, FsResolver};
-use frostlang_runtime::{
-    Importer, ImporterBuilder, Stdlib, VmRuntimeConfiguration, stdlib::RandomConfig,
-};
 
 /// How deeply imports may nest: far deeper than a sound module tree needs, and
 /// shallow enough that runaway nesting fails before the native stack runs out.

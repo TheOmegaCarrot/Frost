@@ -2,8 +2,6 @@
 members = [
     "crates/frostlang",
     "crates/frostlang-parse",
-    "crates/frostlang-runtime",
-    "crates/frostlang-compile",
     "crates/frostlang-driver",
     "crates/frostlang-fs-resolver",
     "crates/frostlang-repl",
@@ -19,12 +17,11 @@ edition = "2024"
 # Workspace crates, for depending on one another. Each version is the minimum a
 # dependent requires.
 [workspace.dependencies]
-frostlang-compile = { path = "crates/frostlang-compile", version = "0.0.1" }
+frostlang = { path = "crates/frostlang", version = "0.0.1" }
 frostlang-driver = { path = "crates/frostlang-driver", version = "0.0.1" }
 frostlang-fs-resolver = { path = "crates/frostlang-fs-resolver", version = "0.0.1" }
 frostlang-parse = { path = "crates/frostlang-parse", version = "0.0.1" }
 frostlang-repl = { path = "crates/frostlang-repl", version = "0.0.1" }
-frostlang-runtime = { path = "crates/frostlang-runtime", version = "0.0.1" }
 
 # Crates opt in with `[lints] workspace = true`.
 [workspace.lints.rust]

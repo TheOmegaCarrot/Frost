@@ -7,12 +7,12 @@ use std::num::NonZeroUsize;
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
 
-use frostlang_compile::{Optimization, OptimizationOptions};
+use frostlang::compile::{Optimization, OptimizationOptions};
+use frostlang::{Extension, ImporterBuilder, Value, VmRuntimeConfiguration};
 use frostlang_driver::{Driver, Exit, ReplSettings};
 use frostlang_repl::{
     Frontend, InvalidName, MetacommandSpec, ReplError, ScriptedFrontend, Transcript,
 };
-use frostlang_runtime::{Extension, ImporterBuilder, Value, VmRuntimeConfiguration};
 
 /// What one run produced.
 #[derive(Debug)]

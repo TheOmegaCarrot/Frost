@@ -10,7 +10,7 @@ path = "src/main.rs"
 [dependencies]
 frostlang-driver = { workspace = true, features = ["graphical-diagnostics"] }
 frostlang-fs-resolver = { workspace = true, features = ["graphical-diagnostics"] }
-frostlang-runtime.workspace = true
+frostlang.workspace = true
 
 [lints]
 workspace = true

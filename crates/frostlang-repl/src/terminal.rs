@@ -7,7 +7,7 @@ use std::path::PathBuf;
 use std::process::{self, Command};
 use std::sync::LazyLock;
 
-use frostlang_runtime::Value;
+use frostlang::Value;
 use nu_ansi_term::{Color, Style};
 use reedline::{
     FileBackedHistory, HISTORY_SIZE, Highlighter, Prompt, PromptEditMode, PromptHistorySearch,

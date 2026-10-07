@@ -8,11 +8,11 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
 
-use frostlang_compile::{CompilerOptions, compile_program};
-use frostlang_fs_resolver::FsResolver;
-use frostlang_runtime::{
+use frostlang::compile::{CompilerOptions, compile_program};
+use frostlang::{
     FrostError, Importer, ImporterBuilder, RunError, Value, Vm, VmRuntimeConfiguration,
 };
+use frostlang_fs_resolver::FsResolver;
 
 /// A fresh, empty directory for one test's files, named for the test.
 pub(crate) struct Tree {

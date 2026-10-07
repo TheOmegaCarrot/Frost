@@ -1,7 +1,7 @@
 //! `ScriptedFrontend` and its `Transcript`: a frontend that test code drives.
 
+use frostlang::Value;
 use frostlang_repl::{Frontend, Repl, ReplError, ScriptedFrontend, Transcript};
-use frostlang_runtime::Value;
 
 #[test]
 fn it_reads_its_segments_in_order_then_ends_for_good() {
