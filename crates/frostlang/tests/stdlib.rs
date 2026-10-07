@@ -6,7 +6,7 @@ mod script;
 
 use std::sync::Arc;
 
-use frostlang::stdlib::RandomConfig;
+use frostlang::stdlib::{RandomConfig, StdlibConfig};
 use frostlang::{Importer, ImporterBuilder, Stdlib, StdlibModule, Value, stdlib};
 use script::Script;
 
@@ -125,9 +125,21 @@ fn names(stdlib: &Stdlib) -> Vec<&str> {
 }
 
 #[test]
+fn the_default_configuration_configures_each_module_by_its_own_default() {
+    let config = StdlibConfig::default();
+    assert_eq!(config.random.rng_seed, RandomConfig::default().rng_seed);
+}
+
+#[test]
+fn with_random_sets_the_random_configuration() {
+    let config = StdlibConfig::default().with_random(RandomConfig { rng_seed: Some(5) });
+    assert_eq!(config.random.rng_seed, Some(5));
+}
+
+#[test]
 fn the_contained_preset_holds_the_contained_modules() {
     assert_eq!(
-        names(&Stdlib::contained(RandomConfig::default())),
+        names(&Stdlib::contained(StdlibConfig::default())),
         ["encoding", "math", "random", "regex", "string"]
     );
 }
@@ -135,14 +147,14 @@ fn the_contained_preset_holds_the_contained_modules() {
 #[test]
 fn the_complete_preset_holds_every_module() {
     assert_eq!(
-        names(&Stdlib::complete(RandomConfig::default())),
+        names(&Stdlib::complete(StdlibConfig::default())),
         ["encoding", "fs", "math", "os", "random", "regex", "string"]
     );
 }
 
 #[test]
 fn a_preset_still_takes_modules_but_not_ones_it_holds() {
-    let contained = Stdlib::contained(RandomConfig::default())
+    let contained = Stdlib::contained(StdlibConfig::default())
         .with_module(stdlib::fs())
         .expect("`contained` does not hold `fs`");
     assert_eq!(
@@ -151,8 +163,8 @@ fn a_preset_still_takes_modules_but_not_ones_it_holds() {
     );
 
     let presets = [
-        Stdlib::contained(RandomConfig::default()),
-        Stdlib::complete(RandomConfig::default()),
+        Stdlib::contained(StdlibConfig::default()),
+        Stdlib::complete(StdlibConfig::default()),
     ];
     for preset in presets {
         let held = names(&preset).len();

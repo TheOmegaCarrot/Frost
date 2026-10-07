@@ -10,12 +10,10 @@
 //! The constant pool serializes through [`const_pool`] as tagged [`ConstValue`]s,
 //! so it round-trips through any format, including non-self-describing binary ones.
 
-use std::sync::Arc;
-
 use serde::de::Error as _;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
-use crate::{FrostError, FrostFloat, MapKey, Value};
+use crate::{FrostBytes, FrostError, FrostFloat, FrostString, MapKey, Value};
 
 /// The runtime version stamped onto (and required by) a serialized image.
 pub(crate) const VERSION: &str = env!("CARGO_PKG_VERSION");
@@ -58,8 +56,8 @@ enum ConstValue {
     Bool(bool),
     Int(i64),
     Float(FrostFloat),
-    String(Arc<str>),
-    Bytes(Arc<[u8]>),
+    String(FrostString),
+    Bytes(FrostBytes),
     Array(Vec<ConstValue>),
     Map(Vec<(MapKey, ConstValue)>),
 }

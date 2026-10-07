@@ -148,7 +148,7 @@ fn map(pairs: Vec<(&str, Value)>) -> Value {
     Value::Map(
         pairs
             .into_iter()
-            .map(|(k, v)| (MapKey::String(Arc::from(k)), v))
+            .map(|(k, v)| (MapKey::from(k), v))
             .collect(),
     )
 }

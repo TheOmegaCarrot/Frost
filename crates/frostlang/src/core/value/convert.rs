@@ -1,6 +1,8 @@
 use std::sync::Arc;
 
-use crate::core::{FrostArray, FrostError, FrostFloat, FrostMap, MapKey, Value, ValueMap};
+use crate::core::{
+    FrostArray, FrostBytes, FrostError, FrostFloat, FrostMap, FrostString, MapKey, Value, ValueMap,
+};
 
 impl From<bool> for Value {
     fn from(b: bool) -> Value {
@@ -35,18 +37,24 @@ impl From<FrostFloat> for Value {
 
 impl From<&str> for Value {
     fn from(s: &str) -> Value {
-        Value::String(Arc::from(s))
+        Value::String(s.into())
     }
 }
 
 impl From<String> for Value {
     fn from(s: String) -> Value {
-        Value::String(Arc::from(s))
+        Value::String(s.into())
     }
 }
 
 impl From<Arc<str>> for Value {
     fn from(s: Arc<str>) -> Value {
+        Value::String(s.into())
+    }
+}
+
+impl From<FrostString> for Value {
+    fn from(s: FrostString) -> Value {
         Value::String(s)
     }
 }
@@ -55,18 +63,24 @@ impl From<Arc<str>> for Value {
 // is exactly what `Bytes` is for. Text comes from the `str` family above.
 impl From<&[u8]> for Value {
     fn from(b: &[u8]) -> Value {
-        Value::Bytes(Arc::from(b))
+        Value::Bytes(b.into())
     }
 }
 
 impl From<Vec<u8>> for Value {
     fn from(b: Vec<u8>) -> Value {
-        Value::Bytes(Arc::from(b))
+        Value::Bytes(b.into())
     }
 }
 
 impl From<Arc<[u8]>> for Value {
     fn from(b: Arc<[u8]>) -> Value {
+        Value::Bytes(b.into())
+    }
+}
+
+impl From<FrostBytes> for Value {
+    fn from(b: FrostBytes) -> Value {
         Value::Bytes(b)
     }
 }
@@ -158,7 +172,7 @@ impl Value {
     /// Any other type returns Null.
     pub fn to_frost_bytes(&self) -> Value {
         match self {
-            Value::String(s) => Value::Bytes(Arc::from(Arc::clone(s))),
+            Value::String(s) => Value::Bytes(FrostBytes::from(s.clone())),
             Value::Bytes(_) => self.clone(),
             _ => Value::Null,
         }

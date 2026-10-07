@@ -9,7 +9,7 @@ mod script;
 
 use std::sync::Arc;
 
-use frostlang::stdlib::RandomConfig;
+use frostlang::stdlib::{RandomConfig, StdlibConfig};
 use frostlang::{Importer, ImporterBuilder, Stdlib, Value, stdlib};
 use script::assertions::{Library, library_assertions};
 use script::{Script, UNOPTIMIZED};
@@ -62,9 +62,10 @@ fn the_presets_forward_the_configured_seed() {
     let config = RandomConfig { rng_seed: Some(9) };
     let draw = "random.seed(9).int(0, 1000000000000)";
     let expected = run_once(draw, &importer(RandomConfig::default()));
+    let presets = StdlibConfig::default().with_random(config);
     for (name, stdlib) in [
-        ("contained", Stdlib::contained(config)),
-        ("complete", Stdlib::complete(config)),
+        ("contained", Stdlib::contained(presets.clone())),
+        ("complete", Stdlib::complete(presets)),
     ] {
         let preset = ImporterBuilder::new().with_stdlib(stdlib).build();
         // Each importer is new, so its default engine is at its first draw.

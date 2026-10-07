@@ -2,7 +2,9 @@ use std::borrow::Cow;
 use std::sync::Arc;
 
 use frostlang::bytecode::{CompiledFunction, FormatVersion};
-use frostlang::{Arity, Closure, FrostArray, FrostMap, FrostOpaque, MapKey, NativeFunction, Value};
+use frostlang::{
+    Arity, Closure, FrostArray, FrostMap, FrostOpaque, MapKey, NativeFunction, OpaqueHandle, Value,
+};
 
 /// A minimal opaque payload for identity-equality tests.
 #[derive(Debug)]
@@ -19,7 +21,7 @@ impl FrostOpaque for Marker {
 }
 
 fn str_key(s: &str) -> MapKey {
-    MapKey::String(Arc::from(s))
+    MapKey::from(s)
 }
 
 // -- Same-type equality --
@@ -254,7 +256,7 @@ fn closures_compare_by_identity() {
 
 #[test]
 fn an_opaque_without_equals_compares_by_identity() {
-    let o: Arc<dyn FrostOpaque> = Arc::new(Marker(42));
+    let o = OpaqueHandle::new(Marker(42));
     assert_eq!(Value::Opaque(o.clone()), Value::Opaque(o));
     // Distinct instances, even with equal payloads, are never equal.
     assert_ne!(Value::opaque(Marker(1)), Value::opaque(Marker(1)));

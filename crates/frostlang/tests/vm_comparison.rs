@@ -62,11 +62,7 @@ fn arr(xs: &[i64]) -> Value {
 
 /// A single-entry map `{ a: <v> }`.
 fn map_a(v: i64) -> Value {
-    Value::Map(
-        [(MapKey::String(Arc::from("a")), Value::Int(v))]
-            .into_iter()
-            .collect(),
-    )
+    Value::Map([(MapKey::from("a"), Value::Int(v))].into_iter().collect())
 }
 
 use Bytecode::{

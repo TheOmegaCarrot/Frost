@@ -1,6 +1,6 @@
-//! Tests for the [`FrostOpaque`] surface: the trait methods through a
-//! type-erased handle, `dyn`-level downcasting, and `try_extract`'s
-//! steal-when-unique / give-back-when-not contract.
+//! Tests for the Opaque surface: the [`FrostOpaque`] trait's methods through an
+//! [`OpaqueHandle`], downcasting, and `try_extract`'s steal-when-unique /
+//! give-back-when-not contract.
 //!
 //! Value-level accessors (`as_opaque`, `downcast_opaque`, `try_into_opaque`)
 //! are covered in `value_accessors.rs`; equality in `value_equality.rs`;
@@ -8,9 +8,8 @@
 //! `library_mutable_cell.rs`.
 
 use std::borrow::Cow;
-use std::sync::Arc;
 
-use frostlang::{FrostOpaque, Value};
+use frostlang::{FrostOpaque, OpaqueHandle, Value};
 
 /// The primary payload type: carries data, has a string approximation.
 #[derive(Debug, PartialEq)]
@@ -42,12 +41,12 @@ impl FrostOpaque for Gadget {
     }
 }
 
-fn widget(id: u32) -> Arc<dyn FrostOpaque> {
-    Arc::new(Widget { id })
+fn widget(id: u32) -> OpaqueHandle {
+    OpaqueHandle::new(Widget { id })
 }
 
 // ============================================================
-// Trait methods through the erased handle
+// Trait methods through the handle
 // ============================================================
 
 #[test]
@@ -59,8 +58,23 @@ fn trait_methods_dispatch_through_the_handle() {
 
 #[test]
 fn try_to_string_may_decline() {
-    let h: Arc<dyn FrostOpaque> = Arc::new(Gadget);
+    let h = OpaqueHandle::new(Gadget);
     assert_eq!(h.try_to_string(), None);
+}
+
+// ============================================================
+// Identity
+// ============================================================
+
+#[test]
+fn a_clone_is_a_handle_to_the_same_payload() {
+    let h = widget(1);
+    assert!(h.ptr_eq(&h.clone()));
+}
+
+#[test]
+fn separate_handles_to_equal_payloads_are_not_the_same() {
+    assert!(!widget(1).ptr_eq(&widget(1)));
 }
 
 // ============================================================
@@ -82,9 +96,23 @@ fn downcast_ref_to_the_wrong_type_is_none() {
 #[test]
 fn downcast_mut_mutates_through_a_unique_handle() {
     let mut h = widget(1);
-    let exclusive = Arc::get_mut(&mut h).expect("handle is unique");
-    exclusive.downcast_mut::<Widget>().expect("is a Widget").id = 9;
+    h.downcast_mut::<Widget>().expect("a unique Widget").id = 9;
     assert_eq!(h.downcast_ref::<Widget>(), Some(&Widget { id: 9 }));
+}
+
+#[test]
+fn downcast_mut_through_a_shared_handle_is_none() {
+    let mut h = widget(1);
+    let keep = h.clone();
+    assert!(h.downcast_mut::<Widget>().is_none());
+    // Neither handle's payload changed.
+    assert_eq!(keep.downcast_ref::<Widget>(), Some(&Widget { id: 1 }));
+}
+
+#[test]
+fn downcast_mut_to_the_wrong_type_is_none() {
+    let mut h = widget(1);
+    assert!(h.downcast_mut::<Gadget>().is_none());
 }
 
 // ============================================================
@@ -104,7 +132,7 @@ fn try_extract_from_a_shared_handle_gives_the_handle_back() {
     let back = h
         .try_extract::<Widget>()
         .expect_err("a shared handle must not be stolen");
-    assert!(Arc::ptr_eq(&back, &keep));
+    assert!(back.ptr_eq(&keep));
     // The returned handle is fully usable.
     assert_eq!(back.downcast_ref::<Widget>(), Some(&Widget { id: 5 }));
 }
@@ -139,4 +167,13 @@ fn value_round_trip_ends_in_extraction() {
     assert!(v.is_opaque());
     let handle = v.try_into_opaque().expect("an Opaque extracts");
     assert_eq!(handle.try_extract::<Widget>().unwrap(), Widget { id: 11 });
+}
+
+#[test]
+fn a_handle_wraps_into_a_value_and_back() {
+    let h = widget(4);
+    let back = Value::Opaque(h.clone())
+        .try_into_opaque()
+        .expect("an Opaque extracts");
+    assert!(back.ptr_eq(&h));
 }

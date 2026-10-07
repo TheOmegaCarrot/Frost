@@ -6,10 +6,9 @@
 //! does; where Bytes are involved, positions count bytes instead.
 
 use std::io::Cursor;
-use std::sync::Arc;
 
 use crate::stdlib::stream::{self, Buffer, Kind};
-use crate::{Arity, FrostError, FrostType, Param, Params, StdlibModule, Value};
+use crate::{Arity, FrostBytes, FrostError, FrostType, Param, Params, StdlibModule, Value};
 
 /// The `std.string` module: finding and counting substrings, splitting into
 /// characters, classifying characters, padding and centering text, and
@@ -60,8 +59,8 @@ pub fn string() -> StdlibModule {
 fn buffer_reader() -> Value {
     const PARAMS: Params = Params::new(&[Param::of(FrostType::FLAT)]);
     Value::checked_native("string.reader", PARAMS, |_, args| {
-        let content: Arc<[u8]> = match args[0].take() {
-            Value::String(text) => Arc::from(text),
+        let content = match args[0].take() {
+            Value::String(text) => FrostBytes::from(text),
             Value::Bytes(octets) => octets,
             other => unreachable!("type-checked as Flat, got {}", other.type_name()),
         };

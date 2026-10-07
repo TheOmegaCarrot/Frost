@@ -5,7 +5,7 @@ use std::num::NonZeroUsize;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
-use frostlang::{Importer, ImporterBuilder, Stdlib, VmRuntimeConfiguration, stdlib::RandomConfig};
+use frostlang::{Importer, ImporterBuilder, Stdlib, VmRuntimeConfiguration, stdlib::StdlibConfig};
 use frostlang_driver::{Driver, Exit};
 use frostlang_fs_resolver::{DiagnosticStyle, FsResolver};
 
@@ -42,7 +42,7 @@ fn importer(script: Option<&Path>) -> Arc<Importer> {
         .chain(module_path)
         .filter(|root| root.is_dir())
         .collect();
-    let importer = ImporterBuilder::new().with_stdlib(Stdlib::complete(RandomConfig::default()));
+    let importer = ImporterBuilder::new().with_stdlib(Stdlib::complete(StdlibConfig::default()));
     match FsResolver::new(roots) {
         Ok(resolver) => importer.append_resolver(Arc::new(
             resolver

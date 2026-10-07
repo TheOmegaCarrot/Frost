@@ -5,9 +5,7 @@ use std::{
     fmt,
     iter::FusedIterator,
     ops::Index,
-    slice,
-    sync::Arc,
-    vec,
+    slice, vec,
 };
 
 use crate::core::{FrostFloat, MapKey, Value};
@@ -96,12 +94,12 @@ impl ValueMap {
 
     /// The value at String key `key`, if present.
     pub fn get_str(&self, key: &str) -> Option<&Value> {
-        self.get(&MapKey::String(Arc::from(key)))
+        self.get(&MapKey::from(key))
     }
 
     /// The value at Bytes key `key`, if present.
     pub fn get_bytes(&self, key: &[u8]) -> Option<&Value> {
-        self.get(&MapKey::Bytes(Arc::from(key)))
+        self.get(&MapKey::from(key))
     }
 
     /// The value at Int key `key`, if present.

@@ -1,12 +1,11 @@
 use std::collections::HashMap;
-use std::sync::Arc;
 
 use serde::{Deserialize, Serialize};
 
 use frostlang::{FrostArray, FrostFloat, FrostMap, MapKey, Value, from_value, to_value};
 
 fn str_key(s: &str) -> MapKey {
-    MapKey::String(Arc::from(s))
+    MapKey::from(s)
 }
 
 // ---- Primitives ----

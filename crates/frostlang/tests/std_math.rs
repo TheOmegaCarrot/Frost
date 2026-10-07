@@ -6,7 +6,7 @@
 
 mod script;
 
-use frostlang::stdlib::RandomConfig;
+use frostlang::stdlib::StdlibConfig;
 use frostlang::{FrostFloat, ImporterBuilder, SpecialFloat, Stdlib, Value, stdlib};
 use script::Script;
 use script::assertions::{Library, library_assertions};
@@ -71,7 +71,7 @@ fn the_module_holds_its_functions_and_constants() {
 
 #[test]
 fn the_module_is_contained() {
-    let stdlib = Stdlib::contained(RandomConfig::default());
+    let stdlib = Stdlib::contained(StdlibConfig::default());
     let contained = ImporterBuilder::new().with_stdlib(stdlib).build();
     let result = Script::new("import('std.math').sqrt(4)")
         .importer(contained)

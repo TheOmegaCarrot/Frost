@@ -12,7 +12,7 @@ use std::io::{
 };
 use std::sync::{Arc, Mutex};
 
-use crate::{Arity, FrostError, FrostResult, FrostType, MapKey, Param, Params, Value};
+use crate::{Arity, FrostBytes, FrostError, FrostResult, FrostType, MapKey, Param, Params, Value};
 
 /// Which operations a bundle offers, beyond those every reader or writer has.
 #[derive(Clone, Copy, PartialEq, Eq)]
@@ -95,7 +95,7 @@ impl Source for BufReader<File> {
     }
 }
 
-impl Source for Cursor<Arc<[u8]>> {
+impl Source for Cursor<FrostBytes> {
     fn seekable(&mut self) -> Option<&mut dyn Seek> {
         Some(self)
     }

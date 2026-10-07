@@ -1,9 +1,7 @@
-use std::sync::Arc;
-
 use frostlang::{FrostArray, FrostMap, MapKey, Value};
 
 fn str_key(s: &str) -> MapKey {
-    MapKey::String(Arc::from(s))
+    MapKey::from(s)
 }
 
 // ---- Subtraction ----

@@ -69,7 +69,7 @@ fn map_kv(pairs: &[(&str, i64)]) -> Value {
     Value::Map(
         pairs
             .iter()
-            .map(|(k, v)| (MapKey::String(Arc::from(*k)), Value::Int(*v)))
+            .map(|(k, v)| (MapKey::from(*k), Value::Int(*v)))
             .collect(),
     )
 }

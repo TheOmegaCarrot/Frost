@@ -5,10 +5,10 @@
 //! start, and modules may still be added to it:
 //!
 //! ```
-//! use frostlang::stdlib::RandomConfig;
+//! use frostlang::stdlib::StdlibConfig;
 //! use frostlang::{ImporterBuilder, Stdlib};
 //!
-//! let stdlib = Stdlib::contained(RandomConfig::default());
+//! let stdlib = Stdlib::contained(StdlibConfig::default());
 //! let importer = ImporterBuilder::new().with_stdlib(stdlib).build();
 //! ```
 //!
@@ -41,26 +41,45 @@ pub use string::string;
 
 use crate::{Stdlib, StdlibModule};
 
+/// The configuration of every configurable module, for the [`Stdlib`] presets.
+///
+/// The default suits most hosts.
+#[derive(Clone, Debug, Default)]
+#[non_exhaustive]
+pub struct StdlibConfig {
+    /// The configuration of [`random`].
+    pub random: RandomConfig,
+}
+
+impl StdlibConfig {
+    /// This configuration with [`random`](Self::random) set to `config`.
+    #[must_use]
+    pub fn with_random(mut self, config: RandomConfig) -> Self {
+        self.random = config;
+        self
+    }
+}
+
 impl Stdlib {
     /// Every module contained within the script: nothing a script does with
     /// them reads or changes anything outside it, such as files, the
     /// environment, other processes, or the clock. Each configurable module is
-    /// configured by its argument.
+    /// configured as `config` says.
     ///
     /// Containment is not a security boundary: a contained script can still
     /// exhaust memory or run forever.
     ///
     /// Includes [`encoding`], [`math`], [`random`], [`regex`], and [`string`].
-    pub fn contained(random_config: RandomConfig) -> Self {
-        Self::new().with_modules([encoding(), math(), random(random_config), regex(), string()])
+    pub fn contained(config: StdlibConfig) -> Self {
+        Self::new().with_modules([encoding(), math(), random(config.random), regex(), string()])
     }
 
     /// Every module, including those that reach outside the script. Each
-    /// configurable module is configured by its argument.
+    /// configurable module is configured as `config` says.
     ///
     /// Includes everything in [`contained`](Self::contained), and [`fs`] and [`os`].
-    pub fn complete(random_config: RandomConfig) -> Self {
-        Self::contained(random_config).with_modules([fs(), os()])
+    pub fn complete(config: StdlibConfig) -> Self {
+        Self::contained(config).with_modules([fs(), os()])
     }
 
     /// This library with `modules` added, whose names must be new to it.

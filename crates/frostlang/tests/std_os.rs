@@ -8,7 +8,7 @@ mod script;
 
 use std::time::{Duration, Instant};
 
-use frostlang::stdlib::RandomConfig;
+use frostlang::stdlib::StdlibConfig;
 use frostlang::{ImporterBuilder, Stdlib, Value, stdlib};
 use script::assertions::{Library, library_assertions};
 use script::{Script, UNOPTIMIZED};
@@ -60,7 +60,7 @@ fn the_standard_output_streams_take_writes() {
 
 #[test]
 fn the_module_is_not_contained() {
-    let stdlib = Stdlib::contained(RandomConfig::default());
+    let stdlib = Stdlib::contained(StdlibConfig::default());
     let contained = ImporterBuilder::new().with_stdlib(stdlib).build();
     let raised = Script::new("import('std.os')").importer(contained).raises();
     assert_eq!(raised, "Could not resolve import 'std.os'");

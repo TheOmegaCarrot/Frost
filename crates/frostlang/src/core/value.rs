@@ -6,8 +6,9 @@ mod type_checks;
 
 use std::sync::Arc;
 
-use crate::core::types::opaque::FrostOpaque;
-use crate::core::{FrostArray, FrostFloat, FrostMap};
+use crate::core::{
+    FrostArray, FrostBytes, FrostFloat, FrostMap, FrostOpaque, FrostString, OpaqueHandle,
+};
 use crate::vm::Closure;
 use crate::vm::NativeFunction;
 
@@ -28,9 +29,9 @@ pub enum Value {
     /// A 64-bit float, guaranteed non-NaN and non-Infinity.
     Float(FrostFloat),
     /// Text, valid UTF-8 by construction.
-    String(Arc<str>),
+    String(FrostString),
     /// An arbitrary byte sequence, carrying no encoding guarantee.
-    Bytes(Arc<[u8]>),
+    Bytes(FrostBytes),
     /// An ordered, immutable sequence of values.
     Array(FrostArray),
     /// An immutable key-value mapping.
@@ -40,13 +41,17 @@ pub enum Value {
     /// A Frost closure.
     Closure(Arc<Closure>),
     /// Runtime-managed opaque data. Native functions downcast to their concrete type.
-    Opaque(Arc<dyn FrostOpaque>),
+    Opaque(OpaqueHandle),
 }
 
 const _: () = {
     const fn assert_send_sync<T: Send + Sync>() {}
     assert_send_sync::<Value>();
 };
+
+// The size every Value pays. A change of representation that alters it should
+// be a deliberate edit to this line.
+const _: () = assert!(size_of::<Value>() == 24);
 
 impl Value {
     /// Returns the inner `i64` if this is an `Int`, or `None`.
@@ -140,7 +145,7 @@ impl Value {
     ///
     /// For the concrete payload type rather than the handle, use
     /// [`downcast_opaque`](Self::downcast_opaque).
-    pub fn as_opaque(&self) -> Option<&Arc<dyn FrostOpaque>> {
+    pub fn as_opaque(&self) -> Option<&OpaqueHandle> {
         match self {
             Self::Opaque(o) => Some(o),
             _ => None,
@@ -149,7 +154,7 @@ impl Value {
 
     /// Extract the contained opaque handle, if present.
     /// Otherwise returns the original value as-is.
-    pub fn try_into_opaque(self) -> Result<Arc<dyn FrostOpaque>, Value> {
+    pub fn try_into_opaque(self) -> Result<OpaqueHandle, Value> {
         match self {
             Self::Opaque(o) => Ok(o),
             _ => Err(self),
@@ -170,7 +175,7 @@ impl Value {
     /// The usual way to hand a [`FrostOpaque`] instance into Frost; see the
     /// trait for what Frost does (and refuses to do) with it.
     pub fn opaque<T: FrostOpaque>(x: T) -> Value {
-        Value::Opaque(Arc::new(x))
+        Value::Opaque(OpaqueHandle::new(x))
     }
 
     /// Borrows the concrete `T` inside an `Opaque` value: `None` when this is

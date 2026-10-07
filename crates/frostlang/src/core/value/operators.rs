@@ -24,12 +24,10 @@ impl Value {
 
             // Concatenation is same-type: text joins text, bytes join bytes.
             // Mixing them falls to the type error below rather than picking a side.
-            (Value::String(l), Value::String(r)) => {
-                Ok(Value::String(Arc::from(format!("{l}{r}").as_str())))
-            }
+            (Value::String(l), Value::String(r)) => Ok(Value::from(format!("{l}{r}"))),
 
             (Value::Bytes(l), Value::Bytes(r)) => {
-                Ok(Value::Bytes(Arc::from([l.as_ref(), r.as_ref()].concat())))
+                Ok(Value::from([l.as_slice(), r.as_slice()].concat()))
             }
 
             // Structural `+` has one home: `add_owned`. The clones are Arc bumps,

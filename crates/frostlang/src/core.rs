@@ -14,12 +14,14 @@ mod value;
 pub use error::{BacktraceFrame, FrostError, FrostResult, WithBacktrace};
 pub use serde::{from_value, to_value};
 pub use types::array::FrostArray;
+pub use types::bytes::FrostBytes;
 pub use types::float::FrostFloat;
 pub use types::frost_type::FrostType;
 pub use types::map::FrostMap;
 pub use types::map_key::MapKey;
-pub use types::opaque::FrostOpaque;
+pub use types::opaque::{FrostOpaque, OpaqueHandle};
 pub use types::special_float::SpecialFloat;
+pub use types::string::FrostString;
 pub use types::value_map::{self, ValueMap};
 pub use util::identifier::{
     KEYWORDS, is_identifier_like, is_identifier_like_and_not_keyword, is_reserved_keyword,

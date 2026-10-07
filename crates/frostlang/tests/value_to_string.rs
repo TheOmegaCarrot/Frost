@@ -1,12 +1,10 @@
 mod common;
 
-use std::sync::Arc;
-
 use frostlang::bytecode::Bytecode;
 use frostlang::{Arity, FrostArray, FrostFloat, FrostMap, MapKey, Value};
 
 fn str_key(s: &str) -> MapKey {
-    MapKey::String(Arc::from(s))
+    MapKey::from(s)
 }
 
 // -- Primitives: to_frost_string --

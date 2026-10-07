@@ -1,12 +1,11 @@
 //! Slicing, grouping, sorting, searching, and transforming arrays and maps.
 
 use std::collections::BTreeMap;
-use std::sync::Arc;
 
 use crate::bytecode::Bytecode;
 use crate::{
-    Arity, FrostArray, FrostError, FrostMap, FrostResult, FrostType, MapKey, NativeCtx, Param,
-    Params, Value, ValueMap,
+    Arity, FrostArray, FrostBytes, FrostError, FrostMap, FrostResult, FrostString, FrostType,
+    MapKey, NativeCtx, Param, Params, Value, ValueMap,
 };
 use enumset::{EnumSet, enum_set};
 
@@ -417,8 +416,8 @@ pub(super) fn find_global() -> Value {
 /// A [`SEQUENCE`] argument, taken apart for slicing by element.
 enum Sequence {
     /// Elements are code points.
-    Text(Arc<str>),
-    Binary(Arc<[u8]>),
+    Text(FrostString),
+    Binary(FrostBytes),
     Array(FrostArray),
 }
 

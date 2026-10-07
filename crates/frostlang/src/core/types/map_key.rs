@@ -2,7 +2,7 @@
 
 use std::sync::Arc;
 
-use crate::core::{FrostError, FrostFloat, Value};
+use crate::core::{FrostBytes, FrostError, FrostFloat, FrostString, Value};
 
 /// A valid Frost map key. Only non-null primitive types may be keys.
 /// Totally ordered, such that ordering of keys of the same type agrees with Frost's `<` operator.
@@ -16,9 +16,9 @@ pub enum MapKey {
     /// A Float key.
     Float(FrostFloat),
     /// A String key.
-    String(Arc<str>),
+    String(FrostString),
     /// A Bytes key.
-    Bytes(Arc<[u8]>),
+    Bytes(FrostBytes),
 }
 
 /// Renders the key as [`Value::to_frost_string`] renders the equivalent Value:
@@ -69,6 +69,12 @@ impl From<String> for MapKey {
 
 impl From<Arc<str>> for MapKey {
     fn from(value: Arc<str>) -> Self {
+        Self::String(value.into())
+    }
+}
+
+impl From<FrostString> for MapKey {
+    fn from(value: FrostString) -> Self {
         Self::String(value)
     }
 }
@@ -88,6 +94,12 @@ impl From<Vec<u8>> for MapKey {
 
 impl From<Arc<[u8]>> for MapKey {
     fn from(value: Arc<[u8]>) -> Self {
+        Self::Bytes(value.into())
+    }
+}
+
+impl From<FrostBytes> for MapKey {
+    fn from(value: FrostBytes) -> Self {
         Self::Bytes(value)
     }
 }

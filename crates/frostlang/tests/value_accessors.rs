@@ -1,5 +1,3 @@
-use std::sync::Arc;
-
 use frostlang::{FrostArray, FrostMap, MapKey, Value};
 
 // -- as_int --
@@ -130,7 +128,7 @@ fn as_array_from_non_array() {
 
 #[test]
 fn as_map_from_map() {
-    let map: FrostMap = vec![(MapKey::String(Arc::from("key")), Value::from(1i64))]
+    let map: FrostMap = vec![(MapKey::from("key"), Value::from(1i64))]
         .into_iter()
         .collect();
     let v = Value::from(map);

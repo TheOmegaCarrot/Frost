@@ -114,7 +114,7 @@ fn try_call(mut ctx: NativeCtx<'_>, args: &mut [Value]) -> FrostResult {
 
 /// A string `MapKey` from a `&str` literal.
 fn string_key(s: &str) -> MapKey {
-    MapKey::String(Arc::from(s))
+    MapKey::from(s)
 }
 
 /// Build a `Value::Map` from a fixed set of entries.

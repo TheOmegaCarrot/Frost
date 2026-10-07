@@ -17,7 +17,7 @@ use std::os::unix::fs::PermissionsExt;
 use std::path::{Path, PathBuf};
 use std::{env, fs, process};
 
-use frostlang::stdlib::RandomConfig;
+use frostlang::stdlib::StdlibConfig;
 use frostlang::{ImporterBuilder, Stdlib, Value, stdlib};
 use script::Script;
 use script::assertions::Library;
@@ -124,7 +124,7 @@ fn the_module_holds_its_functions() {
 
 #[test]
 fn the_module_is_not_contained() {
-    let stdlib = Stdlib::contained(RandomConfig::default());
+    let stdlib = Stdlib::contained(StdlibConfig::default());
     let contained = ImporterBuilder::new().with_stdlib(stdlib).build();
     let raised = Script::new("import('std.fs')").importer(contained).raises();
     assert_eq!(raised, "Could not resolve import 'std.fs'");

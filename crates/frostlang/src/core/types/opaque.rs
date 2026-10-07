@@ -1,6 +1,6 @@
 //! [`FrostOpaque`]: the trait host data implements to travel through Frost.
 
-use std::{any::Any, borrow::Cow, fmt::Debug, sync::Arc};
+use std::{any::Any, borrow::Cow, fmt::Debug, ops::Deref, sync::Arc};
 
 /// Host data carried through Frost as an `Opaque` [`Value`](crate::Value).
 ///
@@ -12,7 +12,7 @@ use std::{any::Any, borrow::Cow, fmt::Debug, sync::Arc};
 /// [`SpecialFloat`](crate::SpecialFloat). A native function receiving it back
 /// recovers the concrete type with
 /// [`Value::downcast_opaque`](crate::Value::downcast_opaque), or steals it back
-/// out with `try_extract`.
+/// out with [`OpaqueHandle::try_extract`].
 pub trait FrostOpaque: Any + Debug + Send + Sync {
     /// The host-facing name of this kind of value.
     ///
@@ -64,12 +64,6 @@ pub(crate) mod sealed {
 }
 
 impl dyn FrostOpaque {
-    /// Frost's `==` between two Opaques; see [`FrostOpaque::equals`].
-    pub(crate) fn frost_eq(self: &Arc<Self>, other: &Arc<Self>) -> bool {
-        let same_type = (**self).type_id() == (**other).type_id();
-        Arc::ptr_eq(self, other) || (same_type && self.equals(&**other))
-    }
-
     /// [`std::mem::needs_drop`] for the payload's concrete type.
     pub(crate) fn needs_drop(&self) -> bool {
         self.has_drop_glue(sealed::Token)
@@ -79,38 +73,72 @@ impl dyn FrostOpaque {
     pub fn downcast_ref<T: FrostOpaque>(&self) -> Option<&T> {
         (self as &dyn Any).downcast_ref::<T>()
     }
+}
 
-    /// Mutably borrows the concrete `T`, or `None` if the payload is some
-    /// other type.
-    ///
-    /// Reaching `&mut dyn FrostOpaque` through the usual shared handle
-    /// requires unique ownership; see [`Arc::get_mut`].
-    pub fn downcast_mut<T: FrostOpaque>(&mut self) -> Option<&mut T> {
-        (self as &mut dyn Any).downcast_mut::<T>()
+/// A shared handle to host data in Frost: the payload of an `Opaque`
+/// [`Value`](crate::Value).
+///
+/// It dereferences to the [`FrostOpaque`] payload, so the trait's methods apply
+/// directly. Cloning a handle is cheap and shares the payload.
+#[derive(Clone, Debug)]
+pub struct OpaqueHandle(Arc<dyn FrostOpaque>);
+
+impl OpaqueHandle {
+    /// A handle to `payload`, the only one.
+    pub fn new<T: FrostOpaque>(payload: T) -> Self {
+        Self(Arc::new(payload))
     }
 
-    /// Takes the `T` out of a uniquely-held handle, zero-copy.
+    /// Borrows the concrete `T`, or `None` if the payload is some other type.
+    pub fn downcast_ref<T: FrostOpaque>(&self) -> Option<&T> {
+        self.0.downcast_ref()
+    }
+
+    /// Mutably borrows the concrete `T`: `None` if the payload is some other
+    /// type, or if another handle shares it.
+    pub fn downcast_mut<T: FrostOpaque>(&mut self) -> Option<&mut T> {
+        let payload: &mut dyn Any = Arc::get_mut(&mut self.0)?;
+        payload.downcast_mut::<T>()
+    }
+
+    /// Takes the `T` out of this handle, zero-copy.
     ///
-    /// Succeeds when the payload is a `T` and this `Arc` is the only handle
-    /// to it. Otherwise the handle comes back unchanged in `Err`, still
-    /// usable: a shared handle or a different payload type is a normal
-    /// outcome, not an error state.
+    /// Succeeds when the payload is a `T` and this is the only handle to it.
+    /// Otherwise the handle comes back unchanged in `Err`, still usable: a
+    /// shared handle or a different payload type is a normal outcome, not an
+    /// error state.
     ///
-    /// The owned counterpart of `downcast_ref`, for a host that wants its
-    /// data back without cloning.
-    pub fn try_extract<T: FrostOpaque>(self: Arc<Self>) -> Result<T, Arc<Self>> {
-        if self.downcast_ref::<T>().is_none() {
+    /// The owned counterpart of [`downcast_ref`](Self::downcast_ref), for a
+    /// host that wants its data back without cloning.
+    pub fn try_extract<T: FrostOpaque>(self) -> Result<T, Self> {
+        if self.0.downcast_ref::<T>().is_none() {
             return Err(self);
         }
 
-        let any: Arc<dyn Any + Send + Sync> = self;
+        let any: Arc<dyn Any + Send + Sync> = self.0;
         let typed: Arc<T> = any
             .downcast()
             .expect("IMPOSSIBLE: payload type was checked above");
 
-        match Arc::try_unwrap(typed) {
-            Ok(value) => Ok(value),
-            Err(shared) => Err(shared),
-        }
+        Arc::try_unwrap(typed).map_err(|shared| Self(shared))
+    }
+
+    /// Whether `self` and `other` are handles to the same payload.
+    pub fn ptr_eq(&self, other: &Self) -> bool {
+        Arc::ptr_eq(&self.0, &other.0)
+    }
+
+    /// Frost's `==` between two Opaques; see [`FrostOpaque::equals`].
+    pub(crate) fn frost_eq(&self, other: &Self) -> bool {
+        let same_type = (*self.0).type_id() == (*other.0).type_id();
+        self.ptr_eq(other) || (same_type && self.0.equals(&*other.0))
+    }
+}
+
+impl Deref for OpaqueHandle {
+    type Target = dyn FrostOpaque;
+
+    fn deref(&self) -> &(dyn FrostOpaque + 'static) {
+        &*self.0
     }
 }

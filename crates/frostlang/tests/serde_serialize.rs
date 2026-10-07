@@ -1,7 +1,6 @@
 mod common;
 
 use std::collections::HashMap;
-use std::sync::Arc;
 
 use serde::Serialize;
 
@@ -9,7 +8,7 @@ use frostlang::bytecode::Bytecode;
 use frostlang::{Arity, FrostArray, FrostMap, MapKey, Value, to_value};
 
 fn str_key(s: &str) -> MapKey {
-    MapKey::String(Arc::from(s))
+    MapKey::from(s)
 }
 
 // ---- Primitives ----

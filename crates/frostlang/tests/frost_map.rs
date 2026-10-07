@@ -3,7 +3,7 @@ use std::sync::Arc;
 use frostlang::{FrostFloat, FrostMap, MapKey, Value, ValueMap};
 
 fn str_key(s: &str) -> MapKey {
-    MapKey::String(Arc::from(s))
+    MapKey::from(s)
 }
 
 fn sample_map() -> FrostMap {

@@ -60,7 +60,7 @@ fn ints(xs: &[i64]) -> Value {
 }
 
 fn skey(s: &str) -> MapKey {
-    MapKey::String(Arc::from(s))
+    MapKey::from(s)
 }
 
 fn map(pairs: Vec<(MapKey, Value)>) -> Value {
