@@ -7,6 +7,9 @@ edition.workspace = true
 default = ["line-editor"]
 # A terminal input with line editing, history, and highlighting.
 line-editor = ["dep:reedline", "dep:nu-ansi-term", "dep:dirs"]
+# Draw compile errors as source snippets with their labels rather than
+# narrating them as plain text.
+graphical-diagnostics = ["frostlang-compile/graphical-diagnostics"]
 
 [dependencies]
 # Where the platform keeps history.
@@ -17,6 +20,10 @@ frostlang-runtime.workspace = true
 # The version reedline uses, for the styles its highlighter takes.
 nu-ansi-term = { version = "0.50", optional = true }
 reedline = { version = "0.52", optional = true }
+
+[dev-dependencies]
+# The tests assert on the graphical rendering.
+frostlang-repl = { path = ".", features = ["graphical-diagnostics"] }
 
 [lints]
 workspace = true

@@ -40,6 +40,23 @@ fn a_compile_error_may_render_with_unicode_but_never_color() {
 }
 
 #[test]
+fn a_compile_error_may_be_narrated() {
+    let tree = Tree::new("errors/compile_narrated");
+    tree.file("bad.frst", "export def x = undefined_name");
+    let importer = importer(
+        tree.resolver(&["."])
+            .with_diagnostics(DiagnosticStyle::Narrated),
+    );
+    let message = run("import('bad')", &importer).message();
+    assert!(message.contains("does not compile"), "{message}");
+    assert!(
+        message.contains("snippet line 1: export def x = undefined_name"),
+        "{message}"
+    );
+    assert!(!message.contains('|'), "nothing drawn:\n{message}");
+}
+
+#[test]
 fn a_parse_error_is_a_compile_error() {
     let tree = Tree::new("errors/parse");
     tree.file("bad.frst", "export def = ");

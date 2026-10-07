@@ -21,16 +21,19 @@ use std::fmt;
 use frostlang_parse::ParseError;
 use frostlang_parse::ast::SourceSpan;
 use miette::{
-    Diagnostic as MietteDiagnostic, GraphicalReportHandler, GraphicalTheme, LabeledSpan,
-    NamedSource, Severity, SourceCode,
+    Diagnostic as MietteDiagnostic, LabeledSpan, NamedSource, NarratableReportHandler, Severity,
+    SourceCode,
 };
+#[cfg(feature = "graphical-diagnostics")]
+use miette::{GraphicalReportHandler, GraphicalTheme};
 
 /// A single compiler diagnostic: an error, a warning, or advice.
 ///
 /// Constructed by the compiler; consume one by rendering it,
-/// through [`Display`](fmt::Display) (the same as [`render`](Self::render)),
-/// or through [`render_pretty`](Self::render_pretty), [`render_unicode`](Self::render_unicode),
-/// or [`render_plain`](Self::render_plain) for a fixed style.
+/// through [`Display`](fmt::Display), the same as [`render`](Self::render), or as
+/// plain text with [`render_narrated`](Self::render_narrated). With the
+/// [`graphical-diagnostics`](crate#features) feature, `render_pretty`,
+/// `render_unicode`, and `render_plain` draw it in a fixed style.
 #[derive(Clone, Debug)]
 pub struct Diagnostic(Diag);
 
@@ -159,26 +162,45 @@ impl Diagnostic {
 // -- Consumption (public) --
 
 impl Diagnostic {
-    /// Render for humans, adapting to the output:
-    /// unicode and color at a terminal (monochrome under `NO_COLOR`), monochrome ASCII otherwise.
-    /// This is what [`Display`](fmt::Display) uses.
+    /// Render for humans. This is what [`Display`](fmt::Display) uses.
+    ///
+    /// With the [`graphical-diagnostics`](crate#features) feature, it draws each
+    /// source snippet with its labels, adapting to the output: unicode and color
+    /// at a terminal (monochrome under `NO_COLOR`), monochrome ASCII otherwise.
+    /// Without it, it is [`render_narrated`](Self::render_narrated).
     pub fn render(&self) -> String {
-        self.0.render_themed(GraphicalTheme::default())
+        #[cfg(feature = "graphical-diagnostics")]
+        return self.0.render_themed(GraphicalTheme::default());
+        #[cfg(not(feature = "graphical-diagnostics"))]
+        return self.render_narrated();
+    }
+
+    /// Render as narrated plain text, drawing nothing: the message, then the
+    /// source lines with each label's line and columns, then any help. It reads
+    /// well to a screen reader, and anywhere a drawing would not survive.
+    pub fn render_narrated(&self) -> String {
+        let mut out = String::new();
+        // Writing to a String is infallible.
+        let _ = NarratableReportHandler::new().render_report(&mut out, &self.0);
+        out
     }
 
     /// Render with color and unicode box-drawing unconditionally.
+    #[cfg(feature = "graphical-diagnostics")]
     pub fn render_pretty(&self) -> String {
         self.0.render_themed(GraphicalTheme::unicode())
     }
 
     /// Render with unicode box-drawing but no color: free of terminal escapes,
     /// so it reads well wherever the text ends up.
+    #[cfg(feature = "graphical-diagnostics")]
     pub fn render_unicode(&self) -> String {
         self.0.render_themed(GraphicalTheme::unicode_nocolor())
     }
 
     /// Render as monochrome ASCII: deterministic, terminal-independent, and the
     /// right choice for logs and test snapshots.
+    #[cfg(feature = "graphical-diagnostics")]
     pub fn render_plain(&self) -> String {
         self.0.render_themed(GraphicalTheme::none())
     }
@@ -193,6 +215,7 @@ impl fmt::Display for Diagnostic {
 impl std::error::Error for Diagnostic {}
 
 impl Diag {
+    #[cfg(feature = "graphical-diagnostics")]
     fn render_themed(&self, theme: GraphicalTheme) -> String {
         let mut out = String::new();
         // Writing to a String is infallible.
@@ -300,20 +323,29 @@ impl Diagnostics {
         self.render_each(Diagnostic::render)
     }
 
+    /// Render every diagnostic as narrated plain text (see
+    /// [`Diagnostic::render_narrated`]), back to back.
+    pub fn render_narrated(&self) -> String {
+        self.render_each(Diagnostic::render_narrated)
+    }
+
     /// Render every diagnostic with color and unicode (see
     /// [`Diagnostic::render_pretty`]), back to back.
+    #[cfg(feature = "graphical-diagnostics")]
     pub fn render_pretty(&self) -> String {
         self.render_each(Diagnostic::render_pretty)
     }
 
     /// Render every diagnostic with unicode but no color (see
     /// [`Diagnostic::render_unicode`]), back to back.
+    #[cfg(feature = "graphical-diagnostics")]
     pub fn render_unicode(&self) -> String {
         self.render_each(Diagnostic::render_unicode)
     }
 
     /// Render every diagnostic as monochrome ASCII (see
     /// [`Diagnostic::render_plain`]), back to back.
+    #[cfg(feature = "graphical-diagnostics")]
     pub fn render_plain(&self) -> String {
         self.render_each(Diagnostic::render_plain)
     }

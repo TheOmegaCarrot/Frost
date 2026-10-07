@@ -1,10 +1,11 @@
-//! The fixed render styles of `Diagnostics`: each says the same thing, and
-//! differs only in the characters it may use.
+//! The fixed render styles of `Diagnostics`: each says the same thing. The
+//! graphical styles differ only in the characters they may use; the narrated
+//! style draws nothing.
 
 mod common;
 
 use common::Script;
-use frostlang_compile::Diagnostics;
+use frostlang_compile::{Diagnostic, Diagnostics};
 
 /// Diagnostics for a script with an unbound name, whose snippet every style shows.
 fn errors() -> Diagnostics {
@@ -22,6 +23,7 @@ fn has_escape(text: &str) -> bool {
 fn every_style_names_the_file_and_shows_the_snippet() {
     let errors = errors();
     for (style, rendered) in [
+        ("narrated", errors.render_narrated()),
         ("plain", errors.render_plain()),
         ("unicode", errors.render_unicode()),
         ("pretty", errors.render_pretty()),
@@ -29,6 +31,33 @@ fn every_style_names_the_file_and_shows_the_snippet() {
         assert!(rendered.contains("script.frst"), "{style}:\n{rendered}");
         assert!(rendered.contains("undefined_name"), "{style}:\n{rendered}");
     }
+}
+
+#[test]
+fn narrated_draws_nothing() {
+    let rendered = errors().render_narrated();
+    assert!(!has_escape(&rendered), "{rendered:?}");
+    for drawing in ["|", "^", "`--", "\u{256d}", "\u{2502}"] {
+        assert!(!rendered.contains(drawing), "no `{drawing}`:\n{rendered}");
+    }
+}
+
+#[test]
+fn narrated_includes_related_diagnostics() {
+    let source = r"
+        def x = 1
+        def x = 2
+    ";
+    let rendered = Script::new(source).compile_errors().render_narrated();
+    assert!(rendered.contains("`x` is already bound"), "{rendered}");
+    assert!(rendered.contains("`x` was first bound here"), "{rendered}");
+}
+
+#[test]
+fn every_diagnostic_in_the_set_is_narrated() {
+    let errors = errors();
+    let each: Vec<String> = errors.iter().map(Diagnostic::render_narrated).collect();
+    assert_eq!(errors.render_narrated(), each.join("\n"));
 }
 
 #[test]

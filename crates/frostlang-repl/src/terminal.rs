@@ -163,6 +163,7 @@ impl Frontend for TerminalFrontend {
                 writeln!(stdout, "{}", value.to_pretty_string())?;
                 stdout.flush()
             }
+            #[cfg(feature = "graphical-diagnostics")]
             Err(ReplError::Compile(diagnostics)) if self.color => {
                 let mut stderr = io::stderr().lock();
                 write!(stderr, "{}", diagnostics.render_pretty())?;

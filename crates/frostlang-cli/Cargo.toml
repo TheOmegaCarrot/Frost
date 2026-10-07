@@ -8,8 +8,8 @@ name = "frost"
 path = "src/main.rs"
 
 [dependencies]
-frostlang-driver.workspace = true
-frostlang-fs-resolver.workspace = true
+frostlang-driver = { workspace = true, features = ["graphical-diagnostics"] }
+frostlang-fs-resolver = { workspace = true, features = ["graphical-diagnostics"] }
 frostlang-runtime.workspace = true
 
 [lints]

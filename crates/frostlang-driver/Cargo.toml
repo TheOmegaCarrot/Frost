@@ -3,6 +3,14 @@ name = "frostlang-driver"
 version = "0.0.1"
 edition.workspace = true
 
+[features]
+# Draw compile errors as source snippets with their labels, in color at a
+# terminal, rather than narrating them as plain text.
+graphical-diagnostics = [
+    "frostlang-compile/graphical-diagnostics",
+    "frostlang-repl/graphical-diagnostics",
+]
+
 [dependencies]
 clap = { version = "4.6", features = ["derive", "string"] }
 frostlang-compile.workspace = true
@@ -10,6 +18,10 @@ frostlang-parse.workspace = true
 frostlang-repl.workspace = true
 frostlang-runtime.workspace = true
 postcard = { version = "1", features = ["alloc"] }
+
+[dev-dependencies]
+# The tests check the output as the `frost` binary, which has the feature, shows it.
+frostlang-driver = { path = ".", features = ["graphical-diagnostics"] }
 
 [lints]
 workspace = true

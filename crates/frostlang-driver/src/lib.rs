@@ -19,6 +19,13 @@
 //!         .run_from_env()
 //! }
 //! ```
+//!
+//! # Features
+//!
+//! - `graphical-diagnostics` (off by default): draw compile errors as source
+//!   snippets with their labels, in color at a terminal, rather than narrating
+//!   them as plain text. A command-line interface for people almost certainly
+//!   wants it.
 
 mod cli;
 mod image;
@@ -575,11 +582,14 @@ impl Session<'_> {
     }
 
     fn report_diagnostics(&mut self, errors: &Diagnostics) -> Exit {
+        #[cfg(feature = "graphical-diagnostics")]
         let rendered = if self.colors(self.terminals.stderr) {
             errors.render_pretty()
         } else {
             errors.render_plain()
         };
+        #[cfg(not(feature = "graphical-diagnostics"))]
+        let rendered = errors.render_narrated();
         write_out(self.stderr, &rendered);
         Exit::ScriptFailed
     }

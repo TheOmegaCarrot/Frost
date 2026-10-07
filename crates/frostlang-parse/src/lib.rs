@@ -20,6 +20,13 @@
 //!
 //! The labeled spans on a [`ParseError`] (see [`Label`]) follow the same
 //! byte-offset conventions.
+//!
+//! # Features
+//!
+//! - `graphical-diagnostics` (off by default): render a [`ParseError`] as a
+//!   drawing of the source snippet with its labels, and in the fixed styles of
+//!   [`ParseError`]'s `render_*` methods. Without it, errors render as plain
+//!   narrated text. If you show parse errors to people, you probably want it.
 
 /// The syntax tree [`parse_program`] produces, rooted at [`Program`](ast::Program).
 pub mod ast;

@@ -20,6 +20,9 @@
 //!
 //! - `line-editor` (default): [`TerminalFrontend`], with line editing,
 //!   history, and syntax highlighting.
+//! - `graphical-diagnostics`: draw compile errors as source snippets with their
+//!   labels, in color at a color terminal, rather than narrating them as plain
+//!   text. If you show the REPL to people, you probably want it.
 
 mod builtins;
 mod frontend;
@@ -357,7 +360,10 @@ pub enum ReplError {
 impl fmt::Display for ReplError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
+            #[cfg(feature = "graphical-diagnostics")]
             Self::Compile(diagnostics) => f.write_str(diagnostics.render_plain().trim_end()),
+            #[cfg(not(feature = "graphical-diagnostics"))]
+            Self::Compile(diagnostics) => f.write_str(diagnostics.render_narrated().trim_end()),
             Self::Run(error) => write!(f, "Error: {}", error.with_backtrace()),
             Self::Metacommand(error) => write!(f, "Error: {error}"),
         }

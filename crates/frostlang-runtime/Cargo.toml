@@ -24,7 +24,7 @@ postcard = { version = "1", features = ["alloc"] }
 # unit test would link a second copy of this crate, whose types would not match.
 # Path only, not the workspace dependency: a versioned dev-dependency on a crate
 # that depends on this one would make publishing circular.
-frostlang-compile = { path = "../frostlang-compile" }
+frostlang-compile = { path = "../frostlang-compile", features = ["graphical-diagnostics"] }
 
 [lints]
 workspace = true

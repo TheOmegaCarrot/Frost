@@ -3,10 +3,19 @@ name = "frostlang-parse"
 version = "0.0.1"
 edition.workspace = true
 
+[features]
+# Graphical rendering of a `ParseError`: the source snippet drawn with its
+# labels, and the fixed `render_*` styles.
+graphical-diagnostics = ["miette/fancy-no-backtrace"]
+
 [dependencies]
 logos = "0.15"
-miette = { version = "7", features = ["fancy"] }
+miette = { version = "7", default-features = false }
 serde = { version = "1", features = ["derive"] }
+
+[dev-dependencies]
+# The tests assert on the graphical rendering.
+frostlang-parse = { path = ".", features = ["graphical-diagnostics"] }
 
 [lints]
 workspace = true

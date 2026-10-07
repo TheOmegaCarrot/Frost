@@ -3,10 +3,22 @@ name = "frostlang-compile"
 version = "0.0.1"
 edition.workspace = true
 
+[features]
+# Graphical rendering of a `Diagnostic`: each source snippet drawn with its
+# labels, and the fixed `render_*` styles.
+graphical-diagnostics = [
+    "miette/fancy-no-backtrace",
+    "frostlang-parse/graphical-diagnostics",
+]
+
 [dependencies]
 frostlang-parse.workspace = true
 frostlang-runtime.workspace = true
-miette = { version = "7", features = ["fancy"] }
+miette = { version = "7", default-features = false }
+
+[dev-dependencies]
+# The tests assert on the graphical rendering.
+frostlang-compile = { path = ".", features = ["graphical-diagnostics"] }
 
 [lints]
 workspace = true

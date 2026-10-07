@@ -1,5 +1,6 @@
-//! The render styles of `ParseError`: each says the same thing, and differs
-//! only in the characters it may use.
+//! The render styles of `ParseError`: each says the same thing. The graphical
+//! styles differ only in the characters they may use; the narrated style draws
+//! nothing.
 
 use frostlang_parse::{ParseError, parse_program};
 
@@ -18,6 +19,7 @@ fn every_style_names_the_file_and_shows_the_snippet_and_label() {
     let error = error();
     let label = &error.labels()[0].text;
     for (style, rendered) in [
+        ("narrated", error.render_narrated()),
         ("plain", error.render_plain()),
         ("unicode", error.render_unicode()),
         ("pretty", error.render_pretty()),
@@ -37,12 +39,37 @@ fn every_style_shows_the_help() {
         .help()
         .expect("a habit from another language earns help");
     for (style, rendered) in [
+        ("narrated", error.render_narrated()),
         ("plain", error.render_plain()),
         ("unicode", error.render_unicode()),
         ("pretty", error.render_pretty()),
     ] {
         assert!(rendered.contains(help), "{style}:\n{rendered}");
     }
+}
+
+#[test]
+fn narrated_draws_nothing() {
+    let rendered = error().render_narrated();
+    assert!(!has_escape(&rendered), "{rendered:?}");
+    for drawing in ["|", "^", "`--", "\u{256d}", "\u{2502}"] {
+        assert!(!rendered.contains(drawing), "no `{drawing}`:\n{rendered}");
+    }
+}
+
+#[test]
+fn narrated_locates_each_label_by_line_and_column() {
+    let error =
+        parse_program("script.frst", "def x = 1\nlet y = x +").expect_err("`let` is not Frost");
+    let rendered = error.render_narrated();
+    assert!(
+        rendered.contains("label at line 2, columns 1 to 3: this is a complete statement"),
+        "{rendered}"
+    );
+    assert!(
+        rendered.contains("label at line 2, column 5: unexpected"),
+        "{rendered}"
+    );
 }
 
 #[test]

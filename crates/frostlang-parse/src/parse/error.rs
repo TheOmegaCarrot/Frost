@@ -2,9 +2,10 @@ use std::error::Error;
 use std::fmt::{self, Display};
 
 use miette::{
-    Diagnostic as MietteDiagnostic, GraphicalReportHandler, GraphicalTheme, LabeledSpan,
-    NamedSource, SourceCode,
+    Diagnostic as MietteDiagnostic, LabeledSpan, NamedSource, NarratableReportHandler, SourceCode,
 };
+#[cfg(feature = "graphical-diagnostics")]
+use miette::{GraphicalReportHandler, GraphicalTheme};
 
 use crate::ast::SourceSpan;
 
@@ -119,9 +120,10 @@ impl Diagnostic {
 ///
 /// Inspect it with [`message`](Self::message), [`labels`](Self::labels), and
 /// [`help`](Self::help). Render it against the source through
-/// [`Display`](fmt::Display) (the same as [`render`](Self::render)), or through
-/// [`render_pretty`](Self::render_pretty), [`render_unicode`](Self::render_unicode),
-/// or [`render_plain`](Self::render_plain) for a fixed style.
+/// [`Display`](fmt::Display), the same as [`render`](Self::render), or as plain
+/// text with [`render_narrated`](Self::render_narrated). With the
+/// [`graphical-diagnostics`](crate#features) feature, `render_pretty`,
+/// `render_unicode`, and `render_plain` draw it in a fixed style.
 #[derive(Clone, Debug)]
 pub struct ParseError(Report);
 
@@ -168,26 +170,45 @@ impl ParseError {
         self.0.diagnostic.help()
     }
 
-    /// Render for humans, adapting to the output:
-    /// unicode and color at a terminal (monochrome under `NO_COLOR`), monochrome ASCII otherwise.
-    /// This is what [`Display`](fmt::Display) uses.
+    /// Render for humans. This is what [`Display`](fmt::Display) uses.
+    ///
+    /// With the [`graphical-diagnostics`](crate#features) feature, it draws the
+    /// source snippet with its labels, adapting to the output: unicode and color
+    /// at a terminal (monochrome under `NO_COLOR`), monochrome ASCII otherwise.
+    /// Without it, it is [`render_narrated`](Self::render_narrated).
     pub fn render(&self) -> String {
-        self.0.render_themed(GraphicalTheme::default())
+        #[cfg(feature = "graphical-diagnostics")]
+        return self.0.render_themed(GraphicalTheme::default());
+        #[cfg(not(feature = "graphical-diagnostics"))]
+        return self.render_narrated();
+    }
+
+    /// Render as narrated plain text, drawing nothing: the message, then the
+    /// source lines with each label's line and columns, then any help. It reads
+    /// well to a screen reader, and anywhere a drawing would not survive.
+    pub fn render_narrated(&self) -> String {
+        let mut out = String::new();
+        // Writing to a String is infallible.
+        let _ = NarratableReportHandler::new().render_report(&mut out, &self.0);
+        out
     }
 
     /// Render with color and unicode box-drawing unconditionally.
+    #[cfg(feature = "graphical-diagnostics")]
     pub fn render_pretty(&self) -> String {
         self.0.render_themed(GraphicalTheme::unicode())
     }
 
     /// Render with unicode box-drawing but no color: free of terminal escapes,
     /// so it reads well wherever the text ends up.
+    #[cfg(feature = "graphical-diagnostics")]
     pub fn render_unicode(&self) -> String {
         self.0.render_themed(GraphicalTheme::unicode_nocolor())
     }
 
     /// Render as monochrome ASCII: deterministic, terminal-independent, and the
     /// right choice for logs and test snapshots.
+    #[cfg(feature = "graphical-diagnostics")]
     pub fn render_plain(&self) -> String {
         self.0.render_themed(GraphicalTheme::none())
     }
@@ -202,6 +223,7 @@ impl Display for ParseError {
 impl Error for ParseError {}
 
 impl Report {
+    #[cfg(feature = "graphical-diagnostics")]
     fn render_themed(&self, theme: GraphicalTheme) -> String {
         let mut out = String::new();
         // Writing to a String is infallible.

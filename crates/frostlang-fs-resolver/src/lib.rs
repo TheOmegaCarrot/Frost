@@ -71,6 +71,14 @@
 //! A module runs under the configuration of the Vm that first imports it, and
 //! with caching, every Vm then shares the result. Use one `FsResolver` for each
 //! set of Vms that share a configuration.
+//!
+//! # Features
+//!
+//! - `graphical-diagnostics` (off by default): adds the [`DiagnosticStyle`]s
+//!   that draw a module's compile errors as source snippets with their labels,
+//!   and makes one of them the default. Without it, an import error narrates
+//!   them as plain text. If you show Frost compiler errors to people, you
+//!   probably want it. It turns on the same feature of `frostlang-compile`.
 
 mod loading;
 mod lookup;
@@ -109,13 +117,21 @@ pub struct FsResolver {
     id: ResolverId,
 }
 
-/// How an import error renders a module's compile errors.
+/// How an import error renders a module's compile errors; see
+/// [`FsResolver::with_diagnostics`].
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum DiagnosticStyle {
-    /// Monochrome ASCII; see [`Diagnostics::render_plain`].
+    /// Narrated plain text; see [`Diagnostics::render_narrated`]. The default
+    /// without the [`graphical-diagnostics`](crate#features) feature.
+    #[cfg_attr(not(feature = "graphical-diagnostics"), default)]
+    Narrated,
+    /// Monochrome ASCII; see [`Diagnostics::render_plain`]. The default with
+    /// the [`graphical-diagnostics`](crate#features) feature.
+    #[cfg(feature = "graphical-diagnostics")]
     #[default]
     Plain,
     /// Unicode box-drawing without color; see [`Diagnostics::render_unicode`].
+    #[cfg(feature = "graphical-diagnostics")]
     Unicode,
 }
 
@@ -153,7 +169,7 @@ impl std::error::Error for RootError {
 
 impl FsResolver {
     /// A resolver searching `roots`, in order, with caching on, symbolic links
-    /// not followed, [`DiagnosticStyle::Plain`], and every optimization.
+    /// not followed, and every optimization.
     ///
     /// Each root is resolved to its canonical path now, so a relative root is
     /// relative to the current working directory at this call.
@@ -245,7 +261,10 @@ impl FsResolver {
 
     fn render(&self, errors: &Diagnostics) -> String {
         match self.diagnostics {
+            DiagnosticStyle::Narrated => errors.render_narrated(),
+            #[cfg(feature = "graphical-diagnostics")]
             DiagnosticStyle::Plain => errors.render_plain(),
+            #[cfg(feature = "graphical-diagnostics")]
             DiagnosticStyle::Unicode => errors.render_unicode(),
         }
     }
