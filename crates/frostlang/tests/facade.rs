@@ -2,7 +2,7 @@
 //! it through `frostlang` paths only, with no direct dependency on the crates
 //! it gathers.
 
-use frostlang::{CompilerOptions, OptimizationOptions, Value, Vm, compile_program};
+use frostlang::{CompilerOptions, Value, Vm, compile_program};
 
 #[test]
 fn compiles_and_runs_source_through_the_facade() {
@@ -11,11 +11,7 @@ fn compiles_and_runs_source_through_the_facade() {
         export def answer = double(21)
         answer + 1
     ";
-    let options = CompilerOptions {
-        optimization_options: OptimizationOptions::ALL,
-        implicit_export: false,
-    };
-    let closure = compile_program("facade.frst", source, options)
+    let closure = compile_program("facade.frst", source, CompilerOptions::new())
         .expect("the source compiles")
         .code
         .into_closure()

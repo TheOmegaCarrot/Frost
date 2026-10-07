@@ -253,10 +253,7 @@ fn import_depth_limit_stops_runaway_import_recursion() {
     // The resolver never terminates on its own (every module it serves imports
     // again), so only the depth limit can end this. Without it the native stack
     // would be exhausted, which is not a catchable error.
-    let config = VmRuntimeConfiguration {
-        max_import_depth: NonZeroUsize::new(4),
-        ..Default::default()
-    };
+    let config = VmRuntimeConfiguration::default().with_max_import_depth(NonZeroUsize::new(4));
     let err = run_with(Arc::new(RecursiveResolver), config, None).unwrap_err();
     assert!(
         err.message().contains("Import depth limit"),

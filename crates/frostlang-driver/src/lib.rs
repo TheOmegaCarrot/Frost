@@ -270,14 +270,11 @@ impl Driver {
         let importer = (self.importer.0)(script_file);
         let session = Session {
             importer: &importer,
-            configuration: VmRuntimeConfiguration {
-                print_sink: Arc::new(print_sink),
-                ..self.configuration.clone()
-            },
-            options: CompilerOptions {
-                optimization_options: optimization,
-                implicit_export: false,
-            },
+            configuration: self
+                .configuration
+                .clone()
+                .with_print_sink(Arc::new(print_sink)),
+            options: CompilerOptions::new().with_optimization(optimization),
             no_args,
             color,
             terminals,

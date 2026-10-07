@@ -8,7 +8,7 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
 
-use frostlang_compile::{CompilerOptions, OptimizationOptions, compile_program};
+use frostlang_compile::{CompilerOptions, compile_program};
 use frostlang_fs_resolver::FsResolver;
 use frostlang_runtime::{
     FrostError, Importer, ImporterBuilder, RunError, Value, Vm, VmRuntimeConfiguration,
@@ -109,11 +109,7 @@ impl Run {
 
 /// Run `source` as the top-level script `main.frst` with `importer`.
 pub(crate) fn run(source: &str, importer: &Arc<Importer>) -> Run {
-    let options = CompilerOptions {
-        optimization_options: OptimizationOptions::ALL,
-        implicit_export: false,
-    };
-    let closure = compile_program("main.frst", source, options)
+    let closure = compile_program("main.frst", source, CompilerOptions::new())
         .unwrap_or_else(|errors| panic!("the script compiles:\n{}", errors.render_plain()))
         .code
         .into_closure()
@@ -123,10 +119,7 @@ pub(crate) fn run(source: &str, importer: &Arc<Importer>) -> Run {
         let printed = Arc::clone(&printed);
         move |text: &str| printed.lock().unwrap().push(text.to_string())
     };
-    let configuration = VmRuntimeConfiguration {
-        print_sink: Arc::new(sink),
-        ..Default::default()
-    };
+    let configuration = VmRuntimeConfiguration::default().with_print_sink(Arc::new(sink));
     let outcome = Vm::factory()
         .configuration(configuration)
         .with_importer(Arc::clone(importer))

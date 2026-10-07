@@ -74,17 +74,11 @@ fn unlimited() -> VmRuntimeConfiguration {
 }
 
 fn with_fuel(budget: usize) -> VmRuntimeConfiguration {
-    VmRuntimeConfiguration {
-        fuel: NonZeroUsize::new(budget),
-        ..Default::default()
-    }
+    VmRuntimeConfiguration::default().with_fuel(NonZeroUsize::new(budget))
 }
 
 fn with_depth(max: usize) -> VmRuntimeConfiguration {
-    VmRuntimeConfiguration {
-        max_call_depth: NonZeroUsize::new(max),
-        ..Default::default()
-    }
+    VmRuntimeConfiguration::default().with_max_call_depth(NonZeroUsize::new(max))
 }
 
 /// A nullary native that returns `null`.

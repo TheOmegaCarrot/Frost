@@ -228,10 +228,7 @@ impl FsResolver {
             )
         })?;
         let filename = path.to_string_lossy();
-        let options = CompilerOptions {
-            optimization_options: self.optimization,
-            implicit_export: false,
-        };
+        let options = CompilerOptions::new().with_optimization(self.optimization);
         let program = compile_program(&filename, &source, options).map_err(|errors| {
             cannot_import(
                 spec,

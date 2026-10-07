@@ -339,6 +339,7 @@ impl HostComponent {
 /// not claimable. Carries the untouched builder and the rejected component back
 /// so the caller can [`rename`](HostComponent::rename) and retry.
 #[derive(Debug)]
+#[non_exhaustive]
 pub enum HostComponentError {
     /// The name is reserved for the runtime (`std`, `ext`) and can never be claimed.
     ReservedName(ImporterBuilder, HostComponent),

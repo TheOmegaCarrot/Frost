@@ -10,8 +10,7 @@ use std::fmt;
 ///
 /// Start from a preset, [`ALL`](Self::ALL) or [`NONE`](Self::NONE), and adjust
 /// it with [`with`](Self::with), [`set`](Self::set), or
-/// [`with_settings`](Self::with_settings). More optimizations may be added, so
-/// these options cannot be built field by field.
+/// [`with_settings`](Self::with_settings).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[non_exhaustive]
 pub struct OptimizationOptions {
@@ -181,7 +180,7 @@ impl OptimizationOptions {
 }
 
 /// One of the optimizations [`OptimizationOptions`] turns on or off, each
-/// described on its field there. More may be added.
+/// described on its field there.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 #[non_exhaustive]
 pub enum Optimization {
@@ -242,6 +241,7 @@ impl Optimization {
 
 /// A setting [`OptimizationOptions::with_settings`] refuses.
 #[derive(Debug, Clone, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum InvalidOptimizationSetting {
     /// Neither `<name>=<value>`, `all`, nor `none`.
     Malformed(String),

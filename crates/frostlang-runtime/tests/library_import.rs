@@ -12,7 +12,7 @@ mod source;
 use std::collections::BTreeMap;
 use std::sync::Arc;
 
-use frostlang_compile::{CompilerOptions, OptimizationOptions, compile_in_scope};
+use frostlang_compile::{CompilerOptions, compile_in_scope};
 use frostlang_runtime::{
     FrostError, HostComponent, ImportCtx, ImportResolver, ImporterBuilder, RunError, Value,
 };
@@ -32,11 +32,7 @@ impl ImportResolver for SourceModules {
             return Ok(None);
         };
         // Every optimization, so the module's own calls are folded wherever they may be.
-        let options = CompilerOptions {
-            optimization_options: OptimizationOptions::ALL,
-            implicit_export: false,
-        };
-        let program = compile_in_scope(module_spec, source, options, &[])
+        let program = compile_in_scope(module_spec, source, CompilerOptions::new(), &[])
             .unwrap_or_else(|errors| panic!("{module_spec} compiles:\n{}", errors.render_plain()))
             .code
             .close(BTreeMap::new())

@@ -58,10 +58,7 @@ fn a_sink_receives_each_print_in_order() {
         .assert_trusted()
         .into_closure()
         .unwrap();
-    let config = VmRuntimeConfiguration {
-        print_sink: sink,
-        ..Default::default()
-    };
+    let config = VmRuntimeConfiguration::default().with_print_sink(sink);
     let result = Vm::factory()
         .configuration(config)
         .build(closure)
@@ -100,10 +97,7 @@ fn a_module_prints_to_the_importing_vms_sink() {
         .assert_trusted()
         .into_closure()
         .unwrap();
-    let config = VmRuntimeConfiguration {
-        print_sink: sink,
-        ..Default::default()
-    };
+    let config = VmRuntimeConfiguration::default().with_print_sink(sink);
     Vm::factory()
         .with_importer(
             ImporterBuilder::new()
@@ -128,10 +122,7 @@ fn a_type_implementing_the_trait_is_a_sink() {
         }
     }
     let counter = Arc::new(Counter::default());
-    let config = VmRuntimeConfiguration {
-        print_sink: counter.clone(),
-        ..Default::default()
-    };
+    let config = VmRuntimeConfiguration::default().with_print_sink(counter.clone());
     let closure = program(vec![Value::Null], print_const(0).to_vec())
         .assert_trusted()
         .into_closure()

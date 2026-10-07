@@ -3,10 +3,7 @@ use frostlang_runtime::{FrostError, RunError, Value, Vm};
 
 /// The error running `source` raises, which it must.
 fn raised(source: &str) -> FrostError {
-    let options = CompilerOptions {
-        optimization_options: OptimizationOptions::NONE,
-        implicit_export: false,
-    };
+    let options = CompilerOptions::new().with_optimization(OptimizationOptions::NONE);
     let closure = compile_program("test.frst", source, options)
         .expect("the source compiles")
         .code

@@ -285,10 +285,9 @@ impl Script {
     }
 
     fn compile(&self, optimization: OptimizationOptions) -> Result<CompilerOutput, Diagnostics> {
-        let options = CompilerOptions {
-            optimization_options: optimization,
-            implicit_export: self.implicit_export,
-        };
+        let options = CompilerOptions::new()
+            .with_optimization(optimization)
+            .with_implicit_export(self.implicit_export);
         let scope: Vec<&str> = self.scope.iter().map(String::as_str).collect();
         compile_in_scope(&self.filename, &self.source, options, &scope)
     }
@@ -310,12 +309,10 @@ impl Script {
             let printed = Arc::clone(&printed);
             move |text: &str| printed.lock().unwrap().push(text.to_string())
         };
-        let config = VmRuntimeConfiguration {
-            max_call_depth: self.max_call_depth,
-            max_import_depth: self.max_import_depth,
-            print_sink: Arc::new(sink),
-            ..Default::default()
-        };
+        let config = VmRuntimeConfiguration::default()
+            .with_max_call_depth(self.max_call_depth)
+            .with_max_import_depth(self.max_import_depth)
+            .with_print_sink(Arc::new(sink));
         let outcome = Vm::factory()
             .configuration(config)
             .with_importer(Arc::clone(&self.importer))

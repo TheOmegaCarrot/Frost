@@ -6,10 +6,8 @@ use std::collections::BTreeMap;
 use frostlang_compile::{CompilerOptions, OptimizationOptions, compile_in_scope};
 use frostlang_runtime::{BacktraceFrame, FrostError, RunError, Value, Vm};
 
-const OPTIONS: CompilerOptions = CompilerOptions {
-    optimization_options: OptimizationOptions::NONE,
-    implicit_export: false,
-};
+const OPTIONS: CompilerOptions =
+    CompilerOptions::new().with_optimization(OptimizationOptions::NONE);
 
 /// Run `source`, compiled as `filename` with `captures` in scope.
 fn run(

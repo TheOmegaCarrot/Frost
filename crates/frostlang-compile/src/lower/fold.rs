@@ -55,12 +55,10 @@ impl FoldVm {
     pub(super) fn new() -> Self {
         // Bounds a runaway fold. Reset per fold; generous because Frost iterates
         // by function call.
-        let config = VmRuntimeConfiguration {
-            fuel: NonZeroUsize::new(100_000),
+        let config = VmRuntimeConfiguration::default()
+            .with_fuel(NonZeroUsize::new(100_000))
             // `print` is impure, so no fold ever reaches it.
-            print_sink: Arc::new(|_: &str| unreachable!("a constant fold printed")),
-            ..Default::default()
-        };
+            .with_print_sink(Arc::new(|_: &str| unreachable!("a constant fold printed")));
         Self {
             factory: Vm::factory().configuration(config),
             parked: RefCell::new(None),

@@ -112,6 +112,7 @@ pub struct Params {
 
 /// Why a parameter spec was rejected.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum InvalidParams {
     /// A required parameter appears after an optional one, so it cannot be
     /// matched positionally (which argument would fill it?).

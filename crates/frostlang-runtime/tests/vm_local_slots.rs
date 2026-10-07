@@ -31,10 +31,8 @@ fn unshared() -> Value {
 
 /// Run `source`, with `unshared` in scope, to its tail value.
 fn run(source: &str) -> Value {
-    let options = CompilerOptions {
-        optimization_options: OptimizationOptions::NONE.with(Optimization::ConsumeLocals, true),
-        implicit_export: false,
-    };
+    let options = CompilerOptions::new()
+        .with_optimization(OptimizationOptions::NONE.with(Optimization::ConsumeLocals, true));
     let program = compile_in_scope("test.frst", source, options, &["unshared"])
         .unwrap_or_else(|errors| panic!("{source}\n{}", errors.render_plain()))
         .code;

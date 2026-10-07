@@ -288,11 +288,10 @@ impl Repl {
             bindings.insert(RESULTS.to_string(), self.results.iter().cloned().collect());
         }
         let scope: Vec<&str> = bindings.keys().map(String::as_str).collect();
-        let options = CompilerOptions {
-            optimization_options: self.optimization,
+        let options = CompilerOptions::new()
+            .with_optimization(self.optimization)
             // Each top-level binding is exported, to be kept for later inputs.
-            implicit_export: true,
-        };
+            .with_implicit_export(true);
         let program = compile_in_scope(INPUT_NAME, source, options, &scope)
             .map_err(ReplError::Compile)?
             .code;

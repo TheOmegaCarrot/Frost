@@ -19,10 +19,9 @@ fn main() -> Exit {
     Driver::new()
         .with_name("frost")
         .with_version(env!("CARGO_PKG_VERSION"))
-        .with_configuration(VmRuntimeConfiguration {
-            max_import_depth: Some(MAX_IMPORT_DEPTH),
-            ..Default::default()
-        })
+        .with_configuration(
+            VmRuntimeConfiguration::default().with_max_import_depth(Some(MAX_IMPORT_DEPTH)),
+        )
         .with_importer_for(importer)
         .run_from_env()
 }

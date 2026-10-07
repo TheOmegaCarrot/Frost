@@ -6,10 +6,7 @@ use frostlang_runtime::CompiledFunction;
 
 /// The top-level function `source` compiles to as `filename`.
 fn compiled(filename: &str, source: &str) -> CompiledFunction {
-    let options = CompilerOptions {
-        optimization_options: OptimizationOptions::NONE,
-        implicit_export: false,
-    };
+    let options = CompilerOptions::new().with_optimization(OptimizationOptions::NONE);
     compile_program(filename, source, options)
         .unwrap_or_else(|errors| panic!("compiles:\n{}", errors.render_plain()))
         .code

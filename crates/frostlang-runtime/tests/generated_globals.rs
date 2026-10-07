@@ -33,10 +33,9 @@ const COMPILED_PATH: &str = concat!(
 ///
 /// Each top-level function is exported, as the global it becomes, so none is
 /// optimized away as unused.
-const OPTIONS: CompilerOptions = CompilerOptions {
-    optimization_options: OptimizationOptions::ALL.with(Optimization::ConstantFold, false),
-    implicit_export: true,
-};
+const OPTIONS: CompilerOptions = CompilerOptions::new()
+    .with_optimization(OptimizationOptions::ALL.with(Optimization::ConstantFold, false))
+    .with_implicit_export(true);
 
 /// The line width the rendered Rust aims to stay within.
 const WIDTH: usize = 100;

@@ -404,10 +404,7 @@ fn bindings_lists_results_only_once_an_input_binds_it() {
 #[test]
 fn every_input_runs_under_the_configuration() {
     // Each input gets the whole budget: fuel does not carry over between inputs.
-    let config = VmRuntimeConfiguration {
-        fuel: NonZeroUsize::new(20),
-        ..Default::default()
-    };
+    let config = VmRuntimeConfiguration::default().with_fuel(NonZeroUsize::new(20));
     let mut repl = Repl::new().with_configuration(config);
     repl.evaluate("defn count(n) -> if n == 0: 0 else: count(n - 1)")
         .unwrap();
@@ -427,10 +424,7 @@ fn print_goes_to_the_configured_sink() {
         let printed = Arc::clone(&printed);
         move |text: &str| printed.lock().unwrap().push(text.to_string())
     };
-    let config = VmRuntimeConfiguration {
-        print_sink: Arc::new(sink),
-        ..Default::default()
-    };
+    let config = VmRuntimeConfiguration::default().with_print_sink(Arc::new(sink));
     let mut repl = Repl::new().with_configuration(config);
     repl.evaluate("def x = 1").unwrap();
     repl.evaluate("print(x); print('two')").unwrap();
@@ -457,10 +451,7 @@ fn inputs_import_from_the_importer() {
 fn inputs_compile_with_the_optimizations_chosen() {
     // Folded, this makes no calls at runtime; unfolded, it needs eleven.
     let foldable = "(fn f(n) -> if n == 0: 0 else: f(n - 1))(10)";
-    let config = || VmRuntimeConfiguration {
-        fuel: NonZeroUsize::new(5),
-        ..Default::default()
-    };
+    let config = || VmRuntimeConfiguration::default().with_fuel(NonZeroUsize::new(5));
     let mut folding = Repl::new().with_configuration(config());
     assert!(folding.evaluate(foldable).is_ok());
     let mut plain = Repl::new()
@@ -521,10 +512,7 @@ fn a_sessions_prints_go_to_the_sink_not_the_frontend() {
         let printed = Arc::clone(&printed);
         move |text: &str| printed.lock().unwrap().push(text.to_string())
     };
-    let config = VmRuntimeConfiguration {
-        print_sink: Arc::new(sink),
-        ..Default::default()
-    };
+    let config = VmRuntimeConfiguration::default().with_print_sink(Arc::new(sink));
     let mut frontend = ScriptedFrontend::new(["print('a'); 1"]);
     Repl::new()
         .with_configuration(config)

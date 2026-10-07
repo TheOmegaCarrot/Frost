@@ -277,10 +277,7 @@ fn disassemble_does_not_run_the_source() {
         let printed = Arc::clone(&printed);
         move |text: &str| printed.lock().unwrap().push(text.to_string())
     };
-    let configuration = VmRuntimeConfiguration {
-        print_sink: Arc::new(sink),
-        ..Default::default()
-    };
+    let configuration = VmRuntimeConfiguration::default().with_print_sink(Arc::new(sink));
     let repl = Repl::new().with_configuration(configuration);
     let transcript = session_on(repl, &[":disassemble def x = 1; print(x)", "x"]);
     assert!(
@@ -526,10 +523,7 @@ fn optimize_applies_to_every_later_input() {
     assert!(!folded.contains("Add"), "{folded}");
     assert!(unfolded.contains("Add"), "{unfolded}");
     // Evaluating, too: unfolded, this needs more fuel than the budget.
-    let configuration = VmRuntimeConfiguration {
-        fuel: NonZeroUsize::new(5),
-        ..Default::default()
-    };
+    let configuration = VmRuntimeConfiguration::default().with_fuel(NonZeroUsize::new(5));
     let foldable = "(fn f(n) -> if n == 0: 0 else: f(n - 1))(10)";
     let transcript = session_on(
         Repl::new().with_configuration(configuration),

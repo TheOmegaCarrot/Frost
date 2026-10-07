@@ -109,6 +109,15 @@ pub struct Vm {
 /// output goes.
 /// The [`Default`] imposes no limits and prints to standard output.
 ///
+/// ```
+/// use std::num::NonZeroUsize;
+///
+/// use frostlang_runtime::VmRuntimeConfiguration;
+///
+/// let config = VmRuntimeConfiguration::default().with_fuel(NonZeroUsize::new(1_000_000));
+/// assert_eq!(config.fuel, NonZeroUsize::new(1_000_000));
+/// ```
+///
 /// Each limit bounds how much work a program may do,
 /// so that a mistake in a script you trust becomes a recoverable [`RunError`]
 /// rather than a hung or crashed process.
@@ -118,6 +127,7 @@ pub struct Vm {
 /// so they are not a security boundary:
 /// that is decided by what the host grants it, on [`Importer`].
 #[derive(Debug, Clone)]
+#[non_exhaustive]
 pub struct VmRuntimeConfiguration {
     /// Maximum call-stack depth (number of frames) before execution fails with a
     /// recoverable error.
@@ -166,6 +176,36 @@ impl Default for VmRuntimeConfiguration {
             max_import_depth: None,
             print_sink: Arc::new(StdoutSink),
         }
+    }
+}
+
+impl VmRuntimeConfiguration {
+    /// This configuration with [`max_call_depth`](Self::max_call_depth) set to `limit`.
+    #[must_use]
+    pub fn with_max_call_depth(mut self, limit: Option<NonZeroUsize>) -> Self {
+        self.max_call_depth = limit;
+        self
+    }
+
+    /// This configuration with [`fuel`](Self::fuel) set to `budget`.
+    #[must_use]
+    pub fn with_fuel(mut self, budget: Option<NonZeroUsize>) -> Self {
+        self.fuel = budget;
+        self
+    }
+
+    /// This configuration with [`max_import_depth`](Self::max_import_depth) set to `limit`.
+    #[must_use]
+    pub fn with_max_import_depth(mut self, limit: Option<NonZeroUsize>) -> Self {
+        self.max_import_depth = limit;
+        self
+    }
+
+    /// This configuration with [`print_sink`](Self::print_sink) set to `sink`.
+    #[must_use]
+    pub fn with_print_sink(mut self, sink: Arc<dyn PrintSink>) -> Self {
+        self.print_sink = sink;
+        self
     }
 }
 

@@ -112,12 +112,10 @@ fn reset_replaces_exports_with_the_new_program() {
 fn builder_accepts_configuration_and_builds_a_runnable_vm() {
     // The configured limits are well above what this program needs, so it runs
     // normally; their enforcement is covered in vm_limits.rs.
-    let config = VmRuntimeConfiguration {
-        max_call_depth: NonZeroUsize::new(64),
-        fuel: NonZeroUsize::new(10_000),
-        max_import_depth: NonZeroUsize::new(8),
-        ..Default::default()
-    };
+    let config = VmRuntimeConfiguration::default()
+        .with_max_call_depth(NonZeroUsize::new(64))
+        .with_fuel(NonZeroUsize::new(10_000))
+        .with_max_import_depth(NonZeroUsize::new(8));
     let result = Vm::factory()
         .configuration(config)
         .build(closure(vec![Bytecode::PushInt(7)], vec![]))
