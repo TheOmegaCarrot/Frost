@@ -1,6 +1,6 @@
 //! What a [`Repl`](crate::Repl) reads its input from and shows its outcomes on.
 
-use std::io::{self, BufRead, Stderr, StdinLock, Stdout, Write};
+use std::io::{self, BufRead, IsTerminal, Stderr, StdinLock, Stdout, Write};
 
 use frostlang::Value;
 
@@ -57,7 +57,9 @@ pub trait Frontend {
 ///
 /// A segment continues onto more lines until [`complete_segment`] completes
 /// it, each further line after a continuation prompt. If input ends first,
-/// the unfinished segment is run as it is, for the compiler to report.
+/// the unfinished segment is run as it is, for the compiler to report. Once
+/// input ends, a newline ends the last prompt's line, unless that prompt is
+/// empty.
 ///
 /// Each value other than Null is written pretty-printed, as by
 /// [`Value::to_pretty_string`], after the prompts, as is a metacommand's
@@ -73,9 +75,15 @@ pub struct LineFrontend<R, W, E> {
 
 impl LineFrontend<StdinLock<'static>, Stdout, Stderr> {
     /// Lines from standard input; prompts and values on standard output, and
-    /// failures on standard error.
+    /// failures on standard error. If standard input is not a terminal, there
+    /// is no one to prompt, so both prompts are empty.
     pub fn stdin() -> Self {
-        Self::new(io::stdin().lock(), io::stdout(), io::stderr())
+        let frontend = Self::new(io::stdin().lock(), io::stdout(), io::stderr());
+        if io::stdin().is_terminal() {
+            frontend
+        } else {
+            frontend.with_prompt("").with_continuation_prompt("")
+        }
     }
 }
 
@@ -117,7 +125,9 @@ impl<R: BufRead, W: Write, E: Write> LineFrontend<R, W, E> {
         let mut line = String::new();
         if self.lines.read_line(&mut line)? == 0 {
             // End the prompt's line, so whatever follows starts on its own.
-            writeln!(self.output)?;
+            if !prompt.is_empty() {
+                writeln!(self.output)?;
+            }
             return Ok(None);
         }
         let line = line.strip_suffix('\n').unwrap_or(&line);

@@ -111,6 +111,43 @@ fn the_prompt_can_be_changed() {
 }
 
 #[test]
+fn empty_prompts_write_nothing_not_even_a_newline_at_the_end() {
+    // Input ending after a whole segment, and mid-segment.
+    for lines in ["a\nf(\n1)\n", "f(\n", ""] {
+        let mut output = Vec::new();
+        read_all(
+            LineFrontend::new(Cursor::new(lines), &mut output, io::sink())
+                .with_prompt("")
+                .with_continuation_prompt(""),
+        );
+        assert!(output.is_empty(), "{lines:?} wrote {output:?}");
+    }
+}
+
+#[test]
+fn the_newline_at_the_end_follows_only_a_prompt_that_is_not_empty() {
+    let prompts = |lines: &str, prompt: &str, continuation_prompt: &str| {
+        let mut output = Vec::new();
+        read_all(
+            LineFrontend::new(Cursor::new(lines), &mut output, io::sink())
+                .with_prompt(prompt)
+                .with_continuation_prompt(continuation_prompt),
+        );
+        String::from_utf8(output).unwrap()
+    };
+    // Input ending mid-segment ends a continuation prompt's line, then the
+    // next read ends the prompt's.
+    assert_eq!(prompts("f(\n", "", ". "), ". \n", "ends mid-segment");
+    assert_eq!(prompts("f(\n1)\n", "", ". "), ". ", "ends between segments");
+    assert_eq!(prompts("f(\n", "> ", ""), "> > \n", "ends mid-segment");
+    assert_eq!(
+        prompts("f(\n1)\n", "> ", ""),
+        "> > \n",
+        "ends between segments"
+    );
+}
+
+#[test]
 fn empty_input_ends_at_once() {
     let mut output = Vec::new();
     assert!(read_all(LineFrontend::new(Cursor::new(""), &mut output, io::sink())).is_empty());
@@ -170,6 +207,30 @@ fn a_session_prompts_shows_each_outcome_and_carries_on() {
     assert_eq!(output, "> > > > 2\n> \n");
     assert!(errors.contains("`nope` is not defined"), "{errors}");
     assert!(errors.ends_with('\n'), "{errors:?}");
+}
+
+#[test]
+fn a_session_without_prompts_writes_only_its_outcomes() {
+    let input = r"def x = 1
+nope
+defn inc(n) ->
+    n + 1
+inc(x)
+:bindings
+";
+    let (mut output, mut errors) = (Vec::new(), Vec::new());
+    let mut frontend = LineFrontend::new(Cursor::new(input), &mut output, &mut errors)
+        .with_prompt("")
+        .with_continuation_prompt("");
+    Repl::new().run(&mut frontend).unwrap();
+    let expected = r"2
+inc      Function
+results  Array
+x        Int
+";
+    assert_eq!(String::from_utf8(output).unwrap(), expected);
+    let errors = String::from_utf8(errors).unwrap();
+    assert!(errors.contains("`nope` is not defined"), "{errors}");
 }
 
 #[test]

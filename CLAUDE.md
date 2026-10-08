@@ -269,6 +269,9 @@ The pipeline-friendly function forms are `transform`, `select`, and `fold`.
 ### Working
 
 - Never edit this `CLAUDE.md` without explicit instruction to do so.
+- Never modify the Backlog (create, edit, change the status of, or archive tasks, docs, or other
+  Backlog data) without explicit instruction to do so. Reading and searching it are fine. This
+  overrides any Backlog workflow guidance below that says to update tasks as work proceeds.
 - Everything saved to Claude's memory must be durable and evergreen: unlikely to need revision.
 
 ### Pre-publish status (temporary)
