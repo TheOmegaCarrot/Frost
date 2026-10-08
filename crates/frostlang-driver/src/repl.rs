@@ -39,7 +39,8 @@ impl Default for ReplSettings {
 impl ReplSettings {
     /// Sessions on [`frostlang_repl::default_frontend`], colored as the command
     /// line's `--color` says, with nothing bound, and keeping as many recent
-    /// results as [`Repl::new`] does.
+    /// results as [`Repl::new`] does. With `repl --basic`, sessions are on
+    /// [`LineFrontend::stdin`](frostlang_repl::LineFrontend::stdin) instead.
     pub fn new() -> Self {
         Self {
             frontend: None,
@@ -56,8 +57,8 @@ impl ReplSettings {
     }
 
     /// Set the frontend sessions run on: `make` is called for a new frontend
-    /// at the start of each session. The command line's `--color` does not
-    /// apply to it.
+    /// at the start of each session. The command line's `--color` and
+    /// `repl --basic` do not apply to it.
     pub fn with_frontend(
         mut self,
         make: impl Fn() -> Box<dyn Frontend> + Send + Sync + 'static,
@@ -93,9 +94,13 @@ impl ReplSettings {
             })
     }
 
-    /// A new session's frontend, colored if `color` is true and it is the
-    /// default, and `repl` with these settings' bindings and recent results.
-    pub(crate) fn start(&self, repl: Repl, color: bool) -> (Box<dyn Frontend>, Repl) {
+    /// A new session's frontend, made by `default_frontend` if these settings
+    /// give none, and `repl` with these settings' bindings and recent results.
+    pub(crate) fn start(
+        &self,
+        repl: Repl,
+        default_frontend: impl FnOnce() -> Box<dyn Frontend>,
+    ) -> (Box<dyn Frontend>, Repl) {
         let mut repl = repl
             .with_bindings(self.bindings.clone())
             .expect("each name was checked when it was bound");
@@ -104,7 +109,7 @@ impl ReplSettings {
         }
         let frontend = match &self.frontend {
             Some(make) => (make.0)(),
-            None => frostlang_repl::default_frontend(color),
+            None => default_frontend(),
         };
         (frontend, repl)
     }

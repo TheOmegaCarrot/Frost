@@ -49,7 +49,7 @@ use frostlang::{
     FrostError, Importer, RunError, TrustedProgram, Value, Vm, VmRuntimeConfiguration,
 };
 use frostlang_parse::parse_program;
-use frostlang_repl::Repl;
+use frostlang_repl::{Frontend, LineFrontend, Repl};
 
 use cli::{Action, Cli, Color, Script};
 
@@ -62,7 +62,7 @@ const ARGS: &str = "args";
 /// A script's printed output goes to the `stdout` given to [`run`](Self::run),
 /// as do help and version text; errors and diagnostics go to its `stderr`.
 /// An interactive session shows its results and failures on its
-/// [`Frontend`](frostlang_repl::Frontend) instead (see [`ReplSettings`]).
+/// [`Frontend`] instead (see [`ReplSettings`]).
 #[derive(Debug, Clone)]
 pub struct Driver {
     name: String,
@@ -287,10 +287,10 @@ impl Driver {
             Action::Eval { code, args } => session.run_source("<eval>", &code, args),
             Action::Check(script) => session.check_file(&script),
             Action::Compile { script, output } => session.compile_file(&script, &output),
-            Action::Repl => session.run_repl(&self.repl),
+            Action::Repl { basic } => session.run_repl(&self.repl, basic),
             Action::List(script) => session.list_file(&script, &mut stdout),
             Action::Ast(script) => session.show_ast(&script, &mut stdout),
-            Action::Nothing if terminals.stdin => session.run_repl(&self.repl),
+            Action::Nothing if terminals.stdin => session.run_repl(&self.repl, false),
             Action::Nothing => session.run_file(&Script::Stdin, Vec::new()),
         }
     }
@@ -482,14 +482,23 @@ impl Session<'_> {
         }
     }
 
-    fn run_repl(mut self, settings: &ReplSettings) -> Exit {
+    /// Run a session on the frontend `settings` give, or, if they give none,
+    /// on a [`LineFrontend`] if `basic` is true, else on the default.
+    fn run_repl(mut self, settings: &ReplSettings, basic: bool) -> Exit {
         // A terminal frontend paints both streams.
         let color = self.colors(self.terminals.stdout && self.terminals.stderr);
         let repl = Repl::new()
             .with_configuration(self.configuration.clone())
             .with_importer(Arc::clone(self.importer))
             .with_optimization(self.options.optimization_options);
-        let (mut frontend, mut repl) = settings.start(repl, color);
+        let default_frontend = || -> Box<dyn Frontend> {
+            if basic {
+                Box::new(LineFrontend::stdin())
+            } else {
+                frostlang_repl::default_frontend(color)
+            }
+        };
+        let (mut frontend, mut repl) = settings.start(repl, default_frontend);
         match repl.run(&mut *frontend) {
             Ok(()) => Exit::Success,
             Err(error) => self.usage_error(&format!("the session ended: {error}")),

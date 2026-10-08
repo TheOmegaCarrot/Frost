@@ -99,7 +99,11 @@ enum Command {
         output: PathBuf,
     },
     /// Start an interactive session (also what no arguments do at a terminal)
-    Repl,
+    Repl {
+        /// Read plain lines, without line editing, even at a terminal
+        #[arg(long)]
+        basic: bool,
+    },
     /// List the bytecode a script compiles to, or an image holds
     List { script: String },
     /// Show the syntax tree a script parses to
@@ -166,7 +170,9 @@ pub(crate) enum Action {
         script: Script,
         output: PathBuf,
     },
-    Repl,
+    Repl {
+        basic: bool,
+    },
     List(Script),
     Ast(Script),
     /// No arguments at all: a session at a terminal, or else the script on
@@ -194,7 +200,7 @@ impl Cli {
                     script: script.into(),
                     output,
                 },
-                Command::Repl => Action::Repl,
+                Command::Repl { basic } => Action::Repl { basic },
                 Command::List { script } => Action::List(script.into()),
                 Command::Ast { script } => Action::Ast(script.into()),
             }),

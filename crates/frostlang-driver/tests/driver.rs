@@ -502,6 +502,23 @@ fn repl_starts_an_interactive_session() {
 }
 
 #[test]
+fn repl_basic_leaves_a_host_frontend_in_place() {
+    let session = run_session(&["def x = 20", "x + 1"], &["repl", "--basic"]);
+    assert_eq!(session.ran.exit, Exit::Success, "{session:?}");
+    assert_eq!(
+        session.values(),
+        [Value::Null, Value::Int(21)],
+        "the host's frontend should run the session"
+    );
+}
+
+#[test]
+fn repl_help_lists_basic() {
+    let help = run(&["repl", "--help"]).stdout;
+    assert!(help.contains("--basic"), "{help}");
+}
+
+#[test]
 fn no_arguments_away_from_a_terminal_run_the_script_on_standard_input() {
     // `Driver::run` takes standard input not to be a terminal.
     let session = run_session_configured(Driver::new(), ReplSettings::new(), &["1"], |_| {}, &[]);
@@ -1008,6 +1025,11 @@ fn a_bad_command_line_is_a_usage_error() {
         vec!["run"],
         vec!["check"],
         vec!["repl", "script.frst"],
+        // `--basic` is `repl`'s alone.
+        vec!["--basic"],
+        vec!["--basic", "repl"],
+        vec!["check", "--basic", "a.frst"],
+        vec!["repl", "--basic=yes"],
         vec!["check", "a.frst", "b.frst"],
     ] {
         let ran = run(&args);
