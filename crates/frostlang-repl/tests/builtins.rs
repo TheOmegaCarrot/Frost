@@ -252,6 +252,46 @@ fn undef_of_an_inputs_results_gives_the_name_back_to_the_repl() {
     );
 }
 
+#[test]
+fn results_given_back_holds_those_made_while_it_was_shadowed() {
+    // Including the value of the shadowing `results` itself, as an input's.
+    let transcript = session(&[
+        "1",
+        "def results = 0",
+        "2",
+        "results",
+        ":undef results",
+        "3",
+        "results",
+    ]);
+    let outcomes = transcript.outcomes();
+    assert!(
+        matches!(outcomes.last(), Some(Ok(results)) if *results == Value::array([1, 2, 0, 3])),
+        "{outcomes:?}"
+    );
+}
+
+#[test]
+fn results_shadowed_still_keeps_only_the_most_recent() {
+    let transcript = session_on(
+        Repl::new().with_results_kept(2),
+        &[
+            "1",
+            "def results = 0",
+            "2",
+            "3",
+            "4",
+            ":undef results",
+            "results",
+        ],
+    );
+    let outcomes = transcript.outcomes();
+    assert!(
+        matches!(outcomes.last(), Some(Ok(results)) if *results == Value::array([3, 4])),
+        "{outcomes:?}"
+    );
+}
+
 // --- :disassemble ---
 
 #[test]

@@ -90,8 +90,10 @@ const RESULTS: &str = "results";
 /// inputs that succeeded, other than Null, up to five by default (see
 /// [`with_results_kept`](Self::with_results_kept)).
 ///
-/// `results` is an ordinary name. Once an input or a seeded binding binds it,
-/// the REPL leaves it alone and keeps no more results.
+/// `results` is an ordinary name: an input or a seeded binding may bind it,
+/// and inputs then see that binding instead. The REPL keeps recording results
+/// meanwhile, so once that binding is removed, `results` holds the most recent
+/// ones.
 ///
 /// # Metacommands
 ///
@@ -215,7 +217,7 @@ impl Repl {
                         .map(|(name, value)| (name.to_string(), value.clone())),
                 );
                 self.idle_vm = Some(result.into_idle_vm());
-                if self.keeps_results() && value != Value::Null {
+                if self.results_kept > 0 && value != Value::Null {
                     if self.results.len() == self.results_kept {
                         self.results.pop_front();
                     }

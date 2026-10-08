@@ -362,10 +362,10 @@ fn keeping_no_results_binds_no_results() {
 }
 
 #[test]
-fn binding_results_takes_the_name_for_good() {
+fn binding_results_shadows_the_recent_results() {
     let inputs = ["1", "def results = 'mine'", "2", "3", "results"];
     assert_eq!(value_of(&inputs), Value::from("mine"));
-    // The new binding may be made from the old; either way, no more are kept.
+    // The new binding may be made from the old.
     let inputs = ["1", "def results = results[-1]", "5", "results"];
     assert_eq!(value_of(&inputs), Value::Int(1));
     // However it is bound.
