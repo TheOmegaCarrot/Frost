@@ -73,6 +73,86 @@ fn int_float_equal_values_compare_equal() {
     assert_eq!(f.compare(&i).unwrap(), Ordering::Equal);
 }
 
+/// Assert each Int compares to its Float as `expected`, in both operand orders.
+fn assert_int_float_orderings(cases: &[(i64, f64, Ordering)]) {
+    for &(int, float, expected) in cases {
+        let i = Value::from(int);
+        let f: Value = float.try_into().unwrap();
+        assert_eq!(i.compare(&f).unwrap(), expected, "{int} vs {float:?}");
+        assert_eq!(
+            f.compare(&i).unwrap(),
+            expected.reverse(),
+            "{float:?} vs {int}"
+        );
+    }
+}
+
+#[test]
+fn int_float_ordering_is_exact_past_2_pow_53() {
+    // Each Int here that is not a Float would round to its neighboring Float,
+    // so a comparison that rounds the Int calls these Equal.
+    const TWO_POW_53: i64 = 1 << 53;
+    assert_int_float_orderings(&[
+        (TWO_POW_53, 9_007_199_254_740_992.0, Ordering::Equal),
+        (TWO_POW_53 + 1, 9_007_199_254_740_992.0, Ordering::Greater),
+        (TWO_POW_53 + 1, 9_007_199_254_740_994.0, Ordering::Less),
+        (-TWO_POW_53 - 1, -9_007_199_254_740_992.0, Ordering::Less),
+        // 2^63 is one past the largest Int.
+        (i64::MAX, 9_223_372_036_854_775_808.0, Ordering::Less),
+        // 2^63 - 1024, the largest Float below 2^63.
+        (i64::MAX, 9_223_372_036_854_774_784.0, Ordering::Greater),
+        (i64::MIN, -9_223_372_036_854_775_808.0, Ordering::Equal),
+        (
+            i64::MIN + 1,
+            -9_223_372_036_854_775_808.0,
+            Ordering::Greater,
+        ),
+    ]);
+}
+
+#[test]
+fn int_float_ordering_holds_past_the_int_range() {
+    assert_int_float_orderings(&[
+        // -2^63 - 2048, the largest Float below the smallest Int.
+        (i64::MIN, -9_223_372_036_854_777_856.0, Ordering::Greater),
+        (i64::MAX, 1e19, Ordering::Less),
+        (i64::MIN, -1e19, Ordering::Greater),
+        (i64::MAX, f64::MAX, Ordering::Less),
+        (i64::MIN, f64::MIN, Ordering::Greater),
+        (0, f64::MAX, Ordering::Less),
+        (0, f64::MIN, Ordering::Greater),
+    ]);
+}
+
+#[test]
+fn int_float_ordering_counts_the_fraction() {
+    assert_int_float_orderings(&[
+        (3, 3.5, Ordering::Less),
+        (3, 2.5, Ordering::Greater),
+        (-3, -2.5, Ordering::Less),
+        (-3, -3.5, Ordering::Greater),
+        (-1, -0.5, Ordering::Less),
+        (0, 0.5, Ordering::Less),
+        (0, -0.5, Ordering::Greater),
+        (0, 0.0, Ordering::Equal),
+        (0, -0.0, Ordering::Equal),
+        // The smallest fractions there are.
+        (0, 5e-324, Ordering::Less),
+        (0, -5e-324, Ordering::Greater),
+        // A half above 2^51: below 2^52, the last range where a Float has a fraction.
+        (
+            2_251_799_813_685_248,
+            2_251_799_813_685_248.5,
+            Ordering::Less,
+        ),
+        (
+            2_251_799_813_685_249,
+            2_251_799_813_685_248.5,
+            Ordering::Greater,
+        ),
+    ]);
+}
+
 // -- String ordering --
 
 #[test]

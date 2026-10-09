@@ -151,8 +151,8 @@ impl Value {
         match (self, rhs) {
             (Value::Int(l), Value::Int(r)) => Ok(l.cmp(r)),
             (Value::Float(l), Value::Float(r)) => Ok(l.cmp(r)),
-            (Value::Int(l), Value::Float(r)) => Ok(FrostFloat::from(*l).cmp(r)),
-            (Value::Float(l), Value::Int(r)) => Ok(l.cmp(&FrostFloat::from(*r))),
+            (Value::Int(l), Value::Float(r)) => Ok(r.cmp_int(*l).reverse()),
+            (Value::Float(l), Value::Int(r)) => Ok(l.cmp_int(*r)),
             (Value::String(l), Value::String(r)) => Ok(l.cmp(r)),
             (Value::Bytes(l), Value::Bytes(r)) => Ok(l.cmp(r)),
 

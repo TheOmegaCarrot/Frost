@@ -104,18 +104,13 @@ fn rounding_function(name: &'static str, round: fn(f64) -> f64) -> Value {
     Value::checked_native(name, ONE_NUMBER, move |_, args| match &args[0] {
         Value::Int(_) => Ok(args[0].take()),
         Value::Float(f) => {
-            let rounded = round(f.get());
-            // The Int range as floats: -2^63 is exact, and 2^63 is just past the end.
-            const INT_START: f64 = -9_223_372_036_854_775_808.0;
-            const INT_END: f64 = 9_223_372_036_854_775_808.0;
-            if (INT_START..INT_END).contains(&rounded) {
-                Ok(Value::Int(rounded as i64))
-            } else {
-                Err(FrostError::from_string(format!(
+            let rounded = FrostFloat::new(round(f.get())).expect("rounding keeps a Float finite");
+            rounded.to_exact_int().map(Value::Int).ok_or_else(|| {
+                FrostError::from_string(format!(
                     "Function {name} has no Int result for {}",
                     args[0].to_frost_string()
-                )))
-            }
+                ))
+            })
         }
         other => unreachable!("type-checked as Numeric, got {}", other.type_name()),
     })

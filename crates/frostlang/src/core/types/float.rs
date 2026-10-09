@@ -24,18 +24,35 @@ impl FrostFloat {
     pub fn get(&self) -> f64 {
         self.0
     }
+
+    /// The Int equal to this Float, if it is a whole number within the Int range.
+    pub(crate) fn to_exact_int(self) -> Option<i64> {
+        // The Int range as floats: -2^63 is exact, and 2^63 is just past the end.
+        const INT_START: f64 = -9_223_372_036_854_775_808.0;
+        const INT_END: f64 = 9_223_372_036_854_775_808.0;
+        let whole = self.0.fract() == 0.0 && (INT_START..INT_END).contains(&self.0);
+        whole.then_some(self.0 as i64)
+    }
+
+    /// Compares this Float with an Int exactly, without rounding the Int to a Float.
+    pub(crate) fn cmp_int(self, int: i64) -> Ordering {
+        let whole = FrostFloat(self.0.trunc());
+        match whole.to_exact_int() {
+            // The fraction breaks a tie between the whole part and the Int.
+            Some(whole_int) => whole_int
+                .cmp(&int)
+                .then(self.0.fract().partial_cmp(&0.0).expect("a finite fraction")),
+            // Past the Int range on one side or the other.
+            None if whole.0 < 0.0 => Ordering::Less,
+            None => Ordering::Greater,
+        }
+    }
 }
 
 impl TryFrom<f64> for FrostFloat {
     type Error = FrostError;
     fn try_from(f: f64) -> Result<FrostFloat, Self::Error> {
         FrostFloat::new(f)
-    }
-}
-
-impl From<i64> for FrostFloat {
-    fn from(i: i64) -> FrostFloat {
-        FrostFloat::new(i as f64).expect("IMPOSSIBLE: Integer conversion to FrostFloat failed")
     }
 }
 
