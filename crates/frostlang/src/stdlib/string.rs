@@ -1,18 +1,19 @@
-//! `std.string`: searching, splitting into characters, classifying, and padding
-//! text, and reading and writing in-memory buffers as streams.
+//! `std.string`: searching, stripping affixes, splitting into characters,
+//! classifying, and padding text, and reading and writing in-memory buffers as
+//! streams.
 //!
-//! Positions and widths count code points. The searching functions and
-//! `is_empty` also take Bytes, in any mix with a String, as the global `contains`
-//! does; where Bytes are involved, positions count bytes instead.
+//! Positions and widths count code points. The searching and stripping functions
+//! and `is_empty` also take Bytes, in any mix with a String, as the global
+//! `contains` does; where Bytes are involved, positions count bytes instead.
 
 use std::io::Cursor;
 
 use crate::stdlib::stream::{self, Buffer, Kind};
 use crate::{Arity, FrostBytes, FrostError, FrostType, Param, Params, StdlibModule, Value};
 
-/// The `std.string` module: finding and counting substrings, splitting into
-/// characters, classifying characters, padding and centering text, and
-/// in-memory buffers read and written as streams.
+/// The `std.string` module: finding and counting substrings, stripping a prefix
+/// or suffix, splitting into characters, classifying characters, padding and
+/// centering text, and in-memory buffers read and written as streams.
 ///
 /// It reaches nothing outside the script.
 pub fn string() -> StdlibModule {
@@ -24,6 +25,8 @@ pub fn string() -> StdlibModule {
             ("count", count()),
             ("chars", chars()),
             ("is_empty", is_empty()),
+            ("strip_prefix", strip_prefix()),
+            ("strip_suffix", strip_suffix()),
             ("is_ascii", is_ascii()),
             ("is_digit", classifier("string.is_digit", is_digit)),
             (
@@ -155,6 +158,66 @@ fn is_empty() -> Value {
         let content = args[0].as_byte_slice().expect("type-checked as Flat");
         Ok(Value::Bool(content.is_empty()))
     })
+}
+
+// --- Stripping ---
+
+/// Removes an affix from one edge of its input, if present.
+type Strip<T> = for<'a> fn(&'a T, &T) -> Option<&'a T>;
+
+/// A function removing an affix, its second argument, from its first argument
+/// with `strip_text` or `strip_bytes`. The result is a String only when both
+/// arguments are, else Bytes. An argument left with nothing removed is returned
+/// as is, though as Bytes if the affix is Bytes.
+fn stripper(
+    name: &'static str,
+    params: Params,
+    strip_text: Strip<str>,
+    strip_bytes: Strip<[u8]>,
+) -> Value {
+    Value::checked_native(name, params, move |_, args| {
+        Ok(match (args[0].as_str(), args[1].as_str()) {
+            (Some(text), Some(affix)) => match strip_text(text, affix) {
+                Some(rest) if rest.len() < text.len() => Value::from(rest),
+                _ => args[0].take(),
+            },
+            _ => {
+                let bytes = args[0].as_byte_slice().expect("type-checked as Flat");
+                let affix = args[1].as_byte_slice().expect("type-checked as Flat");
+                match strip_bytes(bytes, affix) {
+                    Some(rest) if rest.len() < bytes.len() => Value::from(rest),
+                    _ if matches!(args[0], Value::Bytes(_)) => args[0].take(),
+                    _ => Value::from(bytes),
+                }
+            }
+        })
+    })
+}
+
+fn strip_prefix() -> Value {
+    const PARAMS: Params = Params::new(&[
+        Param::of(FrostType::FLAT),
+        Param::of(FrostType::FLAT).named("prefix"),
+    ]);
+    stripper(
+        "string.strip_prefix",
+        PARAMS,
+        |text, prefix| text.strip_prefix(prefix),
+        <[u8]>::strip_prefix,
+    )
+}
+
+fn strip_suffix() -> Value {
+    const PARAMS: Params = Params::new(&[
+        Param::of(FrostType::FLAT),
+        Param::of(FrostType::FLAT).named("suffix"),
+    ]);
+    stripper(
+        "string.strip_suffix",
+        PARAMS,
+        |text, suffix| text.strip_suffix(suffix),
+        <[u8]>::strip_suffix,
+    )
 }
 
 // --- Characters ---

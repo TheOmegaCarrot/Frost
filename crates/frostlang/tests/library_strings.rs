@@ -1,8 +1,9 @@
 //! The Strings globals, from Frost source.
 //!
-//! `split`, `split_once`, `join`, `replace`, `contains`, `starts_with`,
-//! `ends_with`, `strip_prefix`, and `strip_suffix` accept String and Bytes in any mix. Mixed, they work on a String's UTF-8 bytes, and a
-//! result is a String only when every content argument is a String, else Bytes.
+//! `split`, `split_once`, `join`, `replace`, `contains`, `starts_with`, and
+//! `ends_with` accept String and Bytes in any mix. Mixed, they work on a String's
+//! UTF-8 bytes, and a result is a String only when every content argument is a
+//! String, else Bytes.
 //! `lines`, `trim`, `trim_left`, `trim_right`, `to_upper`, and `to_lower` accept
 //! only a String.
 //!
@@ -777,107 +778,6 @@ fn searches_check_their_argument_types() {
 #[test]
 fn searches_take_exactly_two_arguments() {
     for function in ["contains", "starts_with", "ends_with"] {
-        assert_arity(function, 2, &[0, 1, 3]);
-    }
-}
-
-// --- strip_prefix, strip_suffix ---
-
-#[test]
-fn strip_prefix_and_strip_suffix_remove_a_present_affix() {
-    assert_values(&[
-        ("strip_prefix('--opt', '--')", "'opt'"),
-        ("strip_suffix('file.frst', '.frst')", "'file'"),
-        ("strip_prefix('hello', 'hello')", "''"),
-        ("strip_suffix('hello', 'hello')", "''"),
-        (r"strip_prefix('\u{e9}t\u{e9}', '\u{e9}')", r"'t\u{e9}'"),
-        (r"strip_suffix('\u{e9}t\u{e9}', '\u{e9}')", r"'\u{e9}t'"),
-        // Only one occurrence is removed.
-        ("strip_prefix('aaa', 'a')", "'aa'"),
-        ("strip_suffix('aaa', 'a')", "'aa'"),
-    ]);
-}
-
-#[test]
-fn strip_prefix_and_strip_suffix_leave_an_absent_affix_unchanged() {
-    assert_values(&[
-        ("strip_prefix('hello', 'lo')", "'hello'"),
-        ("strip_suffix('hello', 'he')", "'hello'"),
-        ("strip_prefix('he', 'hello')", "'he'"),
-        ("strip_suffix('lo', 'hello')", "'lo'"),
-        ("strip_prefix('', 'a')", "''"),
-        ("strip_suffix('', 'a')", "''"),
-        // The empty affix is always present, and removing it changes nothing.
-        ("strip_prefix('hello', '')", "'hello'"),
-        ("strip_suffix('hello', '')", "'hello'"),
-        ("strip_prefix('', '')", "''"),
-        ("strip_suffix('', '')", "''"),
-    ]);
-}
-
-#[test]
-fn strip_prefix_and_strip_suffix_strip_bytes() {
-    assert_values(&[
-        ("strip_prefix(x'ff0061', x'ff00')", "x'61'"),
-        ("strip_suffix(x'ff0061', x'0061')", "x'ff'"),
-        ("strip_prefix(x'ff00', x'ff00')", "x''"),
-        ("strip_prefix(x'ff00', x'00')", "x'ff00'"),
-        ("strip_suffix(x'ff00', x'ff')", "x'ff00'"),
-        ("strip_prefix(x'ff', x'')", "x'ff'"),
-        ("strip_suffix(x'', x'00')", "x''"),
-    ]);
-}
-
-#[test]
-fn strip_prefix_and_strip_suffix_with_any_bytes_argument_return_bytes() {
-    assert_values(&[
-        ("strip_prefix('abc', x'61')", "x'6263'"),
-        ("strip_suffix('abc', x'63')", "x'6162'"),
-        ("strip_prefix(x'616263', 'ab')", "x'63'"),
-        ("strip_suffix(x'616263', 'bc')", "x'61'"),
-        // Unchanged content, but a Bytes argument still makes the result Bytes.
-        ("strip_prefix('abc', x'00')", "x'616263'"),
-        ("strip_suffix('abc', x'')", "x'616263'"),
-        ("strip_prefix(x'616263', 'z')", "x'616263'"),
-        // A byte-level strip may cut a character apart.
-        (r"strip_prefix('\u{e9}', x'c3')", "x'a9'"),
-        (r"strip_suffix('\u{e9}', x'a9')", "x'c3'"),
-    ]);
-}
-
-#[test]
-fn strip_prefix_and_strip_suffix_strip_runtime_values() {
-    let stripped = Script::new(
-        "[strip_prefix(s, 'ab'), strip_suffix(s, 'bc'), strip_prefix(s, 'z'), strip_suffix(s, x'63')]",
-    )
-    .capture("s", Value::from("abc"))
-    .run();
-    assert_eq!(stripped, run("['c', 'a', 'abc', x'6162']"));
-}
-
-#[test]
-fn strip_prefix_and_strip_suffix_check_their_argument_types() {
-    for (function, affix) in [("strip_prefix", "prefix"), ("strip_suffix", "suffix")] {
-        let position = format!("argument 2 ({affix})");
-        assert_rejects_non_flat(
-            function,
-            &[
-                (&format!("{function}(1, 'a')"), "argument 1", "Int"),
-                (&format!("{function}(null, 'a')"), "argument 1", "Null"),
-                (&format!("{function}(['a'], 'a')"), "argument 1", "Array"),
-                (&format!("{function}({{a: 1}}, 'a')"), "argument 1", "Map"),
-                (&format!("{function}('a', 1)"), &position, "Int"),
-                (&format!("{function}('a', null)"), &position, "Null"),
-                (&format!("{function}('a', ['a'])"), &position, "Array"),
-                (&format!("{function}('a', false)"), &position, "Bool"),
-            ],
-        );
-    }
-}
-
-#[test]
-fn strip_prefix_and_strip_suffix_take_exactly_two_arguments() {
-    for function in ["strip_prefix", "strip_suffix"] {
         assert_arity(function, 2, &[0, 1, 3]);
     }
 }

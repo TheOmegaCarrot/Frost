@@ -119,8 +119,6 @@ define_globals! {
     "contains"              [Pure]   => contains_global(),
     "starts_with"           [Pure]   => starts_with_global(),
     "ends_with"             [Pure]   => ends_with_global(),
-    "strip_prefix"          [Pure]   => strip_prefix_global(),
-    "strip_suffix"          [Pure]   => strip_suffix_global(),
 
     // --- Operators ---
     "plus"                  [Pure]   => plus_global(),

@@ -8,7 +8,7 @@
 mod script;
 
 use frostlang::stdlib::{self, StdlibConfig};
-use frostlang::{ImporterBuilder, Stdlib};
+use frostlang::{ImporterBuilder, Stdlib, Value};
 use script::Script;
 use script::assertions::{Library, library_assertions};
 
@@ -32,7 +32,8 @@ fn the_module_holds_its_functions() {
         "sorted(keys(str))",
         "['center', 'chars', 'count', 'index_of', 'is_alpha', 'is_alphanumeric', 'is_ascii', \
          'is_digit', 'is_empty', 'is_lowercase', 'is_uppercase', 'is_whitespace', \
-         'last_index_of', 'pad_left', 'pad_right', 'reader', 'writer']",
+         'last_index_of', 'pad_left', 'pad_right', 'reader', 'strip_prefix', \
+         'strip_suffix', 'writer']",
     )]);
 }
 
@@ -43,7 +44,7 @@ fn the_module_is_contained() {
     let result = Script::new("import('std.string').count('banana', 'a')")
         .importer(contained)
         .run();
-    assert_eq!(result, frostlang::Value::Int(3));
+    assert_eq!(result, Value::Int(3));
 }
 
 // --- index_of, last_index_of, count ---
@@ -142,6 +143,125 @@ fn searches_check_their_arguments() {
         "Function string.is_empty requires String or Bytes as argument 1, got Array",
     )]);
     assert_arity("is_empty", "1", &[0, 2]);
+}
+
+// --- strip_prefix, strip_suffix ---
+
+#[test]
+fn stripping_removes_a_present_affix() {
+    assert_values(&[
+        ("str.strip_prefix('--opt', '--')", "'opt'"),
+        ("str.strip_suffix('file.frst', '.frst')", "'file'"),
+        ("str.strip_prefix('hello', 'hello')", "''"),
+        ("str.strip_suffix('hello', 'hello')", "''"),
+        (r"str.strip_prefix('\u{e9}t\u{e9}', '\u{e9}')", r"'t\u{e9}'"),
+        (r"str.strip_suffix('\u{e9}t\u{e9}', '\u{e9}')", r"'\u{e9}t'"),
+        // Only one occurrence is removed.
+        ("str.strip_prefix('aaa', 'a')", "'aa'"),
+        ("str.strip_suffix('aaa', 'a')", "'aa'"),
+    ]);
+}
+
+#[test]
+fn stripping_leaves_an_absent_affix_unchanged() {
+    assert_values(&[
+        ("str.strip_prefix('hello', 'lo')", "'hello'"),
+        ("str.strip_suffix('hello', 'he')", "'hello'"),
+        ("str.strip_prefix('he', 'hello')", "'he'"),
+        ("str.strip_suffix('lo', 'hello')", "'lo'"),
+        ("str.strip_prefix('', 'a')", "''"),
+        ("str.strip_suffix('', 'a')", "''"),
+        // The empty affix is always present, and removing it changes nothing.
+        ("str.strip_prefix('hello', '')", "'hello'"),
+        ("str.strip_suffix('hello', '')", "'hello'"),
+        ("str.strip_prefix('', '')", "''"),
+        ("str.strip_suffix('', '')", "''"),
+    ]);
+}
+
+#[test]
+fn stripping_strips_bytes() {
+    assert_values(&[
+        ("str.strip_prefix(x'ff0061', x'ff00')", "x'61'"),
+        ("str.strip_suffix(x'ff0061', x'0061')", "x'ff'"),
+        ("str.strip_prefix(x'ff00', x'ff00')", "x''"),
+        ("str.strip_prefix(x'ff00', x'00')", "x'ff00'"),
+        ("str.strip_suffix(x'ff00', x'ff')", "x'ff00'"),
+        ("str.strip_prefix(x'ff', x'')", "x'ff'"),
+        ("str.strip_suffix(x'', x'00')", "x''"),
+    ]);
+}
+
+#[test]
+fn stripping_with_any_bytes_argument_returns_bytes() {
+    assert_values(&[
+        ("str.strip_prefix('abc', x'61')", "x'6263'"),
+        ("str.strip_suffix('abc', x'63')", "x'6162'"),
+        ("str.strip_prefix(x'616263', 'ab')", "x'63'"),
+        ("str.strip_suffix(x'616263', 'bc')", "x'61'"),
+        // Unchanged content, but a Bytes argument still makes the result Bytes.
+        ("str.strip_prefix('abc', x'00')", "x'616263'"),
+        ("str.strip_suffix('abc', x'')", "x'616263'"),
+        ("str.strip_prefix(x'616263', 'z')", "x'616263'"),
+        // A byte-level strip may cut a character apart.
+        (r"str.strip_prefix('\u{e9}', x'c3')", "x'a9'"),
+        (r"str.strip_suffix('\u{e9}', x'a9')", "x'c3'"),
+    ]);
+}
+
+#[test]
+fn stripping_strips_runtime_values() {
+    let stripped = LIBRARY
+        .script(
+            r"
+            [
+                str.strip_prefix(s, 'ab'),
+                str.strip_suffix(s, 'bc'),
+                str.strip_prefix(s, 'z'),
+                str.strip_suffix(s, x'63'),
+            ]
+            ",
+        )
+        .capture("s", Value::from("abc"))
+        .run();
+    assert_eq!(
+        stripped,
+        Value::array([
+            Value::from("c"),
+            Value::from("a"),
+            Value::from("abc"),
+            Value::from(&b"ab"[..]),
+        ])
+    );
+}
+
+#[test]
+fn stripping_checks_its_arguments() {
+    for (function, affix) in [("strip_prefix", "prefix"), ("strip_suffix", "suffix")] {
+        let rejects = |call: &str, position: &str, got: &str| {
+            (
+                format!("str.{function}{call}"),
+                format!(
+                    "Function string.{function} requires String or Bytes as {position}, got {got}"
+                ),
+            )
+        };
+        let position = format!("argument 2 ({affix})");
+        let cases = [
+            rejects("(1, 'a')", "argument 1", "Int"),
+            rejects("(null, 'a')", "argument 1", "Null"),
+            rejects("(['a'], 'a')", "argument 1", "Array"),
+            rejects("({a: 1}, 'a')", "argument 1", "Map"),
+            rejects("('a', 1)", &position, "Int"),
+            rejects("('a', null)", &position, "Null"),
+            rejects("('a', ['a'])", &position, "Array"),
+            rejects("('a', false)", &position, "Bool"),
+        ];
+        for (source, message) in &cases {
+            assert_raises(&[(source, message)]);
+        }
+        assert_arity(function, "2", &[0, 1, 3]);
+    }
 }
 
 // --- chars ---
