@@ -1,7 +1,8 @@
 //! Splitting, joining, case conversion, and searching strings.
 //!
-//! The content-agnostic functions (`split`, `join`, `replace`, `contains`,
-//! `starts_with`, `ends_with`) accept String and Bytes in any mix, working on a
+//! The content-agnostic functions (`split`, `split_once`, `join`, `replace`,
+//! `contains`, `starts_with`, `ends_with`, `strip_prefix`, `strip_suffix`)
+//! accept String and Bytes in any mix, working on a
 //! String's UTF-8 bytes where Bytes are involved. Their result is a String only
 //! when every content argument is a String, and Bytes otherwise.
 //! The text functions (`lines`, `trim*`, `to_upper`, `to_lower`) accept only a String.
@@ -89,6 +90,44 @@ pub(super) fn split_global() -> Value {
                 .map(Value::from)
                 .collect(),
         })
+    })
+}
+
+/// `haystack` split at the first occurrence of `delimiter`, or after its first
+/// byte when `delimiter` is empty: the first two pieces of [`split_bytes`],
+/// with the rest kept whole. `None` when that would give fewer than two pieces.
+fn split_bytes_once<'a>(haystack: &'a [u8], delimiter: &[u8]) -> Option<(&'a [u8], &'a [u8])> {
+    if delimiter.is_empty() {
+        return (haystack.len() > 1).then(|| haystack.split_at(1));
+    }
+    let at = match_starts(haystack, delimiter).next()?;
+    Some((&haystack[..at], &haystack[at + delimiter.len()..]))
+}
+
+/// `text` split at the first occurrence of `delimiter`, or after its first
+/// character when `delimiter` is empty: the first two pieces of [`split_text`],
+/// with the rest kept whole. `None` when that would give fewer than two pieces.
+fn split_text_once<'a>(text: &'a str, delimiter: &str) -> Option<(&'a str, &'a str)> {
+    if delimiter.is_empty() {
+        let first = text.chars().next()?;
+        return (first.len_utf8() < text.len()).then(|| text.split_at(first.len_utf8()));
+    }
+    text.split_once(delimiter)
+}
+
+pub(super) fn split_once_global() -> Value {
+    const PARAMS: Params = Params::new(&[
+        Param::of(FrostType::FLAT),
+        Param::of(FrostType::FLAT).named("delimiter"),
+    ]);
+    Value::checked_native("split_once", PARAMS, |_, args| {
+        let pieces = match content([&args[0], &args[1]]) {
+            Content::Text([text, delimiter]) => split_text_once(text, delimiter)
+                .map(|(before, after)| Value::array([before, after])),
+            Content::Binary([bytes, delimiter]) => split_bytes_once(bytes, delimiter)
+                .map(|(before, after)| Value::array([before, after])),
+        };
+        Ok(pieces.unwrap_or(Value::Null))
     })
 }
 
@@ -229,4 +268,57 @@ pub(super) fn starts_with_global() -> Value {
 
 pub(super) fn ends_with_global() -> Value {
     search("ends_with", <[u8]>::ends_with)
+}
+
+/// Removes an affix from one edge of its input, if present.
+type Strip<T> = for<'a> fn(&'a T, &T) -> Option<&'a T>;
+
+/// A global removing an affix, its second argument, from its first argument with
+/// `strip_text` or `strip_bytes`. An argument left with nothing removed is
+/// returned as is, though as Bytes if the affix is Bytes.
+fn strip_op(
+    name: &'static str,
+    params: Params,
+    strip_text: Strip<str>,
+    strip_bytes: Strip<[u8]>,
+) -> Value {
+    Value::checked_native(name, params, move |_, args| {
+        Ok(match content([&args[0], &args[1]]) {
+            Content::Text([text, affix]) => match strip_text(text, affix) {
+                Some(rest) if rest.len() < text.len() => Value::from(rest),
+                _ => args[0].take(),
+            },
+            Content::Binary([bytes, affix]) => match strip_bytes(bytes, affix) {
+                Some(rest) if rest.len() < bytes.len() => Value::from(rest),
+                _ if matches!(args[0], Value::Bytes(_)) => args[0].take(),
+                _ => Value::from(bytes),
+            },
+        })
+    })
+}
+
+pub(super) fn strip_prefix_global() -> Value {
+    const PARAMS: Params = Params::new(&[
+        Param::of(FrostType::FLAT),
+        Param::of(FrostType::FLAT).named("prefix"),
+    ]);
+    strip_op(
+        "strip_prefix",
+        PARAMS,
+        |text, prefix| text.strip_prefix(prefix),
+        <[u8]>::strip_prefix,
+    )
+}
+
+pub(super) fn strip_suffix_global() -> Value {
+    const PARAMS: Params = Params::new(&[
+        Param::of(FrostType::FLAT),
+        Param::of(FrostType::FLAT).named("suffix"),
+    ]);
+    strip_op(
+        "strip_suffix",
+        PARAMS,
+        |text, suffix| text.strip_suffix(suffix),
+        <[u8]>::strip_suffix,
+    )
 }

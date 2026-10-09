@@ -1,7 +1,7 @@
 //! The Strings globals, from Frost source.
 //!
-//! `split`, `join`, `replace`, `contains`, `starts_with`, and `ends_with` accept
-//! String and Bytes in any mix. Mixed, they work on a String's UTF-8 bytes, and a
+//! `split`, `split_once`, `join`, `replace`, `contains`, `starts_with`,
+//! `ends_with`, `strip_prefix`, and `strip_suffix` accept String and Bytes in any mix. Mixed, they work on a String's UTF-8 bytes, and a
 //! result is a String only when every content argument is a String, else Bytes.
 //! `lines`, `trim`, `trim_left`, `trim_right`, `to_upper`, and `to_lower` accept
 //! only a String.
@@ -150,6 +150,154 @@ fn split_checks_its_argument_types() {
 #[test]
 fn split_takes_exactly_two_arguments() {
     assert_arity("split", 2, &[0, 1, 3]);
+}
+
+// --- split_once ---
+
+#[test]
+fn split_once_splits_a_string_at_the_first_delimiter() {
+    assert_values(&[
+        ("split_once('key=a=b', '=')", "['key', 'a=b']"),
+        ("split_once('a::b::c', '::')", "['a', 'b::c']"),
+        (
+            r"split_once('a\u{e9}b\u{e9}c', '\u{e9}')",
+            r"['a', 'b\u{e9}c']",
+        ),
+        // A delimiter at either edge leaves an empty piece.
+        ("split_once('=a', '=')", "['', 'a']"),
+        ("split_once('a=', '=')", "['a', '']"),
+        ("split_once('abc', 'abc')", "['', '']"),
+        // Occurrences are found left to right, and the rest is never searched.
+        ("split_once('aaa', 'aa')", "['', 'a']"),
+        ("split_once('aab', 'ab')", "['a', '']"),
+    ]);
+}
+
+#[test]
+fn split_once_without_the_delimiter_is_null() {
+    assert_values(&[
+        ("split_once('abc', ',')", "null"),
+        ("split_once('', ',')", "null"),
+        ("split_once('ab', 'abc')", "null"),
+        ("split_once(x'6162', x'00')", "null"),
+        ("split_once(x'', x'00')", "null"),
+        ("split_once('abc', x'00')", "null"),
+    ]);
+}
+
+#[test]
+fn split_once_on_an_empty_string_splits_off_the_first_character() {
+    assert_values(&[
+        ("split_once('abc', '')", "['a', 'bc']"),
+        (
+            r"split_once('\u{e9}\u{1f600}!', '')",
+            r"['\u{e9}', '\u{1f600}!']",
+        ),
+        (r"split_once('\u{1f600}a', '')", r"['\u{1f600}', 'a']"),
+        // With fewer than two characters there is nothing to split.
+        ("split_once('a', '')", "null"),
+        (r"split_once('\u{1f600}', '')", "null"),
+        ("split_once('', '')", "null"),
+    ]);
+}
+
+#[test]
+fn split_once_splits_bytes() {
+    assert_values(&[
+        ("split_once(x'61006200', x'00')", "[x'61', x'6200']"),
+        ("split_once(x'0000', x'00')", "[x'', x'00']"),
+        ("split_once(x'000000', x'0000')", "[x'', x'00']"),
+        // An empty delimiter splits off the first byte.
+        ("split_once(x'ff00c3', x'')", "[x'ff', x'00c3']"),
+        ("split_once(x'ff', x'')", "null"),
+        ("split_once(x'', x'')", "null"),
+    ]);
+}
+
+#[test]
+fn split_once_with_any_bytes_argument_splits_into_bytes() {
+    assert_values(&[
+        ("split_once('a,b,c', x'2c')", "[x'61', x'622c63']"),
+        ("split_once(x'612c62', ',')", "[x'61', x'62']"),
+        // An empty delimiter splits off a String's first byte, not its first character.
+        (r"split_once('\u{e9}', x'')", "[x'c3', x'a9']"),
+        // A byte-level split may cut a character apart.
+        (r"split_once('\u{e9}', x'a9')", "[x'c3', x'']"),
+    ]);
+}
+
+#[test]
+fn split_once_agrees_with_split() {
+    // `split_once` gives the first piece of `split` and the rest rejoined, or Null
+    // where `split` gives fewer than two pieces. Any case breaking that is returned.
+    let disagreements = run(r#"
+        defn expected(s, d) -> {
+            def pieces = split(s, d)
+            if len(pieces) < 2: null
+            else: [pieces[0], join(drop(pieces, 1), d)]
+        }
+        def cases = [
+            ['a,b,c', ','], [',a,,b,', ','], ['abc', ','], ['', ','],
+            ['aaaa', 'aa'], ['abc', ''], ['a', ''], ['', ''], ['\u{e9}\u{1f600}', ''],
+            [x'610062', x'00'], [x'ff00c3', x''], [x'ff', x''], ['a,b', x'2c'],
+        ]
+        reject(cases, fn c -> split_once(c[0], c[1]) == expected(c[0], c[1]))
+    "#);
+    assert_eq!(disagreements, Value::array::<Value, 0>([]));
+}
+
+#[test]
+fn split_once_inverts_with_join() {
+    assert_values(&[
+        ("join(split_once('k=v=w', '='), '=')", "'k=v=w'"),
+        (r"join(split_once('\u{e9}x', ''), '')", r"'\u{e9}x'"),
+        ("join(split_once(x'610062', x'00'), x'00')", "x'610062'"),
+    ]);
+}
+
+#[test]
+fn split_once_splits_runtime_values() {
+    let split_once = |text: Value, delimiter: Value| {
+        Script::new("split_once(t, d)")
+            .capture("t", text)
+            .capture("d", delimiter)
+            .run()
+    };
+    assert_eq!(
+        split_once(Value::from("x-y-z"), Value::from("-")),
+        Value::array(["x", "y-z"])
+    );
+    assert_eq!(
+        split_once(Value::from("x-y"), Value::from(&b"-"[..])),
+        Value::array([&b"x"[..], &b"y"[..]])
+    );
+    assert_eq!(split_once(Value::from("xy"), Value::from("-")), Value::Null);
+}
+
+#[test]
+fn split_once_checks_its_argument_types() {
+    assert_rejects_non_flat(
+        "split_once",
+        &[
+            ("split_once(1, ',')", "argument 1", "Int"),
+            ("split_once(null, ',')", "argument 1", "Null"),
+            ("split_once(['a,b'], ',')", "argument 1", "Array"),
+            ("split_once({a: 'b'}, ',')", "argument 1", "Map"),
+            ("split_once('a,b', 44)", "argument 2 (delimiter)", "Int"),
+            ("split_once('a,b', null)", "argument 2 (delimiter)", "Null"),
+            (
+                "split_once('a,b', [','])",
+                "argument 2 (delimiter)",
+                "Array",
+            ),
+            ("split_once('a,b', true)", "argument 2 (delimiter)", "Bool"),
+        ],
+    );
+}
+
+#[test]
+fn split_once_takes_exactly_two_arguments() {
+    assert_arity("split_once", 2, &[0, 1, 3]);
 }
 
 // --- lines ---
@@ -629,6 +777,107 @@ fn searches_check_their_argument_types() {
 #[test]
 fn searches_take_exactly_two_arguments() {
     for function in ["contains", "starts_with", "ends_with"] {
+        assert_arity(function, 2, &[0, 1, 3]);
+    }
+}
+
+// --- strip_prefix, strip_suffix ---
+
+#[test]
+fn strip_prefix_and_strip_suffix_remove_a_present_affix() {
+    assert_values(&[
+        ("strip_prefix('--opt', '--')", "'opt'"),
+        ("strip_suffix('file.frst', '.frst')", "'file'"),
+        ("strip_prefix('hello', 'hello')", "''"),
+        ("strip_suffix('hello', 'hello')", "''"),
+        (r"strip_prefix('\u{e9}t\u{e9}', '\u{e9}')", r"'t\u{e9}'"),
+        (r"strip_suffix('\u{e9}t\u{e9}', '\u{e9}')", r"'\u{e9}t'"),
+        // Only one occurrence is removed.
+        ("strip_prefix('aaa', 'a')", "'aa'"),
+        ("strip_suffix('aaa', 'a')", "'aa'"),
+    ]);
+}
+
+#[test]
+fn strip_prefix_and_strip_suffix_leave_an_absent_affix_unchanged() {
+    assert_values(&[
+        ("strip_prefix('hello', 'lo')", "'hello'"),
+        ("strip_suffix('hello', 'he')", "'hello'"),
+        ("strip_prefix('he', 'hello')", "'he'"),
+        ("strip_suffix('lo', 'hello')", "'lo'"),
+        ("strip_prefix('', 'a')", "''"),
+        ("strip_suffix('', 'a')", "''"),
+        // The empty affix is always present, and removing it changes nothing.
+        ("strip_prefix('hello', '')", "'hello'"),
+        ("strip_suffix('hello', '')", "'hello'"),
+        ("strip_prefix('', '')", "''"),
+        ("strip_suffix('', '')", "''"),
+    ]);
+}
+
+#[test]
+fn strip_prefix_and_strip_suffix_strip_bytes() {
+    assert_values(&[
+        ("strip_prefix(x'ff0061', x'ff00')", "x'61'"),
+        ("strip_suffix(x'ff0061', x'0061')", "x'ff'"),
+        ("strip_prefix(x'ff00', x'ff00')", "x''"),
+        ("strip_prefix(x'ff00', x'00')", "x'ff00'"),
+        ("strip_suffix(x'ff00', x'ff')", "x'ff00'"),
+        ("strip_prefix(x'ff', x'')", "x'ff'"),
+        ("strip_suffix(x'', x'00')", "x''"),
+    ]);
+}
+
+#[test]
+fn strip_prefix_and_strip_suffix_with_any_bytes_argument_return_bytes() {
+    assert_values(&[
+        ("strip_prefix('abc', x'61')", "x'6263'"),
+        ("strip_suffix('abc', x'63')", "x'6162'"),
+        ("strip_prefix(x'616263', 'ab')", "x'63'"),
+        ("strip_suffix(x'616263', 'bc')", "x'61'"),
+        // Unchanged content, but a Bytes argument still makes the result Bytes.
+        ("strip_prefix('abc', x'00')", "x'616263'"),
+        ("strip_suffix('abc', x'')", "x'616263'"),
+        ("strip_prefix(x'616263', 'z')", "x'616263'"),
+        // A byte-level strip may cut a character apart.
+        (r"strip_prefix('\u{e9}', x'c3')", "x'a9'"),
+        (r"strip_suffix('\u{e9}', x'a9')", "x'c3'"),
+    ]);
+}
+
+#[test]
+fn strip_prefix_and_strip_suffix_strip_runtime_values() {
+    let stripped = Script::new(
+        "[strip_prefix(s, 'ab'), strip_suffix(s, 'bc'), strip_prefix(s, 'z'), strip_suffix(s, x'63')]",
+    )
+    .capture("s", Value::from("abc"))
+    .run();
+    assert_eq!(stripped, run("['c', 'a', 'abc', x'6162']"));
+}
+
+#[test]
+fn strip_prefix_and_strip_suffix_check_their_argument_types() {
+    for (function, affix) in [("strip_prefix", "prefix"), ("strip_suffix", "suffix")] {
+        let position = format!("argument 2 ({affix})");
+        assert_rejects_non_flat(
+            function,
+            &[
+                (&format!("{function}(1, 'a')"), "argument 1", "Int"),
+                (&format!("{function}(null, 'a')"), "argument 1", "Null"),
+                (&format!("{function}(['a'], 'a')"), "argument 1", "Array"),
+                (&format!("{function}({{a: 1}}, 'a')"), "argument 1", "Map"),
+                (&format!("{function}('a', 1)"), &position, "Int"),
+                (&format!("{function}('a', null)"), &position, "Null"),
+                (&format!("{function}('a', ['a'])"), &position, "Array"),
+                (&format!("{function}('a', false)"), &position, "Bool"),
+            ],
+        );
+    }
+}
+
+#[test]
+fn strip_prefix_and_strip_suffix_take_exactly_two_arguments() {
+    for function in ["strip_prefix", "strip_suffix"] {
         assert_arity(function, 2, &[0, 1, 3]);
     }
 }
