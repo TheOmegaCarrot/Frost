@@ -132,9 +132,105 @@ fn pow_and_atan2_compute_their_f64_methods() {
         );
     }
     assert_values(&[
-        ("math.pow(2, 10)", "1024.0"),
+        ("math.pow(2.0, 10)", "1024.0"),
         ("math.atan2(0, -1)", "math.nums.pi"),
     ]);
+}
+
+#[test]
+fn pow_of_ints_with_a_non_negative_exponent_is_an_int() {
+    assert_values(&[
+        ("math.pow(2, 10)", "1024"),
+        ("math.pow(-3, 3)", "-27"),
+        ("math.pow(-3, 2)", "9"),
+        ("math.pow(7, 1)", "7"),
+        // Exact past 2^53, where a Float would round.
+        ("math.pow(3, 39)", "4052555153018976267"),
+        ("math.pow(2, 62)", "4611686018427387904"),
+        ("math.pow(-2, 63)", "math.nums.minint"),
+    ]);
+}
+
+#[test]
+fn pow_with_a_zero_exponent_is_one() {
+    assert_values(&[
+        ("math.pow(5, 0)", "1"),
+        ("math.pow(-5, 0)", "1"),
+        ("math.pow(0, 0)", "1"),
+        ("math.pow(math.nums.maxint, 0)", "1"),
+        ("math.pow(math.nums.minint, 0)", "1"),
+        ("math.pow(2.5, 0)", "1.0"),
+    ]);
+}
+
+#[test]
+fn pow_of_zero_one_and_negative_one_takes_any_exponent() {
+    // Exponents at and past the 32-bit boundary, with both parities.
+    for exponent in [
+        "4294967294",
+        "4294967295",
+        "4294967296",
+        "4294967297",
+        "math.nums.maxint - 1",
+        "math.nums.maxint",
+    ] {
+        let odd = run(&format!("({exponent}) % 2 == 1")) == Value::Bool(true);
+        let negative_one = if odd { "-1" } else { "1" };
+        assert_values(&[
+            (&format!("math.pow(0, {exponent})"), "0"),
+            (&format!("math.pow(1, {exponent})"), "1"),
+            (&format!("math.pow(-1, {exponent})"), negative_one),
+        ]);
+    }
+}
+
+#[test]
+fn pow_of_ints_past_the_int_range_is_an_error() {
+    for (call, args) in [
+        ("math.pow(2, 63)", "2, 63"),
+        ("math.pow(-2, 64)", "-2, 64"),
+        ("math.pow(10, 1000)", "10, 1000"),
+        ("math.pow(math.nums.maxint, 2)", "9223372036854775807, 2"),
+        ("math.pow(math.nums.minint, 2)", "-9223372036854775808, 2"),
+        ("math.pow(2, 4294967296)", "2, 4294967296"),
+        ("math.pow(-2, math.nums.maxint)", "-2, 9223372036854775807"),
+    ] {
+        assert_raises(&[(
+            call,
+            &format!("Function math.pow has no Int result for {args}"),
+        )]);
+    }
+}
+
+#[test]
+fn pow_with_a_float_or_a_negative_exponent_is_a_float() {
+    assert_values(&[
+        ("math.pow(2, -1)", "0.5"),
+        ("math.pow(-2, -2)", "0.25"),
+        ("math.pow(1, -5)", "1.0"),
+        ("math.pow(2, 3.0)", "8.0"),
+        ("math.pow(2.0, 3)", "8.0"),
+        ("math.pow(4, 0.5)", "2.0"),
+        // Past the Int range, a Float operand keeps the Float result.
+        ("math.pow(2.0, 63)", "9223372036854775808.0"),
+    ]);
+}
+
+#[test]
+fn pow_rejects_a_non_number_beside_an_int() {
+    // The general argument checks are in `every_function_requires_numbers`.
+    for (call, position, got) in [
+        ("math.pow('2', 3)", 1, "String"),
+        ("math.pow(null, 3)", 1, "Null"),
+        ("math.pow(2, '3')", 2, "String"),
+        ("math.pow(2, null)", 2, "Null"),
+        ("math.pow(2, x'03')", 2, "Bytes"),
+    ] {
+        assert_raises(&[(
+            call,
+            &format!("Function math.pow requires Numeric as argument {position}, got {got}"),
+        )]);
+    }
 }
 
 #[test]
@@ -156,7 +252,7 @@ fn a_result_that_is_not_finite_is_an_error() {
         ("expm1(1000)", "1000"),
         ("sinh(1000)", "1000"),
         ("cosh(-1000)", "-1000"),
-        ("pow(10, 1000)", "10, 1000"),
+        ("pow(10.0, 1000)", "10.0, 1000"),
         ("pow(0, -1)", "0, -1"),
         ("pow(-8, 0.5)", "-8, 0.5"),
         (

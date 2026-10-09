@@ -12,9 +12,9 @@ use crate::{
     Value,
 };
 
-/// The `std.math` module: floating-point functions (roots, powers, logarithms,
-/// trigonometric and hyperbolic functions), rounding to Int, `abs`, `min`,
-/// `max`, `clamp`, `lerp`, the numeric constants under `nums`, and
+/// The `std.math` module: floating-point functions (roots, exponentials,
+/// logarithms, trigonometric and hyperbolic functions), rounding to Int, `pow`,
+/// `abs`, `min`, `max`, `clamp`, `lerp`, the numeric constants under `nums`, and
 /// `special_float`, which makes a [`SpecialFloat`] from its name.
 ///
 /// It only computes: it reads and changes nothing outside the script.
@@ -24,7 +24,7 @@ pub fn math() -> StdlibModule {
         Value::map([
             ("sqrt", float_function("math.sqrt", f64::sqrt)),
             ("cbrt", float_function("math.cbrt", f64::cbrt)),
-            ("pow", binary_float_function("math.pow", f64::powf)),
+            ("pow", pow()),
             ("exp", float_function("math.exp", f64::exp)),
             ("exp2", float_function("math.exp2", f64::exp2)),
             ("expm1", float_function("math.expm1", f64::exp_m1)),
@@ -128,6 +128,33 @@ fn abs() -> Value {
         }),
         Value::Float(f) => finite("math.abs", f.get().abs(), args),
         other => unreachable!("type-checked as Numeric, got {}", other.type_name()),
+    })
+}
+
+/// `pow`: an Int of an Int base and a non-negative Int exponent, else a Float.
+fn pow() -> Value {
+    Value::checked_native("math.pow", TWO_NUMBERS, |_, args| {
+        match (&args[0], &args[1]) {
+            (Value::Int(base), Value::Int(exponent)) if *exponent >= 0 => {
+                let result = match u32::try_from(*exponent) {
+                    Ok(exponent) => base.checked_pow(exponent),
+                    // Past `u32`, every base but 0, 1, and -1 overflows.
+                    Err(_) => match base {
+                        0 | 1 => Some(*base),
+                        -1 => Some(if exponent % 2 == 0 { 1 } else { -1 }),
+                        _ => None,
+                    },
+                };
+                result.map(Value::Int).ok_or_else(|| {
+                    FrostError::from_string(format!(
+                        "Function math.pow has no Int result for {}, {}",
+                        args[0].to_frost_string(),
+                        args[1].to_frost_string()
+                    ))
+                })
+            }
+            (base, exponent) => finite("math.pow", float_arg(base).powf(float_arg(exponent)), args),
+        }
     })
 }
 
