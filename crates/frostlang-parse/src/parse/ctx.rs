@@ -43,10 +43,11 @@ pub(crate) struct ParseState {
     /// When > 0, newlines are not significant (we're inside delimiters).
     pub nl_depth: u32,
 
-    /// One frame per enclosing abbreviated lambda; dollar identifiers are
-    /// permitted while non-empty and record into the innermost frame.
+    /// The frame of the abbreviated lambda the parse is in, if any: abbreviated
+    /// lambdas do not nest. Dollar identifiers are permitted while it is present,
+    /// and record into it.
     /// Lives in the checkpointed state so backtracking discards speculative marks.
-    pub abbrev_lambdas: Vec<DollarUsage>,
+    pub abbrev_lambda: Option<DollarUsage>,
 
     /// The brackets open at `pos`, innermost last, each as the parser read it.
     /// Diagnostics read it to say where an error sits.
@@ -137,8 +138,10 @@ impl Bracket {
 
 /// Dollar-identifier usage collected for one abbreviated lambda.
 /// Filled in as the body parses; consumed by `exit_abbreviated_lambda`.
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug)]
 pub(crate) struct DollarUsage {
+    /// The lambda's `$(`.
+    pub opener: SourceSpan,
     /// Becomes `used_params` of [`Expr::AbbreviatedLambda`](crate::ast::Expr::AbbreviatedLambda).
     pub used: Vec<bool>,
     /// Whether the rest parameter `$$` was referenced.
@@ -404,30 +407,44 @@ impl<'src> ParseCtx<'src> {
     }
 
     pub(crate) fn in_abbreviated_lambda(&self) -> bool {
-        !self.state.abbrev_lambdas.is_empty()
+        self.state.abbrev_lambda.is_some()
     }
 
-    pub(crate) fn enter_abbreviated_lambda(&mut self) -> &mut Self {
-        self.state.abbrev_lambdas.push(DollarUsage::default());
+    /// The `$(` of the abbreviated lambda the parse is in, if any.
+    pub(crate) fn enclosing_abbreviated_lambda(&self) -> Option<SourceSpan> {
+        self.state.abbrev_lambda.as_ref().map(|frame| frame.opener)
+    }
+
+    /// Begins an abbreviated lambda whose `$(` is at `opener`.
+    pub(crate) fn enter_abbreviated_lambda(&mut self, opener: SourceSpan) -> &mut Self {
+        let enclosing = self.state.abbrev_lambda.replace(DollarUsage {
+            opener,
+            used: Vec::new(),
+            rest: false,
+        });
+        assert!(
+            enclosing.is_none(),
+            "IMPOSSIBLE: a nested abbreviated lambda is rejected before it is entered"
+        );
         self
     }
 
-    /// Ends the innermost abbreviated lambda, yielding the dollar-identifier
-    /// usage its body recorded.
+    /// Ends the abbreviated lambda, yielding the dollar-identifier usage its body
+    /// recorded.
     pub(crate) fn exit_abbreviated_lambda(&mut self) -> DollarUsage {
         self.state
-            .abbrev_lambdas
-            .pop()
+            .abbrev_lambda
+            .take()
             .expect("IMPOSSIBLE: exit_abbreviated_lambda without a matching enter")
     }
 
-    /// Records a dollar identifier against the innermost abbreviated lambda.
+    /// Records a dollar identifier against the abbreviated lambda.
     /// `name` is the token text: `$`, `$1`..`$9`, or `$$`.
     pub(crate) fn record_dollar(&mut self, name: &str) {
         let frame = self
             .state
-            .abbrev_lambdas
-            .last_mut()
+            .abbrev_lambda
+            .as_mut()
             .expect("IMPOSSIBLE: dollar identifier outside an abbreviated lambda");
         match name {
             "$$" => frame.rest = true,
@@ -441,16 +458,16 @@ impl<'src> ParseCtx<'src> {
         }
     }
 
-    /// Moves the abbreviated-lambda frames out, leaving none behind.
+    /// Moves the abbreviated lambda's frame out, if any, leaving none behind.
     ///
-    /// Paired with [`restore_abbrev_frames`](Self::restore_abbrev_frames) to lend the frames to a format-string interpolation's sub-context (see `parse_interpolation`).
-    pub(crate) fn take_abbrev_frames(&mut self) -> Vec<DollarUsage> {
-        std::mem::take(&mut self.state.abbrev_lambdas)
+    /// Paired with [`restore_abbrev_frame`](Self::restore_abbrev_frame) to lend the frame to a format-string interpolation's sub-context (see `parse_interpolation`).
+    pub(crate) fn take_abbrev_frame(&mut self) -> Option<DollarUsage> {
+        self.state.abbrev_lambda.take()
     }
 
-    /// Seats frames obtained from [`take_abbrev_frames`](Self::take_abbrev_frames).
-    pub(crate) fn restore_abbrev_frames(&mut self, frames: Vec<DollarUsage>) {
-        self.state.abbrev_lambdas = frames;
+    /// Seats a frame obtained from [`take_abbrev_frame`](Self::take_abbrev_frame).
+    pub(crate) fn restore_abbrev_frame(&mut self, frame: Option<DollarUsage>) {
+        self.state.abbrev_lambda = frame;
     }
 
     pub(crate) fn here(&self) -> usize {

@@ -521,12 +521,6 @@ fn abbreviated_placeholder_through_a_nested_regular_lambda() {
 }
 
 #[test]
-fn nested_abbreviated_lambdas_keep_separate_placeholders() {
-    // Each `$1` belongs to its own lambda; only `g` and `h` are free.
-    assert_free("$( g($1, $(h($1))) )", &["g", "h"]);
-}
-
-#[test]
 fn dedup_through_the_replay_path() {
     assert_eq!(ordered("fn -> [fn -> w, fn -> w, w]"), ["w"]);
 }

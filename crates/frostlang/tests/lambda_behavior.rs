@@ -698,25 +698,6 @@ fn an_abbreviated_lambda_captures_the_names_around_it() {
 }
 
 #[test]
-fn a_nested_abbreviated_lambda_has_its_own_placeholders() {
-    // The inner `$($1)` claims `$1`, so the outer takes no arguments.
-    assert_values(&[(
-        r"
-        def f = $($($1))
-        f()(7)
-        ",
-        "7",
-    )]);
-    assert_raises(&[(
-        r"
-        def f = $($($1))
-        f(7)
-        ",
-        "expects 0 arguments",
-    )]);
-}
-
-#[test]
 fn a_placeholder_is_captured_by_a_plain_lambda_inside() {
     // A plain `fn` opens no placeholder scope: its `$1` is the enclosing one's.
     assert_values(&[
@@ -734,8 +715,6 @@ fn a_placeholder_is_captured_by_a_plain_lambda_inside() {
             ",
             "5",
         ),
-        // Within a nested abbreviated lambda, it is that one's.
-        ("$($(fn -> $1)(7)())()", "7"),
         // It counts toward the enclosing one's arity.
         ("$(fn -> $2)(1, 2)()", "2"),
         ("$(fn -> $$)(1, 2)()", "[1, 2]"),
@@ -743,46 +722,6 @@ fn a_placeholder_is_captured_by_a_plain_lambda_inside() {
         ("$(fn -> fn -> $1)(4)()()", "4"),
     ]);
     assert_raises(&[("$(fn -> $2)(1)", "expects 2 arguments")]);
-}
-
-#[test]
-fn each_placeholder_belongs_to_its_immediately_containing_abbreviated_lambda() {
-    // Nesting abbreviated lambdas is inadvisable, but supported: an inner
-    // lambda's placeholders shadow the outer one's entirely.
-    assert_values(&[
-        ("$($1 + $($1 * 10)(2))(3)", "23"),
-        ("$([$1, $($1)(9)])(1)", "[1, 9]"),
-        ("$($ + $($ * 2)(3))(1)", "7"),
-        ("$([$$, $($$)(9)])(1, 2)", "[[1, 2], [9]]"),
-        ("$($1 + $($$)(1, 2)[1])(10)", "12"),
-        ("$($2 + $($1)(5))(0, 1)", "6"),
-        // Three levels, each with its own `$1`.
-        ("$($([$1, $($1 * 100)($1 + 1)])($1 * 10))(1)", "[10, 1100]"),
-    ]);
-}
-
-#[test]
-fn a_nested_abbreviated_lambda_has_its_own_arity() {
-    // An outer lambda whose only placeholders are an inner one's takes none.
-    assert_values(&[("$($($($1)))()()(4)", "4"), ("$($($1 + $2))()(1, 2)", "3")]);
-    assert_raises(&[
-        ("$($($2))()(1)", "expects 2 arguments"),
-        ("$($($1))(1)", "expects 0 arguments"),
-    ]);
-}
-
-#[test]
-fn a_nested_abbreviated_lambda_captures_like_any_lambda() {
-    assert_values(&[
-        (
-            r"
-            def k = 5
-            $($1 + $($1 + k)(1))(10)
-            ",
-            "16",
-        ),
-        ("$(transform($1, $($ + 1)))([1, 2])", "[2, 3]"),
-    ]);
 }
 
 // --- Captures ---

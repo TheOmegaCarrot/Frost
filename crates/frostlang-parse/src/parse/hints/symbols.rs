@@ -706,7 +706,13 @@ impl Site<'_, '_> {
                 || self.token_at(2) == Some(&Token::CloseParen))
             && !(*found == Token::OpPlus && self.abutting_next().is_some());
         is_section.then(|| {
-            "Frost has no operator sections; use an abbreviated lambda, like `$($ + 1)`".to_owned()
+            // Abbreviated lambdas do not nest.
+            if self.ctx.in_abbreviated_lambda() {
+                "Frost has no operator sections; use a lambda, like `fn x -> x + 1`".to_owned()
+            } else {
+                "Frost has no operator sections; use an abbreviated lambda, like `$($ + 1)`"
+                    .to_owned()
+            }
         })
     }
 }

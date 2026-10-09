@@ -886,18 +886,93 @@ mod abbreviated {
         assert!(is_dollar(lr, "$2"));
     }
 
-    // A nested abbreviated lambda is its own scope: the inner `$($1)` parses to
-    // its own node and does not consume the outer `$1` that follows it. The
-    // depth counter must keep the outer `$1` legal after the inner one closes.
+    // -- Nesting --
+    // An abbreviated lambda cannot appear anywhere inside another, even through
+    // a `fn` or an interpolation: which lambda a `$` belongs to is easy to
+    // misread, and a `fn` inside `$(` does not reset what `$` means.
+
     #[test]
-    fn nested_abbreviated() {
-        let expr = parse_expr("$($($1) + $1)");
+    fn a_nested_abbreviated_lambda_is_rejected() {
+        let cases = [
+            "$($($1) + $1)",
+            "$(g($1, $($2)))",
+            // Meant as a thunk over the outer argument
+            "$(lazy($($ * 2)))",
+            // Meant to call the argument with 10
+            "map fns with $($(10))",
+            "$(fn x -> $(x))",
+            "$(fn -> fn -> $($))",
+            "$($'${$($1)}')",
+            "$(if $: $($) else: 0)",
+            "$({a: $($)})",
+        ];
+        for source in cases {
+            let err = frostlang_parse::parse_program("test.frst", source)
+                .expect_err(&format!("{source:?} nests abbreviated lambdas"));
+            assert_eq!(
+                err.message(),
+                "an abbreviated lambda cannot be nested in another",
+                "{source:?}"
+            );
+            let labels: Vec<(&str, &str)> = err
+                .labels()
+                .iter()
+                .map(|label| (&source[label.span.start..label.span.end], &*label.text))
+                .collect();
+            let (inner, outer) = (labels[0], labels[1]);
+            assert_eq!(inner, ("$(", "this `$(` is nested"), "{source:?}");
+            assert_eq!(
+                err.labels()[0].span.start,
+                source.rfind("$(").unwrap(),
+                "{source:?}"
+            );
+            assert_eq!(outer, ("$(", "in this abbreviated lambda"), "{source:?}");
+            assert_eq!(
+                err.labels()[1].span.start,
+                source.find("$(").unwrap(),
+                "{source:?}"
+            );
+            assert_eq!(
+                err.help(),
+                Some(
+                    "to call the argument, write `$1(...)`; to nest a function, write it with `fn`"
+                ),
+                "{source:?}"
+            );
+        }
+    }
+
+    // Three levels: the error is at the first nested `$(`, inside the outermost.
+    #[test]
+    fn deep_nesting_is_rejected_at_the_first_nested_lambda() {
+        let source = "$($($($1)))";
+        let err = frostlang_parse::parse_program("test.frst", source).unwrap_err();
+        let starts: Vec<usize> = err.labels().iter().map(|label| label.span.start).collect();
+        assert_eq!(starts, [2, 0]);
+    }
+
+    #[test]
+    fn abbreviated_lambdas_side_by_side_are_not_nested() {
+        for source in [
+            "[$($1), $($2)]",
+            "f($($ + 1), $($ * 2))",
+            "$($ + 1) @ g($($ * 2))",
+            "fn x -> $($ + x)",
+            "fn -> [$($), $($)]",
+        ] {
+            parse_expr(source);
+        }
+    }
+
+    #[test]
+    fn calling_the_argument_is_written_with_a_numbered_placeholder() {
+        let expr = parse_expr("$($1(10))");
         let body = assert_abbreviated(&expr);
-        let (l, op, r) = is_binop(body).expect("binop body");
-        assert!(matches!(op, BinOp::Add));
-        let inner = assert_abbreviated(l);
-        assert!(is_dollar(inner, "$1"));
-        assert!(is_dollar(r, "$1"));
+        let Expr::Call { callee, args } = &body.node else {
+            panic!("expected a call, got {:?}", body.node)
+        };
+        assert!(is_dollar(callee, "$1"));
+        assert!(is_int(&args[0], 10));
     }
 
     // Placeholders are `$`, `$1`-`$9`, and `$$`. `$0` is not one of them, so it
@@ -995,19 +1070,6 @@ mod abbreviated {
         assert!(is_dollar(r, "$1"));
     }
 
-    #[test]
-    fn summary_nested_attribution() {
-        // A dollar identifier belongs to the innermost abbreviated lambda:
-        // `$2` inside the nested lambda marks the inner summary, not the outer.
-        let expr = parse_expr("$(g($1, $($2)))");
-        assert_eq!(usage(&expr), (&[true][..], false));
-        let body = assert_abbreviated(&expr);
-        let Expr::Call { args, .. } = &body.node else {
-            panic!("expected Call body, got {:?}", body.node)
-        };
-        assert_eq!(usage(&args[1]), (&[false, true][..], false));
-    }
-
     // -- Dollar identifiers inside format-string interpolations --
     // An interpolation is lexed separately from the enclosing source, but
     // lexically it still sits inside the abbreviated lambda: `$n` is legal there
@@ -1060,15 +1122,5 @@ mod abbreviated {
     fn interpolation_dollar_outside_a_lambda_is_rejected() {
         // The gate stays closed: no enclosing abbreviated lambda, no `$n`.
         parse_err("$'v=${$1}'");
-    }
-
-    #[test]
-    fn nested_lambda_in_interpolation_attributes_to_the_inner_lambda() {
-        // `$1` belongs to the innermost lambda, even across the interpolation
-        // boundary: the outer lambda takes no parameters.
-        let expr = parse_expr("$($'${$($1)}')");
-        assert_eq!(usage(&expr), (&[][..], false));
-        let inner = interpolations(assert_abbreviated(&expr))[0];
-        assert_eq!(usage(inner), (&[true][..], false));
     }
 }

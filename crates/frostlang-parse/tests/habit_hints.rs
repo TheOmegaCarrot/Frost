@@ -773,6 +773,12 @@ fn operator_sections() {
     ]);
     // `+1` writes a sign, and `(+ 1 2)` is Lisp's call, not a section.
     assert_help_or_none(&[("(+1)", None), ("(+ 1 2)", None)]);
+    // Inside an abbreviated lambda, another cannot be nested.
+    let in_abbreviated = "Frost has no operator sections; use a lambda, like `fn x -> x + 1`";
+    assert_help(&[
+        ("$(transform($, (+ 1)))", in_abbreviated),
+        ("$($'${(* 2)}')", in_abbreviated),
+    ]);
 }
 
 // A declaration word from another language may be a Frost variable's name.

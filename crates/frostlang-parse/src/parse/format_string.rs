@@ -103,18 +103,18 @@ fn parse_interpolation(
     let mut sub_ctx = ParseCtx::new_interpolation(src, open.end).map_err(context)?;
 
     // An interpolation is lexed separately but sits lexically inside any enclosing
-    // abbreviated lambda, so the sub-context parses with the outer frames in hand:
-    // `$n` is accepted there, and marks land in the enclosing lambda's frame rather
-    // than being lost (which would under-report `used_params`).
-    // A leftover token's error is made while the frames are still lent, so its help sees them.
-    sub_ctx.restore_abbrev_frames(ctx.take_abbrev_frames());
+    // abbreviated lambda, so the sub-context parses with its frame in hand: `$n` is
+    // accepted there, marks land in the lambda's frame rather than being lost (which
+    // would under-report `used_params`), and a `$(` there is nested.
+    // A leftover token's error is made while the frame is still lent, so its help sees it.
+    sub_ctx.restore_abbrev_frame(ctx.take_abbrev_frame());
     let parsed = sub_ctx
         .parse_expression()
         .and_then(|expr| match sub_ctx.peek() {
             Some(leftover) => Err(sub_ctx.expected("`}`", leftover)),
             None => Ok(expr),
         });
-    ctx.restore_abbrev_frames(sub_ctx.take_abbrev_frames());
+    ctx.restore_abbrev_frame(sub_ctx.take_abbrev_frame());
 
     parsed.map_err(context)
 }

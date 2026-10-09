@@ -180,8 +180,22 @@ impl<'src> ParseCtx<'src> {
     // -- Abbreviated lambdas: $(expr) --
 
     pub(crate) fn parse_abbreviated_lambda(&mut self) -> ParseResult<Spanned<Expr>> {
+        let opener: SourceSpan = self.must_peek("`$(`")?.span.clone().into();
+        // In `$(f($($ * 2)))`, which lambda a `$` belongs to is easy to misread.
+        if let Some(outer) = self.enclosing_abbreviated_lambda() {
+            return Err(Diagnostic::at(
+                "an abbreviated lambda cannot be nested in another",
+                opener,
+                "this `$(` is nested",
+            )
+            .with_label(outer, "in this abbreviated lambda")
+            .with_help(Some(
+                "to call the argument, write `$1(...)`; to nest a function, write it with `fn`"
+                    .to_owned(),
+            )));
+        }
         let ((body, usage), span) = self.delimited(Bracket::AbbreviatedLambda, |ctx| {
-            ctx.enter_abbreviated_lambda();
+            ctx.enter_abbreviated_lambda(opener);
             let body = ctx.parse_expression()?;
             Ok((body, ctx.exit_abbreviated_lambda()))
         })?;
