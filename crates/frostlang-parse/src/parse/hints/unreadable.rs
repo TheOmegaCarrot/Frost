@@ -3,7 +3,7 @@
 use std::ops::Range;
 
 use crate::ast::SourceSpan;
-use crate::lex::{FormatStringEnd, scan_format_string, skip_interpolation};
+use crate::lex::{FormatStringEnd, UnclosedInterpolation, scan_format_string};
 use crate::parse::Diagnostic;
 use crate::parse::hints::{
     BITWISE_HELP, CONDITIONAL_HELP, FORMAT_STRING_HELP, GUARD_HELP, INEQUALITY_HELP, LAMBDA_HELP,
@@ -21,16 +21,8 @@ pub(crate) fn unreadable(src: &str, span: Range<usize>, base_offset: usize) -> D
         |range: Range<usize>| SourceSpan::from(range.start + base_offset..range.end + base_offset);
     let rest = &src[span.start..];
 
-    if let Some((open, quote)) = unclosed_interpolation(rest) {
-        let open = span.start + open;
-        return Diagnostic::at(
-            "unclosed interpolation in format String",
-            shifted(open..open + 2),
-            "this `${` is not closed",
-        )
-        .with_help(Some(format!(
-            "inside `${{...}}`, each `{{` needs a `}}`, and a `{quote}` starts a nested String"
-        )));
+    if let Some(diagnostic) = unclosed_interpolation(src, span.start, base_offset) {
+        return diagnostic;
     }
 
     let line_start = src[..span.start]
@@ -71,37 +63,81 @@ struct Reading<'a> {
     help: Option<String>,
 }
 
-/// For `rest`, the source from a format String's `$` onward, the index of an
-/// interpolation's `${` that never closes, when the String's quote stands later on
-/// the `${`'s line; with the quote of the String nested in the interpolation that
-/// swallowed its closing `}`.
-///
-/// In `$'${ {a: 1 }'`, the last quote looks like the String's closer, but the lexer
-/// read it as opening a String nested in the interpolation.
-fn unclosed_interpolation(rest: &str) -> Option<(usize, char)> {
-    let quote = rest
+/// The error for the format String whose `$` is at `start` in `src`, which starts at
+/// `base_offset` in the whole source, if what the lexer could not read there is an
+/// interpolation that does not close on its line, while the String's quote stands
+/// later on that line.
+fn unclosed_interpolation(src: &str, start: usize, base_offset: usize) -> Option<Diagnostic> {
+    let shifted =
+        |range: Range<usize>| SourceSpan::from(range.start + base_offset..range.end + base_offset);
+    let quote = src[start..]
         .strip_prefix('$')?
         .bytes()
         .next()
         .filter(|quote| matches!(quote, b'\'' | b'"'))?;
-    let FormatStringEnd::UnclosedInterpolation(open) =
-        scan_format_string(&rest.as_bytes()[2..], quote)
+    let FormatStringEnd::UnclosedInterpolation { open, why } =
+        scan_format_string(src, start + 2, quote)
     else {
         return None;
     };
-    let open = 2 + open;
-    let after_open = rest[open + 2..].lines().next().unwrap_or_default();
+    // With no quote later on the line, it is the format String that is unclosed.
+    let after_open = src[open + 2..].lines().next().unwrap_or_default();
     if !after_open.contains(char::from(quote)) {
         return None;
     }
-    // The String's own quote stands later on the line, so the scan opened a String
-    // there at the latest.
-    let nested_quote = skip_interpolation(rest.as_bytes(), open + 2)
-        .err()
-        .flatten()
-        .unwrap_or(quote);
-    Some((open, char::from(nested_quote)))
+    let unclosed = Diagnostic::at(
+        "unclosed interpolation in format String",
+        shifted(open..open + 2),
+        "this `${` is not closed",
+    );
+    let nested_help = Some(format!(
+        "inside `${{...}}`, each `{{` needs a `}}`, and a `{}` starts a nested String",
+        char::from(quote)
+    ));
+    let diagnostic = match why {
+        // In `$'${ {a: 1 }'`, the last quote looks like the String's closer, but the
+        // lexer reads it as opening a String nested in the interpolation.
+        UnclosedInterpolation::String(opener) if src.as_bytes()[opener.clone()] == [quote] => {
+            unclosed
+                .with_label(shifted(opener), "this starts a String nested in it")
+                .with_help(nested_help)
+        }
+        // A String of another kind is unclosed in its own right, as in `$'${"a}'`.
+        UnclosedInterpolation::String(opener) => {
+            unreadable(src, opener, base_offset).in_interpolation(shifted(open..open + 2))
+        }
+        UnclosedInterpolation::MultilineString(at) => unclosed
+            .with_label(shifted(at..at + 3), "this String spans lines")
+            .with_help(Some(ONE_LINE_HELP.to_owned())),
+        UnclosedInterpolation::Comment(at) => unclosed
+            .with_label(
+                shifted(at..at + 1),
+                "this comment hides the rest of the line",
+            )
+            .with_help(Some("an interpolation cannot hold a comment".to_owned())),
+        UnclosedInterpolation::LineEnd {
+            open_brace: Some(brace),
+            ..
+        } => unclosed
+            .with_label(shifted(brace..brace + 1), "this `{` is not closed")
+            .with_help(Some(
+                "inside `${...}`, each `{` needs a `}` on the same line".to_owned(),
+            )),
+        // In `$'${'}'`, the String's apparent end is a String nested in the
+        // interpolation.
+        UnclosedInterpolation::LineEnd {
+            open_brace: None,
+            last_string: Some(string),
+        } if src.as_bytes()[string.end - 1] == quote => unclosed
+            .with_label(shifted(string), "this String is nested in it")
+            .with_help(nested_help),
+        UnclosedInterpolation::LineEnd { .. } => unclosed.with_help(Some(ONE_LINE_HELP.to_owned())),
+    };
+    Some(diagnostic)
 }
+
+const ONE_LINE_HELP: &str = "an interpolation ends with `}` on the same line, as its format \
+                             String does";
 
 /// The error for `literal`, the source from a Bytes literal's `x` to the end of its
 /// line, which starts at `start` in the whole source, when the lexer could not read it.

@@ -1992,16 +1992,17 @@ fn unreadable_source() {
             "unclosed interpolation in format String",
             Some(r#"inside `${...}`, each `{` needs a `}`, and a `"` starts a nested String"#),
         ),
-        // The nested String that runs to the line end opens with the other quote.
+        // The nested String that runs to the line end opens with the other quote, so
+        // it is unclosed in its own right.
         (
             r#"def a = $'${ "abc }'"#,
-            "unclosed interpolation in format String",
-            Some(r#"inside `${...}`, each `{` needs a `}`, and a `"` starts a nested String"#),
+            "unclosed String",
+            Some(r#"a String ends with `"` on the same line"#),
         ),
         (
             r#"def a = $"${ 'abc }""#,
-            "unclosed interpolation in format String",
-            Some("inside `${...}`, each `{` needs a `}`, and a `'` starts a nested String"),
+            "unclosed String",
+            Some("a String ends with `'` on the same line"),
         ),
         // A quote on a later line is not this format String's closer.
         (

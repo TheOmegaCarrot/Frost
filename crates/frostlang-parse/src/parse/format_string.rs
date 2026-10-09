@@ -51,7 +51,7 @@ fn split_format_segments(
 
                 let open = text_start + i;
                 let start = i + 2; // past `${`
-                i = skip_interpolation(bytes, start)
+                i = skip_interpolation(raw, start)
                     .expect("IMPOSSIBLE: the lexer closes every interpolation");
                 // `i` is past the closing `}`.
                 let interp_src = &raw[start..i - 1];

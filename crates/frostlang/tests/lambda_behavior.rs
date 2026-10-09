@@ -1765,12 +1765,10 @@ fn defn_works_in_every_scope() {
             ",
             "[2, 4]",
         ),
+        // An interpolation is single-line.
         (
             r#"
-            $'${do {
-                defn g() -> 1
-                g()
-            }}'
+            $'${do { defn g() -> 1; g() }}'
             "#,
             r#""1""#,
         ),

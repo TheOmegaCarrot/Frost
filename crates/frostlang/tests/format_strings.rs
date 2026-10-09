@@ -148,6 +148,18 @@ fn format_strings_nest_deeply() {
 }
 
 #[test]
+fn a_string_in_an_interpolation_may_hold_braces_and_quotes() {
+    let cases = [
+        (r#"$'${R"(say "}")"}'"#, r#"say "}""#),
+        (r#"$'<${"}{"}>'"#, "<}{>"),
+        (r#"$"<${'{'}${$'${"}"}'}>""#, "<{}>"),
+    ];
+    for (source, expected) in cases {
+        assert_eq!(run(source), Value::from(expected), "{source:?}");
+    }
+}
+
+#[test]
 fn many_segments_join_in_order() {
     let source = (1..=20)
         .map(|n| format!("${{{n}}}"))

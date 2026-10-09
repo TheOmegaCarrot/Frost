@@ -468,11 +468,25 @@ fn an_empty_interpolation_finds_its_closing_brace() {
     );
 }
 
-// The format String's closing quote is there, but the interpolation before it never
-// closes, so the interpolation's `${` is labeled rather than the String's opening.
+// The format String's closing quote seems to be there, but the interpolation before
+// it never closes, so the interpolation's `${` is labeled rather than the String's
+// opening; and so is the String nested in the interpolation that holds the quote.
 #[test]
 fn an_unclosed_interpolation_labels_its_opener() {
-    for source in ["def a = $'${ {a: 1 }'", "def b = $'x ${'}'"] {
+    let cases = [
+        // The quote opens a nested String, which runs to the end of the line.
+        (
+            "def a = $'${ {a: 1 }'",
+            ("'", "this starts a String nested in it"),
+        ),
+        // The quote closes a nested String.
+        ("def b = $'x ${'}'", ("'}'", "this String is nested in it")),
+        (
+            "def c = $'${$'a}'",
+            ("$'a}'", "this String is nested in it"),
+        ),
+    ];
+    for (source, nested) in cases {
         let (message, labels) = diagnosis(source);
         assert_eq!(
             message, "unclosed interpolation in format String",
@@ -480,7 +494,15 @@ fn an_unclosed_interpolation_labels_its_opener() {
         );
         assert_eq!(
             labels,
-            [("${", "this `${` is not closed".to_owned())],
+            [
+                ("${", "this `${` is not closed".to_owned()),
+                (nested.0, nested.1.to_owned()),
+            ],
+            "{source:?}"
+        );
+        assert_eq!(
+            help(source).as_deref(),
+            Some("inside `${...}`, each `{` needs a `}`, and a `'` starts a nested String"),
             "{source:?}"
         );
     }
@@ -530,24 +552,6 @@ fn an_interpolation_error_labels_its_opener() {
     }
 }
 
-#[test]
-fn an_interpolation_across_lines_labels_its_opener() {
-    let source = r"
-        def a = $'${[1,
-        2}'
-    ";
-    let (message, labels) = diagnosis(source);
-    assert_eq!(message, "expected `,` or `]`, but found `}`");
-    assert_eq!(
-        labels,
-        [
-            ("}", "unexpected".to_owned()),
-            ("[", "this `[` is not closed".to_owned()),
-            ("${", "in this interpolation".to_owned()),
-        ]
-    );
-}
-
 // Identical labels on each enclosing `${` would stack on one line; only the
 // innermost interpolation, the one holding the error, is labeled.
 #[test]
@@ -581,15 +585,220 @@ fn an_unclosed_nested_interpolation_labels_both_openers() {
         labels,
         [
             ("${", "this `${` is not closed".to_owned()),
+            ("\"", "this starts a String nested in it".to_owned()),
             ("${", "in this interpolation".to_owned()),
         ]
     );
     let starts: Vec<usize> = err.labels().iter().map(|label| label.span.start).collect();
     assert_eq!(
         starts,
-        [source.rfind("${").unwrap(), source.find("${").unwrap()],
+        [
+            source.rfind("${").unwrap(),
+            source.rfind('"').unwrap(),
+            source.find("${").unwrap()
+        ],
         "the inner `${{` is the unclosed one"
     );
+}
+
+// -- An interpolation that does not close on its line --
+// An interpolation is single-line, as its format String is. The error labels what
+// kept it open, and its help says how to close it.
+
+/// The help of the error `src` fails with.
+fn help(src: &str) -> Option<String> {
+    let err = parse_program("test.frst", src).expect_err(src);
+    err.help().map(ToOwned::to_owned)
+}
+
+const ONE_LINE_HELP: &str =
+    "an interpolation ends with `}` on the same line, as its format String does";
+
+#[test]
+fn an_interpolation_holding_a_comment_is_unclosed() {
+    let source = "def a = $'${x # note}'";
+    let (message, labels) = diagnosis(source);
+    assert_eq!(message, "unclosed interpolation in format String");
+    assert_eq!(
+        labels,
+        [
+            ("${", "this `${` is not closed".to_owned()),
+            ("#", "this comment hides the rest of the line".to_owned()),
+        ]
+    );
+    assert_eq!(
+        help(source).as_deref(),
+        Some("an interpolation cannot hold a comment")
+    );
+    // Past the interpolation, a `#` is the format String's text.
+    parse_program("test.frst", "def a = $'${x} # text'").expect("`#` is text");
+}
+
+// With no quote later on the line to close it, the format String is what is
+// unclosed, though its interpolation is too: even in brackets, an interpolation
+// does not continue onto the next line.
+#[test]
+fn a_format_string_whose_interpolation_ends_its_line_is_unclosed() {
+    let multiline_expression = r"
+        def a = $'${(1 +
+        2)}'
+    ";
+    let multiline_array = r"
+        def a = $'${[1,
+        2]}'
+    ";
+    for source in [
+        multiline_expression,
+        multiline_array,
+        "def a = $'${x",
+        "def a = $'${x\n}'",
+        "def a = $'${x\r\n}'",
+    ] {
+        let (message, labels) = diagnosis(source);
+        assert_eq!(message, "unclosed format String", "{source:?}");
+        assert_eq!(
+            labels,
+            [("$'", "this `$'` is not closed".to_owned())],
+            "{source:?}"
+        );
+        assert_eq!(
+            help(source).as_deref(),
+            Some("a format String ends with `'` on the same line"),
+            "{source:?}"
+        );
+    }
+}
+
+#[test]
+fn an_interpolation_ending_its_line_before_the_quote_is_unclosed() {
+    // The quote later on the line is in a String nested in the interpolation.
+    let source = "def a = $'${f('a') + b";
+    let (message, labels) = diagnosis(source);
+    assert_eq!(message, "unclosed interpolation in format String");
+    assert_eq!(labels, [("${", "this `${` is not closed".to_owned())]);
+    assert_eq!(help(source).as_deref(), Some(ONE_LINE_HELP));
+}
+
+#[test]
+fn an_interpolation_holding_a_multiline_string_is_unclosed() {
+    let source = r"
+        def a = $'${'''
+            text
+            '''}'
+    ";
+    let (message, labels) = diagnosis(source);
+    assert_eq!(message, "unclosed interpolation in format String");
+    assert_eq!(
+        labels,
+        [
+            ("${", "this `${` is not closed".to_owned()),
+            ("'''", "this String spans lines".to_owned()),
+        ]
+    );
+    assert_eq!(help(source).as_deref(), Some(ONE_LINE_HELP));
+}
+
+#[test]
+fn a_one_line_multiline_string_in_an_interpolation_is_its_own_error() {
+    // It closes on the line, so the interpolation does too; the String itself is
+    // what is wrong.
+    let message = diagnosis("def a = $'${'''}'''}'").0;
+    assert_eq!(
+        message,
+        "multiline String must begin with a newline after the opening delimiter"
+    );
+}
+
+#[test]
+fn an_unclosed_brace_in_an_interpolation_is_labeled() {
+    for (source, brace) in [
+        ("def a = $'${ {a: '}'", "{a"),
+        // The innermost `{` left open
+        ("def a = $'${ {a: {b: '}'", "{b"),
+        ("def a = $'${ {a: {b: 1} c: 'd'", "{a"),
+    ] {
+        let err = parse_program("test.frst", source).expect_err(source);
+        let (message, labels) = diagnosis(source);
+        assert_eq!(
+            message, "unclosed interpolation in format String",
+            "{source:?}"
+        );
+        assert_eq!(
+            labels,
+            [
+                ("${", "this `${` is not closed".to_owned()),
+                ("{", "this `{` is not closed".to_owned()),
+            ],
+            "{source:?}"
+        );
+        assert_eq!(
+            err.labels()[1].span.start,
+            source.find(brace).unwrap(),
+            "{source:?}"
+        );
+        assert_eq!(
+            help(source).as_deref(),
+            Some("inside `${...}`, each `{` needs a `}` on the same line"),
+            "{source:?}"
+        );
+    }
+}
+
+// A String of another kind than the format String's own quote is unclosed in its
+// own right, and is reported as it would be anywhere, in the interpolation.
+#[test]
+fn an_unclosed_string_in_an_interpolation_is_reported_as_itself() {
+    let cases = [
+        (
+            r#"def a = $'${"a}'"#,
+            "unclosed String",
+            "\"",
+            "a String ends with `\"` on the same line",
+        ),
+        (
+            r#"def a = $"${'a}""#,
+            "unclosed String",
+            "'",
+            "a String ends with `'` on the same line",
+        ),
+        (
+            r#"def a = $'${R"(a}'"#,
+            "unclosed raw String",
+            "R\"",
+            "a raw String ends with `)\"` on the same line",
+        ),
+        (
+            r#"def a = $'${$"a}'"#,
+            "unclosed format String",
+            "$\"",
+            "a format String ends with `\"` on the same line",
+        ),
+        (
+            "def a = $'${'''a}'",
+            "unclosed multiline String",
+            "'''",
+            "a multiline String ends with `'''`",
+        ),
+        (
+            r#"def a = $"${x'7d}""#,
+            "unclosed Bytes literal",
+            "x'",
+            "a Bytes literal ends with `'` on the same line",
+        ),
+    ];
+    for (source, message, opener, expected_help) in cases {
+        let (found, labels) = diagnosis(source);
+        assert_eq!(found, message, "{source:?}");
+        assert_eq!(
+            labels,
+            [
+                (opener, format!("this `{opener}` is not closed")),
+                ("${", "in this interpolation".to_owned()),
+            ],
+            "{source:?}"
+        );
+        assert_eq!(help(source).as_deref(), Some(expected_help), "{source:?}");
+    }
 }
 
 // -- A missing `with` --
@@ -681,20 +890,16 @@ fn a_with_missing_on_the_operand_line_labels_only_the_found_token() {
     }
 }
 
-// Inside an interpolation, what is found past the last token is its closing `}`.
+// Inside an interpolation, what is found past the last token is its closing `}`,
+// on the same line: an interpolation is single-line.
 #[test]
-fn a_with_missing_at_an_interpolation_line_end_labels_the_keyword() {
-    let source = r"
-        def a = $'${map xs
-        }'
-    ";
-    let (message, labels) = diagnosis(source);
+fn a_with_missing_at_an_interpolation_end_finds_its_closing_brace() {
+    let (message, labels) = diagnosis("def a = $'${map xs}'");
     assert_eq!(message, "expected `with`, but found `}`");
     assert_eq!(
         labels,
         [
             ("}", "unexpected".to_owned()),
-            ("map", "this `map` needs `with`".to_owned()),
             ("${", "in this interpolation".to_owned()),
         ]
     );

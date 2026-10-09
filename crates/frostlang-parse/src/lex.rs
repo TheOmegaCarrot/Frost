@@ -334,36 +334,60 @@ fn lex_multiline_single<'src>(lex: &mut logos::Lexer<'src, Token<'src>>) -> Opti
 }
 
 fn lex_format_str<'src>(lex: &mut logos::Lexer<'src, Token<'src>>, quote: u8) -> Option<&'src str> {
-    let FormatStringEnd::Closed(end) = scan_format_string(lex.remainder().as_bytes(), quote) else {
+    let text = lex.remainder();
+    let FormatStringEnd::Closed(end) = scan_format_string(text, 0, quote) else {
         return None;
     };
-    let content = &lex.remainder()[..end];
     lex.bump(end + 1); // consume content + closing quote
-    Some(content)
+    Some(&text[..end])
 }
 
-/// Where a format String's scan ends.
+/// Where a format String's scan ends. Each index is into the text scanned.
 pub(crate) enum FormatStringEnd {
     /// At its closing quote, at this index.
     Closed(usize),
-    /// At an interpolation that has no closing `}`, whose `${` is at this index.
-    UnclosedInterpolation(usize),
+    /// At an interpolation, whose `${` is at `open`, that does not close on its line.
+    UnclosedInterpolation {
+        open: usize,
+        why: UnclosedInterpolation,
+    },
     /// At a line break or the end of input: format Strings are single-line.
     Unclosed,
 }
 
-/// Scans a format String's text, `bytes`, from just past its opening `$'` or `$"`,
-/// `quote` being its quote character.
-pub(crate) fn scan_format_string(bytes: &[u8], quote: u8) -> FormatStringEnd {
-    let mut i = 0;
+/// Why an interpolation does not close on its line. Each index is into the text
+/// scanned.
+#[derive(Debug)]
+pub(crate) enum UnclosedInterpolation {
+    /// A String in it, whose opener (such as `'` or `R"(`) is at this range, does not
+    /// close on its line.
+    String(Range<usize>),
+    /// A multiline String in it, starting at this index, spans lines.
+    MultilineString(usize),
+    /// A comment in it, starting at this index, runs to the end of the line.
+    Comment(usize),
+    /// The line ends first.
+    LineEnd {
+        /// The innermost `{` in it still open, if any.
+        open_brace: Option<usize>,
+        /// The String that ends the line, if one does.
+        last_string: Option<Range<usize>>,
+    },
+}
+
+/// Scans the format String in `text` whose text starts at `start`, just past its
+/// opening `$'` or `$"`, `quote` being its quote character.
+pub(crate) fn scan_format_string(text: &str, start: usize, quote: u8) -> FormatStringEnd {
+    let bytes = text.as_bytes();
+    let mut i = start;
     while i < bytes.len() {
         match bytes[i] {
             // Escaped character: skip both the backslash and the next byte
             b'\\' if i + 1 < bytes.len() => i += 2,
 
-            b'$' if bytes.get(i + 1) == Some(&b'{') => match skip_interpolation(bytes, i + 2) {
+            b'$' if bytes.get(i + 1) == Some(&b'{') => match skip_interpolation(text, i + 2) {
                 Ok(end) => i = end,
-                Err(_) => return FormatStringEnd::UnclosedInterpolation(i),
+                Err(why) => return FormatStringEnd::UnclosedInterpolation { open: i, why },
             },
 
             c if c == quote => return FormatStringEnd::Closed(i),
@@ -376,38 +400,89 @@ pub(crate) fn scan_format_string(bytes: &[u8], quote: u8) -> FormatStringEnd {
     FormatStringEnd::Unclosed
 }
 
-/// Scans a format-string interpolation, starting at `i`, just past its `${`.
-/// Returns the index just past the matching `}`. If the interpolation is unclosed,
-/// returns instead the quote of the last String opened inside it, if any.
-/// Braces inside a quoted string within the interpolation do not count.
-pub(crate) fn skip_interpolation(bytes: &[u8], mut i: usize) -> Result<usize, Option<u8>> {
-    let mut depth = 1u32;
-    let mut last_quote = None;
-    while depth > 0 {
-        match *bytes.get(i).ok_or(last_quote)? {
-            b'{' => depth += 1,
-            b'}' => depth -= 1,
-            q @ (b'\'' | b'"') => {
-                last_quote = Some(q);
-                i += 1;
-                while i < bytes.len() {
-                    match bytes[i] {
-                        b'\\' if i + 1 < bytes.len() => i += 2,
-                        c if c == q => {
-                            i += 1;
-                            break;
+/// Scans the interpolation in `text` whose expression starts at `start`, just past
+/// its `${`, returning the index just past its closing `}`.
+///
+/// The expression is lexed as Frost, so a brace in a String, or in a format String
+/// nested in it, does not count. Like its format String, an interpolation is
+/// single-line.
+pub(crate) fn skip_interpolation(text: &str, start: usize) -> Result<usize, UnclosedInterpolation> {
+    let mut open_braces = Vec::new();
+    let mut last_end = start;
+    let mut last_string = None;
+    // Why the interpolation ends at the line end at `line_end`. The lexer skips only
+    // spaces and comments, so a `#` after the last token starts a comment.
+    let at_line_end =
+        |line_end: usize, last_end: usize, open_braces: &[usize], last_string| match text
+            [last_end..line_end]
+            .find('#')
+        {
+            Some(comment) => UnclosedInterpolation::Comment(last_end + comment),
+            None => UnclosedInterpolation::LineEnd {
+                open_brace: open_braces.last().copied(),
+                last_string,
+            },
+        };
+    let mut lexer = Token::lexer(&text[start..]);
+    while let Some(token) = lexer.next() {
+        let span = start + lexer.span().start..start + lexer.span().end;
+        let mut is_string = false;
+        match token {
+            Ok(Token::OpenBrace) => open_braces.push(span.start),
+            Ok(Token::CloseBrace) => {
+                if open_braces.pop().is_none() {
+                    return Ok(span.end);
+                }
+            }
+            Ok(Token::Newline) => {
+                return Err(at_line_end(span.start, last_end, &open_braces, last_string));
+            }
+            Ok(Token::MultilineStringLiteral(_)) if lexer.slice().contains('\n') => {
+                return Err(UnclosedInterpolation::MultilineString(span.start));
+            }
+            Ok(
+                Token::SingleQuoteStringLiteral(_)
+                | Token::DoubleQuoteStringLiteral(_)
+                | Token::RawStringLiteral(_)
+                | Token::MultilineStringLiteral(_)
+                | Token::SingleQuoteFormatStringLiteral(_)
+                | Token::DoubleQuoteFormatStringLiteral(_)
+                | Token::BytesLiteral(_),
+            ) => is_string = true,
+            Ok(_) => {}
+            Err(()) => match lexer.slice().as_bytes() {
+                // A Bytes literal that closes on its line is left to the parser,
+                // which reports what is wrong inside it.
+                [b'x', quote @ (b'\'' | b'"')] => {
+                    let line = lexer.remainder().split('\n').next().unwrap_or_default();
+                    match line.find(char::from(*quote)) {
+                        Some(close) => {
+                            lexer.bump(close + 1);
+                            is_string = true;
                         }
-                        _ => i += 1,
+                        None => return Err(UnclosedInterpolation::String(span)),
                     }
                 }
-                continue;
-            }
-            _ => {}
+                unlexable => {
+                    if let Some(opener) = STRING_OPENERS
+                        .iter()
+                        .find(|opener| unlexable.starts_with(opener.as_bytes()))
+                    {
+                        let opener = span.start..span.start + opener.len();
+                        return Err(UnclosedInterpolation::String(opener));
+                    }
+                }
+            },
         }
-        i += 1;
+        last_end = start + lexer.span().end;
+        last_string = is_string.then_some(span.start..last_end);
     }
-    Ok(i)
+    Err(at_line_end(text.len(), last_end, &open_braces, last_string))
 }
+
+/// The openers of every String but a Bytes literal, longest first. Source the lexer
+/// cannot read that starts with one is a String that does not close on its line.
+const STRING_OPENERS: [&str; 8] = ["'''", r#"""""#, "R'(", r#"R"("#, "$'", r#"$""#, "'", r#"""#];
 
 impl<'src> std::fmt::Display for Token<'src> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {

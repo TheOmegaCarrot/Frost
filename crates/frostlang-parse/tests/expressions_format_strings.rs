@@ -528,3 +528,102 @@ fn format_escapes_on_both_sides_of_an_interpolation_decode() {
         assert_literal_seg(&segs[2], "\\$\nA");
     }
 }
+
+// -- Strings inside an interpolation --
+// An interpolation's end is found by lexing it as Frost, so a brace or quote inside
+// any String in it neither ends it nor keeps it open.
+
+/// The expression of the one interpolation that is all of `expr`, a format String.
+fn only_interpolation(expr: &Spanned<Expr>) -> &Spanned<Expr> {
+    match segments(expr) {
+        [FormatSegment::Interpolation(inner)] => inner,
+        other => panic!("expected a lone interpolation, got {other:?}"),
+    }
+}
+
+#[test]
+fn a_brace_or_quote_in_a_string_in_an_interpolation_is_text() {
+    let cases = [
+        (r#"$'${"}"}'"#, "}"),
+        (r#"$'${"{"}'"#, "{"),
+        (r#"$"${'}'}""#, "}"),
+        (r#"$"${'{'}""#, "{"),
+        (r#"$'${"'"}'"#, "'"),
+        (r#"$'${"\"}"}'"#, "\"}"),
+        (r#"$'${R'(say '}')'}'"#, "say '}'"),
+        (r#"$'${R"(say "}")"}'"#, r#"say "}""#),
+        (r#"$"${R"({)"}""#, "{"),
+        (r#"$"${R'(")'}""#, "\""),
+    ];
+    for (source, expected) in cases {
+        let expr = parse_expr(source);
+        let inner = only_interpolation(&expr);
+        assert!(
+            matches!(&inner.node, Expr::Literal(Literal::String(text)) if text == expected),
+            "{source:?} should interpolate the String {expected:?}, got {:?}",
+            inner.node
+        );
+    }
+}
+
+#[test]
+fn a_bytes_literal_in_an_interpolation_is_read_whole() {
+    let expr = parse_expr("$'${x'7d7b'}'");
+    let inner = only_interpolation(&expr);
+    assert!(
+        matches!(&inner.node, Expr::Literal(Literal::Bytes(bytes)) if bytes == b"}{"),
+        "got {:?}",
+        inner.node
+    );
+}
+
+#[test]
+fn a_format_string_nests_in_an_interpolation() {
+    // Each nested String holds braces and either quote.
+    let cases = [
+        (r#"$'${$"${"}"}"}'"#, "}"),
+        (r#"$'${$'${'}'}'}'"#, "}"),
+        (r#"$"${$'${"{"}'}""#, "{"),
+        (r#"$'${$"${R'(")'}"}'"#, "\""),
+    ];
+    for (source, expected) in cases {
+        let expr = parse_expr(source);
+        let nested = only_interpolation(&expr);
+        let innermost = only_interpolation(nested);
+        assert!(
+            matches!(&innermost.node, Expr::Literal(Literal::String(text)) if text == expected),
+            "{source:?} should interpolate the String {expected:?}, got {:?}",
+            innermost.node
+        );
+    }
+}
+
+#[test]
+fn format_strings_nest_deeply() {
+    let mut expr = parse_expr(r#"$'${$"${$'${$"${x}"}'}"}'"#);
+    for depth in 0..3 {
+        expr = only_interpolation(&expr).clone();
+        assert!(
+            matches!(expr.node, Expr::FormatString(_)),
+            "depth {depth}: {:?}",
+            expr.node
+        );
+    }
+    assert_interp_name(&segments(&expr)[0], "x");
+}
+
+#[test]
+fn a_closing_brace_after_an_interpolation_is_text() {
+    let expr = parse_expr("$'${x}}'");
+    let segs = segments(&expr);
+    assert_eq!(segs.len(), 2);
+    assert_interp_name(&segs[0], "x");
+    assert_literal_seg(&segs[1], "}");
+}
+
+#[test]
+fn a_map_in_an_interpolation_closes_before_it() {
+    let expr = parse_expr("$'${ {a: {b: 1}} }'");
+    let inner = only_interpolation(&expr);
+    assert!(matches!(inner.node, Expr::Map(_)), "got {:?}", inner.node);
+}
