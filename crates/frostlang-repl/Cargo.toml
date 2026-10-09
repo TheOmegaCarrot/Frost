@@ -6,7 +6,7 @@ edition.workspace = true
 [features]
 default = ["line-editor"]
 # A terminal input with line editing, history, and highlighting.
-line-editor = ["dep:reedline", "dep:nu-ansi-term", "dep:dirs"]
+line-editor = ["dep:reedline", "dep:nu-ansi-term", "dep:dirs", "dep:fastrand"]
 # Draw compile errors as source snippets with their labels rather than
 # narrating them as plain text.
 graphical-diagnostics = ["frostlang/graphical-diagnostics"]
@@ -14,6 +14,8 @@ graphical-diagnostics = ["frostlang/graphical-diagnostics"]
 [dependencies]
 # Where the platform keeps history.
 dirs = { version = "7", optional = true }
+# Unpredictable names for the external editor's directory.
+fastrand = { version = "2.5", optional = true }
 frostlang.workspace = true
 frostlang-parse.workspace = true
 # The version reedline uses, for the styles its highlighter takes.

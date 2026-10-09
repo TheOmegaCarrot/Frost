@@ -490,6 +490,7 @@ name = "frostlang-repl"
 version = "0.0.1"
 dependencies = [
  "dirs",
+ "fastrand",
  "frostlang",
  "frostlang-parse",
  "frostlang-repl",

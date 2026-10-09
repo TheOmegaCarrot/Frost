@@ -25,6 +25,8 @@
 //!   text. If you show the REPL to people, you probably want it.
 
 mod builtins;
+#[cfg(feature = "line-editor")]
+mod edit_dir;
 mod frontend;
 #[cfg(feature = "line-editor")]
 mod highlight;

@@ -4,7 +4,7 @@ use std::borrow::Cow;
 use std::env;
 use std::io::{self, Write};
 use std::path::PathBuf;
-use std::process::{self, Command};
+use std::process::Command;
 use std::sync::LazyLock;
 
 use frostlang::Value;
@@ -14,6 +14,7 @@ use reedline::{
     Reedline, SearchDirection, SearchQuery, Signal, StyledText, ValidationResult, Validator,
 };
 
+use crate::edit_dir::EditDir;
 use crate::highlight::{self, Class};
 use crate::{
     Frontend, Invocation, MetacommandError, MetacommandSpec, MetacommandTable, ReplError,
@@ -28,7 +29,10 @@ use crate::{
 ///
 /// Ctrl-C discards the segment being typed; Ctrl-D on an empty line ends input.
 /// Ctrl-O opens the segment being typed in the editor `$VISUAL` or `$EDITOR`
-/// names, if either is set.
+/// names, if either is set. The editor edits a file in a new directory only the
+/// user can enter, in the system's temporary directory, which is removed when
+/// the frontend is dropped; if that directory cannot be made, Ctrl-O does
+/// nothing.
 ///
 /// Each value other than Null is written as [`render_value`] renders it, to
 /// standard output; a failure is written to standard error.
@@ -39,6 +43,9 @@ pub struct TerminalFrontend {
     // Built at the first read, so that the default history file is opened
     // only if no other history was chosen.
     editor: Option<Reedline>,
+    // Made with the editor, if an external editor is named; holds the file it
+    // edits.
+    edit_dir: Option<EditDir>,
 }
 
 impl Default for TerminalFrontend {
@@ -64,6 +71,7 @@ impl TerminalFrontend {
             color: true,
             history: None,
             editor: None,
+            edit_dir: None,
         }
     }
 
@@ -89,19 +97,23 @@ impl TerminalFrontend {
     }
 
     fn editor(&mut self) -> &mut Reedline {
-        self.editor.get_or_insert_with(|| {
+        if self.editor.is_none() {
             let history = self.history.take().unwrap_or_else(default_history);
-            let editor = Reedline::create()
+            let mut editor = Reedline::create()
                 .with_validator(Box::new(FrostValidator))
                 .with_highlighter(Box::new(FrostHighlighter))
                 .with_history(Box::new(history))
                 .with_ansi_colors(self.color)
                 .use_bracketed_paste(true);
-            match external_editor() {
-                Some(command) => editor.with_buffer_editor(command, edit_file()),
-                None => editor,
+            if let Some(command) = external_editor()
+                && let Ok(edit_dir) = EditDir::new()
+            {
+                editor = editor.with_buffer_editor(command, edit_dir.file());
+                self.edit_dir = Some(edit_dir);
             }
-        })
+            self.editor = Some(editor);
+        }
+        self.editor.as_mut().expect("the editor was just built")
     }
 }
 
@@ -118,12 +130,6 @@ fn external_editor() -> Option<Command> {
     let mut command = Command::new(words.next()?);
     command.args(words);
     Some(command)
-}
-
-/// The file the external editor edits a segment in. Its extension lets the
-/// editor recognize Frost source.
-fn edit_file() -> PathBuf {
-    env::temp_dir().join(format!("frost-edit-{}.frst", process::id()))
 }
 
 /// History in the platform's default file, or for the session only if there
