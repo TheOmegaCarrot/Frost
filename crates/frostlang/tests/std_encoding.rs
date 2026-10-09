@@ -1,5 +1,5 @@
-//! `std.encoding`, from Frost source: integers in any base, Bytes as Ints, and
-//! the Base64, hex, and URL percent-encodings.
+//! `std.encoding`, from Frost source: integers in any base, numbers to fixed
+//! decimal places, Bytes as Ints, and the Base64, hex, and URL percent-encodings.
 //!
 //! Each case runs with only `std.encoding` installed, bound as `enc`.
 //! Content to encode or decode may be a String (its UTF-8) or Bytes; a decoder
@@ -7,7 +7,7 @@
 
 mod script;
 
-use frostlang::{Value, stdlib};
+use frostlang::{FrostFloat, Value, stdlib};
 use script::Script;
 use script::assertions::{Library, library_assertions};
 
@@ -31,7 +31,7 @@ fn the_module_holds_its_functions() {
     assert_values(&[
         (
             "sorted(keys(enc))",
-            "['b64', 'fmt_int', 'from_ints', 'hex', 'parse_int', 'to_ints', 'url']",
+            "['b64', 'fmt_fixed', 'fmt_int', 'from_ints', 'hex', 'parse_int', 'to_ints', 'url']",
         ),
         (
             "sorted(keys(enc.b64))",
@@ -159,6 +159,171 @@ fn fmt_int_and_parse_int_check_their_arguments() {
     ]);
     assert_arity("fmt_int", 2, &[0, 1, 3]);
     assert_arity("parse_int", 2, &[0, 1, 3]);
+}
+
+// --- fmt_fixed ---
+
+#[test]
+fn fmt_fixed_writes_a_float_to_fixed_places() {
+    assert_values(&[
+        ("enc.fmt_fixed(1.5, 2)", "'1.50'"),
+        ("enc.fmt_fixed(3.14159, 2)", "'3.14'"),
+        ("enc.fmt_fixed(3.14159, 4)", "'3.1416'"),
+        ("enc.fmt_fixed(-3.14159, 3)", "'-3.142'"),
+        ("enc.fmt_fixed(0.0, 2)", "'0.00'"),
+        ("enc.fmt_fixed(9.99, 1)", "'10.0'"),
+        // No places, no point.
+        ("enc.fmt_fixed(2.0, 0)", "'2'"),
+        ("enc.fmt_fixed(2.7, 0)", "'3'"),
+        ("enc.fmt_fixed(-2.7, 0)", "'-3'"),
+    ]);
+}
+
+#[test]
+fn fmt_fixed_rounds_a_float_from_its_exact_value() {
+    assert_values(&[
+        // Stored just below the written tie, so they round down.
+        ("enc.fmt_fixed(2.675, 2)", "'2.67'"),
+        ("enc.fmt_fixed(1.005, 2)", "'1.00'"),
+        // Exact ties go to the even digit.
+        ("enc.fmt_fixed(0.125, 2)", "'0.12'"),
+        ("enc.fmt_fixed(0.375, 2)", "'0.38'"),
+        ("enc.fmt_fixed(-1.25, 1)", "'-1.2'"),
+        ("enc.fmt_fixed(0.5, 0)", "'0'"),
+        ("enc.fmt_fixed(1.5, 0)", "'2'"),
+        ("enc.fmt_fixed(2.5, 0)", "'2'"),
+        ("enc.fmt_fixed(-2.5, 0)", "'-2'"),
+    ]);
+}
+
+#[test]
+fn fmt_fixed_writes_zero_without_a_sign() {
+    assert_values(&[
+        ("enc.fmt_fixed(-0.0, 0)", "'0'"),
+        ("enc.fmt_fixed(-0.0, 3)", "'0.000'"),
+        ("enc.fmt_fixed(-0.001, 2)", "'0.00'"),
+        ("enc.fmt_fixed(-0.4, 0)", "'0'"),
+        ("enc.fmt_fixed(-5e-324, 3)", "'0.000'"),
+        // A negative Float that does not round to zero keeps its sign.
+        ("enc.fmt_fixed(-0.006, 2)", "'-0.01'"),
+        ("enc.fmt_fixed(-0.6, 0)", "'-1'"),
+    ]);
+}
+
+#[test]
+fn fmt_fixed_writes_an_int_exactly() {
+    assert_values(&[
+        ("enc.fmt_fixed(5, 2)", "'5.00'"),
+        ("enc.fmt_fixed(5, 0)", "'5'"),
+        ("enc.fmt_fixed(-5, 1)", "'-5.0'"),
+        ("enc.fmt_fixed(0, 3)", "'0.000'"),
+        // Past 2^53, where a Float would round to 9007199254740992.
+        ("enc.fmt_fixed(9007199254740993, 1)", "'9007199254740993.0'"),
+        (
+            "enc.fmt_fixed(9223372036854775807, 0)",
+            "'9223372036854775807'",
+        ),
+        (
+            "enc.fmt_fixed(-9223372036854775807 - 1, 2)",
+            "'-9223372036854775808.00'",
+        ),
+    ]);
+}
+
+#[test]
+fn fmt_fixed_never_uses_scientific_notation() {
+    assert_values(&[
+        ("enc.fmt_fixed(1e21, 1)", "'1000000000000000000000.0'"),
+        ("enc.fmt_fixed(1e-7, 8)", "'0.00000010'"),
+        // The largest Float has 309 digits before the point.
+        ("len(enc.fmt_fixed(1.7976931348623157e308, 0))", "309"),
+        // The smallest positive Float is exact at 1074 places, ending in 5.
+        ("enc.fmt_fixed(5e-324, 3)", "'0.000'"),
+        ("len(enc.fmt_fixed(5e-324, 1074))", "1076"),
+        ("ends_with(enc.fmt_fixed(5e-324, 1074), '5')", "true"),
+        ("ends_with(enc.fmt_fixed(5e-324, 1075), '50')", "true"),
+    ]);
+}
+
+#[test]
+fn fmt_fixed_takes_places_from_0_to_65535() {
+    assert_values(&[
+        ("len(enc.fmt_fixed(1, 65535))", "65537"),
+        ("len(enc.fmt_fixed(0.5, 65535))", "65537"),
+    ]);
+    for places in ["-1", "65536", "-9223372036854775807 - 1"] {
+        let got = script(places).run().to_frost_string();
+        for number in ["1", "1.0"] {
+            assert_raises(&[(
+                &format!("enc.fmt_fixed({number}, {places})"),
+                &format!("Function encoding.fmt_fixed requires places from 0 to 65535, got {got}"),
+            )]);
+        }
+    }
+}
+
+#[test]
+fn fmt_fixed_formats_runtime_values() {
+    let fixed = script("[enc.fmt_fixed(f, p), enc.fmt_fixed(i, p)]")
+        .capture("f", Value::Float(FrostFloat::new(2.345).expect("finite")))
+        .capture("i", Value::Int(7))
+        .capture("p", Value::Int(1))
+        .run();
+    assert_eq!(fixed, Value::array(["2.3", "7.0"]));
+}
+
+#[test]
+fn fmt_fixed_checks_its_arguments() {
+    for (call, position, requires, got) in [
+        (
+            "enc.fmt_fixed('1.5', 2)",
+            "argument 1 (number)",
+            "Numeric",
+            "String",
+        ),
+        (
+            "enc.fmt_fixed(null, 2)",
+            "argument 1 (number)",
+            "Numeric",
+            "Null",
+        ),
+        (
+            "enc.fmt_fixed(true, 2)",
+            "argument 1 (number)",
+            "Numeric",
+            "Bool",
+        ),
+        (
+            "enc.fmt_fixed([1.5], 2)",
+            "argument 1 (number)",
+            "Numeric",
+            "Array",
+        ),
+        (
+            "enc.fmt_fixed(1.5, 2.0)",
+            "argument 2 (places)",
+            "Int",
+            "Float",
+        ),
+        (
+            "enc.fmt_fixed(1.5, '2')",
+            "argument 2 (places)",
+            "Int",
+            "String",
+        ),
+        (
+            "enc.fmt_fixed(1.5, null)",
+            "argument 2 (places)",
+            "Int",
+            "Null",
+        ),
+    ] {
+        assert_raises(&[(
+            call,
+            &format!("Function encoding.fmt_fixed requires {requires} as {position}, got {got}"),
+        )]);
+    }
+    assert_arity("fmt_fixed", 2, &[0, 1, 3]);
 }
 
 // --- to_ints, from_ints ---

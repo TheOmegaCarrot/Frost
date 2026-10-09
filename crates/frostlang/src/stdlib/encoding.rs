@@ -1,5 +1,5 @@
-//! `std.encoding`: integers in any base, Bytes as Ints, and the Base64, hex,
-//! and URL percent-encodings.
+//! `std.encoding`: integers in any base, numbers to fixed decimal places, Bytes
+//! as Ints, and the Base64, hex, and URL percent-encodings.
 //!
 //! Every function taking content to encode or decode accepts String or Bytes;
 //! a String contributes its UTF-8. A decoder or parser given the right type
@@ -8,6 +8,7 @@
 use crate::{FrostError, FrostType, Param, Params, StdlibModule, Value};
 
 /// The `std.encoding` module: formatting and parsing integers in bases 2 to 36,
+/// formatting numbers to a fixed number of decimal places,
 /// converting between Bytes and Arrays of Ints, and Base64 (standard and
 /// URL-safe), hex, and URL percent-encoding.
 ///
@@ -18,6 +19,7 @@ pub fn encoding() -> StdlibModule {
         Value::map([
             ("fmt_int", fmt_int()),
             ("parse_int", parse_int()),
+            ("fmt_fixed", fmt_fixed()),
             ("to_ints", to_ints()),
             ("from_ints", from_ints()),
             (
@@ -107,6 +109,45 @@ fn parse_int() -> Value {
         let base = base_arg("encoding.parse_int", &args[1])?;
         let text = args[0].as_str().expect("type-checked as a String");
         Ok(i64::from_str_radix(text, base).map_or(Value::Null, Value::Int))
+    })
+}
+
+// --- Fixed decimal places ---
+
+/// `fmt_fixed(number, places)`: `number` in decimal with exactly `places` digits
+/// after the point, and no point when `places` is 0. A Float rounds from its
+/// exact binary value, with exact ties going to the even digit, so `2.675`
+/// (stored just below) gives `2.67` and `0.125` gives `0.12`. An Int is written
+/// exactly. A result of zero never has a sign.
+fn fmt_fixed() -> Value {
+    const PARAMS: Params = Params::new(&[
+        Param::of(FrostType::NUMERIC).named("number"),
+        Param::of(FrostType::INT).named("places"),
+    ]);
+    Value::checked_native("encoding.fmt_fixed", PARAMS, |_, args| {
+        let places = args[1].as_int().expect("type-checked as an Int");
+        // Rust's formatting accepts at most `u16::MAX` places.
+        let Ok(places) = u16::try_from(places) else {
+            return Err(FrostError::from_string(format!(
+                "Function encoding.fmt_fixed requires places from 0 to {}, got {places}",
+                u16::MAX
+            )));
+        };
+        let places = usize::from(places);
+        let fixed = match &args[0] {
+            Value::Int(n) if places == 0 => n.to_string(),
+            Value::Int(n) => format!("{n}.{}", "0".repeat(places)),
+            Value::Float(f) => {
+                let mut fixed = format!("{:.*}", places, f.get());
+                // A negative Float that rounds to zero keeps its sign; drop it.
+                if fixed.starts_with('-') && fixed[1..].bytes().all(|b| matches!(b, b'0' | b'.')) {
+                    fixed.remove(0);
+                }
+                fixed
+            }
+            other => unreachable!("type-checked as Numeric, got {}", other.type_name()),
+        };
+        Ok(fixed.into())
     })
 }
 
