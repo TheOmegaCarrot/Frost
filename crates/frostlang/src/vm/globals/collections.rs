@@ -1,6 +1,6 @@
 //! Slicing, grouping, sorting, searching, and transforming arrays and maps.
 
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 
 use crate::bytecode::Bytecode;
 use crate::{
@@ -405,6 +405,24 @@ pub(super) fn find_global() -> Value {
         for element in array.into_vec() {
             if ctx.invoke_ref(&args[1], [&element])?.is_truthy() {
                 return Ok(element);
+            }
+        }
+        Ok(Value::Null)
+    })
+}
+
+pub(super) fn find_index_global() -> Value {
+    const PARAMS: Params = Params::new(&[
+        Param::of(FrostType::ARRAY),
+        Param::of(FrostType::FUNCTION).named("predicate"),
+    ]);
+    Value::checked_native("find_index", PARAMS, |mut ctx, args| {
+        let array = take_array(&mut args[0]);
+        for (index, element) in array.iter().enumerate() {
+            if ctx.invoke_ref(&args[1], [element])?.is_truthy() {
+                return Ok(Value::Int(
+                    i64::try_from(index).expect("an index fits in an Int"),
+                ));
             }
         }
         Ok(Value::Null)
@@ -1035,7 +1053,145 @@ pub(super) fn sort_by_global() -> Value {
     })
 }
 
+/// Which end of an ordering [`extreme`] finds.
+#[derive(Clone, Copy)]
+enum End {
+    Least,
+    Greatest,
+}
+
+/// The first of `items` at `end` of the ordering `before` gives, which answers
+/// whether its first argument comes before its second. `None` for no items.
+fn extreme<T>(
+    items: impl IntoIterator<Item = T>,
+    end: End,
+    before: &mut impl FnMut(&T, &T) -> Result<bool, FrostError>,
+) -> Result<Option<T>, FrostError> {
+    let mut found: Option<T> = None;
+    for item in items {
+        // Replacing only on a strict win keeps the first of any tie.
+        let wins = match (&found, end) {
+            (None, _) => true,
+            (Some(best), End::Least) => before(&item, best)?,
+            (Some(best), End::Greatest) => before(best, &item)?,
+        };
+        if wins {
+            found = Some(item);
+        }
+    }
+    Ok(found)
+}
+
+/// `minimum` or `maximum`: the element at `end` under `<`, or under an optional
+/// comparator as `sorted` takes.
+fn extreme_global(name: &'static str, end: End) -> Value {
+    const PARAMS: Params = Params::new(&[
+        Param::of(FrostType::ARRAY),
+        Param::of(FrostType::FUNCTION)
+            .named("comparator")
+            .optional(),
+    ]);
+    Value::checked_native(name, PARAMS, move |mut ctx, args| {
+        let elements = take_array(&mut args[0]).into_vec();
+        let found = match args.get(1) {
+            Some(comparator) => extreme(elements, end, &mut |a, b| {
+                Ok(ctx.invoke_ref(comparator, [a, b])?.is_truthy())
+            })?,
+            None => extreme(elements, end, &mut less_than)?,
+        };
+        Ok(found.unwrap_or(Value::Null))
+    })
+}
+
+pub(super) fn minimum_global() -> Value {
+    extreme_global("minimum", End::Least)
+}
+
+pub(super) fn maximum_global() -> Value {
+    extreme_global("maximum", End::Greatest)
+}
+
+/// `min_by` or `max_by`: the element whose projection is at `end` under `<`.
+fn extreme_by_global(name: &'static str, end: End) -> Value {
+    const PARAMS: Params = Params::new(&[
+        Param::of(FrostType::ARRAY),
+        Param::of(FrostType::FUNCTION).named("projection"),
+    ]);
+    Value::checked_native(name, PARAMS, move |mut ctx, args| {
+        let elements = take_array(&mut args[0]).into_vec();
+        // Each element's key, from one projection call apiece.
+        let keyed = elements
+            .into_iter()
+            .map(|element| Ok((ctx.invoke_ref(&args[1], [&element])?, element)))
+            .collect::<Result<Vec<_>, FrostError>>()?;
+        let found = extreme(keyed, end, &mut |(a, _), (b, _)| less_than(a, b))?;
+        Ok(found.map_or(Value::Null, |(_, element)| element))
+    })
+}
+
+pub(super) fn min_by_global() -> Value {
+    extreme_by_global("min_by", End::Least)
+}
+
+pub(super) fn max_by_global() -> Value {
+    extreme_by_global("max_by", End::Greatest)
+}
+
 // --- Grouping ---
+
+/// The values seen so far, for keeping only the first of each under `==`.
+///
+/// A value that can be a Map key is looked up in an ordered set, whose ordering
+/// agrees with `==`. Any other value, which may be an Opaque with its own `==`,
+/// is compared with each earlier one of its kind.
+#[derive(Default)]
+struct Seen {
+    keys: BTreeSet<MapKey>,
+    others: Vec<Value>,
+}
+
+impl Seen {
+    /// Whether `value` is new, recording it if so.
+    fn insert(&mut self, value: Value) -> bool {
+        if value.fits(MAP_KEY) {
+            self.keys
+                .insert(MapKey::try_from(value).expect("the value fits a Map key"))
+        } else if self.others.contains(&value) {
+            false
+        } else {
+            self.others.push(value);
+            true
+        }
+    }
+}
+
+pub(super) fn unique_global() -> Value {
+    Value::checked_native("unique", ONE_ARRAY, |_, args| {
+        let mut seen = Seen::default();
+        Ok(take_array(&mut args[0])
+            .into_vec()
+            .into_iter()
+            .filter(|element| seen.insert(element.clone()))
+            .collect())
+    })
+}
+
+pub(super) fn unique_by_global() -> Value {
+    const PARAMS: Params = Params::new(&[
+        Param::of(FrostType::ARRAY),
+        Param::of(FrostType::FUNCTION).named("projection"),
+    ]);
+    Value::checked_native("unique_by", PARAMS, |mut ctx, args| {
+        let mut seen = Seen::default();
+        let mut kept = Vec::new();
+        for element in take_array(&mut args[0]).into_vec() {
+            if seen.insert(ctx.invoke_ref(&args[1], [&element])?) {
+                kept.push(element);
+            }
+        }
+        Ok(kept.into())
+    })
+}
 
 pub(super) fn group_by_global() -> Value {
     Value::checked_native("group_by", ARRAY_AND_FUNCTION, |mut ctx, args| {

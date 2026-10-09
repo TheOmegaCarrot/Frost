@@ -8,6 +8,9 @@
 
 mod script;
 
+use std::borrow::Cow;
+
+use frostlang::{FrostOpaque, Value};
 use script::assertions::{Library, library_assertions};
 use script::{Script, raises};
 
@@ -758,6 +761,53 @@ fn find_raises_what_its_predicate_raises() {
     assert_eq!(script.printed(), ["1"], "the first error ends the search");
 }
 
+// --- find_index ---
+
+#[test]
+fn find_index_returns_the_index_of_the_first_match() {
+    assert_values(&[
+        ("find_index([1, 2, 3, 4], fn x -> x > 2)", "2"),
+        ("find_index([5, 6], fn x -> x == 5)", "0"),
+        ("find_index([1, 2], fn x -> x > 5)", "null"),
+        ("find_index([], fn x -> true)", "null"),
+        ("find_index([[1], [2]], fn a -> a[0] == 2)", "1"),
+        // The predicate's answer is tested for truthiness: 0 is truthy.
+        (
+            "find_index([1, 2, 3], fn x -> if x == 2: 0 else: null)",
+            "1",
+        ),
+    ]);
+    // It stops at the first match.
+    let probe = "find_index([1, 2, 3], fn x -> { print(x); x == 2 })";
+    assert_values(&[(probe, "1")]);
+    assert_eq!(printed(probe), ["1", "2"]);
+}
+
+#[test]
+fn find_index_raises_what_its_predicate_raises() {
+    let script = script("find_index([1, 2], fn x -> { print(x); error('boom') })");
+    assert_eq!(script.raises(), "boom");
+    assert_eq!(script.printed(), ["1"], "the first error ends the search");
+}
+
+#[test]
+fn find_index_checks_its_arguments() {
+    assert_type_errors(
+        "find_index",
+        &[
+            ("find_index({}, id)", "Array", "argument 1", "Map"),
+            ("find_index('ab', id)", "Array", "argument 1", "String"),
+            (
+                "find_index([1], 1)",
+                "Function",
+                "argument 2 (predicate)",
+                "Int",
+            ),
+        ],
+    );
+    assert_arity("find_index", "2", &[0, 1, 3]);
+}
+
 // --- slice, take, drop, tail, drop_tail, stride ---
 //
 // A String's elements are its code points, and Bytes' its bytes.
@@ -1463,6 +1513,456 @@ fn sorting_leaves_the_original_unchanged() {
         [sorted(a), sort_by(a, id), a]
     ";
     assert_values(&[(source, "[[1, 2, 3], [1, 2, 3], [3, 1, 2]]")]);
+}
+
+// --- minimum, maximum ---
+
+#[test]
+fn minimum_and_maximum_find_the_extremes_under_less_than() {
+    assert_values(&[
+        ("minimum([3, 1, 2])", "1"),
+        ("maximum([3, 1, 2])", "3"),
+        ("minimum([5])", "5"),
+        ("maximum([5])", "5"),
+        ("minimum([2, 1.5, 3, -0.5])", "-0.5"),
+        ("maximum([2, 1.5, 3, -0.5])", "3"),
+        ("minimum(['b', 'c', 'a'])", "'a'"),
+        ("maximum(['b', 'c', 'a'])", "'c'"),
+        ("minimum([x'02', x'01ff', x'01'])", "x'01'"),
+        ("maximum([[2], [1, 5], [1]])", "[2]"),
+    ]);
+}
+
+#[test]
+fn minimum_and_maximum_of_nothing_are_null() {
+    assert_values(&[("minimum([])", "null"), ("maximum([])", "null")]);
+}
+
+#[test]
+fn minimum_and_maximum_keep_the_first_of_a_tie() {
+    assert_values(&[
+        // An Int and a Float of equal value are neither less than the other.
+        ("minimum([1.0, 1, 2])", "1.0"),
+        ("minimum([1, 1.0, 2])", "1"),
+        ("maximum([1.0, 1, 0])", "1.0"),
+        ("maximum([1, 1.0, 0])", "1"),
+        (
+            "minimum(['bb', 'a', 'c'], fn a, b -> len(a) < len(b))",
+            "'a'",
+        ),
+        (
+            "maximum(['a', 'bb', 'cc'], fn a, b -> len(a) < len(b))",
+            "'bb'",
+        ),
+    ]);
+}
+
+#[test]
+fn minimum_and_maximum_compare_ints_and_floats_exactly() {
+    // 2^53 + 1 is not a Float; rounded to one, it would tie with 2^53.
+    assert_values(&[
+        (
+            "maximum([9007199254740992.0, 9007199254740993])",
+            "9007199254740993",
+        ),
+        (
+            "minimum([9007199254740993, 9007199254740992.0])",
+            "9007199254740992.0",
+        ),
+    ]);
+}
+
+#[test]
+fn minimum_and_maximum_search_a_long_array() {
+    assert_values(&[
+        // A permutation of 0 to 199, as 73 and 200 are coprime.
+        ("minimum(map range(200) with fn i -> i * 73 % 200)", "0"),
+        ("maximum(map range(200) with fn i -> i * 73 % 200)", "199"),
+        ("minimum(reverse(range(1000)))", "0"),
+        ("maximum(range(1000))", "999"),
+    ]);
+}
+
+#[test]
+fn minimum_and_maximum_order_by_a_comparator() {
+    assert_values(&[
+        // A comparator answers whether its first argument comes before its
+        // second, as `sorted`'s does: here, greatest first.
+        ("minimum([1, 3, 2], fn a, b -> a > b)", "3"),
+        ("maximum([1, 3, 2], fn a, b -> a > b)", "1"),
+        (
+            "minimum(['bb', 'a', 'ccc'], fn a, b -> len(a) < len(b))",
+            "'a'",
+        ),
+        (
+            "maximum(['bb', 'a', 'ccc'], fn a, b -> len(a) < len(b))",
+            "'ccc'",
+        ),
+        // The comparator's answer is tested for truthiness.
+        ("minimum([3, 1, 2], fn a, b -> if a < b: 0 else: null)", "1"),
+        ("minimum([], fn a, b -> error('never called'))", "null"),
+        ("maximum([7], fn a, b -> error('never called'))", "7"),
+        // A comparator may order what `<` cannot.
+        ("minimum([{n: 2}, {n: 1}], fn a, b -> a.n < b.n)", "{n: 1}"),
+    ]);
+}
+
+#[test]
+fn minimum_and_maximum_agree_with_sorted_under_a_comparator() {
+    let source = r"
+        def words = ['pear', 'fig', 'banana', 'kiwi', 'apple']
+        defn shorter(a, b) -> len(a) < len(b)
+        [minimum(words, shorter) == sorted(words, shorter)[0], maximum(words, shorter)]
+    ";
+    // The longest word is unique, so ties do not enter into it.
+    assert_values(&[(source, "[true, 'banana']")]);
+}
+
+#[test]
+fn minimum_and_maximum_survive_an_inconsistent_comparator() {
+    assert_values(&[
+        // Never "before": the first element stands.
+        ("minimum([3, 1, 2], fn a, b -> false)", "3"),
+        ("maximum([3, 1, 2], fn a, b -> false)", "3"),
+        // Any answer still yields one of the elements.
+        (
+            "includes([3, 1, 2], minimum([3, 1, 2], fn a, b -> true))",
+            "true",
+        ),
+        (
+            "includes([3, 1, 2], maximum([3, 1, 2], fn a, b -> true))",
+            "true",
+        ),
+    ]);
+}
+
+#[test]
+fn minimum_and_maximum_raise_when_elements_cannot_be_ordered() {
+    for function in ["minimum", "maximum"] {
+        assert_raises(&[
+            (
+                &format!("{function}([null, null])"),
+                "Type Null is not orderable",
+            ),
+            (
+                &format!("{function}([{{}}, {{a: 1}}])"),
+                "Type Map is not orderable",
+            ),
+        ]);
+        // A single element is never compared, so it need not be orderable.
+        assert_values(&[(&format!("{function}([{{a: 1}}])"), "{a: 1}")]);
+    }
+    // Mixed types raise as `<` does.
+    assert_raises_as(&[
+        ("minimum([1, 'a'])", "'a' < 1"),
+        ("maximum([1, 'a'])", "1 < 'a'"),
+    ]);
+}
+
+#[test]
+fn minimum_and_maximum_raise_what_their_comparator_raises() {
+    for function in ["minimum", "maximum"] {
+        assert_raises(&[(
+            &format!("{function}([1, 2], fn a, b -> error('boom'))"),
+            "boom",
+        )]);
+        // The first error ends the search: the comparator is not called again.
+        let script = script(&format!(
+            "{function}([4, 3, 2, 1], fn a, b -> {{ print('called'); error('boom') }})"
+        ));
+        assert_eq!(script.raises(), "boom");
+        assert_eq!(script.printed(), ["called"]);
+    }
+}
+
+#[test]
+fn minimum_and_maximum_check_their_arguments() {
+    for function in ["minimum", "maximum"] {
+        assert_type_errors(
+            function,
+            &[
+                (&format!("{function}({{}})"), "Array", "argument 1", "Map"),
+                (
+                    &format!("{function}('cba')"),
+                    "Array",
+                    "argument 1",
+                    "String",
+                ),
+                (&format!("{function}(3, 5)"), "Array", "argument 1", "Int"),
+                (
+                    &format!("{function}([1], 1)"),
+                    "Function",
+                    "argument 2 (comparator)",
+                    "Int",
+                ),
+            ],
+        );
+        assert_arity(function, "between 1 and 2", &[0, 3]);
+    }
+}
+
+// --- min_by, max_by ---
+
+#[test]
+fn min_by_and_max_by_return_the_element_with_the_extreme_key() {
+    assert_values(&[
+        ("min_by(['ccc', 'a', 'bb'], len)", "'a'"),
+        ("max_by(['ccc', 'a', 'bb'], len)", "'ccc'"),
+        ("min_by([{n: 2}, {n: 1}], index('n'))", "{n: 1}"),
+        ("max_by([{n: 2}, {n: 1}], index('n'))", "{n: 2}"),
+        ("min_by([1, -3, 2], fn x -> -x)", "2"),
+        ("max_by([1, -3, 2], fn x -> -x)", "-3"),
+        ("min_by([5], fn x -> null)", "5"),
+        ("min_by([], id)", "null"),
+        ("max_by([], id)", "null"),
+    ]);
+}
+
+#[test]
+fn min_by_and_max_by_keep_the_first_of_a_tie() {
+    assert_values(&[
+        ("min_by(['bb', 'a', 'c'], len)", "'a'"),
+        ("max_by(['aa', 'b', 'cc'], len)", "'aa'"),
+        // Keys of equal value but different type tie too.
+        (
+            "min_by(['x', 'y'], fn s -> if s == 'x': 1 else: 1.0)",
+            "'x'",
+        ),
+        (
+            "max_by(['x', 'y'], fn s -> if s == 'x': 1.0 else: 1)",
+            "'x'",
+        ),
+    ]);
+}
+
+#[test]
+fn min_by_and_max_by_project_each_element_once() {
+    for function in ["min_by", "max_by"] {
+        let source = format!("{function}([3, 1, 2], fn x -> {{ print(x); x }})");
+        assert_eq!(printed(&source), ["3", "1", "2"], "{function}");
+    }
+}
+
+#[test]
+fn min_by_and_max_by_raise_when_keys_cannot_be_ordered() {
+    for function in ["min_by", "max_by"] {
+        assert_raises(&[(
+            &format!("{function}([1, 2], fn x -> null)"),
+            "Type Null is not orderable",
+        )]);
+    }
+    assert_raises_as(&[("min_by([1, 2], fn x -> if x == 1: 1 else: 'a')", "'a' < 1")]);
+}
+
+#[test]
+fn min_by_and_max_by_raise_what_their_projection_raises() {
+    for function in ["min_by", "max_by"] {
+        let script = script(&format!(
+            "{function}([1, 2], fn x -> {{ print(x); error('boom') }})"
+        ));
+        assert_eq!(script.raises(), "boom");
+        assert_eq!(
+            script.printed(),
+            ["1"],
+            "the first error ends the projecting"
+        );
+    }
+}
+
+#[test]
+fn min_by_and_max_by_check_their_arguments() {
+    for function in ["min_by", "max_by"] {
+        assert_type_errors(
+            function,
+            &[
+                (
+                    &format!("{function}({{}}, id)"),
+                    "Array",
+                    "argument 1",
+                    "Map",
+                ),
+                (
+                    &format!("{function}([1], 1)"),
+                    "Function",
+                    "argument 2 (projection)",
+                    "Int",
+                ),
+            ],
+        );
+        assert_arity(function, "2", &[0, 1, 3]);
+    }
+}
+
+#[test]
+fn extremes_leave_the_original_unchanged() {
+    let source = r"
+        def a = [3, 1, 2]
+        [minimum(a), maximum(a), min_by(a, id), max_by(a, id), a]
+    ";
+    assert_values(&[(source, "[1, 3, 1, 3, [3, 1, 2]]")]);
+}
+
+// --- unique, unique_by ---
+
+/// An Opaque whose `==` compares only its `key`, so two equal Tags can still
+/// be told apart by `id` in how they render.
+#[derive(Debug)]
+struct Tag {
+    key: u32,
+    id: u32,
+}
+
+impl FrostOpaque for Tag {
+    fn type_name(&self) -> Cow<'static, str> {
+        Cow::Borrowed("Tag")
+    }
+
+    fn try_to_string(&self) -> Option<String> {
+        Some(format!("{}#{}", self.key, self.id))
+    }
+
+    fn equals(&self, other: &dyn FrostOpaque) -> bool {
+        other
+            .downcast_ref::<Self>()
+            .is_some_and(|other| self.key == other.key)
+    }
+}
+
+#[test]
+fn unique_keeps_the_first_of_each_value_in_order() {
+    assert_values(&[
+        ("unique([1, 2, 1, 3, 2])", "[1, 2, 3]"),
+        ("unique([3, 3, 3])", "[3]"),
+        ("unique([])", "[]"),
+        ("unique(['b', 'a', 'b'])", "['b', 'a']"),
+        ("unique([true, false, true])", "[true, false]"),
+        ("unique([x'01', x'01', x'02'])", "[x'01', x'02']"),
+        ("unique(map range(1000) with fn i -> i % 7)", "range(7)"),
+    ]);
+}
+
+#[test]
+fn unique_follows_equality() {
+    assert_values(&[
+        // `1 == 1.0` is false, and a String never equals Bytes.
+        ("unique([1, 1.0, 1, 1.0])", "[1, 1.0]"),
+        ("unique(['a', x'61', 'a'])", "['a', x'61']"),
+        // `0.0 == -0.0` is true.
+        ("len(unique([0.0, -0.0]))", "1"),
+    ]);
+}
+
+#[test]
+fn unique_compares_values_that_cannot_be_map_keys() {
+    assert_values(&[
+        ("unique([null, null])", "[null]"),
+        ("unique([[1], [1], [2], [1]])", "[[1], [2]]"),
+        ("unique([{a: 1}, {a: 2}, {a: 1}])", "[{a: 1}, {a: 2}]"),
+        // Keys and other values mixed, in order.
+        ("unique([1, [1], null, 1, [1], null])", "[1, [1], null]"),
+        (
+            r"
+            def f = fn x -> x
+            len(unique([f, f, id, id]))
+            ",
+            "2",
+        ),
+    ]);
+}
+
+#[test]
+fn unique_uses_an_opaque_types_own_equality() {
+    let tag = |key, id| Value::opaque(Tag { key, id });
+    let rendered = Script::new("map unique([a, b, c, d]) with to_string")
+        .capture("a", tag(1, 1))
+        .capture("b", tag(2, 2))
+        .capture("c", tag(1, 3))
+        .capture("d", tag(2, 4))
+        .run();
+    assert_eq!(rendered, Value::array(["<Tag: 1#1>", "<Tag: 2#2>"]));
+}
+
+#[test]
+fn unique_checks_its_argument() {
+    assert_type_errors(
+        "unique",
+        &[
+            ("unique({})", "Array", "argument 1", "Map"),
+            ("unique('aab')", "Array", "argument 1", "String"),
+            ("unique(null)", "Array", "argument 1", "Null"),
+        ],
+    );
+    assert_arity("unique", "1", &[0, 2]);
+}
+
+#[test]
+fn unique_by_keeps_the_first_element_of_each_key() {
+    assert_values(&[
+        (
+            "unique_by(['a', 'bb', 'c', 'dd', 'eee'], len)",
+            "['a', 'bb', 'eee']",
+        ),
+        ("unique_by([], id)", "[]"),
+        ("unique_by([1, 2, 3], fn x -> null)", "[1]"),
+        (
+            "unique_by([{n: 1, s: 'x'}, {n: 2, s: 'y'}, {n: 1, s: 'z'}], index('n'))",
+            "[{n: 1, s: 'x'}, {n: 2, s: 'y'}]",
+        ),
+        // Keys that cannot be Map keys compare by equality too.
+        (
+            "unique_by([[1, 'x'], [1, 'y'], [2, 'z']], fn p -> [p[0]])",
+            "[[1, 'x'], [2, 'z']]",
+        ),
+        // Keys of equal value but different type are distinct.
+        (
+            "unique_by([1, 2], fn x -> if x == 1: 1 else: 1.0)",
+            "[1, 2]",
+        ),
+    ]);
+}
+
+#[test]
+fn unique_by_projects_each_element_once() {
+    let source = "unique_by([3, 1, 3], fn x -> { print(x); x })";
+    assert_values(&[(source, "[3, 1]")]);
+    assert_eq!(printed(source), ["3", "1", "3"]);
+}
+
+#[test]
+fn unique_by_raises_what_its_projection_raises() {
+    let script = script("unique_by([1, 2], fn x -> { print(x); error('boom') })");
+    assert_eq!(script.raises(), "boom");
+    assert_eq!(
+        script.printed(),
+        ["1"],
+        "the first error ends the projecting"
+    );
+}
+
+#[test]
+fn unique_by_checks_its_arguments() {
+    assert_type_errors(
+        "unique_by",
+        &[
+            ("unique_by({}, id)", "Array", "argument 1", "Map"),
+            (
+                "unique_by([1], 1)",
+                "Function",
+                "argument 2 (projection)",
+                "Int",
+            ),
+        ],
+    );
+    assert_arity("unique_by", "2", &[0, 1, 3]);
+}
+
+#[test]
+fn unique_leaves_the_original_unchanged() {
+    let source = r"
+        def a = [1, 2, 1]
+        [unique(a), unique_by(a, id), a]
+    ";
+    assert_values(&[(source, "[[1, 2], [1, 2], [1, 2, 1]]")]);
 }
 
 // --- group_by, count_by ---
