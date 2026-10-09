@@ -306,6 +306,7 @@ Use `backlog <command> --help` before running unfamiliar commands. Help shows op
 Do not edit Backlog task, draft, document, decision, or milestone markdown files directly. Use the `backlog` CLI so metadata, relationships, and history stay consistent.
 
 The Backlog data storage is git-excluded.
+Every task must go through human code review before being considered "done".
 
 </CRITICAL_INSTRUCTION>
 <!-- BACKLOG.MD GUIDELINES END -->
