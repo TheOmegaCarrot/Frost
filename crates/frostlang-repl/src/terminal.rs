@@ -17,7 +17,7 @@ use reedline::{
 use crate::highlight::{self, Class};
 use crate::{
     Frontend, Invocation, MetacommandError, MetacommandSpec, MetacommandTable, ReplError,
-    complete_segment,
+    complete_segment, render_value,
 };
 
 /// A [`Frontend`] for a person at a terminal, with line editing, history, and
@@ -30,9 +30,8 @@ use crate::{
 /// Ctrl-O opens the segment being typed in the editor `$VISUAL` or `$EDITOR`
 /// names, if either is set.
 ///
-/// Each value other than Null is written pretty-printed, as by
-/// [`Value::to_pretty_string`], to standard output; a failure is written to
-/// standard error.
+/// Each value other than Null is written as [`render_value`] renders it, to
+/// standard output; a failure is written to standard error.
 pub struct TerminalFrontend {
     color: bool,
     // `None` for the default history file.
@@ -160,7 +159,7 @@ impl Frontend for TerminalFrontend {
             Ok(Value::Null) => Ok(()),
             Ok(value) => {
                 let mut stdout = io::stdout().lock();
-                writeln!(stdout, "{}", value.to_pretty_string())?;
+                writeln!(stdout, "{}", render_value(value))?;
                 stdout.flush()
             }
             #[cfg(feature = "graphical-diagnostics")]

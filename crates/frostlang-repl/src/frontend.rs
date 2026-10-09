@@ -53,6 +53,17 @@ pub trait Frontend {
     }
 }
 
+/// `value` as the REPL's own frontends show an input's value: a String quoted
+/// and escaped, so that `"null"` is not mistaken for `null`, and anything else
+/// pretty-printed, as by [`Value::to_pretty_string`].
+pub fn render_value(value: &Value) -> String {
+    match value {
+        // Compact and pretty agree on a lone String.
+        Value::String(_) => value.to_debug_string(),
+        _ => value.to_pretty_string(),
+    }
+}
+
 /// The simplest [`Frontend`]: it reads lines, each after writing a prompt.
 ///
 /// A segment continues onto more lines until [`complete_segment`] completes
@@ -61,9 +72,8 @@ pub trait Frontend {
 /// input ends, a newline ends the last prompt's line, unless that prompt is
 /// empty.
 ///
-/// Each value other than Null is written pretty-printed, as by
-/// [`Value::to_pretty_string`], after the prompts, as is a metacommand's
-/// text, unstyled. A failure is written separately, as [`ReplError`]'s
+/// Each value other than Null is written as [`render_value`] renders it,
+/// after the prompts, as is a metacommand's text, unstyled. A failure is written separately, as [`ReplError`]'s
 /// [`Display`](std::fmt::Display) shows it.
 pub struct LineFrontend<R, W, E> {
     lines: R,
@@ -159,7 +169,7 @@ impl<R: BufRead, W: Write, E: Write> Frontend for LineFrontend<R, W, E> {
         match outcome {
             Ok(Value::Null) => Ok(()),
             Ok(value) => {
-                writeln!(self.output, "{}", value.to_pretty_string())?;
+                writeln!(self.output, "{}", render_value(value))?;
                 self.output.flush()
             }
             Err(error) => {

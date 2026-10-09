@@ -34,7 +34,7 @@ mod segment;
 #[cfg(feature = "line-editor")]
 mod terminal;
 
-pub use frontend::{Frontend, LineFrontend};
+pub use frontend::{Frontend, LineFrontend, render_value};
 pub use metacommand::{
     InvalidMetacommand, Invocation, MetacommandError, MetacommandHandler, MetacommandProblem,
     MetacommandSpec, MetacommandTable,
@@ -47,6 +47,7 @@ pub use terminal::TerminalFrontend;
 use std::collections::{BTreeMap, VecDeque};
 use std::fmt;
 use std::io;
+use std::num::NonZeroUsize;
 use std::sync::Arc;
 
 use frostlang::compile::{CompilerOptions, Diagnostics, OptimizationOptions, compile_in_scope};
@@ -124,13 +125,21 @@ impl Default for Repl {
     }
 }
 
+/// The [`max_call_depth`](VmRuntimeConfiguration::max_call_depth) a [`Repl`]
+/// runs inputs under unless given a configuration: deep enough for any sound
+/// recursion, and shallow enough that a runaway one fails before it exhausts
+/// memory.
+pub const DEFAULT_MAX_CALL_DEPTH: NonZeroUsize = NonZeroUsize::new(1_000_000).unwrap();
+
 impl Repl {
     /// A REPL with nothing bound, nothing importable, the default
-    /// [`VmRuntimeConfiguration`], every optimization on, and five recent
+    /// [`VmRuntimeConfiguration`] but with a call depth of
+    /// [`DEFAULT_MAX_CALL_DEPTH`], every optimization on, and five recent
     /// results kept.
     pub fn new() -> Self {
         Self {
-            configuration: VmRuntimeConfiguration::default(),
+            configuration: VmRuntimeConfiguration::default()
+                .with_max_call_depth(Some(DEFAULT_MAX_CALL_DEPTH)),
             importer: Arc::default(),
             optimization: OptimizationOptions::ALL,
             bindings: BTreeMap::new(),
@@ -140,7 +149,8 @@ impl Repl {
         }
     }
 
-    /// Set the configuration every input runs under.
+    /// Set the configuration every input runs under, its
+    /// [`max_call_depth`](VmRuntimeConfiguration::max_call_depth) included.
     pub fn with_configuration(mut self, configuration: VmRuntimeConfiguration) -> Self {
         self.configuration = configuration;
         self

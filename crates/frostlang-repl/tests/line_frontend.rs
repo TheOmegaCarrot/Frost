@@ -3,7 +3,7 @@
 use std::io::{self, Cursor};
 
 use frostlang::Value;
-use frostlang_repl::{Frontend, LineFrontend, Repl, ReplError};
+use frostlang_repl::{Frontend, LineFrontend, Repl, ReplError, render_value};
 
 /// Every segment `frontend` reads, until it ends.
 fn read_all(mut frontend: impl Frontend) -> Vec<String> {
@@ -154,6 +154,56 @@ fn empty_input_ends_at_once() {
 }
 
 // --- Rendering ---
+
+/// The value of `source`, run as a REPL's first input.
+fn value_of(source: &str) -> Value {
+    Repl::new()
+        .evaluate(source)
+        .unwrap_or_else(|error| panic!("{source:?} failed: {error}"))
+}
+
+#[test]
+fn a_string_renders_quoted_and_escaped() {
+    // Each looks like another value, or holds what must be escaped.
+    let cases = [
+        ("'null'", r#""null""#),
+        ("'42'", r#""42""#),
+        ("'true'", r#""true""#),
+        ("''", r#""""#),
+        (r#"'say "hi"'"#, r#""say \"hi\"""#),
+        (r"'a\\b'", r#""a\\b""#),
+        (r"'a\nb\tc\rd'", r#""a\nb\tc\rd""#),
+        (r"'\u{1}'", r#""\u{1}""#),
+        ("'é'", r#""é""#),
+    ];
+    for (source, expected) in cases {
+        assert_eq!(render_value(&value_of(source)), expected, "{source:?}");
+    }
+}
+
+#[test]
+fn any_other_value_renders_as_pretty_printed() {
+    for source in [
+        "null",
+        "42",
+        "1.5",
+        "true",
+        "x'00ff'",
+        "[1, 'two']",
+        "{a: 'b', [1]: [null]}",
+        "len",
+    ] {
+        let value = value_of(source);
+        assert_eq!(render_value(&value), value.to_pretty_string(), "{source:?}");
+    }
+}
+
+#[test]
+fn a_string_value_is_written_quoted() {
+    let (output, errors) = session("'null'\nnull\n'a\\nb'\n");
+    assert_eq!(output, "> \"null\"\n> > \"a\\nb\"\n> \n");
+    assert_eq!(errors, "");
+}
 
 #[test]
 fn a_value_is_pretty_printed_on_its_own_line() {

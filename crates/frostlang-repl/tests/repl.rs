@@ -9,7 +9,8 @@ use std::sync::{Arc, Mutex};
 use frostlang::compile::{Diagnostics, OptimizationOptions};
 use frostlang::{Extension, FrostError, ImporterBuilder, Value, VmRuntimeConfiguration};
 use frostlang_repl::{
-    Frontend, InvalidName, Repl, ReplError, ScriptedFrontend, SessionError, check_name,
+    DEFAULT_MAX_CALL_DEPTH, Frontend, InvalidName, Repl, ReplError, ScriptedFrontend, SessionError,
+    check_name,
 };
 
 /// Evaluate each of `inputs` in turn on a fresh REPL, returning the last
@@ -415,6 +416,46 @@ fn every_input_runs_under_the_configuration() {
         panic!("the budget should run out");
     };
     assert!(error.message().contains("fuel"), "{}", error.message());
+}
+
+/// The message of the run error `input` fails with on `repl`.
+fn run_error(repl: &mut Repl, input: &str) -> String {
+    match repl.evaluate(input) {
+        Err(ReplError::Run(error)) => error.message().into_owned(),
+        other => panic!("{input:?} should fail to run, but gave {other:?}"),
+    }
+}
+
+#[test]
+fn a_runaway_recursion_fails_at_the_default_call_depth_and_the_session_carries_on() {
+    let mut repl = Repl::new();
+    repl.evaluate("defn runaway(n) -> 1 + runaway(n + 1)")
+        .unwrap();
+    let message = run_error(&mut repl, "runaway(0)");
+    assert!(
+        message.contains(&format!("maximum call depth of {DEFAULT_MAX_CALL_DEPTH}")),
+        "{message}"
+    );
+    assert_eq!(repl.evaluate("1 + 1").unwrap(), Value::Int(2));
+}
+
+#[test]
+fn a_deep_but_bounded_recursion_fits_the_default_call_depth() {
+    let mut repl = Repl::new();
+    repl.evaluate("defn depth(n) -> if n == 0: 0 else: 1 + depth(n - 1)")
+        .unwrap();
+    assert_eq!(repl.evaluate("depth(100000)").unwrap(), Value::Int(100_000));
+}
+
+#[test]
+fn a_configuration_replaces_the_default_call_depth() {
+    let config = VmRuntimeConfiguration::default().with_max_call_depth(NonZeroUsize::new(50));
+    let mut repl = Repl::new().with_configuration(config);
+    repl.evaluate("defn depth(n) -> if n == 0: 0 else: 1 + depth(n - 1)")
+        .unwrap();
+    assert_eq!(repl.evaluate("depth(40)").unwrap(), Value::Int(40));
+    let message = run_error(&mut repl, "depth(60)");
+    assert!(message.contains("maximum call depth of 50"), "{message}");
 }
 
 #[test]
