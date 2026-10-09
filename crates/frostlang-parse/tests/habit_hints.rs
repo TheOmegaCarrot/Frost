@@ -763,18 +763,20 @@ fn star_before_a_name() {
 }
 
 #[test]
-fn operator_sections() {
-    let help = "Frost has no operator sections; use an abbreviated lambda, like `$($ + 1)`";
+fn an_operator_used_as_a_function() {
+    let help =
+        "Frost cannot use an operator as a function; write an abbreviated lambda, like `$($ + 1)`";
     assert_help(&[
         ("(+ 1)", help),
         ("def inc = (+ 1)", help),
         ("(*)", help),
         ("xs @ transform(* 2)", help),
     ]);
-    // `+1` writes a sign, and `(+ 1 2)` is Lisp's call, not a section.
+    // `+1` writes a sign, and `(+ 1 2)` is Lisp's call, not an operator alone.
     assert_help_or_none(&[("(+1)", None), ("(+ 1 2)", None)]);
     // Inside an abbreviated lambda, another cannot be nested.
-    let in_abbreviated = "Frost has no operator sections; use a lambda, like `fn x -> x + 1`";
+    let in_abbreviated =
+        "Frost cannot use an operator as a function; write a lambda, like `fn x -> x + 1`";
     assert_help(&[
         ("$(transform($, (+ 1)))", in_abbreviated),
         ("$($'${(* 2)}')", in_abbreviated),

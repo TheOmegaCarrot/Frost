@@ -675,7 +675,7 @@ impl Site<'_, '_> {
     }
 
     /// Help for an operator where no rule above gave any: `++x`, Python's `*args`, or
-    /// Haskell's operator section `(+ 1)`.
+    /// Haskell's operator used as a function, `(+ 1)` or `(*)`.
     pub(super) fn operator_help(&self) -> Option<String> {
         let found = self.token_at(0)?;
         let after_operand = self.follows_an_operand(0);
@@ -699,18 +699,20 @@ impl Site<'_, '_> {
             return Some(help.to_owned());
         }
         // `(+ 1)` or `(*)`, but not `(+1)`, which writes a sign
-        let is_section = is_binary_operator(found)
+        let is_operator_function = is_binary_operator(found)
             && self.token_at(-1) == Some(&Token::OpenParen)
             && matches!(self.innermost_kind(), Some(Bracket::Group | Bracket::Call))
             && (self.token_at(1) == Some(&Token::CloseParen)
                 || self.token_at(2) == Some(&Token::CloseParen))
             && !(*found == Token::OpPlus && self.abutting_next().is_some());
-        is_section.then(|| {
+        is_operator_function.then(|| {
             // Abbreviated lambdas do not nest.
             if self.ctx.in_abbreviated_lambda() {
-                "Frost has no operator sections; use a lambda, like `fn x -> x + 1`".to_owned()
+                "Frost cannot use an operator as a function; write a lambda, like `fn x -> x + 1`"
+                    .to_owned()
             } else {
-                "Frost has no operator sections; use an abbreviated lambda, like `$($ + 1)`"
+                "Frost cannot use an operator as a function; write an abbreviated lambda, \
+                 like `$($ + 1)`"
                     .to_owned()
             }
         })
