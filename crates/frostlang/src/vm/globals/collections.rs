@@ -3,17 +3,12 @@
 use std::collections::{BTreeMap, BTreeSet};
 
 use crate::bytecode::Bytecode;
-use crate::native::ArgSite;
+use crate::native::{Args, FrostArg, Rest};
 use crate::{
     Arity, FrostArray, FrostBytes, FrostError, FrostMap, FrostResult, FrostString, FrostType,
     MapKey, NativeCtx, Param, Params, Value, ValueMap,
 };
 use enumset::{EnumSet, enum_set};
-
-/// The types a Map key may have.
-const MAP_KEY: EnumSet<FrostType> = enum_set!(
-    FrostType::Bool | FrostType::Int | FrostType::Float | FrostType::String | FrostType::Bytes
-);
 
 /// The types with elements in order: a String's are its code points, and
 /// Bytes' its bytes. See [`Sequence`].
@@ -80,7 +75,7 @@ fn check_length(function: &str, size: usize, count: usize) -> Result<(), FrostEr
 
 /// `value`, which `function`'s callback returned, as a Map key.
 fn returned_key(function: &str, value: Value) -> Result<MapKey, FrostError> {
-    if !value.fits(MAP_KEY) {
+    if !value.fits(MapKey::TYPES) {
         return Err(FrostError::from_string(format!(
             "Function {function} requires its function to return a valid Map key, got {}",
             value.type_name()
@@ -162,7 +157,7 @@ pub(super) fn from_entries_global() -> Value {
             };
             let key = field("key")?;
             let value = field("value")?;
-            if !key.fits(MAP_KEY) {
+            if !key.fits(MapKey::TYPES) {
                 return Err(FrostError::from_string(format!(
                     "Function from_entries requires a valid Map key in every element, \
                      but the key of element {i} is {}",
@@ -177,14 +172,16 @@ pub(super) fn from_entries_global() -> Value {
 }
 
 pub(super) fn dissoc_global() -> Value {
-    Value::native("dissoc", Arity::AtLeast(1), |ctx, args| {
-        ctx.check_args(args, &ONE_MAP)?;
-        let mut map = take_map(&mut args[0]).into_map();
-        for (i, key) in args.iter_mut().enumerate().skip(1) {
-            if !key.fits(MAP_KEY) {
-                return Err(ArgSite::argument("dissoc", i, None).wrong_type(MAP_KEY, key));
-            }
-            map.remove(&MapKey::try_from(key.take()).expect("the key fits a Map key"));
+    const PARAMS: Params = Params::new(&[
+        <FrostMap as FrostArg>::PARAM,
+        <Rest<MapKey> as FrostArg>::PARAM,
+    ]);
+    Value::checked_native("dissoc", PARAMS, |ctx, args| {
+        let mut args = Args::new(ctx.name(), PARAMS, args);
+        let mut map = args.take::<FrostMap>()?.into_map();
+        let Rest(keys) = args.take::<Rest<MapKey>>()?;
+        for key in &keys {
+            map.remove(key);
         }
         Ok(map.into())
     })
@@ -293,7 +290,7 @@ pub(super) fn id_global() -> Value {
 pub(super) fn has_global() -> Value {
     const PARAMS: Params = Params::new(&[
         Param::of(FrostType::STRUCTURED),
-        Param::of(MAP_KEY).named("index"),
+        Param::of(MapKey::TYPES).named("index"),
     ]);
     Value::checked_native("has", PARAMS, |_, args| {
         Ok(Value::Bool(match (&args[0], &args[1]) {
@@ -700,25 +697,27 @@ pub(super) fn flatten_global() -> Value {
     })
 }
 
-/// The Arrays in `args[from..]`, taken from them, where `function` takes any
-/// number of Arrays there.
-fn rest_arrays(
-    function: &str,
-    args: &mut [Value],
-    from: usize,
-) -> Result<Vec<FrostArray>, FrostError> {
-    args.iter_mut()
-        .enumerate()
-        .skip(from)
-        .map(|(i, arg)| match arg.take() {
-            Value::Array(array) => Ok(array),
-            other => Err(FrostError::from_string(format!(
-                "Function {function} requires Array as argument {}, got {}",
-                i + 1,
-                other.type_name()
-            ))),
-        })
-        .collect()
+/// The spec of `zip` and `xprod`: two or more Arrays.
+const ARRAYS: Params = Params::new(&[
+    <FrostArray as FrostArg>::PARAM,
+    <FrostArray as FrostArg>::PARAM,
+    <Rest<FrostArray> as FrostArg>::PARAM,
+]);
+
+/// The spec of `zip_with` and `xprod_with`: a Function, then two or more Arrays.
+const FUNCTION_AND_ARRAYS: Params = Params::new(&[
+    Param::of(FrostType::FUNCTION),
+    <FrostArray as FrostArg>::PARAM,
+    <FrostArray as FrostArg>::PARAM,
+    <Rest<FrostArray> as FrostArg>::PARAM,
+]);
+
+/// The two or more Arrays that `args` has next, as [`ARRAYS`] specifies.
+fn take_arrays(args: &mut Args<'_>) -> Result<Vec<FrostArray>, FrostError> {
+    let first: FrostArray = args.take()?;
+    let second: FrostArray = args.take()?;
+    let Rest(more) = args.take()?;
+    Ok([first, second].into_iter().chain(more).collect())
 }
 
 // A row of `zip` or `xprod` is never built on its own: each element goes
@@ -786,40 +785,39 @@ fn advance_odometer(indices: &mut [usize], arrays: &[FrostArray]) -> bool {
     false
 }
 
-/// The spec of the leading Function of `zip_with` and `xprod_with`.
-const LEADING_FUNCTION: Params = Params::new(&[Param::of(FrostType::FUNCTION)]);
-
 pub(super) fn zip_global() -> Value {
-    Value::native("zip", Arity::AtLeast(2), |_, args| {
-        let arrays = rest_arrays("zip", args, 0)?;
+    Value::checked_native("zip", ARRAYS, |ctx, args| {
+        let arrays = take_arrays(&mut Args::new(ctx.name(), ARRAYS, args))?;
         let rows = map_zip_rows(&arrays, |i| Ok(zip_row(&arrays, i).collect()))?;
         Ok(rows.into())
     })
 }
 
 pub(super) fn zip_with_global() -> Value {
-    Value::native("zip_with", Arity::AtLeast(3), |mut ctx, args| {
-        ctx.check_args(args, &LEADING_FUNCTION)?;
-        let arrays = rest_arrays("zip_with", args, 1)?;
-        let results = map_zip_rows(&arrays, |i| ctx.invoke(&args[0], zip_row(&arrays, i)))?;
+    Value::checked_native("zip_with", FUNCTION_AND_ARRAYS, |mut ctx, args| {
+        let mut args = Args::new(ctx.name(), FUNCTION_AND_ARRAYS, args);
+        let function: Value = args.take()?;
+        let arrays = take_arrays(&mut args)?;
+        let results = map_zip_rows(&arrays, |i| ctx.invoke(&function, zip_row(&arrays, i)))?;
         Ok(results.into())
     })
 }
 
 pub(super) fn xprod_global() -> Value {
-    Value::native("xprod", Arity::AtLeast(2), |_, args| {
-        let arrays = rest_arrays("xprod", args, 0)?;
+    Value::checked_native("xprod", ARRAYS, |ctx, args| {
+        let arrays = take_arrays(&mut Args::new(ctx.name(), ARRAYS, args))?;
         let rows = map_xprod_rows(&arrays, |indices| Ok(xprod_row(&arrays, indices).collect()))?;
         Ok(rows.into())
     })
 }
 
 pub(super) fn xprod_with_global() -> Value {
-    Value::native("xprod_with", Arity::AtLeast(3), |mut ctx, args| {
-        ctx.check_args(args, &LEADING_FUNCTION)?;
-        let arrays = rest_arrays("xprod_with", args, 1)?;
+    Value::checked_native("xprod_with", FUNCTION_AND_ARRAYS, |mut ctx, args| {
+        let mut args = Args::new(ctx.name(), FUNCTION_AND_ARRAYS, args);
+        let function: Value = args.take()?;
+        let arrays = take_arrays(&mut args)?;
         let results = map_xprod_rows(&arrays, |indices| {
-            ctx.invoke(&args[0], xprod_row(&arrays, indices))
+            ctx.invoke(&function, xprod_row(&arrays, indices))
         })?;
         Ok(results.into())
     })
@@ -1148,7 +1146,7 @@ struct Seen {
 impl Seen {
     /// Whether `value` is new, recording it if so.
     fn insert(&mut self, value: Value) -> bool {
-        if value.fits(MAP_KEY) {
+        if value.fits(MapKey::TYPES) {
             self.keys
                 .insert(MapKey::try_from(value).expect("the value fits a Map key"))
         } else if self.others.contains(&value) {

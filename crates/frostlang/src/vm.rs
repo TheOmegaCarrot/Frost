@@ -21,7 +21,7 @@ pub use import::{
 };
 pub use native::{NativeCtx, NativeFn, NativeFunction};
 pub use outcome::{AbortReason, IdleVm, ProgramResult, RunError, RunErrorKind};
-pub(crate) use params::expected_types;
+pub(crate) use params::{Binder, expected_types};
 pub use params::{InvalidParams, Param, Params};
 pub use print_sink::{PrintSink, StdoutSink};
 pub use serialize::FormatVersion;

@@ -2,7 +2,9 @@
 
 use std::sync::Arc;
 
-use crate::core::{FrostBytes, FrostError, FrostFloat, FrostString, Value};
+use enumset::{EnumSet, enum_set};
+
+use crate::core::{FrostBytes, FrostError, FrostFloat, FrostString, FrostType, Value};
 
 /// A valid Frost map key. Only non-null primitive types may be keys.
 /// Totally ordered, such that ordering of keys of the same type agrees with Frost's `<` operator.
@@ -19,6 +21,13 @@ pub enum MapKey {
     String(FrostString),
     /// A Bytes key.
     Bytes(FrostBytes),
+}
+
+impl MapKey {
+    /// The types of value a key may be.
+    pub const TYPES: EnumSet<FrostType> = enum_set!(
+        FrostType::Bool | FrostType::Int | FrostType::Float | FrostType::String | FrostType::Bytes
+    );
 }
 
 /// Renders the key as [`Value::to_frost_string`] renders the equivalent Value:

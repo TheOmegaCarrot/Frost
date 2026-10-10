@@ -33,5 +33,5 @@
 mod arg;
 mod result;
 
-pub use arg::{ArgSite, Args, De, FromArg, FrostArg, Nullable, Optional};
+pub use arg::{ArgSite, Args, De, FromArg, FrostArg, Nullable, Optional, Rest};
 pub use result::{IntoNativeResult, Ser};

@@ -9,9 +9,10 @@
 use std::collections::BTreeMap;
 use std::fmt::Debug;
 
-use frostlang::native::{Args, De, FromArg, FrostArg, Nullable, Optional};
+use frostlang::native::{Args, De, FromArg, FrostArg, Nullable, Optional, Rest};
 use frostlang::{
-    FrostArray, FrostBytes, FrostError, FrostFloat, FrostMap, FrostString, FrostType, Params, Value,
+    FrostArray, FrostBytes, FrostError, FrostFloat, FrostMap, FrostString, FrostType, MapKey,
+    Param, Params, Value,
 };
 use serde::Deserialize;
 
@@ -63,6 +64,8 @@ fn each_argument_type_declares_its_types() {
             FrostType::String | FrostType::Null,
         ),
         (<Optional<String> as FrostArg>::PARAM, FrostType::STRING),
+        (<Rest<String> as FrostArg>::PARAM, FrostType::STRING),
+        (<MapKey as FrostArg>::PARAM, MapKey::TYPES),
     ];
     for (i, (param, types)) in cases.into_iter().enumerate() {
         assert_eq!(param.types(), types, "case {i}");
@@ -77,6 +80,16 @@ fn only_optional_declares_an_optional_parameter() {
     assert!(!<u8 as FrostArg>::PARAM.is_optional());
     assert!(!<Nullable<u8> as FrostArg>::PARAM.is_optional());
     assert!(!<Vec<u8> as FrostArg>::PARAM.is_optional());
+    assert!(!<Rest<u8> as FrostArg>::PARAM.is_optional());
+}
+
+#[test]
+fn only_rest_declares_a_rest_parameter() {
+    assert!(<Rest<u8> as FrostArg>::PARAM.is_rest());
+    assert!(<Rest<Nullable<u8>> as FrostArg>::PARAM.is_rest());
+    assert!(!<u8 as FrostArg>::PARAM.is_rest());
+    assert!(!<Optional<u8> as FrostArg>::PARAM.is_rest());
+    assert!(!<Vec<u8> as FrostArg>::PARAM.is_rest());
 }
 
 #[test]
@@ -86,6 +99,11 @@ fn a_spec_built_from_argument_types_is_const() {
         <Optional<Nullable<u32>> as FrostArg>::PARAM.named("width"),
     ]);
     assert_eq!(PARAMS.arity(), frostlang::Arity::Between(1, 2));
+    const VARIADIC: Params = Params::new(&[
+        <String as FrostArg>::PARAM.named("text"),
+        <Rest<u32> as FrostArg>::PARAM.named("widths"),
+    ]);
+    assert_eq!(VARIADIC.arity(), frostlang::Arity::AtLeast(1));
 }
 
 // --- Plain values ---
@@ -121,6 +139,23 @@ fn each_type_takes_its_value() {
     );
     let map = Value::map([("a", Value::Int(1))]);
     assert_eq!(Value::from(taken::<FrostMap>(map.clone())), map);
+}
+
+#[test]
+fn map_key_takes_a_value_of_each_key_type() {
+    let float = FrostFloat::new(1.5).unwrap();
+    for (value, key) in [
+        (Value::Bool(true), MapKey::Bool(true)),
+        (Value::Int(1), MapKey::Int(1)),
+        (Value::Float(float), MapKey::Float(float)),
+        (Value::from("k"), MapKey::from("k")),
+        (
+            Value::from(&b"k"[..]),
+            MapKey::Bytes(FrostBytes::from(&b"k"[..])),
+        ),
+    ] {
+        assert_eq!(taken::<MapKey>(value), key);
+    }
 }
 
 #[test]
@@ -369,6 +404,125 @@ fn args_takes_each_parameter_in_turn_and_names_it_in_errors() {
     );
 }
 
+/// `(a: String, b?: u8, c?: u8, d: u8)`, with optionals in the middle.
+const INTERIOR_OPTIONALS: Params = Params::new(&[
+    <String as FrostArg>::PARAM.named("a"),
+    <Optional<u8> as FrostArg>::PARAM.named("b"),
+    <Optional<u8> as FrostArg>::PARAM.named("c"),
+    <u8 as FrostArg>::PARAM.named("d"),
+]);
+
+/// `values` taken as [`INTERIOR_OPTIONALS`]: `b`, `c`, and `d`.
+fn take_interior(mut values: Vec<Value>) -> Result<(Optional<u8>, Optional<u8>, u8), FrostError> {
+    let mut args = Args::new("g", INTERIOR_OPTIONALS, &mut values);
+    args.take::<String>()?;
+    Ok((args.take()?, args.take()?, args.take()?))
+}
+
+#[test]
+fn args_fills_interior_optionals_left_to_right_by_count() {
+    let s = || Value::from("s");
+    assert_eq!(
+        take_interior(vec![s(), Value::Int(9)]).unwrap(),
+        (Optional(None), Optional(None), 9)
+    );
+    assert_eq!(
+        take_interior(vec![s(), Value::Int(1), Value::Int(9)]).unwrap(),
+        (Optional(Some(1)), Optional(None), 9)
+    );
+    assert_eq!(
+        take_interior(vec![s(), Value::Int(1), Value::Int(2), Value::Int(9)]).unwrap(),
+        (Optional(Some(1)), Optional(Some(2)), 9)
+    );
+}
+
+#[test]
+fn args_names_the_parameter_an_argument_fills_in_errors() {
+    let s = || Value::from("s");
+    let rejection = |values| take_interior(values).unwrap_err().message().into_owned();
+    // With two arguments, the second is `d`.
+    assert_eq!(
+        rejection(vec![s(), Value::Int(300)]),
+        "Function g requires argument 2 (d) to be from 0 to 255, got 300"
+    );
+    // With three, the second is `b` and the third `d`.
+    assert_eq!(
+        rejection(vec![s(), Value::Int(300), Value::Int(9)]),
+        "Function g requires argument 2 (b) to be from 0 to 255, got 300"
+    );
+    assert_eq!(
+        rejection(vec![s(), Value::Int(1), Value::Int(300)]),
+        "Function g requires argument 3 (d) to be from 0 to 255, got 300"
+    );
+    // With four, the third is `c`.
+    assert_eq!(
+        rejection(vec![s(), Value::Int(1), Value::Int(300), Value::Int(9)]),
+        "Function g requires argument 3 (c) to be from 0 to 255, got 300"
+    );
+}
+
+/// `(text: String, widths: ...u8)`.
+const VARIADIC: Params = Params::new(&[
+    <String as FrostArg>::PARAM.named("text"),
+    <Rest<u8> as FrostArg>::PARAM.named("widths"),
+]);
+
+/// `values` taken as [`VARIADIC`]: its rest.
+fn take_rest(mut values: Vec<Value>) -> Result<Rest<u8>, FrostError> {
+    let mut args = Args::new("g", VARIADIC, &mut values);
+    args.take::<String>()?;
+    args.take()
+}
+
+#[test]
+fn rest_takes_every_remaining_argument() {
+    assert_eq!(take_rest(vec![Value::from("s")]).unwrap(), Rest(vec![]));
+    assert_eq!(
+        take_rest(vec![Value::from("s"), Value::Int(1)]).unwrap(),
+        Rest(vec![1])
+    );
+    assert_eq!(
+        take_rest(vec![
+            Value::from("s"),
+            Value::Int(1),
+            Value::Int(2),
+            Value::Int(3)
+        ])
+        .unwrap(),
+        Rest(vec![1, 2, 3])
+    );
+}
+
+#[test]
+fn rest_names_each_argument_by_its_position() {
+    let values = vec![
+        Value::from("s"),
+        Value::Int(1),
+        Value::Int(2),
+        Value::Int(300),
+    ];
+    assert_eq!(
+        take_rest(values).unwrap_err().message(),
+        "Function g requires argument 4 (widths) to be from 0 to 255, got 300"
+    );
+}
+
+#[test]
+fn rest_takes_each_argument_leaving_null() {
+    let mut values = vec![Value::from("s"), Value::array([1]), Value::array([2])];
+    let mut args = Args::new(
+        "g",
+        Params::new(&[
+            <String as FrostArg>::PARAM,
+            <Rest<FrostArray> as FrostArg>::PARAM,
+        ]),
+        &mut values,
+    );
+    args.take::<String>().unwrap();
+    args.take::<Rest<FrostArray>>().unwrap();
+    assert_eq!(values, [Value::Null, Value::Null, Value::Null]);
+}
+
 #[test]
 fn args_takes_each_argument_leaving_null() {
     let mut values = vec![Value::array([1, 2])];
@@ -488,5 +642,91 @@ fn a_native_taking_args_words_type_and_content_errors_alike() {
     assert_eq!(
         raises("pad('ab')"),
         "Function pad expects between 2 and 3 arguments, but was called with 1"
+    );
+}
+
+/// `each(sql, bindings?, callback)`, shaped as a database's: `callback`
+/// called with `sql` and how many `bindings` there are, Null when omitted.
+fn each() -> Value {
+    const PARAMS: Params = Params::new(&[
+        <String as FrostArg>::PARAM.named("sql"),
+        Param::of(FrostType::STRUCTURED)
+            .optional()
+            .named("bindings"),
+        Param::of(FrostType::FUNCTION).named("callback"),
+    ]);
+    Value::checked_native("each", PARAMS, |mut ctx, args| {
+        let mut args = Args::new(ctx.name(), PARAMS, args);
+        let sql: String = args.take()?;
+        let Optional(bindings) = args.take::<Optional<Value>>()?;
+        let callback: Value = args.take()?;
+        let count = match bindings {
+            None => Value::Null,
+            Some(Value::Array(array)) => Value::Int(array.len() as i64),
+            Some(Value::Map(map)) => Value::Int(map.len() as i64),
+            Some(other) => unreachable!("type-checked, got {}", other.type_name()),
+        };
+        ctx.invoke(&callback, [Value::from(sql), count])
+    })
+}
+
+#[test]
+fn a_native_with_an_interior_optional_runs_from_frost() {
+    let run = |source: &str| Script::new(source).capture("each", each()).run();
+    assert_eq!(
+        run("each('q', fn sql, n -> [sql, n])"),
+        Value::array([Value::from("q"), Value::Null])
+    );
+    assert_eq!(
+        run("each('q', [1, 2], fn sql, n -> [sql, n])"),
+        Value::array([Value::from("q"), Value::Int(2)])
+    );
+    assert_eq!(
+        run("each('q', {a: 1}, fn sql, n -> [sql, n])"),
+        Value::array([Value::from("q"), Value::Int(1)])
+    );
+}
+
+#[test]
+fn a_native_with_an_interior_optional_checks_by_count_not_type() {
+    let raises = |source: &str| Script::new(source).capture("each", each()).raises();
+    // Two arguments: the second is the callback, so bindings there are wrong.
+    assert_eq!(
+        raises("each('q', [1])"),
+        "Function each requires Function as argument 2 (callback), got Array"
+    );
+    // Three: the second is the bindings, so a function there is wrong.
+    assert_eq!(
+        raises("each('q', fn x -> x, fn x -> x)"),
+        "Function each requires Structured as argument 2 (bindings), got Function"
+    );
+    assert_eq!(
+        raises("each('q', [1], [2])"),
+        "Function each requires Function as argument 3 (callback), got Array"
+    );
+    assert_eq!(
+        raises("each('q')"),
+        "Function each expects between 2 and 3 arguments, but was called with 1"
+    );
+}
+
+/// `sum(...ns)`: the sum of any number of Ints.
+fn sum() -> Value {
+    const PARAMS: Params = Params::new(&[<Rest<i64> as FrostArg>::PARAM.named("ns")]);
+    Value::checked_native("sum", PARAMS, |ctx, args| {
+        let Rest(ns) = Args::new(ctx.name(), PARAMS, args).take()?;
+        Ok(Value::Int(ns.iter().sum()))
+    })
+}
+
+#[test]
+fn a_native_with_a_rest_runs_from_frost() {
+    let run = |source: &str| Script::new(source).capture("sum", sum()).run();
+    assert_eq!(run("sum()"), Value::Int(0));
+    assert_eq!(run("sum(5)"), Value::Int(5));
+    assert_eq!(run("sum(1, 2, 3)"), Value::Int(6));
+    assert_eq!(
+        Script::new("sum(1, 2, 'x')").capture("sum", sum()).raises(),
+        "Function sum requires Int as argument 3 (ns), got String"
     );
 }

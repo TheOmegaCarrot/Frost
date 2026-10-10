@@ -9,7 +9,7 @@ use crate::{FrostError, FrostResult, Value};
 
 use super::Vm;
 use super::function::Arity;
-use super::params::Params;
+use super::params::{Binder, Params};
 
 /// A native function's handle back into the running [`Vm`], passed to every native call.
 #[derive(Debug)]
@@ -191,13 +191,22 @@ impl NativeFunction {
     /// A guard to call before trusting argument types in a native body. Arity is
     /// assumed already validated (the VM checks a native's `Arity` before its body
     /// runs), so only the present arguments' types are checked.
+    ///
+    /// Which parameter each argument is checked against follows the rules on
+    /// [`Params`]: every argument a rest parameter takes is checked against
+    /// its types, and an omitted optional parameter checks nothing.
     pub fn check_args(&self, args: &[Value], params: &Params) -> Result<(), FrostError> {
-        for (i, param) in params.as_slice().iter().enumerate() {
-            let Some(arg) = args.get(i) else { break };
-            if !param.accepts(arg) {
-                return Err(
-                    ArgSite::argument(self.name, i, param.name).wrong_type(param.types(), arg)
-                );
+        let mut binder = Binder::new(params, args.len());
+        for param in params.as_slice() {
+            for i in binder.bind(param) {
+                let Some(arg) = args.get(i) else {
+                    return Ok(());
+                };
+                if !param.accepts(arg) {
+                    return Err(
+                        ArgSite::argument(self.name, i, param.name).wrong_type(param.types(), arg)
+                    );
+                }
             }
         }
         Ok(())

@@ -1,14 +1,15 @@
 //! Taking a native's arguments as Rust types.
 
 use std::fmt;
+use std::ops::Range;
 
 use enumset::{EnumSet, enum_set_union};
 use serde::de::DeserializeOwned;
 
-use crate::vm::expected_types;
+use crate::vm::{Binder, expected_types};
 use crate::{
-    FrostArray, FrostBytes, FrostError, FrostFloat, FrostMap, FrostString, FrostType, Param,
-    Params, Value, from_value,
+    FrostArray, FrostBytes, FrostError, FrostFloat, FrostMap, FrostString, FrostType, MapKey,
+    Param, Params, Value, from_value,
 };
 
 /// A Rust type a native can take one argument as.
@@ -90,6 +91,24 @@ impl<T: FromArg> sealed::TakeArg for Optional<T> {
     }
 }
 
+/// A rest parameter: every argument after the others', possibly none, each
+/// taken as `T`.
+#[derive(Clone, Debug, Default, PartialEq, Eq, Hash)]
+pub struct Rest<T>(pub Vec<T>);
+
+impl<T: FromArg> FrostArg for Rest<T> {
+    const PARAM: Param = Param::of(T::TYPES).rest();
+}
+
+impl<T: FromArg> sealed::TakeArg for Rest<T> {
+    fn take_from(args: &mut Args<'_>) -> Result<Self, FrostError> {
+        args.take_rest()
+            .map(|(site, value)| T::from_arg(value, &site))
+            .collect::<Result<_, _>>()
+            .map(Rest)
+    }
+}
+
 /// An argument that may be Null as well as one of `T`'s types:
 /// `Nullable(None)` when it is Null.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash)]
@@ -128,7 +147,9 @@ pub struct Args<'a> {
     function: &'a str,
     params: Params,
     args: &'a mut [Value],
+    /// How many parameters have been taken.
     taken: usize,
+    binder: Binder,
 }
 
 impl<'a> Args<'a> {
@@ -142,11 +163,13 @@ impl<'a> Args<'a> {
     /// Copying a spec built by [`Params::new`] is cheap; one built by
     /// [`Params::try_new`] copies its parameters.
     pub fn new(function: &'a str, params: Params, args: &'a mut [Value]) -> Self {
+        let binder = Binder::new(&params, args.len());
         Self {
             function,
             params,
             args,
             taken: 0,
+            binder,
         }
     }
 
@@ -163,11 +186,10 @@ impl<'a> Args<'a> {
         T::take_from(self)
     }
 
-    /// The next parameter's site, and its argument, unless the call omits it.
-    fn take_one(&mut self) -> (ArgSite<'a>, Option<Value>) {
-        let index = self.taken;
+    /// The next parameter's name, and the indices of the arguments it takes.
+    fn next_param(&mut self) -> (Option<&'static str>, Range<usize>) {
         let params = self.params.as_slice();
-        let param = params.get(index).unwrap_or_else(|| {
+        let param = params.get(self.taken).unwrap_or_else(|| {
             panic!(
                 "Function {} has {} parameters, all taken already",
                 self.function,
@@ -175,8 +197,34 @@ impl<'a> Args<'a> {
             )
         });
         self.taken += 1;
-        let site = ArgSite::argument(self.function, index, param.name());
-        (site, self.args.get_mut(index).map(Value::take))
+        (param.name(), self.binder.bind(param))
+    }
+
+    /// The next parameter's site, and its argument, unless the call omits it.
+    fn take_one(&mut self) -> (ArgSite<'a>, Option<Value>) {
+        let (name, mut indices) = self.next_param();
+        let site = ArgSite::argument(self.function, indices.start, name);
+        let value = indices
+            .next()
+            .and_then(|index| self.args.get_mut(index))
+            .map(Value::take);
+        (site, value)
+    }
+
+    /// The next parameter's arguments, each with its site.
+    fn take_rest(&mut self) -> impl Iterator<Item = (ArgSite<'a>, Value)> {
+        let (name, indices) = self.next_param();
+        let function = self.function;
+        let start = indices.start;
+        self.args[indices]
+            .iter_mut()
+            .enumerate()
+            .map(move |(offset, value)| {
+                (
+                    ArgSite::argument(function, start + offset, name),
+                    value.take(),
+                )
+            })
     }
 }
 
@@ -305,6 +353,17 @@ from_variant! {
     FrostBytes: FrostType::BYTES, Value::Bytes(b) => b;
     FrostArray: FrostType::ARRAY, Value::Array(a) => a;
     FrostMap: FrostType::MAP, Value::Map(m) => m;
+}
+
+impl FromArg for MapKey {
+    const TYPES: EnumSet<FrostType> = MapKey::TYPES;
+
+    fn from_arg(value: Value, site: &ArgSite<'_>) -> Result<Self, FrostError> {
+        if !value.fits(MapKey::TYPES) {
+            mismatch(site, &value)
+        }
+        Ok(MapKey::try_from(value).expect("a value of a key type is a key"))
+    }
 }
 
 /// A Numeric argument: an Int becomes the nearest `f64`.

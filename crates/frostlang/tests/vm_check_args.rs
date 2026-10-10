@@ -129,6 +129,80 @@ fn optional_present_is_still_checked() {
     );
 }
 
+#[test]
+fn every_rest_argument_is_checked_against_the_rest_types() {
+    let params = || {
+        [
+            Param::of(FrostType::String.into()),
+            Param::of(FrostType::Int.into()).rest().named("ns"),
+        ]
+    };
+    assert!(check(&[Value::from("s")], params()).is_ok());
+    assert!(check(&[Value::from("s"), Value::Int(1), Value::Int(2)], params()).is_ok());
+    let err = check(
+        &[
+            Value::from("s"),
+            Value::Int(1),
+            Value::Int(2),
+            Value::from("x"),
+        ],
+        params(),
+    )
+    .unwrap_err();
+    assert_eq!(
+        err.message(),
+        "Function frob requires Int as argument 4 (ns), got String"
+    );
+}
+
+/// `(a: String, b?: Int, c?: Int, d: Bool)`, with optionals in the middle.
+fn interior_optionals() -> [Param; 4] {
+    [
+        Param::of(FrostType::String.into()).named("a"),
+        Param::of(FrostType::Int.into()).optional().named("b"),
+        Param::of(FrostType::Int.into()).optional().named("c"),
+        Param::of(FrostType::Bool.into()).named("d"),
+    ]
+}
+
+#[test]
+fn interior_optionals_receive_arguments_left_to_right_by_count() {
+    let (s, i, t) = (Value::from("s"), Value::Int(1), Value::Bool(true));
+    for args in [
+        vec![s.clone(), t.clone()],
+        vec![s.clone(), i.clone(), t.clone()],
+        vec![s.clone(), i.clone(), i.clone(), t.clone()],
+    ] {
+        assert!(check(&args, interior_optionals()).is_ok(), "{args:?}");
+    }
+}
+
+#[test]
+fn interior_optionals_never_shift_by_type() {
+    // With two arguments, both optionals are omitted, so the second argument
+    // is `d`, whatever its type: an Int is not taken as `b`.
+    let err = check(&[Value::from("s"), Value::Int(1)], interior_optionals()).unwrap_err();
+    assert_eq!(
+        err.message(),
+        "Function frob requires Bool as argument 2 (d), got Int"
+    );
+    // With three, only `b` receives an argument: a Bool there is not taken as
+    // `d`.
+    let args = [Value::from("s"), Value::Bool(true), Value::Bool(true)];
+    let err = check(&args, interior_optionals()).unwrap_err();
+    assert_eq!(
+        err.message(),
+        "Function frob requires Int as argument 2 (b), got Bool"
+    );
+    // With three, the last argument is `d`, not `c`.
+    let args = [Value::from("s"), Value::Int(1), Value::Int(2)];
+    let err = check(&args, interior_optionals()).unwrap_err();
+    assert_eq!(
+        err.message(),
+        "Function frob requires Bool as argument 3 (d), got Int"
+    );
+}
+
 // ============================================================
 // Params construction: arity
 // ============================================================
@@ -167,6 +241,15 @@ fn arity_multiple_trailing_optionals() {
     assert!(matches!(arity_of(params), Arity::Between(1, 3)));
 }
 
+#[test]
+fn arity_with_a_rest_is_at_least_the_required() {
+    assert_eq!(arity_of([Param::any().rest()]), Arity::AtLeast(0));
+    assert_eq!(
+        arity_of([Param::any(), Param::any(), Param::any().rest()]),
+        Arity::AtLeast(2)
+    );
+}
+
 // ============================================================
 // Params construction: validation
 // ============================================================
@@ -178,23 +261,101 @@ fn param_exposes_its_shape() {
     assert_eq!(p.types(), FrostType::NUMERIC);
     assert!(p.is_optional());
 
+    assert!(!p.is_rest());
+
     let q = Param::any();
     assert_eq!(q.name(), None);
     assert_eq!(q.types(), FrostType::ANY);
     assert!(!q.is_optional());
+    assert!(!q.is_rest());
+
+    let r = Param::of(FrostType::INT).rest().named("ns");
+    assert_eq!(r.name(), Some("ns"));
+    assert_eq!(r.types(), FrostType::INT);
+    assert!(r.is_rest());
+    assert!(!r.is_optional());
+
+    // A parameter has one kind: the last made wins.
+    assert!(Param::any().optional().rest().is_rest());
+    assert!(!Param::any().optional().rest().is_optional());
+    assert!(Param::any().rest().optional().is_optional());
+    assert!(!Param::any().rest().optional().is_rest());
 }
 
 #[test]
-fn try_new_rejects_a_required_param_after_an_optional() {
+fn try_new_rejects_two_groups_of_optionals() {
     let result = Params::try_new([
-        Param::of(FrostType::Int.into()),
-        Param::of(FrostType::Int.into()).optional(),
-        Param::of(FrostType::Int.into()), // required after optional: nonsensical
+        Param::any().optional(),
+        Param::any(),
+        Param::any().optional(), // which optional a call of 2 fills would be unclear
     ]);
     assert_eq!(
         result.unwrap_err(),
-        InvalidParams::RequiredAfterOptional { index: 2 }
+        InvalidParams::OptionalsNotContiguous { index: 2 }
     );
+    let result = Params::try_new([
+        Param::any(),
+        Param::any().optional(),
+        Param::any(),
+        Param::any(),
+        Param::any().optional(),
+        Param::any().optional(),
+    ]);
+    assert_eq!(
+        result.unwrap_err(),
+        InvalidParams::OptionalsNotContiguous { index: 4 }
+    );
+}
+
+#[test]
+fn try_new_rejects_a_rest_param_before_the_last() {
+    for (params, index) in [
+        (vec![Param::any().rest(), Param::any()], 0),
+        (
+            vec![Param::any(), Param::any().rest(), Param::any().rest()],
+            1,
+        ),
+    ] {
+        assert_eq!(
+            Params::try_new(params).unwrap_err(),
+            InvalidParams::RestNotLast { index }
+        );
+    }
+}
+
+#[test]
+fn try_new_rejects_optionals_with_a_rest_param() {
+    for (params, index) in [
+        (vec![Param::any().optional(), Param::any().rest()], 1),
+        (
+            vec![Param::any().optional(), Param::any(), Param::any().rest()],
+            2,
+        ),
+    ] {
+        assert_eq!(
+            Params::try_new(params).unwrap_err(),
+            InvalidParams::OptionalsAndRest { index }
+        );
+    }
+}
+
+#[test]
+fn try_new_accepts_one_group_of_optionals_anywhere() {
+    let any = Param::any;
+    for (params, arity) in [
+        (vec![any().optional(), any()], Arity::Between(1, 2)),
+        (vec![any(), any().optional(), any()], Arity::Between(2, 3)),
+        (
+            vec![any(), any().optional(), any().optional(), any()],
+            Arity::Between(2, 4),
+        ),
+        (
+            vec![any().optional(), any().optional(), any(), any()],
+            Arity::Between(2, 4),
+        ),
+    ] {
+        assert_eq!(Params::try_new(params).unwrap().arity(), arity);
+    }
 }
 
 #[test]
@@ -209,21 +370,47 @@ fn try_new_rejects_an_empty_type_set() {
 #[test]
 fn invalid_params_messages_name_the_problem() {
     assert_eq!(
-        InvalidParams::RequiredAfterOptional { index: 2 }.to_string(),
-        "invalid param spec: required parameter at index 2 follows an optional one (optionals must be trailing)"
-    );
-    assert_eq!(
         InvalidParams::EmptyTypeSet { index: 1 }.to_string(),
         "invalid param spec: parameter at index 1 has an empty type set and accepts no value"
+    );
+    assert_eq!(
+        InvalidParams::OptionalsNotContiguous { index: 2 }.to_string(),
+        "invalid param spec: optional parameter at index 2 is apart from the earlier optionals (optionals must be contiguous)"
+    );
+    assert_eq!(
+        InvalidParams::RestNotLast { index: 0 }.to_string(),
+        "invalid param spec: rest parameter at index 0 is not the last parameter"
+    );
+    assert_eq!(
+        InvalidParams::OptionalsAndRest { index: 1 }.to_string(),
+        "invalid param spec: rest parameter at index 1 follows optional parameters (a spec has optionals or a rest, not both)"
     );
 }
 
 #[test]
-#[should_panic(expected = "optionals must be trailing")]
-fn new_panics_on_a_required_param_after_an_optional() {
+#[should_panic(expected = "optional parameters must be contiguous")]
+fn new_panics_on_two_groups_of_optionals() {
     // The slice itself is valid data; `Params::new` is where validation runs,
     // so calling it at runtime panics rather than failing to compile.
-    const BAD: &[Param] = &[Param::any().optional(), Param::any()];
+    const BAD: &[Param] = &[
+        Param::any().optional(),
+        Param::any(),
+        Param::any().optional(),
+    ];
+    let _ = Params::new(BAD);
+}
+
+#[test]
+#[should_panic(expected = "a rest parameter must be the last parameter")]
+fn new_panics_on_a_rest_param_before_the_last() {
+    const BAD: &[Param] = &[Param::any().rest(), Param::any()];
+    let _ = Params::new(BAD);
+}
+
+#[test]
+#[should_panic(expected = "a spec has optionals or a rest, not both")]
+fn new_panics_on_optionals_with_a_rest_param() {
+    const BAD: &[Param] = &[Param::any().optional(), Param::any().rest()];
     let _ = Params::new(BAD);
 }
 
