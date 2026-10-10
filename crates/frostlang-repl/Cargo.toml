@@ -6,12 +6,14 @@ edition.workspace = true
 [features]
 default = ["line-editor"]
 # A terminal input with line editing, history, and highlighting.
-line-editor = ["dep:reedline", "dep:nu-ansi-term", "dep:dirs", "dep:fastrand"]
+line-editor = ["dep:reedline", "dep:nu-ansi-term", "dep:dirs", "dep:fastrand", "dep:ctrlc"]
 # Draw compile errors as source snippets with their labels rather than
 # narrating them as plain text.
 graphical-diagnostics = ["frostlang/graphical-diagnostics"]
 
 [dependencies]
+# Ctrl-C cancelling a running input, on every platform.
+ctrlc = { version = "3.5", optional = true }
 # Where the platform keeps history.
 dirs = { version = "7", optional = true }
 # Unpredictable names for the external editor's directory.

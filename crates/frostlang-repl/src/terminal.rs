@@ -4,8 +4,8 @@ use std::borrow::Cow;
 use std::env;
 use std::io::{self, Write};
 use std::path::PathBuf;
-use std::process::Command;
-use std::sync::LazyLock;
+use std::process::{self, Command};
+use std::sync::{LazyLock, Mutex, MutexGuard, Once, PoisonError};
 
 use frostlang::Value;
 use nu_ansi_term::{Color, Style};
@@ -17,8 +17,8 @@ use reedline::{
 use crate::edit_dir::EditDir;
 use crate::highlight::{self, Class};
 use crate::{
-    Frontend, Invocation, MetacommandError, MetacommandSpec, MetacommandTable, ReplError,
-    complete_segment, render_value,
+    CancelHandle, Frontend, Invocation, MetacommandError, MetacommandSpec, MetacommandTable,
+    ReplError, complete_segment, render_value,
 };
 
 /// A [`Frontend`] for a person at a terminal, with line editing, history, and
@@ -28,6 +28,8 @@ use crate::{
 /// it.
 ///
 /// Ctrl-C discards the segment being typed; Ctrl-D on an empty line ends input.
+/// While an input runs, Ctrl-C [cancels](CancelHandle) it; at any other moment,
+/// it ends the process with exit status 130.
 /// Ctrl-O opens the segment being typed in the editor `$VISUAL` or `$EDITOR`
 /// names, if either is set. The editor edits a file in a new directory only the
 /// user can enter, in the system's temporary directory, which is removed when
@@ -36,6 +38,14 @@ use crate::{
 ///
 /// Each value other than Null is written as [`render_value`] renders it, to
 /// standard output; a failure is written to standard error.
+///
+/// # Ctrl-C is process-wide
+///
+/// A process has one Ctrl-C handler. The first session on a `TerminalFrontend`
+/// installs one, which stays for the life of the process and cancels the
+/// inputs of the latest session to start. If the host has installed a handler
+/// already, through the `ctrlc` crate, Ctrl-C stays the host's and cancels no
+/// input.
 pub struct TerminalFrontend {
     color: bool,
     // `None` for the default history file.
@@ -199,6 +209,39 @@ impl Frontend for TerminalFrontend {
     fn metacommand(&mut self, invocation: &Invocation) -> io::Result<()> {
         METACOMMANDS.dispatch(self, invocation)
     }
+
+    fn set_cancel_handle(&mut self, handle: CancelHandle) {
+        cancel_on_ctrl_c(handle);
+    }
+}
+
+/// What Ctrl-C cancels through: the latest session's handle.
+static CTRL_C_TARGET: Mutex<Option<CancelHandle>> = Mutex::new(None);
+
+/// Have Ctrl-C cancel the inputs `handle` cancels, installing the process's
+/// handler if this is the first session.
+fn cancel_on_ctrl_c(handle: CancelHandle) {
+    *ctrl_c_target() = Some(handle);
+    static INSTALL: Once = Once::new();
+    INSTALL.call_once(|| {
+        // Fails only if the host installed a handler first; Ctrl-C stays the host's.
+        let _ = ctrlc::set_handler(on_ctrl_c);
+    });
+}
+
+fn on_ctrl_c() {
+    let cancelled = ctrl_c_target().as_ref().is_some_and(CancelHandle::cancel);
+    if !cancelled {
+        // No input is running: end the process, as Ctrl-C does by default.
+        // While input is read, the terminal sends Ctrl-C as a key instead.
+        process::exit(130);
+    }
+}
+
+fn ctrl_c_target() -> MutexGuard<'static, Option<CancelHandle>> {
+    // Every critical section is a single store or read, so a panic cannot
+    // leave the target half-written.
+    CTRL_C_TARGET.lock().unwrap_or_else(PoisonError::into_inner)
 }
 
 static METACOMMANDS: LazyLock<MetacommandTable<TerminalFrontend>> = LazyLock::new(|| {

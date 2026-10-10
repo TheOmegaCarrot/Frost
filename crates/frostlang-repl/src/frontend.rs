@@ -4,7 +4,7 @@ use std::io::{self, BufRead, IsTerminal, Stderr, StdinLock, Stdout, Write};
 
 use frostlang::Value;
 
-use crate::{Invocation, MetacommandSpec, ReplError, complete_segment};
+use crate::{CancelHandle, Invocation, MetacommandSpec, ReplError, complete_segment};
 
 /// Where a [`Repl`](crate::Repl) session happens: it supplies each input and
 /// shows what became of it. A terminal, a notebook, or an in-application
@@ -50,6 +50,14 @@ pub trait Frontend {
             "this frontend has no metacommand `:{}`",
             invocation.name()
         )))
+    }
+
+    /// Take the [`CancelHandle`] that cancels the input being evaluated,
+    /// for a frontend that lets its user interrupt one, as Ctrl-C at a terminal does.
+    /// [`Repl::run`](crate::Repl::run) gives it as a session starts.
+    /// By default, it is dropped.
+    fn set_cancel_handle(&mut self, handle: CancelHandle) {
+        let _ = handle;
     }
 }
 

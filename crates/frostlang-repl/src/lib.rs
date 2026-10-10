@@ -25,6 +25,7 @@
 //!   text. If you show the REPL to people, you probably want it.
 
 mod builtins;
+mod cancel;
 #[cfg(feature = "line-editor")]
 mod edit_dir;
 mod frontend;
@@ -36,6 +37,7 @@ mod segment;
 #[cfg(feature = "line-editor")]
 mod terminal;
 
+pub use cancel::CancelHandle;
 pub use frontend::{Frontend, LineFrontend, render_value};
 pub use metacommand::{
     InvalidMetacommand, Invocation, MetacommandError, MetacommandHandler, MetacommandProblem,
@@ -53,7 +55,10 @@ use std::num::NonZeroUsize;
 use std::sync::Arc;
 
 use frostlang::compile::{CompilerOptions, Diagnostics, OptimizationOptions, compile_in_scope};
-use frostlang::{Closure, FrostError, IdleVm, Importer, Value, Vm, VmRuntimeConfiguration};
+use frostlang::{
+    AbortReason, CancelToken, Closure, FrostError, IdleVm, Importer, RunErrorKind, Value, Vm,
+    VmRuntimeConfiguration,
+};
 use frostlang_parse::{Token, tokens};
 
 use builtins::Reply;
@@ -119,6 +124,7 @@ pub struct Repl {
     results: VecDeque<Value>,
     // The Vm the last input ran on, kept warm for the next.
     idle_vm: Option<IdleVm>,
+    cancel: CancelHandle,
 }
 
 impl Default for Repl {
@@ -148,6 +154,7 @@ impl Repl {
             results_kept: 5,
             results: VecDeque::new(),
             idle_vm: None,
+            cancel: CancelHandle::default(),
         }
     }
 
@@ -210,7 +217,28 @@ impl Repl {
     /// The input sees every binding earlier inputs made. The bindings it makes
     /// itself are kept only if it compiles and runs without error; a failed
     /// input changes nothing.
+    ///
+    /// A [`CancelHandle`] from [`cancel_handle`](Self::cancel_handle) can stop
+    /// the input meanwhile.
     pub fn evaluate(&mut self, source: &str) -> Result<Value, ReplError> {
+        let token = self.cancel.begin();
+        let outcome = self.evaluate_until_cancelled(source, token);
+        self.cancel.end();
+        outcome
+    }
+
+    /// The means to cancel whichever input this REPL is evaluating, from
+    /// another thread or a [`Frontend`].
+    pub fn cancel_handle(&self) -> CancelHandle {
+        self.cancel.clone()
+    }
+
+    /// [`evaluate`](Self::evaluate), stopping when `token` is cancelled.
+    fn evaluate_until_cancelled(
+        &mut self,
+        source: &str,
+        token: CancelToken,
+    ) -> Result<Value, ReplError> {
         let closure = self.compile(source)?;
         let vm = match self.idle_vm.take() {
             Some(idle_vm) => idle_vm.build(closure),
@@ -220,7 +248,7 @@ impl Repl {
                 .build(closure)
                 .map_err(ReplError::Run)?,
         };
-        match vm.run() {
+        match vm.with_cancel_token(token).run() {
             Ok(result) => {
                 let value = result.tail().clone();
                 self.bindings.extend(
@@ -239,8 +267,13 @@ impl Repl {
             }
             Err(failure) => {
                 let error = failure.error().clone();
+                let cancelled = failure.kind() == RunErrorKind::Aborted(AbortReason::Cancelled);
                 self.idle_vm = Some(failure.into_idle_vm());
-                Err(ReplError::Run(error))
+                Err(if cancelled {
+                    ReplError::Cancelled(error)
+                } else {
+                    ReplError::Run(error)
+                })
             }
         }
     }
@@ -265,8 +298,12 @@ impl Repl {
     /// Fails if `frontend` fails, or if one of its
     /// [metacommands](Frontend::metacommands) is refused; then it reads
     /// nothing.
+    ///
+    /// The session starts by giving `frontend` this REPL's [`CancelHandle`]
+    /// (see [`Frontend::set_cancel_handle`]).
     pub fn run(&mut self, frontend: &mut dyn Frontend) -> Result<(), SessionError> {
         let registry = Registry::new(frontend.metacommands()).map_err(SessionError::Metacommand)?;
+        frontend.set_cancel_handle(self.cancel_handle());
         while let Some(segment) = frontend.read_segment()? {
             let Some(invocation) = Invocation::parse(&segment) else {
                 frontend.render(self.evaluate(&segment).as_ref())?;
@@ -366,6 +403,9 @@ pub enum ReplError {
     Compile(Diagnostics),
     /// The input raised an error while running.
     Run(FrostError),
+    /// The input was cancelled through a [`CancelHandle`] before it finished.
+    /// The error says where it was running when it stopped.
+    Cancelled(FrostError),
     /// The input was a [metacommand](Repl#metacommands), which failed.
     Metacommand(MetacommandError),
 }
@@ -377,7 +417,9 @@ impl fmt::Display for ReplError {
             Self::Compile(diagnostics) => f.write_str(diagnostics.render_plain().trim_end()),
             #[cfg(not(feature = "graphical-diagnostics"))]
             Self::Compile(diagnostics) => f.write_str(diagnostics.render_narrated().trim_end()),
-            Self::Run(error) => write!(f, "Error: {}", error.with_backtrace()),
+            Self::Run(error) | Self::Cancelled(error) => {
+                write!(f, "Error: {}", error.with_backtrace())
+            }
             Self::Metacommand(error) => write!(f, "Error: {error}"),
         }
     }
@@ -387,7 +429,7 @@ impl std::error::Error for ReplError {
     fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
         match self {
             Self::Compile(diagnostics) => Some(diagnostics),
-            Self::Run(error) => Some(error),
+            Self::Run(error) | Self::Cancelled(error) => Some(error),
             Self::Metacommand(error) => Some(error),
         }
     }
