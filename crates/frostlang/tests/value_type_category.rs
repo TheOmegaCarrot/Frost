@@ -12,7 +12,7 @@ use std::sync::Arc;
 
 use frostlang::bytecode::Bytecode;
 use frostlang::{
-    Arity, EnumSet, FrostArray, FrostMap, FrostOpaque, FrostType, NativeFunction, Value,
+    Arity, FrostArray, FrostMap, FrostOpaque, FrostType, NativeFunction, TypeSet, Value,
 };
 
 type Ft = FrostType;
@@ -172,7 +172,7 @@ fn fits_an_or_built_set() {
 #[test]
 fn nothing_fits_the_empty_set() {
     for (v, _) in samples() {
-        assert!(!v.fits(EnumSet::empty()), "{}", v.type_name());
+        assert!(!v.fits(TypeSet::EMPTY), "{}", v.type_name());
     }
 }
 
@@ -185,12 +185,12 @@ fn samples_cover_every_frost_type() {
     // The category tests below iterate `samples()`, so a type missing from it would
     // be skipped in silence and a type named in an `expected_true` list but absent
     // here would assert nothing at all.
-    let covered: EnumSet<Ft> = samples().iter().map(|(_, t)| *t).collect();
-    assert_eq!(covered, EnumSet::all());
+    let covered: TypeSet = samples().iter().map(|(_, t)| *t).collect();
+    assert_eq!(covered, Ft::ANY);
 }
 
 /// Assert each variant's membership in `set` against a hand-written truth.
-fn assert_membership(set: EnumSet<Ft>, expected_true: &[Ft]) {
+fn assert_membership(set: TypeSet, expected_true: &[Ft]) {
     for (v, t) in samples() {
         let expected = expected_true.contains(&t);
         assert_eq!(v.fits(set), expected, "{} in {:?}", v.type_name(), set);
@@ -285,9 +285,8 @@ fn category_consts_relate_as_expected() {
     assert_eq!(Ft::STRUCTURED, Ft::Array | Ft::Map);
     assert_eq!(Ft::FLAT, Ft::String | Ft::Bytes);
     // Flat is the sequence half of Primitive; it never overlaps Structured.
-    assert_eq!(Ft::FLAT & Ft::STRUCTURED, EnumSet::empty());
+    assert_eq!(Ft::FLAT & Ft::STRUCTURED, TypeSet::EMPTY);
     assert_eq!(Ft::NONNULL, Ft::ANY - Ft::Null);
-    assert_eq!(Ft::ANY, EnumSet::all());
     // Primitive and Structured partition NONNULL minus functions/opaques.
     assert_eq!(
         Ft::PRIMITIVE | Ft::STRUCTURED | Ft::Function | Ft::Opaque,

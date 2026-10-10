@@ -28,15 +28,12 @@ pub mod native;
 pub mod stdlib;
 mod vm;
 
-// Type sets (`EnumSet<FrostType>`) appear in the public API, so the enumset items
-// are re-exported for consumers.
-pub use enumset::{EnumSet, enum_set};
-
 pub use core::{
     BacktraceFrame, FrostArray, FrostBytes, FrostError, FrostFloat, FrostMap, FrostOpaque,
-    FrostResult, FrostString, FrostType, KEYWORDS, MapKey, OpaqueHandle, SpecialFloat, Value,
-    ValueMap, WithBacktrace, from_value, is_identifier_like, is_identifier_like_and_not_keyword,
-    is_reserved_keyword, to_value, value_map, write_escaped_string, write_quoted_string,
+    FrostResult, FrostString, FrostType, KEYWORDS, MapKey, OpaqueHandle, SpecialFloat, TypeSet,
+    Value, ValueMap, WithBacktrace, from_value, is_identifier_like,
+    is_identifier_like_and_not_keyword, is_reserved_keyword, to_value, value_map,
+    write_escaped_string, write_quoted_string,
 };
 
 pub use vm::{

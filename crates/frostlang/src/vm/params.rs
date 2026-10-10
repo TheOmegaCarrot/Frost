@@ -11,9 +11,7 @@ use std::borrow::Cow;
 use std::fmt;
 use std::ops::Range;
 
-use enumset::EnumSet;
-
-use crate::{Arity, FrostType, Value};
+use crate::{Arity, FrostType, TypeSet, Value};
 
 /// One parameter of a native function.
 #[derive(Clone, Copy, Debug)]
@@ -21,7 +19,7 @@ pub struct Param {
     /// Surfaced in the error as `argument N (name)` when present; most params omit it.
     pub(crate) name: Option<&'static str>,
     /// Accepted types. [`FrostType::ANY`] accepts any value.
-    types: EnumSet<FrostType>,
+    types: TypeSet,
     kind: Kind,
 }
 
@@ -37,12 +35,12 @@ enum Kind {
 }
 
 impl Param {
-    /// A required parameter accepting the types in `types`: a single type
-    /// (`FrostType::Function.into()`), a `|`-built set, or a named category.
+    /// A required parameter accepting the types in `types`, such as
+    /// [`FrostType::FUNCTION`] or `FrostType::String.or(FrostType::Bytes)`.
     /// The set must be nonempty; [`Params`] construction rejects an empty one.
     /// Use [`Param::any`] instead to construct a `Param` that accepts any type,
     /// but passing [`FrostType::NONNULL`] to this constructor may more often be what you want.
-    pub const fn of(types: EnumSet<FrostType>) -> Self {
+    pub const fn of(types: TypeSet) -> Self {
         Self {
             name: None,
             types,
@@ -89,7 +87,7 @@ impl Param {
     }
 
     /// The set of types this parameter accepts.
-    pub const fn types(&self) -> EnumSet<FrostType> {
+    pub const fn types(&self) -> TypeSet {
         self.types
     }
 
@@ -110,7 +108,7 @@ impl Param {
 
 /// `types` for an error message: a named category (`Any`, `Numeric`, ...)
 /// when the set is one, else the list of type names, e.g. `String or Array`.
-pub(crate) fn expected_types(types: EnumSet<FrostType>) -> String {
+pub(crate) fn expected_types(types: TypeSet) -> String {
     match types {
         t if t == FrostType::ANY => "Any".to_string(),
         t if t == FrostType::NUMERIC => "Numeric".to_string(),
@@ -211,9 +209,9 @@ impl Params {
     /// ```
     ///
     /// ```compile_fail
-    /// # use frostlang::{EnumSet, Param, Params};
+    /// # use frostlang::{Param, Params, TypeSet};
     /// // An empty type set (a parameter accepting no value) fails const evaluation.
-    /// const PARAMS: Params = Params::new(&[Param::of(EnumSet::empty())]);
+    /// const PARAMS: Params = Params::new(&[Param::of(TypeSet::EMPTY)]);
     /// ```
     ///
     /// ```compile_fail
@@ -300,8 +298,7 @@ impl Params {
         let mut optionals_closed = false;
         let mut i = 0;
         while i < params.len() {
-            // Emptiness via the raw repr: `is_empty` is not a const fn.
-            if params[i].types.as_repr() == 0 {
+            if params[i].types.is_empty() {
                 return Err(InvalidParams::EmptyTypeSet { index: i });
             }
             match params[i].kind {

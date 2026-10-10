@@ -22,6 +22,7 @@ pub use types::map_key::MapKey;
 pub use types::opaque::{FrostOpaque, OpaqueHandle};
 pub use types::special_float::SpecialFloat;
 pub use types::string::FrostString;
+pub use types::type_set::TypeSet;
 pub use types::value_map::{self, ValueMap};
 pub use util::identifier::{
     KEYWORDS, is_identifier_like, is_identifier_like_and_not_keyword, is_reserved_keyword,

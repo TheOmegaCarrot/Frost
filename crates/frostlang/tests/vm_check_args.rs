@@ -7,7 +7,7 @@ use std::sync::Arc;
 
 use frostlang::bytecode::{Bytecode, CompiledFunction, FormatVersion, NameEntry};
 use frostlang::{
-    Arity, EnumSet, FrostError, FrostType, InvalidParams, NativeFunction, Param, Params, Value, Vm,
+    Arity, FrostError, FrostType, InvalidParams, NativeFunction, Param, Params, TypeSet, Value, Vm,
 };
 
 /// A throwaway native named `frob`, for testing `check_args` in isolation.
@@ -360,7 +360,7 @@ fn try_new_accepts_one_group_of_optionals_anywhere() {
 
 #[test]
 fn try_new_rejects_an_empty_type_set() {
-    let result = Params::try_new([Param::any(), Param::of(EnumSet::empty())]);
+    let result = Params::try_new([Param::any(), Param::of(TypeSet::EMPTY)]);
     assert_eq!(
         result.unwrap_err(),
         InvalidParams::EmptyTypeSet { index: 1 }
@@ -417,7 +417,7 @@ fn new_panics_on_optionals_with_a_rest_param() {
 #[test]
 #[should_panic(expected = "type set is empty")]
 fn new_panics_on_an_empty_type_set() {
-    const BAD: &[Param] = &[Param::of(EnumSet::empty())];
+    const BAD: &[Param] = &[Param::of(TypeSet::EMPTY)];
     let _ = Params::new(BAD);
 }
 

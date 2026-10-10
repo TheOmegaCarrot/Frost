@@ -2,10 +2,8 @@
 
 use std::num::NonZeroUsize;
 
-use enumset::{EnumSet, enum_set};
-
 use crate::bytecode::Bytecode;
-use crate::{Arity, FrostType, Param, Params, Value};
+use crate::{Arity, FrostType, Param, Params, TypeSet, Value};
 
 /// The shared one-any-argument spec (`Exact(1)`).
 const ONE_ANY: Params = Params::new(&[Param::any()]);
@@ -13,13 +11,12 @@ const ONE_ANY: Params = Params::new(&[Param::any()]);
 /// The spec for the numeric parsers: the types a number can be read from.
 /// A value of any other type is a type error, which is distinct from a value of the
 /// right type whose content will not convert: that returns Null.
-const NUMERIC_OR_STRING: EnumSet<FrostType> =
-    enum_set!(FrostType::Int | FrostType::Float | FrostType::String);
-const ONE_NUMERIC_OR_STRING: Params = Params::new(&[Param::of(NUMERIC_OR_STRING)]);
+const ONE_NUMERIC_OR_STRING: Params =
+    Params::new(&[Param::of(FrostType::NUMERIC.or(FrostType::String))]);
 
 /// A one-argument type predicate `is_X(v)`, testing whether v's type is in `set`.
 /// Compiles to `DropBelow(1); TypeTest(set)`, identical to `Value::fits(set)`.
-fn type_predicate(name: &'static str, set: EnumSet<FrostType>) -> Value {
+fn type_predicate(name: &'static str, set: TypeSet) -> Value {
     super::bytecode_global(
         name,
         Arity::Exact(1),

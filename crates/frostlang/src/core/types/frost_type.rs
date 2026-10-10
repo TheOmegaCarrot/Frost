@@ -1,16 +1,10 @@
-//! [`FrostType`]: the type of a Frost value, and the named category sets.
-
-use enumset::{EnumSet, EnumSetType, enum_set};
+//! [`FrostType`]: the type of a Frost value.
 
 /// The possible types of a Frost Value.
 ///
-/// Sets of types are [`EnumSet<FrostType>`]: build one with `|`
+/// Sets of types are [`TypeSet`](crate::TypeSet)s: build one with `|`
 /// (`FrostType::Int | FrostType::Float`) or use a named category constant.
-// EnumSetType derives Copy, Clone, PartialEq, and Eq itself.
-// The explicit repr unlocks `EnumSet::as_repr`: const-compatible inspection,
-// needed for const spec validation.
-#[derive(EnumSetType, Debug, serde::Serialize, serde::Deserialize)]
-#[enumset(repr = "u16")]
+#[derive(Clone, Copy, PartialEq, Eq, Debug, serde::Serialize, serde::Deserialize)]
 pub enum FrostType {
     /// The absence of a value.
     Null,
@@ -32,67 +26,6 @@ pub enum FrostType {
     Function,
     /// Host data; see [`FrostOpaque`](crate::FrostOpaque).
     Opaque,
-}
-
-/// Named type sets, for building specs and tests in const context (where a single
-/// [`FrostType`] can't be widened to an [`EnumSet`] via `.into()`).
-impl FrostType {
-    /// The set containing only `Null`.
-    pub const NULL: EnumSet<FrostType> = enum_set!(FrostType::Null);
-    /// The set containing only `Bool`.
-    pub const BOOL: EnumSet<FrostType> = enum_set!(FrostType::Bool);
-    /// The set containing only `Int`.
-    pub const INT: EnumSet<FrostType> = enum_set!(FrostType::Int);
-    /// The set containing only `Float`.
-    pub const FLOAT: EnumSet<FrostType> = enum_set!(FrostType::Float);
-    /// The set containing only `String`.
-    pub const STRING: EnumSet<FrostType> = enum_set!(FrostType::String);
-    /// The set containing only `Bytes`.
-    pub const BYTES: EnumSet<FrostType> = enum_set!(FrostType::Bytes);
-    /// The set containing only `Array`.
-    pub const ARRAY: EnumSet<FrostType> = enum_set!(FrostType::Array);
-    /// The set containing only `Map`.
-    pub const MAP: EnumSet<FrostType> = enum_set!(FrostType::Map);
-    /// The set containing only `Function`.
-    pub const FUNCTION: EnumSet<FrostType> = enum_set!(FrostType::Function);
-    /// The set containing only `Opaque`.
-    pub const OPAQUE: EnumSet<FrostType> = enum_set!(FrostType::Opaque);
-
-    /// Every type: the set that accepts any value.
-    pub const ANY: EnumSet<FrostType> = EnumSet::all();
-
-    /// Int or Float.
-    pub const NUMERIC: EnumSet<FrostType> = enum_set!(FrostType::Int | FrostType::Float);
-
-    /// Null, Bool, Int, Float, String, or Bytes.
-    /// All but Null may be Map keys.
-    pub const PRIMITIVE: EnumSet<FrostType> = enum_set!(
-        FrostType::Null
-            | FrostType::Bool
-            | FrostType::Int
-            | FrostType::Float
-            | FrostType::String
-            | FrostType::Bytes
-    );
-
-    /// Array or Map.
-    pub const STRUCTURED: EnumSet<FrostType> = enum_set!(FrostType::Array | FrostType::Map);
-
-    /// String or Bytes: the flat sequence types.
-    pub const FLAT: EnumSet<FrostType> = enum_set!(FrostType::String | FrostType::Bytes);
-
-    /// Every type except Null.
-    pub const NONNULL: EnumSet<FrostType> = enum_set!(
-        FrostType::Bool
-            | FrostType::Int
-            | FrostType::Float
-            | FrostType::String
-            | FrostType::Bytes
-            | FrostType::Array
-            | FrostType::Map
-            | FrostType::Function
-            | FrostType::Opaque
-    );
 }
 
 impl FrostType {

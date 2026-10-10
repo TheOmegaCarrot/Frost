@@ -562,7 +562,7 @@ enum Direction {
 }
 
 impl FromArg for Direction {
-    const TYPES: frostlang::EnumSet<FrostType> = FrostType::STRING;
+    const TYPES: frostlang::TypeSet = FrostType::STRING;
 
     fn from_arg(value: Value, site: &frostlang::native::ArgSite<'_>) -> Result<Self, FrostError> {
         match value.as_str() {

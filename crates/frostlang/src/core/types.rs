@@ -7,4 +7,5 @@ pub(super) mod map_key;
 pub(super) mod opaque;
 pub(super) mod special_float;
 pub(super) mod string;
+pub(super) mod type_set;
 pub mod value_map;

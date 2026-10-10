@@ -6,14 +6,12 @@ use crate::bytecode::Bytecode;
 use crate::native::{Args, FrostArg, Rest};
 use crate::{
     Arity, FrostArray, FrostBytes, FrostError, FrostMap, FrostResult, FrostString, FrostType,
-    MapKey, NativeCtx, Param, Params, Value, ValueMap,
+    MapKey, NativeCtx, Param, Params, TypeSet, Value, ValueMap,
 };
-use enumset::{EnumSet, enum_set};
 
 /// The types with elements in order: a String's are its code points, and
 /// Bytes' its bytes. See [`Sequence`].
-const SEQUENCE: EnumSet<FrostType> =
-    enum_set!(FrostType::String | FrostType::Bytes | FrostType::Array);
+const SEQUENCE: TypeSet = FrostType::FLAT.or(FrostType::Array);
 
 const ONE_ARRAY: Params = Params::new(&[Param::of(FrostType::ARRAY)]);
 const ONE_MAP: Params = Params::new(&[Param::of(FrostType::MAP)]);
@@ -190,9 +188,7 @@ pub(super) fn dissoc_global() -> Value {
 // --- Measuring and building ---
 
 pub(super) fn len_global() -> Value {
-    const MEASURABLE: EnumSet<FrostType> =
-        enum_set!(FrostType::String | FrostType::Bytes | FrostType::Array | FrostType::Map);
-    const PARAMS: Params = Params::new(&[Param::of(MEASURABLE)]);
+    const PARAMS: Params = Params::new(&[Param::of(FrostType::FLAT.union(FrostType::STRUCTURED))]);
     Value::checked_native("len", PARAMS, |_, args| {
         let len = match &args[0] {
             // A String's length is in code points; see the String/Bytes design.

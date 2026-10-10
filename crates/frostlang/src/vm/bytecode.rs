@@ -2,9 +2,7 @@
 
 use std::num::NonZeroUsize;
 
-use enumset::EnumSet;
-
-use crate::{FrostFloat, FrostType};
+use crate::{FrostFloat, TypeSet};
 
 /// One VM instruction; a [`CompiledFunction`](crate::bytecode::CompiledFunction)'s `code` is a sequence of them.
 ///
@@ -184,7 +182,7 @@ pub enum Bytecode {
     ExtractConstKey(usize),
 
     /// Test whether a value's type is in the given set: `( x -- b )`.
-    TypeTest(EnumSet<FrostType>),
+    TypeTest(TypeSet),
 
     /// Test whether a value is an Array of exactly N elements, keeping it: `( x -- x b )`.
     /// `b` is false if `x` is not an Array.

@@ -1,9 +1,7 @@
 //! Type classification of a [`Value`]: [`frost_type`](Value::frost_type),
 //! [`fits`](Value::fits), and the `is_*` predicates.
 
-use enumset::EnumSet;
-
-use crate::core::{FrostType, Value};
+use crate::core::{FrostType, TypeSet, Value};
 
 type Ft = FrostType;
 
@@ -40,7 +38,7 @@ impl Value {
 
     /// Returns true if this value's type is in `types`.
     /// Use with `|`-built sets or the named categories ([`FrostType::NUMERIC`], etc.).
-    pub fn fits(&self, types: EnumSet<FrostType>) -> bool {
+    pub fn fits(&self, types: TypeSet) -> bool {
         types.contains(self.frost_type())
     }
 

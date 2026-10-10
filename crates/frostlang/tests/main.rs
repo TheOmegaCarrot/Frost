@@ -76,6 +76,7 @@ mod structure_literals;
 mod tail_calls;
 mod truthiness;
 mod type_name;
+mod type_set;
 mod unary_operations;
 mod unary_operators;
 mod value_accessors;

@@ -1,4 +1,4 @@
-//! Tests for the `TypeTest(EnumSet<FrostType>)` opcode, `( v -- b )`: consume a value, push a `Bool` of whether its type is in the set.
+//! Tests for the `TypeTest(TypeSet)` opcode, `( v -- b )`: consume a value, push a `Bool` of whether its type is in the set.
 //!
 //! The set/category *logic* is exhaustively covered at the value level in `value_type_category.rs`;
 //! here we only test the opcode wiring: that it delegates to `fits` with the right set,
@@ -11,7 +11,7 @@ use std::sync::Arc;
 
 use frostlang::bytecode::{Bytecode, CompiledFunction, FormatVersion};
 use frostlang::{
-    Arity, EnumSet, FrostArray, FrostError, FrostFloat, FrostMap, FrostType, Value, Vm,
+    Arity, FrostArray, FrostError, FrostFloat, FrostMap, FrostType, TypeSet, Value, Vm,
 };
 
 type Ft = FrostType;
@@ -138,11 +138,11 @@ fn nonnull_false_on_null_true_on_int() {
 fn empty_set_is_always_false() {
     // The empty set is representable in the opcode; nothing fits it.
     assert_eq!(
-        val(vec![PushInt(1), TypeTest(EnumSet::empty())]),
+        val(vec![PushInt(1), TypeTest(TypeSet::EMPTY)]),
         Value::Bool(false)
     );
     assert_eq!(
-        val(vec![PushNull, TypeTest(EnumSet::empty())]),
+        val(vec![PushNull, TypeTest(TypeSet::EMPTY)]),
         Value::Bool(false)
     );
 }

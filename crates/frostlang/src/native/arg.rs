@@ -3,13 +3,12 @@
 use std::fmt;
 use std::ops::Range;
 
-use enumset::{EnumSet, enum_set_union};
 use serde::de::DeserializeOwned;
 
 use crate::vm::{Binder, expected_types};
 use crate::{
     FrostArray, FrostBytes, FrostError, FrostFloat, FrostMap, FrostString, FrostType, MapKey,
-    Param, Params, Value, from_value,
+    Param, Params, TypeSet, Value, from_value,
 };
 
 /// A Rust type a native can take one argument as.
@@ -18,7 +17,7 @@ use crate::{
 /// is also a required parameter, through [`FrostArg`].
 pub trait FromArg: Sized {
     /// The types of value this type is taken from.
-    const TYPES: EnumSet<FrostType>;
+    const TYPES: TypeSet;
 
     /// Converts `value` into this type.
     ///
@@ -115,7 +114,7 @@ impl<T: FromArg> sealed::TakeArg for Rest<T> {
 pub struct Nullable<T>(pub Option<T>);
 
 impl<T: FromArg> FromArg for Nullable<T> {
-    const TYPES: EnumSet<FrostType> = enum_set_union!(T::TYPES, FrostType::Null);
+    const TYPES: TypeSet = T::TYPES.or(FrostType::Null);
 
     fn from_arg(value: Value, site: &ArgSite<'_>) -> Result<Self, FrostError> {
         match value {
@@ -131,7 +130,7 @@ impl<T: FromArg> FromArg for Nullable<T> {
 pub struct De<T>(pub T);
 
 impl<T: DeserializeOwned> FromArg for De<T> {
-    const TYPES: EnumSet<FrostType> = FrostType::ANY;
+    const TYPES: TypeSet = FrostType::ANY;
 
     fn from_arg(value: Value, site: &ArgSite<'_>) -> Result<Self, FrostError> {
         from_value(value)
@@ -284,7 +283,7 @@ impl<'a> ArgSite<'a> {
     }
 
     /// The error for `value` at this site, which is not of `types`.
-    pub(crate) fn wrong_type(&self, types: EnumSet<FrostType>, value: &Value) -> FrostError {
+    pub(crate) fn wrong_type(&self, types: TypeSet, value: &Value) -> FrostError {
         FrostError::from_string(format!(
             "Function {} requires {} as {self}, got {}",
             self.function,
@@ -321,7 +320,7 @@ fn mismatch(site: &ArgSite<'_>, value: &Value) -> ! {
 // --- Implementations ---
 
 impl FromArg for Value {
-    const TYPES: EnumSet<FrostType> = FrostType::ANY;
+    const TYPES: TypeSet = FrostType::ANY;
 
     fn from_arg(value: Value, _: &ArgSite<'_>) -> Result<Self, FrostError> {
         Ok(value)
@@ -333,7 +332,7 @@ impl FromArg for Value {
 macro_rules! from_variant {
     ($($type:ty: $types:expr, $pattern:pat => $taken:expr;)*) => {$(
         impl FromArg for $type {
-            const TYPES: EnumSet<FrostType> = $types;
+            const TYPES: TypeSet = $types;
 
             fn from_arg(value: Value, site: &ArgSite<'_>) -> Result<Self, FrostError> {
                 match value {
@@ -356,7 +355,7 @@ from_variant! {
 }
 
 impl FromArg for MapKey {
-    const TYPES: EnumSet<FrostType> = MapKey::TYPES;
+    const TYPES: TypeSet = MapKey::TYPES;
 
     fn from_arg(value: Value, site: &ArgSite<'_>) -> Result<Self, FrostError> {
         if !value.fits(MapKey::TYPES) {
@@ -368,7 +367,7 @@ impl FromArg for MapKey {
 
 /// A Numeric argument: an Int becomes the nearest `f64`.
 impl FromArg for f64 {
-    const TYPES: EnumSet<FrostType> = FrostType::NUMERIC;
+    const TYPES: TypeSet = FrostType::NUMERIC;
 
     fn from_arg(value: Value, site: &ArgSite<'_>) -> Result<Self, FrostError> {
         match value {
@@ -396,7 +395,7 @@ fn int_range(min: i128, max: i128) -> String {
 macro_rules! from_int {
     ($($int:ty),*) => {$(
         impl FromArg for $int {
-            const TYPES: EnumSet<FrostType> = FrostType::INT;
+            const TYPES: TypeSet = FrostType::INT;
 
             fn from_arg(value: Value, site: &ArgSite<'_>) -> Result<Self, FrostError> {
                 let Value::Int(int) = value else { mismatch(site, &value) };
@@ -419,7 +418,7 @@ from_int!(
 /// An Array, each element taken as `T`. An element not of `T`'s types is an
 /// error worded as a wrong argument type is.
 impl<T: FromArg> FromArg for Vec<T> {
-    const TYPES: EnumSet<FrostType> = FrostType::ARRAY;
+    const TYPES: TypeSet = FrostType::ARRAY;
 
     fn from_arg(value: Value, site: &ArgSite<'_>) -> Result<Self, FrostError> {
         let Value::Array(array) = value else {
