@@ -27,25 +27,35 @@ impl FunctionBuilder<'_> {
                 foldable: true,
             });
 
-        let ([condition, consequent, alternate], foldable) =
-            self.fold_siblings([condition, consequent, alternate]);
+        // The folding rule of `fold_siblings`, applied a child at a time so that
+        // the branch a constant condition discards is never folded.
+        let all_foldable = condition.foldable && consequent.foldable && alternate.foldable;
+        let fold = |child| {
+            if all_foldable {
+                child
+            } else {
+                self.fold_if_eligible(child)
+            }
+        };
 
+        let condition = fold(condition);
         if self.options.optimization_options.branch_eliminate
             && let Some(condition_value) = constant_of(&condition.code)
         {
-            // TODO: possibly wasting a fold of the discarded branch
-            return Ok(if condition_value.is_truthy() {
+            return Ok(fold(if condition_value.is_truthy() {
                 consequent
             } else {
                 alternate
-            });
+            }));
         }
+        let consequent = fold(consequent);
+        let alternate = fold(alternate);
 
         let to_alternate = self.next_label();
         let past_alternate = self.next_label();
 
         Ok(ExprFragment {
-            foldable,
+            foldable: all_foldable,
             code: condition
                 .code
                 .into_iter()
