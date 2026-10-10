@@ -4,16 +4,18 @@ use std::ops::Range;
 
 use logos::Logos;
 
+use crate::ast::SourceSpan;
+
 /// The tokens of `source`, each with its byte span, in order.
 ///
 /// Whitespace other than newlines, and comments, produce no tokens. An `Err`
 /// covers bytes that begin no token, such as a string missing its closing
 /// quote, a number written `1.e3`, or a character Frost does not use; tokens
 /// resume after it.
-pub fn tokens(source: &str) -> impl Iterator<Item = (Result<Token<'_>, LexError>, Range<usize>)> {
+pub fn tokens(source: &str) -> impl Iterator<Item = (Result<Token<'_>, LexError>, SourceSpan)> {
     Token::lexer(source)
         .spanned()
-        .map(|(token, span)| (token.map_err(|()| LexError), span))
+        .map(|(token, span)| (token.map_err(|()| LexError), span.into()))
 }
 
 /// Bytes of source that begin no [`Token`]; see [`tokens`].

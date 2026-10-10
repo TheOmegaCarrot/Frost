@@ -68,7 +68,6 @@ fn run_main(caps: Vec<(&str, Value)>, body: Vec<Bytecode>) -> Result<ProgramResu
     let map: BTreeMap<String, Value> = caps.into_iter().map(|(n, v)| (n.to_string(), v)).collect();
     Vm::factory()
         .build(main.assert_trusted().close(map).unwrap())
-        .unwrap()
         .run()
         .map_err(frostlang::RunError::into_error)
 }

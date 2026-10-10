@@ -148,7 +148,6 @@ impl Host {
     fn vm_with(&self, source: &str, extra: &[(&str, Value)]) -> Vm {
         self.factory()
             .build(self.program(source, extra))
-            .expect("the Vm builds")
             .with_cancel_token(self.token.clone())
     }
 
@@ -232,7 +231,7 @@ fn a_run_without_a_token_is_unaffected_by_cancellation() {
     // The token is cancelled, but never attached to this Vm.
     let host = Host::new();
     host.token.cancel();
-    let vm = host.factory().build(host.program(FINISHES, &[])).unwrap();
+    let vm = host.factory().build(host.program(FINISHES, &[]));
     assert_finishes_with(vm.run(), finished());
 }
 
@@ -381,14 +380,6 @@ fn a_cancelled_run_can_be_recycled() {
     // The token stays cancelled, but the recycled Vm no longer holds it.
     let host = Host::new();
     let failure = assert_cancelled(host.vm(CANCELS).run());
-    let next = failure.reset(host.program(FINISHES, &[]));
-    assert_finishes_with(next.run(), finished());
-}
-
-#[test]
-fn a_cancelled_run_can_be_recycled_through_an_idle_vm() {
-    let host = Host::new();
-    let failure = assert_cancelled(host.vm(CANCELS).run());
     let next = failure.into_idle_vm().build(host.program(FINISHES, &[]));
     assert_finishes_with(next.run(), finished());
 }
@@ -398,7 +389,7 @@ fn a_finished_runs_token_does_not_reach_the_next_run() {
     let host = Host::new();
     let result = host.vm(FINISHES).run().expect("the first run finishes");
     host.token.cancel();
-    let next = result.reset(host.program(FINISHES, &[]));
+    let next = result.into_idle_vm().build(host.program(FINISHES, &[]));
     assert_finishes_with(next.run(), finished());
 }
 
@@ -413,7 +404,7 @@ fn a_vm_cancelled_before_it_ran_can_be_reset() {
 #[test]
 fn resetting_a_vm_that_never_ran_runs_the_new_script() {
     let host = Host::new();
-    let vm = host.factory().build(host.program("1", &[])).unwrap();
+    let vm = host.factory().build(host.program("1", &[]));
     assert_finishes_with(vm.reset(host.program("2", &[])).run(), Value::Int(2));
 }
 
@@ -424,7 +415,8 @@ fn a_recycled_vm_can_take_a_new_token() {
     let fresh = CancelToken::new();
     fresh.cancel();
     let next = failure
-        .reset(host.program(FINISHES, &[]))
+        .into_idle_vm()
+        .build(host.program(FINISHES, &[]))
         .with_cancel_token(fresh);
     assert_cancelled(next.run());
 }

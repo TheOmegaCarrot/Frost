@@ -96,7 +96,6 @@ fn run_with(
         .expect("all captures provided");
     Vm::factory()
         .build(closure)
-        .unwrap()
         .run()
         .map_err(frostlang::RunError::into_error)
 }

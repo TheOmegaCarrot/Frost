@@ -57,7 +57,6 @@ fn run_global(name: &str, args: Vec<Value>) -> Result<Value, FrostError> {
         .collect();
     Vm::factory()
         .build(main.assert_trusted().close(captures).unwrap())
-        .unwrap()
         .run()
         .map_err(frostlang::RunError::into_error)
         .map(|r| r.tail().clone())

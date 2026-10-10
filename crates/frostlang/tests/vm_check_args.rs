@@ -284,7 +284,6 @@ fn invoke(native: Value, args: Vec<Value>) -> Result<Value, FrostError> {
     }
     Vm::factory()
         .build(main.assert_trusted().close(captures).unwrap())
-        .unwrap()
         .run()
         .map_err(frostlang::RunError::into_error)
         .map(|r| r.tail().clone())

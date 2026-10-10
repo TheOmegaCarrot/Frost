@@ -29,7 +29,6 @@ fn run(program: TrustedProgram, captures: &[(&str, Value)]) -> Value {
     let closure = program.close(captures).expect("every capture is supplied");
     Vm::factory()
         .build(closure)
-        .unwrap()
         .run()
         .unwrap_or_else(|failure| panic!("runs: {}", failure.error()))
         .tail()

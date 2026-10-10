@@ -101,7 +101,7 @@ fn calls_then_probes(calls: usize, probe: Value) -> Arc<Closure> {
 fn every_call_reuses_the_same_slot_storage() {
     let log = Arc::new(Mutex::new(Vec::new()));
     let program = calls_then_probes(10, probe(Arc::clone(&log)));
-    Vm::factory().build(program).unwrap().run().unwrap();
+    Vm::factory().build(program).run().unwrap();
 
     let sightings = log.lock().unwrap();
     assert_eq!(sightings.len(), 10);
@@ -115,12 +115,8 @@ fn every_call_reuses_the_same_slot_storage() {
 fn a_recycled_vm_reuses_its_slot_storage() {
     let log = Arc::new(Mutex::new(Vec::new()));
     let program = calls_then_probes(3, probe(Arc::clone(&log)));
-    let result = Vm::factory()
-        .build(Arc::clone(&program))
-        .unwrap()
-        .run()
-        .unwrap();
-    result.reset(program).run().unwrap();
+    let result = Vm::factory().build(Arc::clone(&program)).run().unwrap();
+    result.into_idle_vm().build(program).run().unwrap();
 
     let sightings = log.lock().unwrap();
     assert_eq!(sightings.len(), 6);

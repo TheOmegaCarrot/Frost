@@ -124,7 +124,8 @@ pub(crate) fn run(source: &str, importer: &Arc<Importer>) -> Run {
         .configuration(configuration)
         .with_importer(Arc::clone(importer))
         .build(closure)
-        .and_then(|vm| vm.run().map_err(RunError::into_error))
+        .run()
+        .map_err(RunError::into_error)
         .map(|result| result.tail().clone());
     let printed = printed.lock().unwrap().clone();
     Run { outcome, printed }

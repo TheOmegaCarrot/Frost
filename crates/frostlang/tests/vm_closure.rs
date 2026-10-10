@@ -65,10 +65,7 @@ fn close_binds_capture_value() {
         .assert_trusted()
         .close(capmap(vec![("x", Value::Int(42))]))
         .unwrap();
-    assert_eq!(
-        run(Vm::factory().build(closure).unwrap()).tail(),
-        &Value::Int(42)
-    );
+    assert_eq!(run(Vm::factory().build(closure)).tail(), &Value::Int(42));
 }
 
 #[test]
@@ -83,10 +80,7 @@ fn close_ignores_extra_map_entries() {
             ("also_unused", Value::Int(3)),
         ]))
         .unwrap();
-    assert_eq!(
-        run(Vm::factory().build(closure).unwrap()).tail(),
-        &Value::Int(1)
-    );
+    assert_eq!(run(Vm::factory().build(closure)).tail(), &Value::Int(1));
 }
 
 #[test]
@@ -141,10 +135,7 @@ fn close_seats_each_capture_in_its_own_slot() {
         .assert_trusted()
         .close(capmap(vec![("b", Value::Int(100)), ("a", Value::Int(1))]))
         .unwrap();
-    assert_eq!(
-        run(Vm::factory().build(closure).unwrap()).tail(),
-        &Value::Int(99)
-    );
+    assert_eq!(run(Vm::factory().build(closure)).tail(), &Value::Int(99));
 }
 
 // ============================================================
@@ -155,10 +146,7 @@ fn close_seats_each_capture_in_its_own_slot() {
 fn into_closure_for_no_captures() {
     let f = compiled(vec![Pop, PushInt(7)], Arity::Exact(0), 0, &[]);
     let closure = f.assert_trusted().into_closure().unwrap();
-    assert_eq!(
-        run(Vm::factory().build(closure).unwrap()).tail(),
-        &Value::Int(7)
-    );
+    assert_eq!(run(Vm::factory().build(closure)).tail(), &Value::Int(7));
 }
 
 #[test]
@@ -245,7 +233,6 @@ fn run_with_args_passes_arguments() {
     );
     let result = Vm::factory()
         .build(f.assert_trusted().into_closure().unwrap())
-        .unwrap()
         .run_with_args([Value::Int(10), Value::Int(20)])
         .unwrap();
     assert_eq!(result.tail(), &Value::Int(-10));
@@ -268,7 +255,6 @@ fn run_with_args_alongside_captures() {
         .unwrap();
     let result = Vm::factory()
         .build(closure)
-        .unwrap()
         .run_with_args([Value::Int(5)])
         .unwrap();
     assert_eq!(result.tail(), &Value::Int(95));
@@ -285,7 +271,6 @@ fn run_with_args_variadic_collects_rest() {
     );
     let result = Vm::factory()
         .build(f.assert_trusted().into_closure().unwrap())
-        .unwrap()
         .run_with_args([Value::Int(1), Value::Int(2), Value::Int(3)])
         .unwrap();
     assert_eq!(
@@ -315,7 +300,6 @@ fn run_with_args_too_few_is_arity_error() {
     );
     let err = Vm::factory()
         .build(f.assert_trusted().into_closure().unwrap())
-        .unwrap()
         .run_with_args([Value::Int(10)])
         .unwrap_err()
         .into_error();
@@ -343,7 +327,6 @@ fn run_with_args_too_many_is_arity_error() {
     );
     let err = Vm::factory()
         .build(f.assert_trusted().into_closure().unwrap())
-        .unwrap()
         .run_with_args([Value::Int(1), Value::Int(2)])
         .unwrap_err()
         .into_error();
@@ -370,7 +353,6 @@ fn run_with_args_variadic_too_few_is_arity_error() {
     );
     let err = Vm::factory()
         .build(f.assert_trusted().into_closure().unwrap())
-        .unwrap()
         .run_with_args([Value::Int(1)])
         .unwrap_err()
         .into_error();
@@ -397,7 +379,6 @@ fn run_no_args_on_parameterized_is_arity_error() {
     );
     let err = Vm::factory()
         .build(f.assert_trusted().into_closure().unwrap())
-        .unwrap()
         .run()
         .unwrap_err()
         .into_error();

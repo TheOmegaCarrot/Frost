@@ -66,7 +66,6 @@ fn run_keeping_vm(
     Vm::factory()
         .configuration(config)
         .build(main.assert_trusted().close(captures).unwrap())
-        .unwrap()
         .run()
 }
 
@@ -300,7 +299,8 @@ fn a_recycled_vm_forgets_a_previous_abort() {
     .into_closure()
     .unwrap();
     let kind = aborted
-        .reset(raises)
+        .into_idle_vm()
+        .build(raises)
         .run()
         .expect_err("the second run should raise")
         .kind();

@@ -34,13 +34,7 @@ fn tail(code: Vec<Bytecode>) -> Value {
         arity: Arity::Exact(0),
     });
     let closure = program.assert_trusted().into_closure().unwrap();
-    Vm::factory()
-        .build(closure)
-        .unwrap()
-        .run()
-        .unwrap()
-        .tail()
-        .clone()
+    Vm::factory().build(closure).run().unwrap().tail().clone()
 }
 
 mod common;

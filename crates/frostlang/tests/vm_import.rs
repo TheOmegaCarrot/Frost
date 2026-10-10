@@ -54,7 +54,6 @@ fn run(constants: Vec<Value>, code: Vec<Bytecode>) -> Result<Value, FrostError> 
     Vm::factory()
         .with_importer(importer())
         .build(closure)
-        .unwrap()
         .run()
         .map_err(frostlang::RunError::into_error)
         .map(|r| r.tail().clone())
@@ -164,7 +163,7 @@ fn a_default_vm_resolves_nothing() {
         arity: Arity::Exact(0),
     });
     let closure = program.assert_trusted().into_closure().unwrap();
-    let result = Vm::factory().build(closure).unwrap().run();
+    let result = Vm::factory().build(closure).run();
     assert!(result.is_err());
 }
 
@@ -238,8 +237,7 @@ fn run_with(
     let mut vm = Vm::factory()
         .with_importer(ImporterBuilder::new().append_resolver(resolver).build())
         .configuration(config)
-        .build(closure)
-        .unwrap();
+        .build(closure);
     if let Some(id) = module_id {
         vm = vm.with_module_id(id);
     }
@@ -286,7 +284,6 @@ fn identified_echo_vm(program: Arc<CompiledFunction>) -> Vm {
                 .build(),
         )
         .build(closure)
-        .unwrap()
         .with_module_id(ModuleId::new("caller-module"))
 }
 
@@ -305,20 +302,11 @@ fn echoing_closure() -> Arc<frostlang::Closure> {
 #[test]
 fn a_recycled_vm_forgets_the_previous_scripts_module_id() {
     // A recycled Vm runs a different script, so the previous script's identity
-    // must not reach that script's imports. Every way of recycling is checked.
+    // must not reach that script's imports. Both ways of finishing are checked.
     let succeeded = identified_echo_vm(importing_program("anything"))
         .run()
         .unwrap();
     assert_eq!(succeeded.tail(), &Value::from("caller-module"));
-    assert_eq!(
-        echoed_id(succeeded.reset(echoing_closure())),
-        Value::Null,
-        "reset after success"
-    );
-
-    let succeeded = identified_echo_vm(importing_program("anything"))
-        .run()
-        .unwrap();
     assert_eq!(
         echoed_id(succeeded.into_idle_vm().build(echoing_closure())),
         Value::Null,
@@ -333,13 +321,6 @@ fn a_recycled_vm_forgets_the_previous_scripts_module_id() {
     };
     let failed = identified_echo_vm(raises()).run().unwrap_err();
     assert_eq!(
-        echoed_id(failed.reset(echoing_closure())),
-        Value::Null,
-        "reset after failure"
-    );
-
-    let failed = identified_echo_vm(raises()).run().unwrap_err();
-    assert_eq!(
         echoed_id(failed.into_idle_vm().build(echoing_closure())),
         Value::Null,
         "rebuilt after failure"
@@ -352,7 +333,8 @@ fn a_recycled_vm_can_be_identified_again() {
         .run()
         .unwrap();
     let vm = succeeded
-        .reset(echoing_closure())
+        .into_idle_vm()
+        .build(echoing_closure())
         .with_module_id(ModuleId::new("next-module"));
     assert_eq!(echoed_id(vm), Value::from("next-module"));
 }

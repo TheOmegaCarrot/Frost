@@ -314,7 +314,6 @@ impl Script {
             .configuration(config)
             .with_importer(Arc::clone(&self.importer))
             .build(closure)
-            .expect("closure builds")
             .run()
             .map(|result| Finished {
                 tail: result.tail().clone(),

@@ -116,13 +116,7 @@ fn passed_unshared(load: Bytecode) -> Value {
         .assert_trusted()
         .close(BTreeMap::from([("probe".to_string(), probe)]))
         .unwrap();
-    Vm::factory()
-        .build(closure)
-        .unwrap()
-        .run()
-        .unwrap()
-        .tail()
-        .clone()
+    Vm::factory().build(closure).run().unwrap().tail().clone()
 }
 
 #[test]

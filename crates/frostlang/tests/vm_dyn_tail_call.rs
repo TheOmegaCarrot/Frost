@@ -58,13 +58,7 @@ fn run_with_f(f: Value, body: Vec<Bytecode>) -> Value {
         .assert_trusted()
         .close(BTreeMap::from([("f".to_string(), f)]))
         .unwrap();
-    Vm::factory()
-        .build(closure)
-        .unwrap()
-        .run()
-        .unwrap()
-        .tail()
-        .clone()
+    Vm::factory().build(closure).run().unwrap().tail().clone()
 }
 
 #[test]

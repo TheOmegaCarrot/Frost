@@ -520,7 +520,8 @@ impl Session<'_> {
             .configuration(self.configuration.clone())
             .with_importer(Arc::clone(self.importer))
             .build(close(program, args))
-            .and_then(|vm| vm.run().map_err(RunError::into_error));
+            .run()
+            .map_err(RunError::into_error);
         match outcome {
             Ok(_) => Exit::Success,
             Err(error) => self.report_error(&error),

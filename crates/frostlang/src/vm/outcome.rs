@@ -70,18 +70,12 @@ impl ProgramResult {
     pub fn fuel_consumed(&self) -> usize {
         self.0.fuel_used
     }
-
-    /// Recycle the warm [`Vm`] to run another [`Closure`], reusing its internal
-    /// allocations rather than building a fresh one.
-    pub fn reset(self, closure: Arc<Closure>) -> Vm {
-        self.0.rearm(closure)
-    }
 }
 
 /// A failed run. Holds the raised [`FrostError`] and the warm [`Vm`], which (unlike a
 /// [`ProgramResult`]) exposes no program state (`tail`/`exports`), since a failed run
 /// leaves the Vm indeterminate. Recover the error with [`into_error`](Self::into_error),
-/// or recycle the Vm via [`reset`](Self::reset).
+/// or recycle the Vm via [`into_idle_vm`](Self::into_idle_vm).
 pub struct RunError {
     pub(super) vm: Vm,
     pub(super) error: FrostError,
@@ -110,12 +104,6 @@ impl RunError {
     pub fn fuel_consumed(&self) -> usize {
         self.vm.fuel_used
     }
-
-    /// Recycle the warm [`Vm`] to run another [`Closure`], reusing its internal
-    /// allocations rather than building a fresh one.
-    pub fn reset(self, closure: Arc<Closure>) -> Vm {
-        self.vm.rearm(closure)
-    }
 }
 
 /// How a run failed; see [`RunError::kind`].
@@ -143,11 +131,18 @@ pub enum AbortReason {
 /// A warm [`Vm`] with no program loaded: its allocations are kept for reuse,
 /// ready to be rebound to a closure. Recovered from a finished run via
 /// [`ProgramResult::into_idle_vm`] / [`RunError::into_idle_vm`].
+///
+/// Recycling a warm Vm is cheaper than [building](super::VmFactory::build) a fresh one.
+/// The recycled Vm keeps its configuration and importer.
 pub struct IdleVm(Vm);
 
 impl IdleVm {
     /// Bind this warm VM to `closure`, clearing the previous run's stack and
     /// frames and resetting fuel, yielding a runnable [`Vm`].
+    ///
+    /// Detaches the previous run's [`CancelToken`](super::CancelToken) and
+    /// [`ModuleId`](super::ModuleId); attach them again with
+    /// [`Vm::with_cancel_token`] and [`Vm::with_module_id`] as needed.
     pub fn build(self, closure: Arc<Closure>) -> Vm {
         self.0.rearm(closure)
     }

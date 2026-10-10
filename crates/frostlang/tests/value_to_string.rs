@@ -278,6 +278,101 @@ fn debug_int_same_as_to_string() {
     assert_eq!(Value::from(42i64).to_debug_string(), "42");
 }
 
+// -- Public escaping: write_quoted_string, write_escaped_string --
+// An out-of-crate printer uses these to match the runtime's own renderings.
+
+/// Text exercising every escaping rule, each paired with its escaped form.
+const ESCAPES: &[(&str, &str)] = &[
+    ("", ""),
+    ("plain text 123 !@#", "plain text 123 !@#"),
+    ("say \"hi\"", r#"say \"hi\""#),
+    (r"a\b", r"a\\b"),
+    ("a\nb\tc\rd", r"a\nb\tc\rd"),
+    ("\0 \u{1} \u{1b} \u{7f}", r"\u{0} \u{1} \u{1b} \u{7f}"),
+    ("\u{85}", r"\u{85}"),
+    ("é 日本 🧊", "é 日本 🧊"),
+    ("'single'", "'single'"),
+];
+
+fn quoted(text: &str) -> String {
+    let mut out = String::new();
+    frostlang::write_quoted_string(text, &mut out).expect("a String accepts every write");
+    out
+}
+
+fn escaped(text: &str) -> String {
+    let mut out = String::new();
+    frostlang::write_escaped_string(text, &mut out).expect("a String accepts every write");
+    out
+}
+
+#[test]
+fn write_escaped_string_escapes_each_rule() {
+    for (text, expected) in ESCAPES {
+        assert_eq!(escaped(text), *expected, "escaping {text:?}");
+    }
+}
+
+#[test]
+fn write_quoted_string_is_the_escaped_form_in_double_quotes() {
+    for (text, expected) in ESCAPES {
+        assert_eq!(quoted(text), format!("\"{expected}\""), "quoting {text:?}");
+    }
+}
+
+#[test]
+fn write_quoted_string_matches_a_strings_debug_rendering() {
+    for (text, _) in ESCAPES {
+        assert_eq!(
+            quoted(text),
+            Value::from(*text).to_debug_string(),
+            "top level, {text:?}"
+        );
+        let array = Value::Array(FrostArray::from(vec![Value::from(*text)]));
+        assert_eq!(
+            format!("[ {} ]", quoted(text)),
+            array.to_frost_string(),
+            "in an Array, {text:?}"
+        );
+    }
+}
+
+#[test]
+fn write_escaped_string_matches_an_opaques_detail() {
+    let detail = frostlang::FrostOpaque::try_to_string(&Note).expect("Note has an approximation");
+    assert_eq!(
+        format!("<Note: {}>", escaped(&detail)),
+        Value::opaque(Note).to_frost_string()
+    );
+}
+
+#[test]
+fn escaping_reports_a_failed_write() {
+    /// A writer that refuses everything.
+    struct Refuses;
+
+    impl std::fmt::Write for Refuses {
+        fn write_str(&mut self, _: &str) -> std::fmt::Result {
+            Err(std::fmt::Error)
+        }
+    }
+
+    for text in ["", "plain", "\n", "\u{1}"] {
+        assert!(
+            frostlang::write_quoted_string(text, &mut Refuses).is_err(),
+            "quoting {text:?}"
+        );
+    }
+    // Unquoted, empty text writes nothing, so nothing can fail.
+    assert!(frostlang::write_escaped_string("", &mut Refuses).is_ok());
+    for text in ["plain", "\n", "\u{1}"] {
+        assert!(
+            frostlang::write_escaped_string(text, &mut Refuses).is_err(),
+            "escaping {text:?}"
+        );
+    }
+}
+
 // -- Empty structures --
 
 #[test]

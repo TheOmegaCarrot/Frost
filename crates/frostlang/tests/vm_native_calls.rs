@@ -59,7 +59,7 @@ fn run_with(
         .assert_trusted()
         .close(captures)
         .expect("all captures provided");
-    Vm::factory().build(closure).unwrap().run().unwrap()
+    Vm::factory().build(closure).run().unwrap()
 }
 
 /// Seat each `(name, value)` as a capture (in order, so name `i` is slot `i`),

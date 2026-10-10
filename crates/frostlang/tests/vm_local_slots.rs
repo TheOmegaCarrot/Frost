@@ -41,7 +41,6 @@ fn run(source: &str) -> Value {
         .expect("`unshared` is supplied");
     let result = Vm::factory()
         .build(closure)
-        .unwrap()
         .run()
         .map_err(RunError::into_error)
         .unwrap_or_else(|error| panic!("{source}\nraised: {}", error.message()));

@@ -90,7 +90,6 @@ fn catch_recycles_native_arg_buffer() {
     );
     let result = Vm::factory()
         .build(program.assert_trusted().into_closure().unwrap())
-        .unwrap()
         .run()
         .unwrap();
     assert_eq!(
@@ -124,7 +123,6 @@ fn catch_recycles_every_intermediate_buffer() {
     let captures = BTreeMap::from([("apply".to_string(), apply_native())]);
     let result = Vm::factory()
         .build(program.assert_trusted().close(captures).unwrap())
-        .unwrap()
         .run()
         .unwrap();
     assert_eq!(

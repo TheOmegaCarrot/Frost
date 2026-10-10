@@ -22,7 +22,7 @@ fn run(
         .close(captures)
         .expect("every capture is supplied");
     let result = Vm::factory()
-        .build(closure)?
+        .build(closure)
         .run()
         .map_err(RunError::into_error)?;
     Ok(result

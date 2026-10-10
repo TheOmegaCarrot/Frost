@@ -71,18 +71,18 @@ pub struct Vm {
     globals: Arc<GlobalSet>,
 
     // The module importer backing the `Import` opcode.
-    // Fixed at build time; persists across `reset`.
+    // Fixed at build time; persists across `rearm`.
     importer: Arc<Importer>,
 
     // The top-level closure to run. Its captures (host + Frost-internal) are already bound;
     // `run`/`run_with_args` invoke it like any other closure.
     top_level: Arc<Closure>,
 
-    // Runtime resource limits. Fixed at build time; persists across `reset`.
+    // Runtime resource limits. Fixed at build time; persists across `rearm`.
     config: VmRuntimeConfiguration,
 
     // Function calls made so far (the fuel meter). Incremented on every call and
-    // compared against `config.fuel`; zeroed on `reset`.
+    // compared against `config.fuel`; zeroed on `rearm`.
     fuel_used: usize,
 
     // The unrecoverable-error channel.
@@ -223,8 +223,8 @@ impl VmRuntimeConfiguration {
 pub struct VmFactory {
     config: VmRuntimeConfiguration,
     importer: Arc<Importer>,
-    // Import nesting level for the Vms this factory builds, checked by `build`.
-    // Non-zero only for a factory obtained from `Vm::child_factory`.
+    // Import nesting level for the Vms this factory builds.
+    // Non-zero only inside a `ChildVmFactory`, whose `build` checks it against the limit.
     import_depth: usize,
 }
 
@@ -245,16 +245,8 @@ impl VmFactory {
     }
 
     /// Build a [`Vm`] to run `closure` under this factory's configuration.
-    pub fn build(&self, closure: Arc<Closure>) -> Result<Vm, FrostError> {
-        if let Some(limit) = self.config.max_import_depth
-            && self.import_depth > limit.get()
-        {
-            return Err(FrostError::from_string(format!(
-                "Import depth limit of {} exceeded",
-                limit.get()
-            )));
-        }
-        Ok(Vm {
+    pub fn build(&self, closure: Arc<Closure>) -> Vm {
+        Vm {
             stack: Vec::new(),
             stack_frames: Vec::new(),
             native_arg_pool: Vec::new(),
@@ -269,7 +261,7 @@ impl VmFactory {
             import_depth: self.import_depth,
             marks: Vec::new(),
             slots: Vec::new(),
-        })
+        }
     }
 }
 
@@ -313,7 +305,15 @@ impl ChildVmFactory {
     /// Fails when the Vm would nest deeper than
     /// [`max_import_depth`](VmRuntimeConfiguration::max_import_depth).
     pub fn build(&self, closure: Arc<Closure>) -> Result<Vm, FrostError> {
-        let vm = self.factory.build(closure)?;
+        if let Some(limit) = self.factory.config.max_import_depth
+            && self.factory.import_depth > limit.get()
+        {
+            return Err(FrostError::from_string(format!(
+                "Import depth limit of {} exceeded",
+                limit.get()
+            )));
+        }
+        let vm = self.factory.build(closure);
         Ok(match &self.cancel_token {
             Some(token) => vm.with_cancel_token(token.clone()),
             None => vm,
@@ -367,7 +367,7 @@ enum TailFlow {
 impl Vm {
     /// A default-configured [`VmFactory`].
     ///
-    /// A Vm runs a single program; reuse a warm Vm via [`ProgramResult::reset`], or stamp
+    /// A Vm runs a single program; reuse a warm Vm via [`IdleVm`], or stamp
     /// out fresh identically-configured Vms by reusing one factory.
     pub fn factory() -> VmFactory {
         VmFactory::default()
@@ -395,7 +395,7 @@ impl Vm {
     }
 
     /// Recycle this Vm to run `closure` instead, reusing its internal allocations.
-    /// Like [`ProgramResult::reset`], but for a Vm that never ran.
+    /// Like [`IdleVm::build`], but for a Vm that never ran.
     ///
     /// Detaches the Vm's [`CancelToken`], if any:
     /// the recycled Vm cannot be cancelled until one is attached again
@@ -956,8 +956,8 @@ impl Vm {
     /// Run the top-level closure, passing `args` as its call arguments.
     ///
     /// Success yields a [`ProgramResult`] (tail value + exports); failure a [`RunError`].
-    /// Either outcome still owns the warm Vm (recyclable via [`reset`](ProgramResult::reset)
-    /// or [`into_idle_vm`](ProgramResult::into_idle_vm)); an arity mismatch is a recoverable failure.
+    /// Either outcome still owns the warm Vm, recyclable via
+    /// [`into_idle_vm`](ProgramResult::into_idle_vm); an arity mismatch is a recoverable failure.
     #[allow(clippy::result_large_err)]
     pub fn run_with_args(
         mut self,
@@ -988,7 +988,7 @@ impl Vm {
             }
             // No `NativeFrame` exists above the top level, so the error has nowhere to be
             // caught: accumulate the backtrace across every remaining frame and surface it.
-            // The (now spent, dirty) Vm rides along in the `RunError` for reuse via `reset`.
+            // The (now spent, dirty) Vm rides along in the `RunError` for reuse.
             Err(err) => {
                 let error = self.unwind_frames(0, err);
                 Err(RunError { vm: self, error })

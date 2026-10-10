@@ -72,7 +72,7 @@ impl FoldVm {
         let closure = function.assert_trusted().close(captures).ok()?;
         let vm = match self.parked.borrow_mut().take() {
             Some(core) => core.build(closure),
-            None => self.factory.build(closure).ok()?,
+            None => self.factory.build(closure),
         };
         let (value, idle) = match vm.run() {
             Ok(result) => (Some(result.tail().clone()), result.into_idle_vm()),

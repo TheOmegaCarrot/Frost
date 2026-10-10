@@ -123,31 +123,56 @@ fn stringify_bytes(bytes: &[u8], buf: &mut String) {
     buf.push('\'');
 }
 
-/// Escapes a String for display inside a structure.
+// These two unwrap because writing to a String cannot fail.
+
 fn escape_string(s: &str, buf: &mut String) {
-    buf.push('"');
-    escape_chars(s, buf);
-    buf.push('"');
+    write_quoted_string(s, buf).unwrap();
 }
 
-/// Escapes text without quoting it. Printable text passes through as itself, so a
-/// non-ASCII character renders as the character it is.
 fn escape_chars(s: &str, buf: &mut String) {
-    for ch in s.chars() {
+    write_escaped_string(s, buf).unwrap();
+}
+
+/// Writes `text` the way Frost displays a String inside a structure:
+/// in double quotes, escaped as by [`write_escaped_string`].
+///
+/// ```
+/// let mut out = String::new();
+/// frostlang::write_quoted_string("say \"hi\"\n", &mut out).unwrap();
+/// assert_eq!(out, r#""say \"hi\"\n""#);
+/// ```
+pub fn write_quoted_string(text: &str, out: &mut impl Write) -> std::fmt::Result {
+    out.write_char('"')?;
+    write_escaped_string(text, out)?;
+    out.write_char('"')
+}
+
+/// Writes `text` escaped but unquoted, as Frost displays an Opaque's detail in
+/// `<Type: detail>`.
+///
+/// `"`, `\`, newline, tab, and carriage return escape as `\"`, `\\`, `\n`, `\t`,
+/// and `\r`. Any other control character escapes as its scalar value in hex,
+/// `\u{1b}`. Everything else, including non-ASCII text, is written as itself.
+///
+/// ```
+/// let mut out = String::new();
+/// frostlang::write_escaped_string("tab\there, \u{1b}, é", &mut out).unwrap();
+/// assert_eq!(out, r"tab\there, \u{1b}, é");
+/// ```
+pub fn write_escaped_string(text: &str, out: &mut impl Write) -> std::fmt::Result {
+    for ch in text.chars() {
         match ch {
-            '"' => buf.push_str("\\\""),
-            '\\' => buf.push_str("\\\\"),
-            '\n' => buf.push_str("\\n"),
-            '\t' => buf.push_str("\\t"),
-            '\r' => buf.push_str("\\r"),
-            // A control character has no readable spelling, so it escapes as its
-            // scalar value: `\u{NN}`, minimal hex digits, matching Rust's `escape_debug`.
-            c if c.is_control() => {
-                write!(buf, "\\u{{{:x}}}", c as u32).unwrap();
-            }
-            c => buf.push(c),
+            '"' => out.write_str("\\\"")?,
+            '\\' => out.write_str("\\\\")?,
+            '\n' => out.write_str("\\n")?,
+            '\t' => out.write_str("\\t")?,
+            '\r' => out.write_str("\\r")?,
+            // Minimal hex digits, matching Rust's `escape_debug`.
+            c if c.is_control() => write!(out, "\\u{{{:x}}}", c as u32)?,
+            c => out.write_char(c)?,
         }
     }
+    Ok(())
 }
 
 fn stringify_array(elems: &[Value], buf: &mut String, ctx: &StringifyContext) {

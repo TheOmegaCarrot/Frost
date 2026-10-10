@@ -2,6 +2,7 @@
 
 use std::ops::Range;
 
+use frostlang_parse::ast::SourceSpan;
 use frostlang_parse::{Token, tokens};
 
 /// `source` as a segment ready to run, or `None` if it needs more lines first.
@@ -51,7 +52,7 @@ fn is_unfinished(source: &str) -> bool {
                 open_brackets += 1;
             }
             Ok(Token::CloseParen | Token::CloseBracket | Token::CloseBrace) => open_brackets -= 1,
-            Err(_) if opens_string(&source[span.clone()]) => return true,
+            Err(_) if opens_string(&source[Range::from(span)]) => return true,
             _ => {}
         }
         last = Some((token, span));
@@ -68,7 +69,7 @@ fn remove_line_continuations(source: &str) -> String {
     let mut kept = String::with_capacity(source.len());
     let mut from = 0;
     for (token, span) in tokens(source) {
-        if token.is_err() && is_line_continuation(source, span.clone()) {
+        if token.is_err() && is_line_continuation(source, span) {
             kept.push_str(&source[from..span.start]);
             from = span.end;
         }
@@ -78,9 +79,9 @@ fn remove_line_continuations(source: &str) -> String {
 }
 
 /// Whether the unlexable bytes at `span` are a line continuation.
-fn is_line_continuation(source: &str, span: Range<usize>) -> bool {
+fn is_line_continuation(source: &str, span: SourceSpan) -> bool {
     let rest_of_line = source[span.end..].split('\n').next().unwrap_or("");
-    &source[span] == "\\" && rest_of_line.trim().is_empty()
+    &source[Range::from(span)] == "\\" && rest_of_line.trim().is_empty()
 }
 
 /// Whether unlexable bytes are the start of a String that continues past the

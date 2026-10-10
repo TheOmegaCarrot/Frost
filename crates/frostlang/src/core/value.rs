@@ -6,6 +6,8 @@ mod type_checks;
 
 use std::sync::Arc;
 
+pub use stringify::{write_escaped_string, write_quoted_string};
+
 use crate::core::{
     FrostArray, FrostBytes, FrostFloat, FrostMap, FrostOpaque, FrostString, OpaqueHandle,
 };

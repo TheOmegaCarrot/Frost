@@ -32,6 +32,7 @@ pub(crate) fn classify(source: &str) -> Vec<(Range<usize>, Class)> {
     let mut depth = 0;
     let mut covered = 0;
     for (token, span) in tokens(source) {
+        let span = Range::from(span);
         classify_gap(source, covered..span.start, &mut classes);
         let class = match token {
             Ok(token) => match token {

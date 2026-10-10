@@ -655,3 +655,12 @@ fn a_failures_source_is_the_error_it_holds() {
     let run = evaluate_all(&["1 / 0"]).unwrap_err();
     assert!(run.source().unwrap().is::<FrostError>(), "{run:?}");
 }
+
+// --- Threading ---
+
+// An async host evaluates on a blocking-task thread (e.g. tokio's
+// `spawn_blocking`), which needs a `Repl` it can move there.
+const _: () = {
+    const fn assert_send<T: Send>() {}
+    assert_send::<Repl>();
+};

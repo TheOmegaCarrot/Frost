@@ -53,7 +53,6 @@ fn call_native(native: Value, argc: usize) -> Result<ProgramResult, FrostError> 
         .unwrap();
     Vm::factory()
         .build(closure)
-        .unwrap()
         .run()
         .map_err(frostlang::RunError::into_error)
 }
@@ -169,7 +168,6 @@ fn between_closure_distinguishes_omitted_from_explicit_null() {
     let run = |args: Vec<Value>| {
         Vm::factory()
             .build(probe.clone().assert_trusted().into_closure().unwrap())
-            .unwrap()
             .run_with_args(args)
             .unwrap()
             .tail()
@@ -213,13 +211,7 @@ fn between_closure_seating_works_through_call() {
             .assert_trusted()
             .close(BTreeMap::from([("probe".to_string(), probe_val.clone())]))
             .unwrap();
-        Vm::factory()
-            .build(closure)
-            .unwrap()
-            .run()
-            .unwrap()
-            .tail()
-            .clone()
+        Vm::factory().build(closure).run().unwrap().tail().clone()
     };
     assert_eq!(call_probe(vec![], 0), Value::Int(-1)); // probe() via Call
     assert_eq!(call_probe(vec![Bytecode::PushNull], 1), Value::Null); // probe(null) via Call

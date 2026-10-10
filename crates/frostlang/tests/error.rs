@@ -11,7 +11,8 @@ fn raised(source: &str) -> FrostError {
         .expect("the source captures nothing");
     Vm::factory()
         .build(closure)
-        .and_then(|vm| vm.run().map_err(RunError::into_error))
+        .run()
+        .map_err(RunError::into_error)
         .expect_err("the source raises")
 }
 

@@ -18,7 +18,6 @@ fn a_host_compiles_and_runs_source() {
         .expect("the program needs no host captures");
     let result = Vm::factory()
         .build(closure)
-        .expect("the VM builds")
         .run()
         .expect("the program runs");
 

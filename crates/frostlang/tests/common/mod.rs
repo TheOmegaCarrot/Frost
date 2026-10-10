@@ -130,12 +130,12 @@ pub(crate) fn run_fn(program: Arc<CompiledFunction>) -> ProgramResult {
         .assert_trusted()
         .into_closure()
         .expect("test top-level captures nothing");
-    Vm::factory().build(closure).unwrap().run().unwrap()
+    Vm::factory().build(closure).run().unwrap()
 }
 
 /// Build a runnable top-level [`Closure`] (no captures) from `code` plus a name
 /// table, splicing in the leading fn-value `Pop`.
-/// For tests that need the closure itself (e.g. `reset`, or building a `Vm` directly).
+/// For tests that need the closure itself (e.g. recycling a finished run, or building a `Vm` directly).
 pub(crate) fn closure(code: Vec<Bytecode>, names: Vec<NameEntry>) -> Arc<Closure> {
     let mut body = vec![Bytecode::Pop];
     body.extend(code);

@@ -42,7 +42,7 @@ fn failed_run() -> RunError {
         Bytecode::PushInt(1),
         Bytecode::ProduceError,
     ]);
-    Vm::factory().build(failing).unwrap().run().unwrap_err()
+    Vm::factory().build(failing).run().unwrap_err()
 }
 
 /// A failed run, with marks and slots left over as a faulty unwind would leave them.
@@ -61,12 +61,6 @@ fn assert_clean(vm: &Vm) {
 #[test]
 fn a_failed_run_leaves_no_marks_or_slots() {
     assert_clean(&failed_run().vm);
-}
-
-#[test]
-fn resetting_a_vm_clears_its_marks_and_slots() {
-    let vm = dirty_failed_run().reset(program(vec![Bytecode::PushNull]));
-    assert_clean(&vm);
 }
 
 #[test]

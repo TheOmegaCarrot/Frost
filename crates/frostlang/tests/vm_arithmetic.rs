@@ -40,7 +40,6 @@ fn eval(constants: Vec<Value>, code: Vec<Bytecode>) -> Result<Value, FrostError>
     let closure = program.assert_trusted().into_closure().unwrap();
     Vm::factory()
         .build(closure)
-        .unwrap()
         .run()
         .map_err(frostlang::RunError::into_error)
         .map(|r| r.tail().clone())

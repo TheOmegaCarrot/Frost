@@ -245,8 +245,7 @@ impl Repl {
             None => Vm::factory()
                 .configuration(self.configuration.clone())
                 .with_importer(Arc::clone(&self.importer))
-                .build(closure)
-                .map_err(ReplError::Run)?,
+                .build(closure),
         };
         match vm.with_cancel_token(token).run() {
             Ok(result) => {
@@ -440,7 +439,7 @@ impl std::error::Error for ReplError {
 pub fn check_name(name: &str) -> Result<(), InvalidName> {
     let mut lexed = tokens(name);
     match (lexed.next(), lexed.next()) {
-        (Some((Ok(Token::Identifier(_)), span)), None) if span == (0..name.len()) => Ok(()),
+        (Some((Ok(Token::Identifier(_)), span)), None) if span == (0..name.len()).into() => Ok(()),
         _ => Err(InvalidName {
             name: name.to_string(),
         }),

@@ -22,6 +22,13 @@ impl From<Range<usize>> for SourceSpan {
     }
 }
 
+impl From<SourceSpan> for Range<usize> {
+    /// The span as a range, for slicing the source: `&source[Range::from(span)]`.
+    fn from(value: SourceSpan) -> Self {
+        value.start..value.end
+    }
+}
+
 // -- Spanned --
 
 /// Pairs an AST payload with its source span.

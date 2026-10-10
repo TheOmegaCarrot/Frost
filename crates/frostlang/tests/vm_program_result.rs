@@ -69,25 +69,26 @@ fn exports_returns_only_exported() {
 }
 
 // ============================================================
-// reset / warm Vm reuse
+// warm Vm reuse
 // ============================================================
 
 #[test]
-fn reset_recycles_into_a_runnable_vm() {
-    // A spent ProgramResult re-arms via reset(closure) and runs the new program.
+fn a_result_can_be_recycled_into_a_runnable_vm() {
+    // A spent ProgramResult yields its Vm, which builds and runs the new program.
     let result_a = run(vec![Bytecode::PushInt(1)]);
     assert_eq!(result_a.tail(), &Value::Int(1));
 
     let result_b = result_a
-        .reset(closure(vec![Bytecode::PushInt(42)], vec![]))
+        .into_idle_vm()
+        .build(closure(vec![Bytecode::PushInt(42)], vec![]))
         .run()
         .unwrap();
     assert_eq!(result_b.tail(), &Value::Int(42));
 }
 
 #[test]
-fn reset_replaces_exports_with_the_new_program() {
-    // Program A exports x = 100. After reset, Program B reuses the Vm and the same
+fn recycling_replaces_exports_with_the_new_program() {
+    // Program A exports x = 100. After recycling, Program B reuses the Vm and the same
     // slot but exports its own x = 200; the result reflects B's run, not A's.
     let result_a = run_fn(fn_with_locals(
         vec![Bytecode::PushInt(100), Bytecode::DefLocal(0)],
@@ -96,7 +97,8 @@ fn reset_replaces_exports_with_the_new_program() {
     assert_eq!(result_a.get_export("x"), Some(&Value::Int(100)));
 
     let result_b = result_a
-        .reset(closure(
+        .into_idle_vm()
+        .build(closure(
             vec![Bytecode::PushInt(200), Bytecode::DefLocal(0)],
             vec![entry("x", true)],
         ))
@@ -120,7 +122,6 @@ fn builder_accepts_configuration_and_builds_a_runnable_vm() {
     let result = Vm::factory()
         .configuration(config)
         .build(closure(vec![Bytecode::PushInt(7)], vec![]))
-        .unwrap()
         .run()
         .unwrap();
     assert_eq!(result.tail(), &Value::Int(7));
@@ -133,22 +134,22 @@ fn builder_accepts_configuration_and_builds_a_runnable_vm() {
 #[test]
 fn a_failed_run_surfaces_its_error_and_recycles_the_vm() {
     // Program A divides by zero: a failed run. Its `RunError` carries the error and
-    // still owns the warm Vm, which `reset` recycles to run a fresh program B.
+    // still owns the warm Vm, which `into_idle_vm` recycles to run a fresh program B.
     let failed = Vm::factory()
         .build(closure(
             vec![Bytecode::PushInt(1), Bytecode::PushInt(0), Bytecode::Divide],
             vec![],
         ))
-        .unwrap()
         .run()
         .unwrap_err();
 
     assert_eq!(failed.error().message(), "Division by zero");
     assert_eq!(failed.fuel_consumed(), 0); // the failing program made no calls
 
-    // The Vm survives the failure: reset it onto program B and run to success.
+    // The Vm survives the failure: rebuild it onto program B and run to success.
     let recovered = failed
-        .reset(closure(vec![Bytecode::PushInt(42)], vec![]))
+        .into_idle_vm()
+        .build(closure(vec![Bytecode::PushInt(42)], vec![]))
         .run()
         .unwrap();
     assert_eq!(recovered.tail(), &Value::Int(42));

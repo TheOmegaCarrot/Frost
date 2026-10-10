@@ -1,12 +1,30 @@
 //! `tokens`, the lexer's public face: source to tokens with byte spans.
 
+use std::ops::Range;
+
+use frostlang_parse::ast::SourceSpan;
 use frostlang_parse::{LexError, Token, tokens};
 
 /// Each token of `source` with the text its span covers.
 fn lexed(source: &str) -> Vec<(Result<Token<'_>, LexError>, &str)> {
     tokens(source)
-        .map(|(token, span)| (token, &source[span]))
+        .map(|(token, span)| (token, &source[Range::from(span)]))
         .collect()
+}
+
+#[test]
+fn spans_are_byte_offsets() {
+    // `é` is two bytes, so every span after it is offset by bytes, not characters.
+    let spans: Vec<SourceSpan> = tokens("'é' x\n~").map(|(_, span)| span).collect();
+    assert_eq!(
+        spans,
+        [
+            SourceSpan { start: 0, end: 4 },
+            SourceSpan { start: 5, end: 6 },
+            SourceSpan { start: 6, end: 7 },
+            SourceSpan { start: 7, end: 8 },
+        ]
+    );
 }
 
 #[test]
