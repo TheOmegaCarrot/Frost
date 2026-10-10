@@ -85,18 +85,18 @@ impl Param {
     pub(crate) fn accepts(&self, value: &Value) -> bool {
         value.fits(self.types)
     }
+}
 
-    /// The accepted types for the error message: a named category (`Any`, `Numeric`, ...)
-    /// when the set is one, else the list of type names, e.g. `String or Array`.
-    pub(crate) fn expected(&self) -> String {
-        match self.types {
-            t if t == FrostType::ANY => "Any".to_string(),
-            t if t == FrostType::NUMERIC => "Numeric".to_string(),
-            t if t == FrostType::PRIMITIVE => "Primitive".to_string(),
-            t if t == FrostType::STRUCTURED => "Structured".to_string(),
-            t if t == FrostType::NONNULL => "Nonnull".to_string(),
-            t => t.iter().map(|t| t.name()).collect::<Vec<_>>().join(" or "),
-        }
+/// `types` for an error message: a named category (`Any`, `Numeric`, ...)
+/// when the set is one, else the list of type names, e.g. `String or Array`.
+pub(crate) fn expected_types(types: EnumSet<FrostType>) -> String {
+    match types {
+        t if t == FrostType::ANY => "Any".to_string(),
+        t if t == FrostType::NUMERIC => "Numeric".to_string(),
+        t if t == FrostType::PRIMITIVE => "Primitive".to_string(),
+        t if t == FrostType::STRUCTURED => "Structured".to_string(),
+        t if t == FrostType::NONNULL => "Nonnull".to_string(),
+        t => t.iter().map(|t| t.name()).collect::<Vec<_>>().join(" or "),
     }
 }
 

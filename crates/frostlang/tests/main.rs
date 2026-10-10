@@ -51,6 +51,8 @@ mod logical_operations;
 mod map_destructuring;
 mod map_key;
 mod match_expressions;
+mod native_args;
+mod native_results;
 mod opaque;
 mod optimization_names;
 mod optimization_presets;

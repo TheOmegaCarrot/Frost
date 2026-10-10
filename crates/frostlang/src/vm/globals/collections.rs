@@ -3,6 +3,7 @@
 use std::collections::{BTreeMap, BTreeSet};
 
 use crate::bytecode::Bytecode;
+use crate::native::ArgSite;
 use crate::{
     Arity, FrostArray, FrostBytes, FrostError, FrostMap, FrostResult, FrostString, FrostType,
     MapKey, NativeCtx, Param, Params, Value, ValueMap,
@@ -178,16 +179,10 @@ pub(super) fn from_entries_global() -> Value {
 pub(super) fn dissoc_global() -> Value {
     Value::native("dissoc", Arity::AtLeast(1), |ctx, args| {
         ctx.check_args(args, &ONE_MAP)?;
-        let key_param = Param::of(MAP_KEY);
         let mut map = take_map(&mut args[0]).into_map();
         for (i, key) in args.iter_mut().enumerate().skip(1) {
             if !key.fits(MAP_KEY) {
-                return Err(FrostError::from_string(format!(
-                    "Function dissoc requires {} as argument {}, got {}",
-                    key_param.expected(),
-                    i + 1,
-                    key.type_name()
-                )));
+                return Err(ArgSite::argument("dissoc", i, None).wrong_type(MAP_KEY, key));
             }
             map.remove(&MapKey::try_from(key.take()).expect("the key fits a Map key"));
         }

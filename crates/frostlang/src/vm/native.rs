@@ -4,6 +4,7 @@
 
 use std::sync::Arc;
 
+use crate::native::ArgSite;
 use crate::{FrostError, FrostResult, Value};
 
 use super::Vm;
@@ -112,7 +113,7 @@ impl NativeCtx<'_> {
     }
 
     /// The running native's name.
-    pub fn name(&self) -> &str {
+    pub fn name(&self) -> &'static str {
         self.function.name
     }
 }
@@ -194,23 +195,16 @@ impl NativeFunction {
         for (i, param) in params.as_slice().iter().enumerate() {
             let Some(arg) = args.get(i) else { break };
             if !param.accepts(arg) {
-                let position = match param.name {
-                    Some(label) => format!("argument {} ({label})", i + 1),
-                    None => format!("argument {}", i + 1),
-                };
-                return Err(FrostError::from_string(format!(
-                    "Function {} requires {} as {position}, got {}",
-                    self.name,
-                    param.expected(),
-                    arg.type_name(),
-                )));
+                return Err(
+                    ArgSite::argument(self.name, i, param.name).wrong_type(param.types(), arg)
+                );
             }
         }
         Ok(())
     }
 
     /// The function's name, as reported in errors and backtraces.
-    pub fn name(&self) -> &str {
+    pub fn name(&self) -> &'static str {
         self.name
     }
 

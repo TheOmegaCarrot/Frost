@@ -8,8 +8,9 @@ use std::time::Duration;
 
 use serde::Deserialize;
 
+use crate::native::{Args, De, FrostArg, Optional};
 use crate::stdlib::stream::{self, Kind};
-use crate::{Arity, FrostError, FrostType, Param, Params, StdlibModule, Value, from_value};
+use crate::{Arity, FrostError, FrostType, Param, Params, StdlibModule, Value};
 
 /// The `std.os` module: reading environment variables, the process ID,
 /// the process's standard input, output, and error streams, sleeping, and
@@ -56,14 +57,9 @@ fn pid() -> Value {
 }
 
 fn sleep() -> Value {
-    const PARAMS: Params = Params::new(&[Param::of(FrostType::INT).named("ms")]);
-    Value::checked_native("os.sleep", PARAMS, |_, args| {
-        let ms = args[0].as_int().expect("type-checked as an Int");
-        let Ok(ms) = u64::try_from(ms) else {
-            return Err(FrostError::from_string(format!(
-                "Function os.sleep requires argument 1 (ms) to be at least 0, got {ms}"
-            )));
-        };
+    const PARAMS: Params = Params::new(&[<u64 as FrostArg>::PARAM.named("ms")]);
+    Value::checked_native("os.sleep", PARAMS, |ctx, args| {
+        let ms: u64 = Args::new(ctx.name(), PARAMS, args).take()?;
         std::thread::sleep(Duration::from_millis(ms));
         Ok(Value::Null)
     })
@@ -84,13 +80,10 @@ struct RunOptions {
 }
 
 impl RunOptions {
-    fn from_map(options: Value) -> Result<Self, FrostError> {
-        let options: Self = from_value(options).map_err(|err| {
-            FrostError::from_string(format!(
-                "Function os.run requires valid options: {}",
-                err.message()
-            ))
-        })?;
+    /// Checks what deserializing cannot: options that exclude each other, and
+    /// the type of `stdin`.
+    fn validate(self) -> Result<Self, FrostError> {
+        let options = self;
         if options.env.is_some() && options.replace_env.is_some() {
             return Err(FrostError::from_static(
                 "Function os.run takes option `env` or `replace_env`, not both",
@@ -145,34 +138,21 @@ fn exit_values(status: std::process::ExitStatus) -> (Value, Value) {
 
 fn run() -> Value {
     const PARAMS: Params = Params::new(&[
-        Param::of(FrostType::STRING).named("command"),
-        Param::of(FrostType::ARRAY).named("args"),
+        <String as FrostArg>::PARAM.named("command"),
+        <Vec<String> as FrostArg>::PARAM.named("args"),
+        // Taken as `Optional<De<RunOptions>>`, but only from a Map.
         Param::of(FrostType::MAP).named("options").optional(),
     ]);
-    Value::checked_native("os.run", PARAMS, |_, args| {
-        let program = args[0].as_str().expect("type-checked as a String");
-        let arguments = args[1]
-            .as_array()
-            .expect("type-checked as an Array")
-            .iter()
-            .enumerate()
-            .map(|(i, argument)| {
-                argument.as_str().ok_or_else(|| {
-                    FrostError::from_string(format!(
-                        "Function os.run requires an Array of Strings as argument 2 (args), \
-                         but element {i} is {}",
-                        argument.type_name()
-                    ))
-                })
-            })
-            .collect::<Result<Vec<&str>, FrostError>>()?;
-        let options = match args.get(2) {
-            Some(options) => RunOptions::from_map(options.clone())?,
-            None => RunOptions::default(),
-        };
+    Value::checked_native("os.run", PARAMS, |ctx, args| {
+        let mut args = Args::new(ctx.name(), PARAMS, args);
+        let program: String = args.take()?;
+        let arguments: Vec<String> = args.take()?;
+        let Optional(options) = args.take::<Optional<De<RunOptions>>>()?;
+        let options = options.map_or_else(RunOptions::default, |De(options)| options);
+        let options = options.validate()?;
         let input = options.stdin.as_ref().and_then(Value::as_byte_slice);
 
-        let mut command = Command::new(program);
+        let mut command = Command::new(&program);
         command
             .args(arguments)
             .stdin(if input.is_some() {
@@ -231,11 +211,11 @@ fn run() -> Value {
         Ok(Value::map([
             (
                 "stdout",
-                stream_value("stdout", output.stdout, options.binary, program)?,
+                stream_value("stdout", output.stdout, options.binary, &program)?,
             ),
             (
                 "stderr",
-                stream_value("stderr", output.stderr, options.binary, program)?,
+                stream_value("stderr", output.stderr, options.binary, &program)?,
             ),
             ("exit_code", exit_code),
             ("signal", signal),

@@ -314,7 +314,7 @@ mod run {
         ] {
             assert_raises(&[(
                 &format!("os.run('true', [], {options})"),
-                &format!("Function os.run requires valid options: {problem}"),
+                &format!("Function os.run requires argument 3 (options) to be valid: {problem}"),
             )]);
         }
     }
@@ -333,8 +333,11 @@ fn run_checks_its_arguments() {
         ),
         (
             "os.run('echo', [1])",
-            "Function os.run requires an Array of Strings as argument 2 (args), \
-             but element 0 is Int",
+            "Function os.run requires String as element 0 of argument 2 (args), got Int",
+        ),
+        (
+            "os.run('echo', ['a', 'b', null])",
+            "Function os.run requires String as element 2 of argument 2 (args), got Null",
         ),
         (
             "os.run('echo', [], 1)",

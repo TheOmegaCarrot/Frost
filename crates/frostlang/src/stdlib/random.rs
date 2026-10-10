@@ -8,6 +8,7 @@
 use std::hash::{BuildHasher, RandomState};
 use std::sync::{Arc, Mutex};
 
+use crate::native::{Args, FrostArg};
 use crate::{FrostError, FrostFloat, FrostType, Param, Params, StdlibModule, Value};
 
 /// The configuration of [`random`].
@@ -102,14 +103,16 @@ fn float_arg(arg: &Value) -> f64 {
 
 fn int(rng: &Shared) -> Value {
     const PARAMS: Params = Params::new(&[
-        Param::of(FrostType::INT).named("low"),
-        Param::of(FrostType::INT).named("high"),
+        <i64 as FrostArg>::PARAM.named("low"),
+        <i64 as FrostArg>::PARAM.named("high"),
     ]);
     let rng = Arc::clone(rng);
-    Value::checked_native("rng.int", PARAMS, move |_, args| {
-        let [low, high] = [&args[0], &args[1]].map(|arg| arg.as_int().expect("an Int"));
+    Value::checked_native("rng.int", PARAMS, move |ctx, args| {
+        let mut args = Args::new(ctx.name(), PARAMS, args);
+        let low: i64 = args.take()?;
+        let high: i64 = args.take()?;
         if low > high {
-            return Err(bounds_error("rng.int", &args[0], &args[1]));
+            return Err(bounds_error("rng.int", &low.into(), &high.into()));
         }
         Ok(Value::Int(draw(&rng, |rng| rng.i64(low..=high))))
     })

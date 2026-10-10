@@ -24,6 +24,7 @@ pub mod compile;
 mod core;
 #[cfg(feature = "image")]
 pub mod image;
+pub mod native;
 pub mod stdlib;
 mod vm;
 
