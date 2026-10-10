@@ -37,7 +37,7 @@ fn tail(code: Vec<Bytecode>) -> Value {
     Vm::factory().build(closure).run().unwrap().tail().clone()
 }
 
-mod common;
+use crate::common;
 
 use Bytecode::{
     Jump, JumpIfFalse, JumpIfTrue, PeekJumpIfFalse, PeekJumpIfTrue, PushFalse, PushInt, PushNull,

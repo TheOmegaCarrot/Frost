@@ -6,7 +6,7 @@
 //! The harness runs every case under every optimization permutation, so a call
 //! over literals is checked both folded and at run time.
 
-mod script;
+use crate::script;
 
 use std::borrow::Cow;
 

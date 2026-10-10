@@ -4,7 +4,7 @@
 //! but `special_float` takes Int or Float arguments. One computed in floating
 //! point returns a Float, and a result that would be NaN or infinite is an error.
 
-mod script;
+use crate::script;
 
 use frostlang::stdlib::StdlibConfig;
 use frostlang::{FrostFloat, ImporterBuilder, SpecialFloat, Stdlib, Value, stdlib};

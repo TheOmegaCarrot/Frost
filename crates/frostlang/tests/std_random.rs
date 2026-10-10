@@ -5,7 +5,7 @@
 //! engine, `random.rng`, belongs to the module instance, so its draws advance
 //! from one run to the next: cases about it build their own module and run once.
 
-mod script;
+use crate::script;
 
 use std::sync::Arc;
 

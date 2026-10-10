@@ -13,7 +13,7 @@
 //! over a literal is checked both folded and at run time. Cases that capture
 //! their input are never folded.
 
-mod script;
+use crate::script;
 
 use std::borrow::Cow;
 

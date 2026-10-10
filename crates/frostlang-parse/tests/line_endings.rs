@@ -2,7 +2,7 @@
 //! same tree, and fails with the same error, whichever line ending it was saved with.
 //! A lone CR is not a line break.
 
-mod helpers;
+use crate::helpers;
 
 use frostlang_parse::ast::*;
 use frostlang_parse::parse_program;

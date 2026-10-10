@@ -9,7 +9,7 @@
 use std::collections::BTreeMap;
 use std::sync::Arc;
 
-mod common;
+use crate::common;
 
 use common::{Pop, global_slot};
 use frostlang::bytecode::{Bytecode, CompiledFunction, FormatVersion, NameEntry};

@@ -2,7 +2,7 @@
 //! every import runs it afresh. Each module here prints when it runs, so the
 //! printed lines count its runs.
 
-mod common;
+use crate::common;
 
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};

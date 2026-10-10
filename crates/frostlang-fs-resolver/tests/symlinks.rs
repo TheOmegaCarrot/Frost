@@ -3,7 +3,7 @@
 
 #![cfg(unix)]
 
-mod common;
+use crate::common;
 
 use common::{Tree, count, importer, run};
 use frostlang::Value;

@@ -5,7 +5,7 @@
 //! Content to encode or decode may be a String (its UTF-8) or Bytes; a decoder
 //! or parser given content that does not decode returns Null.
 
-mod script;
+use crate::script;
 
 use frostlang::{FrostFloat, Value, stdlib};
 use script::Script;

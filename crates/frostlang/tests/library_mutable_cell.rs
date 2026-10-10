@@ -10,7 +10,7 @@
 //! The harness runs every case under every optimization permutation, so each is
 //! checked with and without folding the calls around a cell.
 
-mod script;
+use crate::script;
 
 use std::borrow::Cow;
 

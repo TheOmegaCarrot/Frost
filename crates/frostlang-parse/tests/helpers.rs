@@ -1,6 +1,3 @@
-// Shared across test binaries via `mod helpers;`; no single binary uses every helper.
-#![allow(dead_code)]
-
 use frostlang_parse::ast::*;
 use frostlang_parse::parse_program;
 

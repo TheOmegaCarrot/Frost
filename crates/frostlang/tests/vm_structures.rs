@@ -58,7 +58,7 @@ fn map(pairs: Vec<(MapKey, Value)>) -> Value {
     Value::Map(pairs.into_iter().collect())
 }
 
-mod common;
+use crate::common;
 
 use Bytecode::{DropBelow, ExplodeArray, LoadConst, MakeArray, MakeMap, PushInt, PushNull};
 use common::Pop;

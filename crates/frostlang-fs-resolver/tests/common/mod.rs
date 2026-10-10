@@ -1,11 +1,8 @@
 //! Harness for the resolver's tests: a scratch directory tree of module files,
 //! and a script run with an importer that serves them.
 
-// Each test binary uses its own subset of the harness.
-#![allow(dead_code)]
-
 use std::fs;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
 
 use frostlang::compile::{CompilerOptions, compile_program};
@@ -28,11 +25,6 @@ impl Tree {
         let _ = fs::remove_dir_all(&root);
         fs::create_dir_all(&root).expect("the scratch directory is creatable");
         Self { root }
-    }
-
-    /// The tree's own directory.
-    pub(crate) fn root(&self) -> &Path {
-        &self.root
     }
 
     /// `relative` within the tree.

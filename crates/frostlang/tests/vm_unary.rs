@@ -49,7 +49,7 @@ fn float_val(x: f64) -> Value {
     Value::try_from(x).unwrap()
 }
 
-mod common;
+use crate::common;
 
 use Bytecode::{LoadConst, LogicalNot, Negate, PushFalse, PushInt, PushNull, PushTrue};
 use common::Pop;

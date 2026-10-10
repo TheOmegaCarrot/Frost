@@ -144,8 +144,6 @@ impl Library {
 
 /// Defines, in the test file it is used in, a `LIBRARY` constant of the
 /// [`Library`] given, and each of its methods as a free function over it.
-// Each test binary uses its own subset of the harness.
-#[allow(unused_macros)]
 macro_rules! library_assertions {
     ($library:expr) => {
         const LIBRARY: $crate::script::assertions::Library = $library;
@@ -192,5 +190,4 @@ macro_rules! library_assertions {
     };
 }
 
-#[allow(unused_imports)]
 pub(crate) use library_assertions;

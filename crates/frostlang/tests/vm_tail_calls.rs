@@ -11,7 +11,7 @@
 //! Finite tail-call chains terminate because the last closure simply returns, so
 //! no conditional is required: everything here uses implemented opcodes only.
 
-mod common;
+use crate::common;
 
 use std::sync::Arc;
 

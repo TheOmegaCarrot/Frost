@@ -2,6 +2,8 @@
 name = "frostlang-repl"
 version = "0.0.1"
 edition.workspace = true
+# See `[[test]]`.
+autotests = false
 
 [features]
 default = ["line-editor"]
@@ -27,6 +29,13 @@ reedline = { version = "0.52", optional = true }
 [dev-dependencies]
 # The tests assert on the graphical rendering.
 frostlang-repl = { path = ".", features = ["graphical-diagnostics"] }
+
+# One binary for every integration test, rather than one per file, to save the
+# build time and disk of linking each separately. Each file in `tests/` is a
+# module of `tests/main.rs`, which must declare it.
+[[test]]
+name = "integration"
+path = "tests/main.rs"
 
 [lints]
 workspace = true

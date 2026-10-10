@@ -18,9 +18,6 @@
 //! Tests about what optimization *emits* select the permutations they apply to
 //! and read the code with [`Script::code_where`].
 
-// Each test binary uses its own subset of the harness.
-#![allow(dead_code)]
-
 pub(crate) mod assertions;
 
 use std::collections::BTreeMap;

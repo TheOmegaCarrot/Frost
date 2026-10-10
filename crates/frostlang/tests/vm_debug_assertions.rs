@@ -11,7 +11,7 @@
 
 use std::sync::Arc;
 
-mod common;
+use crate::common;
 
 use common::{Pop, func, run_fn};
 use frostlang::Arity;

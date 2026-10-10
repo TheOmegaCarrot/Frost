@@ -7,7 +7,7 @@
 //! shown, the label preserved) rather than the parser's exact wording, which is
 //! free to change.
 
-mod script;
+use crate::script;
 
 use frostlang::compile::Diagnostics;
 use script::Script;

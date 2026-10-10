@@ -3,7 +3,7 @@
 //! uses from that scope, and implicit export lets the caller harvest every
 //! top-level binding afterward.
 
-mod script;
+use crate::script;
 
 use frostlang::Value;
 use script::{Script, compile_errors};

@@ -3,7 +3,7 @@
 //! to the right value, not to emit a particular opcode (which optimization is
 //! free to change).
 
-mod script;
+use crate::script;
 
 use frostlang::Value;
 use script::{compile_errors, run};

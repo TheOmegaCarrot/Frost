@@ -5,7 +5,7 @@
 //! A native is seated the representative way: built with `NativeFunction::new`,
 //! wrapped in a `Value`, and bound as a top-level capture.
 
-mod common;
+use crate::common;
 
 use std::collections::BTreeMap;
 use std::sync::Arc;

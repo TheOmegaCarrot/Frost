@@ -13,7 +13,7 @@
 //! program balances its marks, since an unbalanced mark trips a debug assertion at
 //! return.
 
-mod common;
+use crate::common;
 
 use common::run;
 use frostlang::Value;

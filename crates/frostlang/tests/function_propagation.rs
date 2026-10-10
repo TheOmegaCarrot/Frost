@@ -8,7 +8,7 @@
 //! identity of a function value. The code assertions pin the options they are
 //! about and confirm a call was actually folded.
 
-mod script;
+use crate::script;
 
 use frostlang::Value;
 use frostlang::bytecode::Bytecode;

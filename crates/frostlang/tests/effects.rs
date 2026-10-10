@@ -6,7 +6,7 @@
 //! permutation to print the same, so no optimization may drop, repeat, or reorder
 //! a print.
 
-mod script;
+use crate::script;
 
 use script::Script;
 

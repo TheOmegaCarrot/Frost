@@ -1,7 +1,7 @@
 //! A module that imports itself, however indirectly, is an import cycle: the
 //! import that closes it raises an error naming the chain.
 
-mod common;
+use crate::common;
 
 use common::{Tree, importer, run};
 use frostlang::Value;

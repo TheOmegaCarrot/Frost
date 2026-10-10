@@ -1,7 +1,7 @@
 //! Which file a specification names, which root serves it, and what an import
 //! receives.
 
-mod common;
+use crate::common;
 
 use std::sync::Arc;
 

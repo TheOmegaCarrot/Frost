@@ -6,7 +6,7 @@
 //! the `Function` (native *and* closure) and `Opaque` variants, and every named category set,
 //! with concrete hand-authored expectations (not re-derived from the implementation), so an inverted category would be caught.
 
-mod common;
+use crate::common;
 
 use std::sync::Arc;
 

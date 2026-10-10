@@ -9,7 +9,7 @@
 //! call it receives, making the calls themselves observable. As a capture it is
 //! known only at runtime, so a call to it never folds.
 
-mod script;
+use crate::script;
 
 use std::sync::{Arc, Mutex};
 

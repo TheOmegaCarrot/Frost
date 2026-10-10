@@ -12,7 +12,7 @@
 //! minimal "-O0" prelude: move the arg into a slot, pop the function value, load
 //! the arg back as the result.
 
-mod common;
+use crate::common;
 
 use common::{entry, func, func_with_captures, run_fn};
 use frostlang::bytecode::Bytecode;

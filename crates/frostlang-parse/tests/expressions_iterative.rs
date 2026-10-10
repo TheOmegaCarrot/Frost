@@ -1,4 +1,4 @@
-mod helpers;
+use crate::helpers;
 
 use frostlang_parse::ast::*;
 use helpers::*;

@@ -5,7 +5,7 @@
 //! so propagation is checked never to change a result; the code assertions
 //! confirm a lookup was actually propagated.
 
-mod script;
+use crate::script;
 
 use frostlang::bytecode::Bytecode;
 use frostlang::{MapKey, Value};

@@ -3,7 +3,7 @@
 //! Every way serde brings a float into a `Value` makes a non-finite one a
 //! `SpecialFloat`, and every way out turns it back into the same float, bit for bit.
 
-mod script;
+use crate::script;
 
 use serde::de::IntoDeserializer;
 use serde::de::value::{Error as PlainError, F64Deserializer};

@@ -7,7 +7,7 @@
 //! serve script files. The harness runs every case under every optimization
 //! permutation, so a call that could be folded is checked both ways.
 
-mod script;
+use crate::script;
 
 use std::collections::BTreeMap;
 use std::sync::Arc;

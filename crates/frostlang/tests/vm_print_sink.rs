@@ -5,7 +5,7 @@
 
 use std::sync::{Arc, Mutex};
 
-mod common;
+use crate::common;
 
 use common::{Pop, global_slot};
 use frostlang::bytecode::{Bytecode, CompiledFunction, FormatVersion};

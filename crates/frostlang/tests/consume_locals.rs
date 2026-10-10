@@ -7,7 +7,7 @@
 //! another local, a closure, or an export. Code-shape cases pin exactly the
 //! options they are about.
 
-mod script;
+use crate::script;
 
 use frostlang::bytecode::Bytecode;
 use frostlang::compile::{Optimization, OptimizationOptions};

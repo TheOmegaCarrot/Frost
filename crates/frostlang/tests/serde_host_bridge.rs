@@ -3,7 +3,7 @@
 //! still refuses Functions, even nested, and treats the bridge's marker as a transparent
 //! newtype so ordinary data is unaffected.
 
-mod common;
+use crate::common;
 
 use std::borrow::Cow;
 use std::sync::Arc;

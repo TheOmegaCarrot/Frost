@@ -11,7 +11,7 @@
 //! Behavioral cases run under every optimization permutation; code-shape cases
 //! pin exactly the options they are about.
 
-mod script;
+use crate::script;
 
 use frostlang::Value;
 use frostlang::bytecode::Bytecode;

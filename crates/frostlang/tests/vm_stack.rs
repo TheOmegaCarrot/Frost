@@ -1,6 +1,6 @@
 #![allow(clippy::approx_constant)]
 
-mod common;
+use crate::common;
 
 use common::run;
 use frostlang::bytecode::Bytecode;

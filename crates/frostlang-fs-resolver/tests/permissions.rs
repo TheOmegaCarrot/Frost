@@ -6,7 +6,7 @@
 
 #![cfg(unix)]
 
-mod common;
+use crate::common;
 
 use std::fs::{self, Permissions};
 use std::os::unix::fs::PermissionsExt;

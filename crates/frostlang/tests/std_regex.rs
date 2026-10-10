@@ -4,7 +4,7 @@
 //! written as raw strings, `R'(...)'`, so backslashes reach the regex engine as
 //! written.
 
-mod script;
+use crate::script;
 
 use frostlang::stdlib::StdlibConfig;
 use frostlang::{ImporterBuilder, Stdlib, stdlib};

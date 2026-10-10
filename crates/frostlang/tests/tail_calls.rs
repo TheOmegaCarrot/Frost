@@ -10,7 +10,7 @@
 //! Each probed call site calls `f` with a distinct argument count, so the
 //! emitted call opcode identifies which site it is.
 
-mod script;
+use crate::script;
 
 use frostlang::bytecode::Bytecode;
 use frostlang::compile::{Optimization, OptimizationOptions};

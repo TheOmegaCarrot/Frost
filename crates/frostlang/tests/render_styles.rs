@@ -2,7 +2,7 @@
 //! graphical styles differ only in the characters they may use; the narrated
 //! style draws nothing.
 
-mod script;
+use crate::script;
 
 use frostlang::compile::{Diagnostic, Diagnostics};
 use script::Script;

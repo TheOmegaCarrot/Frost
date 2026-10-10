@@ -11,7 +11,7 @@
 //! calling a non-function, an arity mismatch, `ProduceError`, plus a couple of
 //! native fixtures (`boom`, `apply`).
 
-mod common;
+use crate::common;
 
 use std::sync::Arc;
 

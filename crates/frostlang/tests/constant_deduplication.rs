@@ -6,7 +6,7 @@
 //! run under every optimization permutation, so a wrongly shared constant shows
 //! up as a permutation that disagrees.
 
-mod script;
+use crate::script;
 
 use frostlang::bytecode::Bytecode;
 use frostlang::compile::{Optimization, OptimizationOptions};

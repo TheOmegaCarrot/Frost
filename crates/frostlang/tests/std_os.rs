@@ -4,7 +4,7 @@
 //! Each case runs with only `std.os` installed, bound as `os`. The cases that
 //! run programs use POSIX tools, so they run only on Unix.
 
-mod script;
+use crate::script;
 
 use std::time::{Duration, Instant};
 

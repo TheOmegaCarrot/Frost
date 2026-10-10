@@ -2,6 +2,8 @@
 name = "frostlang"
 version = "0.0.1"
 edition.workspace = true
+# See `[[test]]`.
+autotests = false
 
 [features]
 default = ["compile"]
@@ -40,6 +42,13 @@ strsim = "0.11.1"
 frostlang = { path = ".", features = ["graphical-diagnostics", "image"] }
 postcard = { version = "1", features = ["alloc"] }
 serde_json = "1"
+
+# One binary for every integration test, rather than one per file, to save the
+# build time and disk of linking each separately. Each file in `tests/` is a
+# module of `tests/main.rs`, which must declare it.
+[[test]]
+name = "integration"
+path = "tests/main.rs"
 
 [lints]
 workspace = true

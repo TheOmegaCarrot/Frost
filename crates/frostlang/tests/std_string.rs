@@ -5,7 +5,7 @@
 //! take Bytes, in any mix with a String; where Bytes are involved, positions
 //! count bytes.
 
-mod script;
+use crate::script;
 
 use frostlang::stdlib::{self, StdlibConfig};
 use frostlang::{ImporterBuilder, Stdlib, Value};

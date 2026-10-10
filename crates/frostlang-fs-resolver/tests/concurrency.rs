@@ -4,7 +4,7 @@
 //! Each concurrent case runs under a watchdog, so a hang fails the test rather
 //! than stalling the suite.
 
-mod common;
+use crate::common;
 
 use std::panic::{self, AssertUnwindSafe};
 use std::sync::atomic::{AtomicBool, Ordering};

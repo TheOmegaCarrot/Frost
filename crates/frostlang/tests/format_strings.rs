@@ -7,7 +7,7 @@
 //! pin a rendering, which is the runtime's to define. The harness runs every
 //! behavioral case under every optimization permutation.
 
-mod script;
+use crate::script;
 
 use frostlang::Value;
 use frostlang::bytecode::Bytecode;

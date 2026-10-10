@@ -73,7 +73,7 @@ fn map_kv(pairs: &[(&str, i64)]) -> Value {
     )
 }
 
-mod common;
+use crate::common;
 
 use Bytecode::{Add, Divide, LoadConst, MakeArray, Modulus, Multiply, PushInt, PushNull, Subtract};
 use common::Pop;

@@ -6,7 +6,7 @@
 //! so neither is checked ever to change what a program does. The code
 //! assertions pin the options they are about.
 
-mod script;
+use crate::script;
 
 use frostlang::Value;
 use frostlang::bytecode::Bytecode;

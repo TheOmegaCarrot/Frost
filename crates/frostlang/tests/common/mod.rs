@@ -2,10 +2,6 @@
 //!
 //! The bytecode-level tests of globals (`vm_*`) predate the compiler. New tests
 //! of globals are written from Frost source (`library_*`), with the `source` harness.
-//!
-//! Lives in `common/mod.rs` (not `common.rs`) so Cargo does not compile it as its own test binary.
-//! `allow(dead_code)` because each test binary pulls in the whole module but uses only the helpers it needs.
-#![allow(dead_code)]
 
 use std::sync::Arc;
 

@@ -2,7 +2,7 @@
 //! and a module runs as a module: imported, identified, and attributed in
 //! backtraces.
 
-mod common;
+use crate::common;
 
 use std::sync::Arc;
 

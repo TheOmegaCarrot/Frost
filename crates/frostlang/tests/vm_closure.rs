@@ -12,7 +12,7 @@ use std::sync::Arc;
 use frostlang::bytecode::{Bytecode, CompiledFunction, FormatVersion, NameEntry};
 use frostlang::{Arity, FrostArray, MissingCaptures, ProgramResult, Value, Vm};
 
-mod common;
+use crate::common;
 
 use Bytecode::{DefLocal, LoadLocal, PushInt, Subtract};
 use common::Pop;

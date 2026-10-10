@@ -1,4 +1,4 @@
-mod common;
+use crate::common;
 
 use frostlang::bytecode::Bytecode;
 use frostlang::{Arity, FrostArray, FrostFloat, FrostMap, MapKey, Value};

@@ -8,7 +8,7 @@
 //! Structures reach the scripts as captures, which are known only at runtime.
 //! The harness runs every behavioral case under every optimization permutation.
 
-mod script;
+use crate::script;
 
 use frostlang::bytecode::Bytecode;
 use frostlang::compile::{Optimization, OptimizationOptions};

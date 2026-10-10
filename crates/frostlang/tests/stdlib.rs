@@ -2,7 +2,7 @@
 //! public API alone. What each module does is tested from Frost source, in the
 //! `std_*` tests.
 
-mod script;
+use crate::script;
 
 use std::sync::Arc;
 

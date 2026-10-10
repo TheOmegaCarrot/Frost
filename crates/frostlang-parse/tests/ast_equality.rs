@@ -2,7 +2,7 @@
 //! (see the `Spanned` docs). Two parses that differ only in whitespace or
 //! other span-shifting trivia are equal; structural differences are not.
 
-mod helpers;
+use crate::helpers;
 
 use helpers::*;
 

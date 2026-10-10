@@ -11,7 +11,7 @@
 //! under every optimization permutation. What the compiler emits for lambdas
 //! (folding, effects, tail calls) is covered by `lambda_compilation.rs`.
 
-mod script;
+use crate::script;
 
 use frostlang::Value;
 use script::{Script, compile_errors, raises, run};

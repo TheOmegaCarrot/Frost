@@ -10,7 +10,7 @@
 //! is exactly which operations are left for runtime. A runtime-only operand is a
 //! capture, which no optimization can see through.
 
-mod script;
+use crate::script;
 
 use frostlang::bytecode::Bytecode;
 use frostlang::{MapKey, Value};
