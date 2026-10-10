@@ -7,6 +7,8 @@ members = [
     "crates/frostlang-repl",
     "crates/frostlang-cli",
     "crates/frostlang-astviz",
+    # The first-party extensions, one crate each.
+    "crates/ext/*",
 ]
 resolver = "3"
 
@@ -22,6 +24,7 @@ frostlang-driver = { path = "crates/frostlang-driver", version = "0.0.1" }
 frostlang-fs-resolver = { path = "crates/frostlang-fs-resolver", version = "0.0.1" }
 frostlang-parse = { path = "crates/frostlang-parse", version = "0.0.1" }
 frostlang-repl = { path = "crates/frostlang-repl", version = "0.0.1" }
+frostlang-uuid = { path = "crates/ext/frostlang-uuid", version = "0.0.1" }
 
 # Crates opt in with `[lints] workspace = true`.
 [workspace.lints.rust]

@@ -46,6 +46,10 @@ independently:
 | `frostlang-cli` | The `frost` binary, built on `frostlang-driver`. |
 | `frostlang-astviz` | AST visualization; compiles the tree-sitter Frost grammar from `editor/`. Unpublished. |
 
+First-party extensions (the `ext.*` modules) live in `crates/ext/<crate name>/`, one crate each,
+named `frostlang-<name>`. Each exposes `extension(/* its configuration */) -> Extension` for a
+host to pass to `ImporterBuilder::with_extension`, and `frostlang-cli` installs every one.
+
 Design documents and working scratch live in `tmp/` (git-ignored) at the repo root.
 
 ## Frost Syntax

@@ -1,13 +1,19 @@
 [package]
-name = "frostlang-cli"
+name = "frostlang-uuid"
 version = "0.0.1"
 edition.workspace = true
 # See `[[test]]`.
 autotests = false
 
-[[bin]]
-name = "frost"
-path = "src/main.rs"
+[dependencies]
+frostlang = { workspace = true, default-features = false }
+# `std` for its monotonic `Generator`.
+ulid = "3"
+uuid = { version = "1.28", features = ["v4", "v7"] }
+
+[dev-dependencies]
+# The tests compile Frost source.
+frostlang.workspace = true
 
 # One binary for every integration test, rather than one per file, to save the
 # build time and disk of linking each separately. Each file in `tests/` is a
@@ -15,12 +21,6 @@ path = "src/main.rs"
 [[test]]
 name = "integration"
 path = "tests/main.rs"
-
-[dependencies]
-frostlang-driver = { workspace = true, features = ["graphical-diagnostics"] }
-frostlang-fs-resolver = { workspace = true, features = ["graphical-diagnostics"] }
-frostlang.workspace = true
-frostlang-uuid.workspace = true
 
 [lints]
 workspace = true

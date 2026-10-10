@@ -30,9 +30,10 @@ fn main() -> Exit {
         .run_from_env()
 }
 
-/// Everything a script may import: the complete standard library, and Frost
-/// files under the directory of `script`, if there is one, the working
-/// directory, and each directory in `FROST_MODULE_PATH`, searched in that order.
+/// Everything a script may import: the complete standard library, every
+/// first-party extension, and Frost files under the directory of `script`, if
+/// there is one, the working directory, and each directory in
+/// `FROST_MODULE_PATH`, searched in that order.
 fn importer(script: Option<&Path>) -> Arc<Importer> {
     let script_dir = script.map(|script| match script.parent() {
         Some(dir) if !dir.as_os_str().is_empty() => dir.to_path_buf(),
@@ -48,7 +49,10 @@ fn importer(script: Option<&Path>) -> Arc<Importer> {
         .chain(module_path)
         .filter(|root| root.is_dir())
         .collect();
-    let importer = ImporterBuilder::new().with_stdlib(Stdlib::complete(StdlibConfig::default()));
+    let importer = ImporterBuilder::new()
+        .with_stdlib(Stdlib::complete(StdlibConfig::default()))
+        .with_extension(frostlang_uuid::extension())
+        .expect("each extension has its own name");
     match FsResolver::new(roots) {
         Ok(resolver) => importer.append_resolver(Arc::new(
             resolver
