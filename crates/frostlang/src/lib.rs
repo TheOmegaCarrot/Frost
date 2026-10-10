@@ -39,11 +39,12 @@ pub use core::{
 };
 
 pub use vm::{
-    AbortReason, Arity, Closure, Extension, ExtensionError, HostComponent, HostComponentError,
-    IdleVm, ImportCtx, ImportResolver, Importer, ImporterBuilder, InvalidComponentName,
-    InvalidParams, MissingCaptures, ModuleId, NativeCtx, NativeFn, NativeFunction, Param, Params,
-    PrintSink, ProgramResult, RunError, RunErrorKind, Stdlib, StdlibError, StdlibModule,
-    StdoutSink, TrustedProgram, Vm, VmFactory, VmRuntimeConfiguration,
+    AbortReason, Arity, CancelToken, ChildVmFactory, Closure, Extension, ExtensionError,
+    HostComponent, HostComponentError, IdleVm, ImportCtx, ImportResolver, Importer,
+    ImporterBuilder, InvalidComponentName, InvalidParams, MissingCaptures, ModuleId, NativeCtx,
+    NativeFn, NativeFunction, Param, Params, PrintSink, ProgramResult, RunError, RunErrorKind,
+    Stdlib, StdlibError, StdlibModule, StdoutSink, TrustedProgram, Vm, VmFactory,
+    VmRuntimeConfiguration,
 };
 
 /// The bytecode the [`Vm`] runs, as the compiler produces it.

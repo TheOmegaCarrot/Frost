@@ -136,6 +136,8 @@ pub enum AbortReason {
     /// The run made more function calls than its
     /// [`fuel`](super::VmRuntimeConfiguration::fuel) allows.
     FuelExhausted,
+    /// The run's [`CancelToken`](super::CancelToken) was cancelled.
+    Cancelled,
 }
 
 /// A warm [`Vm`] with no program loaded: its allocations are kept for reuse,

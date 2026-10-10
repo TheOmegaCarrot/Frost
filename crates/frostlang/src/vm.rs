@@ -1,4 +1,5 @@
 mod bytecode;
+mod cancel;
 mod disassemble;
 mod function;
 mod globals;
@@ -10,6 +11,7 @@ mod print_sink;
 pub(crate) mod serialize;
 
 pub use bytecode::Bytecode;
+pub use cancel::CancelToken;
 pub use disassemble::Disassembly;
 pub use function::{Arity, Closure, CompiledFunction, MissingCaptures, NameEntry, TrustedProgram};
 pub use globals::{GLOBAL_NAMES, GLOBAL_PURITY, Purity};
@@ -87,6 +89,10 @@ pub struct Vm {
     // Once set (e.g. fuel exhaustion) the run is fatally aborting:
     // unlike an ordinary error this cannot be caught.
     abort: Option<Abort>,
+
+    // The host's means to cancel this run, shared with the Vms of the modules it imports.
+    // Dropped on `rearm`, so a cancellation never reaches the next run.
+    cancel_token: Option<CancelToken>,
 
     // Identity of the module this Vm runs, as assigned by the resolver that loaded it.
     // `None` for a top-level script the host did not identify.
@@ -239,9 +245,6 @@ impl VmFactory {
     }
 
     /// Build a [`Vm`] to run `closure` under this factory's configuration.
-    ///
-    /// Fails for a factory from [`ImportCtx::child_factory`] when the Vm would
-    /// nest deeper than [`max_import_depth`](VmRuntimeConfiguration::max_import_depth).
     pub fn build(&self, closure: Arc<Closure>) -> Result<Vm, FrostError> {
         if let Some(limit) = self.config.max_import_depth
             && self.import_depth > limit.get()
@@ -261,10 +264,59 @@ impl VmFactory {
             config: self.config.clone(),
             fuel_used: 0,
             abort: None,
+            cancel_token: None,
             module_id: None,
             import_depth: self.import_depth,
             marks: Vec::new(),
             slots: Vec::new(),
+        })
+    }
+}
+
+/// Builds the [`Vm`]s that run imported modules. Obtain one from [`ImportCtx::child_factory`].
+///
+/// Each Vm it builds runs under the importing Vm's configuration and importer,
+/// one import level deeper, and is cancelled along with the importing Vm
+/// (see [`Vm::with_cancel_token`]).
+/// Resource counters start fresh rather than continuing the importing Vm's;
+/// the limits are a runaway guard, not a budget shared across a module tree.
+#[derive(Debug, Clone)]
+pub struct ChildVmFactory {
+    factory: VmFactory,
+    cancel_token: Option<CancelToken>,
+}
+
+impl ChildVmFactory {
+    pub(crate) fn new(factory: VmFactory, cancel_token: Option<CancelToken>) -> Self {
+        Self {
+            factory,
+            cancel_token,
+        }
+    }
+
+    /// Replace the runtime configuration the Vms this factory builds inherited from
+    /// the importing Vm. See [`VmFactory::configuration`].
+    pub fn configuration(mut self, config: VmRuntimeConfiguration) -> Self {
+        self.factory = self.factory.configuration(config);
+        self
+    }
+
+    /// Replace the [`Importer`] the Vms this factory builds inherited from the
+    /// importing Vm. See [`VmFactory::with_importer`].
+    pub fn with_importer(mut self, importer: Arc<Importer>) -> Self {
+        self.factory = self.factory.with_importer(importer);
+        self
+    }
+
+    /// Build a [`Vm`] to run `closure` as an imported module.
+    ///
+    /// Fails when the Vm would nest deeper than
+    /// [`max_import_depth`](VmRuntimeConfiguration::max_import_depth).
+    pub fn build(&self, closure: Arc<Closure>) -> Result<Vm, FrostError> {
+        let vm = self.factory.build(closure)?;
+        Ok(match &self.cancel_token {
+            Some(token) => vm.with_cancel_token(token.clone()),
+            None => vm,
         })
     }
 }
@@ -330,20 +382,42 @@ impl Vm {
         self
     }
 
+    /// Lets `token` cancel this Vm's run, replacing any token attached before.
+    ///
+    /// A run whose token is cancelled, before or during the run, fails with
+    /// [`AbortReason::Cancelled`].
+    /// Modules the script imports run under the same token.
+    /// Recycling the Vm for another script detaches the token,
+    /// so a cancellation never carries over to the next run.
+    pub fn with_cancel_token(mut self, token: CancelToken) -> Self {
+        self.cancel_token = Some(token);
+        self
+    }
+
+    /// Recycle this Vm to run `closure` instead, reusing its internal allocations.
+    /// Like [`ProgramResult::reset`], but for a Vm that never ran.
+    ///
+    /// Detaches the Vm's [`CancelToken`], if any:
+    /// the recycled Vm cannot be cancelled until one is attached again
+    /// with [`with_cancel_token`](Self::with_cancel_token).
+    pub fn reset(self, closure: Arc<Closure>) -> Vm {
+        self.rearm(closure)
+    }
+
     /// Whether the running script is being imported by another module (import
     /// depth above zero) rather than run directly. Backs the `imported()` global.
     pub(crate) fn is_imported(&self) -> bool {
         self.import_depth > 0
     }
 
-    /// A factory for Vms nested inside this one: same configuration and importer,
-    /// one import level deeper.
-    pub(crate) fn child_factory(&self) -> VmFactory {
-        VmFactory {
+    /// A factory for Vms nested inside this one.
+    pub(crate) fn child_factory(&self) -> ChildVmFactory {
+        let factory = VmFactory {
             config: self.config.clone(),
             importer: self.importer.clone(),
             import_depth: self.import_depth + 1,
-        }
+        };
+        ChildVmFactory::new(factory, self.cancel_token.clone())
     }
 
     /// Package what a resolver needs to build a child Vm.
@@ -352,9 +426,9 @@ impl Vm {
     }
 
     /// Scrub a spent Vm back to a runnable state for `closure`, keeping its allocations.
-    /// Clears the operand stack, frames, marks, and local slots (a failed run leaves them
-    /// dirty), the fuel meter, the abort latch, and the module id, which identified
-    /// the previous script.
+    /// Clears everything which identified the previous script.
+    /// A rearmed Vm and a "brand new" Vm differ only in that a rearmed Vm has some memory
+    /// pre-allocated.
     fn rearm(mut self, closure: Arc<Closure>) -> Vm {
         self.stack.clear();
         self.stack_frames.clear();
@@ -363,6 +437,7 @@ impl Vm {
         self.top_level = closure;
         self.fuel_used = 0;
         self.abort = None;
+        self.cancel_token = None;
         self.module_id = None;
         self
     }
@@ -837,8 +912,11 @@ impl Vm {
                         };
                         let ctx = self.import_ctx();
                         let importer = self.importer.clone();
-                        let module = importer.import(spec, &ctx)?;
-                        self.stack.push(module);
+                        let module = importer.import(spec, &ctx);
+                        // A module cancelled under the shared token fails with an
+                        // ordinary error; this Vm notices the cancellation itself.
+                        self.check_cancelled()?;
+                        self.stack.push(module?);
                     }
                 };
                 pc += 1;
@@ -885,6 +963,9 @@ impl Vm {
         mut self,
         args: impl IntoIterator<Item = Value>,
     ) -> Result<ProgramResult, RunError> {
+        if let Err(error) = self.check_cancelled() {
+            return Err(RunError { vm: self, error });
+        }
         let closure = self.top_level.clone();
         self.stack.push(Value::Closure(closure.clone()));
         self.stack.extend(args);
@@ -1131,9 +1212,11 @@ impl Vm {
     // ----- Resource limits (`VmRuntimeConfiguration`) -----
     // Centralized guards + error messages, called from the several call/frame-push sites.
 
-    /// Count one function call against the fuel budget, failing if it is exhausted.
+    /// Count one function call against the fuel budget, failing if it is exhausted
+    /// or the run is cancelled.
     /// Called at every call site (`Call`, tail calls, and native re-entry via `invoke`).
     fn expend_fuel(&mut self) -> Result<(), FrostError> {
+        self.check_cancelled()?;
         // Counted unconditionally: `fuel_consumed` reports call counts whether or not
         // a budget is set, so the increment is not skippable when unmetered.
         self.fuel_used = self.fuel_used.saturating_add(1);
@@ -1145,6 +1228,18 @@ impl Vm {
                 AbortReason::FuelExhausted,
                 Self::fuel_exhausted(budget.get()),
             ));
+        }
+        Ok(())
+    }
+
+    /// Abort the run if its cancel token has been cancelled.
+    fn check_cancelled(&mut self) -> Result<(), FrostError> {
+        if self
+            .cancel_token
+            .as_ref()
+            .is_some_and(CancelToken::is_cancelled)
+        {
+            return Err(self.abort_with(AbortReason::Cancelled, Self::cancelled()));
         }
         Ok(())
     }
@@ -1186,6 +1281,10 @@ impl Vm {
         FrostError::from_string(format!(
             "Execution exceeded its fuel limit of {limit} function calls"
         ))
+    }
+
+    fn cancelled() -> FrostError {
+        FrostError::from_static("Execution was cancelled")
     }
 
     fn call_depth_exceeded(limit: usize) -> FrostError {

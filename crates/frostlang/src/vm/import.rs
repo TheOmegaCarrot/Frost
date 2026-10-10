@@ -4,7 +4,7 @@ use crate::{
     FrostError, MapKey, Value, ValueMap, core::util::identifier::is_identifier_like_and_not_keyword,
 };
 
-use super::{Vm, VmFactory};
+use super::{ChildVmFactory, Vm};
 
 // White-box tests for the `import` module.
 #[cfg(test)]
@@ -46,13 +46,13 @@ impl std::fmt::Display for ModuleId {
 /// a resolver may use it while resolving, but cannot retain it.
 #[derive(Debug)]
 pub struct ImportCtx<'vm> {
-    factory: VmFactory,
+    factory: ChildVmFactory,
     importing: Option<ModuleId>,
     _vm: PhantomData<&'vm Vm>,
 }
 
 impl ImportCtx<'_> {
-    pub(super) fn new(factory: VmFactory, importing: Option<ModuleId>) -> Self {
+    pub(super) fn new(factory: ChildVmFactory, importing: Option<ModuleId>) -> Self {
         Self {
             factory,
             importing,
@@ -60,12 +60,8 @@ impl ImportCtx<'_> {
         }
     }
 
-    /// A factory for the Vm an imported module runs in:
-    /// the importing Vm's configuration and importer, one import level deeper.
-    ///
-    /// Resource counters start fresh rather than continuing the importing Vm's;
-    /// the limits are a runaway guard, not a budget shared across a module tree.
-    pub fn child_factory(&self) -> VmFactory {
+    /// A factory for the Vm an imported module runs in.
+    pub fn child_factory(&self) -> ChildVmFactory {
         self.factory.clone()
     }
 

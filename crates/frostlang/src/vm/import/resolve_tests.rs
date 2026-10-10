@@ -7,7 +7,7 @@
 
 use std::sync::{Arc, Mutex};
 
-use crate::{FrostError, Value};
+use crate::{FrostError, Value, VmFactory};
 
 use super::*;
 
@@ -19,7 +19,7 @@ fn leaf(n: i64) -> Value {
 /// A top-level import context: no importing module, default child factory.
 /// Registry resolution ignores it entirely; the chain tests pass it through.
 fn ctx() -> ImportCtx<'static> {
-    ImportCtx::new(VmFactory::default(), None)
+    ImportCtx::new(ChildVmFactory::new(VmFactory::default(), None), None)
 }
 
 /// A resolver that claims exactly one spec, recording every spec it is offered,
