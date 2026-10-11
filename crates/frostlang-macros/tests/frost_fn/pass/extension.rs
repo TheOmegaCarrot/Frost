@@ -1,6 +1,6 @@
 // `#[frost_fn]` as an extension uses it: through `frostlang` without its
-// default features, so without the compiler. Every kind of parameter, the
-// context, and a result.
+// default features, so without the compiler. Every kind of parameter, a
+// `types` constraint, the context, and a result.
 
 use frostlang::native::{Function, Nullable, Optional, Rest};
 use frostlang::{FrostResult, NativeCtx, Value, frost_fn};
@@ -22,8 +22,14 @@ fn call_each(#[frost(ctx)] ctx: &mut NativeCtx<'_>, functions: Rest<Function>) -
     Ok(last)
 }
 
+#[frost_fn(name = "ext.is_text")]
+fn is_text(#[frost(unnamed, types = Flat | Array)] sequence: Value) -> bool {
+    !sequence.is_array()
+}
+
 fn main() {
     let _: Value = label_frost();
     let _: Value = call_each_frost();
+    let _: Value = is_text_frost();
     assert_eq!(label("text".to_string(), Optional(None)), "text");
 }

@@ -1,0 +1,101 @@
+error[E0080]: evaluation panicked: a `types` constraint must stay within the types its parameter's Rust type accepts
+ --> tests/frost_fn/fail/types_outside_rust_type.rs:8:21
+  |
+8 | fn disjoint(#[frost(types = String)] _n: i64) {}
+  |                     ^^^^^ evaluation of `disjoint_frost::PARAMS::{constant#0}` failed inside this call
+  |
+note: inside `frostlang::__private::constrain`
+ --> $RUST/core/src/panic.rs
+  |
+  |           $crate::panicking::panic_fmt($crate::const_format_args!($($t)+));
+  |           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the failure occurred here
+  |
+ ::: $WORKSPACE/crates/frostlang/src/lib.rs
+  |
+  | /         assert!(
+  | |             types.is_subset(param.types()),
+  | |             "a `types` constraint must stay within the types its parameter's Rust type accepts"
+  | |         );
+  | |_________- in this macro invocation
+
+note: erroneous constant encountered
+ --> tests/frost_fn/fail/types_outside_rust_type.rs:8:12
+  |
+8 | fn disjoint(#[frost(types = String)] _n: i64) {}
+  |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+error[E0080]: evaluation panicked: a `types` constraint must stay within the types its parameter's Rust type accepts
+  --> tests/frost_fn/fail/types_outside_rust_type.rs:11:24
+   |
+11 | fn overlapping(#[frost(types = Null | Int)] _n: Optional<i64>) {}
+   |                        ^^^^^ evaluation of `overlapping_frost::PARAMS::{constant#0}` failed inside this call
+   |
+note: inside `frostlang::__private::constrain`
+  --> $RUST/core/src/panic.rs
+   |
+   |           $crate::panicking::panic_fmt($crate::const_format_args!($($t)+));
+   |           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the failure occurred here
+   |
+  ::: $WORKSPACE/crates/frostlang/src/lib.rs
+   |
+   | /         assert!(
+   | |             types.is_subset(param.types()),
+   | |             "a `types` constraint must stay within the types its parameter's Rust type accepts"
+   | |         );
+   | |_________- in this macro invocation
+
+note: erroneous constant encountered
+  --> tests/frost_fn/fail/types_outside_rust_type.rs:11:15
+   |
+11 | fn overlapping(#[frost(types = Null | Int)] _n: Optional<i64>) {}
+   |               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+error[E0080]: evaluation panicked: a `types` constraint must stay within the types its parameter's Rust type accepts
+  --> tests/frost_fn/fail/types_outside_rust_type.rs:14:17
+   |
+14 | fn rest(#[frost(types = Numeric)] _ns: Rest<i64>) {}
+   |                 ^^^^^ evaluation of `rest_frost::PARAMS::{constant#0}` failed inside this call
+   |
+note: inside `frostlang::__private::constrain`
+  --> $RUST/core/src/panic.rs
+   |
+   |           $crate::panicking::panic_fmt($crate::const_format_args!($($t)+));
+   |           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the failure occurred here
+   |
+  ::: $WORKSPACE/crates/frostlang/src/lib.rs
+   |
+   | /         assert!(
+   | |             types.is_subset(param.types()),
+   | |             "a `types` constraint must stay within the types its parameter's Rust type accepts"
+   | |         );
+   | |_________- in this macro invocation
+
+note: erroneous constant encountered
+  --> tests/frost_fn/fail/types_outside_rust_type.rs:14:8
+   |
+14 | fn rest(#[frost(types = Numeric)] _ns: Rest<i64>) {}
+   |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+note: erroneous constant encountered
+ --> tests/frost_fn/fail/types_outside_rust_type.rs:7:1
+  |
+7 | #[frost_fn(name = "disjoint")]
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+  = note: this note originates in the attribute macro `frost_fn` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+note: erroneous constant encountered
+  --> tests/frost_fn/fail/types_outside_rust_type.rs:10:1
+   |
+10 | #[frost_fn(name = "overlapping")]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = note: this note originates in the attribute macro `frost_fn` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+note: erroneous constant encountered
+  --> tests/frost_fn/fail/types_outside_rust_type.rs:13:1
+   |
+13 | #[frost_fn(name = "rest")]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = note: this note originates in the attribute macro `frost_fn` (in Nightly builds, run with -Z macro-backtrace for more info)

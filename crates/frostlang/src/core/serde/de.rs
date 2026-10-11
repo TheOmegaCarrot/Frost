@@ -1,12 +1,12 @@
 use std::cell::Cell;
 use std::fmt;
 
-use serde::de::{self, IntoDeserializer, Visitor};
+use serde::de::{self, DeserializeOwned, IntoDeserializer, Visitor};
 use serde::{Deserialize, Deserializer};
 
 use crate::core::serde::{float_value, special_float};
 use crate::core::util::identifier::is_identifier_like_and_not_keyword;
-use crate::core::{FrostArray, MapKey, Value, ValueMap};
+use crate::core::{FrostArray, FrostType, MapKey, TypeSet, Value, ValueMap};
 
 thread_local! {
     /// Carries a whole `Value` from our own [`ValueDeserializer::deserialize_newtype_struct`]
@@ -419,6 +419,182 @@ impl<'de> de::Deserializer<'de> for ValueDeserializer {
 
     serde::forward_to_deserialize_any! {
         tuple tuple_struct
+    }
+}
+
+// -- Probing a target's top-level types --
+
+/// The types of value [`from_value`] can deserialize a `T` from, as told by
+/// what `T` asks of the top-level value. A `T` that asks through
+/// `deserialize_any`, as an untagged enum does, gets every type.
+pub(crate) fn accepted_types<T: DeserializeOwned>() -> TypeSet {
+    match T::deserialize(Probe) {
+        Err(Probed(types)) => types,
+        // `T` was made without asking anything of the value.
+        Ok(_) => FrostType::ANY,
+    }
+}
+
+/// The types a target accepts, carried out of [`Probe`] as its error.
+#[derive(Debug)]
+struct Probed(TypeSet);
+
+impl fmt::Display for Probed {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "accepts {:?}", self.0)
+    }
+}
+
+impl std::error::Error for Probed {}
+
+impl de::Error for Probed {
+    /// A visitor's own failure tells nothing of the types it accepts.
+    fn custom<T: fmt::Display>(_: T) -> Self {
+        Probed(FrostType::ANY)
+    }
+}
+
+/// A deserializer answering each request with the types that the same method
+/// of [`ValueDeserializer`] takes a value of. Keep the two in step.
+struct Probe;
+
+impl Probe {
+    fn accepts<V>(types: TypeSet) -> Result<V, Probed> {
+        Err(Probed(types))
+    }
+}
+
+impl<'de> de::Deserializer<'de> for Probe {
+    type Error = Probed;
+
+    fn deserialize_any<V: Visitor<'de>>(self, _: V) -> Result<V::Value, Probed> {
+        Self::accepts(FrostType::ANY)
+    }
+
+    fn deserialize_bool<V: Visitor<'de>>(self, _: V) -> Result<V::Value, Probed> {
+        Self::accepts(FrostType::BOOL)
+    }
+
+    fn deserialize_i8<V: Visitor<'de>>(self, _: V) -> Result<V::Value, Probed> {
+        Self::accepts(FrostType::INT)
+    }
+
+    fn deserialize_i16<V: Visitor<'de>>(self, _: V) -> Result<V::Value, Probed> {
+        Self::accepts(FrostType::INT)
+    }
+
+    fn deserialize_i32<V: Visitor<'de>>(self, _: V) -> Result<V::Value, Probed> {
+        Self::accepts(FrostType::INT)
+    }
+
+    fn deserialize_i64<V: Visitor<'de>>(self, _: V) -> Result<V::Value, Probed> {
+        Self::accepts(FrostType::INT)
+    }
+
+    fn deserialize_u8<V: Visitor<'de>>(self, _: V) -> Result<V::Value, Probed> {
+        Self::accepts(FrostType::INT)
+    }
+
+    fn deserialize_u16<V: Visitor<'de>>(self, _: V) -> Result<V::Value, Probed> {
+        Self::accepts(FrostType::INT)
+    }
+
+    fn deserialize_u32<V: Visitor<'de>>(self, _: V) -> Result<V::Value, Probed> {
+        Self::accepts(FrostType::INT)
+    }
+
+    fn deserialize_u64<V: Visitor<'de>>(self, _: V) -> Result<V::Value, Probed> {
+        Self::accepts(FrostType::INT)
+    }
+
+    // A SpecialFloat is an Opaque; any other Opaque fails in deserializing.
+    fn deserialize_f32<V: Visitor<'de>>(self, _: V) -> Result<V::Value, Probed> {
+        Self::accepts(FrostType::NUMERIC.or(FrostType::Opaque))
+    }
+
+    fn deserialize_f64<V: Visitor<'de>>(self, _: V) -> Result<V::Value, Probed> {
+        Self::accepts(FrostType::NUMERIC.or(FrostType::Opaque))
+    }
+
+    fn deserialize_char<V: Visitor<'de>>(self, _: V) -> Result<V::Value, Probed> {
+        Self::accepts(FrostType::STRING)
+    }
+
+    fn deserialize_str<V: Visitor<'de>>(self, _: V) -> Result<V::Value, Probed> {
+        Self::accepts(FrostType::STRING)
+    }
+
+    fn deserialize_string<V: Visitor<'de>>(self, _: V) -> Result<V::Value, Probed> {
+        Self::accepts(FrostType::STRING)
+    }
+
+    fn deserialize_bytes<V: Visitor<'de>>(self, _: V) -> Result<V::Value, Probed> {
+        Self::accepts(FrostType::BYTES)
+    }
+
+    fn deserialize_byte_buf<V: Visitor<'de>>(self, _: V) -> Result<V::Value, Probed> {
+        Self::accepts(FrostType::BYTES)
+    }
+
+    /// The types of what the option holds, and Null.
+    fn deserialize_option<V: Visitor<'de>>(self, visitor: V) -> Result<V::Value, Probed> {
+        visitor
+            .visit_some(Probe)
+            .map_err(|Probed(types)| Probed(types.or(FrostType::Null)))
+    }
+
+    fn deserialize_unit<V: Visitor<'de>>(self, _: V) -> Result<V::Value, Probed> {
+        Self::accepts(FrostType::NULL)
+    }
+
+    fn deserialize_unit_struct<V: Visitor<'de>>(
+        self,
+        _: &'static str,
+        _: V,
+    ) -> Result<V::Value, Probed> {
+        Self::accepts(FrostType::NULL)
+    }
+
+    /// The types of what the newtype holds. A `Value` takes any.
+    fn deserialize_newtype_struct<V: Visitor<'de>>(
+        self,
+        name: &'static str,
+        visitor: V,
+    ) -> Result<V::Value, Probed> {
+        if name == super::VALUE_NEWTYPE_TOKEN {
+            return Self::accepts(FrostType::ANY);
+        }
+        visitor.visit_newtype_struct(Probe)
+    }
+
+    fn deserialize_seq<V: Visitor<'de>>(self, _: V) -> Result<V::Value, Probed> {
+        Self::accepts(FrostType::ARRAY)
+    }
+
+    fn deserialize_map<V: Visitor<'de>>(self, _: V) -> Result<V::Value, Probed> {
+        Self::accepts(FrostType::MAP)
+    }
+
+    fn deserialize_struct<V: Visitor<'de>>(
+        self,
+        _: &'static str,
+        _: &'static [&'static str],
+        _: V,
+    ) -> Result<V::Value, Probed> {
+        Self::accepts(FrostType::MAP)
+    }
+
+    fn deserialize_enum<V: Visitor<'de>>(
+        self,
+        _: &'static str,
+        _: &'static [&'static str],
+        _: V,
+    ) -> Result<V::Value, Probed> {
+        Self::accepts(FrostType::String.or(FrostType::Map))
+    }
+
+    serde::forward_to_deserialize_any! {
+        i128 u128 tuple tuple_struct identifier ignored_any
     }
 }
 

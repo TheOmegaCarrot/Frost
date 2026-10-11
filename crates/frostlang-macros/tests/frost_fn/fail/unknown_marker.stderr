@@ -1,4 +1,4 @@
-error: unknown marker: a parameter takes `#[frost(ctx)]` or `#[frost(unnamed)]`
+error: unknown marker: a parameter takes `#[frost(ctx)]`, `#[frost(unnamed)]`, or `#[frost(types = ...)]`
  --> tests/frost_fn/fail/unknown_marker.rs:6:20
   |
 6 | fn unknown(#[frost(skip)] _value: i64) {}

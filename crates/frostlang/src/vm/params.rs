@@ -81,6 +81,11 @@ impl Param {
         }
     }
 
+    /// This parameter, accepting `types` instead.
+    pub(crate) const fn with_types(self, types: TypeSet) -> Self {
+        Self { types, ..self }
+    }
+
     /// The parameter's name, when it has one.
     pub const fn name(&self) -> Option<&'static str> {
         self.name

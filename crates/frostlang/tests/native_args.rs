@@ -12,7 +12,7 @@ use std::fmt::Debug;
 use frostlang::native::{Args, De, FromArg, FrostArg, Function, Nullable, Optional, Rest};
 use frostlang::{
     FrostArray, FrostBytes, FrostError, FrostFloat, FrostMap, FrostString, FrostType, MapKey,
-    Param, Params, Value,
+    Param, Params, SpecialFloat, Value,
 };
 use serde::Deserialize;
 
@@ -368,6 +368,116 @@ fn de_rejects_what_does_not_deserialize_with_the_reason() {
             format!("Function f requires argument 1 (x) to be valid: {reason}")
         );
     }
+}
+
+#[derive(Debug, Deserialize, PartialEq)]
+enum Shape {
+    Dot,
+    Line(u32),
+}
+
+#[derive(Debug, Deserialize, PartialEq)]
+struct Lengths(Vec<i64>);
+
+#[derive(Debug, Deserialize, PartialEq)]
+#[serde(untagged)]
+enum IntOrText {
+    Int(i64),
+    Text(String),
+}
+
+/// The error for argument 1 (x) of `f` not being of `types`, as `check_args`
+/// words it.
+fn wrong_type(types: &str, got: &str) -> String {
+    format!("Function f requires {types} as argument 1 (x), got {got}")
+}
+
+#[test]
+fn de_rejects_a_type_its_target_never_deserializes_from_as_a_wrong_type() {
+    let cases = [
+        (
+            rejection::<De<Options>>(Value::Int(1)),
+            wrong_type("Map", "Int"),
+        ),
+        (
+            rejection::<De<BTreeMap<String, i64>>>(Value::array([1])),
+            wrong_type("Map", "Array"),
+        ),
+        (
+            rejection::<De<Vec<i64>>>(Value::map([("a", Value::Int(1))])),
+            wrong_type("Array", "Map"),
+        ),
+        // A newtype struct takes what it wraps.
+        (
+            rejection::<De<Lengths>>(Value::from("a")),
+            wrong_type("Array", "String"),
+        ),
+        (
+            rejection::<De<String>>(Value::from(&b"a"[..])),
+            wrong_type("String", "Bytes"),
+        ),
+        (
+            rejection::<De<i64>>(Value::Float(FrostFloat::new(1.5).unwrap())),
+            wrong_type("Int", "Float"),
+        ),
+        (
+            rejection::<De<f64>>(Value::from("1")),
+            wrong_type("Int or Float or Opaque", "String"),
+        ),
+        (
+            rejection::<De<bool>>(Value::Null),
+            wrong_type("Bool", "Null"),
+        ),
+        (
+            rejection::<De<()>>(Value::Int(0)),
+            wrong_type("Null", "Int"),
+        ),
+        // An Option takes Null and what it holds.
+        (
+            rejection::<De<Option<Options>>>(Value::Int(1)),
+            wrong_type("Null or Map", "Int"),
+        ),
+        (
+            rejection::<De<Shape>>(Value::Int(1)),
+            wrong_type("String or Map", "Int"),
+        ),
+    ];
+    for (message, expected) in cases {
+        assert_eq!(message, expected);
+    }
+}
+
+#[test]
+fn de_takes_every_type_its_target_deserializes_from() {
+    assert_eq!(taken::<De<f64>>(Value::Int(2)), De(2.0));
+    let infinity = SpecialFloat::new(f64::INFINITY).expect("infinity is special");
+    assert_eq!(taken::<De<f64>>(Value::opaque(infinity)), De(f64::INFINITY));
+    assert_eq!(taken::<De<Option<Options>>>(Value::Null), De(None));
+    assert_eq!(taken::<De<Shape>>(Value::from("Dot")), De(Shape::Dot));
+    assert_eq!(
+        taken::<De<Shape>>(Value::map([("Line", Value::Int(2))])),
+        De(Shape::Line(2))
+    );
+    assert_eq!(
+        taken::<De<Lengths>>(Value::array([1, 2])),
+        De(Lengths(vec![1, 2]))
+    );
+}
+
+#[test]
+fn de_leaves_a_target_that_asks_for_any_type_to_deserializing() {
+    // An untagged enum takes any type, as far as its request tells, so a type
+    // none of its variants takes fails as content.
+    let message = rejection::<De<IntOrText>>(Value::Bool(true));
+    assert!(
+        message.starts_with("Function f requires argument 1 (x) to be valid: "),
+        "{message}"
+    );
+    assert_eq!(
+        taken::<De<IntOrText>>(Value::from("a")),
+        De(IntOrText::Text("a".to_string()))
+    );
+    assert_eq!(taken::<De<Value>>(Value::Int(1)), De(Value::Int(1)));
 }
 
 // --- Several parameters ---

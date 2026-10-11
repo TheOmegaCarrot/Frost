@@ -5,18 +5,9 @@ use std::collections::{BTreeMap, BTreeSet};
 use crate::bytecode::Bytecode;
 use crate::native::{Function, Optional, Rest, Structured};
 use crate::{
-    Arity, FrostArray, FrostBytes, FrostError, FrostMap, FrostResult, FrostString, FrostType,
-    MapKey, NativeCtx, Param, Params, TypeSet, Value, ValueMap, frost_closure, frost_fn,
+    Arity, FrostArray, FrostBytes, FrostError, FrostMap, FrostResult, FrostString, MapKey,
+    NativeCtx, Value, ValueMap, frost_closure, frost_fn,
 };
-
-/// The types with elements in order: a String's are its code points, and
-/// Bytes' its bytes. See [`Sequence`].
-const SEQUENCE: TypeSet = FrostType::FLAT.or(FrostType::Array);
-
-/// The Int in a type-checked argument.
-fn int_arg(arg: &Value) -> i64 {
-    arg.as_int().expect("type-checked as an Int")
-}
 
 /// `n`, the argument at 1-based `position` of `function`, as a count of at least
 /// `minimum`.
@@ -150,21 +141,17 @@ pub(super) fn dissoc(
 
 // --- Measuring and building ---
 
-pub(super) fn len_global() -> Value {
-    const PARAMS: Params = Params::new(&[Param::of(FrostType::FLAT.union(FrostType::STRUCTURED))]);
-    Value::checked_native("len", PARAMS, |_, args| {
-        let len = match &args[0] {
-            // A String's length is in code points; see the String/Bytes design.
-            Value::String(text) => text.chars().count(),
-            Value::Bytes(octets) => octets.len(),
-            Value::Array(array) => array.len(),
-            Value::Map(map) => map.len(),
-            other => unreachable!("type-checked, got {}", other.type_name()),
-        };
-        Ok(Value::Int(
-            i64::try_from(len).expect("a length fits in an Int"),
-        ))
-    })
+#[frost_fn(name = "len")]
+pub(super) fn len(#[frost(unnamed, types = Flat | Structured)] value: Value) -> i64 {
+    let len = match &value {
+        // A String's length is in code points; see the String/Bytes design.
+        Value::String(text) => text.chars().count(),
+        Value::Bytes(octets) => octets.len(),
+        Value::Array(array) => array.len(),
+        Value::Map(map) => map.len(),
+        other => unreachable!("type-checked, got {}", other.type_name()),
+    };
+    i64::try_from(len).expect("a length fits in an Int")
 }
 
 #[frost_fn(name = "range")]
@@ -205,30 +192,31 @@ pub(super) fn repeat(#[frost(unnamed)] value: Value, #[frost(unnamed)] count: i6
     Ok(vec![value; count].into())
 }
 
-pub(super) fn tile_global() -> Value {
-    const PARAMS: Params = Params::new(&[Param::of(SEQUENCE), Param::of(FrostType::INT)]);
-    Value::checked_native("tile", PARAMS, |_, args| {
-        let count = count_arg("tile", 2, int_arg(&args[1]), 0)?;
-        let size = match &args[0] {
-            Value::String(text) => text.len(),
-            Value::Bytes(octets) => octets.len(),
-            Value::Array(array) => array.len() * size_of::<Value>(),
-            other => unreachable!("type-checked, got {}", other.type_name()),
-        };
-        // Any number of copies of nothing is nothing, made without counting them.
-        if size == 0 {
-            return Ok(args[0].take());
-        }
-        check_length("tile", size, count)?;
-        Ok(match args[0].take() {
-            Value::String(text) => text.repeat(count).into(),
-            Value::Bytes(octets) => octets.repeat(count).into(),
-            Value::Array(array) => std::iter::repeat_n(array.as_slice(), count)
-                .flatten()
-                .cloned()
-                .collect(),
-            other => unreachable!("type-checked, got {}", other.type_name()),
-        })
+#[frost_fn(name = "tile")]
+pub(super) fn tile(
+    #[frost(unnamed, types = Flat | Array)] sequence: Value,
+    #[frost(unnamed)] count: i64,
+) -> FrostResult {
+    let count = count_arg("tile", 2, count, 0)?;
+    let size = match &sequence {
+        Value::String(text) => text.len(),
+        Value::Bytes(octets) => octets.len(),
+        Value::Array(array) => array.len() * size_of::<Value>(),
+        other => unreachable!("type-checked, got {}", other.type_name()),
+    };
+    // Any number of copies of nothing is nothing, made without counting them.
+    if size == 0 {
+        return Ok(sequence);
+    }
+    check_length("tile", size, count)?;
+    Ok(match sequence {
+        Value::String(text) => text.repeat(count).into(),
+        Value::Bytes(octets) => octets.repeat(count).into(),
+        Value::Array(array) => std::iter::repeat_n(array.as_slice(), count)
+            .flatten()
+            .cloned()
+            .collect(),
+        other => unreachable!("type-checked, got {}", other.type_name()),
     })
 }
 
@@ -349,7 +337,7 @@ pub(super) fn find_index(
 
 // --- Slicing ---
 
-/// A [`SEQUENCE`] argument, taken apart for slicing by element.
+/// A String, Bytes, or Array argument, taken apart for slicing by element.
 enum Sequence {
     /// Elements are code points.
     Text(FrostString),
@@ -358,9 +346,9 @@ enum Sequence {
 }
 
 impl Sequence {
-    /// The sequence in a type-checked argument, taken from it.
-    fn take(arg: &mut Value) -> Self {
-        match arg.take() {
+    /// The sequence in an argument type-checked as `Flat | Array`.
+    fn of(arg: Value) -> Self {
+        match arg {
             Value::String(text) => Sequence::Text(text),
             Value::Bytes(octets) => Sequence::Binary(octets),
             Value::Array(array) => Sequence::Array(array),
@@ -448,43 +436,44 @@ fn clamp_index(index: i64, len: usize) -> usize {
     usize::try_from(index.clamp(0, len)).expect("a clamped index is not negative")
 }
 
-pub(super) fn slice_global() -> Value {
-    const PARAMS: Params = Params::new(&[
-        Param::of(SEQUENCE),
-        Param::of(FrostType::INT).named("start"),
-        Param::of(FrostType::INT).named("end").optional(),
-    ]);
-    Value::checked_native("slice", PARAMS, |_, args| {
-        let sequence = Sequence::take(&mut args[0]);
-        let len = sequence.len();
-        let start = clamp_index(int_arg(&args[1]), len);
-        let end = args
-            .get(2)
-            .map_or(len, |end| clamp_index(int_arg(end), len));
-        Ok(sequence.range(start, end.max(start)))
-    })
+#[frost_fn(name = "slice")]
+pub(super) fn slice(
+    #[frost(unnamed, types = Flat | Array)] sequence: Value,
+    start: i64,
+    end: Optional<i64>,
+) -> Value {
+    let sequence = Sequence::of(sequence);
+    let len = sequence.len();
+    let start = clamp_index(start, len);
+    let end = end.0.map_or(len, |end| clamp_index(end, len));
+    sequence.range(start, end.max(start))
 }
 
-const SEQUENCE_AND_COUNT: Params = Params::new(&[Param::of(SEQUENCE), Param::of(FrostType::INT)]);
-
-pub(super) fn stride_global() -> Value {
-    Value::checked_native("stride", SEQUENCE_AND_COUNT, |_, args| {
-        let step = count_arg("stride", 2, int_arg(&args[1]), 1)?;
-        Ok(Sequence::take(&mut args[0]).stride(step))
-    })
+#[frost_fn(name = "stride")]
+pub(super) fn stride(
+    #[frost(unnamed, types = Flat | Array)] sequence: Value,
+    #[frost(unnamed)] step: i64,
+) -> FrostResult {
+    let step = count_arg("stride", 2, step, 1)?;
+    Ok(Sequence::of(sequence).stride(step))
 }
 
 /// A `function(sequence, n)` global over the first or last `n` elements, `n`
 /// clamped to the length. `range` maps the length and the clamped `n` to the
 /// range of elements to keep.
 fn end_slice(function: &'static str, range: fn(usize, usize) -> (usize, usize)) -> Value {
-    Value::checked_native(function, SEQUENCE_AND_COUNT, move |_, args| {
-        let n = count_arg(function, 2, int_arg(&args[1]), 0)?;
-        let sequence = Sequence::take(&mut args[0]);
-        let len = sequence.len();
-        let (start, end) = range(len, n.min(len));
-        Ok(sequence.range(start, end))
-    })
+    frost_closure!(
+        function,
+        move |#[frost(unnamed, types = Flat | Array)] sequence: Value,
+              #[frost(unnamed)] n: i64|
+              -> FrostResult {
+            let n = count_arg(function, 2, n, 0)?;
+            let sequence = Sequence::of(sequence);
+            let len = sequence.len();
+            let (start, end) = range(len, n.min(len));
+            Ok(sequence.range(start, end))
+        }
+    )
 }
 
 pub(super) fn take_global() -> Value {
@@ -521,21 +510,19 @@ pub(super) fn chunk(
     Ok(array.as_slice().chunks(size).map(Value::from).collect())
 }
 
-pub(super) fn reverse_global() -> Value {
-    const PARAMS: Params = Params::new(&[Param::of(SEQUENCE)]);
-    Value::checked_native("reverse", PARAMS, |_, args| {
-        Ok(match args[0].take() {
-            // A String reverses by code point; see the String/Bytes design.
-            Value::String(text) => text.chars().rev().collect::<String>().into(),
-            Value::Bytes(octets) => octets.iter().rev().copied().collect::<Vec<u8>>().into(),
-            Value::Array(array) => {
-                let mut elements = array.into_vec();
-                elements.reverse();
-                elements.into()
-            }
-            other => unreachable!("type-checked, got {}", other.type_name()),
-        })
-    })
+#[frost_fn(name = "reverse")]
+pub(super) fn reverse(#[frost(unnamed, types = Flat | Array)] sequence: Value) -> Value {
+    match sequence {
+        // A String reverses by code point; see the String/Bytes design.
+        Value::String(text) => text.chars().rev().collect::<String>().into(),
+        Value::Bytes(octets) => octets.iter().rev().copied().collect::<Vec<u8>>().into(),
+        Value::Array(array) => {
+            let mut elements = array.into_vec();
+            elements.reverse();
+            elements.into()
+        }
+        other => unreachable!("type-checked, got {}", other.type_name()),
+    }
 }
 
 /// How many leading elements of `array` `predicate` holds for, asking each once

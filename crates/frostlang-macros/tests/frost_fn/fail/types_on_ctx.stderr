@@ -1,0 +1,5 @@
+error: the context is no argument, so takes no `types` constraint
+ --> tests/frost_fn/fail/types_on_ctx.rs:6:33
+  |
+6 | fn constrained_ctx(#[frost(ctx, types = Map)] _ctx: &mut NativeCtx<'_>) {}
+  |                                 ^^^^^

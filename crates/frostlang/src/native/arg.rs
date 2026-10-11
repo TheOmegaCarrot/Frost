@@ -5,6 +5,7 @@ use std::ops::Range;
 
 use serde::de::DeserializeOwned;
 
+use crate::core::accepted_types;
 use crate::vm::{Binder, expected_types};
 use crate::{
     FrostArray, FrostBytes, FrostError, FrostFloat, FrostMap, FrostString, FrostType, MapKey,
@@ -135,8 +136,13 @@ impl<T: FromArg> FromArg for Nullable<T> {
     }
 }
 
-/// An argument of any type, deserialized into `T` with [`from_value`], such
-/// as a Map of options into a struct.
+/// An argument deserialized into `T` with [`from_value`], such as a Map of
+/// options into a struct.
+///
+/// Its parameter accepts any type, but an argument of a type `T` never
+/// deserializes from, such as a non-Map for a struct, fails with the same
+/// error as an argument of a type its parameter does not accept. That check
+/// comes when the argument is taken, after every parameter's own type check.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash)]
 pub struct De<T>(pub T);
 
@@ -144,6 +150,10 @@ impl<T: DeserializeOwned> FromArg for De<T> {
     const TYPES: TypeSet = FrostType::ANY;
 
     fn from_arg(value: Value, site: &ArgSite<'_>) -> Result<Self, FrostError> {
+        let types = accepted_types::<T>();
+        if !value.fits(types) {
+            return Err(site.wrong_type(types, &value));
+        }
         from_value(value)
             .map(De)
             .map_err(|err| site.requires(format_args!("valid: {}", err.message())))

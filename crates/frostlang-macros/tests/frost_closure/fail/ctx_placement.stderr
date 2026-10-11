@@ -10,7 +10,7 @@ error: only one parameter can be `#[frost(ctx)]`
 7 |     let _ = frost_closure!("twice", |#[frost(ctx)] _a, #[frost(ctx)] _b| 0);
   |                                                                ^^^
 
-error: unknown marker: a parameter takes `#[frost(ctx)]` or `#[frost(unnamed)]`
+error: unknown marker: a parameter takes `#[frost(ctx)]`, `#[frost(unnamed)]`, or `#[frost(types = ...)]`
  --> tests/frost_closure/fail/ctx_placement.rs:8:48
   |
 8 |     let _ = frost_closure!("unknown", |#[frost(skip)] _value: i64| 0);

@@ -1,0 +1,35 @@
+error: expected `=`
+ --> tests/frost_fn/fail/types_malformed.rs:6:26
+  |
+6 | fn no_value(#[frost(types)] _value: Value) {}
+  |                          ^
+
+error: unexpected end of input, expected identifier
+ --> tests/frost_fn/fail/types_malformed.rs:9:26
+  |
+9 | fn empty(#[frost(types = )] _value: Value) {}
+  |                          ^
+
+error: a constraint joins Frost type names with `|`
+  --> tests/frost_fn/fail/types_malformed.rs:12:32
+   |
+12 | fn plus(#[frost(types = String + Bytes)] _value: Value) {}
+   |                                ^
+
+error: expected identifier
+  --> tests/frost_fn/fail/types_malformed.rs:15:27
+   |
+15 | fn quoted(#[frost(types = "String")] _value: Value) {}
+   |                           ^^^^^^^^
+
+error: unexpected end of input, expected identifier
+  --> tests/frost_fn/fail/types_malformed.rs:18:37
+   |
+18 | fn trailing(#[frost(types = String |)] _value: Value) {}
+   |                                     ^
+
+error: `types` is given twice
+  --> tests/frost_fn/fail/types_malformed.rs:21:34
+   |
+21 | fn twice(#[frost(types = String, types = Bytes)] _value: Value) {}
+   |                                  ^^^^^

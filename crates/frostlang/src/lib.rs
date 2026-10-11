@@ -85,6 +85,27 @@ pub use vm::{
 /// as suits an obvious leading argument;
 /// its pattern then need not be a name, such as `_` or a destructuring one.
 ///
+/// Mark a parameter `#[frost(types = ...)]` to accept only the types listed,
+/// joined by `|` and named as Frost's `is` names them, categories included.
+/// They must be among the types its Rust type accepts, or it fails to compile,
+/// so this mostly serves a [`Value`] parameter
+/// over a set of types no argument type covers.
+/// Markers combine:
+///
+/// ```
+/// use frostlang::{Value, frost_fn};
+///
+/// #[frost_fn(name = "is_empty")]
+/// fn is_empty(#[frost(unnamed, types = Flat | Array)] sequence: Value) -> bool {
+///     match sequence {
+///         Value::String(text) => text.is_empty(),
+///         Value::Bytes(bytes) => bytes.is_empty(),
+///         Value::Array(array) => array.is_empty(),
+///         _ => unreachable!("the constraint admits no other type"),
+///     }
+/// }
+/// ```
+///
 /// # Context
 ///
 /// A first parameter marked `#[frost(ctx)]`, of type `&mut NativeCtx<'_>`,
@@ -310,7 +331,21 @@ pub use frostlang_macros::frost_mutable_bundle;
 #[doc(hidden)]
 pub mod __private {
     pub use crate::native::{Args, Bundle, FrostArg, IntoNativeResult, MutableBundle};
-    pub use crate::{NativeCtx, Params, Value, is_identifier_like_and_not_keyword};
+    pub use crate::{FrostType, NativeCtx, Params, Value, is_identifier_like_and_not_keyword};
+
+    use crate::{Param, TypeSet};
+
+    /// `param`, narrowed to accept only `types`, for a `#[frost(types = ...)]`
+    /// marker. Evaluated in a const context, it fails to compile when `types`
+    /// reaches outside what `param`'s Rust type accepts, since that type's
+    /// `FromArg` may treat any other type as unreachable.
+    pub const fn constrain(param: Param, types: TypeSet) -> Param {
+        assert!(
+            types.is_subset(param.types()),
+            "a `types` constraint must stay within the types its parameter's Rust type accepts"
+        );
+        param.with_types(types)
+    }
 }
 
 /// The bytecode the [`Vm`] runs, as the compiler produces it.

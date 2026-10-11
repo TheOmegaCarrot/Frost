@@ -8,9 +8,9 @@ use std::time::Duration;
 
 use serde::Deserialize;
 
-use crate::native::{Args, De, FrostArg, Optional};
+use crate::native::{De, Optional};
 use crate::stdlib::stream::{self, Kind};
-use crate::{FrostError, FrostString, FrostType, Param, Params, StdlibModule, Value, frost_fn};
+use crate::{FrostError, FrostString, StdlibModule, Value, frost_fn};
 
 /// The `std.os` module: reading environment variables, the process ID,
 /// the process's standard input, output, and error streams, sleeping, and
@@ -26,7 +26,7 @@ pub fn os() -> StdlibModule {
             ("getenv", getenv_frost()),
             ("pid", pid_frost()),
             ("sleep", sleep_frost()),
-            ("run", run()),
+            ("run", run_frost()),
             (
                 "stdin",
                 stream::reader(BufReader::new(io::stdin()), Kind::Stream),
@@ -128,89 +128,83 @@ fn exit_values(status: std::process::ExitStatus) -> (Value, Value) {
     (Value::Null, Value::Null)
 }
 
-fn run() -> Value {
-    const PARAMS: Params = Params::new(&[
-        <String as FrostArg>::PARAM.named("command"),
-        <Vec<String> as FrostArg>::PARAM.named("args"),
-        // Taken as `Optional<De<RunOptions>>`, but only from a Map.
-        Param::of(FrostType::MAP).named("options").optional(),
-    ]);
-    Value::checked_native("os.run", PARAMS, |ctx, args| {
-        let mut args = Args::new(ctx.name(), PARAMS, args);
-        let program: String = args.take()?;
-        let arguments: Vec<String> = args.take()?;
-        let Optional(options) = args.take::<Optional<De<RunOptions>>>()?;
-        let options = options.map_or_else(RunOptions::default, |De(options)| options);
-        let options = options.validate()?;
-        let input = options.stdin.as_ref().and_then(Value::as_byte_slice);
+#[frost_fn(name = "os.run")]
+fn run(
+    command: String,
+    args: Vec<String>,
+    options: Optional<De<RunOptions>>,
+) -> Result<Value, FrostError> {
+    let Optional(options) = options;
+    let options = options.map_or_else(RunOptions::default, |De(options)| options);
+    let options = options.validate()?;
+    let input = options.stdin.as_ref().and_then(Value::as_byte_slice);
 
-        let mut command = Command::new(&program);
-        command
-            .args(arguments)
-            .stdin(if input.is_some() {
-                Stdio::piped()
-            } else {
-                Stdio::null()
-            })
-            .stdout(Stdio::piped())
-            .stderr(Stdio::piped());
-        if let Some(cwd) = &options.cwd {
-            // Spawning reports a bad working directory as if the program were
-            // missing, so it is checked first, to name what is wrong.
-            match std::fs::metadata(cwd) {
-                Ok(metadata) if metadata.is_dir() => {}
-                Ok(_) => {
-                    return Err(FrostError::from_string(format!(
-                        "Function os.run requires its `cwd` option to be a directory, \
-                         but `{cwd}` is not"
-                    )));
-                }
-                Err(err) => {
-                    return Err(FrostError::from_string(format!(
-                        "Function os.run cannot use `{cwd}` as its working directory: {err}"
-                    )));
-                }
-            }
-            command.current_dir(cwd);
-        }
-        if let Some(vars) = &options.replace_env {
-            command.env_clear().envs(vars);
-        }
-        if let Some(vars) = &options.env {
-            command.envs(vars);
-        }
-
-        let could_not_run = |err: std::io::Error| {
-            FrostError::from_string(format!("Function os.run could not run `{program}`: {err}"))
-        };
-        let mut child = command.spawn().map_err(could_not_run)?;
-        let stdin = child.stdin.take();
-        // Input is written from its own thread while this one collects the
-        // output: a child can block writing output until its input is read.
-        let output = std::thread::scope(|scope| {
-            if let (Some(mut pipe), Some(input)) = (stdin, input) {
-                scope.spawn(move || {
-                    // A child may exit without reading all its input; that is
-                    // its business, so a failed write is not an error.
-                    let _ = pipe.write_all(input);
-                });
-            }
-            child.wait_with_output()
+    let mut process = Command::new(&command);
+    process
+        .args(args)
+        .stdin(if input.is_some() {
+            Stdio::piped()
+        } else {
+            Stdio::null()
         })
-        .map_err(could_not_run)?;
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped());
+    if let Some(cwd) = &options.cwd {
+        // Spawning reports a bad working directory as if the program were
+        // missing, so it is checked first, to name what is wrong.
+        match std::fs::metadata(cwd) {
+            Ok(metadata) if metadata.is_dir() => {}
+            Ok(_) => {
+                return Err(FrostError::from_string(format!(
+                    "Function os.run requires its `cwd` option to be a directory, \
+                     but `{cwd}` is not"
+                )));
+            }
+            Err(err) => {
+                return Err(FrostError::from_string(format!(
+                    "Function os.run cannot use `{cwd}` as its working directory: {err}"
+                )));
+            }
+        }
+        process.current_dir(cwd);
+    }
+    if let Some(vars) = &options.replace_env {
+        process.env_clear().envs(vars);
+    }
+    if let Some(vars) = &options.env {
+        process.envs(vars);
+    }
 
-        let (exit_code, signal) = exit_values(output.status);
-        Ok(Value::map([
-            (
-                "stdout",
-                stream_value("stdout", output.stdout, options.binary, &program)?,
-            ),
-            (
-                "stderr",
-                stream_value("stderr", output.stderr, options.binary, &program)?,
-            ),
-            ("exit_code", exit_code),
-            ("signal", signal),
-        ]))
+    let could_not_run = |err: std::io::Error| {
+        FrostError::from_string(format!("Function os.run could not run `{command}`: {err}"))
+    };
+    let mut child = process.spawn().map_err(could_not_run)?;
+    let stdin = child.stdin.take();
+    // Input is written from its own thread while this one collects the
+    // output: a child can block writing output until its input is read.
+    let output = std::thread::scope(|scope| {
+        if let (Some(mut pipe), Some(input)) = (stdin, input) {
+            scope.spawn(move || {
+                // A child may exit without reading all its input; that is
+                // its business, so a failed write is not an error.
+                let _ = pipe.write_all(input);
+            });
+        }
+        child.wait_with_output()
     })
+    .map_err(could_not_run)?;
+
+    let (exit_code, signal) = exit_values(output.status);
+    Ok(Value::map([
+        (
+            "stdout",
+            stream_value("stdout", output.stdout, options.binary, &command)?,
+        ),
+        (
+            "stderr",
+            stream_value("stderr", output.stderr, options.binary, &command)?,
+        ),
+        ("exit_code", exit_code),
+        ("signal", signal),
+    ]))
 }

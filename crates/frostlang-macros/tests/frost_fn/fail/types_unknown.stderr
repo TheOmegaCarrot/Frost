@@ -1,0 +1,23 @@
+error: unknown Frost type `Strng`: a constraint names any of Null, Bool, Int, Float, String, Bytes, Array, Map, Function, Opaque, Primitive, Numeric, Structured, Flat, Nonnull
+ --> tests/frost_fn/fail/types_unknown.rs:7:31
+  |
+7 | fn misspelled(#[frost(types = Strng | Numeric | Mapp)] _value: Value) {}
+  |                               ^^^^^
+
+error: unknown Frost type `Mapp`: a constraint names any of Null, Bool, Int, Float, String, Bytes, Array, Map, Function, Opaque, Primitive, Numeric, Structured, Flat, Nonnull
+ --> tests/frost_fn/fail/types_unknown.rs:7:49
+  |
+7 | fn misspelled(#[frost(types = Strng | Numeric | Mapp)] _value: Value) {}
+  |                                                 ^^^^
+
+error: unknown Frost type `string`: a constraint names any of Null, Bool, Int, Float, String, Bytes, Array, Map, Function, Opaque, Primitive, Numeric, Structured, Flat, Nonnull
+  --> tests/frost_fn/fail/types_unknown.rs:10:30
+   |
+10 | fn lowercase(#[frost(types = string)] _value: Value) {}
+   |                              ^^^^^^
+
+error: unknown Frost type `Any`: a constraint names any of Null, Bool, Int, Float, String, Bytes, Array, Map, Function, Opaque, Primitive, Numeric, Structured, Flat, Nonnull
+  --> tests/frost_fn/fail/types_unknown.rs:14:24
+   |
+14 | fn any(#[frost(types = Any)] _value: Value) {}
+   |                        ^^^

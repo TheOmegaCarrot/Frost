@@ -4,13 +4,7 @@ use std::num::NonZeroUsize;
 
 use crate::bytecode::Bytecode;
 use crate::native::Flat;
-use crate::{Arity, FrostBytes, FrostType, Param, Params, TypeSet, Value, frost_fn};
-
-/// The spec for the numeric parsers: the types a number can be read from.
-/// A value of any other type is a type error, which is distinct from a value of the
-/// right type whose content will not convert: that returns Null.
-const ONE_NUMERIC_OR_STRING: Params =
-    Params::new(&[Param::of(FrostType::NUMERIC.or(FrostType::String))]);
+use crate::{Arity, FrostBytes, FrostType, TypeSet, Value, frost_fn};
 
 /// A one-argument type predicate `is_X(v)`, testing whether v's type is in `set`.
 /// Compiles to `DropBelow(1); TypeTest(set)`, identical to `Value::fits(set)`.
@@ -104,16 +98,18 @@ pub(super) fn pretty(#[frost(unnamed)] value: Value) -> String {
     value.to_pretty_string()
 }
 
-pub(super) fn to_int_global() -> Value {
-    Value::checked_native("to_int", ONE_NUMERIC_OR_STRING, |_, args| {
-        Ok(args[0].to_frost_int())
-    })
+// The numeric parsers take the types a number can be read from. A value of any
+// other type is a type error, which is distinct from a value of the right type
+// whose content will not convert: that returns Null.
+
+#[frost_fn(name = "to_int")]
+pub(super) fn to_int(#[frost(unnamed, types = Numeric | String)] value: Value) -> Value {
+    value.to_frost_int()
 }
 
-pub(super) fn to_float_global() -> Value {
-    Value::checked_native("to_float", ONE_NUMERIC_OR_STRING, |_, args| {
-        Ok(args[0].to_frost_float())
-    })
+#[frost_fn(name = "to_float")]
+pub(super) fn to_float(#[frost(unnamed, types = Numeric | String)] value: Value) -> Value {
+    value.to_frost_float()
 }
 
 #[frost_fn(name = "to_bytes")]

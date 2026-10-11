@@ -1,4 +1,4 @@
-// `#[frost(ctx)]` is the only marker, and takes no value.
+// A parameter takes only the known markers, and `ctx` takes no value.
 
 use frostlang::{NativeCtx, frost_fn};
 

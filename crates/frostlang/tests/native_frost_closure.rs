@@ -252,6 +252,17 @@ fn a_parameter_without_a_type_accepts_any_value() {
 }
 
 #[test]
+fn a_parameter_without_a_type_takes_a_types_constraint() {
+    let describe = frost_closure!("describe", |#[frost(types = Numeric)] n| n.type_name());
+    assert_eq!(run(describe.clone(), "f(2)"), Value::from("Int"));
+    assert_eq!(run(describe.clone(), "f(2.5)"), Value::from("Float"));
+    assert_eq!(
+        raises(describe, "f('2')"),
+        "Function describe requires Numeric as argument 1 (n), got String"
+    );
+}
+
+#[test]
 fn typed_and_untyped_parameters_mix() {
     let tag = frost_closure!("tag", |label: String, value| Value::array([
         label.into(),

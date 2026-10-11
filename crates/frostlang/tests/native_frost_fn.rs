@@ -5,7 +5,9 @@
 //! functions. The rest covers what only the macro decides: names, the
 //! context, return conversion, and how parameter types are named.
 
-use frostlang::native::{Function, IntoNativeResult, Nullable, Optional, Rest, Structured};
+use frostlang::native::{
+    Function, IntoNativeResult, Nullable, Numeric, Optional, Rest, Structured,
+};
 use frostlang::{FrostError, FrostResult, NativeCtx, Value, frost_fn};
 
 use crate::native_args;
@@ -285,6 +287,89 @@ fn parameter_types_are_known_by_their_traits_however_they_are_named() {
         raises("f", reexported_frost(), "f(1, 'x')"),
         "Function reexported requires Int as argument 2 (rest), got String"
     );
+}
+
+/// A `Value` constrained to the types its body handles.
+#[frost_fn(name = "kind")]
+fn kind(#[frost(types = Flat | Array)] sequence: Value) -> &'static str {
+    match sequence {
+        Value::String(_) => "text",
+        Value::Bytes(_) => "binary",
+        Value::Array(_) => "array",
+        other => unreachable!("type-checked, got {}", other.type_name()),
+    }
+}
+
+/// Constraints narrowing a Rust type, on an optional parameter, and on an
+/// unnamed rest parameter.
+#[frost_fn(name = "narrowed")]
+fn narrowed(
+    #[frost(types = Int)] n: Numeric,
+    #[frost(types = Null | String)] label: Optional<Value>,
+) -> Value {
+    Value::array([Value::from(n), label.0.unwrap_or(Value::from("none"))])
+}
+
+#[frost_fn(name = "count_flags")]
+fn count_flags(#[frost(unnamed, types = Bool)] flags: Rest<Value>) -> i64 {
+    flags.0.len() as i64
+}
+
+#[test]
+fn a_types_constraint_admits_its_types() {
+    assert_eq!(run("f", kind_frost(), "f('a')"), Value::from("text"));
+    assert_eq!(run("f", kind_frost(), "f(x'61')"), Value::from("binary"));
+    assert_eq!(run("f", kind_frost(), "f([])"), Value::from("array"));
+    assert_eq!(
+        run("f", narrowed_frost(), "f(1)"),
+        Value::array([Value::Int(1), Value::from("none")])
+    );
+    assert_eq!(
+        run("f", narrowed_frost(), "f(1, null)"),
+        Value::array([Value::Int(1), Value::Null])
+    );
+    assert_eq!(
+        run("f", narrowed_frost(), "f(1, 'a')"),
+        Value::array([Value::Int(1), Value::from("a")])
+    );
+    assert_eq!(
+        run("f", count_flags_frost(), "f(true, false)"),
+        Value::Int(2)
+    );
+}
+
+#[test]
+fn a_types_constraint_rejects_other_types_as_its_parameter_s_types() {
+    let cases = [
+        (
+            kind_frost(),
+            "f(1)",
+            "Function kind requires String or Bytes or Array as argument 1 (sequence), got Int",
+        ),
+        (
+            kind_frost(),
+            "f({})",
+            "Function kind requires String or Bytes or Array as argument 1 (sequence), got Map",
+        ),
+        (
+            narrowed_frost(),
+            "f(1.5)",
+            "Function narrowed requires Int as argument 1 (n), got Float",
+        ),
+        (
+            narrowed_frost(),
+            "f(1, 2)",
+            "Function narrowed requires Null or String as argument 2 (label), got Int",
+        ),
+        (
+            count_flags_frost(),
+            "f(true, 1)",
+            "Function count_flags requires Bool as argument 2, got Int",
+        ),
+    ];
+    for (function, source, message) in cases {
+        assert_eq!(raises("f", function, source), message, "{source:?}");
+    }
 }
 
 // ============================================================

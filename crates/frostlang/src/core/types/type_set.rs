@@ -108,6 +108,12 @@ impl TypeSet {
         self.0.as_repr() == 0
     }
 
+    /// Whether every type in this set is in `other`.
+    pub(crate) const fn is_subset(self, other: TypeSet) -> bool {
+        // Via the raw repr: `EnumSet::is_subset` is not a const fn.
+        self.0.as_repr() & !other.0.as_repr() == 0
+    }
+
     /// Whether `ty` is in the set.
     pub fn contains(self, ty: FrostType) -> bool {
         self.0.contains(Member::of(ty))

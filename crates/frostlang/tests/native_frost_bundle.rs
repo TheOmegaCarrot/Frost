@@ -329,6 +329,52 @@ fn an_unnamed_parameter_is_reported_by_position_alone() {
     );
 }
 
+struct Constrained;
+
+#[frost_bundle(prefix = "constrained")]
+impl Constrained {
+    fn is_text(&self, #[frost(unnamed, types = Flat | Array)] sequence: Value) -> bool {
+        !sequence.is_array()
+    }
+}
+
+/// The last value kept, of the types `keep` admits.
+struct Kept(Value);
+
+#[frost_mutable_bundle(prefix = "kept")]
+impl Kept {
+    fn keep(&mut self, #[frost(types = Numeric | Null)] value: Value) {
+        self.0 = value;
+    }
+
+    fn get(&self) -> Value {
+        self.0.clone()
+    }
+}
+
+#[test]
+fn a_parameter_takes_a_types_constraint() {
+    let constrained = Constrained::frost_functions(Bundle::new(Constrained)).build();
+    assert_eq!(
+        run("c", constrained.clone(), "c.is_text('a')"),
+        Value::Bool(true)
+    );
+    assert_eq!(
+        raises("c", constrained, "c.is_text(1)"),
+        "Function constrained.is_text requires String or Bytes or Array as argument 1, got Int"
+    );
+
+    let kept = || Kept::frost_functions(MutableBundle::new(Kept(Value::Null))).build();
+    assert_eq!(
+        run("k", kept(), "do { k.keep(2.5); k.get() }"),
+        run("k", kept(), "2.5")
+    );
+    assert_eq!(
+        raises("k", kept(), "k.keep('2')"),
+        "Function kept.keep requires Null or Int or Float as argument 1 (value), got String"
+    );
+}
+
 // ============================================================
 // Groups
 // ============================================================

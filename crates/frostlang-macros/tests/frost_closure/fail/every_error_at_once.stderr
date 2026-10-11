@@ -10,7 +10,7 @@ error: a Frost function's parameter must be a plain name, such as `text`
 6 |     let _ = frost_closure!("f", async |(_a, _b): (i64, i64), #[frost(skip)] _c| 0);
   |                                        ^^^^^^^^
 
-error: unknown marker: a parameter takes `#[frost(ctx)]` or `#[frost(unnamed)]`
+error: unknown marker: a parameter takes `#[frost(ctx)]`, `#[frost(unnamed)]`, or `#[frost(types = ...)]`
  --> tests/frost_closure/fail/every_error_at_once.rs:6:70
   |
 6 |     let _ = frost_closure!("f", async |(_a, _b): (i64, i64), #[frost(skip)] _c| 0);

@@ -4,8 +4,10 @@
 use proc_macro2::{Span, TokenStream, TokenTree};
 use quote::{ToTokens, quote, quote_spanned};
 use syn::ext::IdentExt;
+use syn::parse::ParseStream;
+use syn::punctuated::Punctuated;
 use syn::spanned::Spanned;
-use syn::{Attribute, Ident, Pat, PatIdent, Type};
+use syn::{Attribute, Ident, Pat, PatIdent, Token, Type};
 
 use crate::errors::Errors;
 use crate::private;
@@ -27,6 +29,8 @@ pub(crate) struct Arg {
     /// `#[frost(unnamed)]`.
     name: Option<String>,
     ty: Type,
+    /// The types it is narrowed to by a `#[frost(types = ...)]` marker.
+    types: Option<Constraint>,
 }
 
 /// The markers on one parameter.
@@ -36,7 +40,38 @@ struct Markers {
     ctx: Option<Span>,
     /// The span of an `unnamed` marker.
     unnamed: Option<Span>,
+    /// A `types` marker's set.
+    types: Option<Constraint>,
 }
+
+/// A `types = A | B` marker's set of types.
+struct Constraint {
+    /// The span of the marker, where a set outside the parameter's Rust type
+    /// is reported.
+    span: Span,
+    /// The `TypeSet` expression, evaluable in a const context.
+    set: TokenStream,
+}
+
+/// The Frost type and category names a constraint takes, as `is` does, each
+/// with its `TypeSet` constant on `FrostType`.
+const TYPE_NAMES: &[(&str, &str)] = &[
+    ("Null", "NULL"),
+    ("Bool", "BOOL"),
+    ("Int", "INT"),
+    ("Float", "FLOAT"),
+    ("String", "STRING"),
+    ("Bytes", "BYTES"),
+    ("Array", "ARRAY"),
+    ("Map", "MAP"),
+    ("Function", "FUNCTION"),
+    ("Opaque", "OPAQUE"),
+    ("Primitive", "PRIMITIVE"),
+    ("Numeric", "NUMERIC"),
+    ("Structured", "STRUCTURED"),
+    ("Flat", "FLAT"),
+    ("Nonnull", "NONNULL"),
+];
 
 impl Inputs {
     /// Reads the next parameter, `pat` of type `ty`, stripping its
@@ -59,6 +94,12 @@ impl Inputs {
                 errors.push(syn::Error::new(
                     unnamed,
                     "the context is no argument, so has no name to leave out",
+                ));
+            }
+            if let Some(types) = markers.types {
+                errors.push(syn::Error::new(
+                    types.span,
+                    "the context is no argument, so takes no `types` constraint",
                 ));
             }
             if self.ctx.is_some() {
@@ -85,12 +126,18 @@ impl Inputs {
             ));
         }
         // An unnamed argument's pattern need not give a name.
+        let types = markers.types;
         if markers.unnamed.is_some() {
-            self.args.push(Arg { name: None, ty });
+            self.args.push(Arg {
+                name: None,
+                ty,
+                types,
+            });
         } else if let Some(name) = errors.keep(arg_name(pat)) {
             self.args.push(Arg {
                 name: Some(name),
                 ty,
+                types,
             });
         }
         false
@@ -150,7 +197,14 @@ impl Arg {
         let ty = &self.ty;
         let frostlang = private(ty.span());
         let named = self.name.as_ref().map(|name| quote!(.named(#name)));
-        quote_spanned!(ty.span()=> <#ty as #frostlang::FrostArg>::PARAM #named)
+        let param = quote_spanned!(ty.span()=> <#ty as #frostlang::FrostArg>::PARAM #named);
+        match &self.types {
+            Some(Constraint { span, set }) => {
+                let frostlang = private(*span);
+                quote_spanned!(*span=> #frostlang::constrain(#param, #set))
+            }
+            None => param,
+        }
     }
 }
 
@@ -177,13 +231,23 @@ fn take_markers(attrs: &mut Vec<Attribute>) -> syn::Result<Markers> {
     let mut markers = Markers::default();
     for attr in frost_attrs {
         let read = attr.parse_nested_meta(|meta| {
+            if meta.path.is_ident("types") {
+                if markers.types.is_some() {
+                    return Err(meta.error("`types` is given twice"));
+                }
+                let span = meta.path.span();
+                let set = constraint_set(meta.value()?)?;
+                markers.types = Some(Constraint { span, set });
+                return Ok(());
+            }
             let (marker, slot) = if meta.path.is_ident("ctx") {
                 ("ctx", &mut markers.ctx)
             } else if meta.path.is_ident("unnamed") {
                 ("unnamed", &mut markers.unnamed)
             } else {
                 return Err(meta.error(
-                    "unknown marker: a parameter takes `#[frost(ctx)]` or `#[frost(unnamed)]`",
+                    "unknown marker: a parameter takes `#[frost(ctx)]`, `#[frost(unnamed)]`, \
+                     or `#[frost(types = ...)]`",
                 ));
             };
             if !meta.input.is_empty() && !meta.input.peek(syn::Token![,]) {
@@ -198,6 +262,42 @@ fn take_markers(attrs: &mut Vec<Attribute>) -> syn::Result<Markers> {
         errors.keep(read);
     }
     errors.finish().map(|()| markers)
+}
+
+/// The `TypeSet` expression for the `|`-separated Frost type names in `input`.
+fn constraint_set(input: ParseStream<'_>) -> syn::Result<TokenStream> {
+    let names = Punctuated::<Ident, Token![|]>::parse_separated_nonempty(input)?;
+    if !input.is_empty() && !input.peek(Token![,]) {
+        return Err(input.error("a constraint joins Frost type names with `|`"));
+    }
+    let mut errors = Errors::default();
+    let sets: Vec<TokenStream> = names
+        .iter()
+        .filter_map(|name| {
+            let found = TYPE_NAMES
+                .iter()
+                .find(|(frost, _)| name == frost)
+                .map(|(_, constant)| {
+                    let frostlang = private(name.span());
+                    let constant = Ident::new(constant, name.span());
+                    quote_spanned!(name.span()=> #frostlang::FrostType::#constant)
+                });
+            if found.is_none() {
+                let known: Vec<&str> = TYPE_NAMES.iter().map(|(frost, _)| *frost).collect();
+                errors.push(syn::Error::new(
+                    name.span(),
+                    format!(
+                        "unknown Frost type `{name}`: a constraint names any of {}",
+                        known.join(", ")
+                    ),
+                ));
+            }
+            found
+        })
+        .collect();
+    errors.finish()?;
+    let (first, rest) = sets.split_first().expect("the list is nonempty");
+    Ok(quote!(#first #(.union(#rest))*))
 }
 
 /// The name `pat` gives its argument: a plain identifier, less any `r#`.
