@@ -449,7 +449,7 @@ fn every_function_checks_its_arguments() {
         ),
         (
             "random.seed(1.5)",
-            "Function random.seed requires Int as argument 1 (seed), got Float",
+            "Function std.random.seed requires Int as argument 1 (seed), got Float",
         ),
     ]);
     assert_arity_of(&format!("{engine}.int"), "rng.int", 2, &[0, 1, 3]);

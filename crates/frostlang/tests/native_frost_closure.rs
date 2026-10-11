@@ -221,7 +221,7 @@ fn the_name_is_evaluated_once_before_the_closure() {
 
 #[test]
 fn the_context_knows_the_name() {
-    let whoami = frost_closure!("whoami", |#[frost(ctx)] ctx| ctx.name());
+    let whoami = frost_closure!("whoami", |#[frost(ctx)] ctx| ctx.name().to_string());
     assert_eq!(run(whoami, "f()"), Value::from("whoami"));
 }
 

@@ -35,10 +35,10 @@ pub struct RandomConfig {
 /// reproducible within a Frost version, not across versions. Not for cryptography.
 pub fn random(config: RandomConfig) -> StdlibModule {
     let rng_seed = config.rng_seed.map_or_else(os_seed, seed_bits);
-    StdlibModule::new(
-        "random",
-        Value::map([("rng", engine(rng_seed)), ("seed", seed_frost())]),
-    )
+    StdlibModule::builder("random")
+        .value("rng", engine(rng_seed))
+        .function(seed_frost())
+        .build()
 }
 
 /// A seed from the operating system's randomness: std documents that a new
@@ -52,7 +52,7 @@ fn seed_bits(seed: i64) -> u64 {
     u64::from_ne_bytes(seed.to_ne_bytes())
 }
 
-#[frost_fn(name = "random.seed")]
+#[frost_fn]
 fn seed(seed: i64) -> Value {
     engine(seed_bits(seed))
 }

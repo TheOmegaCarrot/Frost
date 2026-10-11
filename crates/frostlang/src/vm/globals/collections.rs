@@ -48,17 +48,17 @@ fn returned_key(function: &str, value: Value) -> Result<MapKey, FrostError> {
 
 // --- Maps ---
 
-#[frost_fn(name = "keys")]
+#[frost_fn]
 pub(super) fn keys(#[frost(unnamed)] map: FrostMap) -> Value {
     map.keys().cloned().map(Value::from).collect()
 }
 
-#[frost_fn(name = "values")]
+#[frost_fn]
 pub(super) fn values(#[frost(unnamed)] map: FrostMap) -> Value {
     map.values().cloned().collect()
 }
 
-#[frost_fn(name = "map_keys")]
+#[frost_fn]
 pub(super) fn map_keys(
     #[frost(ctx)] ctx: &mut NativeCtx<'_>,
     #[frost(unnamed)] map: FrostMap,
@@ -72,7 +72,7 @@ pub(super) fn map_keys(
     Ok(result.into())
 }
 
-#[frost_fn(name = "map_values")]
+#[frost_fn]
 pub(super) fn map_values(
     #[frost(ctx)] ctx: &mut NativeCtx<'_>,
     #[frost(unnamed)] map: FrostMap,
@@ -85,7 +85,7 @@ pub(super) fn map_values(
     Ok(map.into())
 }
 
-#[frost_fn(name = "to_entries")]
+#[frost_fn]
 pub(super) fn to_entries(#[frost(unnamed)] map: FrostMap) -> Value {
     map.iter()
         .map(|(key, value)| {
@@ -94,7 +94,7 @@ pub(super) fn to_entries(#[frost(unnamed)] map: FrostMap) -> Value {
         .collect()
 }
 
-#[frost_fn(name = "from_entries")]
+#[frost_fn]
 pub(super) fn from_entries(#[frost(unnamed)] entries: FrostArray) -> FrostResult {
     let mut result = ValueMap::new();
     for (i, entry) in entries.iter().enumerate() {
@@ -127,7 +127,7 @@ pub(super) fn from_entries(#[frost(unnamed)] entries: FrostArray) -> FrostResult
     Ok(result.into())
 }
 
-#[frost_fn(name = "dissoc")]
+#[frost_fn]
 pub(super) fn dissoc(
     #[frost(unnamed)] map: FrostMap,
     #[frost(unnamed)] Rest(keys): Rest<MapKey>,
@@ -141,7 +141,7 @@ pub(super) fn dissoc(
 
 // --- Measuring and building ---
 
-#[frost_fn(name = "len")]
+#[frost_fn]
 pub(super) fn len(#[frost(unnamed, types = Flat | Structured)] value: Value) -> i64 {
     let len = match &value {
         // A String's length is in code points; see the String/Bytes design.
@@ -154,7 +154,7 @@ pub(super) fn len(#[frost(unnamed, types = Flat | Structured)] value: Value) -> 
     i64::try_from(len).expect("a length fits in an Int")
 }
 
-#[frost_fn(name = "range")]
+#[frost_fn]
 pub(super) fn range(
     #[frost(unnamed)] first: i64,
     #[frost(unnamed)] second: Optional<i64>,
@@ -178,21 +178,21 @@ pub(super) fn range(
         .collect())
 }
 
-#[frost_fn(name = "nulls")]
+#[frost_fn]
 pub(super) fn nulls(#[frost(unnamed)] count: i64) -> FrostResult {
     let count = count_arg("nulls", 1, count, 0)?;
     check_length("nulls", size_of::<Value>(), count)?;
     Ok(vec![Value::Null; count].into())
 }
 
-#[frost_fn(name = "repeat")]
+#[frost_fn]
 pub(super) fn repeat(#[frost(unnamed)] value: Value, #[frost(unnamed)] count: i64) -> FrostResult {
     let count = count_arg("repeat", 2, count, 0)?;
     check_length("repeat", size_of::<Value>(), count)?;
     Ok(vec![value; count].into())
 }
 
-#[frost_fn(name = "tile")]
+#[frost_fn]
 pub(super) fn tile(
     #[frost(unnamed, types = Flat | Array)] sequence: Value,
     #[frost(unnamed)] count: i64,
@@ -227,7 +227,7 @@ pub(super) fn id_global() -> Value {
 
 // --- Searching ---
 
-#[frost_fn(name = "has")]
+#[frost_fn]
 pub(super) fn has(#[frost(unnamed)] structure: Structured, index: MapKey) -> FrostResult {
     Ok(Value::Bool(match (structure, index) {
         (Structured::Array(array), MapKey::Int(i)) => array.frost_get(i).is_some(),
@@ -241,7 +241,7 @@ pub(super) fn has(#[frost(unnamed)] structure: Structured, index: MapKey) -> Fro
     }))
 }
 
-#[frost_fn(name = "includes")]
+#[frost_fn]
 pub(super) fn includes(
     #[frost(unnamed)] array: FrostArray,
     #[frost(unnamed)] target: Value,
@@ -278,7 +278,7 @@ fn any_answers(
     Ok(false)
 }
 
-#[frost_fn(name = "any")]
+#[frost_fn]
 pub(super) fn any(
     #[frost(ctx)] ctx: &mut NativeCtx<'_>,
     #[frost(unnamed)] array: FrostArray,
@@ -287,7 +287,7 @@ pub(super) fn any(
     any_answers(ctx, &array, function.0.as_ref(), true)
 }
 
-#[frost_fn(name = "all")]
+#[frost_fn]
 pub(super) fn all(
     #[frost(ctx)] ctx: &mut NativeCtx<'_>,
     #[frost(unnamed)] array: FrostArray,
@@ -296,7 +296,7 @@ pub(super) fn all(
     Ok(!any_answers(ctx, &array, function.0.as_ref(), false)?)
 }
 
-#[frost_fn(name = "none")]
+#[frost_fn]
 pub(super) fn none(
     #[frost(ctx)] ctx: &mut NativeCtx<'_>,
     #[frost(unnamed)] array: FrostArray,
@@ -305,7 +305,7 @@ pub(super) fn none(
     Ok(!any_answers(ctx, &array, function.0.as_ref(), true)?)
 }
 
-#[frost_fn(name = "find")]
+#[frost_fn]
 pub(super) fn find(
     #[frost(ctx)] ctx: &mut NativeCtx<'_>,
     #[frost(unnamed)] array: FrostArray,
@@ -319,7 +319,7 @@ pub(super) fn find(
     Ok(Value::Null)
 }
 
-#[frost_fn(name = "find_index")]
+#[frost_fn]
 pub(super) fn find_index(
     #[frost(ctx)] ctx: &mut NativeCtx<'_>,
     #[frost(unnamed)] array: FrostArray,
@@ -436,7 +436,7 @@ fn clamp_index(index: i64, len: usize) -> usize {
     usize::try_from(index.clamp(0, len)).expect("a clamped index is not negative")
 }
 
-#[frost_fn(name = "slice")]
+#[frost_fn]
 pub(super) fn slice(
     #[frost(unnamed, types = Flat | Array)] sequence: Value,
     start: i64,
@@ -449,7 +449,7 @@ pub(super) fn slice(
     sequence.range(start, end.max(start))
 }
 
-#[frost_fn(name = "stride")]
+#[frost_fn]
 pub(super) fn stride(
     #[frost(unnamed, types = Flat | Array)] sequence: Value,
     #[frost(unnamed)] step: i64,
@@ -492,7 +492,7 @@ pub(super) fn drop_tail_global() -> Value {
     end_slice("drop_tail", |len, n| (0, len - n))
 }
 
-#[frost_fn(name = "slide")]
+#[frost_fn]
 pub(super) fn slide(
     #[frost(unnamed)] array: FrostArray,
     #[frost(unnamed)] size: i64,
@@ -501,7 +501,7 @@ pub(super) fn slide(
     Ok(array.as_slice().windows(size).map(Value::from).collect())
 }
 
-#[frost_fn(name = "chunk")]
+#[frost_fn]
 pub(super) fn chunk(
     #[frost(unnamed)] array: FrostArray,
     #[frost(unnamed)] size: i64,
@@ -510,7 +510,7 @@ pub(super) fn chunk(
     Ok(array.as_slice().chunks(size).map(Value::from).collect())
 }
 
-#[frost_fn(name = "reverse")]
+#[frost_fn]
 pub(super) fn reverse(#[frost(unnamed, types = Flat | Array)] sequence: Value) -> Value {
     match sequence {
         // A String reverses by code point; see the String/Bytes design.
@@ -540,7 +540,7 @@ fn leading_matches(
     Ok(array.len())
 }
 
-#[frost_fn(name = "take_while")]
+#[frost_fn]
 pub(super) fn take_while(
     #[frost(ctx)] ctx: &mut NativeCtx<'_>,
     #[frost(unnamed)] array: FrostArray,
@@ -552,7 +552,7 @@ pub(super) fn take_while(
     Ok(elements.into())
 }
 
-#[frost_fn(name = "drop_while")]
+#[frost_fn]
 pub(super) fn drop_while(
     #[frost(ctx)] ctx: &mut NativeCtx<'_>,
     #[frost(unnamed)] array: FrostArray,
@@ -564,7 +564,7 @@ pub(super) fn drop_while(
     Ok(elements.into())
 }
 
-#[frost_fn(name = "chunk_by")]
+#[frost_fn]
 pub(super) fn chunk_by(
     #[frost(ctx)] ctx: &mut NativeCtx<'_>,
     #[frost(unnamed)] array: FrostArray,
@@ -602,7 +602,7 @@ fn flatten_into(out: &mut Vec<Value>, elements: Vec<Value>, depth: Option<usize>
     }
 }
 
-#[frost_fn(name = "flatten")]
+#[frost_fn]
 pub(super) fn flatten(
     #[frost(unnamed)] array: FrostArray,
     #[frost(unnamed)] depth: Optional<i64>,
@@ -687,7 +687,7 @@ fn advance_odometer(indices: &mut [usize], arrays: &[FrostArray]) -> bool {
     false
 }
 
-#[frost_fn(name = "zip")]
+#[frost_fn]
 pub(super) fn zip(
     #[frost(unnamed)] first: FrostArray,
     #[frost(unnamed)] second: FrostArray,
@@ -698,7 +698,7 @@ pub(super) fn zip(
     Ok(rows.into())
 }
 
-#[frost_fn(name = "zip_with")]
+#[frost_fn]
 pub(super) fn zip_with(
     #[frost(ctx)] ctx: &mut NativeCtx<'_>,
     #[frost(unnamed)] function: Function,
@@ -711,7 +711,7 @@ pub(super) fn zip_with(
     Ok(results.into())
 }
 
-#[frost_fn(name = "xprod")]
+#[frost_fn]
 pub(super) fn xprod(
     #[frost(unnamed)] first: FrostArray,
     #[frost(unnamed)] second: FrostArray,
@@ -722,7 +722,7 @@ pub(super) fn xprod(
     Ok(rows.into())
 }
 
-#[frost_fn(name = "xprod_with")]
+#[frost_fn]
 pub(super) fn xprod_with(
     #[frost(ctx)] ctx: &mut NativeCtx<'_>,
     #[frost(unnamed)] function: Function,
@@ -739,7 +739,7 @@ pub(super) fn xprod_with(
 
 // --- Transforming ---
 
-#[frost_fn(name = "transform")]
+#[frost_fn]
 pub(super) fn transform(
     #[frost(ctx)] ctx: &mut NativeCtx<'_>,
     #[frost(unnamed)] structure: Structured,
@@ -771,7 +771,7 @@ pub(super) fn transform(
     }
 }
 
-#[frost_fn(name = "flat_map")]
+#[frost_fn]
 pub(super) fn flat_map(
     #[frost(ctx)] ctx: &mut NativeCtx<'_>,
     #[frost(unnamed)] array: FrostArray,
@@ -819,7 +819,7 @@ fn filter_structure(
     }
 }
 
-#[frost_fn(name = "select")]
+#[frost_fn]
 pub(super) fn select(
     #[frost(ctx)] ctx: &mut NativeCtx<'_>,
     #[frost(unnamed)] structure: Structured,
@@ -828,7 +828,7 @@ pub(super) fn select(
     filter_structure(ctx, structure, &predicate, true)
 }
 
-#[frost_fn(name = "reject")]
+#[frost_fn]
 pub(super) fn reject(
     #[frost(ctx)] ctx: &mut NativeCtx<'_>,
     #[frost(unnamed)] structure: Structured,
@@ -837,7 +837,7 @@ pub(super) fn reject(
     filter_structure(ctx, structure, &predicate, false)
 }
 
-#[frost_fn(name = "fold")]
+#[frost_fn]
 pub(super) fn fold(
     #[frost(ctx)] ctx: &mut NativeCtx<'_>,
     #[frost(unnamed)] structure: Structured,
@@ -867,7 +867,7 @@ pub(super) fn fold(
     }
 }
 
-#[frost_fn(name = "sum")]
+#[frost_fn]
 pub(super) fn sum(#[frost(unnamed)] array: FrostArray) -> FrostResult {
     let mut elements = array.into_vec().into_iter();
     let Some(first) = elements.next() else {
@@ -876,7 +876,7 @@ pub(super) fn sum(#[frost(unnamed)] array: FrostArray) -> FrostResult {
     elements.try_fold(first, Value::add_owned)
 }
 
-#[frost_fn(name = "product")]
+#[frost_fn]
 pub(super) fn product(#[frost(unnamed)] array: FrostArray) -> FrostResult {
     let mut elements = array.into_vec().into_iter();
     let Some(first) = elements.next() else {
@@ -922,7 +922,7 @@ fn less_than(a: &Value, b: &Value) -> Result<bool, FrostError> {
     Ok(a.compare(b)?.is_lt())
 }
 
-#[frost_fn(name = "sorted")]
+#[frost_fn]
 pub(super) fn sorted(
     #[frost(ctx)] ctx: &mut NativeCtx<'_>,
     #[frost(unnamed)] array: FrostArray,
@@ -938,7 +938,7 @@ pub(super) fn sorted(
     Ok(sorted.into())
 }
 
-#[frost_fn(name = "sort_by")]
+#[frost_fn]
 pub(super) fn sort_by(
     #[frost(ctx)] ctx: &mut NativeCtx<'_>,
     #[frost(unnamed)] array: FrostArray,
@@ -1062,7 +1062,7 @@ impl Seen {
     }
 }
 
-#[frost_fn(name = "unique")]
+#[frost_fn]
 pub(super) fn unique(#[frost(unnamed)] array: FrostArray) -> Value {
     let mut seen = Seen::default();
     array
@@ -1072,7 +1072,7 @@ pub(super) fn unique(#[frost(unnamed)] array: FrostArray) -> Value {
         .collect()
 }
 
-#[frost_fn(name = "unique_by")]
+#[frost_fn]
 pub(super) fn unique_by(
     #[frost(ctx)] ctx: &mut NativeCtx<'_>,
     #[frost(unnamed)] array: FrostArray,
@@ -1088,7 +1088,7 @@ pub(super) fn unique_by(
     Ok(kept.into())
 }
 
-#[frost_fn(name = "group_by")]
+#[frost_fn]
 pub(super) fn group_by(
     #[frost(ctx)] ctx: &mut NativeCtx<'_>,
     #[frost(unnamed)] array: FrostArray,
@@ -1105,7 +1105,7 @@ pub(super) fn group_by(
         .collect())
 }
 
-#[frost_fn(name = "count_by")]
+#[frost_fn]
 pub(super) fn count_by(
     #[frost(ctx)] ctx: &mut NativeCtx<'_>,
     #[frost(unnamed)] array: FrostArray,
@@ -1122,7 +1122,7 @@ pub(super) fn count_by(
         .collect())
 }
 
-#[frost_fn(name = "scan")]
+#[frost_fn]
 pub(super) fn scan(
     #[frost(ctx)] ctx: &mut NativeCtx<'_>,
     #[frost(unnamed)] array: FrostArray,
@@ -1141,7 +1141,7 @@ pub(super) fn scan(
     Ok(running.into())
 }
 
-#[frost_fn(name = "partition")]
+#[frost_fn]
 pub(super) fn partition(
     #[frost(ctx)] ctx: &mut NativeCtx<'_>,
     #[frost(unnamed)] array: FrostArray,
@@ -1158,7 +1158,7 @@ pub(super) fn partition(
     Ok(Value::map([("pass", pass.into()), ("fail", fail.into())]))
 }
 
-#[frost_fn(name = "map_into")]
+#[frost_fn]
 pub(super) fn map_into(
     #[frost(ctx)] ctx: &mut NativeCtx<'_>,
     #[frost(unnamed)] array: FrostArray,
@@ -1179,7 +1179,7 @@ pub(super) fn map_into(
     Ok(result.into())
 }
 
-#[frost_fn(name = "each")]
+#[frost_fn]
 pub(super) fn each(
     #[frost(ctx)] ctx: &mut NativeCtx<'_>,
     #[frost(unnamed)] structure: Structured,

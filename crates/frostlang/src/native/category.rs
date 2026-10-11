@@ -270,7 +270,7 @@ impl From<Nonnull> for Value {
 /// use frostlang::native::Function;
 /// use frostlang::{FrostResult, NativeCtx, Value, frost_fn};
 ///
-/// #[frost_fn(name = "apply")]
+/// #[frost_fn]
 /// fn apply(#[frost(ctx)] ctx: &mut NativeCtx<'_>, function: Function, value: Value) -> FrostResult {
 ///     ctx.invoke(&function, [value])
 /// }

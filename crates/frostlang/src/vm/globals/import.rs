@@ -6,7 +6,7 @@ use crate::{Arity, Closure, FrostType, NativeCtx, Param, Params, Value, frost_fn
 /// The `imported()` global: `true` when the running script is being imported by
 /// another module, `false` when it is run directly. It reads the running Vm's
 /// import depth, so it is never a compile-time constant.
-#[frost_fn(name = "imported")]
+#[frost_fn]
 pub(super) fn imported(#[frost(ctx)] ctx: &mut NativeCtx<'_>) -> bool {
     ctx.vm.is_imported()
 }

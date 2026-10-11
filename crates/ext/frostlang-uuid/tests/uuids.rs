@@ -207,19 +207,19 @@ fn to_bytes_and_to_string_check_their_argument_types() {
     assert_raises(&[
         (
             "uuid.to_bytes(x'017f22e279b07cc398c4dc0c0c07398f')",
-            "Function uuid.to_bytes requires String as argument 1 (text), got Bytes",
+            "Function ext.uuid.to_bytes requires String as argument 1 (text), got Bytes",
         ),
         (
             "uuid.to_bytes(null)",
-            "Function uuid.to_bytes requires String as argument 1 (text), got Null",
+            "Function ext.uuid.to_bytes requires String as argument 1 (text), got Null",
         ),
         (
             "uuid.to_string('017f22e2-79b0-7cc3-98c4-dc0c0c07398f')",
-            "Function uuid.to_string requires Bytes as argument 1 (bytes), got String",
+            "Function ext.uuid.to_string requires Bytes as argument 1 (bytes), got String",
         ),
         (
             "uuid.to_string([1, 2])",
-            "Function uuid.to_string requires Bytes as argument 1 (bytes), got Array",
+            "Function ext.uuid.to_string requires Bytes as argument 1 (bytes), got Array",
         ),
     ]);
     assert_arity("to_bytes", 1, &[0, 2]);
@@ -279,11 +279,11 @@ fn version_checks_its_argument_type() {
     assert_raises(&[
         (
             "uuid.version(7)",
-            "Function uuid.version requires String or Bytes as argument 1 (id), got Int",
+            "Function ext.uuid.version requires String or Bytes as argument 1 (id), got Int",
         ),
         (
             "uuid.version(null)",
-            "Function uuid.version requires String or Bytes as argument 1 (id), got Null",
+            "Function ext.uuid.version requires String or Bytes as argument 1 (id), got Null",
         ),
     ]);
     assert_arity("version", 1, &[0, 2]);
@@ -339,7 +339,7 @@ fn timestamp_returns_null_for_other_than_a_v7_uuid() {
 fn timestamp_checks_its_argument_type() {
     assert_raises(&[(
         "uuid.timestamp(1645557742000)",
-        "Function uuid.timestamp requires String or Bytes as argument 1 (id), got Int",
+        "Function ext.uuid.timestamp requires String or Bytes as argument 1 (id), got Int",
     )]);
     assert_arity("timestamp", 1, &[0, 2]);
 }

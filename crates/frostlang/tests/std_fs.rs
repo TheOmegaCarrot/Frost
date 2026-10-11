@@ -96,10 +96,10 @@ fn frost(source: &str) -> Value {
     Script::new(source).run()
 }
 
-/// Assert `raised` is `function`'s I/O failure on `path`; the OS's own words
-/// after it vary by platform.
+/// Assert `raised` is the I/O failure on `path` of `function`, named within
+/// `std`, as in `fs.read`; the OS's own words after it vary by platform.
 fn assert_io_error(raised: &str, function: &str, path: &str) {
-    let prefix = format!("Function {function} failed on `{path}`: ");
+    let prefix = format!("Function std.{function} failed on `{path}`: ");
     assert!(raised.starts_with(&prefix), "{raised:?} starts {prefix:?}");
 }
 
@@ -332,12 +332,12 @@ fn size_measures_a_regular_file() {
     );
     assert_eq!(
         scratch.raises("fs.size('/dev/null')"),
-        "Function fs.size requires a regular file, but `/dev/null` is a character device"
+        "Function std.fs.size requires a regular file, but `/dev/null` is a character device"
     );
     assert_eq!(
         scratch.raises("fs.size(fs.concat(dir, 'dir'))"),
         format!(
-            "Function fs.size requires a regular file, but `{}` is a directory",
+            "Function std.fs.size requires a regular file, but `{}` is a directory",
             scratch.text("dir")
         )
     );
@@ -474,8 +474,8 @@ fn a_path_that_is_not_utf8_is_an_error() {
     let name = std::ffi::OsStr::from_bytes(b"bad\xff");
     fs::write(scratch.path("").join(name), "").expect("a non-UTF-8 name is written");
     for (call, function) in [
-        ("fs.list(dir)", "fs.list"),
-        ("fs.glob(dir + '*')", "fs.glob"),
+        ("fs.list(dir)", "std.fs.list"),
+        ("fs.glob(dir + '*')", "std.fs.glob"),
     ] {
         let raised = scratch.raises(call);
         assert!(
@@ -732,32 +732,32 @@ fn glob_checks_its_pattern_and_options() {
     let scratch = Scratch::new("glob_arguments");
     let raised = scratch.raises("fs.glob('[a')");
     assert!(
-        raised.starts_with(r#"Function fs.glob got an invalid pattern "[a": "#),
+        raised.starts_with(r#"Function std.fs.glob got an invalid pattern "[a": "#),
         "{raised}"
     );
     assert_eq!(
         scratch.raises("fs.glob('*', {hiden: true})"),
-        "Function fs.glob requires valid options: unknown field `hiden`, expected \
+        "Function std.fs.glob requires valid options: unknown field `hiden`, expected \
          `hidden` or `case_sensitive` (at a key)"
     );
     assert_eq!(
         scratch.raises("fs.glob('*', {hidden: 1})"),
-        "Function fs.glob requires valid options: expected Bool, got Int (at `hidden`)"
+        "Function std.fs.glob requires valid options: expected Bool, got Int (at `hidden`)"
     );
     assert_eq!(
         scratch.raises("fs.glob(1)"),
-        "Function fs.glob requires String as argument 1 (pattern), got Int"
+        "Function std.fs.glob requires String as argument 1 (pattern), got Int"
     );
     assert_eq!(
         scratch.raises("fs.glob('*', true)"),
-        "Function fs.glob requires Map as argument 2 (options), got Bool"
+        "Function std.fs.glob requires Map as argument 2 (options), got Bool"
     );
     for argc in [0, 3] {
         let args = vec!["'*'"; argc].join(", ");
         assert_eq!(
             scratch.raises(&format!("fs.glob({args})")),
             format!(
-                "Function fs.glob expects between 1 and 2 arguments, but was called with {argc}"
+                "Function std.fs.glob expects between 1 and 2 arguments, but was called with {argc}"
             )
         );
     }
@@ -913,7 +913,7 @@ fn copy_refuses_to_overwrite_a_file_inside_a_tree() {
     assert_eq!(
         scratch.raises("fs.copy(fs.concat(dir, 'tree'), fs.concat(dir, 'copy'))"),
         format!(
-            "Function fs.copy failed on `{}`: `{}` already exists",
+            "Function std.fs.copy failed on `{}`: `{}` already exists",
             scratch.text("tree"),
             scratch.text("copy/sub/b")
         )
@@ -953,7 +953,7 @@ fn copy_refuses_anything_in_the_way() {
                 "fs.copy(fs.concat(dir, 'tree'), fs.concat(dir, '{destination}'))"
             )),
             format!(
-                "Function fs.copy failed on `{}`: `{}` already exists",
+                "Function std.fs.copy failed on `{}`: `{}` already exists",
                 scratch.text("tree"),
                 scratch.text(in_the_way)
             ),
@@ -1125,7 +1125,7 @@ fn read_reads_a_whole_file() {
     assert_eq!(
         scratch.raises("fs.read(fs.concat(dir, 'binary'))"),
         format!(
-            "Function fs.read read text that is not UTF-8 from `{}`",
+            "Function std.fs.read read text that is not UTF-8 from `{}`",
             scratch.text("binary")
         )
     );
@@ -1478,69 +1478,75 @@ fn every_function_checks_its_arguments() {
     for function in one_path {
         assert_eq!(
             scratch.raises(&format!("fs.{function}(1)")),
-            format!("Function fs.{function} requires String as argument 1 (path), got Int")
+            format!("Function std.fs.{function} requires String as argument 1 (path), got Int")
         );
         for argc in [0, 2] {
             let args = vec!["'a'"; argc].join(", ");
             assert_eq!(
                 scratch.raises(&format!("fs.{function}({args})")),
-                format!("Function fs.{function} expects 1 arguments, but was called with {argc}")
+                format!(
+                    "Function std.fs.{function} expects 1 arguments, but was called with {argc}"
+                )
             );
         }
     }
     for function in ["move", "copy", "symlink"] {
         assert_eq!(
             scratch.raises(&format!("fs.{function}(x'62', 'a')")),
-            format!("Function fs.{function} requires String as argument 1, got Bytes")
+            format!("Function std.fs.{function} requires String as argument 1, got Bytes")
         );
         assert_eq!(
             scratch.raises(&format!("fs.{function}('a', x'62')")),
-            format!("Function fs.{function} requires String as argument 2, got Bytes")
+            format!("Function std.fs.{function} requires String as argument 2, got Bytes")
         );
         for argc in [0, 1, 3] {
             let args = vec!["'a'"; argc].join(", ");
             assert_eq!(
                 scratch.raises(&format!("fs.{function}({args})")),
-                format!("Function fs.{function} expects 2 arguments, but was called with {argc}")
+                format!(
+                    "Function std.fs.{function} expects 2 arguments, but was called with {argc}"
+                )
             );
         }
     }
     for function in ["write", "append"] {
         assert_eq!(
             scratch.raises(&format!("fs.{function}(1, 'a')")),
-            format!("Function fs.{function} requires String as argument 1 (path), got Int")
+            format!("Function std.fs.{function} requires String as argument 1 (path), got Int")
         );
         assert_eq!(
             scratch.raises(&format!("fs.{function}('a', 1)")),
             format!(
-                "Function fs.{function} requires String or Bytes as argument 2 (content), got Int"
+                "Function std.fs.{function} requires String or Bytes as argument 2 (content), got Int"
             )
         );
         for argc in [1, 3] {
             let args = vec!["'a'"; argc].join(", ");
             assert_eq!(
                 scratch.raises(&format!("fs.{function}({args})")),
-                format!("Function fs.{function} expects 2 arguments, but was called with {argc}")
+                format!(
+                    "Function std.fs.{function} expects 2 arguments, but was called with {argc}"
+                )
             );
         }
     }
     assert_eq!(
         scratch.raises("fs.concat('a', 1)"),
-        "Function fs.concat requires String as argument 2 (path), got Int"
+        "Function std.fs.concat requires String as argument 2 (path), got Int"
     );
     assert_eq!(
         scratch.raises("fs.concat(1, 'a')"),
-        "Function fs.concat requires String as argument 1 (base), got Int"
+        "Function std.fs.concat requires String as argument 1 (base), got Int"
     );
     for argc in [0, 1, 3] {
         let args = vec!["'a'"; argc].join(", ");
         assert_eq!(
             scratch.raises(&format!("fs.concat({args})")),
-            format!("Function fs.concat expects 2 arguments, but was called with {argc}")
+            format!("Function std.fs.concat expects 2 arguments, but was called with {argc}")
         );
     }
     assert_eq!(
         scratch.raises("fs.cwd(1)"),
-        "Function fs.cwd expects 0 arguments, but was called with 1"
+        "Function std.fs.cwd expects 0 arguments, but was called with 1"
     );
 }

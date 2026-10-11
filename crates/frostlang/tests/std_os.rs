@@ -94,7 +94,7 @@ fn getenv_returns_null_for_a_variable_that_is_not_set() {
 fn getenv_checks_its_argument() {
     assert_raises(&[(
         "os.getenv(1)",
-        "Function os.getenv requires String as argument 1 (name), got Int",
+        "Function std.os.getenv requires String as argument 1 (name), got Int",
     )]);
     assert_arity("getenv", "1", &[0, 2]);
 }
@@ -130,11 +130,11 @@ fn sleep_checks_its_argument() {
     assert_raises(&[
         (
             "os.sleep(-1)",
-            "Function os.sleep requires argument 1 (ms) to be at least 0, got -1",
+            "Function std.os.sleep requires argument 1 (ms) to be at least 0, got -1",
         ),
         (
             "os.sleep(1.5)",
-            "Function os.sleep requires Int as argument 1 (ms), got Float",
+            "Function std.os.sleep requires Int as argument 1 (ms), got Float",
         ),
     ]);
     assert_arity("sleep", "1", &[0, 2]);
@@ -201,13 +201,13 @@ mod run {
         let raised = script("os.run('true', [], {cwd: '/frost-surely-no-such-dir'})").raises();
         assert!(
             raised.starts_with(
-                "Function os.run cannot use `/frost-surely-no-such-dir` as its working directory: "
+                "Function std.os.run cannot use `/frost-surely-no-such-dir` as its working directory: "
             ),
             "{raised}"
         );
         assert_raises(&[(
             "os.run('true', [], {cwd: '/dev/null'})",
-            "Function os.run requires its `cwd` option to be a directory, but `/dev/null` is not",
+            "Function std.os.run requires its `cwd` option to be a directory, but `/dev/null` is not",
         )]);
     }
 
@@ -254,7 +254,7 @@ mod run {
         assert_raises(&[(
             // The shell runs `printf '\377'`, writing the single byte 0xff.
             r#"os.run('sh', ['-c', "printf '\\377'"])"#,
-            "Function os.run got stdout from `sh` that is not UTF-8; \
+            "Function std.os.run got stdout from `sh` that is not UTF-8; \
              pass `binary: true` to get Bytes",
         )]);
         assert_values(&[(
@@ -263,7 +263,7 @@ mod run {
         )]);
         assert_raises(&[(
             r#"os.run('sh', ['-c', "printf '\\377' >&2"])"#,
-            "Function os.run got stderr from `sh` that is not UTF-8; \
+            "Function std.os.run got stderr from `sh` that is not UTF-8; \
              pass `binary: true` to get Bytes",
         )]);
     }
@@ -272,7 +272,8 @@ mod run {
     fn run_raises_when_the_program_cannot_start() {
         let raised = script("os.run('frost-surely-no-such-program', [])").raises();
         assert!(
-            raised.starts_with("Function os.run could not run `frost-surely-no-such-program`: "),
+            raised
+                .starts_with("Function std.os.run could not run `frost-surely-no-such-program`: "),
             "{raised}"
         );
     }
@@ -282,11 +283,11 @@ mod run {
         assert_raises(&[
             (
                 "os.run('true', [], {env: {}, replace_env: {}})",
-                "Function os.run takes option `env` or `replace_env`, not both",
+                "Function std.os.run takes option `env` or `replace_env`, not both",
             ),
             (
                 "os.run('true', [], {stdin: 1})",
-                "Function os.run requires String or Bytes for option `stdin`, got Int",
+                "Function std.os.run requires String or Bytes for option `stdin`, got Int",
             ),
         ]);
     }
@@ -314,7 +315,9 @@ mod run {
         ] {
             assert_raises(&[(
                 &format!("os.run('true', [], {options})"),
-                &format!("Function os.run requires argument 3 (options) to be valid: {problem}"),
+                &format!(
+                    "Function std.os.run requires argument 3 (options) to be valid: {problem}"
+                ),
             )]);
         }
     }
@@ -325,23 +328,23 @@ fn run_checks_its_arguments() {
     assert_raises(&[
         (
             "os.run(1, [])",
-            "Function os.run requires String as argument 1 (command), got Int",
+            "Function std.os.run requires String as argument 1 (command), got Int",
         ),
         (
             "os.run('echo', 'hi')",
-            "Function os.run requires Array as argument 2 (args), got String",
+            "Function std.os.run requires Array as argument 2 (args), got String",
         ),
         (
             "os.run('echo', [1])",
-            "Function os.run requires String as element 0 of argument 2 (args), got Int",
+            "Function std.os.run requires String as element 0 of argument 2 (args), got Int",
         ),
         (
             "os.run('echo', ['a', 'b', null])",
-            "Function os.run requires String as element 2 of argument 2 (args), got Null",
+            "Function std.os.run requires String as element 2 of argument 2 (args), got Null",
         ),
         (
             "os.run('echo', [], 1)",
-            "Function os.run requires Map as argument 3 (options), got Int",
+            "Function std.os.run requires Map as argument 3 (options), got Int",
         ),
     ]);
     assert_arity("run", "between 2 and 3", &[0, 1, 4]);

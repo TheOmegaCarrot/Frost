@@ -6,7 +6,7 @@
 //! context, return conversion, and how parameter types are named.
 
 use frostlang::native::{
-    Function, IntoNativeResult, Nullable, Numeric, Optional, Rest, Structured,
+    Function, IntoNativeResult, NativeDef, Nullable, Numeric, Optional, Rest, Structured,
 };
 use frostlang::{FrostError, FrostResult, NativeCtx, Value, frost_fn};
 
@@ -15,31 +15,41 @@ use crate::script::Script;
 
 /// Asserts that a run of each of `sources`, with `name` bound to the
 /// generated function, ends exactly as with the hand-built one.
-fn assert_alike(name: &str, generated: fn() -> Value, hand_built: fn() -> Value, sources: &[&str]) {
+fn assert_alike(
+    name: &str,
+    generated: fn() -> NativeDef,
+    hand_built: fn() -> Value,
+    sources: &[&str],
+) {
     for source in sources {
-        let outcome =
-            |function: fn() -> Value| Script::new(source).capture(name, function()).outcome();
+        let outcome = |function: Value| Script::new(source).capture(name, function).outcome();
         assert_eq!(
-            outcome(generated),
-            outcome(hand_built),
+            outcome(generated().build()),
+            outcome(hand_built()),
             "{source:?} ends alike with either function"
         );
     }
 }
 
-fn run(name: &str, function: Value, source: &str) -> Value {
-    Script::new(source).capture(name, function).run()
+/// Runs `source` with `name` bound to the function `definition` builds under
+/// its base name.
+fn run(name: &str, definition: NativeDef, source: &str) -> Value {
+    Script::new(source).capture(name, definition.build()).run()
 }
 
-fn raises(name: &str, function: Value, source: &str) -> String {
-    Script::new(source).capture(name, function).raises()
+/// The message `source` raises with `name` bound to the function `definition`
+/// builds under its base name.
+fn raises(name: &str, definition: NativeDef, source: &str) -> String {
+    Script::new(source)
+        .capture(name, definition.build())
+        .raises()
 }
 
 // ============================================================
 // Alike to hand-built functions
 // ============================================================
 
-#[frost_fn(name = "pad")]
+#[frost_fn]
 fn pad(text: String, width: u16, fill: Optional<Nullable<String>>) -> String {
     let fill = match fill {
         Optional(None) => " ".to_string(),
@@ -70,7 +80,7 @@ fn required_and_optional_nullable_parameters_are_alike() {
     );
 }
 
-#[frost_fn(name = "each")]
+#[frost_fn]
 fn each(
     #[frost(ctx)] ctx: &mut NativeCtx<'_>,
     sql: String,
@@ -104,7 +114,7 @@ fn an_interior_optional_and_the_context_are_alike() {
     );
 }
 
-#[frost_fn(name = "sum")]
+#[frost_fn]
 fn sum(ns: Rest<i64>) -> i64 {
     ns.0.iter().sum()
 }
@@ -123,41 +133,76 @@ fn a_rest_parameter_is_alike() {
 // Names
 // ============================================================
 
-#[frost_fn(name = concat!("text", ".", "shout"))]
+#[frost_fn]
 fn shout(text: String) -> String {
     text.to_uppercase()
 }
 
-const SHOUT_NAME: &str = "loud";
-
-#[frost_fn(name = SHOUT_NAME)]
-fn loud(text: String) -> String {
+#[frost_fn(name = "loud")]
+fn yell(text: String) -> String {
     text.to_uppercase()
 }
 
+/// A Rust keyword, but not a Frost one.
+#[frost_fn]
+fn r#struct() -> i64 {
+    1
+}
+
 #[test]
-fn the_name_is_any_constant_str_expression() {
+fn the_base_name_is_the_function_s_own_unless_given() {
+    assert_eq!(shout_frost().base_name(), "shout");
+    assert_eq!(yell_frost().base_name(), "loud");
+    assert_eq!(struct_frost().base_name(), "struct", "less its raw prefix");
+}
+
+#[test]
+fn a_function_built_alone_goes_by_its_base_name() {
     assert_eq!(
         raises("f", shout_frost(), "f(1)"),
-        "Function text.shout requires String as argument 1 (text), got Int"
+        "Function shout requires String as argument 1 (text), got Int"
     );
     assert_eq!(
-        raises("f", loud_frost(), "f(1)"),
+        raises("f", yell_frost(), "f(1)"),
         "Function loud requires String as argument 1 (text), got Int"
+    );
+    assert_eq!(
+        raises("f", struct_frost(), "f(1)"),
+        "Function struct expects 0 arguments, but was called with 1"
     );
 }
 
-#[frost_fn(name = "whoami")]
-fn whoami(#[frost(ctx)] ctx: &mut NativeCtx<'_>) -> &'static str {
-    ctx.name()
+#[test]
+fn a_function_built_with_a_name_goes_by_it() {
+    let given = shout_frost().build_named("text.shout");
+    assert_eq!(
+        Script::new("f(1)").capture("f", given).raises(),
+        "Function text.shout requires String as argument 1 (text), got Int"
+    );
+    let owned = yell_frost().build_named(format!("text.{}", "yell"));
+    assert_eq!(
+        Script::new("f(1)").capture("f", owned).raises(),
+        "Function text.yell requires String as argument 1 (text), got Int",
+        "the name may be built at runtime"
+    );
+}
+
+#[frost_fn]
+fn whoami(#[frost(ctx)] ctx: &mut NativeCtx<'_>) -> String {
+    ctx.name().to_string()
 }
 
 #[test]
 fn the_context_knows_the_name() {
     assert_eq!(run("f", whoami_frost(), "f()"), Value::from("whoami"));
+    let named = whoami_frost().build_named("who.am_i");
+    assert_eq!(
+        Script::new("f()").capture("f", named).run(),
+        Value::from("who.am_i")
+    );
 }
 
-#[frost_fn(name = "raw")]
+#[frost_fn]
 fn raw(r#type: String) -> String {
     r#type
 }
@@ -170,16 +215,16 @@ fn a_raw_parameter_name_is_named_without_its_prefix() {
     );
 }
 
-#[frost_fn(name = "difference")]
-fn difference(args: i64, ctx: i64) -> i64 {
-    args - ctx
+#[frost_fn]
+fn difference(args: i64, ctx: i64, name: i64) -> i64 {
+    args - ctx - name
 }
 
 #[test]
 fn parameters_named_like_the_generated_code_s_locals_are_their_own() {
-    assert_eq!(run("f", difference_frost(), "f(5, 3)"), Value::Int(2));
+    assert_eq!(run("f", difference_frost(), "f(10, 3, 2)"), Value::Int(5));
     assert_eq!(
-        raises("f", difference_frost(), "f(5, 'x')"),
+        raises("f", difference_frost(), "f(5, 'x', 1)"),
         "Function difference requires Int as argument 2 (ctx), got String"
     );
 }
@@ -188,13 +233,13 @@ fn parameters_named_like_the_generated_code_s_locals_are_their_own() {
 // Parameters
 // ============================================================
 
-#[frost_fn(name = "repeat_text")]
+#[frost_fn]
 fn repeat_text(#[frost(unnamed)] text: String, times: usize) -> String {
     text.repeat(times)
 }
 
 /// Unnamed, a parameter's pattern need not give a name.
-#[frost_fn(name = "sum_after_first")]
+#[frost_fn]
 fn sum_after_first(#[frost(unnamed)] _: i64, #[frost(unnamed)] Rest(ns): Rest<i64>) -> i64 {
     ns.iter().sum()
 }
@@ -215,7 +260,7 @@ fn an_unnamed_parameter_is_reported_by_position_alone() {
     );
 }
 
-#[frost_fn(name = "appended")]
+#[frost_fn]
 fn appended(mut items: Vec<i64>, item: i64) -> Vec<i64> {
     items.push(item);
     items
@@ -229,7 +274,7 @@ fn a_mutable_parameter_works() {
     );
 }
 
-#[frost_fn(name = "nothing")]
+#[frost_fn]
 fn nothing() -> i64 {
     0
 }
@@ -252,7 +297,7 @@ mod reexports {
 use frostlang::native::Optional as Maybe;
 
 /// Parameter types named through an alias and a renamed import.
-#[frost_fn(name = "aliased")]
+#[frost_fn]
 fn aliased(text: Text, times: Maybe<u8>) -> Value {
     Value::array([
         Value::from(text),
@@ -263,7 +308,7 @@ fn aliased(text: Text, times: Maybe<u8>) -> Value {
 }
 
 /// A parameter type named through a renamed re-export.
-#[frost_fn(name = "reexported")]
+#[frost_fn]
 fn reexported(rest: reexports::Many<i64>) -> i64 {
     rest.0.len() as i64
 }
@@ -290,7 +335,7 @@ fn parameter_types_are_known_by_their_traits_however_they_are_named() {
 }
 
 /// A `Value` constrained to the types its body handles.
-#[frost_fn(name = "kind")]
+#[frost_fn]
 fn kind(#[frost(types = Flat | Array)] sequence: Value) -> &'static str {
     match sequence {
         Value::String(_) => "text",
@@ -302,7 +347,7 @@ fn kind(#[frost(types = Flat | Array)] sequence: Value) -> &'static str {
 
 /// Constraints narrowing a Rust type, on an optional parameter, and on an
 /// unnamed rest parameter.
-#[frost_fn(name = "narrowed")]
+#[frost_fn]
 fn narrowed(
     #[frost(types = Int)] n: Numeric,
     #[frost(types = Null | String)] label: Optional<Value>,
@@ -310,7 +355,7 @@ fn narrowed(
     Value::array([Value::from(n), label.0.unwrap_or(Value::from("none"))])
 }
 
-#[frost_fn(name = "count_flags")]
+#[frost_fn]
 fn count_flags(#[frost(unnamed, types = Bool)] flags: Rest<Value>) -> i64 {
     flags.0.len() as i64
 }
@@ -367,8 +412,8 @@ fn a_types_constraint_rejects_other_types_as_its_parameter_s_types() {
             "Function count_flags requires Bool as argument 2, got Int",
         ),
     ];
-    for (function, source, message) in cases {
-        assert_eq!(raises("f", function, source), message, "{source:?}");
+    for (definition, source, message) in cases {
+        assert_eq!(raises("f", definition, source), message, "{source:?}");
     }
 }
 
@@ -376,15 +421,15 @@ fn a_types_constraint_rejects_other_types_as_its_parameter_s_types() {
 // Results
 // ============================================================
 
-#[frost_fn(name = "unit")]
+#[frost_fn]
 fn unit() {}
 
-#[frost_fn(name = "maybe")]
+#[frost_fn]
 fn maybe(some: bool) -> Option<i64> {
     some.then_some(1)
 }
 
-#[frost_fn(name = "fallible")]
+#[frost_fn]
 fn fallible(fail: bool) -> Result<i64, FrostError> {
     if fail {
         Err(FrostError::from_static("it failed"))
@@ -393,7 +438,7 @@ fn fallible(fail: bool) -> Result<i64, FrostError> {
     }
 }
 
-#[frost_fn(name = "ratio")]
+#[frost_fn]
 fn ratio(a: f64, b: f64) -> f64 {
     a / b
 }
@@ -409,13 +454,23 @@ fn the_result_converts_through_into_native_result() {
     assert_eq!(run("f", maybe_frost(), "f(false)"), Value::Null);
     assert_eq!(run("f", fallible_frost(), "f(false)"), Value::Int(1));
     assert_eq!(raises("f", fallible_frost(), "f(true)"), "it failed");
+    let conversion_error = |name: &str| {
+        f64::INFINITY
+            .into_result(name)
+            .expect_err("a non-finite f64 is an error")
+            .message()
+            .to_string()
+    };
     assert_eq!(
         raises("f", ratio_frost(), "f(1, 0)"),
-        f64::INFINITY
-            .into_result("ratio")
-            .expect_err("a non-finite f64 is an error")
-            .message(),
+        conversion_error("ratio"),
         "the conversion's error, naming the function"
+    );
+    let named = ratio_frost().build_named("calc.ratio");
+    assert_eq!(
+        Script::new("f(1, 0)").capture("f", named).raises(),
+        conversion_error("calc.ratio"),
+        "the conversion's error, naming the function by the name it was built with"
     );
 }
 
@@ -443,20 +498,29 @@ fn the_maker_has_the_function_s_visibility() {
     assert_eq!(run("f", inner::visible_frost(), "f()"), Value::Int(1));
 }
 
+/// The maker is a `const fn`.
+const PRESENT: NativeDef = present_frost();
+
+#[test]
+fn the_maker_runs_at_compile_time() {
+    assert_eq!(PRESENT.base_name(), "present");
+    assert_eq!(run("f", PRESENT, "f()"), Value::Int(1));
+}
+
 // Were the maker not configured out with the function, it would call a
 // function that does not exist, and this file would not compile.
-#[frost_fn(name = "absent")]
+#[frost_fn]
 #[cfg(any())]
 fn absent() {}
 
 // And before the attribute, which rustc applies first, removing the attribute
 // too.
 #[cfg(any())]
-#[frost_fn(name = "also_absent")]
+#[frost_fn]
 fn also_absent() {}
 
 // Always configured in, as a test.
-#[frost_fn(name = "present")]
+#[frost_fn]
 #[cfg(test)]
 fn present() -> i64 {
     1

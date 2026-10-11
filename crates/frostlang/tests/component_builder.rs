@@ -4,29 +4,35 @@
 
 use std::sync::Arc;
 
-use frostlang::{ComponentBuilder, Extension, HostComponent, ImporterBuilder, Value, frost_fn};
+use frostlang::{
+    ComponentBuilder, Extension, HostComponent, ImporterBuilder, NativeCtx, Value, frost_fn,
+};
 
-use crate::script::{Script, UNOPTIMIZED};
+use crate::script::Script;
 
-/// The Frost function `source` evaluates to. Run under one set of options, as
-/// the function's code differs between them.
-fn frost_function(source: &str) -> Value {
-    Script::new(source).run_under(UNOPTIMIZED)
-}
-
-#[frost_fn(name = "demo.double")]
+#[frost_fn]
 fn double(n: i64) -> i64 {
     n * 2
 }
 
-#[frost_fn(name = "demo.inner.triple")]
+#[frost_fn]
 fn triple(n: i64) -> i64 {
     n * 3
 }
 
-#[frost_fn(name = "plain")]
+#[frost_fn]
 fn plain() -> &'static str {
     "plain"
+}
+
+#[frost_fn(name = "twice")]
+fn twice_as_much(n: i64) -> i64 {
+    n * 2
+}
+
+#[frost_fn]
+fn whoami(#[frost(ctx)] ctx: &mut NativeCtx<'_>) -> String {
+    ctx.name().to_string()
 }
 
 /// The tail of `source`, with `extension` importable.
@@ -36,6 +42,15 @@ fn run_with(extension: Extension, source: &str) -> Value {
         .expect("a lone extension is accepted")
         .build();
     Script::new(source).importer(Arc::clone(&importer)).run()
+}
+
+/// The message `source` raises, with `extension` importable.
+fn raises_with(extension: Extension, source: &str) -> String {
+    let importer = ImporterBuilder::new()
+        .with_extension(extension)
+        .expect("a lone extension is accepted")
+        .build();
+    Script::new(source).importer(Arc::clone(&importer)).raises()
 }
 
 /// The tail of `source`, with `component` importable.
@@ -76,10 +91,10 @@ fn each_kind_of_entry_is_importable() {
 }
 
 #[test]
-fn a_function_is_keyed_by_its_name_after_the_last_dot() {
+fn a_function_is_keyed_by_its_base_name() {
     let demo = Extension::builder("demo")
         .function(double_frost())
-        .module("inner", |inner| inner.function(triple_frost()))
+        .module("inner", |inner| inner.function(twice_as_much_frost()))
         .build();
     let source = r"
         def demo = import('ext.demo')
@@ -89,20 +104,9 @@ fn a_function_is_keyed_by_its_name_after_the_last_dot() {
         run_with(demo, source),
         Value::array([
             Value::array([Value::from("double"), Value::from("inner")]),
-            Value::array([Value::from("triple")]),
+            Value::array([Value::from("twice")]),
         ])
     );
-}
-
-#[test]
-fn a_frost_function_is_keyed_by_its_own_name() {
-    let halve = frost_function("fn halve(n) -> n / 2");
-    let demo = Extension::builder("demo").function(halve).build();
-    let source = r"
-        def demo = import('ext.demo')
-        demo.halve(8)
-    ";
-    assert_eq!(run_with(demo, source), Value::Int(4));
 }
 
 /// A group adding `double`, to a component of either kind.
@@ -152,6 +156,105 @@ fn an_empty_extension_is_an_empty_map() {
 }
 
 // ============================================================
+// Names
+// ============================================================
+
+#[test]
+fn an_extension_s_function_is_named_by_its_import_path_at_every_level() {
+    let demo = Extension::builder("demo")
+        .function(whoami_frost())
+        .module("inner", |inner| {
+            inner
+                .function(whoami_frost())
+                .module("deeper", |deeper| deeper.function(whoami_frost()))
+        })
+        .build();
+    let source = r"
+        def demo = import('ext.demo')
+        [demo.whoami(), demo.inner.whoami(), demo.inner.deeper.whoami()]
+    ";
+    assert_eq!(
+        run_with(demo, source),
+        Value::array([
+            Value::from("ext.demo.whoami"),
+            Value::from("ext.demo.inner.whoami"),
+            Value::from("ext.demo.inner.deeper.whoami"),
+        ])
+    );
+}
+
+#[test]
+fn a_function_s_errors_name_it_by_its_import_path() {
+    let demo = Extension::builder("demo")
+        .module("inner", |inner| inner.function(twice_as_much_frost()))
+        .build();
+    let source = r"
+        def demo = import('ext.demo')
+        demo.inner.twice('x')
+    ";
+    assert_eq!(
+        raises_with(demo, source),
+        "Function ext.demo.inner.twice requires Int as argument 1 (n), got String"
+    );
+}
+
+#[test]
+fn a_host_component_s_function_is_named_by_its_import_path_at_every_level() {
+    let app = HostComponent::builder("app")
+        .function(whoami_frost())
+        .module("inner", |inner| inner.function(whoami_frost()))
+        .build();
+    let source = r"
+        def app = import('app')
+        [app.whoami(), app.inner.whoami()]
+    ";
+    assert_eq!(
+        run_with_component(app, source),
+        Value::array([Value::from("app.whoami"), Value::from("app.inner.whoami")])
+    );
+}
+
+#[test]
+fn renaming_a_built_component_leaves_its_functions_names_as_built() {
+    let extension = Extension::builder("demo")
+        .function(whoami_frost())
+        .build()
+        .rename("renamed")
+        .expect("a valid name");
+    let source = r"
+        def renamed = import('ext.renamed')
+        renamed.whoami()
+    ";
+    assert_eq!(run_with(extension, source), Value::from("ext.demo.whoami"));
+
+    let component = HostComponent::builder("app")
+        .function(whoami_frost())
+        .build()
+        .rename("renamed")
+        .expect("a valid name");
+    let source = r"
+        def renamed = import('renamed')
+        renamed.whoami()
+    ";
+    assert_eq!(
+        run_with_component(component, source),
+        Value::from("app.whoami")
+    );
+}
+
+#[test]
+fn a_value_keeps_the_name_it_was_built_with() {
+    let demo = Extension::builder("demo")
+        .value("who", whoami_frost().build_named("someone"))
+        .build();
+    let source = r"
+        def demo = import('ext.demo')
+        demo.who()
+    ";
+    assert_eq!(run_with(demo, source), Value::from("someone"));
+}
+
+// ============================================================
 // Host components
 // ============================================================
 
@@ -193,12 +296,6 @@ fn a_host_component_names_its_module_path_in_a_repeat_panic() {
     let _ = HostComponent::builder("app").module("inner", |inner| {
         inner.function(triple_frost()).function(triple_frost())
     });
-}
-
-#[test]
-#[should_panic(expected = "host component `app` takes only a Function through `function`, got Int")]
-fn a_host_component_names_itself_in_a_function_panic() {
-    let _ = HostComponent::builder("app").function(Value::Int(1));
 }
 
 // ============================================================
@@ -247,17 +344,4 @@ fn a_repeated_key_in_a_module_panics_naming_its_path() {
     let _ = Extension::builder("demo").module("inner", |inner| {
         inner.function(triple_frost()).function(triple_frost())
     });
-}
-
-#[test]
-#[should_panic(expected = "extension `demo` takes only a Function through `function`, got Int")]
-fn a_function_that_is_not_a_function_panics() {
-    let _ = Extension::builder("demo").function(Value::Int(1));
-}
-
-#[test]
-#[should_panic(expected = "extension `demo` cannot key an entry")]
-fn an_anonymous_frost_function_panics_for_want_of_a_key() {
-    let anonymous = frost_function("fn n -> n");
-    let _ = Extension::builder("demo").function(anonymous);
 }

@@ -3,7 +3,7 @@
 //! natives made with `#[frost_fn]`.
 
 use frostlang::native::{
-    Flat, FrostArg, Function, IntoNativeResult, Nonnull, Numeric, Primitive, Structured,
+    Flat, FrostArg, Function, IntoNativeResult, NativeDef, Nonnull, Numeric, Primitive, Structured,
 };
 use std::fmt::Debug;
 
@@ -16,12 +16,14 @@ use serde::{Deserialize, Serialize};
 
 use crate::script::Script;
 
-fn run(function: Value, source: &str) -> Value {
-    Script::new(source).capture("f", function).run()
+fn run(definition: NativeDef, source: &str) -> Value {
+    Script::new(source).capture("f", definition.build()).run()
 }
 
-fn raises(function: Value, source: &str) -> String {
-    Script::new(source).capture("f", function).raises()
+fn raises(definition: NativeDef, source: &str) -> String {
+    Script::new(source)
+        .capture("f", definition.build())
+        .raises()
 }
 
 /// Every Frost type, as a Frost source literal, with its type.
@@ -38,10 +40,11 @@ const ONE_OF_EACH: [(&str, FrostType); 10] = [
     ("opaque", FrostType::Opaque),
 ];
 
-/// Asserts that `function`, a native named `name` taking one argument `x` of
+/// Asserts that the function `definition` builds, taking one argument `x` of
 /// a category accepting `types` and returning it, returns each value of those
 /// types unchanged, and rejects each other value as `category` names it.
-fn assert_accepts_exactly(name: &str, function: &Value, types: TypeSet, category: &str) {
+fn assert_accepts_exactly(definition: NativeDef, types: TypeSet, category: &str) {
+    let (name, function) = (definition.base_name(), definition.build());
     let opaque = Value::opaque(SpecialFloat::new(f64::INFINITY).expect("special"));
     for (literal, ty) in ONE_OF_EACH {
         // Compared in Frost, as a Function equals only itself.
@@ -73,32 +76,32 @@ fn assert_accepts_exactly(name: &str, function: &Value, types: TypeSet, category
     }
 }
 
-#[frost_fn(name = "numeric")]
+#[frost_fn]
 fn numeric(x: Numeric) -> Numeric {
     x
 }
 
-#[frost_fn(name = "flat")]
+#[frost_fn]
 fn flat(x: Flat) -> Flat {
     x
 }
 
-#[frost_fn(name = "structured")]
+#[frost_fn]
 fn structured(x: Structured) -> Structured {
     x
 }
 
-#[frost_fn(name = "primitive")]
+#[frost_fn]
 fn primitive(x: Primitive) -> Primitive {
     x
 }
 
-#[frost_fn(name = "nonnull")]
+#[frost_fn]
 fn nonnull(x: Nonnull) -> Nonnull {
     x
 }
 
-#[frost_fn(name = "function")]
+#[frost_fn]
 fn function(x: Function) -> Function {
     x
 }
@@ -120,30 +123,15 @@ fn each_type_declares_its_category() {
 
 #[test]
 fn each_type_accepts_exactly_its_category_and_returns_it_unchanged() {
-    assert_accepts_exactly("numeric", &numeric_frost(), FrostType::NUMERIC, "Numeric");
-    assert_accepts_exactly("flat", &flat_frost(), FrostType::FLAT, "String or Bytes");
-    assert_accepts_exactly(
-        "structured",
-        &structured_frost(),
-        FrostType::STRUCTURED,
-        "Structured",
-    );
-    assert_accepts_exactly(
-        "primitive",
-        &primitive_frost(),
-        FrostType::PRIMITIVE,
-        "Primitive",
-    );
-    assert_accepts_exactly("nonnull", &nonnull_frost(), FrostType::NONNULL, "Nonnull");
-    assert_accepts_exactly(
-        "function",
-        &function_frost(),
-        FrostType::FUNCTION,
-        "Function",
-    );
+    assert_accepts_exactly(numeric_frost(), FrostType::NUMERIC, "Numeric");
+    assert_accepts_exactly(flat_frost(), FrostType::FLAT, "String or Bytes");
+    assert_accepts_exactly(structured_frost(), FrostType::STRUCTURED, "Structured");
+    assert_accepts_exactly(primitive_frost(), FrostType::PRIMITIVE, "Primitive");
+    assert_accepts_exactly(nonnull_frost(), FrostType::NONNULL, "Nonnull");
+    assert_accepts_exactly(function_frost(), FrostType::FUNCTION, "Function");
 }
 
-#[frost_fn(name = "describe_numeric")]
+#[frost_fn]
 fn describe_numeric(x: Numeric) -> String {
     match x {
         Numeric::Int(i) => format!("Int {i}"),
@@ -181,7 +169,7 @@ fn flat_gives_the_bytes_of_either() {
     );
 }
 
-#[frost_fn(name = "describe_primitive")]
+#[frost_fn]
 fn describe_primitive(x: Primitive) -> &'static str {
     match x {
         Primitive::Null => "Null",
@@ -193,7 +181,7 @@ fn describe_primitive(x: Primitive) -> &'static str {
     }
 }
 
-#[frost_fn(name = "describe_structured")]
+#[frost_fn]
 fn describe_structured(x: Structured) -> usize {
     match x {
         Structured::Array(a) => a.len(),
@@ -220,7 +208,7 @@ fn an_enum_gives_each_accepted_type_its_variant() {
     assert_eq!(run(describe_structured_frost(), "f({a: 1})"), Value::Int(1));
 }
 
-#[frost_fn(name = "apply")]
+#[frost_fn]
 fn apply(#[frost(ctx)] ctx: &mut NativeCtx<'_>, function: Function, value: Value) -> FrostResult {
     ctx.invoke(&function, [value])
 }

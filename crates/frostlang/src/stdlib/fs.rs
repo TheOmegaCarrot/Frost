@@ -15,8 +15,8 @@ use serde::Deserialize;
 use crate::native::{Flat, Optional};
 use crate::stdlib::stream::{self, Kind};
 use crate::{
-    FrostError, FrostMap, FrostResult, FrostString, StdlibModule, Value, from_value, frost_closure,
-    frost_fn,
+    FrostError, FrostMap, FrostResult, FrostString, NativeCtx, StdlibModule, Value, from_value,
+    frost_closure, frost_fn,
 };
 
 /// The `std.fs` module: path manipulation, file metadata and type tests,
@@ -27,69 +27,77 @@ use crate::{
 /// It reaches outside the script: a script with it can read and change any
 /// file the host process can.
 pub fn fs() -> StdlibModule {
-    StdlibModule::new(
-        "fs",
-        Value::map([
-            ("read", path_function("fs.read", read)),
-            ("read_bytes", path_function("fs.read_bytes", read_bytes)),
-            ("write", content_function("fs.write", write)),
-            ("append", content_function("fs.append", append)),
-            ("open_read", path_function("fs.open_read", open_read)),
-            ("open_write", path_function("fs.open_write", open_write)),
-            ("open_append", path_function("fs.open_append", open_append)),
-            ("absolute", path_function("fs.absolute", absolute)),
-            ("canonical", path_function("fs.canonical", canonical)),
-            ("exists", path_test("fs.exists", Path::exists)),
-            ("is_file", path_test("fs.is_file", Path::is_file)),
-            ("is_directory", path_test("fs.is_directory", Path::is_dir)),
-            ("is_symlink", path_test("fs.is_symlink", Path::is_symlink)),
-            (
-                "is_block",
-                path_test("fs.is_block", |path| special_type(path, Special::Block)),
-            ),
-            (
-                "is_character",
-                path_test("fs.is_character", |path| {
-                    special_type(path, Special::Character)
-                }),
-            ),
-            (
-                "is_fifo",
-                path_test("fs.is_fifo", |path| special_type(path, Special::Fifo)),
-            ),
-            (
-                "is_socket",
-                path_test("fs.is_socket", |path| special_type(path, Special::Socket)),
-            ),
-            ("stat", path_function("fs.stat", stat)),
-            ("size", path_function("fs.size", size)),
-            ("cwd", cwd_frost()),
-            ("list", path_function("fs.list", list)),
-            ("glob", glob_frost()),
-            (
-                "list_recursively",
-                path_function("fs.list_recursively", list_recursively),
-            ),
-            ("mkdir", path_function("fs.mkdir", mkdir)),
-            ("move", two_path_function("fs.move", move_path)),
-            ("copy", two_path_function("fs.copy", copy)),
-            ("symlink", two_path_function("fs.symlink", symlink)),
-            ("read_link", path_function("fs.read_link", read_link)),
-            ("remove", path_function("fs.remove", remove)),
-            (
-                "remove_recursively",
-                path_function("fs.remove_recursively", remove_recursively),
-            ),
-            ("concat", concat_frost()),
-            ("stem", path_part("fs.stem", Path::file_stem)),
-            ("extension", extension_frost()),
-            ("filename", path_part("fs.filename", Path::file_name)),
-            (
-                "parent",
-                path_part("fs.parent", |path| path.parent().map(Path::as_os_str)),
-            ),
-        ]),
-    )
+    StdlibModule::builder("fs")
+        .value("read", path_function("std.fs.read", read))
+        .value("read_bytes", path_function("std.fs.read_bytes", read_bytes))
+        .value("write", content_function("std.fs.write", write))
+        .value("append", content_function("std.fs.append", append))
+        .value("open_read", path_function("std.fs.open_read", open_read))
+        .value("open_write", path_function("std.fs.open_write", open_write))
+        .value(
+            "open_append",
+            path_function("std.fs.open_append", open_append),
+        )
+        .value("absolute", path_function("std.fs.absolute", absolute))
+        .value("canonical", path_function("std.fs.canonical", canonical))
+        .value("exists", path_test("std.fs.exists", Path::exists))
+        .value("is_file", path_test("std.fs.is_file", Path::is_file))
+        .value(
+            "is_directory",
+            path_test("std.fs.is_directory", Path::is_dir),
+        )
+        .value(
+            "is_symlink",
+            path_test("std.fs.is_symlink", Path::is_symlink),
+        )
+        .value(
+            "is_block",
+            path_test("std.fs.is_block", |path| special_type(path, Special::Block)),
+        )
+        .value(
+            "is_character",
+            path_test("std.fs.is_character", |path| {
+                special_type(path, Special::Character)
+            }),
+        )
+        .value(
+            "is_fifo",
+            path_test("std.fs.is_fifo", |path| special_type(path, Special::Fifo)),
+        )
+        .value(
+            "is_socket",
+            path_test("std.fs.is_socket", |path| {
+                special_type(path, Special::Socket)
+            }),
+        )
+        .value("stat", path_function("std.fs.stat", stat))
+        .value("size", path_function("std.fs.size", size))
+        .function(cwd_frost())
+        .value("list", path_function("std.fs.list", list))
+        .function(glob_frost())
+        .value(
+            "list_recursively",
+            path_function("std.fs.list_recursively", list_recursively),
+        )
+        .value("mkdir", path_function("std.fs.mkdir", mkdir))
+        .value("move", two_path_function("std.fs.move", move_path))
+        .value("copy", two_path_function("std.fs.copy", copy))
+        .value("symlink", two_path_function("std.fs.symlink", symlink))
+        .value("read_link", path_function("std.fs.read_link", read_link))
+        .value("remove", path_function("std.fs.remove", remove))
+        .value(
+            "remove_recursively",
+            path_function("std.fs.remove_recursively", remove_recursively),
+        )
+        .function(concat_frost())
+        .value("stem", path_part("std.fs.stem", Path::file_stem))
+        .function(extension_frost())
+        .value("filename", path_part("std.fs.filename", Path::file_name))
+        .value(
+            "parent",
+            path_part("std.fs.parent", |path| path.parent().map(Path::as_os_str)),
+        )
+        .build()
 }
 
 /// The path in a String argument.
@@ -213,17 +221,22 @@ fn canonical(name: &str, path: &Path) -> FrostResult {
     path_value(name, &canonical)
 }
 
-#[frost_fn(name = "fs.cwd")]
-fn cwd() -> FrostResult {
+#[frost_fn]
+fn cwd(#[frost(ctx)] ctx: &mut NativeCtx<'_>) -> FrostResult {
+    let name = ctx.name();
     let cwd = std::env::current_dir()
-        .map_err(|err| FrostError::from_string(format!("Function fs.cwd failed: {err}")))?;
-    path_value("fs.cwd", &cwd)
+        .map_err(|err| FrostError::from_string(format!("Function {name} failed: {err}")))?;
+    path_value(name, &cwd)
 }
 
-#[frost_fn(name = "fs.concat")]
-fn concat(base: FrostString, path: FrostString) -> FrostResult {
+#[frost_fn]
+fn concat(
+    #[frost(ctx)] ctx: &mut NativeCtx<'_>,
+    base: FrostString,
+    path: FrostString,
+) -> FrostResult {
     let joined = path_arg(&base).join(path_arg(&path));
-    path_value("fs.concat", &joined)
+    path_value(ctx.name(), &joined)
 }
 
 /// A function returning the part of a path `part` picks, or the empty String
@@ -235,7 +248,7 @@ fn path_part(name: &'static str, part: fn(&Path) -> Option<&std::ffi::OsStr>) ->
     })
 }
 
-#[frost_fn(name = "fs.extension")]
+#[frost_fn]
 fn extension(path: FrostString) -> Value {
     match path_arg(&path).extension() {
         // The extension is UTF-8: it is part of a String.
@@ -470,18 +483,23 @@ impl Default for GlobOptions {
 }
 
 /// `glob(pattern, options?)`: the paths that `pattern` matches, sorted.
-#[frost_fn(name = "fs.glob")]
-fn glob(pattern: FrostString, options: Optional<FrostMap>) -> FrostResult {
+#[frost_fn]
+fn glob(
+    #[frost(ctx)] ctx: &mut NativeCtx<'_>,
+    pattern: FrostString,
+    options: Optional<FrostMap>,
+) -> FrostResult {
+    let name = ctx.name();
     let options = match options {
         Optional(Some(options)) => from_value(Value::from(options)).map_err(|err| {
             FrostError::from_string(format!(
-                "Function fs.glob requires valid options: {}",
+                "Function {name} requires valid options: {}",
                 err.message()
             ))
         })?,
         Optional(None) => GlobOptions::default(),
     };
-    glob_paths(&pattern, &options)
+    glob_paths(name, &pattern, &options)
 }
 
 /// One component of a glob pattern.
@@ -495,12 +513,11 @@ enum GlobStep<'a> {
     AnyDirectories,
 }
 
-/// The paths `pattern` matches.
-fn glob_paths(pattern: &str, options: &GlobOptions) -> FrostResult {
-    const NAME: &str = "fs.glob";
+/// The paths `pattern` matches, for the function named `function`.
+fn glob_paths(function: &str, pattern: &str, options: &GlobOptions) -> FrostResult {
     let invalid = |err: glob::PatternError| {
         FrostError::from_string(format!(
-            "Function {NAME} got an invalid pattern {}: {err}",
+            "Function {function} got an invalid pattern {}: {err}",
             Value::from(pattern).to_debug_string()
         ))
     };
@@ -529,6 +546,7 @@ fn glob_paths(pattern: &str, options: &GlobOptions) -> FrostResult {
     }
 
     let mut glob = Glob {
+        function,
         hidden: options.hidden,
         match_options: glob::MatchOptions {
             case_sensitive: options.case_sensitive,
@@ -549,17 +567,19 @@ fn glob_paths(pattern: &str, options: &GlobOptions) -> FrostResult {
     // Different ways through two `**`s can reach the same path.
     found.sort();
     found.dedup();
-    sorted_paths(NAME, found)
+    sorted_paths(function, found)
 }
 
 /// A glob search in progress.
-struct Glob {
+struct Glob<'a> {
+    /// The name of the function searching, for errors.
+    function: &'a str,
     hidden: bool,
     match_options: glob::MatchOptions,
     found: Vec<PathBuf>,
 }
 
-impl Glob {
+impl Glob<'_> {
     /// Finds what `steps` match from `path`.
     fn expand(&mut self, path: PathBuf, steps: &[GlobStep]) -> Result<(), FrostError> {
         let Some((step, rest)) = steps.split_first() else {
@@ -574,7 +594,7 @@ impl Glob {
                 }
             }
             GlobStep::Wildcard(pattern) => {
-                for entry in glob_entries(&path)? {
+                for entry in glob_entries(self.function, &path)? {
                     if pattern.matches_with(&entry.name, self.match_options) {
                         self.expand(entry.path, rest)?;
                     }
@@ -582,7 +602,7 @@ impl Glob {
             }
             GlobStep::AnyDirectories => {
                 self.expand(path.clone(), rest)?;
-                for entry in glob_entries(&path)? {
+                for entry in glob_entries(self.function, &path)? {
                     // Never through a symlink, which could loop.
                     let hidden = entry.name.starts_with('.');
                     if entry.is_real_directory && (self.hidden || !hidden) {
@@ -604,9 +624,9 @@ struct GlobEntry {
 }
 
 /// The entries of `dir`, the current directory if empty. A path that is not a
-/// directory, or one the process cannot read, has none.
-fn glob_entries(dir: &Path) -> Result<Vec<GlobEntry>, FrostError> {
-    const NAME: &str = "fs.glob";
+/// directory, or one the process cannot read, has none. `function` names the
+/// function searching, for errors.
+fn glob_entries(function: &str, dir: &Path) -> Result<Vec<GlobEntry>, FrostError> {
     let on_disk = if dir.as_os_str().is_empty() {
         Path::new(".")
     } else {
@@ -624,13 +644,13 @@ fn glob_entries(dir: &Path) -> Result<Vec<GlobEntry>, FrostError> {
         {
             return Ok(Vec::new());
         }
-        Err(err) => return Err(io_error(NAME, on_disk, &err)),
+        Err(err) => return Err(io_error(function, on_disk, &err)),
     };
     read.map(|entry| {
-        let entry = entry.map_err(|err| io_error(NAME, on_disk, &err))?;
+        let entry = entry.map_err(|err| io_error(function, on_disk, &err))?;
         let path = dir.join(entry.file_name());
         let Ok(name) = entry.file_name().into_string() else {
-            return Err(not_utf8(NAME, &path));
+            return Err(not_utf8(function, &path));
         };
         Ok(GlobEntry {
             name,

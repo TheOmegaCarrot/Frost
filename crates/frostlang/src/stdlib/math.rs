@@ -9,7 +9,7 @@ use std::f64::consts;
 
 use crate::native::{Numeric, Optional};
 use crate::{
-    FrostError, FrostFloat, FrostResult, FrostString, SpecialFloat, StdlibModule, Value,
+    FrostError, FrostFloat, FrostResult, FrostString, NativeCtx, SpecialFloat, StdlibModule, Value,
     frost_closure, frost_fn,
 };
 
@@ -20,46 +20,43 @@ use crate::{
 ///
 /// It only computes: it reads and changes nothing outside the script.
 pub fn math() -> StdlibModule {
-    StdlibModule::new(
-        "math",
-        Value::map([
-            ("sqrt", float_function("math.sqrt", f64::sqrt)),
-            ("cbrt", float_function("math.cbrt", f64::cbrt)),
-            ("pow", pow_frost()),
-            ("exp", float_function("math.exp", f64::exp)),
-            ("exp2", float_function("math.exp2", f64::exp2)),
-            ("expm1", float_function("math.expm1", f64::exp_m1)),
-            ("log", float_function("math.log", f64::ln)),
-            ("log1p", float_function("math.log1p", f64::ln_1p)),
-            ("log2", float_function("math.log2", f64::log2)),
-            ("log10", float_function("math.log10", f64::log10)),
-            ("sin", float_function("math.sin", f64::sin)),
-            ("cos", float_function("math.cos", f64::cos)),
-            ("tan", float_function("math.tan", f64::tan)),
-            ("asin", float_function("math.asin", f64::asin)),
-            ("acos", float_function("math.acos", f64::acos)),
-            ("atan", float_function("math.atan", f64::atan)),
-            ("atan2", binary_float_function("math.atan2", f64::atan2)),
-            ("sinh", float_function("math.sinh", f64::sinh)),
-            ("cosh", float_function("math.cosh", f64::cosh)),
-            ("tanh", float_function("math.tanh", f64::tanh)),
-            ("asinh", float_function("math.asinh", f64::asinh)),
-            ("acosh", float_function("math.acosh", f64::acosh)),
-            ("atanh", float_function("math.atanh", f64::atanh)),
-            ("round", rounding_function("math.round", f64::round)),
-            ("ceil", rounding_function("math.ceil", f64::ceil)),
-            ("floor", rounding_function("math.floor", f64::floor)),
-            ("trunc", rounding_function("math.trunc", f64::trunc)),
-            ("abs", abs_frost()),
-            ("min", min_max("math.min", i64::min, f64::min)),
-            ("max", min_max("math.max", i64::max, f64::max)),
-            ("hypot", hypot_frost()),
-            ("clamp", clamp_frost()),
-            ("lerp", lerp_frost()),
-            ("special_float", special_float_frost()),
-            ("nums", nums()),
-        ]),
-    )
+    StdlibModule::builder("math")
+        .value("sqrt", float_function("std.math.sqrt", f64::sqrt))
+        .value("cbrt", float_function("std.math.cbrt", f64::cbrt))
+        .function(pow_frost())
+        .value("exp", float_function("std.math.exp", f64::exp))
+        .value("exp2", float_function("std.math.exp2", f64::exp2))
+        .value("expm1", float_function("std.math.expm1", f64::exp_m1))
+        .value("log", float_function("std.math.log", f64::ln))
+        .value("log1p", float_function("std.math.log1p", f64::ln_1p))
+        .value("log2", float_function("std.math.log2", f64::log2))
+        .value("log10", float_function("std.math.log10", f64::log10))
+        .value("sin", float_function("std.math.sin", f64::sin))
+        .value("cos", float_function("std.math.cos", f64::cos))
+        .value("tan", float_function("std.math.tan", f64::tan))
+        .value("asin", float_function("std.math.asin", f64::asin))
+        .value("acos", float_function("std.math.acos", f64::acos))
+        .value("atan", float_function("std.math.atan", f64::atan))
+        .value("atan2", binary_float_function("std.math.atan2", f64::atan2))
+        .value("sinh", float_function("std.math.sinh", f64::sinh))
+        .value("cosh", float_function("std.math.cosh", f64::cosh))
+        .value("tanh", float_function("std.math.tanh", f64::tanh))
+        .value("asinh", float_function("std.math.asinh", f64::asinh))
+        .value("acosh", float_function("std.math.acosh", f64::acosh))
+        .value("atanh", float_function("std.math.atanh", f64::atanh))
+        .value("round", rounding_function("std.math.round", f64::round))
+        .value("ceil", rounding_function("std.math.ceil", f64::ceil))
+        .value("floor", rounding_function("std.math.floor", f64::floor))
+        .value("trunc", rounding_function("std.math.trunc", f64::trunc))
+        .function(abs_frost())
+        .value("min", min_max("std.math.min", i64::min, f64::min))
+        .value("max", min_max("std.math.max", i64::max, f64::max))
+        .function(hypot_frost())
+        .function(clamp_frost())
+        .function(lerp_frost())
+        .function(special_float_frost())
+        .value("nums", nums())
+        .build()
 }
 
 /// `result`, which `function` computed from `args`, as a Float, if it is finite.
@@ -109,19 +106,25 @@ fn rounding_function(name: &'static str, round: fn(f64) -> f64) -> Value {
     })
 }
 
-#[frost_fn(name = "math.abs")]
-fn abs(#[frost(unnamed)] x: Numeric) -> FrostResult {
+#[frost_fn]
+fn abs(#[frost(ctx)] ctx: &mut NativeCtx<'_>, #[frost(unnamed)] x: Numeric) -> FrostResult {
+    let name = ctx.name();
     match x {
         Numeric::Int(i) => i.checked_abs().map(Value::Int).ok_or_else(|| {
-            FrostError::from_string(format!("Function math.abs has no Int result for {i}"))
+            FrostError::from_string(format!("Function {name} has no Int result for {i}"))
         }),
-        Numeric::Float(f) => finite("math.abs", f.get().abs(), &[x]),
+        Numeric::Float(f) => finite(name, f.get().abs(), &[x]),
     }
 }
 
 /// `pow`: an Int of an Int base and a non-negative Int exponent, else a Float.
-#[frost_fn(name = "math.pow")]
-fn pow(#[frost(unnamed)] base: Numeric, #[frost(unnamed)] exponent: Numeric) -> FrostResult {
+#[frost_fn]
+fn pow(
+    #[frost(ctx)] ctx: &mut NativeCtx<'_>,
+    #[frost(unnamed)] base: Numeric,
+    #[frost(unnamed)] exponent: Numeric,
+) -> FrostResult {
+    let name = ctx.name();
     match (base, exponent) {
         (Numeric::Int(base), Numeric::Int(exponent)) if exponent >= 0 => {
             let result = match u32::try_from(exponent) {
@@ -135,12 +138,12 @@ fn pow(#[frost(unnamed)] base: Numeric, #[frost(unnamed)] exponent: Numeric) -> 
             };
             result.map(Value::Int).ok_or_else(|| {
                 FrostError::from_string(format!(
-                    "Function math.pow has no Int result for {base}, {exponent}"
+                    "Function {name} has no Int result for {base}, {exponent}"
                 ))
             })
         }
         _ => finite(
-            "math.pow",
+            name,
             base.to_f64().powf(exponent.to_f64()),
             &[base, exponent],
         ),
@@ -158,25 +161,32 @@ fn min_max(name: &'static str, ints: fn(i64, i64) -> i64, floats: fn(f64, f64) -
     )
 }
 
-#[frost_fn(name = "math.hypot")]
+#[frost_fn]
 fn hypot(
+    #[frost(ctx)] ctx: &mut NativeCtx<'_>,
     #[frost(unnamed)] a: Numeric,
     #[frost(unnamed)] b: Numeric,
     #[frost(unnamed)] c: Optional<Numeric>,
 ) -> FrostResult {
     let norm = a.to_f64().hypot(b.to_f64());
     match c {
-        Optional(None) => finite("math.hypot", norm, &[a, b]),
-        Optional(Some(c)) => finite("math.hypot", norm.hypot(c.to_f64()), &[a, b, c]),
+        Optional(None) => finite(ctx.name(), norm, &[a, b]),
+        Optional(Some(c)) => finite(ctx.name(), norm.hypot(c.to_f64()), &[a, b, c]),
     }
 }
 
-#[frost_fn(name = "math.clamp")]
-fn clamp(value: Numeric, lo: Numeric, hi: Numeric) -> FrostResult {
+#[frost_fn]
+fn clamp(
+    #[frost(ctx)] ctx: &mut NativeCtx<'_>,
+    value: Numeric,
+    lo: Numeric,
+    hi: Numeric,
+) -> FrostResult {
+    let name = ctx.name();
     let (lo_value, hi_value) = (Value::from(lo), Value::from(hi));
     if lo_value.compare(&hi_value)?.is_gt() {
         return Err(FrostError::from_string(format!(
-            "Function math.clamp requires argument 2 (lo) to be at most argument 3 (hi), \
+            "Function {name} requires argument 2 (lo) to be at most argument 3 (hi), \
              got {} and {}",
             lo_value.to_frost_string(),
             hi_value.to_frost_string()
@@ -187,20 +197,20 @@ fn clamp(value: Numeric, lo: Numeric, hi: Numeric) -> FrostResult {
             Ok(Value::Int(value.clamp(lo, hi)))
         }
         _ => finite(
-            "math.clamp",
+            name,
             value.to_f64().clamp(lo.to_f64(), hi.to_f64()),
             &[value, lo, hi],
         ),
     }
 }
 
-#[frost_fn(name = "math.lerp")]
-fn lerp(a: Numeric, b: Numeric, t: Numeric) -> FrostResult {
+#[frost_fn]
+fn lerp(#[frost(ctx)] ctx: &mut NativeCtx<'_>, a: Numeric, b: Numeric, t: Numeric) -> FrostResult {
     let [a_float, b_float, t_float] = [a, b, t].map(Numeric::to_f64);
     // Weighting both ends, rather than `a + (b - a) * t`, makes `t` of 0 and
     // 1 give exactly `a` and `b`.
     finite(
-        "math.lerp",
+        ctx.name(),
         (1.0 - t_float) * a_float + t_float * b_float,
         &[a, b, t],
     )
@@ -208,7 +218,7 @@ fn lerp(a: Numeric, b: Numeric, t: Numeric) -> FrostResult {
 
 /// The [`SpecialFloat`] Opaque that a String names as Rust parses floats (`NaN`,
 /// `inf`, `-infinity`, in any case), or Null for any other String.
-#[frost_fn(name = "math.special_float")]
+#[frost_fn]
 fn special_float(#[frost(unnamed)] text: FrostString) -> Value {
     // A name has no digits; a numeral such as `1e999` parses as infinite too.
     let is_name = !text.contains(|c: char| c.is_ascii_digit());

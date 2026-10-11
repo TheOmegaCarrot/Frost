@@ -31,12 +31,12 @@ use crate::{FrostError, FrostOpaque, FrostResult, FrostType, OpaqueHandle, TypeS
 ///     }
 /// }
 ///
-/// #[frost_fn(name = "point")]
+/// #[frost_fn]
 /// fn point(x: f64, y: f64) -> Opaque<Point> {
 ///     Opaque::new(Point(x, y))
 /// }
 ///
-/// #[frost_fn(name = "norm")]
+/// #[frost_fn]
 /// fn norm(point: Opaque<Point>) -> f64 {
 ///     point.0.hypot(point.1)
 /// }

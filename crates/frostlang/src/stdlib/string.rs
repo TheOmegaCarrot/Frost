@@ -11,7 +11,8 @@ use std::io::Cursor;
 use crate::native::{Flat, Optional};
 use crate::stdlib::stream::{self, Buffer, Kind};
 use crate::{
-    FrostBytes, FrostError, FrostResult, FrostString, StdlibModule, Value, frost_closure, frost_fn,
+    FrostBytes, FrostError, FrostResult, FrostString, NativeCtx, StdlibModule, Value,
+    frost_closure, frost_fn,
 };
 
 /// The `std.string` module: finding and counting substrings, stripping a prefix
@@ -20,49 +21,46 @@ use crate::{
 ///
 /// It reaches nothing outside the script.
 pub fn string() -> StdlibModule {
-    StdlibModule::new(
-        "string",
-        Value::map([
-            ("index_of", index_of("string.index_of", First)),
-            ("last_index_of", index_of("string.last_index_of", Last)),
-            ("count", count_frost()),
-            ("chars", chars_frost()),
-            ("is_empty", is_empty_frost()),
-            ("strip_prefix", strip_prefix_frost()),
-            ("strip_suffix", strip_suffix_frost()),
-            ("is_ascii", is_ascii_frost()),
-            ("is_digit", classifier("string.is_digit", is_digit)),
-            (
-                "is_alpha",
-                classifier("string.is_alpha", char::is_alphabetic),
-            ),
-            (
-                "is_alphanumeric",
-                classifier("string.is_alphanumeric", char::is_alphanumeric),
-            ),
-            (
-                "is_whitespace",
-                classifier("string.is_whitespace", char::is_whitespace),
-            ),
-            (
-                "is_uppercase",
-                case_classifier("string.is_uppercase", char::is_uppercase),
-            ),
-            (
-                "is_lowercase",
-                case_classifier("string.is_lowercase", char::is_lowercase),
-            ),
-            ("pad_left", padder("string.pad_left", Side::Left)),
-            ("pad_right", padder("string.pad_right", Side::Right)),
-            ("center", padder("string.center", Side::Both)),
-            ("reader", reader_frost()),
-            ("writer", writer_frost()),
-        ]),
-    )
+    StdlibModule::builder("string")
+        .value("index_of", index_of("std.string.index_of", First))
+        .value("last_index_of", index_of("std.string.last_index_of", Last))
+        .function(count_frost())
+        .function(chars_frost())
+        .function(is_empty_frost())
+        .function(strip_prefix_frost())
+        .function(strip_suffix_frost())
+        .function(is_ascii_frost())
+        .value("is_digit", classifier("std.string.is_digit", is_digit))
+        .value(
+            "is_alpha",
+            classifier("std.string.is_alpha", char::is_alphabetic),
+        )
+        .value(
+            "is_alphanumeric",
+            classifier("std.string.is_alphanumeric", char::is_alphanumeric),
+        )
+        .value(
+            "is_whitespace",
+            classifier("std.string.is_whitespace", char::is_whitespace),
+        )
+        .value(
+            "is_uppercase",
+            case_classifier("std.string.is_uppercase", char::is_uppercase),
+        )
+        .value(
+            "is_lowercase",
+            case_classifier("std.string.is_lowercase", char::is_lowercase),
+        )
+        .value("pad_left", padder("std.string.pad_left", Side::Left))
+        .value("pad_right", padder("std.string.pad_right", Side::Right))
+        .value("center", padder("std.string.center", Side::Both))
+        .function(reader_frost())
+        .function(writer_frost())
+        .build()
 }
 
 /// `reader(content)`: a reader over a String or Bytes.
-#[frost_fn(name = "string.reader")]
+#[frost_fn]
 fn reader(#[frost(unnamed)] content: Flat) -> Value {
     let content = match content {
         Flat::String(text) => FrostBytes::from(text),
@@ -72,7 +70,7 @@ fn reader(#[frost(unnamed)] content: Flat) -> Value {
 }
 
 /// `writer()`: a writer that keeps what is written, for reading back.
-#[frost_fn(name = "string.writer")]
+#[frost_fn]
 fn writer() -> Value {
     stream::writer(Buffer::default(), Kind::Buffer)
 }
@@ -121,13 +119,18 @@ fn index_of(name: &'static str, occurrence: Occurrence) -> Value {
     )
 }
 
-#[frost_fn(name = "string.count")]
-fn count(#[frost(unnamed)] haystack: Flat, #[frost(unnamed)] needle: Flat) -> FrostResult {
+#[frost_fn]
+fn count(
+    #[frost(ctx)] ctx: &mut NativeCtx<'_>,
+    #[frost(unnamed)] haystack: Flat,
+    #[frost(unnamed)] needle: Flat,
+) -> FrostResult {
     let (haystack, needle) = (haystack.as_bytes(), needle.as_bytes());
     if needle.is_empty() {
-        return Err(FrostError::from_static(
-            "Function string.count requires argument 2 to be non-empty",
-        ));
+        return Err(FrostError::from_string(format!(
+            "Function {} requires argument 2 to be non-empty",
+            ctx.name()
+        )));
     }
     // Counting by byte is exact for text too: a UTF-8 needle matches only
     // at character boundaries of UTF-8 text.
@@ -140,7 +143,7 @@ fn count(#[frost(unnamed)] haystack: Flat, #[frost(unnamed)] needle: Flat) -> Fr
     Ok(Value::Int(count))
 }
 
-#[frost_fn(name = "string.is_empty")]
+#[frost_fn]
 fn is_empty(#[frost(unnamed)] content: Flat) -> bool {
     content.as_bytes().is_empty()
 }
@@ -170,7 +173,7 @@ fn strip(text: Flat, affix: &Flat, strip_text: Strip<str>, strip_bytes: Strip<[u
     }
 }
 
-#[frost_fn(name = "string.strip_prefix")]
+#[frost_fn]
 fn strip_prefix(#[frost(unnamed)] text: Flat, prefix: Flat) -> Value {
     strip(
         text,
@@ -180,7 +183,7 @@ fn strip_prefix(#[frost(unnamed)] text: Flat, prefix: Flat) -> Value {
     )
 }
 
-#[frost_fn(name = "string.strip_suffix")]
+#[frost_fn]
 fn strip_suffix(#[frost(unnamed)] text: Flat, suffix: Flat) -> Value {
     strip(
         text,
@@ -192,14 +195,14 @@ fn strip_suffix(#[frost(unnamed)] text: Flat, suffix: Flat) -> Value {
 
 // --- Characters ---
 
-#[frost_fn(name = "string.chars")]
+#[frost_fn]
 fn chars(#[frost(unnamed)] text: FrostString) -> Value {
     text.chars().map(|c| Value::from(c.to_string())).collect()
 }
 
 /// `is_ascii(text)`: whether a String holds nothing outside ASCII. Unlike the
 /// other classifiers, it passes the empty String, which holds nothing at all.
-#[frost_fn(name = "string.is_ascii")]
+#[frost_fn]
 fn is_ascii(#[frost(unnamed)] text: FrostString) -> bool {
     text.is_ascii()
 }

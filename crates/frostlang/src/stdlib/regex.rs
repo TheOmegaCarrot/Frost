@@ -24,25 +24,25 @@ use crate::{
 ///
 /// It only computes: it reads and changes nothing outside the script.
 pub fn regex() -> StdlibModule {
-    StdlibModule::new(
-        "regex",
-        Value::map([
-            ("matches", one_text("regex.matches", Pattern::matches)),
-            ("contains", one_text("regex.contains", Pattern::contains)),
-            ("replace", replacer("regex.replace", Count::All)),
-            (
-                "replace_first",
-                replacer("regex.replace_first", Count::First),
-            ),
-            ("replace_with", replace_with_frost()),
-            ("split", one_text("regex.split", Pattern::split)),
-            (
-                "scan_matches",
-                one_text("regex.scan_matches", Pattern::scan_matches),
-            ),
-            ("compile", compile_frost()),
-        ]),
-    )
+    StdlibModule::builder("regex")
+        .value("matches", one_text("std.regex.matches", Pattern::matches))
+        .value(
+            "contains",
+            one_text("std.regex.contains", Pattern::contains),
+        )
+        .value("replace", replacer("std.regex.replace", Count::All))
+        .value(
+            "replace_first",
+            replacer("std.regex.replace_first", Count::First),
+        )
+        .function(replace_with_frost())
+        .value("split", one_text("std.regex.split", Pattern::split))
+        .value(
+            "scan_matches",
+            one_text("std.regex.scan_matches", Pattern::scan_matches),
+        )
+        .function(compile_frost())
+        .build()
 }
 
 // --- Compiled patterns ---
@@ -204,22 +204,22 @@ fn replacer(name: &'static str, count: Count) -> Value {
     })
 }
 
-#[frost_fn(name = "regex.replace_with")]
+#[frost_fn]
 fn replace_with(
     #[frost(ctx)] ctx: &mut NativeCtx<'_>,
     #[frost(unnamed)] text: FrostString,
     pattern: FrostString,
     callback: Function,
 ) -> FrostResult {
-    let pattern = Pattern::new("regex.replace_with", &pattern)?;
+    let pattern = Pattern::new(ctx.name(), &pattern)?;
     pattern.replace_with(ctx, &text, &callback)
 }
 
 // --- compile: the same functions over one compiled pattern ---
 
-#[frost_fn(name = "regex.compile")]
-fn compile(pattern: FrostString) -> FrostResult {
-    let pattern = Pattern::new("regex.compile", &pattern)?;
+#[frost_fn]
+fn compile(#[frost(ctx)] ctx: &mut NativeCtx<'_>, pattern: FrostString) -> FrostResult {
+    let pattern = Pattern::new(ctx.name(), &pattern)?;
     Ok(Bundle::new(Compiled(pattern))
         .with(Compiled::frost_functions)
         .build())

@@ -70,7 +70,7 @@ fn matches_rejects_a_pattern_that_is_invalid_alone() {
     // Wrapped to anchor it, this would become a valid pattern of another meaning.
     let raised = script("re.matches('b', 'a)|(?:b')").raises();
     assert!(
-        raised.starts_with(r#"Function regex.matches got an invalid pattern "a)|(?:b": "#),
+        raised.starts_with(r#"Function std.regex.matches got an invalid pattern "a)|(?:b": "#),
         "{raised}"
     );
 }
@@ -235,7 +235,7 @@ fn an_invalid_pattern_is_an_error() {
         assert_raises(&[(
             &format!("re.{call}"),
             &format!(
-                r#"Function regex.{name} got an invalid pattern "(": found open group without closing ')'"#
+                r#"Function std.regex.{name} got an invalid pattern "(": found open group without closing ')'"#
             ),
         )]);
     }
@@ -247,12 +247,12 @@ fn every_function_checks_its_arguments() {
         assert_raises(&[
             (
                 &format!("re.{function}(x'61', 'a')"),
-                &format!("Function regex.{function} requires String as argument 1, got Bytes"),
+                &format!("Function std.regex.{function} requires String as argument 1, got Bytes"),
             ),
             (
                 &format!("re.{function}('a', 1)"),
                 &format!(
-                    "Function regex.{function} requires String as argument 2 (pattern), got Int"
+                    "Function std.regex.{function} requires String as argument 2 (pattern), got Int"
                 ),
             ),
         ]);
@@ -262,18 +262,18 @@ fn every_function_checks_its_arguments() {
         assert_raises(&[
             (
                 &format!("re.{function}(x'61', 'a', 'b')"),
-                &format!("Function regex.{function} requires String as argument 1, got Bytes"),
+                &format!("Function std.regex.{function} requires String as argument 1, got Bytes"),
             ),
             (
                 &format!("re.{function}('a', 1, 'b')"),
                 &format!(
-                    "Function regex.{function} requires String as argument 2 (pattern), got Int"
+                    "Function std.regex.{function} requires String as argument 2 (pattern), got Int"
                 ),
             ),
             (
                 &format!("re.{function}('a', 'a', 1)"),
                 &format!(
-                    "Function regex.{function} requires String as argument 3 (replacement), got Int"
+                    "Function std.regex.{function} requires String as argument 3 (replacement), got Int"
                 ),
             ),
         ]);
@@ -282,15 +282,15 @@ fn every_function_checks_its_arguments() {
     assert_raises(&[
         (
             "re.replace_with(x'61', 'a', id)",
-            "Function regex.replace_with requires String as argument 1, got Bytes",
+            "Function std.regex.replace_with requires String as argument 1, got Bytes",
         ),
         (
             "re.replace_with('a', 1, id)",
-            "Function regex.replace_with requires String as argument 2 (pattern), got Int",
+            "Function std.regex.replace_with requires String as argument 2 (pattern), got Int",
         ),
         (
             "re.replace_with('a', 'a', 'b')",
-            "Function regex.replace_with requires Function as argument 3 (callback), got String",
+            "Function std.regex.replace_with requires Function as argument 3 (callback), got String",
         ),
     ]);
     assert_arity("replace_with", 3, &[0, 2, 4]);
@@ -394,12 +394,12 @@ fn a_compiled_pattern_is_reusable() {
 fn compile_rejects_an_invalid_pattern() {
     assert_raises(&[(
         "re.compile('(')",
-        r#"Function regex.compile got an invalid pattern "(": found open group without closing ')'"#,
+        r#"Function std.regex.compile got an invalid pattern "(": found open group without closing ')'"#,
     )]);
     // Valid only if wrapped, as `matches` wraps it: still invalid.
     let raised = script("re.compile('a)|(?:b')").raises();
     assert!(
-        raised.starts_with(r#"Function regex.compile got an invalid pattern "a)|(?:b": "#),
+        raised.starts_with(r#"Function std.regex.compile got an invalid pattern "a)|(?:b": "#),
         "{raised}"
     );
 }
@@ -474,7 +474,7 @@ fn compiled_functions_check_their_arguments() {
         ),
         (
             "re.compile(1)",
-            "Function regex.compile requires String as argument 1 (pattern), got Int",
+            "Function std.regex.compile requires String as argument 1 (pattern), got Int",
         ),
     ]);
     assert_arity("compile", 1, &[0, 2]);

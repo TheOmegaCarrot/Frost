@@ -5,18 +5,18 @@ use crate::{FrostError, FrostMap, FrostString, NativeCtx, Value, frost_fn};
 
 /// `print(value)`: hand the value, as `to_string` renders it, to the Vm's print
 /// sink. Returns Null.
-#[frost_fn(name = "print")]
+#[frost_fn]
 pub(super) fn print(#[frost(ctx)] ctx: &mut NativeCtx<'_>, #[frost(unnamed)] value: Value) {
     ctx.vm.config.print_sink.print(&value.to_frost_string());
 }
 
-#[frost_fn(name = "mformat")]
+#[frost_fn]
 pub(super) fn mformat(format: FrostString, replacements: FrostMap) -> Result<String, FrostError> {
     fill_template(&format, &replacements)
 }
 
 /// `mprint(format, replacements)`: print what `mformat` returns. Returns Null.
-#[frost_fn(name = "mprint")]
+#[frost_fn]
 pub(super) fn mprint(
     #[frost(ctx)] ctx: &mut NativeCtx<'_>,
     format: FrostString,

@@ -2,7 +2,7 @@
 //! over shared state, from the functions of an impl block.
 
 use proc_macro2::{Span, TokenStream};
-use quote::{format_ident, quote, quote_spanned};
+use quote::{format_ident, quote};
 use syn::ext::IdentExt;
 use syn::parse::Parser;
 use syn::{
@@ -11,7 +11,7 @@ use syn::{
 
 use crate::errors::Errors;
 use crate::inputs::Inputs;
-use crate::{private, result, signature};
+use crate::{private, result, signature, usable_name};
 
 /// Which builder a bundle macro adds to.
 #[derive(Clone, Copy, PartialEq, Eq)]
@@ -284,18 +284,6 @@ fn adder(kind: Kind, block: &ItemImpl, group: &Group, functions: &[Function]) ->
             }
         }
     }
-}
-
-/// A compile-time check that `name` is usable as a Frost identifier, failing
-/// with `message` at `span`.
-fn usable_name(name: &str, span: Span, message: &str) -> TokenStream {
-    let frostlang = private(span);
-    quote_spanned!(span=>
-        const _: () = ::core::assert!(
-            #frostlang::is_identifier_like_and_not_keyword(#name),
-            #message,
-        );
-    )
 }
 
 impl Function {

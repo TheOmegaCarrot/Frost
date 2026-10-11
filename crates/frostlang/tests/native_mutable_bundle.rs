@@ -203,7 +203,7 @@ fn a_held_state_still_offers_the_native_context() {
     let named = MutableBundle::new(())
         .function("thing.whoami", NO_PARAMS, |ctx, _| {
             let state = ctx.lock()?;
-            Ok(state.native().name())
+            Ok(state.native().name().to_string())
         })
         .build();
     let result = Script::new("t.whoami()").capture("t", named).run();

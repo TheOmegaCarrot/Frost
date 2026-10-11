@@ -77,7 +77,7 @@ fn call_type_check() -> Value {
 ///
 /// The argument array is interpreted the same as `call`, only the result shape differs.
 /// This is Frost's catch primitive, surfaced as a native.
-#[frost_fn(name = "try_call")]
+#[frost_fn]
 pub(super) fn try_call(
     #[frost(ctx)] ctx: &mut NativeCtx<'_>,
     #[frost(unnamed)] function: Function,
@@ -124,7 +124,7 @@ pub(super) fn error_global() -> Value {
     )
 }
 
-#[frost_fn(name = "and_then")]
+#[frost_fn]
 pub(super) fn and_then(
     #[frost(ctx)] ctx: &mut NativeCtx<'_>,
     #[frost(unnamed)] value: Value,
@@ -136,7 +136,7 @@ pub(super) fn and_then(
     }
 }
 
-#[frost_fn(name = "or_else")]
+#[frost_fn]
 pub(super) fn or_else(
     #[frost(ctx)] ctx: &mut NativeCtx<'_>,
     #[frost(unnamed)] value: Value,

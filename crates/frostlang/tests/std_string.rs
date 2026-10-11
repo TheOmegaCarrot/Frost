@@ -104,7 +104,7 @@ fn count_counts_occurrences_that_do_not_overlap() {
     for needle in ["''", "x''"] {
         assert_raises(&[(
             &format!("str.count('abc', {needle})"),
-            "Function string.count requires argument 2 to be non-empty",
+            "Function std.string.count requires argument 2 to be non-empty",
         )]);
     }
 }
@@ -126,13 +126,13 @@ fn searches_check_their_arguments() {
             (
                 &format!("str.{function}(1, 'a')"),
                 &format!(
-                    "Function string.{function} requires String or Bytes as argument 1, got Int"
+                    "Function std.string.{function} requires String or Bytes as argument 1, got Int"
                 ),
             ),
             (
                 &format!("str.{function}('a', ['a'])"),
                 &format!(
-                    "Function string.{function} requires String or Bytes as argument 2, got Array"
+                    "Function std.string.{function} requires String or Bytes as argument 2, got Array"
                 ),
             ),
         ]);
@@ -140,7 +140,7 @@ fn searches_check_their_arguments() {
     }
     assert_raises(&[(
         "str.is_empty([])",
-        "Function string.is_empty requires String or Bytes as argument 1, got Array",
+        "Function std.string.is_empty requires String or Bytes as argument 1, got Array",
     )]);
     assert_arity("is_empty", "1", &[0, 2]);
 }
@@ -242,7 +242,7 @@ fn stripping_checks_its_arguments() {
             (
                 format!("str.{function}{call}"),
                 format!(
-                    "Function string.{function} requires String or Bytes as {position}, got {got}"
+                    "Function std.string.{function} requires String or Bytes as {position}, got {got}"
                 ),
             )
         };
@@ -366,7 +366,7 @@ fn text_functions_take_only_a_string() {
     for function in CLASSIFIERS.iter().chain(&["chars"]) {
         assert_raises(&[(
             &format!("str.{function}(x'61')"),
-            &format!("Function string.{function} requires String as argument 1, got Bytes"),
+            &format!("Function std.string.{function} requires String as argument 1, got Bytes"),
         )]);
         assert_arity(function, "1", &[0, 2]);
     }
@@ -403,7 +403,7 @@ fn padding_leaves_a_string_already_wide_enough() {
         assert_raises(&[(
             &format!("str.{function}('hello', 3, 'ab')"),
             &format!(
-                "Function string.{function} requires a single character as argument 3 \
+                "Function std.string.{function} requires a single character as argument 3 \
                  (fill), got \"ab\""
             ),
         )]);
@@ -428,7 +428,7 @@ fn padding_past_what_memory_can_address_is_an_error() {
     for function in ["pad_left", "pad_right", "center"] {
         assert_raises(&[(
             &format!(r"str.{function}('a', 9223372036854775807, '\u{{e9}}')"),
-            &format!("Function string.{function} cannot make a String that long"),
+            &format!("Function std.string.{function} cannot make a String that long"),
         )]);
     }
 }
@@ -440,38 +440,38 @@ fn padding_checks_its_arguments() {
             (
                 &format!("str.{function}('a', -1)"),
                 &format!(
-                    "Function string.{function} requires argument 2 (width) to be at least 0, \
+                    "Function std.string.{function} requires argument 2 (width) to be at least 0, \
                      got -1"
                 ),
             ),
             (
                 &format!("str.{function}('a', 3, '')"),
                 &format!(
-                    "Function string.{function} requires a single character as argument 3 \
+                    "Function std.string.{function} requires a single character as argument 3 \
                      (fill), got \"\""
                 ),
             ),
             (
                 &format!("str.{function}('a', 3, 'ab')"),
                 &format!(
-                    "Function string.{function} requires a single character as argument 3 \
+                    "Function std.string.{function} requires a single character as argument 3 \
                      (fill), got \"ab\""
                 ),
             ),
             (
                 &format!("str.{function}(x'61', 3)"),
-                &format!("Function string.{function} requires String as argument 1, got Bytes"),
+                &format!("Function std.string.{function} requires String as argument 1, got Bytes"),
             ),
             (
                 &format!("str.{function}('a', 3.0)"),
                 &format!(
-                    "Function string.{function} requires Int as argument 2 (width), got Float"
+                    "Function std.string.{function} requires Int as argument 2 (width), got Float"
                 ),
             ),
             (
                 &format!("str.{function}('a', 3, 0)"),
                 &format!(
-                    "Function string.{function} requires String as argument 3 (fill), got Int"
+                    "Function std.string.{function} requires String as argument 3 (fill), got Int"
                 ),
             ),
         ]);
@@ -719,7 +719,7 @@ fn stream_functions_check_their_arguments() {
     assert_raises(&[
         (
             "str.reader(1)",
-            "Function string.reader requires String or Bytes as argument 1, got Int",
+            "Function std.string.reader requires String or Bytes as argument 1, got Int",
         ),
         (
             "str.writer().write(1)",

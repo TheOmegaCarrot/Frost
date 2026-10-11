@@ -7,7 +7,8 @@
 
 use crate::native::{Flat, Numeric};
 use crate::{
-    FrostArray, FrostError, FrostResult, FrostString, StdlibModule, Value, frost_closure, frost_fn,
+    FrostArray, FrostError, FrostResult, FrostString, NativeCtx, StdlibModule, Value,
+    frost_closure, frost_fn,
 };
 
 /// The `std.encoding` module: formatting and parsing integers in bases 2 to 36,
@@ -17,45 +18,33 @@ use crate::{
 ///
 /// It only computes: it reads and changes nothing outside the script.
 pub fn encoding() -> StdlibModule {
-    StdlibModule::new(
-        "encoding",
-        Value::map([
-            ("fmt_int", fmt_int_frost()),
-            ("parse_int", parse_int_frost()),
-            ("fmt_fixed", fmt_fixed_frost()),
-            ("to_ints", to_ints_frost()),
-            ("from_ints", from_ints_frost()),
-            (
-                "b64",
-                Value::map([
-                    ("encode", b64_encoder("encoding.b64.encode", &STANDARD)),
-                    ("decode", b64_decoder("encoding.b64.decode", &STANDARD)),
-                    (
-                        "urlencode",
-                        b64_encoder("encoding.b64.urlencode", &URL_SAFE),
-                    ),
-                    (
-                        "urldecode",
-                        b64_decoder("encoding.b64.urldecode", &URL_SAFE),
-                    ),
-                ]),
-            ),
-            (
-                "hex",
-                Value::map([
-                    ("encode", hex_encode_frost()),
-                    ("decode", hex_decode_frost()),
-                ]),
-            ),
-            (
-                "url",
-                Value::map([
-                    ("encode", url_encode_frost()),
-                    ("decode", url_decode_frost()),
-                ]),
-            ),
-        ]),
-    )
+    StdlibModule::builder("encoding")
+        .function(fmt_int_frost())
+        .function(parse_int_frost())
+        .function(fmt_fixed_frost())
+        .function(to_ints_frost())
+        .function(from_ints_frost())
+        .module("b64", |b64| {
+            b64.value("encode", b64_encoder("std.encoding.b64.encode", &STANDARD))
+                .value("decode", b64_decoder("std.encoding.b64.decode", &STANDARD))
+                .value(
+                    "urlencode",
+                    b64_encoder("std.encoding.b64.urlencode", &URL_SAFE),
+                )
+                .value(
+                    "urldecode",
+                    b64_decoder("std.encoding.b64.urldecode", &URL_SAFE),
+                )
+        })
+        .module("hex", |hex| {
+            hex.function(hex_encode_frost())
+                .function(hex_decode_frost())
+        })
+        .module("url", |url| {
+            url.function(url_encode_frost())
+                .function(url_decode_frost())
+        })
+        .build()
 }
 
 // --- Integers ---
@@ -70,9 +59,13 @@ fn base_arg(function: &str, base: i64) -> Result<u32, FrostError> {
     }
 }
 
-#[frost_fn(name = "encoding.fmt_int")]
-fn fmt_int(number: i64, base: i64) -> Result<String, FrostError> {
-    let base = base_arg("encoding.fmt_int", base)?;
+#[frost_fn]
+fn fmt_int(
+    #[frost(ctx)] ctx: &mut NativeCtx<'_>,
+    number: i64,
+    base: i64,
+) -> Result<String, FrostError> {
+    let base = base_arg(ctx.name(), base)?;
 
     // Digits come out least significant first; the magnitude of
     // `i64::MIN` fits only unsigned.
@@ -92,9 +85,9 @@ fn fmt_int(number: i64, base: i64) -> Result<String, FrostError> {
     Ok(digits.into_iter().rev().collect())
 }
 
-#[frost_fn(name = "encoding.parse_int")]
-fn parse_int(text: FrostString, base: i64) -> FrostResult {
-    let base = base_arg("encoding.parse_int", base)?;
+#[frost_fn]
+fn parse_int(#[frost(ctx)] ctx: &mut NativeCtx<'_>, text: FrostString, base: i64) -> FrostResult {
+    let base = base_arg(ctx.name(), base)?;
     Ok(i64::from_str_radix(&text, base).map_or(Value::Null, Value::Int))
 }
 
@@ -105,12 +98,17 @@ fn parse_int(text: FrostString, base: i64) -> FrostResult {
 /// exact binary value, with exact ties going to the even digit, so `2.675`
 /// (stored just below) gives `2.67` and `0.125` gives `0.12`. An Int is written
 /// exactly. A result of zero never has a sign.
-#[frost_fn(name = "encoding.fmt_fixed")]
-fn fmt_fixed(number: Numeric, places: i64) -> Result<String, FrostError> {
+#[frost_fn]
+fn fmt_fixed(
+    #[frost(ctx)] ctx: &mut NativeCtx<'_>,
+    number: Numeric,
+    places: i64,
+) -> Result<String, FrostError> {
     // Rust's formatting accepts at most `u16::MAX` places.
     let Ok(places) = u16::try_from(places) else {
         return Err(FrostError::from_string(format!(
-            "Function encoding.fmt_fixed requires places from 0 to {}, got {places}",
+            "Function {} requires places from 0 to {}, got {places}",
+            ctx.name(),
             u16::MAX
         )));
     };
@@ -131,7 +129,7 @@ fn fmt_fixed(number: Numeric, places: i64) -> Result<String, FrostError> {
 
 // --- Bytes as Ints ---
 
-#[frost_fn(name = "encoding.to_ints")]
+#[frost_fn]
 fn to_ints(#[frost(unnamed)] content: Flat) -> Value {
     content
         .as_bytes()
@@ -140,8 +138,11 @@ fn to_ints(#[frost(unnamed)] content: Flat) -> Value {
         .collect()
 }
 
-#[frost_fn(name = "encoding.from_ints")]
-fn from_ints(#[frost(unnamed)] ints: FrostArray) -> FrostResult {
+#[frost_fn]
+fn from_ints(
+    #[frost(ctx)] ctx: &mut NativeCtx<'_>,
+    #[frost(unnamed)] ints: FrostArray,
+) -> FrostResult {
     // Every element's type is checked before any value: a wrong type is an
     // error wherever it is, while a value outside 0 to 255 makes the result Null.
     if let Some((i, element)) = ints
@@ -150,7 +151,8 @@ fn from_ints(#[frost(unnamed)] ints: FrostArray) -> FrostResult {
         .find(|(_, element)| element.as_int().is_none())
     {
         return Err(FrostError::from_string(format!(
-            "Function encoding.from_ints requires an Array of Ints, but element {i} is {}",
+            "Function {} requires an Array of Ints, but element {i} is {}",
+            ctx.name(),
             element.type_name()
         )));
     }
@@ -276,7 +278,7 @@ fn hex_digit(c: u8) -> Option<u8> {
         .map(|digit| u8::try_from(digit).expect("a hex digit is below 16"))
 }
 
-#[frost_fn(name = "encoding.hex.encode")]
+#[frost_fn(name = "encode")]
 fn hex_encode(#[frost(unnamed)] content: Flat) -> String {
     let bytes = content.as_bytes();
     let mut out = String::with_capacity(bytes.len() * 2);
@@ -288,7 +290,7 @@ fn hex_encode(#[frost(unnamed)] content: Flat) -> String {
     out
 }
 
-#[frost_fn(name = "encoding.hex.decode")]
+#[frost_fn(name = "decode")]
 fn hex_decode(#[frost(unnamed)] content: Flat) -> Value {
     let text = content.as_bytes();
     if !text.len().is_multiple_of(2) {
@@ -308,7 +310,7 @@ fn is_unreserved(byte: u8) -> bool {
     byte.is_ascii_alphanumeric() || matches!(byte, b'-' | b'.' | b'_' | b'~')
 }
 
-#[frost_fn(name = "encoding.url.encode")]
+#[frost_fn(name = "encode")]
 fn url_encode(#[frost(unnamed)] content: Flat) -> String {
     let bytes = content.as_bytes();
     let mut out = String::with_capacity(bytes.len());
@@ -327,7 +329,7 @@ fn url_encode(#[frost(unnamed)] content: Flat) -> String {
     out
 }
 
-#[frost_fn(name = "encoding.url.decode")]
+#[frost_fn(name = "decode")]
 fn url_decode(#[frost(unnamed)] content: Flat) -> Value {
     let text = content.as_bytes();
     let mut bytes = Vec::with_capacity(text.len());

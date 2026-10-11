@@ -33,7 +33,7 @@ fn ulid_arg(id: &Flat) -> Option<Ulid> {
     id_arg(id, parse, Ulid::from_bytes)
 }
 
-#[frost_fn(name = "uuid.ulid.new")]
+#[frost_fn]
 pub(crate) fn new() -> Value {
     // The generator holds only the last ULID made, which a panic cannot
     // leave half-written.
@@ -46,18 +46,18 @@ pub(crate) fn new() -> Value {
     text(ulid)
 }
 
-#[frost_fn(name = "uuid.ulid.to_bytes")]
+#[frost_fn]
 pub(crate) fn to_bytes(text: FrostString) -> Value {
     parse(text.as_str()).map_or(Value::Null, |ulid| ulid.to_bytes().as_slice().into())
 }
 
-#[frost_fn(name = "uuid.ulid.to_string")]
+#[frost_fn]
 pub(crate) fn to_string(bytes: FrostBytes) -> Value {
     <[u8; 16]>::try_from(&bytes[..]).map_or(Value::Null, |bytes| text(Ulid::from_bytes(bytes)))
 }
 
 /// `timestamp(id)`: the Unix time in milliseconds that a ULID records.
-#[frost_fn(name = "uuid.ulid.timestamp")]
+#[frost_fn]
 pub(crate) fn timestamp(id: Flat) -> Value {
     ulid_arg(&id).map_or(Value::Null, |ulid| millis_value(ulid.timestamp_ms()))
 }

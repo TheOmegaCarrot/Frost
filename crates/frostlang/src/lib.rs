@@ -51,25 +51,33 @@ pub use vm::{
 
 /// Makes a Frost function from a Rust function.
 ///
-/// `#[frost_fn(name = ...)]` keeps the function as written,
-/// and adds its maker: a function named after it plus `_frost`,
+/// `#[frost_fn]` keeps the function as written,
+/// and adds its maker: a `const fn` named after it plus `_frost`,
 /// with the same visibility,
-/// that returns it as a Frost function [`Value`].
-/// `name` is required: the Frost function's name, which errors show,
-/// given as any constant `&'static str` expression.
+/// that returns its [`NativeDef`](native::NativeDef),
+/// which builds the Frost function [`Value`] and names it.
 ///
 /// ```
 /// use frostlang::{Value, frost_fn};
 ///
-/// #[frost_fn(name = "text.repeat")]
+/// #[frost_fn]
 /// fn repeat(text: String, times: usize) -> String {
 ///     text.repeat(times)
 /// }
 ///
-/// let repeat_for_frost: Value = repeat_frost();
+/// let repeat_for_frost: Value = repeat_frost().build();
 /// // The function stays callable from Rust.
 /// assert_eq!(repeat("ab".to_string(), 2), "abab");
 /// ```
+///
+/// # Base name
+///
+/// The definition's base name is the function's name, less any `r#`.
+/// `#[frost_fn(name = "...")]` gives another, as a string literal,
+/// as when two functions in one Rust module are both `encode` to Frost,
+/// placed in different modules.
+/// Either way, it is a Frost identifier, not a keyword;
+/// this is checked at compile time.
 ///
 /// # Parameters
 ///
@@ -95,7 +103,7 @@ pub use vm::{
 /// ```
 /// use frostlang::{Value, frost_fn};
 ///
-/// #[frost_fn(name = "is_empty")]
+/// #[frost_fn]
 /// fn is_empty(#[frost(unnamed, types = Flat | Array)] sequence: Value) -> bool {
 ///     match sequence {
 ///         Value::String(text) => text.is_empty(),
@@ -119,7 +127,7 @@ pub use vm::{
 /// use frostlang::native::Function;
 /// use frostlang::{FrostResult, NativeCtx, Value, frost_fn};
 ///
-/// #[frost_fn(name = "apply_twice")]
+/// #[frost_fn]
 /// fn apply_twice(
 ///     #[frost(ctx)] ctx: &mut NativeCtx<'_>,
 ///     function: Function,
@@ -129,7 +137,7 @@ pub use vm::{
 ///     ctx.invoke(&function, [once])
 /// }
 ///
-/// let apply_twice_for_frost: Value = apply_twice_frost();
+/// let apply_twice_for_frost: Value = apply_twice_frost().build();
 /// ```
 ///
 /// # Result
@@ -335,7 +343,20 @@ pub mod __private {
     pub use crate::native::{Args, Bundle, FrostArg, IntoNativeResult, MutableBundle};
     pub use crate::{FrostType, NativeCtx, Params, Value, is_identifier_like_and_not_keyword};
 
+    pub use crate::native::NativeDef;
+
+    use std::borrow::Cow;
+
     use crate::{Param, TypeSet};
+
+    /// The definition of a native, which `make` builds under a given name,
+    /// for `#[frost_fn]`.
+    pub const fn native_def(
+        base_name: &'static str,
+        make: fn(Cow<'static, str>) -> Value,
+    ) -> NativeDef {
+        NativeDef::new(base_name, make)
+    }
 
     /// `param`, narrowed to accept only `types`, for a `#[frost(types = ...)]`
     /// marker. Evaluated in a const context, it fails to compile when `types`

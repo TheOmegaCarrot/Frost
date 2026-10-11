@@ -1431,7 +1431,7 @@ impl Vm {
             vm.native_arg_pool.push(buf);
         };
 
-        if let Err(err) = Self::check_arity(native.arity, buf.len(), native.name) {
+        if let Err(err) = Self::check_arity(native.arity, buf.len(), &native.name) {
             reclaim(self, buf);
             return Err(err);
         }

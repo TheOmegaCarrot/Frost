@@ -2,6 +2,7 @@
 //! [`NativeFunction`], the [`NativeCtx`] handle back into the VM,
 //! and the [`Value::native`] / [`Value::checked_native`] constructors.
 
+use std::borrow::Cow;
 use std::sync::Arc;
 
 use crate::native::{ArgSite, Function};
@@ -26,7 +27,7 @@ pub struct NativeCtx<'a> {
     pub(super) function: &'a NativeFunction,
 }
 
-impl NativeCtx<'_> {
+impl<'a> NativeCtx<'a> {
     /// Calls a Frost function from inside a native function.
     ///
     /// Returns the callee's result, or the error it raised. The Vm is restored before
@@ -111,10 +112,10 @@ impl NativeCtx<'_> {
 
     /// Calls a Frost function as [`invoke`](Self::invoke) does, with arguments by
     /// reference.
-    pub fn invoke_ref<'a>(
+    pub fn invoke_ref<'v>(
         &mut self,
         function: &Function,
-        args: impl IntoIterator<Item = &'a Value>,
+        args: impl IntoIterator<Item = &'v Value>,
     ) -> FrostResult {
         self.invoke(function, args.into_iter().cloned())
     }
@@ -126,8 +127,11 @@ impl NativeCtx<'_> {
     }
 
     /// The running native's name.
-    pub fn name(&self) -> &'static str {
-        self.function.name
+    ///
+    /// It borrows the native, not this context, so it outlives a move of the
+    /// context.
+    pub fn name(&self) -> &'a str {
+        &self.function.name
     }
 }
 
@@ -151,7 +155,7 @@ impl<F> NativeFn for F where
 pub struct NativeFunction {
     pub(super) arity: Arity,
     pub(super) function: Box<dyn NativeFn>,
-    pub(super) name: &'static str,
+    pub(super) name: Cow<'static, str>,
 }
 
 impl std::fmt::Debug for NativeFunction {
@@ -168,13 +172,13 @@ impl NativeFunction {
     ///
     /// Most callers want [`Value::native`] instead: it wraps the result in a [`Value`].
     /// Reach for this only when you specifically need a bare [`NativeFunction`].
-    pub fn new<F>(name: &'static str, arity: Arity, function: F) -> Self
+    pub fn new<F>(name: impl Into<Cow<'static, str>>, arity: Arity, function: F) -> Self
     where
         F: NativeFn,
     {
         Self {
             arity,
-            name,
+            name: name.into(),
             function: Box::new(function),
         }
     }
@@ -185,13 +189,13 @@ impl NativeFunction {
     ///
     /// Most callers want [`Value::checked_native`] instead: it wraps the result in a [`Value`].
     /// Reach for this only when you specifically need a bare [`NativeFunction`].
-    pub fn checked<F>(name: &'static str, params: Params, body: F) -> Self
+    pub fn checked<F>(name: impl Into<Cow<'static, str>>, params: Params, body: F) -> Self
     where
         F: NativeFn,
     {
         Self {
             arity: params.arity(),
-            name,
+            name: name.into(),
             function: Box::new(move |ctx, args| {
                 ctx.check_args(args, &params)?;
                 body(ctx, args)
@@ -217,7 +221,7 @@ impl NativeFunction {
                 };
                 if !param.accepts(arg) {
                     return Err(
-                        ArgSite::argument(self.name, i, param.name).wrong_type(param.types(), arg)
+                        ArgSite::argument(&self.name, i, param.name).wrong_type(param.types(), arg)
                     );
                 }
             }
@@ -226,8 +230,8 @@ impl NativeFunction {
     }
 
     /// The function's name, as reported in errors and backtraces.
-    pub fn name(&self) -> &'static str {
-        self.name
+    pub fn name(&self) -> &str {
+        &self.name
     }
 
     /// The number of arguments the function accepts.
@@ -248,7 +252,7 @@ impl Value {
     /// Reach for this when the function validates its own arguments: it accepts
     /// flexible types, or which types are valid depends on more than one argument at
     /// once. To have argument types checked for you, use [`Value::checked_native`].
-    pub fn native<F>(name: &'static str, arity: Arity, function: F) -> Value
+    pub fn native<F>(name: impl Into<Cow<'static, str>>, arity: Arity, function: F) -> Value
     where
         F: NativeFn,
     {
@@ -265,7 +269,7 @@ impl Value {
     /// This is the usual way to expose a Rust function to Frost. Use [`Value::native`]
     /// when the valid types can't be described per parameter and the function must
     /// check them itself.
-    pub fn checked_native<F>(name: &'static str, params: Params, body: F) -> Value
+    pub fn checked_native<F>(name: impl Into<Cow<'static, str>>, params: Params, body: F) -> Value
     where
         F: NativeFn,
     {

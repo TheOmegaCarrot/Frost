@@ -5,7 +5,7 @@ use frostlang::frost_fn;
 struct Counter(i64);
 
 impl Counter {
-    #[frost_fn(name = "counter.get")]
+    #[frost_fn]
     fn get(&self) -> i64 {
         self.0
     }

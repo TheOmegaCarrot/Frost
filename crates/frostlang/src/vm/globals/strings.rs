@@ -76,7 +76,7 @@ fn split_text<'a>(text: &'a str, delimiter: &str) -> Vec<&'a str> {
     text.split(delimiter).collect()
 }
 
-#[frost_fn(name = "split")]
+#[frost_fn]
 pub(super) fn split(#[frost(unnamed)] target: Flat, delimiter: Flat) -> Value {
     match content([&target, &delimiter]) {
         Content::Text([text, delimiter]) => split_text(text, delimiter)
@@ -112,7 +112,7 @@ fn split_text_once<'a>(text: &'a str, delimiter: &str) -> Option<(&'a str, &'a s
     text.split_once(delimiter)
 }
 
-#[frost_fn(name = "split_once")]
+#[frost_fn]
 pub(super) fn split_once(#[frost(unnamed)] target: Flat, delimiter: Flat) -> Value {
     let pieces =
         match content([&target, &delimiter]) {
@@ -124,12 +124,12 @@ pub(super) fn split_once(#[frost(unnamed)] target: Flat, delimiter: Flat) -> Val
     pieces.unwrap_or(Value::Null)
 }
 
-#[frost_fn(name = "lines")]
+#[frost_fn]
 pub(super) fn lines(#[frost(unnamed)] text: FrostString) -> Value {
     text.lines().map(Value::from).collect()
 }
 
-#[frost_fn(name = "join")]
+#[frost_fn]
 pub(super) fn join(
     #[frost(unnamed)] elements: FrostArray,
     separator: Flat,
@@ -157,7 +157,7 @@ pub(super) fn join(
     })
 }
 
-#[frost_fn(name = "replace")]
+#[frost_fn]
 pub(super) fn replace(#[frost(unnamed)] target: Flat, find: Flat, replacement: Flat) -> Value {
     // An empty `find` matches nothing, so the target comes back unchanged
     // (though as Bytes, if the other arguments make the result Bytes).
@@ -209,7 +209,7 @@ pub(super) fn to_lower_global() -> Value {
     text_op("to_lower", |text| text.to_lowercase().into())
 }
 
-#[frost_fn(name = "contains")]
+#[frost_fn]
 pub(super) fn contains(#[frost(unnamed)] haystack: Flat, #[frost(unnamed)] needle: Flat) -> bool {
     match content([&haystack, &needle]) {
         Content::Text([text, needle]) => text.contains(needle),
@@ -217,7 +217,7 @@ pub(super) fn contains(#[frost(unnamed)] haystack: Flat, #[frost(unnamed)] needl
     }
 }
 
-#[frost_fn(name = "starts_with")]
+#[frost_fn]
 pub(super) fn starts_with(
     #[frost(unnamed)] haystack: Flat,
     #[frost(unnamed)] needle: Flat,
@@ -225,7 +225,7 @@ pub(super) fn starts_with(
     haystack.as_bytes().starts_with(needle.as_bytes())
 }
 
-#[frost_fn(name = "ends_with")]
+#[frost_fn]
 pub(super) fn ends_with(#[frost(unnamed)] haystack: Flat, #[frost(unnamed)] needle: Flat) -> bool {
     haystack.as_bytes().ends_with(needle.as_bytes())
 }

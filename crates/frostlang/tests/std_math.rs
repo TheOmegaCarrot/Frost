@@ -197,7 +197,7 @@ fn pow_of_ints_past_the_int_range_is_an_error() {
     ] {
         assert_raises(&[(
             call,
-            &format!("Function math.pow has no Int result for {args}"),
+            &format!("Function std.math.pow has no Int result for {args}"),
         )]);
     }
 }
@@ -228,7 +228,7 @@ fn pow_rejects_a_non_number_beside_an_int() {
     ] {
         assert_raises(&[(
             call,
-            &format!("Function math.pow requires Numeric as argument {position}, got {got}"),
+            &format!("Function std.math.pow requires Numeric as argument {position}, got {got}"),
         )]);
     }
 }
@@ -269,7 +269,7 @@ fn a_result_that_is_not_finite_is_an_error() {
         assert_raises(&[(
             &format!("math.{call}"),
             &format!(
-                "Function math.{name} has no finite result for {}",
+                "Function std.math.{name} has no finite result for {}",
                 rendered.join(", ")
             ),
         )]);
@@ -322,11 +322,11 @@ fn rounding_past_the_int_range_is_an_error() {
         assert_raises(&[
             (
                 &format!("math.{function}(math.nums.maxfloat)"),
-                &format!("Function math.{function} has no Int result for {max}"),
+                &format!("Function std.math.{function} has no Int result for {max}"),
             ),
             (
                 &format!("math.{function}(math.nums.minfloat)"),
-                &format!("Function math.{function} has no Int result for {min}"),
+                &format!("Function std.math.{function} has no Int result for {min}"),
             ),
         ]);
     }
@@ -346,7 +346,7 @@ fn rounding_past_the_int_range_is_an_error() {
         ]);
         assert_raises(&[(
             &format!("math.{function}(9223372036854775808.0)"),
-            &format!("Function math.{function} has no Int result for {past}"),
+            &format!("Function std.math.{function} has no Int result for {past}"),
         )]);
     }
 }
@@ -364,7 +364,7 @@ fn abs_keeps_the_type() {
     ]);
     assert_raises(&[(
         "math.abs(math.nums.minint)",
-        "Function math.abs has no Int result for -9223372036854775808",
+        "Function std.math.abs has no Int result for -9223372036854775808",
     )]);
 }
 
@@ -409,7 +409,7 @@ fn clamp_keeps_a_value_within_bounds() {
     ]);
     assert_raises(&[(
         "math.clamp(1, 3, 0)",
-        "Function math.clamp requires argument 2 (lo) to be at most argument 3 (hi), got 3 and 0",
+        "Function std.math.clamp requires argument 2 (lo) to be at most argument 3 (hi), got 3 and 0",
     )]);
 }
 
@@ -422,7 +422,7 @@ fn clamp_compares_int_bounds_exactly() {
     )]);
     assert_raises(&[(
         "math.clamp(0, 9223372036854775807, 9223372036854775806)",
-        "Function math.clamp requires argument 2 (lo) to be at most argument 3 (hi), \
+        "Function std.math.clamp requires argument 2 (lo) to be at most argument 3 (hi), \
          got 9223372036854775807 and 9223372036854775806",
     )]);
 }
@@ -525,11 +525,11 @@ fn special_float_requires_a_string() {
     assert_raises(&[
         (
             "math.special_float(x'6e616e')",
-            "Function math.special_float requires String as argument 1, got Bytes",
+            "Function std.math.special_float requires String as argument 1, got Bytes",
         ),
         (
             "math.special_float(1.5)",
-            "Function math.special_float requires String as argument 1, got Float",
+            "Function std.math.special_float requires String as argument 1, got Float",
         ),
     ]);
     assert_arity("special_float", "1", &[0, 2]);
@@ -542,14 +542,14 @@ fn every_function_requires_numbers() {
     for &(name, _, _, _) in UNARY {
         assert_raises(&[(
             &format!("math.{name}('1')"),
-            &format!("Function math.{name} requires Numeric as argument 1, got String"),
+            &format!("Function std.math.{name} requires Numeric as argument 1, got String"),
         )]);
         assert_arity(name, "1", &[0, 2]);
     }
     for name in ["round", "ceil", "floor", "trunc", "abs"] {
         assert_raises(&[(
             &format!("math.{name}(null)"),
-            &format!("Function math.{name} requires Numeric as argument 1, got Null"),
+            &format!("Function std.math.{name} requires Numeric as argument 1, got Null"),
         )]);
         assert_arity(name, "1", &[0, 2]);
     }
@@ -557,11 +557,11 @@ fn every_function_requires_numbers() {
         assert_raises(&[
             (
                 &format!("math.{name}(true, 1)"),
-                &format!("Function math.{name} requires Numeric as argument 1, got Bool"),
+                &format!("Function std.math.{name} requires Numeric as argument 1, got Bool"),
             ),
             (
                 &format!("math.{name}(1, [1])"),
-                &format!("Function math.{name} requires Numeric as argument 2, got Array"),
+                &format!("Function std.math.{name} requires Numeric as argument 2, got Array"),
             ),
         ]);
         assert_arity(name, "2", &[0, 1, 3]);
@@ -569,39 +569,39 @@ fn every_function_requires_numbers() {
     assert_raises(&[
         (
             "math.hypot('1', 2)",
-            "Function math.hypot requires Numeric as argument 1, got String",
+            "Function std.math.hypot requires Numeric as argument 1, got String",
         ),
         (
             "math.hypot(1, '2')",
-            "Function math.hypot requires Numeric as argument 2, got String",
+            "Function std.math.hypot requires Numeric as argument 2, got String",
         ),
         (
             "math.hypot(1, 2, '3')",
-            "Function math.hypot requires Numeric as argument 3, got String",
+            "Function std.math.hypot requires Numeric as argument 3, got String",
         ),
         (
             "math.clamp('1', 0, 3)",
-            "Function math.clamp requires Numeric as argument 1 (value), got String",
+            "Function std.math.clamp requires Numeric as argument 1 (value), got String",
         ),
         (
             "math.clamp(1, [0], 3)",
-            "Function math.clamp requires Numeric as argument 2 (lo), got Array",
+            "Function std.math.clamp requires Numeric as argument 2 (lo), got Array",
         ),
         (
             "math.clamp(1, 0, '3')",
-            "Function math.clamp requires Numeric as argument 3 (hi), got String",
+            "Function std.math.clamp requires Numeric as argument 3 (hi), got String",
         ),
         (
             "math.lerp(true, 1, 0)",
-            "Function math.lerp requires Numeric as argument 1 (a), got Bool",
+            "Function std.math.lerp requires Numeric as argument 1 (a), got Bool",
         ),
         (
             "math.lerp(0, {}, 0)",
-            "Function math.lerp requires Numeric as argument 2 (b), got Map",
+            "Function std.math.lerp requires Numeric as argument 2 (b), got Map",
         ),
         (
             "math.lerp(0, 1, null)",
-            "Function math.lerp requires Numeric as argument 3 (t), got Null",
+            "Function std.math.lerp requires Numeric as argument 3 (t), got Null",
         ),
     ]);
     assert_arity("hypot", "between 2 and 3", &[0, 1, 4]);

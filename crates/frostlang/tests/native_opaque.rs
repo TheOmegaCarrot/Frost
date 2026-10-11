@@ -19,17 +19,17 @@ impl FrostOpaque for Point {
     }
 }
 
-#[frost_fn(name = "point")]
+#[frost_fn]
 fn point(x: i64, y: i64) -> Opaque<Point> {
     Opaque::new(Point(x, y))
 }
 
-#[frost_fn(name = "sum")]
+#[frost_fn]
 fn sum(point: Opaque<Point>) -> i64 {
     point.0 + point.1
 }
 
-#[frost_fn(name = "describe")]
+#[frost_fn]
 fn describe(point: Optional<Nullable<Opaque<Point>>>) -> String {
     match point {
         Optional(None) => "omitted".to_string(),
@@ -43,9 +43,9 @@ fn describe(point: Optional<Nullable<Opaque<Point>>>) -> String {
 fn script(source: &str) -> Script {
     let special = SpecialFloat::new(f64::NAN).expect("NaN is special");
     Script::new(source)
-        .capture("point", point_frost())
-        .capture("sum", sum_frost())
-        .capture("describe", describe_frost())
+        .capture("point", point_frost().build())
+        .capture("sum", sum_frost().build())
+        .capture("describe", describe_frost().build())
         .capture("special", Value::opaque(special))
 }
 

@@ -108,7 +108,7 @@ impl Library {
             None => (function.to_string(), function.to_string()),
             Some(module) => (
                 format!("{}.{function}", module.binding),
-                format!("{}.{function}", (module.make)().name()),
+                format!("std.{}.{function}", (module.make)().name()),
             ),
         };
         self.assert_arity_of(&call, &name, expects, counts);

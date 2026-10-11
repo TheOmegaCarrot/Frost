@@ -111,7 +111,7 @@ pub(crate) fn assert_arity(function: &str, expects: impl Display, counts: &[usiz
         assert_eq!(
             raises(&expression),
             format!(
-                "Function uuid.{function} expects {expects} arguments, but was called with {argc}"
+                "Function ext.uuid.{function} expects {expects} arguments, but was called with {argc}"
             ),
             "{expression:?}"
         );

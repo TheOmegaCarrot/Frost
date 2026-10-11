@@ -1,0 +1,23 @@
+error[E0080]: evaluation panicked: a base name must be a Frost identifier, not a keyword: give another with `name = "..."`, not `map`
+ --> tests/frost_fn/fail/name_keyword.rs:7:4
+  |
+7 | fn map() {}
+  |    ^^^ evaluation of `map_frost::_` failed here
+
+error[E0080]: evaluation panicked: a base name must be a Frost identifier, not a keyword: give another with `name = "..."`, not `if`
+ --> tests/frost_fn/fail/name_keyword.rs:9:19
+  |
+9 | #[frost_fn(name = "if")]
+  |                   ^^^^ evaluation of `condition_frost::_` failed here
+
+error[E0080]: evaluation panicked: a base name must be a Frost identifier, not a keyword: give another with `name = "..."`, not `not-an-identifier`
+  --> tests/frost_fn/fail/name_keyword.rs:12:19
+   |
+12 | #[frost_fn(name = "not-an-identifier")]
+   |                   ^^^^^^^^^^^^^^^^^^^ evaluation of `dashed_frost::_` failed here
+
+error[E0080]: evaluation panicked: a base name must be a Frost identifier, not a keyword: give another with `name = "..."`, not `a{b}`
+  --> tests/frost_fn/fail/name_keyword.rs:16:19
+   |
+16 | #[frost_fn(name = "a{b}")]
+   |                   ^^^^^^ evaluation of `braced_frost::_` failed here

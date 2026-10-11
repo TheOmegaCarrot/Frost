@@ -1,0 +1,5 @@
+error: a base name is one segment, with no `.`: where the function is placed gives its path
+ --> tests/frost_fn/fail/name_dotted.rs:5:19
+  |
+5 | #[frost_fn(name = "geometry.area")]
+  |                   ^^^^^^^^^^^^^^^

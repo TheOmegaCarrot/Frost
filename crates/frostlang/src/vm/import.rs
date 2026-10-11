@@ -1,5 +1,6 @@
 use std::{collections::BTreeMap, marker::PhantomData, sync::Arc};
 
+use crate::native::NativeDef;
 use crate::{
     FrostError, MapKey, Value, ValueMap, core::util::identifier::is_identifier_like_and_not_keyword,
 };
@@ -145,16 +146,14 @@ struct Module {
 pub struct StdlibModule(Module);
 
 impl StdlibModule {
-    /// A module imported as `std.{name}`.
-    pub(crate) fn new(name: &'static str, content: Value) -> Self {
-        debug_assert!(
-            is_identifier_like_and_not_keyword(name),
-            "a stdlib module name is identifier-like: {name:?}"
-        );
-        Self(Module {
-            name: name.to_string(),
-            content,
-        })
+    /// A builder for the module imported as `std.{name}`.
+    pub(crate) fn builder(name: &'static str) -> ComponentBuilder<Self> {
+        ComponentBuilder::new(
+            "standard library module",
+            Some("std"),
+            name.to_string(),
+            Self,
+        )
     }
 
     /// The name this module registers under (imported as `std.{name}`).
@@ -298,12 +297,12 @@ impl Extension {
     /// ```
     /// use frostlang::{Extension, Value, frost_fn};
     ///
-    /// #[frost_fn(name = "geometry.area")]
+    /// #[frost_fn]
     /// fn area(width: f64, height: f64) -> f64 {
     ///     width * height
     /// }
     ///
-    /// #[frost_fn(name = "geometry.units.to_cm")]
+    /// #[frost_fn]
     /// fn to_cm(inches: f64) -> f64 {
     ///     inches * 2.54
     /// }
@@ -324,7 +323,7 @@ impl Extension {
     /// If `name` is not a valid name, as for [`new`](Self::new). Take a name
     /// known only at runtime through `new`.
     pub fn builder(name: impl Into<String>) -> ExtensionBuilder {
-        ComponentBuilder::new("extension", name.into(), Extension)
+        ComponentBuilder::new("extension", Some("ext"), name.into(), Extension)
     }
 }
 
@@ -361,51 +360,51 @@ pub type HostComponentBuilder = ComponentBuilder<HostComponent>;
 pub struct ComponentBuilder<T> {
     /// The kind of component, as messages name it, such as `extension`.
     kind: &'static str,
-    /// The component's name, or a nested module's path, as in
+    /// The component's name, or a nested module's path within it, as in
     /// `geometry.units`, for messages.
     name: String,
+    /// The import path of the module being built, as in
+    /// `ext.geometry.units`, which names the functions placed in it.
+    path: String,
     entries: ValueMap,
     /// Makes the component from its name and content.
     make: fn(Module) -> T,
 }
 
 impl<T> ComponentBuilder<T> {
-    /// A builder for the `kind` of component named `name`, made by `make`.
-    /// Panics if `name` is invalid.
-    fn new(kind: &'static str, name: String, make: fn(Module) -> T) -> Self {
+    /// A builder for the `kind` of component named `name`, imported under
+    /// `root` if any, and made by `make`. Panics if `name` is invalid.
+    fn new(kind: &'static str, root: Option<&str>, name: String, make: fn(Module) -> T) -> Self {
         if !is_identifier_like_and_not_keyword(&name) {
             panic!("{}", InvalidComponentName(name));
         }
+        let path = match root {
+            Some(root) => format!("{root}.{name}"),
+            None => name.clone(),
+        };
         Self {
             kind,
             name,
+            path,
             entries: ValueMap::new(),
             make,
         }
     }
 
-    /// Adds `function`, keyed by its name after the last `.`, so a function
-    /// named `geometry.area` is keyed `area`.
+    /// Adds the function `definition` defines, keyed by its
+    /// [`base_name`](NativeDef::base_name), and named by the path it is
+    /// imported by: in the `units` module of the extension `geometry`, a
+    /// function with base name `to_cm` is named `ext.geometry.units.to_cm`.
+    ///
+    /// The name is fixed when the function is built, so renaming the
+    /// component afterwards, as by [`Extension::rename`], leaves it as built.
     ///
     /// # Panics
     ///
-    /// If `function` is not a Frost function, or its key is invalid or taken,
-    /// as for [`value`](Self::value).
-    pub fn function(self, function: Value) -> Self {
-        let name = match &function {
-            Value::NativeFunction(native) => native.name(),
-            Value::Closure(closure) => closure.function.name.as_str(),
-            other => panic!(
-                "{} `{}` takes only a Function through `function`, got {}",
-                self.kind,
-                self.name,
-                other.type_name()
-            ),
-        };
-        let key = name
-            .rsplit_once('.')
-            .map_or(name, |(_, key)| key)
-            .to_string();
+    /// If the key is taken, as for [`value`](Self::value).
+    pub fn function(self, definition: NativeDef) -> Self {
+        let key = definition.base_name();
+        let function = definition.build_named(format!("{}.{key}", self.path));
         self.value(key, function)
     }
 
@@ -444,6 +443,7 @@ impl<T> ComponentBuilder<T> {
         let nested = module(Self {
             kind: self.kind,
             name: format!("{}.{key}", self.name),
+            path: format!("{}.{key}", self.path),
             entries: ValueMap::new(),
             make: self.make,
         });
@@ -516,7 +516,7 @@ impl HostComponent {
     /// If `name` is not a valid name, as for [`new`](Self::new). Take a name
     /// known only at runtime through `new`.
     pub fn builder(name: impl Into<String>) -> HostComponentBuilder {
-        ComponentBuilder::new("host component", name.into(), HostComponent)
+        ComponentBuilder::new("host component", None, name.into(), HostComponent)
     }
 }
 

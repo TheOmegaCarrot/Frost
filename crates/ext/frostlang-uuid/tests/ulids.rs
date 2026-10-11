@@ -196,19 +196,19 @@ fn to_bytes_and_to_string_check_their_argument_types() {
     assert_raises(&[
         (
             "uuid.ulid.to_bytes(x'01563e3ab5d3d6764c61efb99302bd5b')",
-            "Function uuid.ulid.to_bytes requires String as argument 1 (text), got Bytes",
+            "Function ext.uuid.ulid.to_bytes requires String as argument 1 (text), got Bytes",
         ),
         (
             "uuid.ulid.to_bytes(null)",
-            "Function uuid.ulid.to_bytes requires String as argument 1 (text), got Null",
+            "Function ext.uuid.ulid.to_bytes requires String as argument 1 (text), got Null",
         ),
         (
             "uuid.ulid.to_string('01ARZ3NDEKTSV4RRFFQ69G5FAV')",
-            "Function uuid.ulid.to_string requires Bytes as argument 1 (bytes), got String",
+            "Function ext.uuid.ulid.to_string requires Bytes as argument 1 (bytes), got String",
         ),
         (
             "uuid.ulid.to_string({})",
-            "Function uuid.ulid.to_string requires Bytes as argument 1 (bytes), got Map",
+            "Function ext.uuid.ulid.to_string requires Bytes as argument 1 (bytes), got Map",
         ),
     ]);
     assert_arity("ulid.to_bytes", 1, &[0, 2]);
@@ -267,11 +267,11 @@ fn timestamp_checks_its_argument_type() {
     assert_raises(&[
         (
             "uuid.ulid.timestamp(1469922850259)",
-            "Function uuid.ulid.timestamp requires String or Bytes as argument 1 (id), got Int",
+            "Function ext.uuid.ulid.timestamp requires String or Bytes as argument 1 (id), got Int",
         ),
         (
             "uuid.ulid.timestamp(null)",
-            "Function uuid.ulid.timestamp requires String or Bytes as argument 1 (id), got Null",
+            "Function ext.uuid.ulid.timestamp requires String or Bytes as argument 1 (id), got Null",
         ),
     ]);
     assert_arity("ulid.timestamp", 1, &[0, 2]);

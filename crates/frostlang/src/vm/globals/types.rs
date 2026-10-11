@@ -76,7 +76,7 @@ pub(super) fn is_flat_global() -> Value {
     type_predicate("is_flat", FrostType::FLAT)
 }
 
-#[frost_fn(name = "type")]
+#[frost_fn]
 pub(super) fn r#type(#[frost(unnamed)] value: Value) -> &'static str {
     value.type_name()
 }
@@ -93,7 +93,7 @@ pub(super) fn to_string_global() -> Value {
     )
 }
 
-#[frost_fn(name = "pretty")]
+#[frost_fn]
 pub(super) fn pretty(#[frost(unnamed)] value: Value) -> String {
     value.to_pretty_string()
 }
@@ -102,22 +102,22 @@ pub(super) fn pretty(#[frost(unnamed)] value: Value) -> String {
 // other type is a type error, which is distinct from a value of the right type
 // whose content will not convert: that returns Null.
 
-#[frost_fn(name = "to_int")]
+#[frost_fn]
 pub(super) fn to_int(#[frost(unnamed, types = Numeric | String)] value: Value) -> Value {
     value.to_frost_int()
 }
 
-#[frost_fn(name = "to_float")]
+#[frost_fn]
 pub(super) fn to_float(#[frost(unnamed, types = Numeric | String)] value: Value) -> Value {
     value.to_frost_float()
 }
 
-#[frost_fn(name = "to_bytes")]
+#[frost_fn]
 pub(super) fn to_bytes(#[frost(unnamed)] value: Flat) -> Value {
     Value::from(value).to_frost_bytes()
 }
 
-#[frost_fn(name = "from_utf8")]
+#[frost_fn]
 pub(super) fn from_utf8(#[frost(unnamed)] bytes: FrostBytes) -> Value {
     Value::Bytes(bytes).decode_utf8()
 }

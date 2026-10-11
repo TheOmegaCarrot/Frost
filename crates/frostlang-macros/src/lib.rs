@@ -43,3 +43,16 @@ pub fn frost_mutable_bundle(attr: TokenStream, item: TokenStream) -> TokenStream
 fn private(span: proc_macro2::Span) -> proc_macro2::TokenStream {
     quote::quote_spanned!(span=> ::frostlang::__private)
 }
+
+/// A compile-time check that `name` is usable as a Frost identifier, failing
+/// with `message` at `span`.
+fn usable_name(name: &str, span: proc_macro2::Span, message: &str) -> proc_macro2::TokenStream {
+    let frostlang = private(span);
+    quote::quote_spanned!(span=>
+        const _: () = ::core::assert!(
+            #frostlang::is_identifier_like_and_not_keyword(#name),
+            "{}",
+            #message,
+        );
+    )
+}

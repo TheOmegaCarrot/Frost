@@ -131,7 +131,9 @@ fn fmt_int_and_parse_int_require_a_base_from_2_to_36() {
         for base in ["0", "1", "37", "-2"] {
             assert_raises(&[(
                 &format!("enc.{function}({number}, {base})"),
-                &format!("Function encoding.{function} requires a base from 2 to 36, got {base}"),
+                &format!(
+                    "Function std.encoding.{function} requires a base from 2 to 36, got {base}"
+                ),
             )]);
         }
     }
@@ -142,19 +144,19 @@ fn fmt_int_and_parse_int_check_their_arguments() {
     assert_raises(&[
         (
             "enc.fmt_int(1.0, 10)",
-            "Function encoding.fmt_int requires Int as argument 1 (number), got Float",
+            "Function std.encoding.fmt_int requires Int as argument 1 (number), got Float",
         ),
         (
             "enc.fmt_int(1, '10')",
-            "Function encoding.fmt_int requires Int as argument 2 (base), got String",
+            "Function std.encoding.fmt_int requires Int as argument 2 (base), got String",
         ),
         (
             "enc.parse_int(x'31', 10)",
-            "Function encoding.parse_int requires String as argument 1 (text), got Bytes",
+            "Function std.encoding.parse_int requires String as argument 1 (text), got Bytes",
         ),
         (
             "enc.parse_int('1', null)",
-            "Function encoding.parse_int requires Int as argument 2 (base), got Null",
+            "Function std.encoding.parse_int requires Int as argument 2 (base), got Null",
         ),
     ]);
     assert_arity("fmt_int", 2, &[0, 1, 3]);
@@ -256,7 +258,9 @@ fn fmt_fixed_takes_places_from_0_to_65535() {
         for number in ["1", "1.0"] {
             assert_raises(&[(
                 &format!("enc.fmt_fixed({number}, {places})"),
-                &format!("Function encoding.fmt_fixed requires places from 0 to 65535, got {got}"),
+                &format!(
+                    "Function std.encoding.fmt_fixed requires places from 0 to 65535, got {got}"
+                ),
             )]);
         }
     }
@@ -320,7 +324,9 @@ fn fmt_fixed_checks_its_arguments() {
     ] {
         assert_raises(&[(
             call,
-            &format!("Function encoding.fmt_fixed requires {requires} as {position}, got {got}"),
+            &format!(
+                "Function std.encoding.fmt_fixed requires {requires} as {position}, got {got}"
+            ),
         )]);
     }
     assert_arity("fmt_fixed", 2, &[0, 1, 3]);
@@ -354,16 +360,16 @@ fn from_ints_requires_ints_before_it_checks_their_range() {
     assert_raises(&[
         (
             "enc.from_ints([1, 'a'])",
-            "Function encoding.from_ints requires an Array of Ints, but element 1 is String",
+            "Function std.encoding.from_ints requires an Array of Ints, but element 1 is String",
         ),
         (
             "enc.from_ints([1.0])",
-            "Function encoding.from_ints requires an Array of Ints, but element 0 is Float",
+            "Function std.encoding.from_ints requires an Array of Ints, but element 0 is Float",
         ),
         // An Int out of range before it does not make this Null.
         (
             "enc.from_ints([256, null])",
-            "Function encoding.from_ints requires an Array of Ints, but element 1 is Null",
+            "Function std.encoding.from_ints requires an Array of Ints, but element 1 is Null",
         ),
     ]);
 }
@@ -373,11 +379,11 @@ fn to_ints_and_from_ints_check_their_argument() {
     assert_raises(&[
         (
             "enc.to_ints([1])",
-            "Function encoding.to_ints requires String or Bytes as argument 1, got Array",
+            "Function std.encoding.to_ints requires String or Bytes as argument 1, got Array",
         ),
         (
             "enc.from_ints('ab')",
-            "Function encoding.from_ints requires Array as argument 1, got String",
+            "Function std.encoding.from_ints requires Array as argument 1, got String",
         ),
     ]);
     assert_arity("to_ints", 1, &[0, 2]);
@@ -470,7 +476,7 @@ fn b64_functions_check_their_argument() {
         assert_raises(&[(
             &format!("enc.b64.{function}(1)"),
             &format!(
-                "Function encoding.b64.{function} requires String or Bytes as argument 1, got Int"
+                "Function std.encoding.b64.{function} requires String or Bytes as argument 1, got Int"
             ),
         )]);
         assert_arity(&format!("b64.{function}"), 1, &[0, 2]);
@@ -510,7 +516,7 @@ fn hex_functions_check_their_argument() {
         assert_raises(&[(
             &format!("enc.hex.{function}([1])"),
             &format!(
-                "Function encoding.hex.{function} requires String or Bytes as argument 1, got Array"
+                "Function std.encoding.hex.{function} requires String or Bytes as argument 1, got Array"
             ),
         )]);
         assert_arity(&format!("hex.{function}"), 1, &[0, 2]);
@@ -571,7 +577,7 @@ fn url_functions_check_their_argument() {
         assert_raises(&[(
             &format!("enc.url.{function}(null)"),
             &format!(
-                "Function encoding.url.{function} requires String or Bytes as argument 1, got Null"
+                "Function std.encoding.url.{function} requires String or Bytes as argument 1, got Null"
             ),
         )]);
         assert_arity(&format!("url.{function}"), 1, &[0, 2]);
