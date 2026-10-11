@@ -1493,14 +1493,22 @@ fn every_function_checks_its_arguments() {
             );
         }
     }
-    for function in ["move", "copy", "symlink"] {
+    for (function, first, second) in [
+        ("move", "source", "destination"),
+        ("copy", "source", "destination"),
+        ("symlink", "target", "link"),
+    ] {
         assert_eq!(
             scratch.raises(&format!("fs.{function}(x'62', 'a')")),
-            format!("Function std.fs.{function} requires String as argument 1, got Bytes")
+            format!(
+                "Function std.fs.{function} requires String as argument 1 ({first}), got Bytes"
+            )
         );
         assert_eq!(
             scratch.raises(&format!("fs.{function}('a', x'62')")),
-            format!("Function std.fs.{function} requires String as argument 2, got Bytes")
+            format!(
+                "Function std.fs.{function} requires String as argument 2 ({second}), got Bytes"
+            )
         );
         for argc in [0, 1, 3] {
             let args = vec!["'a'"; argc].join(", ");

@@ -408,7 +408,8 @@ fn join_joins_runtime_values() {
 fn join_requires_every_element_to_be_a_string_or_bytes() {
     let message = |got: &str| {
         format!(
-            "Function join requires Array of String or Bytes as argument 1, got Array containing {got}"
+            "Function join requires Array of String or Bytes as argument 1 (parts), \
+             got Array containing {got}"
         )
     };
     for (source, got) in [
@@ -427,11 +428,11 @@ fn join_requires_every_element_to_be_a_string_or_bytes() {
 fn join_checks_its_argument_types() {
     assert_raises(&[(
         "join('abc', ',')",
-        &type_error("join", "Array", "argument 1", "String"),
+        &type_error("join", "Array", "argument 1 (parts)", "String"),
     )]);
     assert_raises(&[(
         "join(x'61', ',')",
-        &type_error("join", "Array", "argument 1", "Bytes"),
+        &type_error("join", "Array", "argument 1 (parts)", "Bytes"),
     )]);
     assert_rejects_non_flat(
         "join",
@@ -534,8 +535,8 @@ fn replace_checks_its_argument_types() {
         &[
             ("replace(1, '-', '+')", "argument 1", "Int"),
             ("replace(null, '-', '+')", "argument 1", "Null"),
-            ("replace('a', 1, '+')", "argument 2 (find)", "Int"),
-            ("replace('a', ['-'], '+')", "argument 2 (find)", "Array"),
+            ("replace('a', 1, '+')", "argument 2 (needle)", "Int"),
+            ("replace('a', ['-'], '+')", "argument 2 (needle)", "Array"),
             ("replace('a', '-', 1)", "argument 3 (replacement)", "Int"),
             (
                 "replace('a', '-', null)",

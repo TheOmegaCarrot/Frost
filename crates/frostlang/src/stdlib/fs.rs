@@ -82,7 +82,7 @@ pub fn fs() -> StdlibModule {
         .value("mkdir", path_function("std.fs.mkdir", mkdir))
         .value("move", two_path_function("std.fs.move", move_path))
         .value("copy", two_path_function("std.fs.copy", copy))
-        .value("symlink", two_path_function("std.fs.symlink", symlink))
+        .function(symlink_frost())
         .value("read_link", path_function("std.fs.read_link", read_link))
         .value("remove", path_function("std.fs.remove", remove))
         .value(
@@ -137,7 +137,7 @@ fn path_function(name: &'static str, body: fn(&str, &Path) -> FrostResult) -> Va
 fn two_path_function(name: &'static str, body: fn(&str, &Path, &Path) -> FrostResult) -> Value {
     frost_closure!(
         name,
-        move |#[frost(unnamed)] source: FrostString, #[frost(unnamed)] destination: FrostString| {
+        move |source: FrostString, destination: FrostString| {
             body(name, path_arg(&source), path_arg(&destination))
         }
     )
@@ -750,7 +750,7 @@ fn copy_tree(from: &Path, to: &Path, follow: bool) -> io::Result<()> {
         return Ok(());
     }
     if metadata.file_type().is_symlink() {
-        return link(&fs::read_link(from)?, to);
+        return make_symlink(&fs::read_link(from)?, to);
     }
     if occupied(to) {
         return Err(already_exists(to));
@@ -759,7 +759,7 @@ fn copy_tree(from: &Path, to: &Path, follow: bool) -> io::Result<()> {
 }
 
 /// Make a symlink at `link_path` pointing to `target`.
-fn link(target: &Path, link_path: &Path) -> io::Result<()> {
+fn make_symlink(target: &Path, link_path: &Path) -> io::Result<()> {
     #[cfg(unix)]
     {
         std::os::unix::fs::symlink(target, link_path)
@@ -782,8 +782,15 @@ fn link(target: &Path, link_path: &Path) -> io::Result<()> {
     }
 }
 
-fn symlink(name: &str, target: &Path, link_path: &Path) -> FrostResult {
-    link(target, link_path).map_err(|err| io_error(name, link_path, &err))?;
+#[frost_fn]
+fn symlink(
+    #[frost(ctx)] ctx: &mut NativeCtx<'_>,
+    target: FrostString,
+    link: FrostString,
+) -> FrostResult {
+    let link_path = path_arg(&link);
+    make_symlink(path_arg(&target), link_path)
+        .map_err(|err| io_error(ctx.name(), link_path, &err))?;
     Ok(Value::Null)
 }
 

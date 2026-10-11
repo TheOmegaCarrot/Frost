@@ -37,7 +37,7 @@ pub fn math() -> StdlibModule {
         .value("asin", float_function("std.math.asin", f64::asin))
         .value("acos", float_function("std.math.acos", f64::acos))
         .value("atan", float_function("std.math.atan", f64::atan))
-        .value("atan2", binary_float_function("std.math.atan2", f64::atan2))
+        .function(atan2_frost())
         .value("sinh", float_function("std.math.sinh", f64::sinh))
         .value("cosh", float_function("std.math.cosh", f64::cosh))
         .value("tanh", float_function("std.math.tanh", f64::tanh))
@@ -80,14 +80,9 @@ fn float_function(name: &'static str, f: fn(f64) -> f64) -> Value {
     })
 }
 
-/// A two-argument function computed in floating point.
-fn binary_float_function(name: &'static str, f: fn(f64, f64) -> f64) -> Value {
-    frost_closure!(
-        name,
-        move |#[frost(unnamed)] x: Numeric, #[frost(unnamed)] y: Numeric| {
-            finite(name, f(x.to_f64(), y.to_f64()), &[x, y])
-        }
-    )
+#[frost_fn]
+fn atan2(#[frost(ctx)] ctx: &mut NativeCtx<'_>, y: Numeric, x: Numeric) -> FrostResult {
+    finite(ctx.name(), y.to_f64().atan2(x.to_f64()), &[y, x])
 }
 
 /// A function rounding to an Int by `round`; an Int is already rounded.

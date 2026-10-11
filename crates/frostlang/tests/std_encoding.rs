@@ -383,7 +383,7 @@ fn to_ints_and_from_ints_check_their_argument() {
         ),
         (
             "enc.from_ints('ab')",
-            "Function std.encoding.from_ints requires Array as argument 1, got String",
+            "Function std.encoding.from_ints requires Array as argument 1 (ints), got String",
         ),
     ]);
     assert_arity("to_ints", 1, &[0, 2]);

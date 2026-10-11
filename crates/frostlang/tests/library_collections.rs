@@ -232,7 +232,7 @@ fn to_entries_and_from_entries_check_their_argument() {
     );
     assert_type_errors(
         "from_entries",
-        &[("from_entries({})", "Array", "argument 1", "Map")],
+        &[("from_entries({})", "Array", "argument 1 (entries)", "Map")],
     );
     assert_arity("to_entries", "1", &[0, 2]);
     assert_arity("from_entries", "1", &[0, 2]);

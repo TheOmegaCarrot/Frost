@@ -139,10 +139,7 @@ fn to_ints(#[frost(unnamed)] content: Flat) -> Value {
 }
 
 #[frost_fn]
-fn from_ints(
-    #[frost(ctx)] ctx: &mut NativeCtx<'_>,
-    #[frost(unnamed)] ints: FrostArray,
-) -> FrostResult {
+fn from_ints(#[frost(ctx)] ctx: &mut NativeCtx<'_>, ints: FrostArray) -> FrostResult {
     // Every element's type is checked before any value: a wrong type is an
     // error wherever it is, while a value outside 0 to 255 makes the result Null.
     if let Some((i, element)) = ints

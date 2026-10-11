@@ -134,16 +134,18 @@ impl Engine {
         Ok(array[index].clone())
     }
 
-    fn sample(&mut self, #[frost(unnamed)] array: FrostArray, n: i64) -> FrostResult {
-        let count = usize::try_from(n).ok().filter(|&n| n <= array.len());
-        let Some(count) = count else {
+    fn sample(&mut self, #[frost(unnamed)] array: FrostArray, count: i64) -> FrostResult {
+        let size = usize::try_from(count)
+            .ok()
+            .filter(|&size| size <= array.len());
+        let Some(size) = size else {
             return Err(FrostError::from_string(format!(
-                "Function rng.sample requires argument 2 (n) to be from 0 to the Array's \
-                 length, {}, got {n}",
+                "Function rng.sample requires argument 2 (count) to be from 0 to the Array's \
+                 length, {}, got {count}",
                 array.len()
             )));
         };
-        Ok(self.0.choose_multiple(array.iter().cloned(), count).into())
+        Ok(self.0.choose_multiple(array.iter().cloned(), size).into())
     }
 
     fn shuffle(&mut self, #[frost(unnamed)] array: FrostArray) -> FrostArray {

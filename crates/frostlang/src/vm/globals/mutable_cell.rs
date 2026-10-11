@@ -25,9 +25,7 @@ fn forbid_cycle(value: &Value) -> Result<(), FrostError> {
 }
 
 #[frost_fn]
-pub(super) fn mutable_cell(
-    #[frost(unnamed)] initial: Optional<Value>,
-) -> Result<Value, FrostError> {
+pub(super) fn mutable_cell(initial: Optional<Value>) -> Result<Value, FrostError> {
     let initial = initial.0.unwrap_or(Value::Null);
     forbid_cycle(&initial)?;
     Ok(MutableBundle::new(Cell(initial))

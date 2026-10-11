@@ -324,7 +324,7 @@ fn sample_draws_distinct_elements() {
         assert_raises(&[(
             &format!("random.seed(1).sample(range(10), {n})"),
             &format!(
-                "Function rng.sample requires argument 2 (n) to be from 0 to the Array's length, \
+                "Function rng.sample requires argument 2 (count) to be from 0 to the Array's length, \
                  10, got {n}"
             ),
         )]);
@@ -441,7 +441,7 @@ fn every_function_checks_its_arguments() {
         ),
         (
             &format!("{engine}.sample([1], '1')"),
-            "Function rng.sample requires Int as argument 2 (n), got String",
+            "Function rng.sample requires Int as argument 2 (count), got String",
         ),
         (
             &format!("{engine}.shuffle('abc')"),

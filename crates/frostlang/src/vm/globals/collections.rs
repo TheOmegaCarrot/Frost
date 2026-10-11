@@ -102,7 +102,7 @@ pub(super) fn to_entries(#[frost(unnamed)] map: FrostMap) -> Value {
 }
 
 #[frost_fn]
-pub(super) fn from_entries(#[frost(unnamed)] entries: FrostArray) -> FrostResult {
+pub(super) fn from_entries(entries: FrostArray) -> FrostResult {
     let mut result = ValueMap::new();
     for (i, entry) in entries.iter().enumerate() {
         let Value::Map(entry) = entry else {
@@ -827,25 +827,25 @@ pub(super) fn fold(
     #[frost(ctx)] ctx: &mut NativeCtx<'_>,
     #[frost(unnamed)] structure: Structured,
     #[frost(unnamed)] function: Function,
-    #[frost(unnamed)] init: Optional<Value>,
+    initial: Optional<Value>,
 ) -> FrostResult {
     match structure {
         Structured::Array(arr) => {
             let mut iter = arr.into_vec().into_iter();
-            let init = match init.0 {
-                Some(init) => init,
+            let initial = match initial.0 {
+                Some(initial) => initial,
                 None => iter.next().unwrap_or(Value::Null),
             };
 
-            iter.try_fold(init, |acc, elem| ctx.invoke(&function, [acc, elem]))
+            iter.try_fold(initial, |acc, elem| ctx.invoke(&function, [acc, elem]))
         }
         Structured::Map(map) => {
-            let Some(init) = init.0 else {
+            let Some(initial) = initial.0 else {
                 return Err(FrostError::from_static(
                     "Fold over a Map requires an initializer",
                 ));
             };
-            map.into_map().into_iter().try_fold(init, |acc, (k, v)| {
+            map.into_map().into_iter().try_fold(initial, |acc, (k, v)| {
                 ctx.invoke(&function, [acc, k.into(), v])
             })
         }

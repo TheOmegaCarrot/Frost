@@ -555,7 +555,7 @@ fn every_function_requires_numbers() {
     }
     for (name, first, second) in [
         ("pow", "argument 1 (base)", "argument 2 (exponent)"),
-        ("atan2", "argument 1", "argument 2"),
+        ("atan2", "argument 1 (y)", "argument 2 (x)"),
         ("min", "argument 1", "argument 2"),
         ("max", "argument 1", "argument 2"),
     ] {

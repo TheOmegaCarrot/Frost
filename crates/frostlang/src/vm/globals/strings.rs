@@ -133,27 +133,22 @@ pub(super) fn lines(#[frost(unnamed)] text: FrostString) -> Value {
 }
 
 #[frost_fn]
-pub(super) fn join(
-    #[frost(unnamed)] elements: FrostArray,
-    separator: Flat,
-) -> Result<Value, FrostError> {
-    if let Some(bad) = elements
-        .iter()
-        .find(|element| !element.fits(FrostType::FLAT))
-    {
+pub(super) fn join(parts: FrostArray, separator: Flat) -> Result<Value, FrostError> {
+    if let Some(bad) = parts.iter().find(|part| !part.fits(FrostType::FLAT)) {
         return Err(FrostError::from_string(format!(
-            "Function join requires Array of String or Bytes as argument 1, got Array containing {}",
+            "Function join requires Array of String or Bytes as argument 1 (parts), \
+             got Array containing {}",
             bad.type_name()
         )));
     }
 
-    let texts: Option<Vec<&str>> = elements.iter().map(Value::as_str).collect();
+    let texts: Option<Vec<&str>> = parts.iter().map(Value::as_str).collect();
     Ok(match (texts, &separator) {
         (Some(texts), Flat::String(separator)) => texts.join(separator).into(),
         _ => {
-            let pieces: Vec<&[u8]> = elements
+            let pieces: Vec<&[u8]> = parts
                 .iter()
-                .map(|element| element.as_byte_slice().expect("the element is Flat"))
+                .map(|part| part.as_byte_slice().expect("the part is Flat"))
                 .collect();
             pieces.join(separator.as_bytes()).into()
         }
@@ -161,15 +156,15 @@ pub(super) fn join(
 }
 
 #[frost_fn]
-pub(super) fn replace(#[frost(unnamed)] target: Flat, find: Flat, replacement: Flat) -> Value {
-    // An empty `find` matches nothing, so the target comes back unchanged
+pub(super) fn replace(#[frost(unnamed)] target: Flat, needle: Flat, replacement: Flat) -> Value {
+    // An empty `needle` matches nothing, so the target comes back unchanged
     // (though as Bytes, if the other arguments make the result Bytes).
-    match content([&target, &find, &replacement]) {
+    match content([&target, &needle, &replacement]) {
         Content::Text([text, "", _]) => Value::from(text),
-        Content::Text([text, find, replacement]) => text.replace(find, replacement).into(),
+        Content::Text([text, needle, replacement]) => text.replace(needle, replacement).into(),
         Content::Binary([bytes, [], _]) => Value::from(bytes),
-        Content::Binary([bytes, find, replacement]) => {
-            split_bytes(bytes, find).join(replacement).into()
+        Content::Binary([bytes, needle, replacement]) => {
+            split_bytes(bytes, needle).join(replacement).into()
         }
     }
 }
