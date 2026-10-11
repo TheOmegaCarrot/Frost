@@ -291,6 +291,150 @@ impl Extension {
             Err(InvalidComponentName(name))
         }
     }
+
+    /// A builder for an extension named `name`, whose content is a Map built
+    /// entry by entry:
+    ///
+    /// ```
+    /// use frostlang::{Extension, Value, frost_fn};
+    ///
+    /// #[frost_fn(name = "geometry.area")]
+    /// fn area(width: f64, height: f64) -> f64 {
+    ///     width * height
+    /// }
+    ///
+    /// #[frost_fn(name = "geometry.units.to_cm")]
+    /// fn to_cm(inches: f64) -> f64 {
+    ///     inches * 2.54
+    /// }
+    ///
+    /// fn extension(with_units: bool) -> Extension {
+    ///     Extension::builder("geometry")
+    ///         .function(area_frost())
+    ///         .value("full_turn", Value::Int(360))
+    ///         .with_if(with_units, |extension| {
+    ///             extension.module("units", |units| units.function(to_cm_frost()))
+    ///         })
+    ///         .build()
+    /// }
+    /// ```
+    ///
+    /// # Panics
+    ///
+    /// If `name` is not a valid name, as for [`new`](Self::new). Take a name
+    /// known only at runtime through `new`.
+    pub fn builder(name: impl Into<String>) -> ExtensionBuilder {
+        let name = name.into();
+        if !is_identifier_like_and_not_keyword(&name) {
+            panic!("{}", InvalidComponentName(name));
+        }
+        ExtensionBuilder {
+            name,
+            entries: ValueMap::new(),
+        }
+    }
+}
+
+/// Builds an [`Extension`], or a module nested in one, entry by entry; made
+/// by [`Extension::builder`].
+///
+/// A script reaches each entry by its key, as in `ext.geometry.area`, so a key
+/// is a Frost identifier and not a keyword. A nested module is built with the
+/// same methods, so a group, a function adding entries to a builder, works at
+/// any level.
+///
+/// Every method panics on an entry that cannot be added, since an extension's
+/// entries are fixed in its code.
+#[derive(Debug)]
+#[must_use = "an extension builder does nothing until built"]
+pub struct ExtensionBuilder {
+    /// The extension's name, or a nested module's path, as in `geometry.units`,
+    /// for messages.
+    name: String,
+    entries: ValueMap,
+}
+
+impl ExtensionBuilder {
+    /// Adds `function`, keyed by its name after the last `.`, so a function
+    /// named `geometry.area` is keyed `area`.
+    ///
+    /// # Panics
+    ///
+    /// If `function` is not a Frost function, or its key is invalid or taken,
+    /// as for [`value`](Self::value).
+    pub fn function(self, function: Value) -> Self {
+        let name = match &function {
+            Value::NativeFunction(native) => native.name(),
+            Value::Closure(closure) => closure.function.name.as_str(),
+            other => panic!(
+                "extension `{}` takes only a Function through `function`, got {}",
+                self.name,
+                other.type_name()
+            ),
+        };
+        let key = name
+            .rsplit_once('.')
+            .map_or(name, |(_, key)| key)
+            .to_string();
+        self.value(key, function)
+    }
+
+    /// Adds `value`, keyed `key`.
+    ///
+    /// # Panics
+    ///
+    /// If `key` is not a Frost identifier, is a keyword, or already keys an
+    /// entry.
+    pub fn value(mut self, key: impl Into<String>, value: Value) -> Self {
+        let key = key.into();
+        assert!(
+            is_identifier_like_and_not_keyword(&key),
+            "extension `{}` cannot key an entry {key:?}: a key is a Frost identifier, not a keyword",
+            self.name
+        );
+        let previous = self.entries.insert(MapKey::from(key.as_str()), value);
+        assert!(
+            previous.is_none(),
+            "extension `{}` already has an entry keyed `{key}`",
+            self.name
+        );
+        self
+    }
+
+    /// Adds the module that `module` builds, keyed `key`: a Map of its own
+    /// entries.
+    ///
+    /// # Panics
+    ///
+    /// If `key` is invalid or taken, as for [`value`](Self::value).
+    pub fn module(self, key: impl Into<String>, module: impl FnOnce(Self) -> Self) -> Self {
+        let key = key.into();
+        let nested = module(Self {
+            name: format!("{}.{key}", self.name),
+            entries: ValueMap::new(),
+        });
+        self.value(key, Value::from(nested.entries))
+    }
+
+    /// Adds the entries of `group`, which takes the builder and returns it
+    /// with them.
+    pub fn with(self, group: impl FnOnce(Self) -> Self) -> Self {
+        group(self)
+    }
+
+    /// Adds the entries of `group`, as [`with`](Self::with) does, only when
+    /// `condition` holds.
+    pub fn with_if(self, condition: bool, group: impl FnOnce(Self) -> Self) -> Self {
+        if condition { group(self) } else { self }
+    }
+
+    /// The extension, whose content is a Map of the entries.
+    pub fn build(self) -> Extension {
+        Extension(Module {
+            name: self.name,
+            content: Value::from(self.entries),
+        })
+    }
 }
 
 /// A host-defined import registry component.

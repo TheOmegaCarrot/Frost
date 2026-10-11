@@ -1,6 +1,8 @@
 //! Argument types for Frost's type categories, and for Function: each accepts
 //! exactly its category's types, as [`FrostType`]'s constants define them.
 
+use serde::{Deserialize, Deserializer, Serialize, Serializer, de};
+
 use crate::native::{ArgSite, FromArg};
 use crate::vm::expected_types;
 use crate::{
@@ -17,9 +19,10 @@ fn mismatch(types: TypeSet, value: &Value) -> FrostError {
     ))
 }
 
-/// Implements [`FromArg`] for each category type, by its `TryFrom<Value>`: an
-/// argument checked against its types always converts.
-macro_rules! from_arg {
+/// Implements, for each category type, [`FromArg`] by its `TryFrom<Value>`
+/// (an argument checked against its types always converts), and serde's
+/// traits as the `Value` it holds.
+macro_rules! category {
     ($($category:ident: $types:expr),* $(,)?) => {$(
         impl FromArg for $category {
             const TYPES: TypeSet = $types;
@@ -28,10 +31,33 @@ macro_rules! from_arg {
                 Self::try_from(value)
             }
         }
+
+        /// Serializes as the value it holds.
+        impl Serialize for $category {
+            fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+                Value::from(self.clone()).serialize(serializer)
+            }
+        }
+
+        /// Deserializes a value of its category's types, failing for any other.
+        impl<'de> Deserialize<'de> for $category {
+            fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+                let value = Value::deserialize(deserializer)?;
+                if !value.fits($types) {
+                    // Worded as the serde bridge words its own type mismatches.
+                    return Err(de::Error::custom(format_args!(
+                        "expected {}, got {}",
+                        expected_types($types),
+                        value.type_name()
+                    )));
+                }
+                Ok(Self::try_from(value).expect("a value of the category's types converts"))
+            }
+        }
     )*};
 }
 
-from_arg!(
+category!(
     Numeric: FrostType::NUMERIC,
     Flat: FrostType::FLAT,
     Structured: FrostType::STRUCTURED,

@@ -66,6 +66,18 @@ impl<S: Send + Sync + 'static> Bundle<S> {
         })
     }
 
+    /// Adds the functions of `group`, which takes the bundle and returns it
+    /// with them, as a group made by [`frost_bundle`](crate::frost_bundle) does.
+    pub fn with(self, group: impl FnOnce(Self) -> Self) -> Self {
+        group(self)
+    }
+
+    /// Adds the functions of `group`, as [`with`](Self::with) does, only when
+    /// `condition` holds.
+    pub fn with_if(self, condition: bool, group: impl FnOnce(Self) -> Self) -> Self {
+        if condition { group(self) } else { self }
+    }
+
     /// Adds the function `name`, which receives the state apart from its
     /// [`NativeCtx`], so that a bundle kind can give it its own context.
     pub(super) fn function_over_state<F, R>(

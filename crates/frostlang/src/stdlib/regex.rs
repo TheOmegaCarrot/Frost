@@ -220,7 +220,9 @@ fn replace_with(
 #[frost_fn(name = "regex.compile")]
 fn compile(pattern: FrostString) -> FrostResult {
     let pattern = Pattern::new("regex.compile", &pattern)?;
-    Ok(Compiled::frost_functions(Bundle::new(Compiled(pattern))).build())
+    Ok(Bundle::new(Compiled(pattern))
+        .with(Compiled::frost_functions)
+        .build())
 }
 
 /// A compiled pattern, whose functions are the module's less the pattern.

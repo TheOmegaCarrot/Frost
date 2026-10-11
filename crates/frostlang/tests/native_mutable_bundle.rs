@@ -97,18 +97,28 @@ fn a_second_function_with_the_same_key_panics() {
         .function("b.get", NO_PARAMS, |_, _| Ok(Value::Null));
 }
 
+/// A group: the function `name`, returning Null, added to `bundle`.
+fn group(name: &'static str) -> impl FnOnce(MutableBundle<()>) -> MutableBundle<()> {
+    move |bundle| bundle.function(name, NO_PARAMS, |_, _| Ok(Value::Null))
+}
+
+/// The keys of `bundle`, in order.
+fn keys(bundle: &Value) -> Vec<String> {
+    let map = bundle.as_map().expect("a bundle is a Map");
+    map.keys().map(ToString::to_string).collect()
+}
+
 #[test]
-fn functions_can_be_added_conditionally() {
-    let with = |extra: bool| {
-        let mut bundle =
-            MutableBundle::new(()).function("thing.always", NO_PARAMS, |_, _| Ok(Value::Null));
-        if extra {
-            bundle = bundle.function("thing.sometimes", NO_PARAMS, |_, _| Ok(Value::Null));
-        }
-        bundle.build().as_map().expect("a bundle is a Map").len()
+fn groups_are_added_with_with_and_with_if_its_condition_holds() {
+    let bundle = |extra: bool| {
+        MutableBundle::new(())
+            .with(group("thing.always"))
+            .with_if(extra, group("thing.sometimes"))
+            .with_if(!extra, group("thing.otherwise"))
+            .build()
     };
-    assert_eq!(with(false), 1);
-    assert_eq!(with(true), 2);
+    assert_eq!(keys(&bundle(false)), ["always", "otherwise"]);
+    assert_eq!(keys(&bundle(true)), ["always", "sometimes"]);
 }
 
 // ============================================================

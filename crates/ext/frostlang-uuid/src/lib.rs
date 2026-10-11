@@ -48,27 +48,20 @@ use frostlang::{Extension, Value};
 /// clock. Within a process, v7 UUIDs are strictly increasing, as are ULIDs,
 /// even when several are made in the same millisecond.
 pub fn extension() -> Extension {
-    Extension::new(
-        "uuid",
-        Value::map([
-            ("v4", uuids::v4_frost()),
-            ("v7", uuids::v7_frost()),
-            ("to_bytes", uuids::to_bytes_frost()),
-            ("to_string", uuids::to_string_frost()),
-            ("version", uuids::version_frost()),
-            ("timestamp", uuids::timestamp_frost()),
-            (
-                "ulid",
-                Value::map([
-                    ("new", ulids::new_frost()),
-                    ("to_bytes", ulids::to_bytes_frost()),
-                    ("to_string", ulids::to_string_frost()),
-                    ("timestamp", ulids::timestamp_frost()),
-                ]),
-            ),
-        ]),
-    )
-    .expect("`uuid` is a valid extension name")
+    Extension::builder("uuid")
+        .function(uuids::v4_frost())
+        .function(uuids::v7_frost())
+        .function(uuids::to_bytes_frost())
+        .function(uuids::to_string_frost())
+        .function(uuids::version_frost())
+        .function(uuids::timestamp_frost())
+        .module("ulid", |ulid| {
+            ulid.function(ulids::new_frost())
+                .function(ulids::to_bytes_frost())
+                .function(ulids::to_string_frost())
+                .function(ulids::timestamp_frost())
+        })
+        .build()
 }
 
 /// The ID that `id` holds: text read with `parse`, or exactly 16 Bytes read with

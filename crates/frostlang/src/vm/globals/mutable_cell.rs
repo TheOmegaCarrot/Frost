@@ -30,7 +30,9 @@ pub(super) fn mutable_cell(
 ) -> Result<Value, FrostError> {
     let initial = initial.0.unwrap_or(Value::Null);
     forbid_cycle(&initial)?;
-    Ok(Cell::frost_functions(MutableBundle::new(Cell(initial))).build())
+    Ok(MutableBundle::new(Cell(initial))
+        .with(Cell::frost_functions)
+        .build())
 }
 
 /// What a mutable cell holds.

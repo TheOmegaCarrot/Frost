@@ -9,8 +9,10 @@ use std::fmt::Debug;
 
 use frostlang::{
     Arity, FrostBytes, FrostError, FrostFloat, FrostResult, FrostType, NativeCtx, SpecialFloat,
-    TypeSet, Value, frost_fn,
+    TypeSet, Value, from_value, frost_fn, to_value,
 };
+use serde::de::DeserializeOwned;
+use serde::{Deserialize, Serialize};
 
 use crate::script::Script;
 
@@ -291,5 +293,116 @@ fn each_converts_into_the_value_it_holds() {
             .into_result("f")
             .expect("a Bool returns"),
         Value::Bool(true)
+    );
+}
+
+// ============================================================
+// Serde
+// ============================================================
+
+/// Asserts that `T` deserializes through `from_value` from exactly the values
+/// of `types`, serializing back through `to_value` unchanged, and fails for any
+/// other naming `expected` and its type.
+fn assert_round_trips_exactly<T>(types: TypeSet, expected: &str)
+where
+    T: Serialize + DeserializeOwned + Debug,
+{
+    for value in one_value_of_each() {
+        let ty = value.type_name();
+        match from_value::<T>(value.clone()) {
+            Ok(taken) => {
+                assert!(types.contains(value.frost_type()), "{ty} is not {expected}");
+                assert_eq!(
+                    to_value(&taken).expect("a category value serializes"),
+                    value,
+                    "{ty} serializes back unchanged"
+                );
+            }
+            Err(error) => {
+                assert!(!types.contains(value.frost_type()), "{ty} is {expected}");
+                assert_eq!(error.message(), format!("expected {expected}, got {ty}"));
+            }
+        }
+    }
+}
+
+#[test]
+fn each_round_trips_through_serde_exactly_its_category_s_values() {
+    assert_round_trips_exactly::<Numeric>(FrostType::NUMERIC, "Numeric");
+    assert_round_trips_exactly::<Flat>(FrostType::FLAT, "String or Bytes");
+    assert_round_trips_exactly::<Structured>(FrostType::STRUCTURED, "Structured");
+    assert_round_trips_exactly::<Primitive>(FrostType::PRIMITIVE, "Primitive");
+    assert_round_trips_exactly::<Nonnull>(FrostType::NONNULL, "Nonnull");
+    assert_round_trips_exactly::<Function>(FrostType::FUNCTION, "Function");
+}
+
+/// Options naming each kind of category field.
+#[derive(Debug, Serialize, Deserialize)]
+struct Shape {
+    size: Numeric,
+    label: Flat,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    on_draw: Option<Function>,
+}
+
+#[test]
+fn a_derived_struct_holds_category_fields() {
+    let options = Value::map([("size", Value::Int(2)), ("label", Value::from("a"))]);
+    let shape: Shape = from_value(options.clone()).expect("the options deserialize");
+    assert!(matches!(shape.size, Numeric::Int(2)), "{shape:?}");
+    assert_eq!(shape.label, Flat::String("a".into()));
+    assert!(shape.on_draw.is_none(), "{shape:?}");
+    assert_eq!(
+        to_value(&shape).expect("the options serialize"),
+        options,
+        "the options serialize back unchanged"
+    );
+}
+
+#[test]
+fn a_category_field_of_another_type_fails_with_its_path() {
+    let cases = [
+        (
+            Value::map([("size", Value::from("big")), ("label", Value::from("a"))]),
+            "expected Numeric, got String (at `size`)",
+        ),
+        (
+            Value::map([("size", Value::Int(2)), ("label", Value::array([1]))]),
+            "expected String or Bytes, got Array (at `label`)",
+        ),
+        (
+            Value::map([
+                ("size", Value::Int(2)),
+                ("label", Value::from("a")),
+                ("on_draw", Value::Int(3)),
+            ]),
+            "expected Function, got Int (at `on_draw`)",
+        ),
+    ];
+    for (options, message) in cases {
+        let error = from_value::<Shape>(options).expect_err("the options are rejected");
+        assert_eq!(error.message(), message);
+    }
+}
+
+#[test]
+fn a_category_works_with_other_serde_formats() {
+    let shape: Shape =
+        serde_json::from_str(r#"{"size": 2.5, "label": "a"}"#).expect("the JSON deserializes");
+    assert!(
+        matches!(shape.size, Numeric::Float(f) if f.get() == 2.5),
+        "{shape:?}"
+    );
+    assert_eq!(
+        serde_json::to_string(&shape).expect("the options serialize"),
+        r#"{"size":2.5,"label":"a"}"#
+    );
+    let error = serde_json::from_str::<Shape>(r#"{"size": "big", "label": "a"}"#)
+        .expect_err("a String size is rejected");
+    assert!(
+        error
+            .to_string()
+            .starts_with("expected Numeric, got String"),
+        "{error}"
     );
 }

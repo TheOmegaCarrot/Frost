@@ -83,14 +83,11 @@ impl Source for Cursor<FrostBytes> {
 
 /// A reader bundle over `source`, offering what `kind` allows.
 pub(super) fn reader(source: impl Source, kind: Kind) -> Value {
-    let mut reader = Reader::frost_functions(MutableBundle::new(Reader(Some(Box::new(source)))));
-    if kind.seeks() {
-        reader = Reader::seek_functions(reader);
-    }
-    if kind.closes() {
-        reader = Reader::close_functions(reader);
-    }
-    reader.build()
+    MutableBundle::new(Reader(Some(Box::new(source))))
+        .with(Reader::frost_functions)
+        .with_if(kind.seeks(), Reader::seek_functions)
+        .with_if(kind.closes(), Reader::close_functions)
+        .build()
 }
 
 /// A reader's source; `None` once closed.
@@ -293,20 +290,13 @@ impl Sink for Buffer {
 
 /// A writer bundle over `sink`, offering what `kind` allows.
 pub(super) fn writer(sink: impl Sink, kind: Kind) -> Value {
-    let mut writer = Writer::frost_functions(MutableBundle::new(Writer(Some(Box::new(sink)))));
-    if kind != Kind::Buffer {
-        writer = Writer::flush_functions(writer);
-    }
-    if kind.seeks() {
-        writer = Writer::seek_functions(writer);
-    }
-    if kind.closes() {
-        writer = Writer::close_functions(writer);
-    }
-    if kind == Kind::Buffer {
-        writer = Writer::buffer_functions(writer);
-    }
-    writer.build()
+    MutableBundle::new(Writer(Some(Box::new(sink))))
+        .with(Writer::frost_functions)
+        .with_if(kind != Kind::Buffer, Writer::flush_functions)
+        .with_if(kind.seeks(), Writer::seek_functions)
+        .with_if(kind.closes(), Writer::close_functions)
+        .with_if(kind == Kind::Buffer, Writer::buffer_functions)
+        .build()
 }
 
 /// A writer's sink; `None` once closed.

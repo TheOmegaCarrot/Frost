@@ -62,7 +62,9 @@ fn seed(seed: i64) -> Value {
 /// An engine: the draw functions over one generator seeded with `seed`.
 fn engine(seed: u64) -> Value {
     let engine = Engine(fastrand::Rng::with_seed(seed));
-    Engine::frost_functions(MutableBundle::new(engine)).build()
+    MutableBundle::new(engine)
+        .with(Engine::frost_functions)
+        .build()
 }
 
 /// An engine's generator.

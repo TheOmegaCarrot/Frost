@@ -83,7 +83,9 @@ impl Table {
 }
 
 fn table(entries: Vec<i64>) -> Value {
-    Table::frost_functions(Bundle::new(Table(entries))).build()
+    Bundle::new(Table(entries))
+        .with(Table::frost_functions)
+        .build()
 }
 
 #[test]
@@ -136,7 +138,9 @@ impl Counter {
 fn make_counter() -> Value {
     Value::native("make_counter", Arity::Exact(1), |_, args| {
         let start = args[0].as_int().expect("an Int start");
-        Ok(Counter::frost_functions(MutableBundle::new(Counter(start))).build())
+        Ok(MutableBundle::new(Counter(start))
+            .with(Counter::frost_functions)
+            .build())
     })
 }
 
@@ -196,8 +200,9 @@ impl Greeting {
 
 #[test]
 fn a_function_takes_the_state_that_never_changes_each_way() {
-    let greeting = Greeting::frost_functions(Bundle::new(Greeting(String::from("Hello"))));
-    let greeting = greeting.build();
+    let greeting = Bundle::new(Greeting(String::from("Hello")))
+        .with(Greeting::frost_functions)
+        .build();
     let run = |source| run("g", greeting.clone(), source);
     assert_eq!(run("g.greet('Ada')"), Value::from("Hello, Ada"));
     assert_eq!(run("g.whoami()"), Value::from("Hello from greeting.whoami"));
@@ -237,7 +242,9 @@ impl Tally {
 }
 
 fn tally() -> Value {
-    Tally::frost_functions(MutableBundle::new(Tally(Vec::new()))).build()
+    MutableBundle::new(Tally(Vec::new()))
+        .with(Tally::frost_functions)
+        .build()
 }
 
 #[test]
@@ -280,7 +287,9 @@ fn a_function_through_its_context_may_reenter_the_bundle() {
 
 #[test]
 fn each_function_is_keyed_by_its_name_and_named_with_the_prefix() {
-    let greeting = Greeting::frost_functions(Bundle::new(Greeting(String::new()))).build();
+    let greeting = Bundle::new(Greeting(String::new()))
+        .with(Greeting::frost_functions)
+        .build();
     assert_eq!(
         keys(&greeting),
         ["greet", "stateless", "through_context", "whoami"]
@@ -302,7 +311,7 @@ impl Raw {
 
 #[test]
 fn a_raw_function_name_is_keyed_without_its_prefix() {
-    let raw = Raw::frost_functions(Bundle::new(Raw)).build();
+    let raw = Bundle::new(Raw).with(Raw::frost_functions).build();
     assert_eq!(keys(&raw), ["type"]);
     assert_eq!(run("r", raw, "r.type()"), Value::from("typed"));
 }
@@ -318,7 +327,7 @@ impl Unnamed {
 
 #[test]
 fn an_unnamed_parameter_is_reported_by_position_alone() {
-    let unnamed = Unnamed::frost_functions(Bundle::new(Unnamed)).build();
+    let unnamed = Bundle::new(Unnamed).with(Unnamed::frost_functions).build();
     assert_eq!(
         raises("u", unnamed.clone(), "u.repeat(1, 2)"),
         "Function unnamed.repeat requires String as argument 1, got Int"
@@ -354,7 +363,9 @@ impl Kept {
 
 #[test]
 fn a_parameter_takes_a_types_constraint() {
-    let constrained = Constrained::frost_functions(Bundle::new(Constrained)).build();
+    let constrained = Bundle::new(Constrained)
+        .with(Constrained::frost_functions)
+        .build();
     assert_eq!(
         run("c", constrained.clone(), "c.is_text('a')"),
         Value::Bool(true)
@@ -364,7 +375,11 @@ fn a_parameter_takes_a_types_constraint() {
         "Function constrained.is_text requires String or Bytes or Array as argument 1, got Int"
     );
 
-    let kept = || Kept::frost_functions(MutableBundle::new(Kept(Value::Null))).build();
+    let kept = || {
+        MutableBundle::new(Kept(Value::Null))
+            .with(Kept::frost_functions)
+            .build()
+    };
     assert_eq!(
         run("k", kept(), "do { k.keep(2.5); k.get() }"),
         run("k", kept(), "2.5")
@@ -397,11 +412,10 @@ impl Light {
 }
 
 fn light(switchable: bool) -> Value {
-    let mut light = Light::frost_functions(MutableBundle::new(Light(false)));
-    if switchable {
-        light = Light::switch_functions(light);
-    }
-    light.build()
+    MutableBundle::new(Light(false))
+        .with(Light::frost_functions)
+        .with_if(switchable, Light::switch_functions)
+        .build()
 }
 
 #[test]
@@ -459,14 +473,18 @@ impl Configured {
 
 #[test]
 fn each_function_is_added_exactly_when_it_is_configured() {
-    let configured = Configured::frost_functions(Bundle::new(Configured)).build();
+    let configured = Bundle::new(Configured)
+        .with(Configured::frost_functions)
+        .build();
     assert_eq!(keys(&configured), ["present"]);
 }
 
 #[test]
 fn each_group_exists_exactly_when_its_block_is_configured() {
-    let configured = Configured::frost_functions(Bundle::new(Configured));
-    let configured = Configured::extra_functions(configured).build();
+    let configured = Bundle::new(Configured)
+        .with(Configured::frost_functions)
+        .with(Configured::extra_functions)
+        .build();
     assert_eq!(keys(&configured), ["extra", "present"]);
 }
 
@@ -477,7 +495,9 @@ fn each_group_exists_exactly_when_its_block_is_configured() {
 #[test]
 fn a_shared_state_is_the_host_s_own() {
     let shared = Arc::new(StateLock::new(Counter(41)));
-    let counter = Counter::frost_functions(MutableBundle::from_shared(Arc::clone(&shared))).build();
+    let counter = MutableBundle::from_shared(Arc::clone(&shared))
+        .with(Counter::frost_functions)
+        .build();
     let optimization = optimization_permutations()
         .next()
         .expect("there is always one permutation");
@@ -505,7 +525,9 @@ impl Fragile {
 #[test]
 fn a_panic_in_a_function_holding_the_state_poisons_it() {
     let shared = Arc::new(StateLock::new(Fragile(5)));
-    let fragile = Fragile::frost_functions(MutableBundle::from_shared(Arc::clone(&shared))).build();
+    let fragile = MutableBundle::from_shared(Arc::clone(&shared))
+        .with(Fragile::frost_functions)
+        .build();
     let optimization = optimization_permutations()
         .next()
         .expect("there is always one permutation");

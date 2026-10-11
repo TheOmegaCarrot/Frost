@@ -70,6 +70,19 @@ impl<S: Send + 'static> MutableBundle<S> {
         )
     }
 
+    /// Adds the functions of `group`, which takes the bundle and returns it
+    /// with them, as a group made by
+    /// [`frost_mutable_bundle`](crate::frost_mutable_bundle) does.
+    pub fn with(self, group: impl FnOnce(Self) -> Self) -> Self {
+        group(self)
+    }
+
+    /// Adds the functions of `group`, as [`with`](Self::with) does, only when
+    /// `condition` holds.
+    pub fn with_if(self, condition: bool, group: impl FnOnce(Self) -> Self) -> Self {
+        if condition { group(self) } else { self }
+    }
+
     /// The bundle: a Map of its functions by key.
     pub fn build(self) -> Value {
         self.0.build()

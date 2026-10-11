@@ -41,8 +41,8 @@ pub use core::{
 };
 
 pub use vm::{
-    AbortReason, Arity, CancelToken, ChildVmFactory, Closure, Extension, ExtensionError,
-    HostComponent, HostComponentError, IdleVm, ImportCtx, ImportResolver, Importer,
+    AbortReason, Arity, CancelToken, ChildVmFactory, Closure, Extension, ExtensionBuilder,
+    ExtensionError, HostComponent, HostComponentError, IdleVm, ImportCtx, ImportResolver, Importer,
     ImporterBuilder, InvalidComponentName, InvalidParams, MissingCaptures, ModuleId, NativeCtx,
     NativeFn, NativeFunction, Param, Params, PrintSink, ProgramResult, RunError, RunErrorKind,
     Stdlib, StdlibError, StdlibModule, StdoutSink, TrustedProgram, Vm, VmFactory,
@@ -201,7 +201,7 @@ pub use frostlang_macros::frost_closure;
 /// `#[frost_bundle(prefix = "...")]` keeps the impl block as written,
 /// and adds to the type a private associated function, `frost_functions`,
 /// that takes a `Bundle<Self>`, adds the block's functions to it,
-/// and returns it.
+/// and returns it: a group, for [`Bundle::with`](native::Bundle::with).
 /// Each function is keyed by its own name,
 /// and its Frost name, which errors show, is the prefix, a dot, and the key:
 /// below, `greet` is keyed `greet` and named `greeting.greet`.
@@ -221,7 +221,9 @@ pub use frostlang_macros::frost_closure;
 /// }
 ///
 /// let greeting = Greeting(String::from("Hello"));
-/// let greeting_for_frost: Value = Greeting::frost_functions(Bundle::new(greeting)).build();
+/// let greeting_for_frost: Value = Bundle::new(greeting)
+///     .with(Greeting::frost_functions)
+///     .build();
 /// ```
 ///
 /// # Functions
@@ -245,7 +247,8 @@ pub use frostlang_macros::frost_closure;
 /// instead of `frost_functions`,
 /// as a second annotated impl block on the same type must.
 /// Each group adds to the builder it is given,
-/// so groups combine into a bundle of optional parts;
+/// so groups combine into a bundle of optional parts
+/// through [`Bundle::with_if`](native::Bundle::with_if);
 /// see [`frost_mutable_bundle`] for an example.
 ///
 /// # Configuration
@@ -317,11 +320,10 @@ pub use frostlang_macros::frost_bundle;
 /// }
 ///
 /// fn counter(resettable: bool) -> Value {
-///     let mut counter = Counter::frost_functions(MutableBundle::new(Counter(0)));
-///     if resettable {
-///         counter = Counter::reset_functions(counter);
-///     }
-///     counter.build()
+///     MutableBundle::new(Counter(0))
+///         .with(Counter::frost_functions)
+///         .with_if(resettable, Counter::reset_functions)
+///         .build()
 /// }
 /// ```
 pub use frostlang_macros::frost_mutable_bundle;
