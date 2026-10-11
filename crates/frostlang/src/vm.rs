@@ -16,9 +16,9 @@ pub use disassemble::Disassembly;
 pub use function::{Arity, Closure, CompiledFunction, MissingCaptures, NameEntry, TrustedProgram};
 pub use globals::{GLOBAL_NAMES, GLOBAL_PURITY, Purity};
 pub use import::{
-    Extension, ExtensionBuilder, ExtensionError, HostComponent, HostComponentError, ImportCtx,
-    ImportResolver, Importer, ImporterBuilder, InvalidComponentName, ModuleId, Stdlib, StdlibError,
-    StdlibModule,
+    ComponentBuilder, Extension, ExtensionBuilder, ExtensionError, HostComponent,
+    HostComponentBuilder, HostComponentError, ImportCtx, ImportResolver, Importer, ImporterBuilder,
+    InvalidComponentName, ModuleId, Stdlib, StdlibError, StdlibModule,
 };
 pub use native::{NativeCtx, NativeFn, NativeFunction};
 pub use outcome::{AbortReason, IdleVm, ProgramResult, RunError, RunErrorKind};

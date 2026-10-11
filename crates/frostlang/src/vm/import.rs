@@ -324,37 +324,66 @@ impl Extension {
     /// If `name` is not a valid name, as for [`new`](Self::new). Take a name
     /// known only at runtime through `new`.
     pub fn builder(name: impl Into<String>) -> ExtensionBuilder {
-        let name = name.into();
-        if !is_identifier_like_and_not_keyword(&name) {
-            panic!("{}", InvalidComponentName(name));
-        }
-        ExtensionBuilder {
-            name,
-            entries: ValueMap::new(),
-        }
+        ComponentBuilder::new("extension", name.into(), Extension)
     }
 }
 
-/// Builds an [`Extension`], or a module nested in one, entry by entry; made
-/// by [`Extension::builder`].
+/// Builds an [`Extension`]; see [`ComponentBuilder`].
+pub type ExtensionBuilder = ComponentBuilder<Extension>;
+
+/// Builds a [`HostComponent`]; see [`ComponentBuilder`].
+pub type HostComponentBuilder = ComponentBuilder<HostComponent>;
+
+/// Builds an [`Extension`] or a [`HostComponent`], or a module nested in one,
+/// entry by entry; made by [`Extension::builder`] or
+/// [`HostComponent::builder`].
 ///
 /// A script reaches each entry by its key, as in `ext.geometry.area`, so a key
 /// is a Frost identifier and not a keyword. A nested module is built with the
 /// same methods, so a group, a function adding entries to a builder, works at
-/// any level.
+/// any level, and one generic over `T` works for either kind:
 ///
-/// Every method panics on an entry that cannot be added, since an extension's
+/// ```
+/// use frostlang::{ComponentBuilder, Extension, HostComponent, Value};
+///
+/// fn versioned<T>(component: ComponentBuilder<T>) -> ComponentBuilder<T> {
+///     component.value("version", Value::Int(2))
+/// }
+///
+/// let extension = Extension::builder("tools").with(versioned).build();
+/// let component = HostComponent::builder("app").with(versioned).build();
+/// ```
+///
+/// Every method panics on an entry that cannot be added, since a component's
 /// entries are fixed in its code.
 #[derive(Debug)]
-#[must_use = "an extension builder does nothing until built"]
-pub struct ExtensionBuilder {
-    /// The extension's name, or a nested module's path, as in `geometry.units`,
-    /// for messages.
+#[must_use = "a component builder does nothing until built"]
+pub struct ComponentBuilder<T> {
+    /// The kind of component, as messages name it, such as `extension`.
+    kind: &'static str,
+    /// The component's name, or a nested module's path, as in
+    /// `geometry.units`, for messages.
     name: String,
     entries: ValueMap,
+    /// Makes the component from its name and content.
+    make: fn(Module) -> T,
 }
 
-impl ExtensionBuilder {
+impl<T> ComponentBuilder<T> {
+    /// A builder for the `kind` of component named `name`, made by `make`.
+    /// Panics if `name` is invalid.
+    fn new(kind: &'static str, name: String, make: fn(Module) -> T) -> Self {
+        if !is_identifier_like_and_not_keyword(&name) {
+            panic!("{}", InvalidComponentName(name));
+        }
+        Self {
+            kind,
+            name,
+            entries: ValueMap::new(),
+            make,
+        }
+    }
+
     /// Adds `function`, keyed by its name after the last `.`, so a function
     /// named `geometry.area` is keyed `area`.
     ///
@@ -367,7 +396,8 @@ impl ExtensionBuilder {
             Value::NativeFunction(native) => native.name(),
             Value::Closure(closure) => closure.function.name.as_str(),
             other => panic!(
-                "extension `{}` takes only a Function through `function`, got {}",
+                "{} `{}` takes only a Function through `function`, got {}",
+                self.kind,
                 self.name,
                 other.type_name()
             ),
@@ -389,13 +419,15 @@ impl ExtensionBuilder {
         let key = key.into();
         assert!(
             is_identifier_like_and_not_keyword(&key),
-            "extension `{}` cannot key an entry {key:?}: a key is a Frost identifier, not a keyword",
+            "{} `{}` cannot key an entry {key:?}: a key is a Frost identifier, not a keyword",
+            self.kind,
             self.name
         );
         let previous = self.entries.insert(MapKey::from(key.as_str()), value);
         assert!(
             previous.is_none(),
-            "extension `{}` already has an entry keyed `{key}`",
+            "{} `{}` already has an entry keyed `{key}`",
+            self.kind,
             self.name
         );
         self
@@ -410,8 +442,10 @@ impl ExtensionBuilder {
     pub fn module(self, key: impl Into<String>, module: impl FnOnce(Self) -> Self) -> Self {
         let key = key.into();
         let nested = module(Self {
+            kind: self.kind,
             name: format!("{}.{key}", self.name),
             entries: ValueMap::new(),
+            make: self.make,
         });
         self.value(key, Value::from(nested.entries))
     }
@@ -428,9 +462,9 @@ impl ExtensionBuilder {
         if condition { group(self) } else { self }
     }
 
-    /// The extension, whose content is a Map of the entries.
-    pub fn build(self) -> Extension {
-        Extension(Module {
+    /// The component, whose content is a Map of the entries.
+    pub fn build(self) -> T {
+        (self.make)(Module {
             name: self.name,
             content: Value::from(self.entries),
         })
@@ -472,6 +506,17 @@ impl HostComponent {
         } else {
             Err(InvalidComponentName(name))
         }
+    }
+
+    /// A builder for a host component named `name`, whose content is a Map
+    /// built entry by entry, as an [`Extension::builder`]'s is.
+    ///
+    /// # Panics
+    ///
+    /// If `name` is not a valid name, as for [`new`](Self::new). Take a name
+    /// known only at runtime through `new`.
+    pub fn builder(name: impl Into<String>) -> HostComponentBuilder {
+        ComponentBuilder::new("host component", name.into(), HostComponent)
     }
 }
 

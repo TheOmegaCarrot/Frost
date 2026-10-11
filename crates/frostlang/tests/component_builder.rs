@@ -1,9 +1,10 @@
-//! `Extension::builder`: an extension's content built entry by entry, then
-//! imported from Frost source as `ext.{name}`.
+//! `Extension::builder` and `HostComponent::builder`: a component's content
+//! built entry by entry, then imported from Frost source, as `ext.{name}` for
+//! an extension and as `{name}` for a host component.
 
 use std::sync::Arc;
 
-use frostlang::{Extension, ExtensionBuilder, ImporterBuilder, Value, frost_fn};
+use frostlang::{ComponentBuilder, Extension, HostComponent, ImporterBuilder, Value, frost_fn};
 
 use crate::script::{Script, UNOPTIMIZED};
 
@@ -33,6 +34,15 @@ fn run_with(extension: Extension, source: &str) -> Value {
     let importer = ImporterBuilder::new()
         .with_extension(extension)
         .expect("a lone extension is accepted")
+        .build();
+    Script::new(source).importer(Arc::clone(&importer)).run()
+}
+
+/// The tail of `source`, with `component` importable.
+fn run_with_component(component: HostComponent, source: &str) -> Value {
+    let importer = ImporterBuilder::new()
+        .with_component(component)
+        .expect("a lone component is accepted")
         .build();
     Script::new(source).importer(Arc::clone(&importer)).run()
 }
@@ -95,9 +105,9 @@ fn a_frost_function_is_keyed_by_its_own_name() {
     assert_eq!(run_with(demo, source), Value::Int(4));
 }
 
-/// A group adding `double`.
-fn doubling(extension: ExtensionBuilder) -> ExtensionBuilder {
-    extension.function(double_frost())
+/// A group adding `double`, to a component of either kind.
+fn doubling<T>(component: ComponentBuilder<T>) -> ComponentBuilder<T> {
+    component.function(double_frost())
 }
 
 #[test]
@@ -139,6 +149,56 @@ fn an_empty_extension_is_an_empty_map() {
         run_with(Extension::builder("demo").build(), source),
         Value::map::<&str, 0>([])
     );
+}
+
+// ============================================================
+// Host components
+// ============================================================
+
+#[test]
+fn a_host_component_is_built_alike_and_imported_by_its_name() {
+    let app = HostComponent::builder("app")
+        .with(doubling)
+        .value("answer", Value::Int(42))
+        .module("inner", |inner| inner.function(triple_frost()))
+        .build();
+    assert_eq!(app.name(), "app");
+    let source = r"
+        def app = import('app')
+        [app.double(2), app.answer, app.inner.triple(2)]
+    ";
+    assert_eq!(
+        run_with_component(app, source),
+        Value::array([Value::Int(4), Value::Int(42), Value::Int(6)])
+    );
+}
+
+#[test]
+#[should_panic(expected = r#"invalid component name "not-valid""#)]
+fn a_host_component_name_that_is_not_an_identifier_panics() {
+    let _ = HostComponent::builder("not-valid");
+}
+
+#[test]
+#[should_panic(
+    expected = r#"host component `app` cannot key an entry "my-key": a key is a Frost identifier, not a keyword"#
+)]
+fn a_host_component_names_itself_in_a_key_panic() {
+    let _ = HostComponent::builder("app").value("my-key", Value::Null);
+}
+
+#[test]
+#[should_panic(expected = "host component `app.inner` already has an entry keyed `triple`")]
+fn a_host_component_names_its_module_path_in_a_repeat_panic() {
+    let _ = HostComponent::builder("app").module("inner", |inner| {
+        inner.function(triple_frost()).function(triple_frost())
+    });
+}
+
+#[test]
+#[should_panic(expected = "host component `app` takes only a Function through `function`, got Int")]
+fn a_host_component_names_itself_in_a_function_panic() {
+    let _ = HostComponent::builder("app").function(Value::Int(1));
 }
 
 // ============================================================
