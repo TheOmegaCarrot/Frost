@@ -1,4 +1,3 @@
-use std::borrow::Cow;
 use std::sync::Arc;
 
 use frostlang::bytecode::{CompiledFunction, FormatVersion};
@@ -11,8 +10,8 @@ use frostlang::{
 struct Marker(i64);
 
 impl FrostOpaque for Marker {
-    fn type_name(&self) -> Cow<'static, str> {
-        Cow::Borrowed("Marker")
+    fn type_name() -> &'static str {
+        "Marker"
     }
 
     fn try_to_string(&self) -> Option<String> {
@@ -267,8 +266,8 @@ fn an_opaque_without_equals_compares_by_identity() {
 struct Tag(i64);
 
 impl FrostOpaque for Tag {
-    fn type_name(&self) -> Cow<'static, str> {
-        Cow::Borrowed("Tag")
+    fn type_name() -> &'static str {
+        "Tag"
     }
 
     fn try_to_string(&self) -> Option<String> {
@@ -287,8 +286,8 @@ impl FrostOpaque for Tag {
 struct EqualsAnything;
 
 impl FrostOpaque for EqualsAnything {
-    fn type_name(&self) -> Cow<'static, str> {
-        Cow::Borrowed("EqualsAnything")
+    fn type_name() -> &'static str {
+        "EqualsAnything"
     }
 
     fn try_to_string(&self) -> Option<String> {

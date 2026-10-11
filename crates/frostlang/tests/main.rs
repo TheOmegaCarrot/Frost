@@ -59,6 +59,7 @@ mod native_frost_bundle;
 mod native_frost_closure;
 mod native_frost_fn;
 mod native_mutable_bundle;
+mod native_opaque;
 mod native_results;
 mod opaque;
 mod optimization_names;

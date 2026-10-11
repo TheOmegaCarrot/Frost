@@ -123,8 +123,8 @@ fn function_placeholder() {
 struct Widget;
 
 impl frostlang::FrostOpaque for Widget {
-    fn type_name(&self) -> std::borrow::Cow<'static, str> {
-        std::borrow::Cow::Borrowed("Widget")
+    fn type_name() -> &'static str {
+        "Widget"
     }
 
     fn try_to_string(&self) -> Option<String> {
@@ -137,8 +137,8 @@ impl frostlang::FrostOpaque for Widget {
 struct Gizmo;
 
 impl frostlang::FrostOpaque for Gizmo {
-    fn type_name(&self) -> std::borrow::Cow<'static, str> {
-        std::borrow::Cow::Borrowed("Gizmo")
+    fn type_name() -> &'static str {
+        "Gizmo"
     }
 
     fn try_to_string(&self) -> Option<String> {
@@ -151,8 +151,8 @@ impl frostlang::FrostOpaque for Gizmo {
 struct Note;
 
 impl frostlang::FrostOpaque for Note {
-    fn type_name(&self) -> std::borrow::Cow<'static, str> {
-        std::borrow::Cow::Borrowed("Note")
+    fn type_name() -> &'static str {
+        "Note"
     }
 
     fn try_to_string(&self) -> Option<String> {

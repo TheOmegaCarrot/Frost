@@ -7,8 +7,6 @@
 //! rendering in `value_to_string.rs`; which payloads a mutable cell accepts in
 //! `library_mutable_cell.rs`.
 
-use std::borrow::Cow;
-
 use frostlang::{FrostOpaque, OpaqueHandle, Value};
 
 /// The primary payload type: carries data, has a string approximation.
@@ -18,8 +16,8 @@ struct Widget {
 }
 
 impl FrostOpaque for Widget {
-    fn type_name(&self) -> Cow<'static, str> {
-        Cow::Borrowed("Widget")
+    fn type_name() -> &'static str {
+        "Widget"
     }
 
     fn try_to_string(&self) -> Option<String> {
@@ -32,8 +30,8 @@ impl FrostOpaque for Widget {
 struct Gadget;
 
 impl FrostOpaque for Gadget {
-    fn type_name(&self) -> Cow<'static, str> {
-        Cow::Borrowed("Gadget")
+    fn type_name() -> &'static str {
+        "Gadget"
     }
 
     fn try_to_string(&self) -> Option<String> {

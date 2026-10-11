@@ -329,7 +329,7 @@ impl fmt::Display for ArgSite<'_> {
 
 /// Panics over `value`, which the type taking it at `site` cannot take: the
 /// native's `Params` disagree with its argument types.
-fn mismatch(site: &ArgSite<'_>, value: &Value) -> ! {
+pub(super) fn mismatch(site: &ArgSite<'_>, value: &Value) -> ! {
     panic!(
         "{site} of {} is {}, which its Rust type cannot take: \
          the native's Params disagree with its argument types",

@@ -8,8 +8,6 @@
 
 use crate::script;
 
-use std::borrow::Cow;
-
 use frostlang::{FrostOpaque, Value};
 use script::assertions::{Library, library_assertions};
 use script::{Script, raises};
@@ -1813,8 +1811,8 @@ struct Tag {
 }
 
 impl FrostOpaque for Tag {
-    fn type_name(&self) -> Cow<'static, str> {
-        Cow::Borrowed("Tag")
+    fn type_name() -> &'static str {
+        "Tag"
     }
 
     fn try_to_string(&self) -> Option<String> {

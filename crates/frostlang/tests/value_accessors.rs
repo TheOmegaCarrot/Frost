@@ -150,8 +150,8 @@ fn as_map_from_non_map() {
 struct Sealed(u32);
 
 impl frostlang::FrostOpaque for Sealed {
-    fn type_name(&self) -> std::borrow::Cow<'static, str> {
-        std::borrow::Cow::Borrowed("Sealed")
+    fn type_name() -> &'static str {
+        "Sealed"
     }
 
     fn try_to_string(&self) -> Option<String> {
@@ -164,8 +164,8 @@ impl frostlang::FrostOpaque for Sealed {
 struct Decoy;
 
 impl frostlang::FrostOpaque for Decoy {
-    fn type_name(&self) -> std::borrow::Cow<'static, str> {
-        std::borrow::Cow::Borrowed("Decoy")
+    fn type_name() -> &'static str {
+        "Decoy"
     }
 
     fn try_to_string(&self) -> Option<String> {

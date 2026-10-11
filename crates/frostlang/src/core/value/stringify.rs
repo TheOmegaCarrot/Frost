@@ -92,7 +92,7 @@ fn stringify(value: &Value, buf: &mut String, ctx: &StringifyContext) {
 /// as a String's contents are, so it cannot break a pretty layout.
 fn stringify_opaque(opaque: &dyn FrostOpaque, buf: &mut String) {
     buf.push('<');
-    buf.push_str(&opaque.type_name());
+    buf.push_str(opaque.type_name());
     if let Some(approximation) = opaque.try_to_string() {
         buf.push_str(": ");
         escape_chars(&approximation, buf);

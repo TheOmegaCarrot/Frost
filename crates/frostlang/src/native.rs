@@ -37,10 +37,12 @@ mod category;
 #[cfg(test)]
 mod frost_fn_tests;
 mod mutable_bundle;
+mod opaque;
 mod result;
 
 pub use arg::{ArgSite, Args, De, FromArg, FrostArg, Nullable, Optional, Rest};
 pub use bundle::{Bundle, BundleCtx};
 pub use category::{Flat, Function, Nonnull, Numeric, Primitive, Structured};
 pub use mutable_bundle::{MutableBundle, MutableBundleCtx, PoisonedState, StateGuard, StateLock};
+pub use opaque::Opaque;
 pub use result::{IntoNativeResult, Ser};

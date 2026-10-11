@@ -57,8 +57,8 @@ fn opaque() -> Value {
     struct Hidden;
 
     impl FrostOpaque for Hidden {
-        fn type_name(&self) -> std::borrow::Cow<'static, str> {
-            std::borrow::Cow::Borrowed("Hidden")
+        fn type_name() -> &'static str {
+            "Hidden"
         }
 
         fn try_to_string(&self) -> Option<String> {

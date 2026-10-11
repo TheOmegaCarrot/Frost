@@ -12,8 +12,6 @@
 
 use crate::script;
 
-use std::borrow::Cow;
-
 use frostlang::{FrostOpaque, SpecialFloat, Value};
 use script::Script;
 use script::assertions::{Library, library_assertions};
@@ -157,8 +155,8 @@ fn a_cell_rejects_a_function() {
 struct Plain(#[allow(dead_code)] u64);
 
 impl FrostOpaque for Plain {
-    fn type_name(&self) -> Cow<'static, str> {
-        Cow::Borrowed("Plain")
+    fn type_name() -> &'static str {
+        "Plain"
     }
 
     fn try_to_string(&self) -> Option<String> {
@@ -171,8 +169,8 @@ impl FrostOpaque for Plain {
 struct Owning(#[allow(dead_code)] Vec<u8>);
 
 impl FrostOpaque for Owning {
-    fn type_name(&self) -> Cow<'static, str> {
-        Cow::Borrowed("Owning")
+    fn type_name() -> &'static str {
+        "Owning"
     }
 
     fn try_to_string(&self) -> Option<String> {

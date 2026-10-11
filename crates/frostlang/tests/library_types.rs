@@ -15,8 +15,6 @@
 
 use crate::script;
 
-use std::borrow::Cow;
-
 use frostlang::{FrostOpaque, Value};
 use script::assertions::{Library, library_assertions};
 use script::{Script, raises, run};
@@ -63,8 +61,8 @@ const SAMPLES: &[(&str, &str)] = &[
 struct Payload;
 
 impl FrostOpaque for Payload {
-    fn type_name(&self) -> Cow<'static, str> {
-        Cow::Borrowed("Payload")
+    fn type_name() -> &'static str {
+        "Payload"
     }
 
     fn try_to_string(&self) -> Option<String> {

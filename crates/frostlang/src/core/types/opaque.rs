@@ -1,6 +1,6 @@
 //! [`FrostOpaque`]: the trait host data implements to travel through Frost.
 
-use std::{any::Any, borrow::Cow, fmt::Debug, ops::Deref, sync::Arc};
+use std::{any::Any, fmt::Debug, ops::Deref, sync::Arc};
 
 /// Host data carried through Frost as an `Opaque` [`Value`](crate::Value).
 ///
@@ -13,12 +13,16 @@ use std::{any::Any, borrow::Cow, fmt::Debug, ops::Deref, sync::Arc};
 /// recovers the concrete type with
 /// [`Value::downcast_opaque`](crate::Value::downcast_opaque), or steals it back
 /// out with [`OpaqueHandle::try_extract`].
-pub trait FrostOpaque: Any + Debug + Send + Sync {
-    /// The host-facing name of this kind of value.
+pub trait FrostOpaque: Any + Debug + Send + Sync + sealed::DynTypeName {
+    /// The host-facing name of this type of value, the same for every value.
     ///
-    /// Surfaced when Frost renders the value; keep it short, stable, and
-    /// capitalized like a type name.
-    fn type_name(&self) -> Cow<'static, str>;
+    /// Surfaced when Frost renders the value and in errors; keep it short,
+    /// stable, and capitalized like a type name. A `dyn FrostOpaque`, as an
+    /// [`OpaqueHandle`] dereferences to, gives it through a `type_name` method
+    /// of its own.
+    fn type_name() -> &'static str
+    where
+        Self: Sized;
 
     /// A human-readable approximation of this value, if it has one.
     ///
@@ -58,12 +62,32 @@ pub trait FrostOpaque: Any + Debug + Send + Sync {
 }
 
 pub(crate) mod sealed {
+    use super::FrostOpaque;
+
     /// Proof of a call from inside this crate; see
     /// [`FrostOpaque::has_drop_glue`](super::FrostOpaque::has_drop_glue).
     pub struct Token;
+
+    /// [`FrostOpaque::type_name`] through a receiver, so that a
+    /// `dyn FrostOpaque` can name its payload type. Implemented for every
+    /// payload type, so no implementation can differ from its `type_name`.
+    pub trait DynTypeName {
+        fn dyn_type_name(&self) -> &'static str;
+    }
+
+    impl<T: FrostOpaque> DynTypeName for T {
+        fn dyn_type_name(&self) -> &'static str {
+            T::type_name()
+        }
+    }
 }
 
 impl dyn FrostOpaque {
+    /// The payload type's [`FrostOpaque::type_name`].
+    pub fn type_name(&self) -> &'static str {
+        self.dyn_type_name()
+    }
+
     /// [`std::mem::needs_drop`] for the payload's concrete type.
     pub(crate) fn needs_drop(&self) -> bool {
         self.has_drop_glue(sealed::Token)
@@ -111,16 +135,24 @@ impl OpaqueHandle {
     /// The owned counterpart of [`downcast_ref`](Self::downcast_ref), for a
     /// host that wants its data back without cloning.
     pub fn try_extract<T: FrostOpaque>(self) -> Result<T, Self> {
+        Arc::try_unwrap(self.downcast_arc()?).map_err(Self::from_arc)
+    }
+
+    /// A handle to the payload of `payload`, shared with it.
+    pub(crate) fn from_arc<T: FrostOpaque>(payload: Arc<T>) -> Self {
+        Self(payload)
+    }
+
+    /// The payload as a `T`, still shared with any other handle to it, or
+    /// this handle unchanged if the payload is some other type.
+    pub(crate) fn downcast_arc<T: FrostOpaque>(self) -> Result<Arc<T>, Self> {
         if self.0.downcast_ref::<T>().is_none() {
             return Err(self);
         }
-
         let any: Arc<dyn Any + Send + Sync> = self.0;
-        let typed: Arc<T> = any
+        Ok(any
             .downcast()
-            .expect("IMPOSSIBLE: payload type was checked above");
-
-        Arc::try_unwrap(typed).map_err(|shared| Self(shared))
+            .expect("IMPOSSIBLE: payload type was checked above"))
     }
 
     /// Whether `self` and `other` are handles to the same payload.

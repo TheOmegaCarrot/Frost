@@ -5,8 +5,6 @@
 
 use crate::common;
 
-use std::borrow::Cow;
-
 use serde::{Deserialize, Serialize};
 
 use frostlang::{FrostOpaque, Value, from_value, frost_closure, to_value};
@@ -19,8 +17,8 @@ fn native_fn() -> Value {
 struct Widget;
 
 impl FrostOpaque for Widget {
-    fn type_name(&self) -> Cow<'static, str> {
-        Cow::Borrowed("Widget")
+    fn type_name() -> &'static str {
+        "Widget"
     }
 
     fn try_to_string(&self) -> Option<String> {

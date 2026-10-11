@@ -123,8 +123,8 @@ fn an_opaque() -> Value {
     struct Blob(String);
 
     impl FrostOpaque for Blob {
-        fn type_name(&self) -> std::borrow::Cow<'static, str> {
-            std::borrow::Cow::Borrowed("Blob")
+        fn type_name() -> &'static str {
+            "Blob"
         }
 
         fn try_to_string(&self) -> Option<String> {

@@ -1,7 +1,5 @@
 //! [`SpecialFloat`]: a NaN or infinite float, carried as an Opaque.
 
-use std::borrow::Cow;
-
 use crate::core::FrostOpaque;
 
 /// A NaN or infinite `f64`, which [`FrostFloat`](crate::FrostFloat) cannot hold.
@@ -26,8 +24,8 @@ impl SpecialFloat {
 }
 
 impl FrostOpaque for SpecialFloat {
-    fn type_name(&self) -> Cow<'static, str> {
-        Cow::Borrowed("SpecialFloat")
+    fn type_name() -> &'static str {
+        "SpecialFloat"
     }
 
     fn try_to_string(&self) -> Option<String> {
