@@ -1,0 +1,7 @@
+error: `frost_closure!` needs the Frost function's name, then the closure: `frost_closure!("...", |...| ...)`
+ --> tests/frost_closure/fail/missing_name.rs:6:13
+  |
+6 |     let _ = frost_closure!(|n: i64| n);
+  |             ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+  = note: this error originates in the macro `frost_closure` (in Nightly builds, run with -Z macro-backtrace for more info)

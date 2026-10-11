@@ -1,0 +1,44 @@
+warning: variable does not need to be mutable
+ --> tests/frost_closure/fail/not_shareable.rs:8:9
+  |
+8 |     let mut count = 0;
+  |         ----^^^^^
+  |         |
+  |         help: remove this `mut`
+  |
+  = note: `#[warn(unused_mut)]` (part of `#[warn(unused)]`) on by default
+
+error[E0594]: cannot assign to `count`, as it is a captured variable in a `Fn` closure
+  --> tests/frost_closure/fail/not_shareable.rs:10:9
+   |
+ 9 |       let _ = frost_closure!("mutating", move || {
+   |               -                          ------- in this closure
+   |  _____________|
+   | |
+10 | |         count += 1;
+   | |         ^^^^^^^^^^ cannot assign
+11 | |         count
+12 | |     });
+   | |      -
+   | |      |
+   | |______change this to accept `FnMut` instead of `Fn`
+   |        expects `Fn` instead of `FnMut`
+
+error[E0373]: closure may outlive the current function, but it borrows `local`, which is owned by the current function
+  --> tests/frost_closure/fail/not_shareable.rs:15:41
+   |
+15 |     let _ = frost_closure!("borrowing", || local.len());
+   |                                         ^^ ----- `local` is borrowed here
+   |                                         |
+   |                                         may outlive borrowed value `local`
+   |
+note: function requires argument type to outlive `'static`
+  --> tests/frost_closure/fail/not_shareable.rs:15:13
+   |
+15 |     let _ = frost_closure!("borrowing", || local.len());
+   |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   = note: this error originates in the macro `frost_closure` (in Nightly builds, run with -Z macro-backtrace for more info)
+help: to force the closure to take ownership of `local` (and any other referenced variables), use the `move` keyword
+   |
+15 |     let _ = frost_closure!("borrowing", move || local.len());
+   |                                         ++++

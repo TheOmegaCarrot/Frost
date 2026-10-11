@@ -1,0 +1,17 @@
+error: `frost_closure!` takes a plain closure, not an `async` one
+ --> tests/frost_closure/fail/not_plain.rs:6:44
+  |
+6 |     let _ = frost_closure!("asynchronous", async |n: i64| n);
+  |                                            ^^^^^
+
+error: `frost_closure!` takes a plain closure, not a `const` one
+ --> tests/frost_closure/fail/not_plain.rs:7:40
+  |
+7 |     let _ = frost_closure!("constant", const |n: i64| n);
+  |                                        ^^^^^
+
+error: `frost_closure!` takes a plain closure, not one with a `for<...>` binder
+ --> tests/frost_closure/fail/not_plain.rs:8:38
+  |
+8 |     let _ = frost_closure!("binder", for<'a> |n: i64| n);
+  |                                      ^^^^^^^

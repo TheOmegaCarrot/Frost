@@ -84,17 +84,19 @@ fn check_signature(function: &ItemFn, errors: &mut Errors) {
 
 /// Reads the inputs from `sig`'s parameters, stripping their markers.
 fn read_inputs(sig: &mut Signature, errors: &mut Errors) -> Inputs {
-    let mut params = Vec::new();
+    let mut inputs = Inputs::default();
     for input in &mut sig.inputs {
         match input {
-            FnArg::Typed(typed) => params.push((&mut typed.attrs, &*typed.pat, &*typed.ty)),
+            FnArg::Typed(typed) => {
+                inputs.read(&mut typed.attrs, &typed.pat, Some(&typed.ty), errors);
+            }
             FnArg::Receiver(receiver) => errors.push(syn::Error::new_spanned(
                 receiver,
                 "`#[frost_fn]` takes a free function, not a method",
             )),
         }
     }
-    Inputs::read(params, errors)
+    inputs
 }
 
 /// `<function>_frost`, returning the Frost function named `name`.
@@ -113,11 +115,7 @@ fn maker(function: &ItemFn, name: &Expr, inputs: &Inputs) -> TokenStream {
     // Mixed-site, so that no parameter name can shadow them.
     let ctx = Ident::new("ctx", Span::mixed_site());
     let args = Ident::new("args", Span::mixed_site());
-    let (ctx_pattern, ctx_arg) = if inputs.ctx {
-        (quote!(mut #ctx), quote!(&mut #ctx,))
-    } else {
-        (quote!(_), quote!())
-    };
+    let (ctx_pattern, ctx_arg) = inputs.ctx_pattern_and_arg(&ctx);
     let spec = inputs.spec(sig.paren_token.span.join());
     let takes = inputs.takes(&args);
     // A return type that cannot be returned is reported at that type.

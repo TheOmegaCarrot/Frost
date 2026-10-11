@@ -110,12 +110,48 @@ pub use vm::{
 /// `extern`. Each parameter but the context is a plain name, such as `text`.
 pub use frostlang_macros::frost_fn;
 
+/// Makes a Frost function from a Rust closure.
+///
+/// `frost_closure!(name, closure)` returns the Frost function [`Value`] named
+/// `name`, which calls `closure`. It takes its parameters and gives its result
+/// as [`frost_fn`] does, which describes them; this covers the differences.
+///
+/// `name` is any `&'static str` expression, evaluated once, when the function
+/// is made, so a factory may name each function it makes:
+///
+/// ```
+/// use frostlang::{Value, frost_closure};
+///
+/// fn adder(name: &'static str, amount: i64) -> Value {
+///     frost_closure!(name, move |n: i64| n + amount)
+/// }
+///
+/// let add_one_for_frost: Value = adder("add_one", 1);
+/// ```
+///
+/// A parameter written without a type is a [`Value`], accepting any value.
+/// The context parameter needs no type either, as it has only the one:
+///
+/// ```
+/// use frostlang::{Value, frost_closure};
+///
+/// let apply_for_frost: Value = frost_closure!("apply", |#[frost(ctx)] ctx, function, value| {
+///     ctx.invoke(&function, [value])
+/// });
+/// ```
+///
+/// The closure is called through a shared reference, from whichever thread
+/// runs Frost, so it must be `Fn`, `Send`, `Sync`, and `'static`, typically by
+/// capturing with `move`. It is not `async` or `const`, and has no `for<...>`
+/// binder.
+pub use frostlang_macros::frost_closure;
+
 // What the binding macros' generated code names: its only path into this
 // crate, so that public paths may move without breaking the macros.
 #[doc(hidden)]
 pub mod __private {
     pub use crate::native::{Args, FrostArg, IntoNativeResult};
-    pub use crate::{Params, Value};
+    pub use crate::{NativeCtx, Params, Value};
 }
 
 /// The bytecode the [`Vm`] runs, as the compiler produces it.

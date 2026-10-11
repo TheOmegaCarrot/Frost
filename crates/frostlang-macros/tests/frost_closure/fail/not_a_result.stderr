@@ -1,0 +1,45 @@
+error[E0277]: `Opaque` cannot be returned to Frost
+ --> tests/frost_closure/fail/not_a_result.rs:9:43
+  |
+9 |     let _ = frost_closure!("typed", || -> Opaque { Opaque });
+  |                                           ^^^^^^ not a native's result type
+  |
+help: the trait `IntoNativeResult` is not implemented for `Opaque`
+ --> tests/frost_closure/fail/not_a_result.rs:6:1
+  |
+6 | struct Opaque;
+  | ^^^^^^^^^^^^^
+  = note: a native's result type implements `IntoNativeResult`
+  = help: the following other types implement trait `IntoNativeResult`:
+            &str
+            ()
+            FrostArray
+            FrostBytes
+            FrostFloat
+            FrostMap
+            FrostString
+            Option<T>
+          and $N others
+
+error[E0277]: `Opaque` cannot be returned to Frost
+  --> tests/frost_closure/fail/not_a_result.rs:10:42
+   |
+10 |     let _ = frost_closure!("untyped", || Opaque);
+   |                                          ^^^^^^ not a native's result type
+   |
+help: the trait `IntoNativeResult` is not implemented for `Opaque`
+  --> tests/frost_closure/fail/not_a_result.rs:6:1
+   |
+ 6 | struct Opaque;
+   | ^^^^^^^^^^^^^
+   = note: a native's result type implements `IntoNativeResult`
+   = help: the following other types implement trait `IntoNativeResult`:
+             &str
+             ()
+             FrostArray
+             FrostBytes
+             FrostFloat
+             FrostMap
+             FrostString
+             Option<T>
+           and $N others

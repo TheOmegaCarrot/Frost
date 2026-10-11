@@ -1,0 +1,24 @@
+error[E0080]: evaluation panicked: invalid param spec: a spec has optionals or a rest, not both
+ --> tests/frost_closure/fail/params_rules.rs:7:33
+  |
+7 |     let _ = frost_closure!("f", |_first: Optional<i64>, _rest: Rest<i64>| 0);
+  |                                 ^ evaluation of `main::{constant#0}` failed inside this call
+  |
+note: inside `Params::new`
+ --> $RUST/core/src/panic.rs
+  |
+  |         $crate::panicking::panic_fmt($crate::const_format_args!($($t)+));
+  |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the failure occurred here
+  |
+ ::: $WORKSPACE/crates/frostlang/src/vm/params.rs
+  |
+  |                 panic!("invalid param spec: a spec has optionals or a rest, not both")
+  |                 ---------------------------------------------------------------------- in this macro invocation
+
+note: erroneous constant encountered
+ --> tests/frost_closure/fail/params_rules.rs:7:13
+  |
+7 |     let _ = frost_closure!("f", |_first: Optional<i64>, _rest: Rest<i64>| 0);
+  |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+  = note: this note originates in the macro `frost_closure` (in Nightly builds, run with -Z macro-backtrace for more info)

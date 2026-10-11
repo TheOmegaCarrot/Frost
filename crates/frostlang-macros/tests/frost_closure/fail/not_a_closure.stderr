@@ -1,0 +1,5 @@
+error: `frost_closure!` takes a closure; for a function, see `#[frost_fn]`
+  --> tests/frost_closure/fail/not_a_closure.rs:10:38
+   |
+10 |     let _ = frost_closure!("double", double);
+   |                                      ^^^^^^

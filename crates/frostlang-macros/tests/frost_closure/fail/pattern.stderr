@@ -1,0 +1,11 @@
+error: a Frost function's parameter must be a plain name, such as `text`
+ --> tests/frost_closure/fail/pattern.rs:6:38
+  |
+6 |     let _ = frost_closure!("tuple", |(_a, _b): (i64, i64)| 0);
+  |                                      ^^^^^^^^
+
+error: a Frost function's parameter must be a plain name, such as `text`
+ --> tests/frost_closure/fail/pattern.rs:7:41
+  |
+7 |     let _ = frost_closure!("wildcard", |_| 0);
+  |                                         ^

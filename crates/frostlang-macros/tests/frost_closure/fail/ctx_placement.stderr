@@ -1,0 +1,17 @@
+error: the `#[frost(ctx)]` parameter must come first
+ --> tests/frost_closure/fail/ctx_placement.rs:6:63
+  |
+6 |     let _ = frost_closure!("not_first", |_value: i64, #[frost(ctx)] _ctx| 0);
+  |                                                               ^^^
+
+error: only one parameter can be `#[frost(ctx)]`
+ --> tests/frost_closure/fail/ctx_placement.rs:7:64
+  |
+7 |     let _ = frost_closure!("twice", |#[frost(ctx)] _a, #[frost(ctx)] _b| 0);
+  |                                                                ^^^
+
+error: unknown marker: a parameter takes only `#[frost(ctx)]`
+ --> tests/frost_closure/fail/ctx_placement.rs:8:48
+  |
+8 |     let _ = frost_closure!("unknown", |#[frost(skip)] _value: i64| 0);
+  |                                                ^^^^

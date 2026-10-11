@@ -1,6 +1,7 @@
 //! The macros behind `frostlang`'s Frost function bindings. Use them through
 //! `frostlang`, which re-exports and documents them.
 
+mod closure;
 mod errors;
 mod frost_fn;
 mod inputs;
@@ -11,6 +12,12 @@ use proc_macro::TokenStream;
 #[proc_macro_attribute]
 pub fn frost_fn(attr: TokenStream, item: TokenStream) -> TokenStream {
     frost_fn::expand(attr.into(), item.into()).into()
+}
+
+// Documented at its re-export in `frostlang`.
+#[proc_macro]
+pub fn frost_closure(input: TokenStream) -> TokenStream {
+    closure::expand(input.into()).into()
 }
 
 /// The path through which generated code reaches `frostlang`: never its public

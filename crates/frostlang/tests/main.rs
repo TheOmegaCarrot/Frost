@@ -53,6 +53,7 @@ mod map_key;
 mod match_expressions;
 mod native_args;
 mod native_bundle;
+mod native_frost_closure;
 mod native_frost_fn;
 mod native_mutable_bundle;
 mod native_results;
