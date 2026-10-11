@@ -5,6 +5,25 @@ use frostlang::{
     KEYWORDS, is_identifier_like, is_identifier_like_and_not_keyword, is_reserved_keyword,
 };
 
+// -- In const evaluation --
+
+// The binding macros check names at compile time, so every check must work
+// in const evaluation, and agree there with every keyword.
+const _: () = {
+    assert!(is_identifier_like("rng"));
+    assert!(!is_identifier_like("a.b"));
+    assert!(!is_identifier_like(""));
+    assert!(is_reserved_keyword("map"));
+    assert!(!is_reserved_keyword("mapping"));
+    assert!(is_identifier_like_and_not_keyword("compiled_regex"));
+    assert!(!is_identifier_like_and_not_keyword("match"));
+    let mut i = 0;
+    while i < KEYWORDS.len() {
+        assert!(is_reserved_keyword(KEYWORDS[i]));
+        i += 1;
+    }
+};
+
 // -- is_identifier_like --
 
 #[test]

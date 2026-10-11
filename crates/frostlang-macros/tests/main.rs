@@ -9,5 +9,6 @@
 //! with `TRYBUILD=overwrite` to write each `.stderr` file in place, then review
 //! the diff; do so too when a new Rust release rewords a rustc error.
 
+mod frost_bundle;
 mod frost_closure;
 mod frost_fn;

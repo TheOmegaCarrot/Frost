@@ -41,7 +41,7 @@ fn counter(count: MutableBundle<i64>) -> Value {
 }
 
 /// `make_counter(start)`: a fresh counter per call, owning its count.
-fn make_counter() -> Value {
+pub(crate) fn make_counter() -> Value {
     Value::native("make_counter", Arity::Exact(1), |_, args| {
         let start = args[0].as_int().expect("an Int start");
         Ok(counter(MutableBundle::new(start)))

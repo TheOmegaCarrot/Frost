@@ -7,9 +7,10 @@
 
 use std::hash::{BuildHasher, RandomState};
 
-use crate::native::{Args, FrostArg, MutableBundle, MutableBundleCtx, Optional};
+use crate::native::{ArgSite, FromArg, MutableBundle, Optional};
 use crate::{
-    FrostArray, FrostError, FrostFloat, FrostResult, FrostType, Param, Params, StdlibModule, Value,
+    FrostArray, FrostError, FrostFloat, FrostResult, FrostType, Param, Params, StdlibModule,
+    TypeSet, Value, frost_mutable_bundle,
 };
 
 /// The configuration of [`random`].
@@ -61,35 +62,24 @@ fn seed() -> Value {
 
 // --- Engines ---
 
-/// The context of an engine's draw functions, over its generator.
-type Ctx<'a> = MutableBundleCtx<'a, fastrand::Rng>;
-
 /// An engine: the draw functions over one generator seeded with `seed`.
 fn engine(seed: u64) -> Value {
-    const BOUNDS: Params = Params::new(&[
-        Param::of(FrostType::NUMERIC).named("low"),
-        Param::of(FrostType::NUMERIC).named("high"),
-    ]);
-    const INT_BOUNDS: Params = Params::new(&[
-        <i64 as FrostArg>::PARAM.named("low"),
-        <i64 as FrostArg>::PARAM.named("high"),
-    ]);
-    const PROBABILITY: Params = Params::new(&[Param::of(FrostType::NUMERIC)
-        .named("probability")
-        .optional()]);
-    const ARRAY: Params = Params::new(&[<FrostArray as FrostArg>::PARAM]);
-    const ARRAY_AND_COUNT: Params = Params::new(&[
-        <FrostArray as FrostArg>::PARAM,
-        <i64 as FrostArg>::PARAM.named("n"),
-    ]);
-    MutableBundle::new(fastrand::Rng::with_seed(seed))
-        .function("rng.int", INT_BOUNDS, int)
-        .function("rng.float", BOUNDS, float)
-        .function("rng.bool", PROBABILITY, boolean)
-        .function("rng.choice", ARRAY, choice)
-        .function("rng.sample", ARRAY_AND_COUNT, sample)
-        .function("rng.shuffle", ARRAY, shuffle)
-        .build()
+    let engine = Engine(fastrand::Rng::with_seed(seed));
+    Engine::frost_functions(MutableBundle::new(engine)).build()
+}
+
+/// An engine's generator.
+struct Engine(fastrand::Rng);
+
+/// A Numeric argument as given, so that an error can show it as written.
+struct Numeric(Value);
+
+impl FromArg for Numeric {
+    const TYPES: TypeSet = FrostType::NUMERIC;
+
+    fn from_arg(value: Value, _: &ArgSite<'_>) -> Result<Self, FrostError> {
+        Ok(Self(value))
+    }
 }
 
 /// The error for bounds whose low end, `low`, is above the high end, `high`.
@@ -111,82 +101,76 @@ fn float_arg(arg: &Value) -> f64 {
     }
 }
 
-fn int(ctx: &mut Ctx<'_>, mut args: Args<'_>) -> FrostResult {
-    let low: i64 = args.take()?;
-    let high: i64 = args.take()?;
-    if low > high {
-        return Err(bounds_error("rng.int", &low.into(), &high.into()));
+#[frost_mutable_bundle(prefix = "rng")]
+impl Engine {
+    fn int(&mut self, low: i64, high: i64) -> FrostResult {
+        if low > high {
+            return Err(bounds_error("rng.int", &low.into(), &high.into()));
+        }
+        Ok(Value::Int(self.0.i64(low..=high)))
     }
-    Ok(Value::Int(ctx.lock()?.i64(low..=high)))
-}
 
-fn float(ctx: &mut Ctx<'_>, mut args: Args<'_>) -> FrostResult {
-    let low_arg: Value = args.take()?;
-    let high_arg: Value = args.take()?;
-    let [low, high] = [&low_arg, &high_arg].map(float_arg);
-    if low > high {
-        return Err(bounds_error("rng.float", &low_arg, &high_arg));
+    fn float(&mut self, low: Numeric, high: Numeric) -> FrostResult {
+        let [low_arg, high_arg] = [low.0, high.0];
+        let [low, high] = [&low_arg, &high_arg].map(float_arg);
+        if low > high {
+            return Err(bounds_error("rng.float", &low_arg, &high_arg));
+        }
+        if low == high {
+            return Ok(Value::Float(
+                FrostFloat::new(low).expect("a Numeric argument is finite"),
+            ));
+        }
+        let t = self.0.f64_inclusive();
+        // Weighting both ends, rather than `low + (high - low) * t`, cannot
+        // overflow, and gives exactly `low` and `high` at the ends. Rounding can
+        // still step just past an end, so the result is clamped.
+        let drawn = ((1.0 - t) * low + t * high).clamp(low, high);
+        Ok(Value::Float(
+            FrostFloat::new(drawn).expect("a point between two finite floats is finite"),
+        ))
     }
-    if low == high {
-        return Ok(Value::Float(
-            FrostFloat::new(low).expect("a Numeric argument is finite"),
-        ));
+
+    fn bool(&mut self, probability: Optional<Numeric>) -> FrostResult {
+        let Optional(Some(Numeric(probability))) = probability else {
+            return Ok(Value::Bool(self.0.bool()));
+        };
+        let p = float_arg(&probability);
+        if !(0.0..=1.0).contains(&p) {
+            return Err(FrostError::from_string(format!(
+                "Function rng.bool requires argument 1 (probability) to be from 0 to 1, got {}",
+                probability.to_frost_string()
+            )));
+        }
+        // A draw from [0, 1) is below 1 always and below 0 never.
+        Ok(Value::Bool(self.0.f64() < p))
     }
-    let t = ctx.lock()?.f64_inclusive();
-    // Weighting both ends, rather than `low + (high - low) * t`, cannot
-    // overflow, and gives exactly `low` and `high` at the ends. Rounding can
-    // still step just past an end, so the result is clamped.
-    let drawn = ((1.0 - t) * low + t * high).clamp(low, high);
-    Ok(Value::Float(
-        FrostFloat::new(drawn).expect("a point between two finite floats is finite"),
-    ))
-}
 
-fn boolean(ctx: &mut Ctx<'_>, mut args: Args<'_>) -> FrostResult {
-    let Optional(probability) = args.take::<Optional<Value>>()?;
-    let Some(probability) = probability else {
-        return Ok(Value::Bool(ctx.lock()?.bool()));
-    };
-    let p = float_arg(&probability);
-    if !(0.0..=1.0).contains(&p) {
-        return Err(FrostError::from_string(format!(
-            "Function rng.bool requires argument 1 (probability) to be from 0 to 1, got {}",
-            probability.to_frost_string()
-        )));
+    fn choice(&mut self, #[frost(unnamed)] array: FrostArray) -> FrostResult {
+        if array.is_empty() {
+            return Err(FrostError::from_static(
+                "Function rng.choice requires a non-empty Array",
+            ));
+        }
+        let index = self.0.usize(..array.len());
+        Ok(array[index].clone())
     }
-    // A draw from [0, 1) is below 1 always and below 0 never.
-    Ok(Value::Bool(ctx.lock()?.f64() < p))
-}
 
-fn choice(ctx: &mut Ctx<'_>, mut args: Args<'_>) -> FrostResult {
-    let array: FrostArray = args.take()?;
-    if array.is_empty() {
-        return Err(FrostError::from_static(
-            "Function rng.choice requires a non-empty Array",
-        ));
+    fn sample(&mut self, #[frost(unnamed)] array: FrostArray, n: i64) -> FrostResult {
+        let count = usize::try_from(n).ok().filter(|&n| n <= array.len());
+        let Some(count) = count else {
+            return Err(FrostError::from_string(format!(
+                "Function rng.sample requires argument 2 (n) to be from 0 to the Array's \
+                 length, {}, got {n}",
+                array.len()
+            )));
+        };
+        Ok(self.0.choose_multiple(array.iter().cloned(), count).into())
     }
-    let index = ctx.lock()?.usize(..array.len());
-    Ok(array[index].clone())
-}
 
-fn sample(ctx: &mut Ctx<'_>, mut args: Args<'_>) -> FrostResult {
-    let array: FrostArray = args.take()?;
-    let n: i64 = args.take()?;
-    let count = usize::try_from(n).ok().filter(|&n| n <= array.len());
-    let Some(count) = count else {
-        return Err(FrostError::from_string(format!(
-            "Function rng.sample requires argument 2 (n) to be from 0 to the Array's \
-             length, {}, got {n}",
-            array.len()
-        )));
-    };
-    let sampled = ctx.lock()?.choose_multiple(array.iter().cloned(), count);
-    Ok(sampled.into())
-}
-
-fn shuffle(ctx: &mut Ctx<'_>, mut args: Args<'_>) -> FrostResult {
-    let array: FrostArray = args.take()?;
-    let mut elements = array.into_vec();
-    ctx.lock()?.shuffle(&mut elements);
-    Ok(elements.into())
+    fn shuffle(&mut self, #[frost(unnamed)] array: FrostArray) -> FrostArray {
+        let mut elements = array.into_vec();
+        self.0.shuffle(&mut elements);
+        elements.into()
+    }
 }

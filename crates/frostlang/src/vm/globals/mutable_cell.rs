@@ -1,7 +1,9 @@
 //! Mutable reference cells: Frost's only built-in mutable state.
 
+use std::mem;
+
 use crate::native::MutableBundle;
-use crate::{Arity, FrostError, Param, Params, Value};
+use crate::{Arity, FrostError, Value, frost_mutable_bundle};
 
 fn forbid_cycle(value: &Value) -> Result<(), FrostError> {
     match value {
@@ -27,18 +29,21 @@ pub(super) fn mutable_cell_global() -> Value {
         // steal the initial value if present, else default to Null.
         let initial = args.first_mut().map_or(Value::Null, Value::take);
         forbid_cycle(&initial)?;
-
-        const NO_PARAMS: Params = Params::new(&[]);
-        const ONE_ANY: Params = Params::new(&[Param::any()]);
-        Ok(MutableBundle::new(initial)
-            .function("mutable_cell.get", NO_PARAMS, |ctx, _| {
-                Ok(ctx.lock()?.clone())
-            })
-            .function("mutable_cell.exchange", ONE_ANY, |ctx, mut args| {
-                let new_value: Value = args.take()?;
-                forbid_cycle(&new_value)?;
-                Ok(std::mem::replace(&mut *ctx.lock()?, new_value))
-            })
-            .build())
+        Ok(Cell::frost_functions(MutableBundle::new(Cell(initial))).build())
     })
+}
+
+/// What a mutable cell holds.
+struct Cell(Value);
+
+#[frost_mutable_bundle(prefix = "mutable_cell")]
+impl Cell {
+    fn get(&self) -> Value {
+        self.0.clone()
+    }
+
+    fn exchange(&mut self, new_value: Value) -> Result<Value, FrostError> {
+        forbid_cycle(&new_value)?;
+        Ok(mem::replace(&mut self.0, new_value))
+    }
 }

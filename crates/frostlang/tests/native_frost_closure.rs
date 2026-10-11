@@ -312,6 +312,27 @@ fn a_mutable_parameter_works() {
     assert_eq!(run(appended, "f([1, 2], 3)"), Value::array([1, 2, 3]));
 }
 
+#[test]
+fn an_unnamed_parameter_is_reported_by_position_alone() {
+    // Unnamed, a parameter's pattern need not give a name.
+    let sum_after_first = frost_closure!("sum_after_first", |#[frost(unnamed)] _: i64,
+                                                             #[frost(unnamed)] Rest(ns): Rest<
+        i64,
+    >| ns.iter().sum::<i64>());
+    assert_eq!(run(sum_after_first, "f(100, 1, 2)"), Value::Int(3));
+    let repeat = frost_closure!("repeat", |#[frost(unnamed)] text: String, times: usize| {
+        text.repeat(times)
+    });
+    assert_eq!(
+        raises(repeat.clone(), "f(1, 2)"),
+        "Function repeat requires String as argument 1, got Int"
+    );
+    assert_eq!(
+        raises(repeat, "f('a', 'b')"),
+        "Function repeat requires Int as argument 2 (times), got String"
+    );
+}
+
 /// The first of `items`, or Null when there are none, for any element type.
 fn first<T>(name: &'static str) -> Value
 where

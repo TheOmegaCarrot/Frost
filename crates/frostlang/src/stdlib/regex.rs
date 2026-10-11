@@ -13,9 +13,10 @@ use std::sync::OnceLock;
 
 use regex_lite::Regex;
 
-use crate::native::{Args, Bundle, BundleCtx, FrostArg};
+use crate::native::{ArgSite, Bundle, FromArg};
 use crate::{
-    FrostError, FrostResult, FrostString, FrostType, NativeCtx, Param, Params, StdlibModule, Value,
+    FrostError, FrostResult, FrostString, FrostType, NativeCtx, Param, Params, StdlibModule,
+    TypeSet, Value, frost_bundle,
 };
 
 /// The `std.regex` module: testing, replacing, splitting, and scanning text by
@@ -225,69 +226,60 @@ fn compile() -> Value {
     const PARAMS: Params = Params::new(&[Param::of(FrostType::STRING).named("pattern")]);
     Value::checked_native("regex.compile", PARAMS, |_, args| {
         let pattern = Pattern::new("regex.compile", string_arg(&args[0]))?;
-        Ok(Bundle::new(pattern)
-            .function("compiled_regex.matches", TEXT, |ctx, args| {
-                bound_one_text(ctx, args, Pattern::matches)
-            })
-            .function("compiled_regex.contains", TEXT, |ctx, args| {
-                bound_one_text(ctx, args, Pattern::contains)
-            })
-            .function(
-                "compiled_regex.replace",
-                TEXT_AND_REPLACEMENT,
-                |ctx, args| bound_replacer(ctx, args, Count::All),
-            )
-            .function(
-                "compiled_regex.replace_first",
-                TEXT_AND_REPLACEMENT,
-                |ctx, args| bound_replacer(ctx, args, Count::First),
-            )
-            .function(
-                "compiled_regex.replace_with",
-                TEXT_AND_CALLBACK,
-                bound_replace_with,
-            )
-            .function("compiled_regex.split", TEXT, |ctx, args| {
-                bound_one_text(ctx, args, Pattern::split)
-            })
-            .function("compiled_regex.scan_matches", TEXT, |ctx, args| {
-                bound_one_text(ctx, args, Pattern::scan_matches)
-            })
-            .build())
+        Ok(Compiled::frost_functions(Bundle::new(Compiled(pattern))).build())
     })
 }
 
-/// The context of a compiled pattern's functions.
-type Compiled<'a> = BundleCtx<'a, Pattern>;
+/// A compiled pattern, whose functions are the module's less the pattern.
+struct Compiled(Pattern);
 
-const TEXT: Params = Params::new(&[<FrostString as FrostArg>::PARAM]);
-const TEXT_AND_REPLACEMENT: Params = Params::new(&[
-    <FrostString as FrostArg>::PARAM,
-    <FrostString as FrostArg>::PARAM.named("replacement"),
-]);
-const TEXT_AND_CALLBACK: Params = Params::new(&[
-    <FrostString as FrostArg>::PARAM,
-    Param::of(FrostType::FUNCTION).named("callback"),
-]);
+#[frost_bundle(prefix = "compiled_regex")]
+impl Compiled {
+    fn matches(&self, #[frost(unnamed)] text: FrostString) -> Value {
+        self.0.matches(&text)
+    }
 
-/// A function of text alone, performing `operation` with the pattern.
-fn bound_one_text(
-    ctx: &mut Compiled<'_>,
-    mut args: Args<'_>,
-    operation: fn(&Pattern, &str) -> Value,
-) -> FrostResult {
-    let text: FrostString = args.take()?;
-    Ok(operation(ctx.state(), &text))
+    fn contains(&self, #[frost(unnamed)] text: FrostString) -> Value {
+        self.0.contains(&text)
+    }
+
+    fn replace(&self, #[frost(unnamed)] text: FrostString, replacement: FrostString) -> Value {
+        self.0.replace(&text, &replacement, Count::All)
+    }
+
+    fn replace_first(
+        &self,
+        #[frost(unnamed)] text: FrostString,
+        replacement: FrostString,
+    ) -> Value {
+        self.0.replace(&text, &replacement, Count::First)
+    }
+
+    fn replace_with(
+        &self,
+        #[frost(ctx)] ctx: &mut NativeCtx<'_>,
+        #[frost(unnamed)] text: FrostString,
+        callback: Callback,
+    ) -> FrostResult {
+        self.0.replace_with(ctx, &text, &callback.0)
+    }
+
+    fn split(&self, #[frost(unnamed)] text: FrostString) -> Value {
+        self.0.split(&text)
+    }
+
+    fn scan_matches(&self, #[frost(unnamed)] text: FrostString) -> Value {
+        self.0.scan_matches(&text)
+    }
 }
 
-fn bound_replacer(ctx: &mut Compiled<'_>, mut args: Args<'_>, count: Count) -> FrostResult {
-    let text: FrostString = args.take()?;
-    let replacement: FrostString = args.take()?;
-    Ok(ctx.state().replace(&text, &replacement, count))
-}
+/// A Function argument.
+struct Callback(Value);
 
-fn bound_replace_with(ctx: &mut Compiled<'_>, mut args: Args<'_>) -> FrostResult {
-    let text: FrostString = args.take()?;
-    let callback: Value = args.take()?;
-    ctx.state().replace_with(ctx.native(), &text, &callback)
+impl FromArg for Callback {
+    const TYPES: TypeSet = FrostType::FUNCTION;
+
+    fn from_arg(value: Value, _: &ArgSite<'_>) -> Result<Self, FrostError> {
+        Ok(Self(value))
+    }
 }

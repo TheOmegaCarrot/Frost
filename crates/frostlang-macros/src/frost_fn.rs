@@ -1,15 +1,14 @@
 //! `#[frost_fn]`: a Frost function calling a Rust function.
 
 use proc_macro2::{Span, TokenStream};
-use quote::{format_ident, quote, quote_spanned};
+use quote::{format_ident, quote};
 use syn::ext::IdentExt;
 use syn::parse::Parser;
-use syn::spanned::Spanned;
-use syn::{Expr, FnArg, Ident, ItemFn, ReturnType, Safety, Signature};
+use syn::{Expr, FnArg, Ident, ItemFn, Signature};
 
 use crate::errors::Errors;
 use crate::inputs::Inputs;
-use crate::private;
+use crate::{private, result, signature};
 
 /// The function as written, less its markers, and its maker; or, for an
 /// invalid declaration, its errors, still with the function so that its
@@ -21,7 +20,12 @@ pub(crate) fn expand(attr: TokenStream, item: TokenStream) -> TokenStream {
     };
     let mut errors = Errors::default();
     let name = errors.keep(frost_name(attr));
-    check_signature(&function, &mut errors);
+    signature::check(
+        &function.modifiers,
+        &function.sig,
+        "`#[frost_fn]` takes a plain function",
+        &mut errors,
+    );
     let inputs = read_inputs(&mut function.sig, &mut errors);
     match (errors.finish(), name) {
         (Ok(()), Some(name)) => {
@@ -57,31 +61,6 @@ fn frost_name(attr: TokenStream) -> syn::Result<Expr> {
     })
 }
 
-/// Records an error for each way `function` is not a plain function.
-fn check_signature(function: &ItemFn, errors: &mut Errors) {
-    let sig = &function.sig;
-    let not = |thing: &str| format!("`#[frost_fn]` takes a plain function, not {thing}");
-    errors.keep(function.modifiers.require_empty());
-    if let Some(asyncness) = &sig.asyncness {
-        errors.push(syn::Error::new_spanned(asyncness, not("an `async` one")));
-    }
-    if !matches!(sig.safety, Safety::Default) {
-        errors.push(syn::Error::new_spanned(&sig.safety, not("an `unsafe` one")));
-    }
-    if let Some(abi) = &sig.abi {
-        errors.push(syn::Error::new_spanned(abi, not("an `extern` one")));
-    }
-    let generic = not("a generic one: the macro must name each parameter's type");
-    if !sig.generics.params.is_empty() {
-        errors.push(syn::Error::new_spanned(&sig.generics, &generic));
-    } else if let Some(where_clause) = &sig.generics.where_clause {
-        errors.push(syn::Error::new_spanned(where_clause, &generic));
-    }
-    if let Some(variadic) = &sig.variadic {
-        errors.push(syn::Error::new_spanned(variadic, not("a variadic one")));
-    }
-}
-
 /// Reads the inputs from `sig`'s parameters, stripping their markers.
 fn read_inputs(sig: &mut Signature, errors: &mut Errors) -> Inputs {
     let mut inputs = Inputs::default();
@@ -115,21 +94,10 @@ fn maker(function: &ItemFn, name: &Expr, inputs: &Inputs) -> TokenStream {
     // Mixed-site, so that no parameter name can shadow them.
     let ctx = Ident::new("ctx", Span::mixed_site());
     let args = Ident::new("args", Span::mixed_site());
-    let (ctx_pattern, ctx_arg) = inputs.ctx_pattern_and_arg(&ctx);
+    let (ctx_pattern, (pass_ctx, ctx_arg)) = inputs.ctx_pattern_and_pass(&ctx);
     let spec = inputs.spec(sig.paren_token.span.join());
     let takes = inputs.takes(&args);
-    // A return type that cannot be returned is reported at that type.
-    let result_span = match &sig.output {
-        ReturnType::Type(_, ty) => ty.span(),
-        ReturnType::Default => target.span(),
-    };
-    // Bound first, so that every token of the conversion is spanned at the
-    // return type; see `private`. Unlike `ctx` and `args`, it is not
-    // mixed-site, whose hygiene would break that span; no parameter can shadow
-    // it, since the parameters are never bound as locals here.
-    let result = Ident::new("result", result_span);
-    let result_frostlang = private(result_span);
-    let convert = quote_spanned!(result_span=> #result_frostlang::IntoNativeResult::into_result(#result, NAME));
+    let (result, convert) = result::conversion(&sig.output, target.span(), &quote!(NAME));
 
     quote! {
         #(#cfgs)*
@@ -139,6 +107,7 @@ fn maker(function: &ItemFn, name: &Expr, inputs: &Inputs) -> TokenStream {
             const PARAMS: #frostlang::Params = #spec;
             #frostlang::Value::checked_native(NAME, PARAMS, |#ctx_pattern, #args| {
                 let mut #args = #frostlang::Args::new(NAME, PARAMS, #args);
+                #pass_ctx
                 let #result = #target(#ctx_arg #(#takes),*);
                 #convert
             })

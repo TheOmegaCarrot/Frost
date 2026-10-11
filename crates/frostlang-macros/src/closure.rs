@@ -3,14 +3,14 @@
 use std::mem;
 
 use proc_macro2::{Span, TokenStream};
-use quote::{format_ident, quote, quote_spanned};
+use quote::{format_ident, quote};
 use syn::parse::{Parse, ParseStream};
 use syn::spanned::Spanned;
-use syn::{Attribute, Expr, ExprClosure, Ident, Pat, PatType, ReturnType, Token};
+use syn::{Attribute, Expr, ExprClosure, Ident, Pat, PatType, Token};
 
 use crate::errors::Errors;
 use crate::inputs::{Inputs, ctx_type, value_type};
-use crate::private;
+use crate::{private, result};
 
 /// The macro's input: the Frost function's name, then the closure.
 struct Input {
@@ -130,21 +130,10 @@ fn function(name: &Expr, closure: &ExprClosure, inputs: &Inputs) -> TokenStream 
     // Mixed-site, so that neither the closure nor what it captures sees them.
     let [name_local, params, function, ctx, args] =
         ["name", "params", "function", "ctx", "args"].map(|n| Ident::new(n, Span::mixed_site()));
-    let (ctx_pattern, ctx_arg) = inputs.ctx_pattern_and_arg(&ctx);
+    let (ctx_pattern, (pass_ctx, ctx_arg)) = inputs.ctx_pattern_and_pass(&ctx);
     let spec = inputs.spec(closure.inputs_begin.span);
     let takes = inputs.takes(&args);
-    // A result that cannot be returned is reported at its type, or else at
-    // the body.
-    let result_span = match &closure.output {
-        ReturnType::Type(_, ty) => ty.span(),
-        ReturnType::Default => closure.body.span(),
-    };
-    // See `frost_fn` for why it is not mixed-site.
-    let result = Ident::new("result", result_span);
-    let result_frostlang = private(result_span);
-    let convert = quote_spanned!(result_span=>
-        #result_frostlang::IntoNativeResult::into_result(#result, #name_local)
-    );
+    let (result, convert) = result::conversion(&closure.output, closure.body.span(), &name_local);
 
     // Requires of the closure, where it is written, what `checked_native` will
     // of the function calling it: so rustc reports a closure falling short at
@@ -153,7 +142,7 @@ fn function(name: &Expr, closure: &ExprClosure, inputs: &Inputs) -> TokenStream 
     let arg_types: Vec<Ident> = (0..inputs.args.len())
         .map(|i| format_ident!("A{i}"))
         .collect();
-    let ctx_type = inputs.ctx.then(|| quote!(&mut #frostlang::NativeCtx<'_>,));
+    let ctx_type = inputs.ctx.map(|_| quote!(&mut #frostlang::NativeCtx<'_>,));
     let required = quote! {{
         fn required<F, R, #(#arg_types),*>(function: F) -> F
         where
@@ -176,6 +165,7 @@ fn function(name: &Expr, closure: &ExprClosure, inputs: &Inputs) -> TokenStream 
                 #params.clone(),
                 move |#ctx_pattern, #args| {
                     let mut #args = #frostlang::Args::new(#name_local, #params.clone(), #args);
+                    #pass_ctx
                     let #result = #function(#ctx_arg #(#takes),*);
                     #convert
                 },

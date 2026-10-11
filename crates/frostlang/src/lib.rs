@@ -74,8 +74,9 @@ pub use vm::{
 /// Each parameter's type gives its [`Param`] through
 /// [`FrostArg`](native::FrostArg): the types it accepts, and whether it is
 /// required, [`Optional`](native::Optional), or a [`Rest`](native::Rest). Its
-/// name names it in errors. Parameters that break the rules of [`Params`] fail
-/// to compile.
+/// name names it in errors, unless it is marked `#[frost(unnamed)]`, as an
+/// obvious leading argument may be; then its pattern need not be a name.
+/// Parameters that break the rules of [`Params`] fail to compile.
 ///
 /// A first parameter marked `#[frost(ctx)]`, of type `&mut NativeCtx<'_>`,
 /// receives the call's [`NativeCtx`], for calling back into Frost. Rust code
@@ -103,11 +104,18 @@ pub use vm::{
 /// The function returns any [`IntoNativeResult`](native::IntoNativeResult);
 /// returning nothing returns Null.
 ///
+/// # Configuration
+///
+/// `#[cfg]` works on the function in either order. Written after the macro, it
+/// applies to the generated function too, so that exists exactly when the
+/// function does; written before, rustc removes the function, macro and all,
+/// first.
+///
 /// # Restrictions
 ///
 /// The function is a plain free function: not a method, and not generic
 /// (including through `impl Trait` parameters), `async`, `unsafe`, or
-/// `extern`. Each parameter but the context is a plain name, such as `text`.
+/// `extern`. Each named parameter is a plain name, such as `text`.
 pub use frostlang_macros::frost_fn;
 
 /// Makes a Frost function from a Rust closure.
@@ -146,12 +154,126 @@ pub use frostlang_macros::frost_fn;
 /// binder.
 pub use frostlang_macros::frost_closure;
 
+/// Makes a group of Frost functions over state that never changes, from the
+/// functions of an impl block, to add to a [`Bundle`](native::Bundle).
+///
+/// `#[frost_bundle(prefix = "...")]` keeps the impl block as written, and adds
+/// to the type a private associated function, `frost_functions`, adding each
+/// of the block's functions to a `Bundle<Self>`. A function is keyed by its own
+/// name, and named that key qualified by the prefix:
+///
+/// ```
+/// use frostlang::native::Bundle;
+/// use frostlang::{NativeCtx, Value, frost_bundle};
+///
+/// struct Greeting(String);
+///
+/// #[frost_bundle(prefix = "greeting")]
+/// impl Greeting {
+///     /// `greeting.greet(name)`
+///     fn greet(&self, name: String) -> String {
+///         format!("{}, {name}", self.0)
+///     }
+/// }
+///
+/// let greeting = Greeting(String::from("Hello"));
+/// let greeting_for_frost: Value = Greeting::frost_functions(Bundle::new(greeting)).build();
+/// ```
+///
+/// # Functions
+///
+/// Every function in the block is one of the group, so keep any other in an
+/// impl block of its own. Each takes its parameters and gives its result as
+/// with [`frost_fn`], and takes the state in one of three ways:
+///
+/// - As `&self`. A first parameter marked `#[frost(ctx)]`, of type
+///   `&mut NativeCtx<'_>`, receives the call's [`NativeCtx`]; the state stays
+///   readable while it calls back into Frost.
+/// - Through its context: with no receiver, a first parameter marked
+///   `#[frost(ctx)]`, of type `&mut BundleCtx<'_, Self>`, receives its whole
+///   [`BundleCtx`](native::BundleCtx).
+/// - Not at all: with neither, it is a function of its arguments alone.
+///
+/// # Groups
+///
+/// `group = name` names the generated function instead, as a second annotated
+/// impl block on the same type must. Each group adds to the builder it is
+/// given, so groups combine into bundles of optional parts; see
+/// [`frost_mutable_bundle`] for an example.
+///
+/// # Configuration
+///
+/// `#[cfg]` works on the impl block in either order, as with [`frost_fn`]: the
+/// generated function exists exactly when the block does. It works on each
+/// function in the block too, which the generated function then adds exactly
+/// when the function exists.
+///
+/// # Restrictions
+///
+/// The prefix and each function's name are Frost identifiers, and not
+/// keywords: Frost reaches each function as `.name`. This is checked at
+/// compile time. The impl block is an inherent one, not generic, and its
+/// functions are not generic, `async`, `unsafe`, or `extern`.
+pub use frostlang_macros::frost_bundle;
+
+/// Makes a group of Frost functions over state that changes, from the
+/// functions of an impl block, to add to a
+/// [`MutableBundle`](native::MutableBundle).
+///
+/// It is as [`frost_bundle`] in all but how each function takes the state:
+///
+/// - As `&self` or `&mut self`, locked for the call. A first parameter marked
+///   `#[frost(ctx)]` has type `&NativeCtx<'_>`: every capability but calling
+///   back into Frost, which holding the state forbids.
+/// - Through its context: with no receiver, a first parameter marked
+///   `#[frost(ctx)]`, of type `&mut MutableBundleCtx<'_, Self>`, receives its
+///   whole [`MutableBundleCtx`](native::MutableBundleCtx), to lock the state
+///   itself and call back into Frost between locks.
+/// - Not at all.
+///
+/// Groups make a bundle's parts optional:
+///
+/// ```
+/// use frostlang::native::MutableBundle;
+/// use frostlang::{Value, frost_mutable_bundle};
+///
+/// struct Counter(i64);
+///
+/// #[frost_mutable_bundle(prefix = "counter")]
+/// impl Counter {
+///     fn get(&self) -> i64 {
+///         self.0
+///     }
+///
+///     fn add(&mut self, amount: i64) -> i64 {
+///         self.0 += amount;
+///         self.0
+///     }
+/// }
+///
+/// #[frost_mutable_bundle(prefix = "counter", group = reset_functions)]
+/// impl Counter {
+///     fn reset(&mut self) {
+///         self.0 = 0;
+///     }
+/// }
+///
+/// fn counter(resettable: bool) -> Value {
+///     let mut counter = Counter::frost_functions(MutableBundle::new(Counter(0)));
+///     if resettable {
+///         counter = Counter::reset_functions(counter);
+///     }
+///     counter.build()
+/// }
+/// ```
+pub use frostlang_macros::frost_mutable_bundle;
+
 // What the binding macros' generated code names: its only path into this
 // crate, so that public paths may move without breaking the macros.
 #[doc(hidden)]
 pub mod __private {
-    pub use crate::native::{Args, FrostArg, IntoNativeResult};
-    pub use crate::{NativeCtx, Params, Value};
+    pub use crate::native::{Args, Bundle, FrostArg, IntoNativeResult, MutableBundle};
+    pub use crate::{NativeCtx, Params, Value, is_identifier_like_and_not_keyword};
 }
 
 /// The bytecode the [`Vm`] runs, as the compiler produces it.

@@ -13,8 +13,9 @@ use crate::private;
 /// The inputs of a Frost function, read one parameter at a time.
 #[derive(Default)]
 pub(crate) struct Inputs {
-    /// Whether the first parameter is the context, a `&mut NativeCtx`.
-    pub(crate) ctx: bool,
+    /// The span of the context parameter's type, if the first parameter is
+    /// the context; a context of the wrong type is reported there.
+    pub(crate) ctx: Option<Span>,
     pub(crate) args: Vec<Arg>,
     /// How many parameters have been read.
     read: usize,
@@ -22,9 +23,19 @@ pub(crate) struct Inputs {
 
 /// A parameter taken from the Frost function's arguments.
 pub(crate) struct Arg {
-    /// Its name in the spec, which errors report.
-    name: String,
+    /// Its name in the spec, which errors report; none when marked
+    /// `#[frost(unnamed)]`.
+    name: Option<String>,
     ty: Type,
+}
+
+/// The markers on one parameter.
+#[derive(Default)]
+struct Markers {
+    /// The span of a `ctx` marker.
+    ctx: Option<Span>,
+    /// The span of an `unnamed` marker.
+    unnamed: Option<Span>,
 }
 
 impl Inputs {
@@ -42,8 +53,15 @@ impl Inputs {
     ) -> bool {
         let index = self.read;
         self.read += 1;
-        if let Some(ctx) = errors.keep(take_markers(attrs)).flatten() {
-            if self.ctx {
+        let markers = errors.keep(take_markers(attrs)).unwrap_or_default();
+        if let Some(ctx) = markers.ctx {
+            if let Some(unnamed) = markers.unnamed {
+                errors.push(syn::Error::new(
+                    unnamed,
+                    "the context is no argument, so has no name to leave out",
+                ));
+            }
+            if self.ctx.is_some() {
                 errors.push(syn::Error::new(
                     ctx,
                     "only one parameter can be `#[frost(ctx)]`",
@@ -54,7 +72,7 @@ impl Inputs {
                     "the `#[frost(ctx)]` parameter must come first",
                 ));
             } else {
-                self.ctx = true;
+                self.ctx = Some(ty.map_or_else(|| pat.span(), Spanned::span));
             }
             return true;
         }
@@ -66,8 +84,14 @@ impl Inputs {
                  the macro must name it",
             ));
         }
-        if let Some(name) = errors.keep(arg_name(pat)) {
-            self.args.push(Arg { name, ty });
+        // An unnamed argument's pattern need not give a name.
+        if markers.unnamed.is_some() {
+            self.args.push(Arg { name: None, ty });
+        } else if let Some(name) = errors.keep(arg_name(pat)) {
+            self.args.push(Arg {
+                name: Some(name),
+                ty,
+            });
         }
         false
     }
@@ -83,13 +107,32 @@ impl Inputs {
     }
 
     /// The pattern binding the `NativeCtx` of a call as `ctx`, and the
-    /// argument passing it on, if there is a context parameter.
-    pub(crate) fn ctx_pattern_and_arg(&self, ctx: &Ident) -> (TokenStream, TokenStream) {
-        if self.ctx {
-            (quote!(mut #ctx), quote!(&mut #ctx,))
-        } else {
-            (quote!(_), quote!())
-        }
+    /// statement and argument passing it on, as [`pass_ctx`](Self::pass_ctx).
+    pub(crate) fn ctx_pattern_and_pass(
+        &self,
+        ctx: &Ident,
+    ) -> (TokenStream, (TokenStream, TokenStream)) {
+        let pattern = match self.ctx {
+            Some(_) => quote!(mut #ctx),
+            None => quote!(_),
+        };
+        (pattern, self.pass_ctx(quote!(&mut #ctx)))
+    }
+
+    /// A statement binding `ctx`, an expression of the context to pass on, to
+    /// a local, and that local as the first argument of a call; nothing
+    /// without a context parameter.
+    ///
+    /// The local is spanned at the parameter's type, so that rustc reports a
+    /// context of the wrong type there, not at the macro. As in
+    /// `result::conversion`, it is not mixed-site, whose hygiene would break
+    /// that span, and nothing can shadow it.
+    pub(crate) fn pass_ctx(&self, ctx: TokenStream) -> (TokenStream, TokenStream) {
+        let Some(span) = self.ctx else {
+            return (TokenStream::new(), TokenStream::new());
+        };
+        let local = Ident::new("context", span);
+        (quote!(let #local = #ctx;), quote!(#local,))
     }
 
     /// An expression per argument, in order, taking it from the `Args` named
@@ -104,9 +147,10 @@ impl Inputs {
 
 impl Arg {
     fn param(&self) -> TokenStream {
-        let (ty, name) = (&self.ty, &self.name);
+        let ty = &self.ty;
         let frostlang = private(ty.span());
-        quote_spanned!(ty.span()=> <#ty as #frostlang::FrostArg>::PARAM.named(#name))
+        let named = self.name.as_ref().map(|name| quote!(.named(#name)));
+        quote_spanned!(ty.span()=> <#ty as #frostlang::FrostArg>::PARAM #named)
     }
 }
 
@@ -122,33 +166,38 @@ pub(crate) fn ctx_type() -> Type {
     syn::parse_quote!(&mut #frostlang::NativeCtx<'_>)
 }
 
-/// Strips the `#[frost(...)]` markers from `attrs`, returning the span of a
-/// `ctx` marker if there is one.
-fn take_markers(attrs: &mut Vec<Attribute>) -> syn::Result<Option<Span>> {
-    let (markers, others): (Vec<_>, Vec<_>) = attrs
+/// Strips the `#[frost(...)]` markers from `attrs`, returning them.
+fn take_markers(attrs: &mut Vec<Attribute>) -> syn::Result<Markers> {
+    let (frost_attrs, others): (Vec<_>, Vec<_>) = attrs
         .drain(..)
         .partition(|attr| attr.path().is_ident("frost"));
     *attrs = others;
 
     let mut errors = Errors::default();
-    let mut ctx = None;
-    for marker in markers {
-        let read = marker.parse_nested_meta(|meta| {
-            if !meta.path.is_ident("ctx") {
-                return Err(meta.error("unknown marker: a parameter takes only `#[frost(ctx)]`"));
-            }
+    let mut markers = Markers::default();
+    for attr in frost_attrs {
+        let read = attr.parse_nested_meta(|meta| {
+            let (marker, slot) = if meta.path.is_ident("ctx") {
+                ("ctx", &mut markers.ctx)
+            } else if meta.path.is_ident("unnamed") {
+                ("unnamed", &mut markers.unnamed)
+            } else {
+                return Err(meta.error(
+                    "unknown marker: a parameter takes `#[frost(ctx)]` or `#[frost(unnamed)]`",
+                ));
+            };
             if !meta.input.is_empty() && !meta.input.peek(syn::Token![,]) {
-                return Err(meta.error("`ctx` takes no value"));
+                return Err(meta.error(format!("`{marker}` takes no value")));
             }
-            if ctx.is_some() {
-                return Err(meta.error("only one parameter can be `#[frost(ctx)]`"));
+            if slot.is_some() {
+                return Err(meta.error(format!("`{marker}` is given twice")));
             }
-            ctx = Some(meta.path.span());
+            *slot = Some(meta.path.span());
             Ok(())
         });
         errors.keep(read);
     }
-    errors.finish().map(|()| ctx)
+    errors.finish().map(|()| markers)
 }
 
 /// The name `pat` gives its argument: a plain identifier, less any `r#`.

@@ -209,6 +209,33 @@ fn parameters_named_like_the_generated_code_s_locals_are_their_own() {
 // Parameters
 // ============================================================
 
+#[frost_fn(name = "repeat_text")]
+fn repeat_text(#[frost(unnamed)] text: String, times: usize) -> String {
+    text.repeat(times)
+}
+
+/// Unnamed, a parameter's pattern need not give a name.
+#[frost_fn(name = "sum_after_first")]
+fn sum_after_first(#[frost(unnamed)] _: i64, #[frost(unnamed)] Rest(ns): Rest<i64>) -> i64 {
+    ns.iter().sum()
+}
+
+#[test]
+fn an_unnamed_parameter_is_reported_by_position_alone() {
+    assert_eq!(
+        raises("f", repeat_text_frost(), "f(1, 2)"),
+        "Function repeat_text requires String as argument 1, got Int"
+    );
+    assert_eq!(
+        raises("f", repeat_text_frost(), "f('a', 'b')"),
+        "Function repeat_text requires Int as argument 2 (times), got String"
+    );
+    assert_eq!(
+        run("f", sum_after_first_frost(), "f(100, 1, 2)"),
+        Value::Int(3)
+    );
+}
+
 #[frost_fn(name = "appended")]
 fn appended(mut items: Vec<i64>, item: i64) -> Vec<i64> {
     items.push(item);
@@ -359,6 +386,12 @@ fn the_maker_has_the_function_s_visibility() {
 #[frost_fn(name = "absent")]
 #[cfg(any())]
 fn absent() {}
+
+// And before the attribute, which rustc applies first, removing the attribute
+// too.
+#[cfg(any())]
+#[frost_fn(name = "also_absent")]
+fn also_absent() {}
 
 // Always configured in, as a test.
 #[frost_fn(name = "present")]

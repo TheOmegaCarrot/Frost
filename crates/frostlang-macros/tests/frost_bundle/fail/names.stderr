@@ -1,0 +1,17 @@
+error[E0080]: evaluation panicked: a bundle's prefix must be a Frost identifier, not a keyword: `match`
+ --> tests/frost_bundle/fail/names.rs:8:25
+  |
+8 | #[frost_bundle(prefix = "match")]
+  |                         ^^^^^^^ evaluation of `Keyword::frost_functions::_` failed here
+
+error[E0080]: evaluation panicked: a bundle's keys must be Frost identifiers, not keywords: rename `map`
+  --> tests/frost_bundle/fail/names.rs:10:8
+   |
+10 |     fn map(&self) {}
+   |        ^^^ evaluation of `Keyword::frost_functions::_` failed here
+
+error[E0080]: evaluation panicked: a bundle's prefix must be a Frost identifier, not a keyword: `a.b`
+  --> tests/frost_bundle/fail/names.rs:15:33
+   |
+15 | #[frost_mutable_bundle(prefix = "a.b")]
+   |                                 ^^^^^ evaluation of `Dotted::frost_functions::_` failed here

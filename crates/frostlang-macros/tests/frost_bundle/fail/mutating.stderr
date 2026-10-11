@@ -1,0 +1,5 @@
+error: `#[frost_bundle]` is over state that never changes, so its functions take `&self`; for state that changes, see `#[frost_mutable_bundle]`
+ --> tests/frost_bundle/fail/mutating.rs:9:12
+  |
+9 |     fn add(&mut self, amount: i64) -> i64 {
+  |            ^^^^^^^^^

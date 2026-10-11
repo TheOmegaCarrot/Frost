@@ -1,0 +1,23 @@
+error: `#[frost_bundle]` takes a plain impl block, not a trait impl
+  --> tests/frost_bundle/fail/not_plain.rs:13:6
+   |
+13 | impl Named for Thing {
+   |      ^^^^^^^^^
+
+error: `#[frost_bundle]` takes a plain impl block, not a generic one: the macro must name each parameter's type
+  --> tests/frost_bundle/fail/not_plain.rs:22:5
+   |
+22 | impl<T: Send + Sync> Wrapper<T> {}
+   |     ^^^^^^^^^^^^^^^^
+
+error: `#[frost_bundle]` needs a plain function, not an `async` one
+  --> tests/frost_bundle/fail/not_plain.rs:28:5
+   |
+28 |     async fn later(&self) {}
+   |     ^^^^^
+
+error: `#[frost_bundle]` needs a plain function, not a generic one: the macro must name each parameter's type
+  --> tests/frost_bundle/fail/not_plain.rs:30:15
+   |
+30 |     fn generic<T>(&self) {}
+   |               ^^^

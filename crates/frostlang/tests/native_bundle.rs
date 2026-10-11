@@ -17,7 +17,7 @@ const CALLBACK: Params = Params::new(&[Param::of(FrostType::FUNCTION).named("cal
 
 /// A table bundle over `entries`: `get(index)`, `len()`, and `apply(callback)`,
 /// which returns an Array of `callback(entry)` for each entry.
-fn table(entries: Vec<i64>) -> Value {
+pub(crate) fn table(entries: Vec<i64>) -> Value {
     Bundle::new(entries)
         .function("table.get", INDEX, |ctx, mut args| {
             let index: usize = args.take()?;

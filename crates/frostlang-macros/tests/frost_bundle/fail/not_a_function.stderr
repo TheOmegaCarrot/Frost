@@ -1,0 +1,5 @@
+error: `#[frost_bundle]` takes an impl block of functions only: move this to an impl block of its own
+ --> tests/frost_bundle/fail/not_a_function.rs:9:5
+  |
+9 |     const LIMIT: i64 = 10;
+  |     ^^^^^^^^^^^^^^^^^^^^^^
