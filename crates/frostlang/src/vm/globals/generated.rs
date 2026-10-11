@@ -7,7 +7,7 @@
 //! the compiler:
 //!
 //! ```text
-//! UPDATE_GENERATED=1 cargo test -p frostlang --test generated_globals
+//! UPDATE_GENERATED=1 cargo test -p frostlang --test integration generated_globals
 //! ```
 //!
 //! `compiled.rs` is a [`Value`] tree: a Map from each function's name to that

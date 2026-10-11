@@ -147,7 +147,6 @@ define_globals! {
     "tile"                  [Pure]   => tile_frost().build(),
     "id"                    [Pure]   => id_global(),
     "has"                   [Pure]   => has_frost().build(),
-    "includes"              [Pure]   => includes_frost().build(),
     "index"                 [Pure]   => index_global(),
     "dig"                   [Pure]   => dig_global(),
     "slice"                 [Pure]   => slice_frost().build(),

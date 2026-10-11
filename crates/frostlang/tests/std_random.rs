@@ -287,7 +287,7 @@ fn choice_draws_an_element() {
     assert_values(&[
         (
             &format!(
-                "all({}, fn x -> includes(['a', 'b', 'c'], x))",
+                "all({}, fn x -> contains(['a', 'b', 'c'], x))",
                 draws("r.choice(['a', 'b', 'c'])", 200)
             ),
             "true",
@@ -311,7 +311,7 @@ fn choice_draws_an_element() {
 fn sample_draws_distinct_elements() {
     let source = r"
         def s = random.seed(1).sample(range(10), 4)
-        [len(s), all(s, fn x -> includes(range(10), x)), len(count_by(s, id))]
+        [len(s), all(s, fn x -> contains(range(10), x)), len(count_by(s, id))]
     ";
     assert_values(&[
         (source, "[4, true, 4]"),

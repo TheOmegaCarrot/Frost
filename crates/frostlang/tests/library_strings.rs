@@ -3,7 +3,7 @@
 //! `split`, `split_once`, `join`, `replace`, `contains`, `starts_with`, and
 //! `ends_with` accept String and Bytes in any mix. Mixed, they work on a String's
 //! UTF-8 bytes, and a result is a String only when every content argument is a
-//! String, else Bytes.
+//! String, else Bytes. `contains` also searches an Array for an equal element.
 //! `lines`, `trim`, `trim_left`, `trim_right`, `to_upper`, and `to_lower` accept
 //! only a String.
 //!
@@ -680,6 +680,30 @@ fn contains_finds_a_substring() {
 }
 
 #[test]
+fn contains_finds_an_equal_element_of_an_array() {
+    assert_values(&[
+        ("contains([1, 2, 3], 2)", "true"),
+        ("contains([1, 2, 3], 4)", "false"),
+        ("contains([], null)", "false"),
+        ("contains([null], null)", "true"),
+        // Equality is `==`: there is no cross-type numeric equality.
+        ("contains([1], 1.0)", "false"),
+        ("contains([[1]], [1])", "true"),
+        ("contains([{a: 1}], {a: 1})", "true"),
+        // An element, not a run of them, and not part of one.
+        ("contains([1, 2, 3], [1, 2])", "false"),
+        ("contains(['abc'], 'a')", "false"),
+        // Any value may be sought in an Array.
+        ("contains(['a'], x'61')", "false"),
+        ("contains([fn -> 1], 1)", "false"),
+    ]);
+    let found = Script::new("[contains(xs, 2), contains(xs, 'b')]")
+        .capture("xs", Value::array([1, 2, 3]))
+        .run();
+    assert_eq!(found, run("[true, false]"), "searched at run time");
+}
+
+#[test]
 fn starts_with_and_ends_with_test_an_edge() {
     assert_values(&[
         ("starts_with('hello', 'he')", "true"),
@@ -739,8 +763,40 @@ fn searches_search_runtime_values() {
 }
 
 #[test]
-fn searches_check_their_argument_types() {
-    for function in ["contains", "starts_with", "ends_with"] {
+fn contains_checks_its_argument_types() {
+    for (source, got) in [
+        ("contains(1, 'a')", "Int"),
+        ("contains(null, 'a')", "Null"),
+        ("contains({a: 1}, 'a')", "Map"),
+        ("contains(fn -> 1, 'a')", "Function"),
+    ] {
+        assert_eq!(
+            raises(source),
+            type_error("contains", "String or Bytes or Array", "argument 1", got),
+            "{source:?}"
+        );
+    }
+    // What argument 2 must be depends on what argument 1 is.
+    for (source, searched, got) in [
+        ("contains('a', 1)", "a String", "Int"),
+        ("contains('a', null)", "a String", "Null"),
+        ("contains('a', ['a'])", "a String", "Array"),
+        ("contains(x'61', {a: 1})", "Bytes", "Map"),
+    ] {
+        assert_eq!(
+            raises(source),
+            format!(
+                "Function contains requires String or Bytes as argument 2 for {searched}, \
+                 got {got}"
+            ),
+            "{source:?}"
+        );
+    }
+}
+
+#[test]
+fn starts_with_and_ends_with_check_their_argument_types() {
+    for function in ["starts_with", "ends_with"] {
         assert_rejects_non_flat(
             function,
             &[

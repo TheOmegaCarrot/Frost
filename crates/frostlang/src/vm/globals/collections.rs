@@ -241,14 +241,6 @@ pub(super) fn has(#[frost(unnamed)] structure: Structured, index: MapKey) -> Fro
     }))
 }
 
-#[frost_fn]
-pub(super) fn includes(
-    #[frost(unnamed)] array: FrostArray,
-    #[frost(unnamed)] target: Value,
-) -> bool {
-    array.iter().any(|element| *element == target)
-}
-
 pub(super) fn index_global() -> Value {
     super::generated::global("index")
 }

@@ -41,8 +41,8 @@ const LOWERCASE_TYPE_NAMES: &[&str] = &[
 
 const UNLESS_HELP: &str = "Frost has no `unless`; write `if not cond: ...`";
 
-const IN_HELP: &str = "Frost has no `in` operator; use `includes(xs, x)` for an Array, \
-                       `has(m, k)` for a Map, or `contains(s, part)` for a String";
+const IN_HELP: &str = "Frost has no `in` operator; use `contains(xs, x)` for an Array or \
+                       String, or `has(m, k)` for a Map";
 
 impl<'src> Site<'_, 'src> {
     /// The word from another language that starts the error's statement, when it is in

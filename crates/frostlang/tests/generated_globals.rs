@@ -7,7 +7,7 @@
 //! `UPDATE_GENERATED` to rewrite the file instead:
 //!
 //! ```text
-//! UPDATE_GENERATED=1 cargo test -p frostlang --test generated_globals
+//! UPDATE_GENERATED=1 cargo test -p frostlang --test integration generated_globals
 //! ```
 //!
 //! The runtime's `generated` module documents the other side: what `compiled.rs`
@@ -55,7 +55,7 @@ fn compiled_generated_globals_match_their_source() {
     panic!(
         "{COMPILED_PATH} is stale: it differs from what its source and the current compiler \
          produce. Regenerate it with:\n\n    \
-         UPDATE_GENERATED=1 cargo test -p frostlang --test generated_globals\n"
+         UPDATE_GENERATED=1 cargo test -p frostlang --test integration generated_globals\n"
     );
 }
 

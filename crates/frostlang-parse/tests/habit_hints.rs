@@ -62,8 +62,8 @@ const ELIF_HELP: &str = "use `elif` for another condition";
 
 const REST_HELP: &str = "a rest binding is written `...name`";
 
-const IN_HELP: &str = "Frost has no `in` operator; use `includes(xs, x)` for an Array, \
-                       `has(m, k)` for a Map, or `contains(s, part)` for a String";
+const IN_HELP: &str = "Frost has no `in` operator; use `contains(xs, x)` for an Array or \
+                       String, or `has(m, k)` for a Map";
 
 const IMMUTABLE_HELP: &str =
     "Frost values are immutable; bind an updated value to a new name with `def`";

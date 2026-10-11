@@ -70,7 +70,7 @@ fn keys_and_values_list_entries_in_the_same_order() {
     assert_values(&[(source, "[5, 5, true]")]);
     let source = r"
         def m = {a: 1, b: 2, [3]: 'c', [true]: null, [1.5]: [4]}
-        all(['a', 'b', 3, true, 1.5], fn k -> includes(keys(m), k))
+        all(['a', 'b', 3, true, 1.5], fn k -> contains(keys(m), k))
     ";
     assert_values(&[(source, "true")]);
 }
@@ -518,7 +518,7 @@ fn tile_checks_its_arguments() {
     assert_arity("tile", "2", &[0, 1, 3]);
 }
 
-// --- has, includes ---
+// --- has ---
 
 #[test]
 fn has_tests_for_a_map_key() {
@@ -570,25 +570,6 @@ fn has_checks_its_arguments() {
         ],
     );
     assert_arity("has", "2", &[0, 1, 3]);
-}
-
-#[test]
-fn includes_tests_for_an_equal_element() {
-    assert_values(&[
-        ("includes([1, 2, 3], 2)", "true"),
-        ("includes([1, 2, 3], 4)", "false"),
-        ("includes([], null)", "false"),
-        ("includes([null], null)", "true"),
-        // Equality is `==`: there is no cross-type numeric equality.
-        ("includes([1], 1.0)", "false"),
-        ("includes([[1]], [1])", "true"),
-        ("includes([{a: 1}], {a: 1})", "true"),
-    ]);
-    assert_type_errors(
-        "includes",
-        &[("includes('abc', 'a')", "Array", "argument 1", "String")],
-    );
-    assert_arity("includes", "2", &[0, 1, 3]);
 }
 
 // --- index, dig ---
@@ -1624,11 +1605,11 @@ fn minimum_and_maximum_survive_an_inconsistent_comparator() {
         ("maximum([3, 1, 2], fn a, b -> false)", "3"),
         // Any answer still yields one of the elements.
         (
-            "includes([3, 1, 2], minimum([3, 1, 2], fn a, b -> true))",
+            "contains([3, 1, 2], minimum([3, 1, 2], fn a, b -> true))",
             "true",
         ),
         (
-            "includes([3, 1, 2], maximum([3, 1, 2], fn a, b -> true))",
+            "contains([3, 1, 2], maximum([3, 1, 2], fn a, b -> true))",
             "true",
         ),
     ]);

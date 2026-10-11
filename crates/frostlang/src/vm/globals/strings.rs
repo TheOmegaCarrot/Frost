@@ -4,10 +4,13 @@
 //! `contains`, `starts_with`, `ends_with`) accept String and Bytes in any mix,
 //! working on a String's UTF-8 bytes where Bytes are involved. Their result is a String only
 //! when every content argument is a String, and Bytes otherwise.
+//! `contains` also searches an Array, for an element equal to its second argument.
 //! The text functions (`lines`, `trim*`, `to_upper`, `to_lower`) accept only a String.
 
 use crate::native::Flat;
-use crate::{FrostArray, FrostError, FrostString, FrostType, Value, frost_closure, frost_fn};
+use crate::{
+    FrostArray, FrostError, FrostString, FrostType, NativeCtx, Value, frost_closure, frost_fn,
+};
 
 /// Flat arguments resolved to one content type: text when every one is a String,
 /// else bytes, with each String contributing its UTF-8.
@@ -209,12 +212,37 @@ pub(super) fn to_lower_global() -> Value {
     text_op("to_lower", |text| text.to_lowercase().into())
 }
 
+/// Whether an Array has an element equal to `needle`, or String or Bytes hold
+/// `needle`, also String or Bytes, as a substring.
 #[frost_fn]
-pub(super) fn contains(#[frost(unnamed)] haystack: Flat, #[frost(unnamed)] needle: Flat) -> bool {
-    match content([&haystack, &needle]) {
+pub(super) fn contains(
+    #[frost(ctx)] ctx: &mut NativeCtx<'_>,
+    #[frost(unnamed, types = Flat | Array)] haystack: Value,
+    #[frost(unnamed)] needle: Value,
+) -> Result<bool, FrostError> {
+    if let Value::Array(array) = &haystack {
+        return Ok(array.iter().any(|element| *element == needle));
+    }
+    let haystack = Flat::try_from(haystack).expect("type-checked as String or Bytes");
+    let needle = match needle {
+        Value::String(text) => Flat::String(text),
+        Value::Bytes(bytes) => Flat::Bytes(bytes),
+        other => {
+            let searched = match haystack {
+                Flat::String(_) => "a String",
+                Flat::Bytes(_) => "Bytes",
+            };
+            return Err(FrostError::from_string(format!(
+                "Function {} requires String or Bytes as argument 2 for {searched}, got {}",
+                ctx.name(),
+                other.type_name()
+            )));
+        }
+    };
+    Ok(match content([&haystack, &needle]) {
         Content::Text([text, needle]) => text.contains(needle),
         Content::Binary([bytes, needle]) => contains_bytes(bytes, needle),
-    }
+    })
 }
 
 #[frost_fn]
