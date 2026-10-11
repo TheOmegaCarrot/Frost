@@ -1,0 +1,18 @@
+error: `#[frost_fn]` takes a plain function, not a generic one: the macro must name each parameter's type
+ --> tests/frost_fn/fail/generic.rs:7:11
+  |
+7 | fn by_type<T>(_value: T) {}
+  |           ^^^
+
+error: `#[frost_fn]` takes a plain function, not a generic one: the macro must name each parameter's type
+  --> tests/frost_fn/fail/generic.rs:10:15
+   |
+10 | fn by_lifetime<'a>() {}
+   |               ^^^^
+
+error: `#[frost_fn]` takes a plain function, not a generic one: the macro must name each parameter's type
+  --> tests/frost_fn/fail/generic.rs:14:1
+   |
+14 | / where
+15 | |     i64: Copy,
+   | |______________^

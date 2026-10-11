@@ -1,0 +1,11 @@
+error: a Frost function's parameter type cannot be `impl Trait`: the macro must name it
+ --> tests/frost_fn/fail/impl_trait.rs:7:18
+  |
+7 | fn outer(_value: impl Into<i64>) {}
+  |                  ^^^^
+
+error: a Frost function's parameter type cannot be `impl Trait`: the macro must name it
+  --> tests/frost_fn/fail/impl_trait.rs:10:25
+   |
+10 | fn nested(_values: Rest<impl Into<i64>>) {}
+   |                         ^^^^

@@ -1,0 +1,29 @@
+error: unknown argument: `#[frost_fn]` takes only `name`
+ --> tests/frost_fn/fail/every_error_at_once.rs:5:12
+  |
+5 | #[frost_fn(strict = true)]
+  |            ^^^^^^
+
+error: `#[frost_fn]` takes a plain function, not an `async` one
+ --> tests/frost_fn/fail/every_error_at_once.rs:6:1
+  |
+6 | async fn f<T>((_a, _b): (T, T), #[frost(skip)] _c: i64) {}
+  | ^^^^^
+
+error: `#[frost_fn]` takes a plain function, not a generic one: the macro must name each parameter's type
+ --> tests/frost_fn/fail/every_error_at_once.rs:6:11
+  |
+6 | async fn f<T>((_a, _b): (T, T), #[frost(skip)] _c: i64) {}
+  |           ^^^
+
+error: a Frost function's parameter must be a plain name, such as `text`
+ --> tests/frost_fn/fail/every_error_at_once.rs:6:15
+  |
+6 | async fn f<T>((_a, _b): (T, T), #[frost(skip)] _c: i64) {}
+  |               ^^^^^^^^
+
+error: unknown marker: a parameter takes only `#[frost(ctx)]`
+ --> tests/frost_fn/fail/every_error_at_once.rs:6:41
+  |
+6 | async fn f<T>((_a, _b): (T, T), #[frost(skip)] _c: i64) {}
+  |                                         ^^^^

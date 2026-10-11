@@ -35,6 +35,11 @@ pub trait FromArg: Sized {
 /// Every [`FromArg`] type is a required parameter, and [`Optional`] makes a
 /// parameter that may be omitted. This trait is sealed: implement [`FromArg`]
 /// instead.
+#[diagnostic::on_unimplemented(
+    message = "`{Self}` is not a Frost argument type",
+    label = "not a Frost argument type",
+    note = "to take arguments as a type of your own, implement `FromArg` for it"
+)]
 pub trait FrostArg: sealed::TakeArg {
     /// The parameter, unnamed. Name it with [`Param::named`].
     const PARAM: Param;
@@ -46,6 +51,12 @@ mod sealed {
 
     /// How a [`FrostArg`](super::FrostArg) takes its argument, kept private so
     /// that the set of parameter kinds stays the crate's.
+    // Worded as `FrostArg`, the public trait an error should name.
+    #[diagnostic::on_unimplemented(
+        message = "`{Self}` is not a Frost argument type",
+        label = "not a Frost argument type",
+        note = "to take arguments as a type of your own, implement `FromArg` for it"
+    )]
     pub trait TakeArg: Sized {
         fn take_from(args: &mut Args<'_>) -> Result<Self, FrostError>;
     }

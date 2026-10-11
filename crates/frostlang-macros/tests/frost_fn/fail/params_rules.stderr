@@ -1,0 +1,24 @@
+error[E0080]: evaluation panicked: invalid param spec: a spec has optionals or a rest, not both
+ --> tests/frost_fn/fail/params_rules.rs:8:5
+  |
+8 | fn f(_first: Optional<i64>, _rest: Rest<i64>) {}
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ evaluation of `f_frost::PARAMS` failed inside this call
+  |
+note: inside `Params::new`
+ --> $RUST/core/src/panic.rs
+  |
+  |         $crate::panicking::panic_fmt($crate::const_format_args!($($t)+));
+  |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the failure occurred here
+  |
+ ::: $WORKSPACE/crates/frostlang/src/vm/params.rs
+  |
+  |                 panic!("invalid param spec: a spec has optionals or a rest, not both")
+  |                 ---------------------------------------------------------------------- in this macro invocation
+
+note: erroneous constant encountered
+ --> tests/frost_fn/fail/params_rules.rs:7:1
+  |
+7 | #[frost_fn(name = "f")]
+  | ^^^^^^^^^^^^^^^^^^^^^^^
+  |
+  = note: this note originates in the attribute macro `frost_fn` (in Nightly builds, run with -Z macro-backtrace for more info)

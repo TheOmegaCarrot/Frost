@@ -1,0 +1,5 @@
+error: `#[frost_fn]` takes a free function, not a method
+ --> tests/frost_fn/fail/method.rs:9:12
+  |
+9 |     fn get(&self) -> i64 {
+  |            ^^^^^

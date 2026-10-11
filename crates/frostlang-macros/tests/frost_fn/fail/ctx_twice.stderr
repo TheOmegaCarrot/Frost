@@ -1,0 +1,11 @@
+error: only one parameter can be `#[frost(ctx)]`
+ --> tests/frost_fn/fail/ctx_twice.rs:6:61
+  |
+6 | fn two_params(#[frost(ctx)] _a: &mut NativeCtx<'_>, #[frost(ctx)] _b: &mut NativeCtx<'_>) {}
+  |                                                             ^^^
+
+error: only one parameter can be `#[frost(ctx)]`
+ --> tests/frost_fn/fail/ctx_twice.rs:9:30
+  |
+9 | fn marked_twice(#[frost(ctx, ctx)] _ctx: &mut NativeCtx<'_>) {}
+  |                              ^^^

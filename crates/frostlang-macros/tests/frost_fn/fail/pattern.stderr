@@ -1,0 +1,23 @@
+error: a Frost function's parameter must be a plain name, such as `text`
+ --> tests/frost_fn/fail/pattern.rs:6:10
+  |
+6 | fn tuple((_a, _b): (i64, i64)) {}
+  |          ^^^^^^^^
+
+error: a Frost function's parameter must be a plain name, such as `text`
+ --> tests/frost_fn/fail/pattern.rs:9:13
+  |
+9 | fn wildcard(_: i64) {}
+  |             ^
+
+error: a Frost function's parameter must be a plain name, such as `text`
+  --> tests/frost_fn/fail/pattern.rs:12:11
+   |
+12 | fn by_ref(ref _value: i64) {}
+   |           ^^^^^^^^^^
+
+error: a Frost function's parameter must be a plain name, such as `text`
+  --> tests/frost_fn/fail/pattern.rs:15:10
+   |
+15 | fn bound(_value @ _: i64) {}
+   |          ^^^^^^^^^^

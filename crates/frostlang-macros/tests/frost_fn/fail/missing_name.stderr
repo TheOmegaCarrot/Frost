@@ -1,0 +1,7 @@
+error: `#[frost_fn]` needs the Frost function's name: `#[frost_fn(name = "...")]`
+ --> tests/frost_fn/fail/missing_name.rs:5:1
+  |
+5 | #[frost_fn]
+  | ^^^^^^^^^^^
+  |
+  = note: this error originates in the attribute macro `frost_fn` (in Nightly builds, run with -Z macro-backtrace for more info)

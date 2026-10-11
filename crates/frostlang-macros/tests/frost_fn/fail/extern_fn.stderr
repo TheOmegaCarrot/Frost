@@ -1,0 +1,5 @@
+error: `#[frost_fn]` takes a plain function, not an `extern` one
+ --> tests/frost_fn/fail/extern_fn.rs:6:1
+  |
+6 | extern "C" fn f() {}
+  | ^^^^^^^^^^

@@ -595,7 +595,7 @@ fn a_custom_type_takes_arguments_and_words_errors_alike() {
 
 /// `pad(text, width, fill?)`: `text` padded on the left to `width` characters
 /// with `fill`, a space when omitted, or nothing when Null.
-fn pad() -> Value {
+pub(crate) fn pad() -> Value {
     const PARAMS: Params = Params::new(&[
         <String as FrostArg>::PARAM.named("text"),
         <u16 as FrostArg>::PARAM.named("width"),
@@ -647,7 +647,7 @@ fn a_native_taking_args_words_type_and_content_errors_alike() {
 
 /// `each(sql, bindings?, callback)`, shaped as a database's: `callback`
 /// called with `sql` and how many `bindings` there are, Null when omitted.
-fn each() -> Value {
+pub(crate) fn each() -> Value {
     const PARAMS: Params = Params::new(&[
         <String as FrostArg>::PARAM.named("sql"),
         Param::of(FrostType::STRUCTURED)
@@ -711,7 +711,7 @@ fn a_native_with_an_interior_optional_checks_by_count_not_type() {
 }
 
 /// `sum(...ns)`: the sum of any number of Ints.
-fn sum() -> Value {
+pub(crate) fn sum() -> Value {
     const PARAMS: Params = Params::new(&[<Rest<i64> as FrostArg>::PARAM.named("ns")]);
     Value::checked_native("sum", PARAMS, |ctx, args| {
         let Rest(ns) = Args::new(ctx.name(), PARAMS, args).take()?;

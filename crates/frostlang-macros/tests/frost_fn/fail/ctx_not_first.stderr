@@ -1,0 +1,5 @@
+error: the `#[frost(ctx)]` parameter must come first
+ --> tests/frost_fn/fail/ctx_not_first.rs:6:27
+  |
+6 | fn f(_value: i64, #[frost(ctx)] _ctx: &mut NativeCtx<'_>) {}
+  |                           ^^^

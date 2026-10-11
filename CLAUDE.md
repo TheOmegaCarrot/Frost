@@ -39,6 +39,7 @@ independently:
 | Crate | Purpose |
 |---|---|
 | `frostlang` | What a host embeds. The `core` (the `Value` type, its variants, operators, conversions, serde bridge), the `vm` (bytecode execution, globals, native functions, arity/type params, import, serialization), the `stdlib` (the `std.*` modules a host opts into), and, behind the default `compile` feature, the `compile` module: AST to bytecode (scope resolution, capture discovery, constant folding and propagation, assembly). Extensions depend on it with `default-features = false`. |
+| `frostlang-macros` | The proc macros binding Rust functions as Frost functions (`#[frost_fn]` and kin), re-exported and documented by `frostlang`. Generated code reaches `frostlang` only through its hidden `__private` module. Compile tests (trybuild) live here, built against `frostlang` without default features. |
 | `frostlang-parse` | Source text to AST: lexer, recursive-descent parser, diagnostics. Grammar only; semantics belong to the compiler. Intentionally lax in what it accepts, deferring many errors to the compiler. |
 | `frostlang-driver` | A complete command-line interface built around a host's configuration: importer, runtime limits, optimizations. |
 | `frostlang-fs-resolver` | An optional `ImportResolver` serving `import('a.b.c')` from `a/b/c.frst` under host-configured roots, with caching and cycle detection. |

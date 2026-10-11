@@ -1,0 +1,32 @@
+[package]
+name = "frostlang-macros"
+version = "0.0.1"
+edition.workspace = true
+# See `[[test]]`.
+autotests = false
+
+[lib]
+proc-macro = true
+
+[dependencies]
+proc-macro2 = "1"
+quote = "1"
+# `full` to parse functions, closures, and impl blocks.
+syn = { version = "3", features = ["full"] }
+
+[dev-dependencies]
+# The compile tests build against `frostlang` as an extension does: without its
+# compiler.
+frostlang = { workspace = true, default-features = false }
+# `diff` for readable failures.
+trybuild = { version = "1", features = ["diff"] }
+
+# One binary for every integration test, rather than one per file, to save the
+# build time and disk of linking each separately. Each file in `tests/` is a
+# module of `tests/main.rs`, which must declare it.
+[[test]]
+name = "integration"
+path = "tests/main.rs"
+
+[lints]
+workspace = true

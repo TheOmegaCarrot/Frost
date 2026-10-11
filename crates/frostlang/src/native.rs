@@ -32,6 +32,9 @@
 
 mod arg;
 mod bundle;
+// White-box tests for `#[frost_fn]` used within this crate.
+#[cfg(test)]
+mod frost_fn_tests;
 mod mutable_bundle;
 mod result;
 

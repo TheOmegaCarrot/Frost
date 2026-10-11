@@ -14,6 +14,11 @@ use crate::{
 /// [`FromArg`](super::FromArg). So a `Vec<u8>` returns an Array of Ints,
 /// unlike `Value::from`, which makes Bytes of it: return Bytes as
 /// [`FrostBytes`], or return a [`Value`] to choose the value exactly.
+#[diagnostic::on_unimplemented(
+    message = "`{Self}` cannot be returned to Frost",
+    label = "not a native's result type",
+    note = "a native's result type implements `IntoNativeResult`"
+)]
 pub trait IntoNativeResult {
     /// This result as the value returned by the native named `function`, or
     /// the error it raises. The conversion fails only for a result no value

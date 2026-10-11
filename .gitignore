@@ -1,2 +1,4 @@
 target/
 .backlog/
+# Where trybuild writes a compile-fail test's output when it has no `.stderr` yet.
+wip/

@@ -1,0 +1,65 @@
+error[E0277]: `&'static str` is not a Frost argument type
+ --> tests/frost_fn/fail/not_an_argument.rs:6:13
+  |
+6 | fn f(_text: &'static str) {}
+  |             -^^^^^^^^^^^
+  |             |
+  |             not a Frost argument type
+  |             required by a bound introduced by this call
+  |
+  = help: the trait `FromArg` is not implemented for `&'static str`
+  = note: to take arguments as a type of your own, implement `FromArg` for it
+help: the trait `FromArg` is implemented for `std::string::String`
+ --> $WORKSPACE/crates/frostlang/src/native/arg.rs
+  |
+  |           impl FromArg for $type {
+  |           ^^^^^^^^^^^^^^^^^^^^^^
+...
+  | / from_variant! {
+  | |     bool: FrostType::BOOL, Value::Bool(b) => b;
+  | |     FrostFloat: FrostType::FLOAT, Value::Float(f) => f;
+  | |     String: FrostType::STRING, Value::String(s) => String::from(s);
+... |
+  | |     FrostMap: FrostType::MAP, Value::Map(m) => m;
+  | | }
+  | |_- in this macro invocation
+  = note: required for `&'static str` to implement `FrostArg`
+note: required by a bound in `frostlang::native::Args::<'a>::take`
+ --> $WORKSPACE/crates/frostlang/src/native/arg.rs
+  |
+  |     pub fn take<T: FrostArg>(&mut self) -> Result<T, FrostError> {
+  |                    ^^^^^^^^ required by this bound in `Args::<'a>::take`
+  = note: this error originates in the macro `from_variant` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error[E0277]: `&'static str` is not a Frost argument type
+ --> tests/frost_fn/fail/not_an_argument.rs:6:13
+  |
+6 | fn f(_text: &'static str) {}
+  |             ^^^^^^^^^^^^ not a Frost argument type
+  |
+  = help: the trait `FromArg` is not implemented for `&'static str`
+  = note: to take arguments as a type of your own, implement `FromArg` for it
+help: the trait `FromArg` is implemented for `std::string::String`
+ --> $WORKSPACE/crates/frostlang/src/native/arg.rs
+  |
+  |           impl FromArg for $type {
+  |           ^^^^^^^^^^^^^^^^^^^^^^
+...
+  | / from_variant! {
+  | |     bool: FrostType::BOOL, Value::Bool(b) => b;
+  | |     FrostFloat: FrostType::FLOAT, Value::Float(f) => f;
+  | |     String: FrostType::STRING, Value::String(s) => String::from(s);
+... |
+  | |     FrostMap: FrostType::MAP, Value::Map(m) => m;
+  | | }
+  | |_- in this macro invocation
+  = note: required for `&'static str` to implement `native::arg::sealed::TakeArg`
+note: required by a bound in `PARAM`
+ --> $WORKSPACE/crates/frostlang/src/native/arg.rs
+  |
+  | pub trait FrostArg: sealed::TakeArg {
+  |                     ^^^^^^^^^^^^^^^ required by this bound in `FrostArg::PARAM`
+  |     /// The parameter, unnamed. Name it with [`Param::named`].
+  |     const PARAM: Param;
+  |           ----- required by a bound in this associated constant
+  = note: this error originates in the macro `from_variant` (in Nightly builds, run with -Z macro-backtrace for more info)

@@ -1,0 +1,5 @@
+error: `#[frost_fn]` takes a plain function, not an `unsafe` one
+ --> tests/frost_fn/fail/unsafe_fn.rs:6:1
+  |
+6 | unsafe fn f() {}
+  | ^^^^^^

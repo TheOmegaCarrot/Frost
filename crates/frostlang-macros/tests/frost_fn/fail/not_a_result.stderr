@@ -1,0 +1,22 @@
+error[E0277]: `Opaque` cannot be returned to Frost
+ --> tests/frost_fn/fail/not_a_result.rs:8:11
+  |
+8 | fn f() -> Opaque {
+  |           ^^^^^^ not a native's result type
+  |
+help: the trait `IntoNativeResult` is not implemented for `Opaque`
+ --> tests/frost_fn/fail/not_a_result.rs:5:1
+  |
+5 | struct Opaque;
+  | ^^^^^^^^^^^^^
+  = note: a native's result type implements `IntoNativeResult`
+  = help: the following other types implement trait `IntoNativeResult`:
+            &str
+            ()
+            FrostArray
+            FrostBytes
+            FrostFloat
+            FrostMap
+            FrostString
+            Option<T>
+          and $N others

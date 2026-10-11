@@ -1,0 +1,17 @@
+error: unknown marker: a parameter takes only `#[frost(ctx)]`
+ --> tests/frost_fn/fail/unknown_marker.rs:6:20
+  |
+6 | fn unknown(#[frost(skip)] _value: i64) {}
+  |                    ^^^^
+
+error: `ctx` takes no value
+ --> tests/frost_fn/fail/unknown_marker.rs:9:19
+  |
+9 | fn valued(#[frost(ctx = true)] _ctx: &mut NativeCtx<'_>) {}
+  |                   ^^^
+
+error: expected attribute arguments in parentheses: #[frost(...)]
+  --> tests/frost_fn/fail/unknown_marker.rs:12:11
+   |
+12 | fn bare(#[frost] _value: i64) {}
+   |           ^^^^^
