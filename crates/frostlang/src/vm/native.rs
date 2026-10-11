@@ -12,6 +12,14 @@ use super::function::Arity;
 use super::params::{Binder, Params};
 
 /// A native function's handle back into the running [`Vm`], passed to every native call.
+///
+/// Its methods that can run Frost code, such as [`invoke`](Self::invoke), take
+/// `&mut self`; every other takes `&self`. So a shared `&NativeCtx` offers every
+/// capability but calling back into Frost, which is how a
+/// [`MutableBundleCtx`](crate::native::MutableBundleCtx) forbids calling back while holding
+/// its state.
+// Keep to this rule when adding a method: a `&self` method that runs Frost code
+// would let a bundle function deadlock on its own state.
 #[derive(Debug)]
 pub struct NativeCtx<'a> {
     pub(crate) vm: &'a mut Vm,

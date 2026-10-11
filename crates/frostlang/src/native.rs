@@ -31,7 +31,11 @@
 //! `-1` is given for a `u64`.
 
 mod arg;
+mod bundle;
+mod mutable_bundle;
 mod result;
 
 pub use arg::{ArgSite, Args, De, FromArg, FrostArg, Nullable, Optional, Rest};
+pub use bundle::{Bundle, BundleCtx};
+pub use mutable_bundle::{MutableBundle, MutableBundleCtx, PoisonedState, StateGuard, StateLock};
 pub use result::{IntoNativeResult, Ser};

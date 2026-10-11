@@ -9,11 +9,14 @@
 //! Each function compiles its pattern on every call. `regex.compile(pattern)`
 //! compiles one once, returning a Map of the same functions, less the pattern.
 
-use std::sync::{Arc, OnceLock};
+use std::sync::OnceLock;
 
 use regex_lite::Regex;
 
-use crate::{FrostError, FrostResult, FrostType, NativeCtx, Param, Params, StdlibModule, Value};
+use crate::native::{Args, Bundle, BundleCtx, FrostArg};
+use crate::{
+    FrostError, FrostResult, FrostString, FrostType, NativeCtx, Param, Params, StdlibModule, Value,
+};
 
 /// The `std.regex` module: testing, replacing, splitting, and scanning text by
 /// regular expression, and compiling a pattern for reuse.
@@ -221,74 +224,70 @@ fn replace_with() -> Value {
 fn compile() -> Value {
     const PARAMS: Params = Params::new(&[Param::of(FrostType::STRING).named("pattern")]);
     Value::checked_native("regex.compile", PARAMS, |_, args| {
-        let pattern = Arc::new(Pattern::new("regex.compile", string_arg(&args[0]))?);
-        Ok(Value::map([
-            (
-                "matches",
-                bound_one_text("compiled_regex.matches", &pattern, Pattern::matches),
-            ),
-            (
-                "contains",
-                bound_one_text("compiled_regex.contains", &pattern, Pattern::contains),
-            ),
-            (
-                "replace",
-                bound_replacer("compiled_regex.replace", &pattern, Count::All),
-            ),
-            (
-                "replace_first",
-                bound_replacer("compiled_regex.replace_first", &pattern, Count::First),
-            ),
-            ("replace_with", bound_replace_with(&pattern)),
-            (
-                "split",
-                bound_one_text("compiled_regex.split", &pattern, Pattern::split),
-            ),
-            (
-                "scan_matches",
-                bound_one_text(
-                    "compiled_regex.scan_matches",
-                    &pattern,
-                    Pattern::scan_matches,
-                ),
-            ),
-        ]))
+        let pattern = Pattern::new("regex.compile", string_arg(&args[0]))?;
+        Ok(Bundle::new(pattern)
+            .function("compiled_regex.matches", TEXT, |ctx, args| {
+                bound_one_text(ctx, args, Pattern::matches)
+            })
+            .function("compiled_regex.contains", TEXT, |ctx, args| {
+                bound_one_text(ctx, args, Pattern::contains)
+            })
+            .function(
+                "compiled_regex.replace",
+                TEXT_AND_REPLACEMENT,
+                |ctx, args| bound_replacer(ctx, args, Count::All),
+            )
+            .function(
+                "compiled_regex.replace_first",
+                TEXT_AND_REPLACEMENT,
+                |ctx, args| bound_replacer(ctx, args, Count::First),
+            )
+            .function(
+                "compiled_regex.replace_with",
+                TEXT_AND_CALLBACK,
+                bound_replace_with,
+            )
+            .function("compiled_regex.split", TEXT, |ctx, args| {
+                bound_one_text(ctx, args, Pattern::split)
+            })
+            .function("compiled_regex.scan_matches", TEXT, |ctx, args| {
+                bound_one_text(ctx, args, Pattern::scan_matches)
+            })
+            .build())
     })
 }
 
-/// A function of text alone, performing `operation` with `pattern`.
+/// The context of a compiled pattern's functions.
+type Compiled<'a> = BundleCtx<'a, Pattern>;
+
+const TEXT: Params = Params::new(&[<FrostString as FrostArg>::PARAM]);
+const TEXT_AND_REPLACEMENT: Params = Params::new(&[
+    <FrostString as FrostArg>::PARAM,
+    <FrostString as FrostArg>::PARAM.named("replacement"),
+]);
+const TEXT_AND_CALLBACK: Params = Params::new(&[
+    <FrostString as FrostArg>::PARAM,
+    Param::of(FrostType::FUNCTION).named("callback"),
+]);
+
+/// A function of text alone, performing `operation` with the pattern.
 fn bound_one_text(
-    name: &'static str,
-    pattern: &Arc<Pattern>,
+    ctx: &mut Compiled<'_>,
+    mut args: Args<'_>,
     operation: fn(&Pattern, &str) -> Value,
-) -> Value {
-    const PARAMS: Params = Params::new(&[Param::of(FrostType::STRING)]);
-    let pattern = Arc::clone(pattern);
-    Value::checked_native(name, PARAMS, move |_, args| {
-        Ok(operation(&pattern, string_arg(&args[0])))
-    })
+) -> FrostResult {
+    let text: FrostString = args.take()?;
+    Ok(operation(ctx.state(), &text))
 }
 
-fn bound_replacer(name: &'static str, pattern: &Arc<Pattern>, count: Count) -> Value {
-    const PARAMS: Params = Params::new(&[
-        Param::of(FrostType::STRING),
-        Param::of(FrostType::STRING).named("replacement"),
-    ]);
-    let pattern = Arc::clone(pattern);
-    Value::checked_native(name, PARAMS, move |_, args| {
-        Ok(pattern.replace(string_arg(&args[0]), string_arg(&args[1]), count))
-    })
+fn bound_replacer(ctx: &mut Compiled<'_>, mut args: Args<'_>, count: Count) -> FrostResult {
+    let text: FrostString = args.take()?;
+    let replacement: FrostString = args.take()?;
+    Ok(ctx.state().replace(&text, &replacement, count))
 }
 
-fn bound_replace_with(pattern: &Arc<Pattern>) -> Value {
-    const PARAMS: Params = Params::new(&[
-        Param::of(FrostType::STRING),
-        Param::of(FrostType::FUNCTION).named("callback"),
-    ]);
-    let pattern = Arc::clone(pattern);
-    Value::checked_native(
-        "compiled_regex.replace_with",
-        PARAMS,
-        move |mut ctx, args| pattern.replace_with(&mut ctx, string_arg(&args[0]), &args[1]),
-    )
+fn bound_replace_with(ctx: &mut Compiled<'_>, mut args: Args<'_>) -> FrostResult {
+    let text: FrostString = args.take()?;
+    let callback: Value = args.take()?;
+    ctx.state().replace_with(ctx.native(), &text, &callback)
 }

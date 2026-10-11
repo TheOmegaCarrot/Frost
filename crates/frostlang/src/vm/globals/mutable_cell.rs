@@ -1,8 +1,7 @@
 //! Mutable reference cells: Frost's only built-in mutable state.
 
-use std::sync::{Arc, Mutex};
-
-use crate::{Arity, FrostError, Value};
+use crate::native::MutableBundle;
+use crate::{Arity, FrostError, Param, Params, Value};
 
 fn forbid_cycle(value: &Value) -> Result<(), FrostError> {
     match value {
@@ -29,27 +28,17 @@ pub(super) fn mutable_cell_global() -> Value {
         let initial = args.first_mut().map_or(Value::Null, Value::take);
         forbid_cycle(&initial)?;
 
-        let get_cell = Arc::new(Mutex::new(initial));
-        let exchange_cell = get_cell.clone();
-
-        Ok(Value::map([
-            (
-                "get",
-                Value::native("mutable_cell.get", Arity::Exact(0), move |_, _| {
-                    Ok(get_cell.lock().unwrap().clone())
-                }),
-            ),
-            (
-                "exchange",
-                Value::native("mutable_cell.exchange", Arity::Exact(1), move |_, args| {
-                    let new_value = args[0].take();
-                    forbid_cycle(&new_value)?;
-                    Ok(std::mem::replace(
-                        &mut *exchange_cell.lock().unwrap(),
-                        new_value,
-                    ))
-                }),
-            ),
-        ]))
+        const NO_PARAMS: Params = Params::new(&[]);
+        const ONE_ANY: Params = Params::new(&[Param::any()]);
+        Ok(MutableBundle::new(initial)
+            .function("mutable_cell.get", NO_PARAMS, |ctx, _| {
+                Ok(ctx.lock()?.clone())
+            })
+            .function("mutable_cell.exchange", ONE_ANY, |ctx, mut args| {
+                let new_value: Value = args.take()?;
+                forbid_cycle(&new_value)?;
+                Ok(std::mem::replace(&mut *ctx.lock()?, new_value))
+            })
+            .build())
     })
 }

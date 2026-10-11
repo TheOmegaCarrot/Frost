@@ -6,10 +6,11 @@
 //! Not for cryptography.
 
 use std::hash::{BuildHasher, RandomState};
-use std::sync::{Arc, Mutex};
 
-use crate::native::{Args, FrostArg};
-use crate::{FrostError, FrostFloat, FrostType, Param, Params, StdlibModule, Value};
+use crate::native::{Args, FrostArg, MutableBundle, MutableBundleCtx, Optional};
+use crate::{
+    FrostArray, FrostError, FrostFloat, FrostResult, FrostType, Param, Params, StdlibModule, Value,
+};
 
 /// The configuration of [`random`].
 #[derive(Clone, Copy, Debug, Default)]
@@ -60,26 +61,35 @@ fn seed() -> Value {
 
 // --- Engines ---
 
-/// A generator shared by the draw functions of one engine.
-type Shared = Arc<Mutex<fastrand::Rng>>;
+/// The context of an engine's draw functions, over its generator.
+type Ctx<'a> = MutableBundleCtx<'a, fastrand::Rng>;
 
 /// An engine: the draw functions over one generator seeded with `seed`.
 fn engine(seed: u64) -> Value {
-    let rng: Shared = Arc::new(Mutex::new(fastrand::Rng::with_seed(seed)));
-    Value::map([
-        ("int", int(&rng)),
-        ("float", float(&rng)),
-        ("bool", boolean(&rng)),
-        ("choice", choice(&rng)),
-        ("sample", sample(&rng)),
-        ("shuffle", shuffle(&rng)),
-    ])
-}
-
-/// Runs `draw` with the engine's generator.
-fn draw<T>(rng: &Shared, draw: impl FnOnce(&mut fastrand::Rng) -> T) -> T {
-    // A draw cannot panic midway, so the generator is never left poisoned.
-    draw(&mut rng.lock().expect("a draw never panics"))
+    const BOUNDS: Params = Params::new(&[
+        Param::of(FrostType::NUMERIC).named("low"),
+        Param::of(FrostType::NUMERIC).named("high"),
+    ]);
+    const INT_BOUNDS: Params = Params::new(&[
+        <i64 as FrostArg>::PARAM.named("low"),
+        <i64 as FrostArg>::PARAM.named("high"),
+    ]);
+    const PROBABILITY: Params = Params::new(&[Param::of(FrostType::NUMERIC)
+        .named("probability")
+        .optional()]);
+    const ARRAY: Params = Params::new(&[<FrostArray as FrostArg>::PARAM]);
+    const ARRAY_AND_COUNT: Params = Params::new(&[
+        <FrostArray as FrostArg>::PARAM,
+        <i64 as FrostArg>::PARAM.named("n"),
+    ]);
+    MutableBundle::new(fastrand::Rng::with_seed(seed))
+        .function("rng.int", INT_BOUNDS, int)
+        .function("rng.float", BOUNDS, float)
+        .function("rng.bool", PROBABILITY, boolean)
+        .function("rng.choice", ARRAY, choice)
+        .function("rng.sample", ARRAY_AND_COUNT, sample)
+        .function("rng.shuffle", ARRAY, shuffle)
+        .build()
 }
 
 /// The error for bounds whose low end, `low`, is above the high end, `high`.
@@ -101,119 +111,82 @@ fn float_arg(arg: &Value) -> f64 {
     }
 }
 
-fn int(rng: &Shared) -> Value {
-    const PARAMS: Params = Params::new(&[
-        <i64 as FrostArg>::PARAM.named("low"),
-        <i64 as FrostArg>::PARAM.named("high"),
-    ]);
-    let rng = Arc::clone(rng);
-    Value::checked_native("rng.int", PARAMS, move |ctx, args| {
-        let mut args = Args::new(ctx.name(), PARAMS, args);
-        let low: i64 = args.take()?;
-        let high: i64 = args.take()?;
-        if low > high {
-            return Err(bounds_error("rng.int", &low.into(), &high.into()));
-        }
-        Ok(Value::Int(draw(&rng, |rng| rng.i64(low..=high))))
-    })
+fn int(ctx: &mut Ctx<'_>, mut args: Args<'_>) -> FrostResult {
+    let low: i64 = args.take()?;
+    let high: i64 = args.take()?;
+    if low > high {
+        return Err(bounds_error("rng.int", &low.into(), &high.into()));
+    }
+    Ok(Value::Int(ctx.lock()?.i64(low..=high)))
 }
 
-fn float(rng: &Shared) -> Value {
-    const PARAMS: Params = Params::new(&[
-        Param::of(FrostType::NUMERIC).named("low"),
-        Param::of(FrostType::NUMERIC).named("high"),
-    ]);
-    let rng = Arc::clone(rng);
-    Value::checked_native("rng.float", PARAMS, move |_, args| {
-        let [low, high] = [&args[0], &args[1]].map(float_arg);
-        if low > high {
-            return Err(bounds_error("rng.float", &args[0], &args[1]));
-        }
-        if low == high {
-            return Ok(Value::Float(
-                FrostFloat::new(low).expect("a Numeric argument is finite"),
-            ));
-        }
-        let t = draw(&rng, fastrand::Rng::f64_inclusive);
-        // Weighting both ends, rather than `low + (high - low) * t`, cannot
-        // overflow, and gives exactly `low` and `high` at the ends. Rounding can
-        // still step just past an end, so the result is clamped.
-        let drawn = ((1.0 - t) * low + t * high).clamp(low, high);
-        Ok(Value::Float(
-            FrostFloat::new(drawn).expect("a point between two finite floats is finite"),
-        ))
-    })
+fn float(ctx: &mut Ctx<'_>, mut args: Args<'_>) -> FrostResult {
+    let low_arg: Value = args.take()?;
+    let high_arg: Value = args.take()?;
+    let [low, high] = [&low_arg, &high_arg].map(float_arg);
+    if low > high {
+        return Err(bounds_error("rng.float", &low_arg, &high_arg));
+    }
+    if low == high {
+        return Ok(Value::Float(
+            FrostFloat::new(low).expect("a Numeric argument is finite"),
+        ));
+    }
+    let t = ctx.lock()?.f64_inclusive();
+    // Weighting both ends, rather than `low + (high - low) * t`, cannot
+    // overflow, and gives exactly `low` and `high` at the ends. Rounding can
+    // still step just past an end, so the result is clamped.
+    let drawn = ((1.0 - t) * low + t * high).clamp(low, high);
+    Ok(Value::Float(
+        FrostFloat::new(drawn).expect("a point between two finite floats is finite"),
+    ))
 }
 
-fn boolean(rng: &Shared) -> Value {
-    const PARAMS: Params = Params::new(&[Param::of(FrostType::NUMERIC)
-        .named("probability")
-        .optional()]);
-    let rng = Arc::clone(rng);
-    Value::checked_native("rng.bool", PARAMS, move |_, args| {
-        let Some(probability) = args.first() else {
-            return Ok(Value::Bool(draw(&rng, fastrand::Rng::bool)));
-        };
-        let p = float_arg(probability);
-        if !(0.0..=1.0).contains(&p) {
-            return Err(FrostError::from_string(format!(
-                "Function rng.bool requires argument 1 (probability) to be from 0 to 1, got {}",
-                probability.to_frost_string()
-            )));
-        }
-        // A draw from [0, 1) is below 1 always and below 0 never.
-        Ok(Value::Bool(draw(&rng, fastrand::Rng::f64) < p))
-    })
+fn boolean(ctx: &mut Ctx<'_>, mut args: Args<'_>) -> FrostResult {
+    let Optional(probability) = args.take::<Optional<Value>>()?;
+    let Some(probability) = probability else {
+        return Ok(Value::Bool(ctx.lock()?.bool()));
+    };
+    let p = float_arg(&probability);
+    if !(0.0..=1.0).contains(&p) {
+        return Err(FrostError::from_string(format!(
+            "Function rng.bool requires argument 1 (probability) to be from 0 to 1, got {}",
+            probability.to_frost_string()
+        )));
+    }
+    // A draw from [0, 1) is below 1 always and below 0 never.
+    Ok(Value::Bool(ctx.lock()?.f64() < p))
 }
 
-fn choice(rng: &Shared) -> Value {
-    const PARAMS: Params = Params::new(&[Param::of(FrostType::ARRAY)]);
-    let rng = Arc::clone(rng);
-    Value::checked_native("rng.choice", PARAMS, move |_, args| {
-        let array = args[0].as_array().expect("type-checked as an Array");
-        if array.is_empty() {
-            return Err(FrostError::from_static(
-                "Function rng.choice requires a non-empty Array",
-            ));
-        }
-        let index = draw(&rng, |rng| rng.usize(..array.len()));
-        Ok(array[index].clone())
-    })
+fn choice(ctx: &mut Ctx<'_>, mut args: Args<'_>) -> FrostResult {
+    let array: FrostArray = args.take()?;
+    if array.is_empty() {
+        return Err(FrostError::from_static(
+            "Function rng.choice requires a non-empty Array",
+        ));
+    }
+    let index = ctx.lock()?.usize(..array.len());
+    Ok(array[index].clone())
 }
 
-fn sample(rng: &Shared) -> Value {
-    const PARAMS: Params = Params::new(&[
-        Param::of(FrostType::ARRAY),
-        Param::of(FrostType::INT).named("n"),
-    ]);
-    let rng = Arc::clone(rng);
-    Value::checked_native("rng.sample", PARAMS, move |_, args| {
-        let array = args[0].as_array().expect("type-checked as an Array");
-        let n = args[1].as_int().expect("type-checked as an Int");
-        let count = usize::try_from(n).ok().filter(|&n| n <= array.len());
-        let Some(count) = count else {
-            return Err(FrostError::from_string(format!(
-                "Function rng.sample requires argument 2 (n) to be from 0 to the Array's \
-                 length, {}, got {n}",
-                array.len()
-            )));
-        };
-        let sampled = draw(&rng, |rng| {
-            rng.choose_multiple(array.iter().cloned(), count)
-        });
-        Ok(sampled.into())
-    })
+fn sample(ctx: &mut Ctx<'_>, mut args: Args<'_>) -> FrostResult {
+    let array: FrostArray = args.take()?;
+    let n: i64 = args.take()?;
+    let count = usize::try_from(n).ok().filter(|&n| n <= array.len());
+    let Some(count) = count else {
+        return Err(FrostError::from_string(format!(
+            "Function rng.sample requires argument 2 (n) to be from 0 to the Array's \
+             length, {}, got {n}",
+            array.len()
+        )));
+    };
+    let sampled = ctx.lock()?.choose_multiple(array.iter().cloned(), count);
+    Ok(sampled.into())
 }
 
-fn shuffle(rng: &Shared) -> Value {
-    const PARAMS: Params = Params::new(&[Param::of(FrostType::ARRAY)]);
-    let rng = Arc::clone(rng);
-    Value::checked_native("rng.shuffle", PARAMS, move |_, args| {
-        let Value::Array(array) = args[0].take() else {
-            unreachable!("type-checked as an Array")
-        };
-        let mut elements = array.into_vec();
-        draw(&rng, |rng| rng.shuffle(&mut elements));
-        Ok(elements.into())
-    })
+fn shuffle(ctx: &mut Ctx<'_>, mut args: Args<'_>) -> FrostResult {
+    let array: FrostArray = args.take()?;
+    let mut elements = array.into_vec();
+    ctx.lock()?.shuffle(&mut elements);
+    Ok(elements.into())
 }
