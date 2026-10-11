@@ -11,7 +11,7 @@ use std::sync::Arc;
 use frostlang::bytecode::{CompiledFunction, FormatVersion};
 use frostlang::compile::{CompilerOptions, compile_in_scope};
 use frostlang::image::{self, ImageError};
-use frostlang::{Arity, TrustedProgram, Value, Vm};
+use frostlang::{Arity, TrustedProgram, Value, Vm, frost_closure};
 
 /// `source`, compiled with `scope` as its enclosing scope.
 fn compile(source: &str, scope: &[&str]) -> TrustedProgram {
@@ -163,7 +163,7 @@ fn a_program_with_a_function_constant_cannot_be_saved() {
         origin: None,
         code: Vec::new(),
         child_fns: Vec::new(),
-        constants: vec![Value::native("f", Arity::Exact(0), |_, _| Ok(Value::Null))],
+        constants: vec![frost_closure!("f", || Value::Null)],
         key_constants: Vec::new(),
         name_table: Vec::new(),
         num_captures: 0,

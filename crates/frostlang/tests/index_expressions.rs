@@ -12,7 +12,7 @@ use crate::script;
 
 use frostlang::bytecode::Bytecode;
 use frostlang::compile::{Optimization, OptimizationOptions};
-use frostlang::{Arity, MapKey, Value};
+use frostlang::{MapKey, Value, frost_closure};
 use script::{Emitted, Script, UNOPTIMIZED, raises};
 
 const FOLD: OptimizationOptions = UNOPTIMIZED.with(Optimization::ConstantFold, true);
@@ -37,9 +37,9 @@ fn map() -> Value {
         ),
         (
             "double",
-            Value::native("double", Arity::Exact(1), |_, args| match args[0] {
-                Value::Int(n) => Ok(Value::Int(n * 2)),
-                _ => Ok(Value::Null),
+            frost_closure!("double", |n: Value| match n {
+                Value::Int(n) => Value::Int(n * 2),
+                _ => Value::Null,
             }),
         ),
     ])

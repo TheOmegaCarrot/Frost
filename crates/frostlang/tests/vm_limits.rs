@@ -15,8 +15,8 @@ use common::Pop;
 use frostlang::bytecode::{Bytecode, CompiledFunction, FormatVersion, NameEntry};
 use frostlang::native::Function;
 use frostlang::{
-    AbortReason, Arity, FrostError, ProgramResult, RunError, RunErrorKind, Value, Vm,
-    VmRuntimeConfiguration,
+    AbortReason, Arity, FrostError, FrostResult, ProgramResult, RunError, RunErrorKind, Value, Vm,
+    VmRuntimeConfiguration, frost_closure,
 };
 
 use Bytecode::*;
@@ -84,14 +84,12 @@ fn with_depth(max: usize) -> VmRuntimeConfiguration {
 
 /// A nullary native that returns `null`.
 fn noop() -> Value {
-    Value::native("noop", Arity::Exact(0), |_, _: &mut [Value]| {
-        Ok(Value::Null)
-    })
+    frost_closure!("noop", || Value::Null)
 }
 
 /// A nullary native that fails with an ordinary (catchable) error.
 fn boom() -> Value {
-    Value::native("boom", Arity::Exact(0), |_, _: &mut [Value]| {
+    frost_closure!("boom", || -> FrostResult {
         Err(FrostError::from_static("boom"))
     })
 }
@@ -99,24 +97,22 @@ fn boom() -> Value {
 /// Invokes its single argument with no args, swallowing any error into a sentinel.
 /// Stands in for `try_call`: it *tries* to catch whatever the invoked function raises.
 fn catcher() -> Value {
-    Value::native("catcher", Arity::Exact(1), |mut ctx, args| {
-        let function = Function::try_from(args[0].clone())?;
-        match ctx.invoke(&function, std::iter::empty()) {
-            Ok(value) => Ok(value),
-            Err(_) => Ok(Value::from("swallowed")),
-        }
+    frost_closure!("catcher", |#[frost(ctx)] ctx, function: Function| {
+        ctx.invoke(&function, std::iter::empty())
+            .unwrap_or_else(|_| Value::from("swallowed"))
     })
 }
 
 /// `recurse(self, n)`: invokes `self(self, n - 1)` until `n <= 0`, growing one native
 /// frame per level; an unbounded (non-tail) recursion knob for the depth cap.
 fn recurse() -> Value {
-    Value::native("recurse", Arity::Exact(2), |mut ctx, args| {
-        let n = args[1].as_int().expect("recurse depth must be an Int");
+    frost_closure!("recurse", |#[frost(ctx)] ctx,
+                               f: Function,
+                               n: i64|
+     -> FrostResult {
         if n <= 0 {
             return Ok(Value::Int(0));
         }
-        let f = Function::try_from(args[0].clone())?;
         ctx.invoke(&f, [f.clone().into_value(), Value::Int(n - 1)])
     })
 }

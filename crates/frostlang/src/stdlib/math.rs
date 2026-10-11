@@ -7,9 +7,10 @@
 
 use std::f64::consts;
 
+use crate::native::{Numeric, Optional};
 use crate::{
-    FrostError, FrostFloat, FrostResult, FrostType, Param, Params, SpecialFloat, StdlibModule,
-    Value,
+    FrostError, FrostFloat, FrostResult, FrostString, SpecialFloat, StdlibModule, Value,
+    frost_closure, frost_fn,
 };
 
 /// The `std.math` module: floating-point functions (roots, exponentials,
@@ -24,7 +25,7 @@ pub fn math() -> StdlibModule {
         Value::map([
             ("sqrt", float_function("math.sqrt", f64::sqrt)),
             ("cbrt", float_function("math.cbrt", f64::cbrt)),
-            ("pow", pow()),
+            ("pow", pow_frost()),
             ("exp", float_function("math.exp", f64::exp)),
             ("exp2", float_function("math.exp2", f64::exp2)),
             ("expm1", float_function("math.expm1", f64::exp_m1)),
@@ -49,35 +50,25 @@ pub fn math() -> StdlibModule {
             ("ceil", rounding_function("math.ceil", f64::ceil)),
             ("floor", rounding_function("math.floor", f64::floor)),
             ("trunc", rounding_function("math.trunc", f64::trunc)),
-            ("abs", abs()),
+            ("abs", abs_frost()),
             ("min", min_max("math.min", i64::min, f64::min)),
             ("max", min_max("math.max", i64::max, f64::max)),
-            ("hypot", hypot()),
-            ("clamp", clamp()),
-            ("lerp", lerp()),
-            ("special_float", special_float()),
+            ("hypot", hypot_frost()),
+            ("clamp", clamp_frost()),
+            ("lerp", lerp_frost()),
+            ("special_float", special_float_frost()),
             ("nums", nums()),
         ]),
     )
 }
 
-const ONE_NUMBER: Params = Params::new(&[Param::of(FrostType::NUMERIC)]);
-const TWO_NUMBERS: Params =
-    Params::new(&[Param::of(FrostType::NUMERIC), Param::of(FrostType::NUMERIC)]);
-
-/// A type-checked Numeric argument, as a float.
-fn float_arg(arg: &Value) -> f64 {
-    match arg {
-        Value::Int(i) => *i as f64,
-        Value::Float(f) => f.get(),
-        other => unreachable!("type-checked as Numeric, got {}", other.type_name()),
-    }
-}
-
 /// `result`, which `function` computed from `args`, as a Float, if it is finite.
-fn finite(function: &str, result: f64, args: &[Value]) -> FrostResult {
+fn finite(function: &str, result: f64, args: &[Numeric]) -> FrostResult {
     FrostFloat::new(result).map(Value::Float).map_err(|_| {
-        let args: Vec<String> = args.iter().map(Value::to_frost_string).collect();
+        let args: Vec<String> = args
+            .iter()
+            .map(|&arg| Value::from(arg).to_frost_string())
+            .collect();
         FrostError::from_string(format!(
             "Function {function} has no finite result for {}",
             args.join(", ")
@@ -87,153 +78,144 @@ fn finite(function: &str, result: f64, args: &[Value]) -> FrostResult {
 
 /// A one-argument function computed in floating point.
 fn float_function(name: &'static str, f: fn(f64) -> f64) -> Value {
-    Value::checked_native(name, ONE_NUMBER, move |_, args| {
-        finite(name, f(float_arg(&args[0])), args)
+    frost_closure!(name, move |#[frost(unnamed)] x: Numeric| {
+        finite(name, f(x.to_f64()), &[x])
     })
 }
 
 /// A two-argument function computed in floating point.
 fn binary_float_function(name: &'static str, f: fn(f64, f64) -> f64) -> Value {
-    Value::checked_native(name, TWO_NUMBERS, move |_, args| {
-        finite(name, f(float_arg(&args[0]), float_arg(&args[1])), args)
-    })
+    frost_closure!(
+        name,
+        move |#[frost(unnamed)] x: Numeric, #[frost(unnamed)] y: Numeric| {
+            finite(name, f(x.to_f64(), y.to_f64()), &[x, y])
+        }
+    )
 }
 
 /// A function rounding to an Int by `round`; an Int is already rounded.
 fn rounding_function(name: &'static str, round: fn(f64) -> f64) -> Value {
-    Value::checked_native(name, ONE_NUMBER, move |_, args| match &args[0] {
-        Value::Int(_) => Ok(args[0].take()),
-        Value::Float(f) => {
+    frost_closure!(name, move |#[frost(unnamed)] x: Numeric| match x {
+        Numeric::Int(i) => Ok(Value::Int(i)),
+        Numeric::Float(f) => {
             let rounded = FrostFloat::new(round(f.get())).expect("rounding keeps a Float finite");
             rounded.to_exact_int().map(Value::Int).ok_or_else(|| {
                 FrostError::from_string(format!(
                     "Function {name} has no Int result for {}",
-                    args[0].to_frost_string()
+                    Value::Float(f).to_frost_string()
                 ))
             })
         }
-        other => unreachable!("type-checked as Numeric, got {}", other.type_name()),
     })
 }
 
-fn abs() -> Value {
-    Value::checked_native("math.abs", ONE_NUMBER, |_, args| match &args[0] {
-        Value::Int(i) => i.checked_abs().map(Value::Int).ok_or_else(|| {
+#[frost_fn(name = "math.abs")]
+fn abs(#[frost(unnamed)] x: Numeric) -> FrostResult {
+    match x {
+        Numeric::Int(i) => i.checked_abs().map(Value::Int).ok_or_else(|| {
             FrostError::from_string(format!("Function math.abs has no Int result for {i}"))
         }),
-        Value::Float(f) => finite("math.abs", f.get().abs(), args),
-        other => unreachable!("type-checked as Numeric, got {}", other.type_name()),
-    })
+        Numeric::Float(f) => finite("math.abs", f.get().abs(), &[x]),
+    }
 }
 
 /// `pow`: an Int of an Int base and a non-negative Int exponent, else a Float.
-fn pow() -> Value {
-    Value::checked_native("math.pow", TWO_NUMBERS, |_, args| {
-        match (&args[0], &args[1]) {
-            (Value::Int(base), Value::Int(exponent)) if *exponent >= 0 => {
-                let result = match u32::try_from(*exponent) {
-                    Ok(exponent) => base.checked_pow(exponent),
-                    // Past `u32`, every base but 0, 1, and -1 overflows.
-                    Err(_) => match base {
-                        0 | 1 => Some(*base),
-                        -1 => Some(if exponent % 2 == 0 { 1 } else { -1 }),
-                        _ => None,
-                    },
-                };
-                result.map(Value::Int).ok_or_else(|| {
-                    FrostError::from_string(format!(
-                        "Function math.pow has no Int result for {}, {}",
-                        args[0].to_frost_string(),
-                        args[1].to_frost_string()
-                    ))
-                })
-            }
-            (base, exponent) => finite("math.pow", float_arg(base).powf(float_arg(exponent)), args),
+#[frost_fn(name = "math.pow")]
+fn pow(#[frost(unnamed)] base: Numeric, #[frost(unnamed)] exponent: Numeric) -> FrostResult {
+    match (base, exponent) {
+        (Numeric::Int(base), Numeric::Int(exponent)) if exponent >= 0 => {
+            let result = match u32::try_from(exponent) {
+                Ok(exponent) => base.checked_pow(exponent),
+                // Past `u32`, every base but 0, 1, and -1 overflows.
+                Err(_) => match base {
+                    0 | 1 => Some(base),
+                    -1 => Some(if exponent % 2 == 0 { 1 } else { -1 }),
+                    _ => None,
+                },
+            };
+            result.map(Value::Int).ok_or_else(|| {
+                FrostError::from_string(format!(
+                    "Function math.pow has no Int result for {base}, {exponent}"
+                ))
+            })
         }
-    })
+        _ => finite(
+            "math.pow",
+            base.to_f64().powf(exponent.to_f64()),
+            &[base, exponent],
+        ),
+    }
 }
 
 /// `min` or `max`: an Int of two Ints, else a Float.
 fn min_max(name: &'static str, ints: fn(i64, i64) -> i64, floats: fn(f64, f64) -> f64) -> Value {
-    Value::checked_native(name, TWO_NUMBERS, move |_, args| {
-        match (&args[0], &args[1]) {
-            (Value::Int(a), Value::Int(b)) => Ok(Value::Int(ints(*a, *b))),
-            (a, b) => finite(name, floats(float_arg(a), float_arg(b)), args),
+    frost_closure!(
+        name,
+        move |#[frost(unnamed)] a: Numeric, #[frost(unnamed)] b: Numeric| match (a, b) {
+            (Numeric::Int(a), Numeric::Int(b)) => Ok(Value::Int(ints(a, b))),
+            _ => finite(name, floats(a.to_f64(), b.to_f64()), &[a, b]),
         }
-    })
+    )
 }
 
-fn hypot() -> Value {
-    const PARAMS: Params = Params::new(&[
-        Param::of(FrostType::NUMERIC),
-        Param::of(FrostType::NUMERIC),
-        Param::of(FrostType::NUMERIC).optional(),
-    ]);
-    Value::checked_native("math.hypot", PARAMS, |_, args| {
-        let norm = args
-            .iter()
-            .map(float_arg)
-            .reduce(f64::hypot)
-            .expect("hypot has at least two arguments");
-        finite("math.hypot", norm, args)
-    })
+#[frost_fn(name = "math.hypot")]
+fn hypot(
+    #[frost(unnamed)] a: Numeric,
+    #[frost(unnamed)] b: Numeric,
+    #[frost(unnamed)] c: Optional<Numeric>,
+) -> FrostResult {
+    let norm = a.to_f64().hypot(b.to_f64());
+    match c {
+        Optional(None) => finite("math.hypot", norm, &[a, b]),
+        Optional(Some(c)) => finite("math.hypot", norm.hypot(c.to_f64()), &[a, b, c]),
+    }
 }
 
-fn clamp() -> Value {
-    const PARAMS: Params = Params::new(&[
-        Param::of(FrostType::NUMERIC).named("value"),
-        Param::of(FrostType::NUMERIC).named("lo"),
-        Param::of(FrostType::NUMERIC).named("hi"),
-    ]);
-    Value::checked_native("math.clamp", PARAMS, |_, args| {
-        if args[1].compare(&args[2])?.is_gt() {
-            return Err(FrostError::from_string(format!(
-                "Function math.clamp requires argument 2 (lo) to be at most argument 3 (hi), \
-                 got {} and {}",
-                args[1].to_frost_string(),
-                args[2].to_frost_string()
-            )));
+#[frost_fn(name = "math.clamp")]
+fn clamp(value: Numeric, lo: Numeric, hi: Numeric) -> FrostResult {
+    let (lo_value, hi_value) = (Value::from(lo), Value::from(hi));
+    if lo_value.compare(&hi_value)?.is_gt() {
+        return Err(FrostError::from_string(format!(
+            "Function math.clamp requires argument 2 (lo) to be at most argument 3 (hi), \
+             got {} and {}",
+            lo_value.to_frost_string(),
+            hi_value.to_frost_string()
+        )));
+    }
+    match (value, lo, hi) {
+        (Numeric::Int(value), Numeric::Int(lo), Numeric::Int(hi)) => {
+            Ok(Value::Int(value.clamp(lo, hi)))
         }
-        match (&args[0], &args[1], &args[2]) {
-            (Value::Int(value), Value::Int(lo), Value::Int(hi)) => {
-                Ok(Value::Int((*value).clamp(*lo, *hi)))
-            }
-            (value, lo, hi) => finite(
-                "math.clamp",
-                float_arg(value).clamp(float_arg(lo), float_arg(hi)),
-                args,
-            ),
-        }
-    })
+        _ => finite(
+            "math.clamp",
+            value.to_f64().clamp(lo.to_f64(), hi.to_f64()),
+            &[value, lo, hi],
+        ),
+    }
 }
 
-fn lerp() -> Value {
-    const PARAMS: Params = Params::new(&[
-        Param::of(FrostType::NUMERIC).named("a"),
-        Param::of(FrostType::NUMERIC).named("b"),
-        Param::of(FrostType::NUMERIC).named("t"),
-    ]);
-    Value::checked_native("math.lerp", PARAMS, |_, args| {
-        let [a, b, t] = [&args[0], &args[1], &args[2]].map(float_arg);
-        // Weighting both ends, rather than `a + (b - a) * t`, makes `t` of 0 and
-        // 1 give exactly `a` and `b`.
-        finite("math.lerp", (1.0 - t) * a + t * b, args)
-    })
+#[frost_fn(name = "math.lerp")]
+fn lerp(a: Numeric, b: Numeric, t: Numeric) -> FrostResult {
+    let [a_float, b_float, t_float] = [a, b, t].map(Numeric::to_f64);
+    // Weighting both ends, rather than `a + (b - a) * t`, makes `t` of 0 and
+    // 1 give exactly `a` and `b`.
+    finite(
+        "math.lerp",
+        (1.0 - t_float) * a_float + t_float * b_float,
+        &[a, b, t],
+    )
 }
 
 /// The [`SpecialFloat`] Opaque that a String names as Rust parses floats (`NaN`,
 /// `inf`, `-infinity`, in any case), or Null for any other String.
-fn special_float() -> Value {
-    const PARAMS: Params = Params::new(&[Param::of(FrostType::STRING)]);
-    Value::checked_native("math.special_float", PARAMS, |_, args| {
-        let text = args[0].as_str().expect("type-checked as String");
-        // A name has no digits; a numeral such as `1e999` parses as infinite too.
-        let is_name = !text.contains(|c: char| c.is_ascii_digit());
-        let special = text.parse::<f64>().ok().and_then(SpecialFloat::new);
-        Ok(special
-            .filter(|_| is_name)
-            .map_or(Value::Null, Value::opaque))
-    })
+#[frost_fn(name = "math.special_float")]
+fn special_float(#[frost(unnamed)] text: FrostString) -> Value {
+    // A name has no digits; a numeral such as `1e999` parses as infinite too.
+    let is_name = !text.contains(|c: char| c.is_ascii_digit());
+    let special = text.parse::<f64>().ok().and_then(SpecialFloat::new);
+    special
+        .filter(|_| is_name)
+        .map_or(Value::Null, Value::opaque)
 }
 
 /// The constants under `math.nums`.

@@ -2,8 +2,8 @@
 
 use std::mem;
 
-use crate::native::MutableBundle;
-use crate::{Arity, FrostError, Value, frost_mutable_bundle};
+use crate::native::{MutableBundle, Optional};
+use crate::{FrostError, Value, frost_fn, frost_mutable_bundle};
 
 fn forbid_cycle(value: &Value) -> Result<(), FrostError> {
     match value {
@@ -24,13 +24,13 @@ fn forbid_cycle(value: &Value) -> Result<(), FrostError> {
     }
 }
 
-pub(super) fn mutable_cell_global() -> Value {
-    Value::native("mutable_cell", Arity::Between(0, 1), |_, args| {
-        // steal the initial value if present, else default to Null.
-        let initial = args.first_mut().map_or(Value::Null, Value::take);
-        forbid_cycle(&initial)?;
-        Ok(Cell::frost_functions(MutableBundle::new(Cell(initial))).build())
-    })
+#[frost_fn(name = "mutable_cell")]
+pub(super) fn mutable_cell(
+    #[frost(unnamed)] initial: Optional<Value>,
+) -> Result<Value, FrostError> {
+    let initial = initial.0.unwrap_or(Value::Null);
+    forbid_cycle(&initial)?;
+    Ok(Cell::frost_functions(MutableBundle::new(Cell(initial))).build())
 }
 
 /// What a mutable cell holds.

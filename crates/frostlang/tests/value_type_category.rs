@@ -8,11 +8,9 @@
 
 use crate::common;
 
-use std::sync::Arc;
-
 use frostlang::bytecode::Bytecode;
 use frostlang::{
-    Arity, FrostArray, FrostMap, FrostOpaque, FrostType, NativeFunction, TypeSet, Value,
+    Arity, FrostArray, FrostMap, FrostOpaque, FrostType, TypeSet, Value, frost_closure,
 };
 
 type Ft = FrostType;
@@ -34,11 +32,7 @@ fn map() -> Value {
 }
 
 fn native() -> Value {
-    Value::NativeFunction(Arc::new(NativeFunction::new(
-        "f",
-        Arity::Exact(0),
-        |_ctx, _args| Ok(Value::Null),
-    )))
+    frost_closure!("f", || Value::Null)
 }
 
 /// A real `Closure` value, only obtainable by running `CreateClosure`.

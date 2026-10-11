@@ -14,18 +14,15 @@
 use std::collections::BTreeMap;
 
 use frostlang::compile::{CompilerOptions, Optimization, OptimizationOptions, compile_in_scope};
-use frostlang::{Arity, RunError, Value, Vm};
+use frostlang::{RunError, Value, Vm, frost_closure};
 
 /// `unshared(structure)`: whether the Array or Map passed in is referenced by
 /// nothing but the argument itself.
 fn unshared() -> Value {
-    Value::native("unshared", Arity::Exact(1), |_, args| {
-        let unshared = match args[0].take() {
-            Value::Array(array) => array.try_into_vec().is_ok(),
-            Value::Map(map) => map.try_into_map().is_ok(),
-            other => panic!("`unshared` takes an Array or Map, not {other:?}"),
-        };
-        Ok(Value::Bool(unshared))
+    frost_closure!("unshared", |structure: Value| match structure {
+        Value::Array(array) => array.try_into_vec().is_ok(),
+        Value::Map(map) => map.try_into_map().is_ok(),
+        other => panic!("`unshared` takes an Array or Map, not {other:?}"),
     })
 }
 

@@ -20,9 +20,9 @@ use std::time::Duration;
 use frostlang::compile::{CompilerOptions, compile_in_scope};
 use frostlang::native::Function;
 use frostlang::{
-    AbortReason, Arity, CancelToken, Closure, FrostError, ImportCtx, ImportResolver, Importer,
+    AbortReason, CancelToken, Closure, FrostError, ImportCtx, ImportResolver, Importer,
     ImporterBuilder, ProgramResult, RunError, RunErrorKind, Value, Vm, VmFactory,
-    VmRuntimeConfiguration,
+    VmRuntimeConfiguration, frost_closure,
 };
 
 // ============================================================
@@ -171,10 +171,7 @@ fn compile(source: &str, captures: BTreeMap<String, Value>) -> Arc<Closure> {
 /// `cancel()`: cancels `token`.
 fn cancel_native(token: &CancelToken) -> Value {
     let token = token.clone();
-    Value::native("cancel", Arity::Exact(0), move |_, _: &mut [Value]| {
-        token.cancel();
-        Ok(Value::Null)
-    })
+    frost_closure!("cancel", move || token.cancel())
 }
 
 /// Serves every import by running `source` in a child Vm, as a resolver that
@@ -242,9 +239,8 @@ fn cancelling_from_another_thread_stops_a_runaway_run() {
     // The host cancels from this thread once the run is under way.
     let host = Host::new();
     let (started_sender, started) = mpsc::channel();
-    let started_native = Value::native("started", Arity::Exact(0), move |_, _: &mut [Value]| {
+    let started_native = frost_closure!("started", move || {
         started_sender.send(()).expect("the test is waiting");
-        Ok(Value::Null)
     });
     let source = format!("{SPIN}\nstarted()\nspin(0)");
     let vm = host.vm_with(&source, &[("started", started_native)]);
@@ -317,13 +313,14 @@ fn a_native_that_swallows_a_cancellation_cannot_resume_frost() {
     // call `second` and returns a result of its own.
     // Once `first` is cancelled, the call to `second` is refused and the
     // native's result is ignored.
-    let persist = Value::native("persist", Arity::Exact(2), |mut ctx, args| {
-        let first = Function::try_from(args[0].clone())?;
-        let second = Function::try_from(args[1].clone())?;
-        let _ = ctx.invoke(&first, []);
-        let _ = ctx.invoke(&second, []);
-        Ok(Value::from("swallowed"))
-    });
+    let persist = frost_closure!(
+        "persist",
+        |#[frost(ctx)] ctx, first: Function, second: Function| {
+            let _ = ctx.invoke(&first, []);
+            let _ = ctx.invoke(&second, []);
+            "swallowed"
+        }
+    );
     let host = Host::new();
     let source = format!(
         r#"{SPIN}

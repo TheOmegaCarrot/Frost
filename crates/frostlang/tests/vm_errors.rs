@@ -17,10 +17,10 @@ use std::sync::Arc;
 
 use common::{entry, global_slot};
 use frostlang::bytecode::{Bytecode, CompiledFunction, FormatVersion, NameEntry};
-use frostlang::native::Function;
+use frostlang::native::{Function, Rest};
 use frostlang::{
     Arity, BacktraceFrame, FrostError, FrostMap, FrostResult, NativeCtx, NativeFunction,
-    ProgramResult, Value, Vm,
+    ProgramResult, Value, Vm, frost_closure,
 };
 
 // ============================================================
@@ -105,20 +105,15 @@ fn run_with(
 /// its args and *propagates* any error (it does not catch). Used to exercise an
 /// error flowing through a native frame.
 fn apply_native() -> Value {
-    native("apply", Arity::AtLeast(1), |mut ctx, args| {
-        let f = Function::try_from(args[0].clone())?;
-        ctx.invoke(
-            &f,
-            args[1..]
-                .iter_mut()
-                .map(|v| std::mem::replace(v, Value::Null)),
-        )
-    })
+    frost_closure!("apply", |#[frost(ctx)] ctx,
+                             f: Function,
+                             rest: Rest<Value>|
+     -> FrostResult { ctx.invoke(&f, rest.0) })
 }
 
 /// A native that always raises.
 fn boom_native() -> Value {
-    native("boom", Arity::Exact(0), |_ctx, _args| {
+    frost_closure!("boom", || -> FrostResult {
         Err(FrostError::from_static("boom!"))
     })
 }

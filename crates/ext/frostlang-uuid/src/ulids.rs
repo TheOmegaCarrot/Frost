@@ -2,10 +2,11 @@
 
 use std::sync::{Mutex, PoisonError};
 
-use frostlang::Value;
+use frostlang::native::Flat;
+use frostlang::{FrostBytes, FrostString, Value, frost_fn};
 use ulid::{Generator, Overflow, Ulid};
 
-use crate::{BYTES, ID, NO_PARAMS, TEXT, id_arg, millis_value};
+use crate::{id_arg, millis_value};
 
 /// The one generator for the process, so that every ULID made is greater than
 /// the last, wherever it was made.
@@ -27,42 +28,36 @@ fn parse(text: &str) -> Option<Ulid> {
     Ulid::from_string(text).ok()
 }
 
-/// The ULID that `id`, type-checked as String or Bytes, holds.
-fn ulid_arg(id: &Value) -> Option<Ulid> {
+/// The ULID that `id` holds.
+fn ulid_arg(id: &Flat) -> Option<Ulid> {
     id_arg(id, parse, Ulid::from_bytes)
 }
 
+#[frost_fn(name = "uuid.ulid.new")]
 pub(crate) fn new() -> Value {
-    Value::checked_native("uuid.ulid.new", NO_PARAMS, |_, _| {
-        // The generator holds only the last ULID made, which a panic cannot
-        // leave half-written.
-        let mut generator = GENERATOR.lock().unwrap_or_else(PoisonError::into_inner);
-        // Overflow takes 2^80 ULIDs in one millisecond; incrementing carries
-        // into the next millisecond, which keeps the order.
-        let ulid = generator
-            .generate()
-            .unwrap_or_else(Overflow::commit_overflow_increment);
-        Ok(text(ulid))
-    })
+    // The generator holds only the last ULID made, which a panic cannot
+    // leave half-written.
+    let mut generator = GENERATOR.lock().unwrap_or_else(PoisonError::into_inner);
+    // Overflow takes 2^80 ULIDs in one millisecond; incrementing carries
+    // into the next millisecond, which keeps the order.
+    let ulid = generator
+        .generate()
+        .unwrap_or_else(Overflow::commit_overflow_increment);
+    text(ulid)
 }
 
-pub(crate) fn to_bytes() -> Value {
-    Value::checked_native("uuid.ulid.to_bytes", TEXT, |_, args| {
-        let text = args[0].as_str().expect("type-checked as a String");
-        Ok(parse(text).map_or(Value::Null, |ulid| ulid.to_bytes().as_slice().into()))
-    })
+#[frost_fn(name = "uuid.ulid.to_bytes")]
+pub(crate) fn to_bytes(text: FrostString) -> Value {
+    parse(text.as_str()).map_or(Value::Null, |ulid| ulid.to_bytes().as_slice().into())
 }
 
-pub(crate) fn to_string() -> Value {
-    Value::checked_native("uuid.ulid.to_string", BYTES, |_, args| {
-        let bytes = args[0].as_bytes().expect("type-checked as Bytes");
-        Ok(<[u8; 16]>::try_from(bytes).map_or(Value::Null, |bytes| text(Ulid::from_bytes(bytes))))
-    })
+#[frost_fn(name = "uuid.ulid.to_string")]
+pub(crate) fn to_string(bytes: FrostBytes) -> Value {
+    <[u8; 16]>::try_from(&bytes[..]).map_or(Value::Null, |bytes| text(Ulid::from_bytes(bytes)))
 }
 
 /// `timestamp(id)`: the Unix time in milliseconds that a ULID records.
-pub(crate) fn timestamp() -> Value {
-    Value::checked_native("uuid.ulid.timestamp", ID, |_, args| {
-        Ok(ulid_arg(&args[0]).map_or(Value::Null, |ulid| millis_value(ulid.timestamp_ms())))
-    })
+#[frost_fn(name = "uuid.ulid.timestamp")]
+pub(crate) fn timestamp(id: Flat) -> Value {
+    ulid_arg(&id).map_or(Value::Null, |ulid| millis_value(ulid.timestamp_ms()))
 }

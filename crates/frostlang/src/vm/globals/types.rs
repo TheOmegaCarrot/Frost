@@ -3,10 +3,8 @@
 use std::num::NonZeroUsize;
 
 use crate::bytecode::Bytecode;
-use crate::{Arity, FrostType, Param, Params, TypeSet, Value};
-
-/// The shared one-any-argument spec (`Exact(1)`).
-const ONE_ANY: Params = Params::new(&[Param::any()]);
+use crate::native::Flat;
+use crate::{Arity, FrostBytes, FrostType, Param, Params, TypeSet, Value, frost_fn};
 
 /// The spec for the numeric parsers: the types a number can be read from.
 /// A value of any other type is a type error, which is distinct from a value of the
@@ -84,10 +82,9 @@ pub(super) fn is_flat_global() -> Value {
     type_predicate("is_flat", FrostType::FLAT)
 }
 
-pub(super) fn type_global() -> Value {
-    Value::checked_native("type", ONE_ANY, |_, args| {
-        Ok(Value::from(args[0].type_name()))
-    })
+#[frost_fn(name = "type")]
+pub(super) fn r#type(#[frost(unnamed)] value: Value) -> &'static str {
+    value.type_name()
 }
 
 pub(super) fn to_string_global() -> Value {
@@ -102,10 +99,9 @@ pub(super) fn to_string_global() -> Value {
     )
 }
 
-pub(super) fn pretty_global() -> Value {
-    Value::native("pretty", Arity::Exact(1), |_, args| {
-        Ok(Value::from(args[0].to_pretty_string()))
-    })
+#[frost_fn(name = "pretty")]
+pub(super) fn pretty(#[frost(unnamed)] value: Value) -> String {
+    value.to_pretty_string()
 }
 
 pub(super) fn to_int_global() -> Value {
@@ -120,12 +116,12 @@ pub(super) fn to_float_global() -> Value {
     })
 }
 
-pub(super) fn to_bytes_global() -> Value {
-    const PARAMS: Params = Params::new(&[Param::of(FrostType::FLAT)]);
-    Value::checked_native("to_bytes", PARAMS, |_, args| Ok(args[0].to_frost_bytes()))
+#[frost_fn(name = "to_bytes")]
+pub(super) fn to_bytes(#[frost(unnamed)] value: Flat) -> Value {
+    Value::from(value).to_frost_bytes()
 }
 
-pub(super) fn from_utf8_global() -> Value {
-    const PARAMS: Params = Params::new(&[Param::of(FrostType::BYTES)]);
-    Value::checked_native("from_utf8", PARAMS, |_, args| Ok(args[0].decode_utf8()))
+#[frost_fn(name = "from_utf8")]
+pub(super) fn from_utf8(#[frost(unnamed)] bytes: FrostBytes) -> Value {
+    Value::Bytes(bytes).decode_utf8()
 }

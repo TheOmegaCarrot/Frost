@@ -13,7 +13,8 @@ use crate::common;
 
 use common::Pop;
 use frostlang::bytecode::{Bytecode, CompiledFunction, FormatVersion, NameEntry};
-use frostlang::{Arity, FrostResult, NativeFunction, Value, Vm};
+use frostlang::native::Rest;
+use frostlang::{Arity, Value, Vm, frost_closure};
 
 use Bytecode::*;
 
@@ -94,14 +95,8 @@ fn dyn_tail_call_spreads_array_into_closure() {
 
 #[test]
 fn dyn_tail_call_spreads_array_into_native() {
-    // A native callee takes the spread args as a slice; the count is dynamic.
-    let sum = Value::NativeFunction(Arc::new(NativeFunction::new(
-        "sum",
-        Arity::AtLeast(0),
-        |_ctx, args: &mut [Value]| -> FrostResult {
-            Ok(Value::Int(args.iter().map(|v| v.as_int().unwrap()).sum()))
-        },
-    )));
+    // A native callee takes the spread args as its rest; the count is dynamic.
+    let sum = frost_closure!("sum", |ns: Rest<i64>| ns.0.iter().sum::<i64>());
     let result = run_with_f(
         sum,
         vec![

@@ -13,7 +13,7 @@ use std::thread;
 use std::time::Duration;
 
 use common::{Run, Tree, count, run};
-use frostlang::{Arity, HostComponent, Importer, ImporterBuilder, Value};
+use frostlang::{HostComponent, Importer, ImporterBuilder, Value, frost_closure};
 
 /// Far longer than any case takes when it does not hang.
 const WATCHDOG: Duration = Duration::from_secs(30);
@@ -59,9 +59,8 @@ fn threads_loading_one_module_at_once_do_not_wait_for_each_other() {
         ",
     );
     let barrier = Arc::new(Barrier::new(2));
-    let meet = Value::native("meet", Arity::Exact(0), move |_, _| {
+    let meet = frost_closure!("meet", move || {
         barrier.wait();
-        Ok(Value::Null)
     });
     let importer = importer_with(&tree, Value::map([("meet", meet)]));
 
@@ -110,11 +109,10 @@ fn a_load_that_panics_leaves_the_resolver_usable() {
         ",
     );
     let exploded = AtomicBool::new(false);
-    let explode = Value::native("explode", Arity::Exact(0), move |_, _| {
+    let explode = frost_closure!("explode", move || {
         if !exploded.swap(true, Ordering::SeqCst) {
             panic!("a native panicked while `m` was loading");
         }
-        Ok(Value::Null)
     });
     let importer = importer_with(&tree, Value::map([("explode", explode)]));
 

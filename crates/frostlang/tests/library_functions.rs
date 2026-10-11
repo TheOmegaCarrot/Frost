@@ -13,7 +13,7 @@
 
 use crate::script;
 
-use frostlang::{Arity, Value};
+use frostlang::{Value, frost_closure};
 use script::assertions::{Library, library_assertions};
 use script::{Script, raises, run};
 
@@ -78,9 +78,7 @@ fn call_checks_its_argument_types_in_order() {
 
 #[test]
 fn call_calls_a_runtime_function() {
-    let wrap = Value::native("wrap", Arity::Exact(1), |_, args| {
-        Ok(Value::array([args[0].take()]))
-    });
+    let wrap = frost_closure!("wrap", |value: Value| Value::array([value]));
     let called = Script::new("call(f, [2])").capture("f", wrap).run();
     assert_eq!(called, run("[2]"));
 }

@@ -3,42 +3,15 @@
 use std::collections::{BTreeMap, BTreeSet};
 
 use crate::bytecode::Bytecode;
-use crate::native::{Args, FrostArg, Function, Rest};
+use crate::native::{Function, Optional, Rest, Structured};
 use crate::{
     Arity, FrostArray, FrostBytes, FrostError, FrostMap, FrostResult, FrostString, FrostType,
-    MapKey, NativeCtx, Param, Params, TypeSet, Value, ValueMap,
+    MapKey, NativeCtx, Param, Params, TypeSet, Value, ValueMap, frost_closure, frost_fn,
 };
 
 /// The types with elements in order: a String's are its code points, and
 /// Bytes' its bytes. See [`Sequence`].
 const SEQUENCE: TypeSet = FrostType::FLAT.or(FrostType::Array);
-
-const ONE_ARRAY: Params = Params::new(&[Param::of(FrostType::ARRAY)]);
-const ONE_MAP: Params = Params::new(&[Param::of(FrostType::MAP)]);
-const ARRAY_AND_FUNCTION: Params =
-    Params::new(&[Param::of(FrostType::ARRAY), Param::of(FrostType::FUNCTION)]);
-const MAP_AND_FUNCTION: Params =
-    Params::new(&[Param::of(FrostType::MAP), Param::of(FrostType::FUNCTION)]);
-const STRUCTURE_AND_FUNCTION: Params = Params::new(&[
-    Param::of(FrostType::STRUCTURED),
-    Param::of(FrostType::FUNCTION),
-]);
-
-/// The Array in a type-checked argument, taken from it.
-fn take_array(arg: &mut Value) -> FrostArray {
-    match arg.take() {
-        Value::Array(array) => array,
-        other => unreachable!("type-checked as an Array, got {}", other.type_name()),
-    }
-}
-
-/// The Map in a type-checked argument, taken from it.
-fn take_map(arg: &mut Value) -> FrostMap {
-    match arg.take() {
-        Value::Map(map) => map,
-        other => unreachable!("type-checked as a Map, got {}", other.type_name()),
-    }
-}
 
 /// The Int in a type-checked argument.
 fn int_arg(arg: &Value) -> i64 {
@@ -84,105 +57,95 @@ fn returned_key(function: &str, value: Value) -> Result<MapKey, FrostError> {
 
 // --- Maps ---
 
-pub(super) fn keys_global() -> Value {
-    Value::checked_native("keys", ONE_MAP, |_, args| {
-        let map = take_map(&mut args[0]);
-        Ok(map.keys().cloned().map(Value::from).collect())
-    })
+#[frost_fn(name = "keys")]
+pub(super) fn keys(#[frost(unnamed)] map: FrostMap) -> Value {
+    map.keys().cloned().map(Value::from).collect()
 }
 
-pub(super) fn values_global() -> Value {
-    Value::checked_native("values", ONE_MAP, |_, args| {
-        let map = take_map(&mut args[0]);
-        Ok(map.values().cloned().collect())
-    })
+#[frost_fn(name = "values")]
+pub(super) fn values(#[frost(unnamed)] map: FrostMap) -> Value {
+    map.values().cloned().collect()
 }
 
-pub(super) fn map_keys_global() -> Value {
-    Value::checked_native("map_keys", MAP_AND_FUNCTION, |mut ctx, args| {
-        let map = take_map(&mut args[0]).into_map();
-        let function = Function::try_from(args[1].take())?;
-        let mut result = ValueMap::new();
-        for (key, value) in map {
-            let key = returned_key("map_keys", ctx.invoke(&function, [key.into()])?)?;
-            result.insert(key, value);
-        }
-        Ok(result.into())
-    })
+#[frost_fn(name = "map_keys")]
+pub(super) fn map_keys(
+    #[frost(ctx)] ctx: &mut NativeCtx<'_>,
+    #[frost(unnamed)] map: FrostMap,
+    #[frost(unnamed)] function: Function,
+) -> FrostResult {
+    let mut result = ValueMap::new();
+    for (key, value) in map.into_map() {
+        let key = returned_key("map_keys", ctx.invoke(&function, [key.into()])?)?;
+        result.insert(key, value);
+    }
+    Ok(result.into())
 }
 
-pub(super) fn map_values_global() -> Value {
-    Value::checked_native("map_values", MAP_AND_FUNCTION, |mut ctx, args| {
-        let mut map = take_map(&mut args[0]).into_map();
-        let function = Function::try_from(args[1].take())?;
-        for value in map.values_mut() {
-            *value = ctx.invoke(&function, [value.take()])?;
-        }
-        Ok(map.into())
-    })
+#[frost_fn(name = "map_values")]
+pub(super) fn map_values(
+    #[frost(ctx)] ctx: &mut NativeCtx<'_>,
+    #[frost(unnamed)] map: FrostMap,
+    #[frost(unnamed)] function: Function,
+) -> FrostResult {
+    let mut map = map.into_map();
+    for value in map.values_mut() {
+        *value = ctx.invoke(&function, [value.take()])?;
+    }
+    Ok(map.into())
 }
 
-pub(super) fn to_entries_global() -> Value {
-    Value::checked_native("to_entries", ONE_MAP, |_, args| {
-        let map = take_map(&mut args[0]);
-        Ok(map
-            .iter()
-            .map(|(key, value)| {
-                Value::map([("key", Value::from(key.clone())), ("value", value.clone())])
+#[frost_fn(name = "to_entries")]
+pub(super) fn to_entries(#[frost(unnamed)] map: FrostMap) -> Value {
+    map.iter()
+        .map(|(key, value)| {
+            Value::map([("key", Value::from(key.clone())), ("value", value.clone())])
+        })
+        .collect()
+}
+
+#[frost_fn(name = "from_entries")]
+pub(super) fn from_entries(#[frost(unnamed)] entries: FrostArray) -> FrostResult {
+    let mut result = ValueMap::new();
+    for (i, entry) in entries.iter().enumerate() {
+        let Value::Map(entry) = entry else {
+            return Err(FrostError::from_string(format!(
+                "Function from_entries requires an Array of Maps, but element {i} is {}",
+                entry.type_name()
+            )));
+        };
+        let field = |name: &str| {
+            entry.get_str(name).ok_or_else(|| {
+                FrostError::from_string(format!(
+                    "Function from_entries requires a {name} in every element, \
+                     but element {i} has none"
+                ))
             })
-            .collect())
-    })
+        };
+        let key = field("key")?;
+        let value = field("value")?;
+        if !key.fits(MapKey::TYPES) {
+            return Err(FrostError::from_string(format!(
+                "Function from_entries requires a valid Map key in every element, \
+                 but the key of element {i} is {}",
+                key.type_name()
+            )));
+        }
+        let key = MapKey::try_from(key.clone()).expect("the key fits a Map key");
+        result.insert(key, value.clone());
+    }
+    Ok(result.into())
 }
 
-pub(super) fn from_entries_global() -> Value {
-    Value::checked_native("from_entries", ONE_ARRAY, |_, args| {
-        let entries = take_array(&mut args[0]);
-        let mut result = ValueMap::new();
-        for (i, entry) in entries.iter().enumerate() {
-            let Value::Map(entry) = entry else {
-                return Err(FrostError::from_string(format!(
-                    "Function from_entries requires an Array of Maps, but element {i} is {}",
-                    entry.type_name()
-                )));
-            };
-            let field = |name: &str| {
-                entry.get_str(name).ok_or_else(|| {
-                    FrostError::from_string(format!(
-                        "Function from_entries requires a {name} in every element, \
-                         but element {i} has none"
-                    ))
-                })
-            };
-            let key = field("key")?;
-            let value = field("value")?;
-            if !key.fits(MapKey::TYPES) {
-                return Err(FrostError::from_string(format!(
-                    "Function from_entries requires a valid Map key in every element, \
-                     but the key of element {i} is {}",
-                    key.type_name()
-                )));
-            }
-            let key = MapKey::try_from(key.clone()).expect("the key fits a Map key");
-            result.insert(key, value.clone());
-        }
-        Ok(result.into())
-    })
-}
-
-pub(super) fn dissoc_global() -> Value {
-    const PARAMS: Params = Params::new(&[
-        <FrostMap as FrostArg>::PARAM,
-        <Rest<MapKey> as FrostArg>::PARAM,
-    ]);
-    Value::checked_native("dissoc", PARAMS, |ctx, args| {
-        let mut args = Args::new(ctx.name(), PARAMS, args);
-        let mut map = args.take::<FrostMap>()?.into_map();
-        let Rest(keys) = args.take::<Rest<MapKey>>()?;
-        for key in &keys {
-            map.remove(key);
-        }
-        Ok(map.into())
-    })
+#[frost_fn(name = "dissoc")]
+pub(super) fn dissoc(
+    #[frost(unnamed)] map: FrostMap,
+    #[frost(unnamed)] Rest(keys): Rest<MapKey>,
+) -> Value {
+    let mut map = map.into_map();
+    for key in &keys {
+        map.remove(key);
+    }
+    map.into()
 }
 
 // --- Measuring and building ---
@@ -204,49 +167,42 @@ pub(super) fn len_global() -> Value {
     })
 }
 
-pub(super) fn range_global() -> Value {
-    const PARAMS: Params = Params::new(&[
-        Param::of(FrostType::INT),
-        Param::of(FrostType::INT).optional(),
-        Param::of(FrostType::INT).optional(),
-    ]);
-    Value::checked_native("range", PARAMS, |_, args| {
-        let (start, stop, step) = match *args {
-            [ref stop] => (0, int_arg(stop), 1),
-            [ref start, ref stop] => (int_arg(start), int_arg(stop), 1),
-            [ref start, ref stop, ref step] => (int_arg(start), int_arg(stop), int_arg(step)),
-            _ => unreachable!("arity-checked"),
-        };
-        if step == 0 {
-            return Err(FrostError::from_static(
-                "Function range requires a step other than 0",
-            ));
-        }
-        let before_stop = |n: &i64| if step > 0 { *n < stop } else { *n > stop };
-        // A step past the Int range ends the range, as it is past `stop` too.
-        Ok(std::iter::successors(Some(start), |n| n.checked_add(step))
-            .take_while(before_stop)
-            .map(Value::Int)
-            .collect())
-    })
+#[frost_fn(name = "range")]
+pub(super) fn range(
+    #[frost(unnamed)] first: i64,
+    #[frost(unnamed)] second: Optional<i64>,
+    #[frost(unnamed)] third: Optional<i64>,
+) -> FrostResult {
+    let (start, stop, step) = match (first, second.0, third.0) {
+        (stop, None, _) => (0, stop, 1),
+        (start, Some(stop), None) => (start, stop, 1),
+        (start, Some(stop), Some(step)) => (start, stop, step),
+    };
+    if step == 0 {
+        return Err(FrostError::from_static(
+            "Function range requires a step other than 0",
+        ));
+    }
+    let before_stop = |n: &i64| if step > 0 { *n < stop } else { *n > stop };
+    // A step past the Int range ends the range, as it is past `stop` too.
+    Ok(std::iter::successors(Some(start), |n| n.checked_add(step))
+        .take_while(before_stop)
+        .map(Value::Int)
+        .collect())
 }
 
-pub(super) fn nulls_global() -> Value {
-    const PARAMS: Params = Params::new(&[Param::of(FrostType::INT)]);
-    Value::checked_native("nulls", PARAMS, |_, args| {
-        let count = count_arg("nulls", 1, int_arg(&args[0]), 0)?;
-        check_length("nulls", size_of::<Value>(), count)?;
-        Ok(vec![Value::Null; count].into())
-    })
+#[frost_fn(name = "nulls")]
+pub(super) fn nulls(#[frost(unnamed)] count: i64) -> FrostResult {
+    let count = count_arg("nulls", 1, count, 0)?;
+    check_length("nulls", size_of::<Value>(), count)?;
+    Ok(vec![Value::Null; count].into())
 }
 
-pub(super) fn repeat_global() -> Value {
-    const PARAMS: Params = Params::new(&[Param::any(), Param::of(FrostType::INT)]);
-    Value::checked_native("repeat", PARAMS, |_, args| {
-        let count = count_arg("repeat", 2, int_arg(&args[1]), 0)?;
-        check_length("repeat", size_of::<Value>(), count)?;
-        Ok(vec![args[0].take(); count].into())
-    })
+#[frost_fn(name = "repeat")]
+pub(super) fn repeat(#[frost(unnamed)] value: Value, #[frost(unnamed)] count: i64) -> FrostResult {
+    let count = count_arg("repeat", 2, count, 0)?;
+    check_length("repeat", size_of::<Value>(), count)?;
+    Ok(vec![value; count].into())
 }
 
 pub(super) fn tile_global() -> Value {
@@ -283,34 +239,26 @@ pub(super) fn id_global() -> Value {
 
 // --- Searching ---
 
-pub(super) fn has_global() -> Value {
-    const PARAMS: Params = Params::new(&[
-        Param::of(FrostType::STRUCTURED),
-        Param::of(MapKey::TYPES).named("index"),
-    ]);
-    Value::checked_native("has", PARAMS, |_, args| {
-        Ok(Value::Bool(match (&args[0], &args[1]) {
-            (Value::Array(array), Value::Int(i)) => array.frost_get(*i).is_some(),
-            (Value::Array(_), index) => {
-                return Err(FrostError::from_string(format!(
-                    "Function has requires Int as argument 2 (index) for an Array, got {}",
-                    index.type_name()
-                )));
-            }
-            (Value::Map(map), key) => {
-                map.contains_key(&MapKey::try_from(key.clone()).expect("type-checked as a key"))
-            }
-            (other, _) => unreachable!("type-checked, got {}", other.type_name()),
-        }))
-    })
+#[frost_fn(name = "has")]
+pub(super) fn has(#[frost(unnamed)] structure: Structured, index: MapKey) -> FrostResult {
+    Ok(Value::Bool(match (structure, index) {
+        (Structured::Array(array), MapKey::Int(i)) => array.frost_get(i).is_some(),
+        (Structured::Array(_), index) => {
+            return Err(FrostError::from_string(format!(
+                "Function has requires Int as argument 2 (index) for an Array, got {}",
+                Value::from(index).type_name()
+            )));
+        }
+        (Structured::Map(map), key) => map.contains_key(&key),
+    }))
 }
 
-pub(super) fn includes_global() -> Value {
-    const PARAMS: Params = Params::new(&[Param::of(FrostType::ARRAY), Param::any()]);
-    Value::checked_native("includes", PARAMS, |_, args| {
-        let array = take_array(&mut args[0]);
-        Ok(Value::Bool(array.iter().any(|element| *element == args[1])))
-    })
+#[frost_fn(name = "includes")]
+pub(super) fn includes(
+    #[frost(unnamed)] array: FrostArray,
+    #[frost(unnamed)] target: Value,
+) -> bool {
+    array.iter().any(|element| *element == target)
 }
 
 pub(super) fn index_global() -> Value {
@@ -342,92 +290,61 @@ fn any_answers(
     Ok(false)
 }
 
-const ARRAY_AND_OPTIONAL_FUNCTION: Params = Params::new(&[
-    Param::of(FrostType::ARRAY),
-    Param::of(FrostType::FUNCTION).optional(),
-]);
-
-/// The Function that `args` has second, if it was given, as
-/// [`ARRAY_AND_OPTIONAL_FUNCTION`] specifies.
-fn take_optional_function(args: &mut [Value]) -> Result<Option<Function>, FrostError> {
-    args.get_mut(1)
-        .map(|function| Function::try_from(function.take()))
-        .transpose()
+#[frost_fn(name = "any")]
+pub(super) fn any(
+    #[frost(ctx)] ctx: &mut NativeCtx<'_>,
+    #[frost(unnamed)] array: FrostArray,
+    #[frost(unnamed)] function: Optional<Function>,
+) -> Result<bool, FrostError> {
+    any_answers(ctx, &array, function.0.as_ref(), true)
 }
 
-pub(super) fn any_global() -> Value {
-    Value::checked_native("any", ARRAY_AND_OPTIONAL_FUNCTION, |mut ctx, args| {
-        let array = take_array(&mut args[0]);
-        let function = take_optional_function(args)?;
-        Ok(Value::Bool(any_answers(
-            &mut ctx,
-            &array,
-            function.as_ref(),
-            true,
-        )?))
-    })
+#[frost_fn(name = "all")]
+pub(super) fn all(
+    #[frost(ctx)] ctx: &mut NativeCtx<'_>,
+    #[frost(unnamed)] array: FrostArray,
+    #[frost(unnamed)] function: Optional<Function>,
+) -> Result<bool, FrostError> {
+    Ok(!any_answers(ctx, &array, function.0.as_ref(), false)?)
 }
 
-pub(super) fn all_global() -> Value {
-    Value::checked_native("all", ARRAY_AND_OPTIONAL_FUNCTION, |mut ctx, args| {
-        let array = take_array(&mut args[0]);
-        let function = take_optional_function(args)?;
-        Ok(Value::Bool(!any_answers(
-            &mut ctx,
-            &array,
-            function.as_ref(),
-            false,
-        )?))
-    })
+#[frost_fn(name = "none")]
+pub(super) fn none(
+    #[frost(ctx)] ctx: &mut NativeCtx<'_>,
+    #[frost(unnamed)] array: FrostArray,
+    #[frost(unnamed)] function: Optional<Function>,
+) -> Result<bool, FrostError> {
+    Ok(!any_answers(ctx, &array, function.0.as_ref(), true)?)
 }
 
-pub(super) fn none_global() -> Value {
-    Value::checked_native("none", ARRAY_AND_OPTIONAL_FUNCTION, |mut ctx, args| {
-        let array = take_array(&mut args[0]);
-        let function = take_optional_function(args)?;
-        Ok(Value::Bool(!any_answers(
-            &mut ctx,
-            &array,
-            function.as_ref(),
-            true,
-        )?))
-    })
-}
-
-pub(super) fn find_global() -> Value {
-    const PARAMS: Params = Params::new(&[
-        Param::of(FrostType::ARRAY),
-        Param::of(FrostType::FUNCTION).named("predicate"),
-    ]);
-    Value::checked_native("find", PARAMS, |mut ctx, args| {
-        let array = take_array(&mut args[0]);
-        let predicate = Function::try_from(args[1].take())?;
-        for element in array.into_vec() {
-            if ctx.invoke_ref(&predicate, [&element])?.is_truthy() {
-                return Ok(element);
-            }
+#[frost_fn(name = "find")]
+pub(super) fn find(
+    #[frost(ctx)] ctx: &mut NativeCtx<'_>,
+    #[frost(unnamed)] array: FrostArray,
+    predicate: Function,
+) -> FrostResult {
+    for element in array.into_vec() {
+        if ctx.invoke_ref(&predicate, [&element])?.is_truthy() {
+            return Ok(element);
         }
-        Ok(Value::Null)
-    })
+    }
+    Ok(Value::Null)
 }
 
-pub(super) fn find_index_global() -> Value {
-    const PARAMS: Params = Params::new(&[
-        Param::of(FrostType::ARRAY),
-        Param::of(FrostType::FUNCTION).named("predicate"),
-    ]);
-    Value::checked_native("find_index", PARAMS, |mut ctx, args| {
-        let array = take_array(&mut args[0]);
-        let predicate = Function::try_from(args[1].take())?;
-        for (index, element) in array.iter().enumerate() {
-            if ctx.invoke_ref(&predicate, [element])?.is_truthy() {
-                return Ok(Value::Int(
-                    i64::try_from(index).expect("an index fits in an Int"),
-                ));
-            }
+#[frost_fn(name = "find_index")]
+pub(super) fn find_index(
+    #[frost(ctx)] ctx: &mut NativeCtx<'_>,
+    #[frost(unnamed)] array: FrostArray,
+    predicate: Function,
+) -> FrostResult {
+    for (index, element) in array.iter().enumerate() {
+        if ctx.invoke_ref(&predicate, [element])?.is_truthy() {
+            return Ok(Value::Int(
+                i64::try_from(index).expect("an index fits in an Int"),
+            ));
         }
-        Ok(Value::Null)
-    })
+    }
+    Ok(Value::Null)
 }
 
 // --- Slicing ---
@@ -586,23 +503,22 @@ pub(super) fn drop_tail_global() -> Value {
     end_slice("drop_tail", |len, n| (0, len - n))
 }
 
-const ARRAY_AND_SIZE: Params =
-    Params::new(&[Param::of(FrostType::ARRAY), Param::of(FrostType::INT)]);
-
-pub(super) fn slide_global() -> Value {
-    Value::checked_native("slide", ARRAY_AND_SIZE, |_, args| {
-        let size = count_arg("slide", 2, int_arg(&args[1]), 1)?;
-        let array = take_array(&mut args[0]);
-        Ok(array.as_slice().windows(size).map(Value::from).collect())
-    })
+#[frost_fn(name = "slide")]
+pub(super) fn slide(
+    #[frost(unnamed)] array: FrostArray,
+    #[frost(unnamed)] size: i64,
+) -> FrostResult {
+    let size = count_arg("slide", 2, size, 1)?;
+    Ok(array.as_slice().windows(size).map(Value::from).collect())
 }
 
-pub(super) fn chunk_global() -> Value {
-    Value::checked_native("chunk", ARRAY_AND_SIZE, |_, args| {
-        let size = count_arg("chunk", 2, int_arg(&args[1]), 1)?;
-        let array = take_array(&mut args[0]);
-        Ok(array.as_slice().chunks(size).map(Value::from).collect())
-    })
+#[frost_fn(name = "chunk")]
+pub(super) fn chunk(
+    #[frost(unnamed)] array: FrostArray,
+    #[frost(unnamed)] size: i64,
+) -> FrostResult {
+    let size = count_arg("chunk", 2, size, 1)?;
+    Ok(array.as_slice().chunks(size).map(Value::from).collect())
 }
 
 pub(super) fn reverse_global() -> Value {
@@ -637,48 +553,53 @@ fn leading_matches(
     Ok(array.len())
 }
 
-pub(super) fn take_while_global() -> Value {
-    Value::checked_native("take_while", ARRAY_AND_FUNCTION, |mut ctx, args| {
-        let mut elements = take_array(&mut args[0]).into_vec();
-        let predicate = Function::try_from(args[1].take())?;
-        let kept = leading_matches(&mut ctx, &elements, &predicate)?;
-        elements.truncate(kept);
-        Ok(elements.into())
-    })
+#[frost_fn(name = "take_while")]
+pub(super) fn take_while(
+    #[frost(ctx)] ctx: &mut NativeCtx<'_>,
+    #[frost(unnamed)] array: FrostArray,
+    #[frost(unnamed)] predicate: Function,
+) -> FrostResult {
+    let mut elements = array.into_vec();
+    let kept = leading_matches(ctx, &elements, &predicate)?;
+    elements.truncate(kept);
+    Ok(elements.into())
 }
 
-pub(super) fn drop_while_global() -> Value {
-    Value::checked_native("drop_while", ARRAY_AND_FUNCTION, |mut ctx, args| {
-        let mut elements = take_array(&mut args[0]).into_vec();
-        let predicate = Function::try_from(args[1].take())?;
-        let dropped = leading_matches(&mut ctx, &elements, &predicate)?;
-        elements.drain(..dropped);
-        Ok(elements.into())
-    })
+#[frost_fn(name = "drop_while")]
+pub(super) fn drop_while(
+    #[frost(ctx)] ctx: &mut NativeCtx<'_>,
+    #[frost(unnamed)] array: FrostArray,
+    #[frost(unnamed)] predicate: Function,
+) -> FrostResult {
+    let mut elements = array.into_vec();
+    let dropped = leading_matches(ctx, &elements, &predicate)?;
+    elements.drain(..dropped);
+    Ok(elements.into())
 }
 
-pub(super) fn chunk_by_global() -> Value {
-    Value::checked_native("chunk_by", ARRAY_AND_FUNCTION, |mut ctx, args| {
-        let elements = take_array(&mut args[0]).into_vec();
-        let same_chunk = Function::try_from(args[1].take())?;
-        let mut chunks: Vec<Vec<Value>> = Vec::new();
-        for element in elements {
-            // Each adjacent pair is asked once: does the next element join the chunk?
-            let joins = match chunks.last() {
-                Some(chunk) => {
-                    let previous = chunk.last().expect("a chunk is never empty");
-                    ctx.invoke_ref(&same_chunk, [previous, &element])?
-                        .is_truthy()
-                }
-                None => false,
-            };
-            match chunks.last_mut() {
-                Some(chunk) if joins => chunk.push(element),
-                _ => chunks.push(vec![element]),
+#[frost_fn(name = "chunk_by")]
+pub(super) fn chunk_by(
+    #[frost(ctx)] ctx: &mut NativeCtx<'_>,
+    #[frost(unnamed)] array: FrostArray,
+    #[frost(unnamed)] same_chunk: Function,
+) -> FrostResult {
+    let mut chunks: Vec<Vec<Value>> = Vec::new();
+    for element in array.into_vec() {
+        // Each adjacent pair is asked once: does the next element join the chunk?
+        let joins = match chunks.last() {
+            Some(chunk) => {
+                let previous = chunk.last().expect("a chunk is never empty");
+                ctx.invoke_ref(&same_chunk, [previous, &element])?
+                    .is_truthy()
             }
+            None => false,
+        };
+        match chunks.last_mut() {
+            Some(chunk) if joins => chunk.push(element),
+            _ => chunks.push(vec![element]),
         }
-        Ok(chunks.into_iter().map(Value::from).collect())
-    })
+    }
+    Ok(chunks.into_iter().map(Value::from).collect())
 }
 
 /// Append `elements` to `out`, splicing in the elements of each Array among them
@@ -694,43 +615,24 @@ fn flatten_into(out: &mut Vec<Value>, elements: Vec<Value>, depth: Option<usize>
     }
 }
 
-pub(super) fn flatten_global() -> Value {
-    const PARAMS: Params = Params::new(&[
-        Param::of(FrostType::ARRAY),
-        Param::of(FrostType::INT).optional(),
-    ]);
-    Value::checked_native("flatten", PARAMS, |_, args| {
-        let depth = match args.get(1) {
-            Some(depth) => Some(count_arg("flatten", 2, int_arg(depth), 0)?),
-            None => None,
-        };
-        let mut out = Vec::new();
-        flatten_into(&mut out, take_array(&mut args[0]).into_vec(), depth);
-        Ok(out.into())
-    })
+#[frost_fn(name = "flatten")]
+pub(super) fn flatten(
+    #[frost(unnamed)] array: FrostArray,
+    #[frost(unnamed)] depth: Optional<i64>,
+) -> FrostResult {
+    let depth = depth
+        .0
+        .map(|depth| count_arg("flatten", 2, depth, 0))
+        .transpose()?;
+    let mut out = Vec::new();
+    flatten_into(&mut out, array.into_vec(), depth);
+    Ok(out.into())
 }
 
-/// The spec of `zip` and `xprod`: two or more Arrays.
-const ARRAYS: Params = Params::new(&[
-    <FrostArray as FrostArg>::PARAM,
-    <FrostArray as FrostArg>::PARAM,
-    <Rest<FrostArray> as FrostArg>::PARAM,
-]);
-
-/// The spec of `zip_with` and `xprod_with`: a Function, then two or more Arrays.
-const FUNCTION_AND_ARRAYS: Params = Params::new(&[
-    Param::of(FrostType::FUNCTION),
-    <FrostArray as FrostArg>::PARAM,
-    <FrostArray as FrostArg>::PARAM,
-    <Rest<FrostArray> as FrostArg>::PARAM,
-]);
-
-/// The two or more Arrays that `args` has next, as [`ARRAYS`] specifies.
-fn take_arrays(args: &mut Args<'_>) -> Result<Vec<FrostArray>, FrostError> {
-    let first: FrostArray = args.take()?;
-    let second: FrostArray = args.take()?;
-    let Rest(more) = args.take()?;
-    Ok([first, second].into_iter().chain(more).collect())
+/// The Arrays of `zip` and `xprod` and their `_with` forms, which take two or
+/// more, as one list.
+fn all_arrays(first: FrostArray, second: FrostArray, more: Vec<FrostArray>) -> Vec<FrostArray> {
+    [first, second].into_iter().chain(more).collect()
 }
 
 // A row of `zip` or `xprod` is never built on its own: each element goes
@@ -798,105 +700,116 @@ fn advance_odometer(indices: &mut [usize], arrays: &[FrostArray]) -> bool {
     false
 }
 
-pub(super) fn zip_global() -> Value {
-    Value::checked_native("zip", ARRAYS, |ctx, args| {
-        let arrays = take_arrays(&mut Args::new(ctx.name(), ARRAYS, args))?;
-        let rows = map_zip_rows(&arrays, |i| Ok(zip_row(&arrays, i).collect()))?;
-        Ok(rows.into())
-    })
+#[frost_fn(name = "zip")]
+pub(super) fn zip(
+    #[frost(unnamed)] first: FrostArray,
+    #[frost(unnamed)] second: FrostArray,
+    #[frost(unnamed)] Rest(more): Rest<FrostArray>,
+) -> FrostResult {
+    let arrays = all_arrays(first, second, more);
+    let rows = map_zip_rows(&arrays, |i| Ok(zip_row(&arrays, i).collect()))?;
+    Ok(rows.into())
 }
 
-pub(super) fn zip_with_global() -> Value {
-    Value::checked_native("zip_with", FUNCTION_AND_ARRAYS, |mut ctx, args| {
-        let mut args = Args::new(ctx.name(), FUNCTION_AND_ARRAYS, args);
-        let function: Function = args.take()?;
-        let arrays = take_arrays(&mut args)?;
-        let results = map_zip_rows(&arrays, |i| ctx.invoke(&function, zip_row(&arrays, i)))?;
-        Ok(results.into())
-    })
+#[frost_fn(name = "zip_with")]
+pub(super) fn zip_with(
+    #[frost(ctx)] ctx: &mut NativeCtx<'_>,
+    #[frost(unnamed)] function: Function,
+    #[frost(unnamed)] first: FrostArray,
+    #[frost(unnamed)] second: FrostArray,
+    #[frost(unnamed)] Rest(more): Rest<FrostArray>,
+) -> FrostResult {
+    let arrays = all_arrays(first, second, more);
+    let results = map_zip_rows(&arrays, |i| ctx.invoke(&function, zip_row(&arrays, i)))?;
+    Ok(results.into())
 }
 
-pub(super) fn xprod_global() -> Value {
-    Value::checked_native("xprod", ARRAYS, |ctx, args| {
-        let arrays = take_arrays(&mut Args::new(ctx.name(), ARRAYS, args))?;
-        let rows = map_xprod_rows(&arrays, |indices| Ok(xprod_row(&arrays, indices).collect()))?;
-        Ok(rows.into())
-    })
+#[frost_fn(name = "xprod")]
+pub(super) fn xprod(
+    #[frost(unnamed)] first: FrostArray,
+    #[frost(unnamed)] second: FrostArray,
+    #[frost(unnamed)] Rest(more): Rest<FrostArray>,
+) -> FrostResult {
+    let arrays = all_arrays(first, second, more);
+    let rows = map_xprod_rows(&arrays, |indices| Ok(xprod_row(&arrays, indices).collect()))?;
+    Ok(rows.into())
 }
 
-pub(super) fn xprod_with_global() -> Value {
-    Value::checked_native("xprod_with", FUNCTION_AND_ARRAYS, |mut ctx, args| {
-        let mut args = Args::new(ctx.name(), FUNCTION_AND_ARRAYS, args);
-        let function: Function = args.take()?;
-        let arrays = take_arrays(&mut args)?;
-        let results = map_xprod_rows(&arrays, |indices| {
-            ctx.invoke(&function, xprod_row(&arrays, indices))
-        })?;
-        Ok(results.into())
-    })
+#[frost_fn(name = "xprod_with")]
+pub(super) fn xprod_with(
+    #[frost(ctx)] ctx: &mut NativeCtx<'_>,
+    #[frost(unnamed)] function: Function,
+    #[frost(unnamed)] first: FrostArray,
+    #[frost(unnamed)] second: FrostArray,
+    #[frost(unnamed)] Rest(more): Rest<FrostArray>,
+) -> FrostResult {
+    let arrays = all_arrays(first, second, more);
+    let results = map_xprod_rows(&arrays, |indices| {
+        ctx.invoke(&function, xprod_row(&arrays, indices))
+    })?;
+    Ok(results.into())
 }
 
 // --- Transforming ---
 
-pub(super) fn transform_global() -> Value {
-    Value::checked_native("transform", STRUCTURE_AND_FUNCTION, |mut ctx, args| {
-        let structure = args[0].take();
-        let function = Function::try_from(args[1].take())?;
-
-        match structure {
-            Value::Array(arr) => {
-                let mut vec = arr.into_vec();
-                for elem in &mut vec {
-                    *elem = ctx.invoke(&function, [elem.take()])?;
-                }
-                Ok(vec.into())
+#[frost_fn(name = "transform")]
+pub(super) fn transform(
+    #[frost(ctx)] ctx: &mut NativeCtx<'_>,
+    #[frost(unnamed)] structure: Structured,
+    #[frost(unnamed)] function: Function,
+) -> FrostResult {
+    match structure {
+        Structured::Array(arr) => {
+            let mut vec = arr.into_vec();
+            for elem in &mut vec {
+                *elem = ctx.invoke(&function, [elem.take()])?;
             }
-            Value::Map(map) => {
-                let map = map.into_map();
-                let mut result = ValueMap::new();
-                for (k, v) in map {
-                    match ctx.invoke(&function, [k.into(), v])? {
-                        Value::Map(m) => result.extend(m.into_map()),
-                        other => {
-                            return Err(FrostError::from_string(format!(
-                                "When transforming a Map, the function must return a Map, got {}",
-                                other.type_name()
-                            )));
-                        }
+            Ok(vec.into())
+        }
+        Structured::Map(map) => {
+            let mut result = ValueMap::new();
+            for (k, v) in map.into_map() {
+                match ctx.invoke(&function, [k.into(), v])? {
+                    Value::Map(m) => result.extend(m.into_map()),
+                    other => {
+                        return Err(FrostError::from_string(format!(
+                            "When transforming a Map, the function must return a Map, got {}",
+                            other.type_name()
+                        )));
                     }
                 }
-                Ok(result.into())
             }
-            _ => unreachable!(),
+            Ok(result.into())
         }
-    })
+    }
 }
 
-pub(super) fn flat_map_global() -> Value {
-    Value::checked_native("flat_map", ARRAY_AND_FUNCTION, |mut ctx, args| {
-        let array = take_array(&mut args[0]);
-        let function = Function::try_from(args[1].take())?;
-        let mut out = Vec::new();
-        for element in array.into_vec() {
-            match ctx.invoke(&function, [element])? {
-                Value::Array(inner) => out.extend(inner.into_vec()),
-                other => out.push(other),
-            }
+#[frost_fn(name = "flat_map")]
+pub(super) fn flat_map(
+    #[frost(ctx)] ctx: &mut NativeCtx<'_>,
+    #[frost(unnamed)] array: FrostArray,
+    #[frost(unnamed)] function: Function,
+) -> FrostResult {
+    let mut out = Vec::new();
+    for element in array.into_vec() {
+        match ctx.invoke(&function, [element])? {
+            Value::Array(inner) => out.extend(inner.into_vec()),
+            other => out.push(other),
         }
-        Ok(out.into())
-    })
+    }
+    Ok(out.into())
 }
 
 /// The elements of an Array, or the entries of a Map, whose `predicate` answer
 /// has the truthiness `keep`: the body of both `select` and `reject`.
 fn filter_structure(
     ctx: &mut NativeCtx<'_>,
-    structure: Value,
+    structure: Structured,
     predicate: &Function,
     keep: bool,
-) -> Result<Value, FrostError> {
+) -> FrostResult {
     match structure {
-        Value::Array(arr) => arr
+        Structured::Array(arr) => arr
             .into_vec()
             .into_iter()
             .filter_map(|elem| match ctx.invoke_ref(predicate, [&elem]) {
@@ -905,7 +818,7 @@ fn filter_structure(
                 Err(e) => Some(Err(e)),
             })
             .collect(),
-        Value::Map(map) => map
+        Structured::Map(map) => map
             .into_map()
             .into_iter()
             .filter_map(
@@ -916,77 +829,73 @@ fn filter_structure(
                 },
             )
             .collect(),
-        other => unreachable!("type-checked as Structured, got {}", other.type_name()),
     }
 }
 
-pub(super) fn select_global() -> Value {
-    Value::checked_native("select", STRUCTURE_AND_FUNCTION, |mut ctx, args| {
-        let predicate = Function::try_from(args[1].take())?;
-        filter_structure(&mut ctx, args[0].take(), &predicate, true)
-    })
+#[frost_fn(name = "select")]
+pub(super) fn select(
+    #[frost(ctx)] ctx: &mut NativeCtx<'_>,
+    #[frost(unnamed)] structure: Structured,
+    #[frost(unnamed)] predicate: Function,
+) -> FrostResult {
+    filter_structure(ctx, structure, &predicate, true)
 }
 
-pub(super) fn reject_global() -> Value {
-    Value::checked_native("reject", STRUCTURE_AND_FUNCTION, |mut ctx, args| {
-        let predicate = Function::try_from(args[1].take())?;
-        filter_structure(&mut ctx, args[0].take(), &predicate, false)
-    })
+#[frost_fn(name = "reject")]
+pub(super) fn reject(
+    #[frost(ctx)] ctx: &mut NativeCtx<'_>,
+    #[frost(unnamed)] structure: Structured,
+    #[frost(unnamed)] predicate: Function,
+) -> FrostResult {
+    filter_structure(ctx, structure, &predicate, false)
 }
 
-pub(super) fn fold_global() -> Value {
-    const PARAMS: Params = Params::new(&[
-        Param::of(FrostType::STRUCTURED),
-        Param::of(FrostType::FUNCTION),
-        Param::any().optional(),
-    ]);
-    Value::checked_native("fold", PARAMS, |mut ctx, args| {
-        let structure = args[0].take();
-        let function = Function::try_from(args[1].take())?;
+#[frost_fn(name = "fold")]
+pub(super) fn fold(
+    #[frost(ctx)] ctx: &mut NativeCtx<'_>,
+    #[frost(unnamed)] structure: Structured,
+    #[frost(unnamed)] function: Function,
+    #[frost(unnamed)] init: Optional<Value>,
+) -> FrostResult {
+    match structure {
+        Structured::Array(arr) => {
+            let mut iter = arr.into_vec().into_iter();
+            let init = match init.0 {
+                Some(init) => init,
+                None => iter.next().unwrap_or(Value::Null),
+            };
 
-        match structure {
-            Value::Array(arr) => {
-                let mut iter = arr.into_vec().into_iter();
-                let init = match args.get_mut(2).map(Value::take) {
-                    Some(init) => init,
-                    None => iter.next().unwrap_or(Value::Null),
-                };
-
-                iter.try_fold(init, |acc, elem| ctx.invoke(&function, [acc, elem]))
-            }
-            Value::Map(map) => {
-                let Some(init) = args.get_mut(2).map(Value::take) else {
-                    return Err(FrostError::from_static(
-                        "Fold over a Map requires an initializer",
-                    ));
-                };
-                map.into_map().into_iter().try_fold(init, |acc, (k, v)| {
-                    ctx.invoke(&function, [acc, k.into(), v])
-                })
-            }
-            _ => unreachable!(),
+            iter.try_fold(init, |acc, elem| ctx.invoke(&function, [acc, elem]))
         }
-    })
+        Structured::Map(map) => {
+            let Some(init) = init.0 else {
+                return Err(FrostError::from_static(
+                    "Fold over a Map requires an initializer",
+                ));
+            };
+            map.into_map().into_iter().try_fold(init, |acc, (k, v)| {
+                ctx.invoke(&function, [acc, k.into(), v])
+            })
+        }
+    }
 }
 
-pub(super) fn sum_global() -> Value {
-    Value::checked_native("sum", ONE_ARRAY, |_, args| {
-        let mut elements = take_array(&mut args[0]).into_vec().into_iter();
-        let Some(first) = elements.next() else {
-            return Ok(Value::Null);
-        };
-        elements.try_fold(first, Value::add_owned)
-    })
+#[frost_fn(name = "sum")]
+pub(super) fn sum(#[frost(unnamed)] array: FrostArray) -> FrostResult {
+    let mut elements = array.into_vec().into_iter();
+    let Some(first) = elements.next() else {
+        return Ok(Value::Null);
+    };
+    elements.try_fold(first, Value::add_owned)
 }
 
-pub(super) fn product_global() -> Value {
-    Value::checked_native("product", ONE_ARRAY, |_, args| {
-        let mut elements = take_array(&mut args[0]).into_vec().into_iter();
-        let Some(first) = elements.next() else {
-            return Ok(Value::Null);
-        };
-        elements.try_fold(first, |product, element| product.multiply(&element))
-    })
+#[frost_fn(name = "product")]
+pub(super) fn product(#[frost(unnamed)] array: FrostArray) -> FrostResult {
+    let mut elements = array.into_vec().into_iter();
+    let Some(first) = elements.next() else {
+        return Ok(Value::Null);
+    };
+    elements.try_fold(first, |product, element| product.multiply(&element))
 }
 
 /// Stable-sort `items` by `before`, which answers whether its first argument
@@ -1026,42 +935,36 @@ fn less_than(a: &Value, b: &Value) -> Result<bool, FrostError> {
     Ok(a.compare(b)?.is_lt())
 }
 
-pub(super) fn sorted_global() -> Value {
-    const PARAMS: Params = Params::new(&[
-        Param::of(FrostType::ARRAY),
-        Param::of(FrostType::FUNCTION)
-            .named("comparator")
-            .optional(),
-    ]);
-    Value::checked_native("sorted", PARAMS, |mut ctx, args| {
-        let elements = take_array(&mut args[0]).into_vec();
-        let comparator = take_optional_function(args)?;
-        let sorted = match &comparator {
-            Some(comparator) => merge_sort(elements, &mut |a, b| {
-                Ok(ctx.invoke_ref(comparator, [a, b])?.is_truthy())
-            })?,
-            None => merge_sort(elements, &mut less_than)?,
-        };
-        Ok(sorted.into())
-    })
+#[frost_fn(name = "sorted")]
+pub(super) fn sorted(
+    #[frost(ctx)] ctx: &mut NativeCtx<'_>,
+    #[frost(unnamed)] array: FrostArray,
+    comparator: Optional<Function>,
+) -> FrostResult {
+    let elements = array.into_vec();
+    let sorted = match &comparator.0 {
+        Some(comparator) => merge_sort(elements, &mut |a, b| {
+            Ok(ctx.invoke_ref(comparator, [a, b])?.is_truthy())
+        })?,
+        None => merge_sort(elements, &mut less_than)?,
+    };
+    Ok(sorted.into())
 }
 
-pub(super) fn sort_by_global() -> Value {
-    const PARAMS: Params = Params::new(&[
-        Param::of(FrostType::ARRAY),
-        Param::of(FrostType::FUNCTION).named("projection"),
-    ]);
-    Value::checked_native("sort_by", PARAMS, |mut ctx, args| {
-        let elements = take_array(&mut args[0]).into_vec();
-        let projection = Function::try_from(args[1].take())?;
-        // Each element's key, from one projection call apiece.
-        let keyed = elements
-            .into_iter()
-            .map(|element| Ok((ctx.invoke_ref(&projection, [&element])?, element)))
-            .collect::<Result<Vec<_>, FrostError>>()?;
-        let sorted = merge_sort(keyed, &mut |(a, _), (b, _)| less_than(a, b))?;
-        Ok(sorted.into_iter().map(|(_, element)| element).collect())
-    })
+#[frost_fn(name = "sort_by")]
+pub(super) fn sort_by(
+    #[frost(ctx)] ctx: &mut NativeCtx<'_>,
+    #[frost(unnamed)] array: FrostArray,
+    projection: Function,
+) -> FrostResult {
+    // Each element's key, from one projection call apiece.
+    let keyed = array
+        .into_vec()
+        .into_iter()
+        .map(|element| Ok((ctx.invoke_ref(&projection, [&element])?, element)))
+        .collect::<Result<Vec<_>, FrostError>>()?;
+    let sorted = merge_sort(keyed, &mut |(a, _), (b, _)| less_than(a, b))?;
+    Ok(sorted.into_iter().map(|(_, element)| element).collect())
 }
 
 /// Which end of an ordering [`extreme`] finds.
@@ -1096,16 +999,12 @@ fn extreme<T>(
 /// `minimum` or `maximum`: the element at `end` under `<`, or under an optional
 /// comparator as `sorted` takes.
 fn extreme_global(name: &'static str, end: End) -> Value {
-    const PARAMS: Params = Params::new(&[
-        Param::of(FrostType::ARRAY),
-        Param::of(FrostType::FUNCTION)
-            .named("comparator")
-            .optional(),
-    ]);
-    Value::checked_native(name, PARAMS, move |mut ctx, args| {
-        let elements = take_array(&mut args[0]).into_vec();
-        let comparator = take_optional_function(args)?;
-        let found = match &comparator {
+    frost_closure!(name, move |#[frost(ctx)] ctx,
+                               #[frost(unnamed)] array: FrostArray,
+                               comparator: Optional<Function>|
+          -> FrostResult {
+        let elements = array.into_vec();
+        let found = match &comparator.0 {
             Some(comparator) => extreme(elements, end, &mut |a, b| {
                 Ok(ctx.invoke_ref(comparator, [a, b])?.is_truthy())
             })?,
@@ -1125,15 +1024,13 @@ pub(super) fn maximum_global() -> Value {
 
 /// `min_by` or `max_by`: the element whose projection is at `end` under `<`.
 fn extreme_by_global(name: &'static str, end: End) -> Value {
-    const PARAMS: Params = Params::new(&[
-        Param::of(FrostType::ARRAY),
-        Param::of(FrostType::FUNCTION).named("projection"),
-    ]);
-    Value::checked_native(name, PARAMS, move |mut ctx, args| {
-        let elements = take_array(&mut args[0]).into_vec();
-        let projection = Function::try_from(args[1].take())?;
+    frost_closure!(name, move |#[frost(ctx)] ctx,
+                               #[frost(unnamed)] array: FrostArray,
+                               projection: Function|
+          -> FrostResult {
         // Each element's key, from one projection call apiece.
-        let keyed = elements
+        let keyed = array
+            .into_vec()
             .into_iter()
             .map(|element| Ok((ctx.invoke_ref(&projection, [&element])?, element)))
             .collect::<Result<Vec<_>, FrostError>>()?;
@@ -1178,138 +1075,140 @@ impl Seen {
     }
 }
 
-pub(super) fn unique_global() -> Value {
-    Value::checked_native("unique", ONE_ARRAY, |_, args| {
-        let mut seen = Seen::default();
-        Ok(take_array(&mut args[0])
-            .into_vec()
-            .into_iter()
-            .filter(|element| seen.insert(element.clone()))
-            .collect())
-    })
+#[frost_fn(name = "unique")]
+pub(super) fn unique(#[frost(unnamed)] array: FrostArray) -> Value {
+    let mut seen = Seen::default();
+    array
+        .into_vec()
+        .into_iter()
+        .filter(|element| seen.insert(element.clone()))
+        .collect()
 }
 
-pub(super) fn unique_by_global() -> Value {
-    const PARAMS: Params = Params::new(&[
-        Param::of(FrostType::ARRAY),
-        Param::of(FrostType::FUNCTION).named("projection"),
-    ]);
-    Value::checked_native("unique_by", PARAMS, |mut ctx, args| {
-        let mut seen = Seen::default();
-        let mut kept = Vec::new();
-        let projection = Function::try_from(args[1].take())?;
-        for element in take_array(&mut args[0]).into_vec() {
-            if seen.insert(ctx.invoke_ref(&projection, [&element])?) {
-                kept.push(element);
+#[frost_fn(name = "unique_by")]
+pub(super) fn unique_by(
+    #[frost(ctx)] ctx: &mut NativeCtx<'_>,
+    #[frost(unnamed)] array: FrostArray,
+    projection: Function,
+) -> FrostResult {
+    let mut seen = Seen::default();
+    let mut kept = Vec::new();
+    for element in array.into_vec() {
+        if seen.insert(ctx.invoke_ref(&projection, [&element])?) {
+            kept.push(element);
+        }
+    }
+    Ok(kept.into())
+}
+
+#[frost_fn(name = "group_by")]
+pub(super) fn group_by(
+    #[frost(ctx)] ctx: &mut NativeCtx<'_>,
+    #[frost(unnamed)] array: FrostArray,
+    #[frost(unnamed)] projection: Function,
+) -> FrostResult {
+    let mut groups: BTreeMap<MapKey, Vec<Value>> = BTreeMap::new();
+    for element in array.into_vec() {
+        let key = returned_key("group_by", ctx.invoke_ref(&projection, [&element])?)?;
+        groups.entry(key).or_default().push(element);
+    }
+    Ok(groups
+        .into_iter()
+        .map(|(key, group)| (key, Value::from(group)))
+        .collect())
+}
+
+#[frost_fn(name = "count_by")]
+pub(super) fn count_by(
+    #[frost(ctx)] ctx: &mut NativeCtx<'_>,
+    #[frost(unnamed)] array: FrostArray,
+    #[frost(unnamed)] projection: Function,
+) -> FrostResult {
+    let mut counts: BTreeMap<MapKey, i64> = BTreeMap::new();
+    for element in &array {
+        let key = returned_key("count_by", ctx.invoke_ref(&projection, [element])?)?;
+        *counts.entry(key).or_default() += 1;
+    }
+    Ok(counts
+        .into_iter()
+        .map(|(key, count)| (key, Value::Int(count)))
+        .collect())
+}
+
+#[frost_fn(name = "scan")]
+pub(super) fn scan(
+    #[frost(ctx)] ctx: &mut NativeCtx<'_>,
+    #[frost(unnamed)] array: FrostArray,
+    #[frost(unnamed)] function: Function,
+) -> FrostResult {
+    let mut elements = array.into_vec().into_iter();
+    let Some(first) = elements.next() else {
+        return Ok(Value::from(Vec::<Value>::new()));
+    };
+    let mut running = vec![first];
+    for element in elements {
+        let last = running.last().expect("running starts with an element");
+        let next = ctx.invoke(&function, [last.clone(), element])?;
+        running.push(next);
+    }
+    Ok(running.into())
+}
+
+#[frost_fn(name = "partition")]
+pub(super) fn partition(
+    #[frost(ctx)] ctx: &mut NativeCtx<'_>,
+    #[frost(unnamed)] array: FrostArray,
+    #[frost(unnamed)] predicate: Function,
+) -> FrostResult {
+    let (mut pass, mut fail) = (Vec::new(), Vec::new());
+    for element in array.into_vec() {
+        if ctx.invoke_ref(&predicate, [&element])?.is_truthy() {
+            pass.push(element);
+        } else {
+            fail.push(element);
+        }
+    }
+    Ok(Value::map([("pass", pass.into()), ("fail", fail.into())]))
+}
+
+#[frost_fn(name = "map_into")]
+pub(super) fn map_into(
+    #[frost(ctx)] ctx: &mut NativeCtx<'_>,
+    #[frost(unnamed)] array: FrostArray,
+    #[frost(unnamed)] function: Function,
+) -> FrostResult {
+    let mut result = ValueMap::new();
+    for element in array.into_vec() {
+        match ctx.invoke(&function, [element])? {
+            Value::Map(entries) => result.extend(entries.into_map()),
+            other => {
+                return Err(FrostError::from_string(format!(
+                    "Function map_into requires its function to return a Map, got {}",
+                    other.type_name()
+                )));
             }
         }
-        Ok(kept.into())
-    })
+    }
+    Ok(result.into())
 }
 
-pub(super) fn group_by_global() -> Value {
-    Value::checked_native("group_by", ARRAY_AND_FUNCTION, |mut ctx, args| {
-        let array = take_array(&mut args[0]);
-        let projection = Function::try_from(args[1].take())?;
-        let mut groups: BTreeMap<MapKey, Vec<Value>> = BTreeMap::new();
-        for element in array.into_vec() {
-            let key = returned_key("group_by", ctx.invoke_ref(&projection, [&element])?)?;
-            groups.entry(key).or_default().push(element);
-        }
-        Ok(groups
-            .into_iter()
-            .map(|(key, group)| (key, Value::from(group)))
-            .collect())
-    })
-}
-
-pub(super) fn count_by_global() -> Value {
-    Value::checked_native("count_by", ARRAY_AND_FUNCTION, |mut ctx, args| {
-        let array = take_array(&mut args[0]);
-        let projection = Function::try_from(args[1].take())?;
-        let mut counts: BTreeMap<MapKey, i64> = BTreeMap::new();
-        for element in &array {
-            let key = returned_key("count_by", ctx.invoke_ref(&projection, [element])?)?;
-            *counts.entry(key).or_default() += 1;
-        }
-        Ok(counts
-            .into_iter()
-            .map(|(key, count)| (key, Value::Int(count)))
-            .collect())
-    })
-}
-
-pub(super) fn scan_global() -> Value {
-    Value::checked_native("scan", ARRAY_AND_FUNCTION, |mut ctx, args| {
-        let mut elements = take_array(&mut args[0]).into_vec().into_iter();
-        let function = Function::try_from(args[1].take())?;
-        let Some(first) = elements.next() else {
-            return Ok(Value::from(Vec::<Value>::new()));
-        };
-        let mut running = vec![first];
-        for element in elements {
-            let last = running.last().expect("running starts with an element");
-            let next = ctx.invoke(&function, [last.clone(), element])?;
-            running.push(next);
-        }
-        Ok(running.into())
-    })
-}
-
-pub(super) fn partition_global() -> Value {
-    Value::checked_native("partition", ARRAY_AND_FUNCTION, |mut ctx, args| {
-        let array = take_array(&mut args[0]);
-        let predicate = Function::try_from(args[1].take())?;
-        let (mut pass, mut fail) = (Vec::new(), Vec::new());
-        for element in array.into_vec() {
-            if ctx.invoke_ref(&predicate, [&element])?.is_truthy() {
-                pass.push(element);
-            } else {
-                fail.push(element);
+#[frost_fn(name = "each")]
+pub(super) fn each(
+    #[frost(ctx)] ctx: &mut NativeCtx<'_>,
+    #[frost(unnamed)] structure: Structured,
+    #[frost(unnamed)] function: Function,
+) -> FrostResult {
+    match &structure {
+        Structured::Array(arr) => {
+            for v in arr {
+                ctx.invoke_ref(&function, [v])?;
             }
         }
-        Ok(Value::map([("pass", pass.into()), ("fail", fail.into())]))
-    })
-}
-
-pub(super) fn map_into_global() -> Value {
-    Value::checked_native("map_into", ARRAY_AND_FUNCTION, |mut ctx, args| {
-        let array = take_array(&mut args[0]);
-        let function = Function::try_from(args[1].take())?;
-        let mut result = ValueMap::new();
-        for element in array.into_vec() {
-            match ctx.invoke(&function, [element])? {
-                Value::Map(entries) => result.extend(entries.into_map()),
-                other => {
-                    return Err(FrostError::from_string(format!(
-                        "Function map_into requires its function to return a Map, got {}",
-                        other.type_name()
-                    )));
-                }
+        Structured::Map(map) => {
+            for (k, v) in map {
+                ctx.invoke(&function, [k.clone().into(), v.clone()])?;
             }
         }
-        Ok(result.into())
-    })
-}
-
-pub(super) fn each_global() -> Value {
-    Value::checked_native("each", STRUCTURE_AND_FUNCTION, |mut ctx, params| {
-        let structure = params[0].take();
-        let function = Function::try_from(params[1].take())?;
-        match &structure {
-            Value::Array(arr) => {
-                for v in arr {
-                    ctx.invoke_ref(&function, [v])?;
-                }
-            }
-            Value::Map(map) => {
-                for (k, v) in map {
-                    ctx.invoke(&function, [k.clone().into(), v.clone()])?;
-                }
-            }
-            _ => unreachable!(),
-        };
-
-        Ok(structure)
-    })
+    }
+    Ok(structure.into())
 }

@@ -10,7 +10,7 @@ use serde::Deserialize;
 
 use crate::native::{Args, De, FrostArg, Optional};
 use crate::stdlib::stream::{self, Kind};
-use crate::{Arity, FrostError, FrostType, Param, Params, StdlibModule, Value};
+use crate::{FrostError, FrostString, FrostType, Param, Params, StdlibModule, Value, frost_fn};
 
 /// The `std.os` module: reading environment variables, the process ID,
 /// the process's standard input, output, and error streams, sleeping, and
@@ -23,9 +23,9 @@ pub fn os() -> StdlibModule {
     StdlibModule::new(
         "os",
         Value::map([
-            ("getenv", getenv()),
-            ("pid", pid()),
-            ("sleep", sleep()),
+            ("getenv", getenv_frost()),
+            ("pid", pid_frost()),
+            ("sleep", sleep_frost()),
             ("run", run()),
             (
                 "stdin",
@@ -37,32 +37,24 @@ pub fn os() -> StdlibModule {
     )
 }
 
-fn getenv() -> Value {
-    const PARAMS: Params = Params::new(&[Param::of(FrostType::STRING).named("name")]);
-    Value::checked_native("os.getenv", PARAMS, |_, args| {
-        let name = args[0].as_str().expect("type-checked as a String");
-        // No variable has such a name, and the platform may reject asking.
-        if name.is_empty() || name.contains(['=', '\0']) {
-            return Ok(Value::Null);
-        }
-        // An unset variable and one whose value is not UTF-8 are both Null.
-        Ok(std::env::var(name).map_or(Value::Null, Value::from))
-    })
+#[frost_fn(name = "os.getenv")]
+fn getenv(name: FrostString) -> Value {
+    // No variable has such a name, and the platform may reject asking.
+    if name.is_empty() || name.contains(['=', '\0']) {
+        return Value::Null;
+    }
+    // An unset variable and one whose value is not UTF-8 are both Null.
+    std::env::var(name.as_str()).map_or(Value::Null, Value::from)
 }
 
-fn pid() -> Value {
-    Value::native("os.pid", Arity::Exact(0), |_, _| {
-        Ok(Value::Int(i64::from(std::process::id())))
-    })
+#[frost_fn(name = "os.pid")]
+fn pid() -> i64 {
+    i64::from(std::process::id())
 }
 
-fn sleep() -> Value {
-    const PARAMS: Params = Params::new(&[<u64 as FrostArg>::PARAM.named("ms")]);
-    Value::checked_native("os.sleep", PARAMS, |ctx, args| {
-        let ms: u64 = Args::new(ctx.name(), PARAMS, args).take()?;
-        std::thread::sleep(Duration::from_millis(ms));
-        Ok(Value::Null)
-    })
+#[frost_fn(name = "os.sleep")]
+fn sleep(ms: u64) {
+    std::thread::sleep(Duration::from_millis(ms));
 }
 
 // --- run ---

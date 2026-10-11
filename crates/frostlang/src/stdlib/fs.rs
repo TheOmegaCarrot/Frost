@@ -12,9 +12,11 @@ use std::path::{Path, PathBuf};
 
 use serde::Deserialize;
 
+use crate::native::{Flat, Optional};
 use crate::stdlib::stream::{self, Kind};
 use crate::{
-    Arity, FrostError, FrostResult, FrostType, Param, Params, StdlibModule, Value, from_value,
+    FrostError, FrostMap, FrostResult, FrostString, StdlibModule, Value, from_value, frost_closure,
+    frost_fn,
 };
 
 /// The `std.fs` module: path manipulation, file metadata and type tests,
@@ -61,9 +63,9 @@ pub fn fs() -> StdlibModule {
             ),
             ("stat", path_function("fs.stat", stat)),
             ("size", path_function("fs.size", size)),
-            ("cwd", cwd()),
+            ("cwd", cwd_frost()),
             ("list", path_function("fs.list", list)),
-            ("glob", glob()),
+            ("glob", glob_frost()),
             (
                 "list_recursively",
                 path_function("fs.list_recursively", list_recursively),
@@ -78,9 +80,9 @@ pub fn fs() -> StdlibModule {
                 "remove_recursively",
                 path_function("fs.remove_recursively", remove_recursively),
             ),
-            ("concat", concat()),
+            ("concat", concat_frost()),
             ("stem", path_part("fs.stem", Path::file_stem)),
-            ("extension", extension()),
+            ("extension", extension_frost()),
             ("filename", path_part("fs.filename", Path::file_name)),
             (
                 "parent",
@@ -90,11 +92,9 @@ pub fn fs() -> StdlibModule {
     )
 }
 
-const ONE_PATH: Params = Params::new(&[Param::of(FrostType::STRING).named("path")]);
-
-/// The path in a type-checked String argument.
-fn path_arg(arg: &Value) -> &Path {
-    Path::new(arg.as_str().expect("type-checked as a String"))
+/// The path in a String argument.
+fn path_arg(arg: &FrostString) -> &Path {
+    Path::new(arg.as_str())
 }
 
 /// `path` as a String, if it is UTF-8; `function` names it in the error.
@@ -122,37 +122,29 @@ fn io_error(function: &str, path: &Path, err: &io::Error) -> FrostError {
 
 /// A function of one path, computing `body`, which reports failures as I/O errors.
 fn path_function(name: &'static str, body: fn(&str, &Path) -> FrostResult) -> Value {
-    Value::checked_native(name, ONE_PATH, move |_, args| {
-        body(name, path_arg(&args[0]))
-    })
+    frost_closure!(name, move |path: FrostString| body(name, path_arg(&path)))
 }
 
 /// A function of two paths, a source and a destination, computing `body`.
 fn two_path_function(name: &'static str, body: fn(&str, &Path, &Path) -> FrostResult) -> Value {
-    const PARAMS: Params =
-        Params::new(&[Param::of(FrostType::STRING), Param::of(FrostType::STRING)]);
-    Value::checked_native(name, PARAMS, move |_, args| {
-        body(name, path_arg(&args[0]), path_arg(&args[1]))
-    })
+    frost_closure!(
+        name,
+        move |#[frost(unnamed)] source: FrostString, #[frost(unnamed)] destination: FrostString| {
+            body(name, path_arg(&source), path_arg(&destination))
+        }
+    )
 }
 
 /// A test of one path, which is false of a path that does not exist.
 fn path_test(name: &'static str, test: fn(&Path) -> bool) -> Value {
-    Value::checked_native(name, ONE_PATH, move |_, args| {
-        Ok(Value::Bool(test(path_arg(&args[0]))))
-    })
+    frost_closure!(name, move |path: FrostString| test(path_arg(&path)))
 }
 
 /// A function of a path and content to put there, a String or Bytes,
 /// computing `body`.
 fn content_function(name: &'static str, body: fn(&str, &Path, &[u8]) -> FrostResult) -> Value {
-    const PARAMS: Params = Params::new(&[
-        Param::of(FrostType::STRING).named("path"),
-        Param::of(FrostType::FLAT).named("content"),
-    ]);
-    Value::checked_native(name, PARAMS, move |_, args| {
-        let content = args[1].as_byte_slice().expect("type-checked as Flat");
-        body(name, path_arg(&args[0]), content)
+    frost_closure!(name, move |path: FrostString, content: Flat| {
+        body(name, path_arg(&path), content.as_bytes())
     })
 }
 
@@ -221,42 +213,35 @@ fn canonical(name: &str, path: &Path) -> FrostResult {
     path_value(name, &canonical)
 }
 
-fn cwd() -> Value {
-    Value::native("fs.cwd", Arity::Exact(0), |_, _| {
-        let cwd = std::env::current_dir()
-            .map_err(|err| FrostError::from_string(format!("Function fs.cwd failed: {err}")))?;
-        path_value("fs.cwd", &cwd)
-    })
+#[frost_fn(name = "fs.cwd")]
+fn cwd() -> FrostResult {
+    let cwd = std::env::current_dir()
+        .map_err(|err| FrostError::from_string(format!("Function fs.cwd failed: {err}")))?;
+    path_value("fs.cwd", &cwd)
 }
 
-fn concat() -> Value {
-    const PARAMS: Params = Params::new(&[
-        Param::of(FrostType::STRING).named("base"),
-        Param::of(FrostType::STRING).named("path"),
-    ]);
-    Value::checked_native("fs.concat", PARAMS, |_, args| {
-        let joined = path_arg(&args[0]).join(path_arg(&args[1]));
-        path_value("fs.concat", &joined)
-    })
+#[frost_fn(name = "fs.concat")]
+fn concat(base: FrostString, path: FrostString) -> FrostResult {
+    let joined = path_arg(&base).join(path_arg(&path));
+    path_value("fs.concat", &joined)
 }
 
 /// A function returning the part of a path `part` picks, or the empty String
 /// if there is none.
 fn path_part(name: &'static str, part: fn(&Path) -> Option<&std::ffi::OsStr>) -> Value {
-    Value::checked_native(name, ONE_PATH, move |_, args| {
-        let part = part(path_arg(&args[0])).unwrap_or_default();
+    frost_closure!(name, move |path: FrostString| {
+        let part = part(path_arg(&path)).unwrap_or_default();
         path_value(name, Path::new(part))
     })
 }
 
-fn extension() -> Value {
-    Value::checked_native("fs.extension", ONE_PATH, |_, args| {
-        Ok(match path_arg(&args[0]).extension() {
-            // The extension is UTF-8: it is part of a String.
-            Some(extension) => format!(".{}", extension.to_string_lossy()).into(),
-            None => Value::from(""),
-        })
-    })
+#[frost_fn(name = "fs.extension")]
+fn extension(path: FrostString) -> Value {
+    match path_arg(&path).extension() {
+        // The extension is UTF-8: it is part of a String.
+        Some(extension) => format!(".{}", extension.to_string_lossy()).into(),
+        None => Value::from(""),
+    }
 }
 
 // --- Metadata ---
@@ -485,24 +470,18 @@ impl Default for GlobOptions {
 }
 
 /// `glob(pattern, options?)`: the paths that `pattern` matches, sorted.
-fn glob() -> Value {
-    const PARAMS: Params = Params::new(&[
-        Param::of(FrostType::STRING).named("pattern"),
-        Param::of(FrostType::MAP).named("options").optional(),
-    ]);
-    Value::checked_native("fs.glob", PARAMS, |_, args| {
-        let pattern = args[0].as_str().expect("type-checked as a String");
-        let options = match args.get(1) {
-            Some(options) => from_value(options.clone()).map_err(|err| {
-                FrostError::from_string(format!(
-                    "Function fs.glob requires valid options: {}",
-                    err.message()
-                ))
-            })?,
-            None => GlobOptions::default(),
-        };
-        glob_paths(pattern, &options)
-    })
+#[frost_fn(name = "fs.glob")]
+fn glob(pattern: FrostString, options: Optional<FrostMap>) -> FrostResult {
+    let options = match options {
+        Optional(Some(options)) => from_value(Value::from(options)).map_err(|err| {
+            FrostError::from_string(format!(
+                "Function fs.glob requires valid options: {}",
+                err.message()
+            ))
+        })?,
+        Optional(None) => GlobOptions::default(),
+    };
+    glob_paths(&pattern, &options)
 }
 
 /// One component of a glob pattern.

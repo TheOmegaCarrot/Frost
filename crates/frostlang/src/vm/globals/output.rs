@@ -1,44 +1,32 @@
 //! Printing and message formatting.
 
 use crate::core::util::identifier::is_identifier_like;
-use crate::{Arity, FrostError, FrostMap, FrostType, Param, Params, Value};
+use crate::{FrostError, FrostMap, FrostString, NativeCtx, Value, frost_fn};
 
 /// `print(value)`: hand the value, as `to_string` renders it, to the Vm's print
 /// sink. Returns Null.
-pub(super) fn print_global() -> Value {
-    Value::native("print", Arity::Exact(1), |ctx, args| {
-        ctx.vm.config.print_sink.print(&args[0].to_frost_string());
-        Ok(Value::Null)
-    })
+#[frost_fn(name = "print")]
+pub(super) fn print(#[frost(ctx)] ctx: &mut NativeCtx<'_>, #[frost(unnamed)] value: Value) {
+    ctx.vm.config.print_sink.print(&value.to_frost_string());
 }
 
-/// The spec shared by `mformat` and `mprint`.
-const MFORMAT_PARAMS: Params = Params::new(&[
-    Param::of(FrostType::STRING).named("format string"),
-    Param::of(FrostType::MAP).named("replacement map"),
-]);
-
-pub(super) fn mformat_global() -> Value {
-    Value::checked_native("mformat", MFORMAT_PARAMS, |_, args| {
-        let (Value::String(template), Value::Map(replacements)) = (&args[0], &args[1]) else {
-            unreachable!()
-        };
-        Ok(Value::from(mformat(template, replacements)?))
-    })
+#[frost_fn(name = "mformat")]
+pub(super) fn mformat(format: FrostString, replacements: FrostMap) -> Result<String, FrostError> {
+    fill_template(&format, &replacements)
 }
 
 /// `mprint(format, replacements)`: print what `mformat` returns. Returns Null.
-pub(super) fn mprint_global() -> Value {
-    Value::checked_native("mprint", MFORMAT_PARAMS, |ctx, args| {
-        let (Value::String(template), Value::Map(replacements)) = (&args[0], &args[1]) else {
-            unreachable!()
-        };
-        ctx.vm
-            .config
-            .print_sink
-            .print(&mformat(template, replacements)?);
-        Ok(Value::Null)
-    })
+#[frost_fn(name = "mprint")]
+pub(super) fn mprint(
+    #[frost(ctx)] ctx: &mut NativeCtx<'_>,
+    format: FrostString,
+    replacements: FrostMap,
+) -> Result<(), FrostError> {
+    ctx.vm
+        .config
+        .print_sink
+        .print(&fill_template(&format, &replacements)?);
+    Ok(())
 }
 
 /// One piece of a parsed `mformat` template.
@@ -51,7 +39,7 @@ enum Segment<'a> {
 
 /// Replace each `${key}` placeholder in `template` with the `to_string` rendering
 /// of `replacements[key]`.
-fn mformat(template: &str, replacements: &FrostMap) -> Result<String, FrostError> {
+fn fill_template(template: &str, replacements: &FrostMap) -> Result<String, FrostError> {
     // The whole template is parsed before any lookup, so a malformed placeholder
     // is reported even when an earlier one's key is missing.
     parse_template(template)?.into_iter().try_fold(

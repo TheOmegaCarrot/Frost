@@ -15,7 +15,8 @@ use std::sync::{Arc, Mutex};
 
 use frostlang::bytecode::Bytecode;
 use frostlang::compile::{Optimization, OptimizationOptions};
-use frostlang::{Arity, Value};
+use frostlang::native::Rest;
+use frostlang::{Value, frost_closure};
 use script::{Emitted, Script, UNOPTIMIZED, optimization_permutations, raises, run};
 
 const FOLD: OptimizationOptions = UNOPTIMIZED.with(Optimization::ConstantFold, true);
@@ -36,9 +37,9 @@ impl Probe {
     /// The probe as a Frost function value.
     fn function(&self) -> Value {
         let calls = Arc::clone(&self.calls);
-        Value::native("probe", Arity::AtLeast(0), move |_, args| {
-            calls.lock().unwrap().push(args.to_vec());
-            Ok(Value::from(args.to_vec()))
+        frost_closure!("probe", move |args: Rest<Value>| {
+            calls.lock().unwrap().push(args.0.clone());
+            Value::from(args.0)
         })
     }
 
@@ -228,12 +229,7 @@ fn threading_continues_across_a_leading_newline() {
 
 #[test]
 fn threading_into_an_indexed_callee() {
-    let add = Value::native("add", Arity::Exact(2), |_, args| {
-        let (Value::Int(a), Value::Int(b)) = (&args[0], &args[1]) else {
-            panic!("expected two Ints");
-        };
-        Ok(Value::Int(a + b))
-    });
+    let add = frost_closure!("add", |a: i64, b: i64| a + b);
     let tail = Script::new("5 @ m.add(2)")
         .capture("m", Value::map([("add", add)]))
         .run();

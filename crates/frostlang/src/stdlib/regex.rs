@@ -15,8 +15,8 @@ use regex_lite::Regex;
 
 use crate::native::{Bundle, Function};
 use crate::{
-    FrostError, FrostResult, FrostString, FrostType, NativeCtx, Param, Params, StdlibModule, Value,
-    frost_bundle,
+    FrostError, FrostResult, FrostString, NativeCtx, StdlibModule, Value, frost_bundle,
+    frost_closure, frost_fn,
 };
 
 /// The `std.regex` module: testing, replacing, splitting, and scanning text by
@@ -34,20 +34,15 @@ pub fn regex() -> StdlibModule {
                 "replace_first",
                 replacer("regex.replace_first", Count::First),
             ),
-            ("replace_with", replace_with()),
+            ("replace_with", replace_with_frost()),
             ("split", one_text("regex.split", Pattern::split)),
             (
                 "scan_matches",
                 one_text("regex.scan_matches", Pattern::scan_matches),
             ),
-            ("compile", compile()),
+            ("compile", compile_frost()),
         ]),
     )
-}
-
-/// The text of a type-checked String argument.
-fn string_arg(arg: &Value) -> &str {
-    arg.as_str().expect("type-checked as a String")
 }
 
 // --- Compiled patterns ---
@@ -191,49 +186,41 @@ impl Pattern {
 
 /// A function of text and a pattern, performing `operation`.
 fn one_text(name: &'static str, operation: fn(&Pattern, &str) -> Value) -> Value {
-    const PARAMS: Params = Params::new(&[
-        Param::of(FrostType::STRING),
-        Param::of(FrostType::STRING).named("pattern"),
-    ]);
-    Value::checked_native(name, PARAMS, move |_, args| {
-        let pattern = Pattern::new(name, string_arg(&args[1]))?;
-        Ok(operation(&pattern, string_arg(&args[0])))
+    frost_closure!(name, move |#[frost(unnamed)] text: FrostString,
+                               pattern: FrostString|
+          -> FrostResult {
+        let pattern = Pattern::new(name, &pattern)?;
+        Ok(operation(&pattern, &text))
     })
 }
 
 fn replacer(name: &'static str, count: Count) -> Value {
-    const PARAMS: Params = Params::new(&[
-        Param::of(FrostType::STRING),
-        Param::of(FrostType::STRING).named("pattern"),
-        Param::of(FrostType::STRING).named("replacement"),
-    ]);
-    Value::checked_native(name, PARAMS, move |_, args| {
-        let pattern = Pattern::new(name, string_arg(&args[1]))?;
-        Ok(pattern.replace(string_arg(&args[0]), string_arg(&args[2]), count))
+    frost_closure!(name, move |#[frost(unnamed)] text: FrostString,
+                               pattern: FrostString,
+                               replacement: FrostString|
+          -> FrostResult {
+        let pattern = Pattern::new(name, &pattern)?;
+        Ok(pattern.replace(&text, &replacement, count))
     })
 }
 
-fn replace_with() -> Value {
-    const PARAMS: Params = Params::new(&[
-        Param::of(FrostType::STRING),
-        Param::of(FrostType::STRING).named("pattern"),
-        Param::of(FrostType::FUNCTION).named("callback"),
-    ]);
-    Value::checked_native("regex.replace_with", PARAMS, |mut ctx, args| {
-        let pattern = Pattern::new("regex.replace_with", string_arg(&args[1]))?;
-        let callback = Function::try_from(args[2].take())?;
-        pattern.replace_with(&mut ctx, string_arg(&args[0]), &callback)
-    })
+#[frost_fn(name = "regex.replace_with")]
+fn replace_with(
+    #[frost(ctx)] ctx: &mut NativeCtx<'_>,
+    #[frost(unnamed)] text: FrostString,
+    pattern: FrostString,
+    callback: Function,
+) -> FrostResult {
+    let pattern = Pattern::new("regex.replace_with", &pattern)?;
+    pattern.replace_with(ctx, &text, &callback)
 }
 
 // --- compile: the same functions over one compiled pattern ---
 
-fn compile() -> Value {
-    const PARAMS: Params = Params::new(&[Param::of(FrostType::STRING).named("pattern")]);
-    Value::checked_native("regex.compile", PARAMS, |_, args| {
-        let pattern = Pattern::new("regex.compile", string_arg(&args[0]))?;
-        Ok(Compiled::frost_functions(Bundle::new(Compiled(pattern))).build())
-    })
+#[frost_fn(name = "regex.compile")]
+fn compile(pattern: FrostString) -> FrostResult {
+    let pattern = Pattern::new("regex.compile", &pattern)?;
+    Ok(Compiled::frost_functions(Bundle::new(Compiled(pattern))).build())
 }
 
 /// A compiled pattern, whose functions are the module's less the pattern.

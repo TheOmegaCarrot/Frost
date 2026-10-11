@@ -5,7 +5,10 @@
 //! a String contributes its UTF-8. A decoder or parser given the right type
 //! but content that does not decode returns Null.
 
-use crate::{FrostError, FrostType, Param, Params, StdlibModule, Value};
+use crate::native::{Flat, Numeric};
+use crate::{
+    FrostArray, FrostError, FrostResult, FrostString, StdlibModule, Value, frost_closure, frost_fn,
+};
 
 /// The `std.encoding` module: formatting and parsing integers in bases 2 to 36,
 /// formatting numbers to a fixed number of decimal places,
@@ -17,11 +20,11 @@ pub fn encoding() -> StdlibModule {
     StdlibModule::new(
         "encoding",
         Value::map([
-            ("fmt_int", fmt_int()),
-            ("parse_int", parse_int()),
-            ("fmt_fixed", fmt_fixed()),
-            ("to_ints", to_ints()),
-            ("from_ints", from_ints()),
+            ("fmt_int", fmt_int_frost()),
+            ("parse_int", parse_int_frost()),
+            ("fmt_fixed", fmt_fixed_frost()),
+            ("to_ints", to_ints_frost()),
+            ("from_ints", from_ints_frost()),
             (
                 "b64",
                 Value::map([
@@ -39,30 +42,26 @@ pub fn encoding() -> StdlibModule {
             ),
             (
                 "hex",
-                Value::map([("encode", hex_encode()), ("decode", hex_decode())]),
+                Value::map([
+                    ("encode", hex_encode_frost()),
+                    ("decode", hex_decode_frost()),
+                ]),
             ),
             (
                 "url",
-                Value::map([("encode", url_encode()), ("decode", url_decode())]),
+                Value::map([
+                    ("encode", url_encode_frost()),
+                    ("decode", url_decode_frost()),
+                ]),
             ),
         ]),
     )
 }
 
-/// The spec of a function of one String or Bytes.
-const ONE_FLAT: Params = Params::new(&[Param::of(FrostType::FLAT)]);
-
-/// The bytes of a type-checked String or Bytes argument.
-fn flat_arg(arg: &Value) -> &[u8] {
-    arg.as_byte_slice()
-        .expect("type-checked as String or Bytes")
-}
-
 // --- Integers ---
 
 /// `base`, the base argument of `function`, if it is from 2 to 36.
-fn base_arg(function: &str, base: &Value) -> Result<u32, FrostError> {
-    let base = base.as_int().expect("type-checked as an Int");
+fn base_arg(function: &str, base: i64) -> Result<u32, FrostError> {
     match u32::try_from(base) {
         Ok(base @ 2..=36) => Ok(base),
         _ => Err(FrostError::from_string(format!(
@@ -71,45 +70,32 @@ fn base_arg(function: &str, base: &Value) -> Result<u32, FrostError> {
     }
 }
 
-fn fmt_int() -> Value {
-    const PARAMS: Params = Params::new(&[
-        Param::of(FrostType::INT).named("number"),
-        Param::of(FrostType::INT).named("base"),
-    ]);
-    Value::checked_native("encoding.fmt_int", PARAMS, |_, args| {
-        let base = base_arg("encoding.fmt_int", &args[1])?;
-        let number = args[0].as_int().expect("type-checked as an Int");
+#[frost_fn(name = "encoding.fmt_int")]
+fn fmt_int(number: i64, base: i64) -> Result<String, FrostError> {
+    let base = base_arg("encoding.fmt_int", base)?;
 
-        // Digits come out least significant first; the magnitude of
-        // `i64::MIN` fits only unsigned.
-        let mut magnitude = number.unsigned_abs();
-        let mut digits = Vec::new();
-        loop {
-            let digit =
-                u32::try_from(magnitude % u64::from(base)).expect("a digit is below the base");
-            digits.push(char::from_digit(digit, base).expect("a digit is below the base"));
-            magnitude /= u64::from(base);
-            if magnitude == 0 {
-                break;
-            }
+    // Digits come out least significant first; the magnitude of
+    // `i64::MIN` fits only unsigned.
+    let mut magnitude = number.unsigned_abs();
+    let mut digits = Vec::new();
+    loop {
+        let digit = u32::try_from(magnitude % u64::from(base)).expect("a digit is below the base");
+        digits.push(char::from_digit(digit, base).expect("a digit is below the base"));
+        magnitude /= u64::from(base);
+        if magnitude == 0 {
+            break;
         }
-        if number < 0 {
-            digits.push('-');
-        }
-        Ok(digits.into_iter().rev().collect::<String>().into())
-    })
+    }
+    if number < 0 {
+        digits.push('-');
+    }
+    Ok(digits.into_iter().rev().collect())
 }
 
-fn parse_int() -> Value {
-    const PARAMS: Params = Params::new(&[
-        Param::of(FrostType::STRING).named("text"),
-        Param::of(FrostType::INT).named("base"),
-    ]);
-    Value::checked_native("encoding.parse_int", PARAMS, |_, args| {
-        let base = base_arg("encoding.parse_int", &args[1])?;
-        let text = args[0].as_str().expect("type-checked as a String");
-        Ok(i64::from_str_radix(text, base).map_or(Value::Null, Value::Int))
-    })
+#[frost_fn(name = "encoding.parse_int")]
+fn parse_int(text: FrostString, base: i64) -> FrostResult {
+    let base = base_arg("encoding.parse_int", base)?;
+    Ok(i64::from_str_radix(&text, base).map_or(Value::Null, Value::Int))
 }
 
 // --- Fixed decimal places ---
@@ -119,71 +105,60 @@ fn parse_int() -> Value {
 /// exact binary value, with exact ties going to the even digit, so `2.675`
 /// (stored just below) gives `2.67` and `0.125` gives `0.12`. An Int is written
 /// exactly. A result of zero never has a sign.
-fn fmt_fixed() -> Value {
-    const PARAMS: Params = Params::new(&[
-        Param::of(FrostType::NUMERIC).named("number"),
-        Param::of(FrostType::INT).named("places"),
-    ]);
-    Value::checked_native("encoding.fmt_fixed", PARAMS, |_, args| {
-        let places = args[1].as_int().expect("type-checked as an Int");
-        // Rust's formatting accepts at most `u16::MAX` places.
-        let Ok(places) = u16::try_from(places) else {
-            return Err(FrostError::from_string(format!(
-                "Function encoding.fmt_fixed requires places from 0 to {}, got {places}",
-                u16::MAX
-            )));
-        };
-        let places = usize::from(places);
-        let fixed = match &args[0] {
-            Value::Int(n) if places == 0 => n.to_string(),
-            Value::Int(n) => format!("{n}.{}", "0".repeat(places)),
-            Value::Float(f) => {
-                let mut fixed = format!("{:.*}", places, f.get());
-                // A negative Float that rounds to zero keeps its sign; drop it.
-                if fixed.starts_with('-') && fixed[1..].bytes().all(|b| matches!(b, b'0' | b'.')) {
-                    fixed.remove(0);
-                }
-                fixed
+#[frost_fn(name = "encoding.fmt_fixed")]
+fn fmt_fixed(number: Numeric, places: i64) -> Result<String, FrostError> {
+    // Rust's formatting accepts at most `u16::MAX` places.
+    let Ok(places) = u16::try_from(places) else {
+        return Err(FrostError::from_string(format!(
+            "Function encoding.fmt_fixed requires places from 0 to {}, got {places}",
+            u16::MAX
+        )));
+    };
+    let places = usize::from(places);
+    Ok(match number {
+        Numeric::Int(n) if places == 0 => n.to_string(),
+        Numeric::Int(n) => format!("{n}.{}", "0".repeat(places)),
+        Numeric::Float(f) => {
+            let mut fixed = format!("{:.*}", places, f.get());
+            // A negative Float that rounds to zero keeps its sign; drop it.
+            if fixed.starts_with('-') && fixed[1..].bytes().all(|b| matches!(b, b'0' | b'.')) {
+                fixed.remove(0);
             }
-            other => unreachable!("type-checked as Numeric, got {}", other.type_name()),
-        };
-        Ok(fixed.into())
+            fixed
+        }
     })
 }
 
 // --- Bytes as Ints ---
 
-fn to_ints() -> Value {
-    Value::checked_native("encoding.to_ints", ONE_FLAT, |_, args| {
-        Ok(flat_arg(&args[0])
-            .iter()
-            .map(|&byte| Value::Int(i64::from(byte)))
-            .collect())
-    })
+#[frost_fn(name = "encoding.to_ints")]
+fn to_ints(#[frost(unnamed)] content: Flat) -> Value {
+    content
+        .as_bytes()
+        .iter()
+        .map(|&byte| Value::Int(i64::from(byte)))
+        .collect()
 }
 
-fn from_ints() -> Value {
-    const PARAMS: Params = Params::new(&[Param::of(FrostType::ARRAY)]);
-    Value::checked_native("encoding.from_ints", PARAMS, |_, args| {
-        let ints = args[0].as_array().expect("type-checked as an Array");
-        // Every element's type is checked before any value: a wrong type is an
-        // error wherever it is, while a value outside 0 to 255 makes the result Null.
-        if let Some((i, element)) = ints
-            .iter()
-            .enumerate()
-            .find(|(_, element)| element.as_int().is_none())
-        {
-            return Err(FrostError::from_string(format!(
-                "Function encoding.from_ints requires an Array of Ints, but element {i} is {}",
-                element.type_name()
-            )));
-        }
-        let bytes: Option<Vec<u8>> = ints
-            .iter()
-            .map(|element| u8::try_from(element.as_int().expect("checked as an Int")).ok())
-            .collect();
-        Ok(bytes.map_or(Value::Null, Value::from))
-    })
+#[frost_fn(name = "encoding.from_ints")]
+fn from_ints(#[frost(unnamed)] ints: FrostArray) -> FrostResult {
+    // Every element's type is checked before any value: a wrong type is an
+    // error wherever it is, while a value outside 0 to 255 makes the result Null.
+    if let Some((i, element)) = ints
+        .iter()
+        .enumerate()
+        .find(|(_, element)| element.as_int().is_none())
+    {
+        return Err(FrostError::from_string(format!(
+            "Function encoding.from_ints requires an Array of Ints, but element {i} is {}",
+            element.type_name()
+        )));
+    }
+    let bytes: Option<Vec<u8>> = ints
+        .iter()
+        .map(|element| u8::try_from(element.as_int().expect("checked as an Int")).ok())
+        .collect();
+    Ok(bytes.map_or(Value::Null, Value::from))
 }
 
 // --- Base64 (RFC 4648) ---
@@ -281,14 +256,14 @@ fn b64_decode(text: &[u8], alphabet: &Alphabet) -> Option<Vec<u8>> {
 }
 
 fn b64_encoder(name: &'static str, alphabet: &'static Alphabet) -> Value {
-    Value::checked_native(name, ONE_FLAT, move |_, args| {
-        Ok(b64_encode(flat_arg(&args[0]), alphabet).into())
+    frost_closure!(name, move |#[frost(unnamed)] content: Flat| {
+        b64_encode(content.as_bytes(), alphabet)
     })
 }
 
 fn b64_decoder(name: &'static str, alphabet: &'static Alphabet) -> Value {
-    Value::checked_native(name, ONE_FLAT, move |_, args| {
-        Ok(b64_decode(flat_arg(&args[0]), alphabet).map_or(Value::Null, Value::from))
+    frost_closure!(name, move |#[frost(unnamed)] content: Flat| {
+        b64_decode(content.as_bytes(), alphabet).map_or(Value::Null, Value::from)
     })
 }
 
@@ -301,31 +276,29 @@ fn hex_digit(c: u8) -> Option<u8> {
         .map(|digit| u8::try_from(digit).expect("a hex digit is below 16"))
 }
 
-fn hex_encode() -> Value {
-    Value::checked_native("encoding.hex.encode", ONE_FLAT, |_, args| {
-        let bytes = flat_arg(&args[0]);
-        let mut out = String::with_capacity(bytes.len() * 2);
-        for byte in bytes {
-            for nibble in [byte >> 4, byte & 0xf] {
-                out.push(char::from_digit(u32::from(nibble), 16).expect("a nibble is below 16"));
-            }
+#[frost_fn(name = "encoding.hex.encode")]
+fn hex_encode(#[frost(unnamed)] content: Flat) -> String {
+    let bytes = content.as_bytes();
+    let mut out = String::with_capacity(bytes.len() * 2);
+    for byte in bytes {
+        for nibble in [byte >> 4, byte & 0xf] {
+            out.push(char::from_digit(u32::from(nibble), 16).expect("a nibble is below 16"));
         }
-        Ok(out.into())
-    })
+    }
+    out
 }
 
-fn hex_decode() -> Value {
-    Value::checked_native("encoding.hex.decode", ONE_FLAT, |_, args| {
-        let text = flat_arg(&args[0]);
-        if !text.len().is_multiple_of(2) {
-            return Ok(Value::Null);
-        }
-        let bytes: Option<Vec<u8>> = text
-            .chunks(2)
-            .map(|pair| Some(hex_digit(pair[0])? << 4 | hex_digit(pair[1])?))
-            .collect();
-        Ok(bytes.map_or(Value::Null, Value::from))
-    })
+#[frost_fn(name = "encoding.hex.decode")]
+fn hex_decode(#[frost(unnamed)] content: Flat) -> Value {
+    let text = content.as_bytes();
+    if !text.len().is_multiple_of(2) {
+        return Value::Null;
+    }
+    let bytes: Option<Vec<u8>> = text
+        .chunks(2)
+        .map(|pair| Some(hex_digit(pair[0])? << 4 | hex_digit(pair[1])?))
+        .collect();
+    bytes.map_or(Value::Null, Value::from)
 }
 
 // --- URL percent-encoding (RFC 3986) ---
@@ -335,47 +308,44 @@ fn is_unreserved(byte: u8) -> bool {
     byte.is_ascii_alphanumeric() || matches!(byte, b'-' | b'.' | b'_' | b'~')
 }
 
-fn url_encode() -> Value {
-    Value::checked_native("encoding.url.encode", ONE_FLAT, |_, args| {
-        let bytes = flat_arg(&args[0]);
-        let mut out = String::with_capacity(bytes.len());
-        for &byte in bytes {
-            if is_unreserved(byte) {
-                out.push(char::from(byte));
-            } else {
-                // RFC 3986 recommends uppercase hex digits.
-                out.push('%');
-                for nibble in [byte >> 4, byte & 0xf] {
-                    let digit =
-                        char::from_digit(u32::from(nibble), 16).expect("a nibble is below 16");
-                    out.push(digit.to_ascii_uppercase());
-                }
+#[frost_fn(name = "encoding.url.encode")]
+fn url_encode(#[frost(unnamed)] content: Flat) -> String {
+    let bytes = content.as_bytes();
+    let mut out = String::with_capacity(bytes.len());
+    for &byte in bytes {
+        if is_unreserved(byte) {
+            out.push(char::from(byte));
+        } else {
+            // RFC 3986 recommends uppercase hex digits.
+            out.push('%');
+            for nibble in [byte >> 4, byte & 0xf] {
+                let digit = char::from_digit(u32::from(nibble), 16).expect("a nibble is below 16");
+                out.push(digit.to_ascii_uppercase());
             }
         }
-        Ok(out.into())
-    })
+    }
+    out
 }
 
-fn url_decode() -> Value {
-    Value::checked_native("encoding.url.decode", ONE_FLAT, |_, args| {
-        let text = flat_arg(&args[0]);
-        let mut bytes = Vec::with_capacity(text.len());
-        let mut rest = text.iter();
-        while let Some(&byte) = rest.next() {
-            if byte != b'%' {
-                bytes.push(byte);
-                continue;
-            }
-            let escaped = match (rest.next(), rest.next()) {
-                (Some(&high), Some(&low)) => hex_digit(high).zip(hex_digit(low)),
-                _ => None,
-            };
-            match escaped {
-                Some((high, low)) => bytes.push(high << 4 | low),
-                None => return Ok(Value::Null),
-            }
+#[frost_fn(name = "encoding.url.decode")]
+fn url_decode(#[frost(unnamed)] content: Flat) -> Value {
+    let text = content.as_bytes();
+    let mut bytes = Vec::with_capacity(text.len());
+    let mut rest = text.iter();
+    while let Some(&byte) = rest.next() {
+        if byte != b'%' {
+            bytes.push(byte);
+            continue;
         }
-        // The decoded bytes are text only if they are UTF-8.
-        Ok(String::from_utf8(bytes).map_or(Value::Null, Value::from))
-    })
+        let escaped = match (rest.next(), rest.next()) {
+            (Some(&high), Some(&low)) => hex_digit(high).zip(hex_digit(low)),
+            _ => None,
+        };
+        match escaped {
+            Some((high, low)) => bytes.push(high << 4 | low),
+            None => return Value::Null,
+        }
+    }
+    // The decoded bytes are text only if they are UTF-8.
+    String::from_utf8(bytes).map_or(Value::Null, Value::from)
 }

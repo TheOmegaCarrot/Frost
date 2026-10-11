@@ -9,7 +9,7 @@ use std::hash::{BuildHasher, RandomState};
 
 use crate::native::{MutableBundle, Numeric, Optional};
 use crate::{
-    FrostArray, FrostError, FrostFloat, FrostResult, FrostType, Param, Params, StdlibModule, Value,
+    FrostArray, FrostError, FrostFloat, FrostResult, StdlibModule, Value, frost_fn,
     frost_mutable_bundle,
 };
 
@@ -37,7 +37,7 @@ pub fn random(config: RandomConfig) -> StdlibModule {
     let rng_seed = config.rng_seed.map_or_else(os_seed, seed_bits);
     StdlibModule::new(
         "random",
-        Value::map([("rng", engine(rng_seed)), ("seed", seed())]),
+        Value::map([("rng", engine(rng_seed)), ("seed", seed_frost())]),
     )
 }
 
@@ -52,12 +52,9 @@ fn seed_bits(seed: i64) -> u64 {
     u64::from_ne_bytes(seed.to_ne_bytes())
 }
 
-fn seed() -> Value {
-    const PARAMS: Params = Params::new(&[Param::of(FrostType::INT).named("seed")]);
-    Value::checked_native("random.seed", PARAMS, |_, args| {
-        let seed = args[0].as_int().expect("type-checked as an Int");
-        Ok(engine(seed_bits(seed)))
-    })
+#[frost_fn(name = "random.seed")]
+fn seed(seed: i64) -> Value {
+    engine(seed_bits(seed))
 }
 
 // --- Engines ---

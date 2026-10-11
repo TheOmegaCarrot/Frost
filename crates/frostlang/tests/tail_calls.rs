@@ -14,13 +14,14 @@ use crate::script;
 
 use frostlang::bytecode::Bytecode;
 use frostlang::compile::{Optimization, OptimizationOptions};
-use frostlang::{Arity, Value};
+use frostlang::native::Rest;
+use frostlang::{Value, frost_closure};
 use script::{Emitted, Script, UNOPTIMIZED};
 
 /// The top-level code of `source` under exactly `optimization`, with `x` a
 /// runtime-only Bool and `f` a runtime-only function.
 fn code_under(source: &str, optimization: OptimizationOptions) -> Emitted {
-    let f = Value::native("f", Arity::AtLeast(0), |_, _| Ok(Value::Null));
+    let f = frost_closure!("f", |_args: Rest<Value>| Value::Null);
     Script::new(source)
         .capture("x", Value::Bool(true))
         .capture("f", f)

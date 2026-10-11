@@ -1,7 +1,7 @@
 use crate::common;
 
 use frostlang::bytecode::Bytecode;
-use frostlang::{Arity, FrostArray, FrostFloat, FrostMap, MapKey, Value};
+use frostlang::{FrostArray, FrostFloat, FrostMap, MapKey, Value, frost_closure};
 
 fn str_key(s: &str) -> MapKey {
     MapKey::from(s)
@@ -92,7 +92,7 @@ fn bytes_top_level_render_as_a_literal() {
 /// Both kinds of Function value render as the same placeholder, in every rendering.
 #[test]
 fn function_placeholder() {
-    let native = Value::native("f", Arity::Exact(0), |_ctx, _args| Ok(Value::Null));
+    let native = frost_closure!("f", || Value::Null);
     let closure = Value::Closure(common::closure(vec![Bytecode::PushNull], vec![]));
 
     for (kind, function) in [("native", native), ("closure", closure)] {

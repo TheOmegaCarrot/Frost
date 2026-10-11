@@ -10,7 +10,7 @@ use std::sync::{Arc, Mutex};
 use std::thread;
 use std::time::Duration;
 
-use frostlang::{Arity, Value};
+use frostlang::{Value, frost_closure};
 use frostlang_repl::{CancelHandle, Frontend, Repl, ReplError, ScriptedFrontend};
 
 /// How long work that should be cancelled may take before the test fails.
@@ -63,9 +63,8 @@ spin(0)
 #[test]
 fn cancelling_from_another_thread_stops_the_running_input() {
     let (started_sender, started) = mpsc::channel();
-    let signal = Value::native("signal", Arity::Exact(0), move |_, _: &mut [Value]| {
+    let signal = frost_closure!("signal", move || {
         started_sender.send(()).expect("the test is waiting");
-        Ok(Value::Null)
     });
     let mut repl = Repl::new().with_binding("signal", signal).unwrap();
     let handle = repl.cancel_handle();
@@ -128,9 +127,8 @@ fn cancelling_with_no_input_running_does_nothing() {
 fn self_cancelling_repl() -> Repl {
     let repl = Repl::new();
     let handle = repl.cancel_handle();
-    let signal = Value::native("signal", Arity::Exact(0), move |_, _: &mut [Value]| {
+    let signal = frost_closure!("signal", move || {
         assert!(handle.cancel(), "cancel should report the input running");
-        Ok(Value::Null)
     });
     repl.with_binding("signal", signal).unwrap()
 }
@@ -186,13 +184,12 @@ fn a_frontend_cancels_through_the_handle_its_session_gives_it() {
     let handle = Arc::new(Mutex::new(None::<CancelHandle>));
     let signal = {
         let handle = Arc::clone(&handle);
-        Value::native("signal", Arity::Exact(0), move |_, _: &mut [Value]| {
+        frost_closure!("signal", move || {
             let guard = handle.lock().unwrap();
             let handle = guard
                 .as_ref()
                 .expect("the session gives the frontend its handle before any input");
             assert!(handle.cancel(), "cancel should report the input running");
-            Ok(Value::Null)
         })
     };
     let scripted = ScriptedFrontend::new(["def kept = 1", RUNAWAY, "[kept, is_null(lost)]"]);

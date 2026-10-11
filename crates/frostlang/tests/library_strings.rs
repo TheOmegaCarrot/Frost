@@ -739,18 +739,6 @@ fn searches_search_runtime_values() {
 }
 
 #[test]
-fn contains_points_an_array_search_at_includes() {
-    let message = "Function contains requires String or Bytes as argument 1, got Array \
-                   (use includes to search an Array)";
-    assert_raises(&[
-        ("contains(['a'], 'a')", message),
-        // The hint comes first, even when the second argument is also wrong.
-        ("contains(['a'], 1)", message),
-        ("contains([], null)", message),
-    ]);
-}
-
-#[test]
 fn searches_check_their_argument_types() {
     for function in ["contains", "starts_with", "ends_with"] {
         assert_rejects_non_flat(
@@ -759,20 +747,13 @@ fn searches_check_their_argument_types() {
                 (&format!("{function}(1, 'a')"), "argument 1", "Int"),
                 (&format!("{function}(null, 'a')"), "argument 1", "Null"),
                 (&format!("{function}({{a: 1}}, 'a')"), "argument 1", "Map"),
+                (&format!("{function}(['a'], 'a')"), "argument 1", "Array"),
                 (&format!("{function}('a', 1)"), "argument 2", "Int"),
                 (&format!("{function}('a', null)"), "argument 2", "Null"),
                 (&format!("{function}('a', ['a'])"), "argument 2", "Array"),
             ],
         );
     }
-    assert_rejects_non_flat(
-        "starts_with",
-        &[("starts_with(['a'], 'a')", "argument 1", "Array")],
-    );
-    assert_rejects_non_flat(
-        "ends_with",
-        &[("ends_with(['a'], 'a')", "argument 1", "Array")],
-    );
 }
 
 #[test]

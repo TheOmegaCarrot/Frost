@@ -1,15 +1,14 @@
 use std::sync::Arc;
 
 use crate::bytecode::{Bytecode, CompiledFunction, FormatVersion};
-use crate::{Arity, Closure, FrostType, Param, Params, Value};
+use crate::{Arity, Closure, FrostType, NativeCtx, Param, Params, Value, frost_fn};
 
 /// The `imported()` global: `true` when the running script is being imported by
 /// another module, `false` when it is run directly. It reads the running Vm's
 /// import depth, so it is never a compile-time constant.
-pub(super) fn imported_global() -> Value {
-    Value::native("imported", Arity::Exact(0), |ctx, _args| {
-        Ok(Value::Bool(ctx.vm.is_imported()))
-    })
+#[frost_fn(name = "imported")]
+pub(super) fn imported(#[frost(ctx)] ctx: &mut NativeCtx<'_>) -> bool {
+    ctx.vm.is_imported()
 }
 
 pub(super) fn import_global() -> Value {

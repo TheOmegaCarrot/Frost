@@ -13,7 +13,7 @@ use crate::common;
 
 use common::{Pop, global_slot};
 use frostlang::bytecode::{Bytecode, CompiledFunction, FormatVersion, NameEntry};
-use frostlang::{Arity, FrostArray, FrostError, FrostFloat, MapKey, NativeFunction, Value, Vm};
+use frostlang::{Arity, FrostArray, FrostError, FrostFloat, MapKey, Value, Vm, frost_closure};
 
 use Bytecode::*;
 
@@ -85,11 +85,7 @@ fn fmap(pairs: Vec<(&str, Value)>) -> Value {
 }
 
 fn func_value() -> Value {
-    Value::NativeFunction(Arc::new(NativeFunction::new(
-        "f",
-        Arity::Exact(0),
-        |_, _: &mut [Value]| Ok(Value::Null),
-    )))
+    frost_closure!("f", || Value::Null)
 }
 
 // ============================================================

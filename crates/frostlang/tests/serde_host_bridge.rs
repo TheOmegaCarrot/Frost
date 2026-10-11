@@ -6,18 +6,13 @@
 use crate::common;
 
 use std::borrow::Cow;
-use std::sync::Arc;
 
 use serde::{Deserialize, Serialize};
 
-use frostlang::{Arity, FrostOpaque, NativeFunction, Value, from_value, to_value};
+use frostlang::{FrostOpaque, Value, from_value, frost_closure, to_value};
 
 fn native_fn() -> Value {
-    Value::NativeFunction(Arc::new(NativeFunction::new(
-        "f",
-        Arity::Exact(0),
-        |_ctx, _args| Ok(Value::Null),
-    )))
+    frost_closure!("f", || Value::Null)
 }
 
 #[derive(Debug)]

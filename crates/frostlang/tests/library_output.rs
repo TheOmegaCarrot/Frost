@@ -322,34 +322,26 @@ fn mformat_checks_its_argument_types() {
     let message =
         |requires: &str, ty: &str| format!("Function mformat requires {requires}, got {ty}");
     for (source, requires, ty) in [
-        (
-            "mformat(42, {})",
-            "String as argument 1 (format string)",
-            "Int",
-        ),
+        ("mformat(42, {})", "String as argument 1 (format)", "Int"),
         (
             "mformat(x'6869', {})",
-            "String as argument 1 (format string)",
+            "String as argument 1 (format)",
             "Bytes",
         ),
-        (
-            "mformat(null, {})",
-            "String as argument 1 (format string)",
-            "Null",
-        ),
+        ("mformat(null, {})", "String as argument 1 (format)", "Null"),
         (
             "mformat('${k}', 'nope')",
-            "Map as argument 2 (replacement map)",
+            "Map as argument 2 (replacements)",
             "String",
         ),
         (
             "mformat('${k}', [1])",
-            "Map as argument 2 (replacement map)",
+            "Map as argument 2 (replacements)",
             "Array",
         ),
         (
             "mformat('${k}', null)",
-            "Map as argument 2 (replacement map)",
+            "Map as argument 2 (replacements)",
             "Null",
         ),
     ] {
@@ -470,24 +462,20 @@ fn mprint_checks_its_argument_types() {
     let message =
         |requires: &str, ty: &str| format!("Function mprint requires {requires}, got {ty}");
     for (source, requires, ty) in [
-        (
-            "mprint(42, {})",
-            "String as argument 1 (format string)",
-            "Int",
-        ),
+        ("mprint(42, {})", "String as argument 1 (format)", "Int"),
         (
             "mprint(x'6869', {})",
-            "String as argument 1 (format string)",
+            "String as argument 1 (format)",
             "Bytes",
         ),
         (
             "mprint('${k}', 'nope')",
-            "Map as argument 2 (replacement map)",
+            "Map as argument 2 (replacements)",
             "String",
         ),
         (
             "mprint('${k}', null)",
-            "Map as argument 2 (replacement map)",
+            "Map as argument 2 (replacements)",
             "Null",
         ),
     ] {

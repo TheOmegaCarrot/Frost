@@ -8,7 +8,7 @@ use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
 
 use common::{Tree, count, importer, run};
-use frostlang::{Arity, HostComponent, ImporterBuilder, Value};
+use frostlang::{HostComponent, ImporterBuilder, Value, frost_closure};
 
 /// A module that prints `ran <name>` when it runs, and exports a function, whose
 /// identity tells one run's exports from another's.
@@ -111,9 +111,7 @@ fn a_module_that_fails_is_cached_once_it_succeeds() {
     let on = Arc::new(AtomicBool::new(false));
     let switch = {
         let on = Arc::clone(&on);
-        Value::native("on", Arity::Exact(0), move |_, _| {
-            Ok(Value::Bool(on.load(Ordering::SeqCst)))
-        })
+        frost_closure!("on", move || on.load(Ordering::SeqCst))
     };
     let importer = ImporterBuilder::new()
         .with_component(

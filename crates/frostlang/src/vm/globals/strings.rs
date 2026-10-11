@@ -6,9 +6,8 @@
 //! when every content argument is a String, and Bytes otherwise.
 //! The text functions (`lines`, `trim*`, `to_upper`, `to_lower`) accept only a String.
 
-use crate::{FrostError, FrostType, Param, Params, Value};
-
-const ONE_STRING: Params = Params::new(&[Param::of(FrostType::STRING)]);
+use crate::native::Flat;
+use crate::{FrostArray, FrostError, FrostString, FrostType, Value, frost_closure, frost_fn};
 
 /// Flat arguments resolved to one content type: text when every one is a String,
 /// else bytes, with each String contributing its UTF-8.
@@ -17,12 +16,16 @@ enum Content<'a, const N: usize> {
     Binary([&'a [u8]; N]),
 }
 
-/// Resolve `values`, which must all be Flat, to their [`Content`].
-fn content<const N: usize>(values: [&Value; N]) -> Content<'_, N> {
-    if values.iter().all(|value| matches!(value, Value::String(_))) {
-        Content::Text(values.map(|value| value.as_str().expect("every value is a String")))
+/// Resolve `values` to their [`Content`].
+fn content<const N: usize>(values: [&Flat; N]) -> Content<'_, N> {
+    let texts = values.map(|value| match value {
+        Flat::String(text) => Some(text.as_str()),
+        Flat::Bytes(_) => None,
+    });
+    if texts.iter().all(Option::is_some) {
+        Content::Text(texts.map(|text| text.expect("every value is a String")))
     } else {
-        Content::Binary(values.map(|value| value.as_byte_slice().expect("the value is Flat")))
+        Content::Binary(values.map(Flat::as_bytes))
     }
 }
 
@@ -73,23 +76,18 @@ fn split_text<'a>(text: &'a str, delimiter: &str) -> Vec<&'a str> {
     text.split(delimiter).collect()
 }
 
-pub(super) fn split_global() -> Value {
-    const PARAMS: Params = Params::new(&[
-        Param::of(FrostType::FLAT),
-        Param::of(FrostType::FLAT).named("delimiter"),
-    ]);
-    Value::checked_native("split", PARAMS, |_, args| {
-        Ok(match content([&args[0], &args[1]]) {
-            Content::Text([text, delimiter]) => split_text(text, delimiter)
-                .into_iter()
-                .map(Value::from)
-                .collect(),
-            Content::Binary([bytes, delimiter]) => split_bytes(bytes, delimiter)
-                .into_iter()
-                .map(Value::from)
-                .collect(),
-        })
-    })
+#[frost_fn(name = "split")]
+pub(super) fn split(#[frost(unnamed)] target: Flat, delimiter: Flat) -> Value {
+    match content([&target, &delimiter]) {
+        Content::Text([text, delimiter]) => split_text(text, delimiter)
+            .into_iter()
+            .map(Value::from)
+            .collect(),
+        Content::Binary([bytes, delimiter]) => split_bytes(bytes, delimiter)
+            .into_iter()
+            .map(Value::from)
+            .collect(),
+    }
 }
 
 /// `haystack` split at the first occurrence of `delimiter`, or after its first
@@ -114,101 +112,80 @@ fn split_text_once<'a>(text: &'a str, delimiter: &str) -> Option<(&'a str, &'a s
     text.split_once(delimiter)
 }
 
-pub(super) fn split_once_global() -> Value {
-    const PARAMS: Params = Params::new(&[
-        Param::of(FrostType::FLAT),
-        Param::of(FrostType::FLAT).named("delimiter"),
-    ]);
-    Value::checked_native("split_once", PARAMS, |_, args| {
-        let pieces = match content([&args[0], &args[1]]) {
+#[frost_fn(name = "split_once")]
+pub(super) fn split_once(#[frost(unnamed)] target: Flat, delimiter: Flat) -> Value {
+    let pieces =
+        match content([&target, &delimiter]) {
             Content::Text([text, delimiter]) => split_text_once(text, delimiter)
                 .map(|(before, after)| Value::array([before, after])),
             Content::Binary([bytes, delimiter]) => split_bytes_once(bytes, delimiter)
                 .map(|(before, after)| Value::array([before, after])),
         };
-        Ok(pieces.unwrap_or(Value::Null))
-    })
+    pieces.unwrap_or(Value::Null)
 }
 
-pub(super) fn lines_global() -> Value {
-    Value::checked_native("lines", ONE_STRING, |_, args| {
-        let text = args[0].as_str().expect("the argument is a String");
-        Ok(text.lines().map(Value::from).collect())
-    })
+#[frost_fn(name = "lines")]
+pub(super) fn lines(#[frost(unnamed)] text: FrostString) -> Value {
+    text.lines().map(Value::from).collect()
 }
 
-pub(super) fn join_global() -> Value {
-    const PARAMS: Params = Params::new(&[
-        Param::of(FrostType::ARRAY),
-        Param::of(FrostType::FLAT).named("separator"),
-    ]);
-    Value::checked_native("join", PARAMS, |_, args| {
-        let (Value::Array(elements), separator) = (&args[0], &args[1]) else {
-            unreachable!()
-        };
-        if let Some(bad) = elements
-            .iter()
-            .find(|element| !element.fits(FrostType::FLAT))
-        {
-            return Err(FrostError::from_string(format!(
-                "Function join requires Array of String or Bytes as argument 1, got Array containing {}",
-                bad.type_name()
-            )));
+#[frost_fn(name = "join")]
+pub(super) fn join(
+    #[frost(unnamed)] elements: FrostArray,
+    separator: Flat,
+) -> Result<Value, FrostError> {
+    if let Some(bad) = elements
+        .iter()
+        .find(|element| !element.fits(FrostType::FLAT))
+    {
+        return Err(FrostError::from_string(format!(
+            "Function join requires Array of String or Bytes as argument 1, got Array containing {}",
+            bad.type_name()
+        )));
+    }
+
+    let texts: Option<Vec<&str>> = elements.iter().map(Value::as_str).collect();
+    Ok(match (texts, &separator) {
+        (Some(texts), Flat::String(separator)) => texts.join(separator).into(),
+        _ => {
+            let pieces: Vec<&[u8]> = elements
+                .iter()
+                .map(|element| element.as_byte_slice().expect("the element is Flat"))
+                .collect();
+            pieces.join(separator.as_bytes()).into()
         }
-
-        let texts: Option<Vec<&str>> = elements.iter().map(Value::as_str).collect();
-        Ok(match (texts, separator.as_str()) {
-            (Some(texts), Some(separator)) => texts.join(separator).into(),
-            _ => {
-                let pieces: Vec<&[u8]> = elements
-                    .iter()
-                    .map(|element| element.as_byte_slice().expect("the element is Flat"))
-                    .collect();
-                let separator = separator.as_byte_slice().expect("the separator is Flat");
-                pieces.join(separator).into()
-            }
-        })
     })
 }
 
-pub(super) fn replace_global() -> Value {
-    const PARAMS: Params = Params::new(&[
-        Param::of(FrostType::FLAT),
-        Param::of(FrostType::FLAT).named("find"),
-        Param::of(FrostType::FLAT).named("replacement"),
-    ]);
-    Value::checked_native("replace", PARAMS, |_, args| {
-        // An empty `find` matches nothing, so the target comes back unchanged
-        // (though as Bytes, if the other arguments make the result Bytes).
-        Ok(match content([&args[0], &args[1], &args[2]]) {
-            Content::Text([text, "", _]) => Value::from(text),
-            Content::Text([text, find, replacement]) => text.replace(find, replacement).into(),
-            Content::Binary([bytes, [], _]) => Value::from(bytes),
-            Content::Binary([bytes, find, replacement]) => {
-                split_bytes(bytes, find).join(replacement).into()
-            }
-        })
-    })
+#[frost_fn(name = "replace")]
+pub(super) fn replace(#[frost(unnamed)] target: Flat, find: Flat, replacement: Flat) -> Value {
+    // An empty `find` matches nothing, so the target comes back unchanged
+    // (though as Bytes, if the other arguments make the result Bytes).
+    match content([&target, &find, &replacement]) {
+        Content::Text([text, "", _]) => Value::from(text),
+        Content::Text([text, find, replacement]) => text.replace(find, replacement).into(),
+        Content::Binary([bytes, [], _]) => Value::from(bytes),
+        Content::Binary([bytes, find, replacement]) => {
+            split_bytes(bytes, find).join(replacement).into()
+        }
+    }
 }
 
 /// A one-String global returning `op` applied to its argument.
 fn text_op(name: &'static str, op: fn(&str) -> Value) -> Value {
-    Value::checked_native(name, ONE_STRING, move |_, args| {
-        Ok(op(args[0].as_str().expect("the argument is a String")))
-    })
+    frost_closure!(name, move |#[frost(unnamed)] text: FrostString| op(&text))
 }
 
 /// A one-String global trimming its argument with `trim`, which must return a
 /// subslice of its input. An argument with nothing to trim is returned as is.
 fn trim_op(name: &'static str, trim: fn(&str) -> &str) -> Value {
-    Value::checked_native(name, ONE_STRING, move |_, args| {
-        let text = args[0].as_str().expect("the argument is a String");
-        let trimmed = trim(text);
-        Ok(if trimmed.len() == text.len() {
-            args[0].take()
+    frost_closure!(name, move |#[frost(unnamed)] text: FrostString| {
+        let trimmed = trim(&text);
+        if trimmed.len() == text.len() {
+            Value::String(text)
         } else {
             Value::from(trimmed)
-        })
+        }
     })
 }
 
@@ -232,39 +209,23 @@ pub(super) fn to_lower_global() -> Value {
     text_op("to_lower", |text| text.to_lowercase().into())
 }
 
-/// The spec shared by the two-Flat-argument searches.
-const HAYSTACK_AND_NEEDLE: Params =
-    Params::new(&[Param::of(FrostType::FLAT), Param::of(FrostType::FLAT)]);
-
-/// A search global answering `found(haystack, needle)` over the arguments' bytes.
-fn search(name: &'static str, found: fn(&[u8], &[u8]) -> bool) -> Value {
-    Value::checked_native(name, HAYSTACK_AND_NEEDLE, move |_, args| {
-        let [haystack, needle] =
-            [&args[0], &args[1]].map(|value| value.as_byte_slice().expect("the value is Flat"));
-        Ok(Value::Bool(found(haystack, needle)))
-    })
+#[frost_fn(name = "contains")]
+pub(super) fn contains(#[frost(unnamed)] haystack: Flat, #[frost(unnamed)] needle: Flat) -> bool {
+    match content([&haystack, &needle]) {
+        Content::Text([text, needle]) => text.contains(needle),
+        Content::Binary([bytes, needle]) => contains_bytes(bytes, needle),
+    }
 }
 
-pub(super) fn contains_global() -> Value {
-    Value::native("contains", HAYSTACK_AND_NEEDLE.arity(), |ctx, args| {
-        if let Value::Array(_) = args[0] {
-            return Err(FrostError::from_static(
-                "Function contains requires String or Bytes as argument 1, got Array \
-                 (use includes to search an Array)",
-            ));
-        }
-        ctx.check_args(args, &HAYSTACK_AND_NEEDLE)?;
-        Ok(Value::Bool(match content([&args[0], &args[1]]) {
-            Content::Text([text, needle]) => text.contains(needle),
-            Content::Binary([bytes, needle]) => contains_bytes(bytes, needle),
-        }))
-    })
+#[frost_fn(name = "starts_with")]
+pub(super) fn starts_with(
+    #[frost(unnamed)] haystack: Flat,
+    #[frost(unnamed)] needle: Flat,
+) -> bool {
+    haystack.as_bytes().starts_with(needle.as_bytes())
 }
 
-pub(super) fn starts_with_global() -> Value {
-    search("starts_with", <[u8]>::starts_with)
-}
-
-pub(super) fn ends_with_global() -> Value {
-    search("ends_with", <[u8]>::ends_with)
+#[frost_fn(name = "ends_with")]
+pub(super) fn ends_with(#[frost(unnamed)] haystack: Flat, #[frost(unnamed)] needle: Flat) -> bool {
+    haystack.as_bytes().ends_with(needle.as_bytes())
 }

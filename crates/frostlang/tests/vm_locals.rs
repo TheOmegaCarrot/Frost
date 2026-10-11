@@ -5,7 +5,7 @@ use std::sync::Arc;
 
 use common::{entry, fn_with_locals, func, run_fn};
 use frostlang::bytecode::{Bytecode, CompiledFunction, FormatVersion};
-use frostlang::{Arity, Value, Vm};
+use frostlang::{Arity, Value, Vm, frost_closure};
 
 // ============================================================
 // Local slots
@@ -88,9 +88,9 @@ fn a_consumed_slot_may_be_defined_and_read_again() {
 /// Store an Array in a local, then pass it, loaded with `load`, to a native
 /// that reports whether it holds the Array's only reference.
 fn passed_unshared(load: Bytecode) -> Value {
-    let probe = Value::native("probe", Arity::Exact(1), |_, args| {
-        let array = args[0].take().try_into_array().expect("an Array");
-        Ok(Value::Bool(array.try_into_vec().is_ok()))
+    let probe = frost_closure!("probe", |array: Value| {
+        let array = array.try_into_array().expect("an Array");
+        array.try_into_vec().is_ok()
     });
     let program = Arc::new(CompiledFunction {
         version: FormatVersion,

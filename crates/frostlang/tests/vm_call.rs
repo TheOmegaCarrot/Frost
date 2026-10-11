@@ -13,9 +13,8 @@ use crate::common;
 
 use common::{Pop, global_slot};
 use frostlang::bytecode::{Bytecode, CompiledFunction, FormatVersion, NameEntry};
-use frostlang::{
-    Arity, FrostArray, FrostError, FrostResult, NativeFunction, ProgramResult, Value, Vm,
-};
+use frostlang::native::Rest;
+use frostlang::{Arity, FrostArray, FrostError, ProgramResult, Value, Vm, frost_closure};
 
 use Bytecode::*;
 
@@ -167,14 +166,8 @@ fn call_preserves_argument_order() {
 
 #[test]
 fn call_spreads_into_a_native() {
-    // call(sum, [1, 2, 3]) -> 6 ; the native receives the spread args as a slice.
-    let sum = Value::NativeFunction(Arc::new(NativeFunction::new(
-        "sum",
-        Arity::AtLeast(0),
-        |_ctx, args: &mut [Value]| -> FrostResult {
-            Ok(Value::Int(args.iter().map(|v| v.as_int().unwrap()).sum()))
-        },
-    )));
+    // call(sum, [1, 2, 3]) -> 6 ; the native receives the spread args as its rest.
+    let sum = frost_closure!("sum", |ns: Rest<i64>| ns.0.iter().sum::<i64>());
     let r = run_main(
         vec![("f", sum)],
         vec![

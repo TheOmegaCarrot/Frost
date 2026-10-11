@@ -16,7 +16,8 @@
 mod ulids;
 mod uuids;
 
-use frostlang::{Extension, FrostType, Param, Params, Value};
+use frostlang::native::Flat;
+use frostlang::{Extension, Value};
 
 /// The `ext.uuid` extension.
 ///
@@ -50,19 +51,19 @@ pub fn extension() -> Extension {
     Extension::new(
         "uuid",
         Value::map([
-            ("v4", uuids::v4()),
-            ("v7", uuids::v7()),
-            ("to_bytes", uuids::to_bytes()),
-            ("to_string", uuids::to_string()),
-            ("version", uuids::version()),
-            ("timestamp", uuids::timestamp()),
+            ("v4", uuids::v4_frost()),
+            ("v7", uuids::v7_frost()),
+            ("to_bytes", uuids::to_bytes_frost()),
+            ("to_string", uuids::to_string_frost()),
+            ("version", uuids::version_frost()),
+            ("timestamp", uuids::timestamp_frost()),
             (
                 "ulid",
                 Value::map([
-                    ("new", ulids::new()),
-                    ("to_bytes", ulids::to_bytes()),
-                    ("to_string", ulids::to_string()),
-                    ("timestamp", ulids::timestamp()),
+                    ("new", ulids::new_frost()),
+                    ("to_bytes", ulids::to_bytes_frost()),
+                    ("to_string", ulids::to_string_frost()),
+                    ("timestamp", ulids::timestamp_frost()),
                 ]),
             ),
         ]),
@@ -70,29 +71,16 @@ pub fn extension() -> Extension {
     .expect("`uuid` is a valid extension name")
 }
 
-/// The spec of a function of no arguments.
-const NO_PARAMS: Params = Params::new(&[]);
-
-/// The spec of a function of an ID's text.
-const TEXT: Params = Params::new(&[Param::of(FrostType::STRING).named("text")]);
-
-/// The spec of a function of an ID's Bytes.
-const BYTES: Params = Params::new(&[Param::of(FrostType::BYTES).named("bytes")]);
-
-/// The spec of a function of an ID as text or Bytes.
-const ID: Params = Params::new(&[Param::of(FrostType::FLAT).named("id")]);
-
-/// The ID that `id`, type-checked as String or Bytes, holds: text read with
-/// `parse`, or exactly 16 Bytes read with `from_bytes`.
+/// The ID that `id` holds: text read with `parse`, or exactly 16 Bytes read with
+/// `from_bytes`.
 fn id_arg<T>(
-    id: &Value,
+    id: &Flat,
     parse: impl FnOnce(&str) -> Option<T>,
     from_bytes: impl FnOnce([u8; 16]) -> T,
 ) -> Option<T> {
     match id {
-        Value::String(text) => parse(text.as_str()),
-        Value::Bytes(bytes) => <[u8; 16]>::try_from(&bytes[..]).ok().map(from_bytes),
-        other => unreachable!("type-checked as String or Bytes, got {}", other.type_name()),
+        Flat::String(text) => parse(text.as_str()),
+        Flat::Bytes(bytes) => <[u8; 16]>::try_from(&bytes[..]).ok().map(from_bytes),
     }
 }
 

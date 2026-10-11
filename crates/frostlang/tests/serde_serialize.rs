@@ -5,7 +5,7 @@ use std::collections::HashMap;
 use serde::Serialize;
 
 use frostlang::bytecode::Bytecode;
-use frostlang::{Arity, FrostArray, FrostMap, MapKey, Value, to_value};
+use frostlang::{FrostArray, FrostMap, MapKey, Value, frost_closure, to_value};
 
 fn str_key(s: &str) -> MapKey {
     MapKey::from(s)
@@ -351,7 +351,7 @@ fn serialize_value_map() {
 /// Both kinds of Function value refuse a foreign serializer.
 #[test]
 fn serialize_function_errors() {
-    let native = Value::native("f", Arity::Exact(0), |_ctx, _args| Ok(Value::Null));
+    let native = frost_closure!("f", || Value::Null);
     let closure = Value::Closure(common::closure(vec![Bytecode::PushNull], vec![]));
 
     for (kind, function) in [("native", native), ("closure", closure)] {

@@ -17,7 +17,7 @@ use crate::common;
 
 use common::{Pop, global_slot as slot};
 use frostlang::bytecode::{Bytecode, CompiledFunction, FormatVersion, NameEntry};
-use frostlang::{Arity, FrostArray, FrostError, FrostOpaque, MapKey, NativeFunction, Value, Vm};
+use frostlang::{Arity, FrostArray, FrostError, FrostOpaque, MapKey, Value, Vm, frost_closure};
 
 use Bytecode::*;
 
@@ -112,11 +112,7 @@ fn exchange(cell: &Value, value: Value) -> Value {
 
 /// A throwaway Function value, which a cell may not hold.
 fn a_function() -> Value {
-    Value::NativeFunction(Arc::new(NativeFunction::new(
-        "noop",
-        Arity::Exact(0),
-        |_, _: &mut [Value]| Ok(Value::Null),
-    )))
+    frost_closure!("noop", || Value::Null)
 }
 
 /// An opaque host value owning heap data, also forbidden since a cell can't see
