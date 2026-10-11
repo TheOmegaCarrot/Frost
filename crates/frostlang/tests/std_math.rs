@@ -220,15 +220,15 @@ fn pow_with_a_float_or_a_negative_exponent_is_a_float() {
 fn pow_rejects_a_non_number_beside_an_int() {
     // The general argument checks are in `every_function_requires_numbers`.
     for (call, position, got) in [
-        ("math.pow('2', 3)", 1, "String"),
-        ("math.pow(null, 3)", 1, "Null"),
-        ("math.pow(2, '3')", 2, "String"),
-        ("math.pow(2, null)", 2, "Null"),
-        ("math.pow(2, x'03')", 2, "Bytes"),
+        ("math.pow('2', 3)", "argument 1 (base)", "String"),
+        ("math.pow(null, 3)", "argument 1 (base)", "Null"),
+        ("math.pow(2, '3')", "argument 2 (exponent)", "String"),
+        ("math.pow(2, null)", "argument 2 (exponent)", "Null"),
+        ("math.pow(2, x'03')", "argument 2 (exponent)", "Bytes"),
     ] {
         assert_raises(&[(
             call,
-            &format!("Function std.math.pow requires Numeric as argument {position}, got {got}"),
+            &format!("Function std.math.pow requires Numeric as {position}, got {got}"),
         )]);
     }
 }
@@ -553,15 +553,20 @@ fn every_function_requires_numbers() {
         )]);
         assert_arity(name, "1", &[0, 2]);
     }
-    for name in ["pow", "atan2", "min", "max"] {
+    for (name, first, second) in [
+        ("pow", "argument 1 (base)", "argument 2 (exponent)"),
+        ("atan2", "argument 1", "argument 2"),
+        ("min", "argument 1", "argument 2"),
+        ("max", "argument 1", "argument 2"),
+    ] {
         assert_raises(&[
             (
                 &format!("math.{name}(true, 1)"),
-                &format!("Function std.math.{name} requires Numeric as argument 1, got Bool"),
+                &format!("Function std.math.{name} requires Numeric as {first}, got Bool"),
             ),
             (
                 &format!("math.{name}(1, [1])"),
-                &format!("Function std.math.{name} requires Numeric as argument 2, got Array"),
+                &format!("Function std.math.{name} requires Numeric as {second}, got Array"),
             ),
         ]);
         assert_arity(name, "2", &[0, 1, 3]);

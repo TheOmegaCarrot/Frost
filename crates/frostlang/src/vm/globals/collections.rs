@@ -9,12 +9,19 @@ use crate::{
     NativeCtx, Value, ValueMap, frost_closure, frost_fn,
 };
 
-/// `n`, the argument at 1-based `position` of `function`, as a count of at least
-/// `minimum`.
-fn count_arg(function: &str, position: usize, n: i64, minimum: i64) -> Result<usize, FrostError> {
+/// `n`, the argument at 1-based `position` of `function`, whose parameter is
+/// named `name`, as a count of at least `minimum`.
+fn count_arg(
+    function: &str,
+    position: usize,
+    name: &str,
+    n: i64,
+    minimum: i64,
+) -> Result<usize, FrostError> {
     if n < minimum {
         return Err(FrostError::from_string(format!(
-            "Function {function} requires argument {position} to be at least {minimum}, got {n}"
+            "Function {function} requires argument {position} ({name}) \
+             to be at least {minimum}, got {n}"
         )));
     }
     Ok(usize::try_from(n).expect("a count at least its minimum is not negative"))
@@ -128,12 +135,9 @@ pub(super) fn from_entries(#[frost(unnamed)] entries: FrostArray) -> FrostResult
 }
 
 #[frost_fn]
-pub(super) fn dissoc(
-    #[frost(unnamed)] map: FrostMap,
-    #[frost(unnamed)] Rest(keys): Rest<MapKey>,
-) -> Value {
+pub(super) fn dissoc(#[frost(unnamed)] map: FrostMap, keys: Rest<MapKey>) -> Value {
     let mut map = map.into_map();
-    for key in &keys {
+    for key in &keys.0 {
         map.remove(key);
     }
     map.into()
@@ -179,15 +183,15 @@ pub(super) fn range(
 }
 
 #[frost_fn]
-pub(super) fn nulls(#[frost(unnamed)] count: i64) -> FrostResult {
-    let count = count_arg("nulls", 1, count, 0)?;
+pub(super) fn nulls(count: i64) -> FrostResult {
+    let count = count_arg("nulls", 1, "count", count, 0)?;
     check_length("nulls", size_of::<Value>(), count)?;
     Ok(vec![Value::Null; count].into())
 }
 
 #[frost_fn]
-pub(super) fn repeat(#[frost(unnamed)] value: Value, #[frost(unnamed)] count: i64) -> FrostResult {
-    let count = count_arg("repeat", 2, count, 0)?;
+pub(super) fn repeat(#[frost(unnamed)] value: Value, count: i64) -> FrostResult {
+    let count = count_arg("repeat", 2, "count", count, 0)?;
     check_length("repeat", size_of::<Value>(), count)?;
     Ok(vec![value; count].into())
 }
@@ -195,9 +199,9 @@ pub(super) fn repeat(#[frost(unnamed)] value: Value, #[frost(unnamed)] count: i6
 #[frost_fn]
 pub(super) fn tile(
     #[frost(unnamed, types = Flat | Array)] sequence: Value,
-    #[frost(unnamed)] count: i64,
+    count: i64,
 ) -> FrostResult {
-    let count = count_arg("tile", 2, count, 0)?;
+    let count = count_arg("tile", 2, "count", count, 0)?;
     let size = match &sequence {
         Value::String(text) => text.len(),
         Value::Bytes(octets) => octets.len(),
@@ -274,27 +278,27 @@ fn any_answers(
 pub(super) fn any(
     #[frost(ctx)] ctx: &mut NativeCtx<'_>,
     #[frost(unnamed)] array: FrostArray,
-    #[frost(unnamed)] function: Optional<Function>,
+    predicate: Optional<Function>,
 ) -> Result<bool, FrostError> {
-    any_answers(ctx, &array, function.0.as_ref(), true)
+    any_answers(ctx, &array, predicate.0.as_ref(), true)
 }
 
 #[frost_fn]
 pub(super) fn all(
     #[frost(ctx)] ctx: &mut NativeCtx<'_>,
     #[frost(unnamed)] array: FrostArray,
-    #[frost(unnamed)] function: Optional<Function>,
+    predicate: Optional<Function>,
 ) -> Result<bool, FrostError> {
-    Ok(!any_answers(ctx, &array, function.0.as_ref(), false)?)
+    Ok(!any_answers(ctx, &array, predicate.0.as_ref(), false)?)
 }
 
 #[frost_fn]
 pub(super) fn none(
     #[frost(ctx)] ctx: &mut NativeCtx<'_>,
     #[frost(unnamed)] array: FrostArray,
-    #[frost(unnamed)] function: Optional<Function>,
+    predicate: Optional<Function>,
 ) -> Result<bool, FrostError> {
-    Ok(!any_answers(ctx, &array, function.0.as_ref(), true)?)
+    Ok(!any_answers(ctx, &array, predicate.0.as_ref(), true)?)
 }
 
 #[frost_fn]
@@ -444,25 +448,23 @@ pub(super) fn slice(
 #[frost_fn]
 pub(super) fn stride(
     #[frost(unnamed, types = Flat | Array)] sequence: Value,
-    #[frost(unnamed)] step: i64,
+    step: i64,
 ) -> FrostResult {
-    let step = count_arg("stride", 2, step, 1)?;
+    let step = count_arg("stride", 2, "step", step, 1)?;
     Ok(Sequence::of(sequence).stride(step))
 }
 
-/// A `function(sequence, n)` global over the first or last `n` elements, `n`
-/// clamped to the length. `range` maps the length and the clamped `n` to the
-/// range of elements to keep.
+/// A `function(sequence, count)` global over the first or last `count`
+/// elements, `count` clamped to the length. `range` maps the length and the
+/// clamped `count` to the range of elements to keep.
 fn end_slice(function: &'static str, range: fn(usize, usize) -> (usize, usize)) -> Value {
     frost_closure!(
         function,
-        move |#[frost(unnamed, types = Flat | Array)] sequence: Value,
-              #[frost(unnamed)] n: i64|
-              -> FrostResult {
-            let n = count_arg(function, 2, n, 0)?;
+        move |#[frost(unnamed, types = Flat | Array)] sequence: Value, count: i64| -> FrostResult {
+            let count = count_arg(function, 2, "count", count, 0)?;
             let sequence = Sequence::of(sequence);
             let len = sequence.len();
-            let (start, end) = range(len, n.min(len));
+            let (start, end) = range(len, count.min(len));
             Ok(sequence.range(start, end))
         }
     )
@@ -485,20 +487,14 @@ pub(super) fn drop_tail_global() -> Value {
 }
 
 #[frost_fn]
-pub(super) fn slide(
-    #[frost(unnamed)] array: FrostArray,
-    #[frost(unnamed)] size: i64,
-) -> FrostResult {
-    let size = count_arg("slide", 2, size, 1)?;
+pub(super) fn slide(#[frost(unnamed)] array: FrostArray, size: i64) -> FrostResult {
+    let size = count_arg("slide", 2, "size", size, 1)?;
     Ok(array.as_slice().windows(size).map(Value::from).collect())
 }
 
 #[frost_fn]
-pub(super) fn chunk(
-    #[frost(unnamed)] array: FrostArray,
-    #[frost(unnamed)] size: i64,
-) -> FrostResult {
-    let size = count_arg("chunk", 2, size, 1)?;
+pub(super) fn chunk(#[frost(unnamed)] array: FrostArray, size: i64) -> FrostResult {
+    let size = count_arg("chunk", 2, "size", size, 1)?;
     Ok(array.as_slice().chunks(size).map(Value::from).collect())
 }
 
@@ -536,7 +532,7 @@ fn leading_matches(
 pub(super) fn take_while(
     #[frost(ctx)] ctx: &mut NativeCtx<'_>,
     #[frost(unnamed)] array: FrostArray,
-    #[frost(unnamed)] predicate: Function,
+    predicate: Function,
 ) -> FrostResult {
     let mut elements = array.into_vec();
     let kept = leading_matches(ctx, &elements, &predicate)?;
@@ -548,7 +544,7 @@ pub(super) fn take_while(
 pub(super) fn drop_while(
     #[frost(ctx)] ctx: &mut NativeCtx<'_>,
     #[frost(unnamed)] array: FrostArray,
-    #[frost(unnamed)] predicate: Function,
+    predicate: Function,
 ) -> FrostResult {
     let mut elements = array.into_vec();
     let dropped = leading_matches(ctx, &elements, &predicate)?;
@@ -560,7 +556,7 @@ pub(super) fn drop_while(
 pub(super) fn chunk_by(
     #[frost(ctx)] ctx: &mut NativeCtx<'_>,
     #[frost(unnamed)] array: FrostArray,
-    #[frost(unnamed)] same_chunk: Function,
+    predicate: Function,
 ) -> FrostResult {
     let mut chunks: Vec<Vec<Value>> = Vec::new();
     for element in array.into_vec() {
@@ -568,7 +564,7 @@ pub(super) fn chunk_by(
         let joins = match chunks.last() {
             Some(chunk) => {
                 let previous = chunk.last().expect("a chunk is never empty");
-                ctx.invoke_ref(&same_chunk, [previous, &element])?
+                ctx.invoke_ref(&predicate, [previous, &element])?
                     .is_truthy()
             }
             None => false,
@@ -595,13 +591,10 @@ fn flatten_into(out: &mut Vec<Value>, elements: Vec<Value>, depth: Option<usize>
 }
 
 #[frost_fn]
-pub(super) fn flatten(
-    #[frost(unnamed)] array: FrostArray,
-    #[frost(unnamed)] depth: Optional<i64>,
-) -> FrostResult {
+pub(super) fn flatten(#[frost(unnamed)] array: FrostArray, depth: Optional<i64>) -> FrostResult {
     let depth = depth
         .0
-        .map(|depth| count_arg("flatten", 2, depth, 0))
+        .map(|depth| count_arg("flatten", 2, "depth", depth, 0))
         .transpose()?;
     let mut out = Vec::new();
     flatten_into(&mut out, array.into_vec(), depth);
@@ -815,7 +808,7 @@ fn filter_structure(
 pub(super) fn select(
     #[frost(ctx)] ctx: &mut NativeCtx<'_>,
     #[frost(unnamed)] structure: Structured,
-    #[frost(unnamed)] predicate: Function,
+    predicate: Function,
 ) -> FrostResult {
     filter_structure(ctx, structure, &predicate, true)
 }
@@ -824,7 +817,7 @@ pub(super) fn select(
 pub(super) fn reject(
     #[frost(ctx)] ctx: &mut NativeCtx<'_>,
     #[frost(unnamed)] structure: Structured,
-    #[frost(unnamed)] predicate: Function,
+    predicate: Function,
 ) -> FrostResult {
     filter_structure(ctx, structure, &predicate, false)
 }
@@ -1084,7 +1077,7 @@ pub(super) fn unique_by(
 pub(super) fn group_by(
     #[frost(ctx)] ctx: &mut NativeCtx<'_>,
     #[frost(unnamed)] array: FrostArray,
-    #[frost(unnamed)] projection: Function,
+    projection: Function,
 ) -> FrostResult {
     let mut groups: BTreeMap<MapKey, Vec<Value>> = BTreeMap::new();
     for element in array.into_vec() {
@@ -1101,7 +1094,7 @@ pub(super) fn group_by(
 pub(super) fn count_by(
     #[frost(ctx)] ctx: &mut NativeCtx<'_>,
     #[frost(unnamed)] array: FrostArray,
-    #[frost(unnamed)] projection: Function,
+    projection: Function,
 ) -> FrostResult {
     let mut counts: BTreeMap<MapKey, i64> = BTreeMap::new();
     for element in &array {
@@ -1137,7 +1130,7 @@ pub(super) fn scan(
 pub(super) fn partition(
     #[frost(ctx)] ctx: &mut NativeCtx<'_>,
     #[frost(unnamed)] array: FrostArray,
-    #[frost(unnamed)] predicate: Function,
+    predicate: Function,
 ) -> FrostResult {
     let (mut pass, mut fail) = (Vec::new(), Vec::new());
     for element in array.into_vec() {

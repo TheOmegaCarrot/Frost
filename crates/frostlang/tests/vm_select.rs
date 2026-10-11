@@ -331,7 +331,7 @@ fn second_argument_must_be_a_function() {
     let err = select(arr(vec![Value::Int(1)]), Value::Int(2)).unwrap_err();
     assert_eq!(
         err.message(),
-        "Function select requires Function as argument 2, got Int"
+        "Function select requires Function as argument 2 (predicate), got Int"
     );
 }
 

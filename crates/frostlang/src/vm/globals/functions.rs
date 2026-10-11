@@ -81,7 +81,7 @@ fn call_type_check() -> Value {
 pub(super) fn try_call(
     #[frost(ctx)] ctx: &mut NativeCtx<'_>,
     #[frost(unnamed)] function: Function,
-    #[frost(unnamed)] args: Optional<FrostArray>,
+    args: Optional<FrostArray>,
 ) -> FrostResult {
     let call_args = args.0.unwrap_or_else(FrostArray::empty);
 

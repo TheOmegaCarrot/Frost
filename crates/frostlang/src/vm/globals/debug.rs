@@ -7,10 +7,7 @@ use crate::{FrostError, Value, frost_fn};
 /// A String `error` is raised as `Failed assertion: {error}`, any other value as
 /// is, and no `error` as `Failed assertion`.
 #[frost_fn]
-pub(super) fn assert(
-    #[frost(unnamed)] condition: Value,
-    #[frost(unnamed)] error: Optional<Value>,
-) -> Result<Value, FrostError> {
+pub(super) fn assert(condition: Value, error: Optional<Value>) -> Result<Value, FrostError> {
     if condition.is_truthy() {
         return Ok(condition);
     }

@@ -104,7 +104,7 @@ fn count_counts_occurrences_that_do_not_overlap() {
     for needle in ["''", "x''"] {
         assert_raises(&[(
             &format!("str.count('abc', {needle})"),
-            "Function std.string.count requires argument 2 to be non-empty",
+            "Function std.string.count requires argument 2 (needle) to be non-empty",
         )]);
     }
 }
@@ -132,7 +132,8 @@ fn searches_check_their_arguments() {
             (
                 &format!("str.{function}('a', ['a'])"),
                 &format!(
-                    "Function std.string.{function} requires String or Bytes as argument 2, got Array"
+                    "Function std.string.{function} requires String or Bytes as argument 2 (needle), \
+                     got Array"
                 ),
             ),
         ]);
@@ -731,31 +732,31 @@ fn stream_functions_check_their_arguments() {
         ),
         (
             "str.reader('a').read_bytes(-1)",
-            "Function reader.read_bytes requires argument 1 to be at least 0, got -1",
+            "Function reader.read_bytes requires argument 1 (count) to be at least 0, got -1",
         ),
         (
             "str.reader('a').read_bytes('1')",
-            "Function reader.read_bytes requires Int as argument 1, got String",
+            "Function reader.read_bytes requires Int as argument 1 (count), got String",
         ),
         (
             "str.reader('a').read_bytes(1.0)",
-            "Function reader.read_bytes requires Int as argument 1, got Float",
+            "Function reader.read_bytes requires Int as argument 1 (count), got Float",
         ),
         (
             "str.reader('a').seek('1')",
-            "Function reader.seek requires Int as argument 1, got String",
+            "Function reader.seek requires Int as argument 1 (position), got String",
         ),
         (
             "str.writer().seek('1')",
-            "Function writer.seek requires Int as argument 1, got String",
+            "Function writer.seek requires Int as argument 1 (position), got String",
         ),
         (
             "str.reader('a').seek(-1)",
-            "Function reader.seek requires argument 1 to be at least 0, got -1",
+            "Function reader.seek requires argument 1 (position) to be at least 0, got -1",
         ),
         (
             "str.writer().seek(-1)",
-            "Function writer.seek requires argument 1 to be at least 0, got -1",
+            "Function writer.seek requires argument 1 (position) to be at least 0, got -1",
         ),
     ]);
     assert_arity("reader", 1, &[0, 2]);

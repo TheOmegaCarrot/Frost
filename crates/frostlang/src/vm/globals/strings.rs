@@ -218,7 +218,7 @@ pub(super) fn to_lower_global() -> Value {
 pub(super) fn contains(
     #[frost(ctx)] ctx: &mut NativeCtx<'_>,
     #[frost(unnamed, types = Flat | Array)] haystack: Value,
-    #[frost(unnamed)] needle: Value,
+    needle: Value,
 ) -> Result<bool, FrostError> {
     if let Value::Array(array) = &haystack {
         return Ok(array.iter().any(|element| *element == needle));
@@ -233,7 +233,8 @@ pub(super) fn contains(
                 Flat::Bytes(_) => "Bytes",
             };
             return Err(FrostError::from_string(format!(
-                "Function {} requires String or Bytes as argument 2 for {searched}, got {}",
+                "Function {} requires String or Bytes as argument 2 (needle) for {searched}, \
+                 got {}",
                 ctx.name(),
                 other.type_name()
             )));
@@ -246,14 +247,11 @@ pub(super) fn contains(
 }
 
 #[frost_fn]
-pub(super) fn starts_with(
-    #[frost(unnamed)] haystack: Flat,
-    #[frost(unnamed)] needle: Flat,
-) -> bool {
-    haystack.as_bytes().starts_with(needle.as_bytes())
+pub(super) fn starts_with(#[frost(unnamed)] haystack: Flat, prefix: Flat) -> bool {
+    haystack.as_bytes().starts_with(prefix.as_bytes())
 }
 
 #[frost_fn]
-pub(super) fn ends_with(#[frost(unnamed)] haystack: Flat, #[frost(unnamed)] needle: Flat) -> bool {
-    haystack.as_bytes().ends_with(needle.as_bytes())
+pub(super) fn ends_with(#[frost(unnamed)] haystack: Flat, suffix: Flat) -> bool {
+    haystack.as_bytes().ends_with(suffix.as_bytes())
 }

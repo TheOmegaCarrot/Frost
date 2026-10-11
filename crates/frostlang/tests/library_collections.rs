@@ -262,8 +262,13 @@ fn dissoc_checks_its_arguments() {
         "dissoc",
         &[
             ("dissoc([1], 0)", "Map", "argument 1", "Array"),
-            ("dissoc({}, null)", MAP_KEY, "argument 2", "Null"),
-            ("dissoc({}, 'a', [1])", MAP_KEY, "argument 3", "Array"),
+            ("dissoc({}, null)", MAP_KEY, "argument 2 (keys)", "Null"),
+            (
+                "dissoc({}, 'a', [1])",
+                MAP_KEY,
+                "argument 3 (keys)",
+                "Array",
+            ),
         ],
     );
     assert_arity("dissoc", "at least 1", &[0]);
@@ -380,7 +385,7 @@ fn nulls_makes_an_array_of_nulls() {
     assert_raises(&[
         (
             "nulls(-1)",
-            "Function nulls requires argument 1 to be at least 0, got -1",
+            "Function nulls requires argument 1 (count) to be at least 0, got -1",
         ),
         // A length past what memory can address is an error, not a crash.
         (
@@ -388,7 +393,10 @@ fn nulls_makes_an_array_of_nulls() {
             "Function nulls cannot make a sequence that long",
         ),
     ]);
-    assert_type_errors("nulls", &[("nulls('3')", "Int", "argument 1", "String")]);
+    assert_type_errors(
+        "nulls",
+        &[("nulls('3')", "Int", "argument 1 (count)", "String")],
+    );
     assert_arity("nulls", "1", &[0, 2]);
 }
 
@@ -421,7 +429,7 @@ fn repeat_checks_its_arguments() {
     assert_raises(&[
         (
             "repeat(0, -1)",
-            "Function repeat requires argument 2 to be at least 0, got -1",
+            "Function repeat requires argument 2 (count) to be at least 0, got -1",
         ),
         // A length past what memory can address is an error, not a crash.
         (
@@ -432,9 +440,9 @@ fn repeat_checks_its_arguments() {
     assert_type_errors(
         "repeat",
         &[
-            ("repeat(0, '3')", "Int", "argument 2", "String"),
-            ("repeat(0, 3.0)", "Int", "argument 2", "Float"),
-            ("repeat(0, null)", "Int", "argument 2", "Null"),
+            ("repeat(0, '3')", "Int", "argument 2 (count)", "String"),
+            ("repeat(0, 3.0)", "Int", "argument 2 (count)", "Float"),
+            ("repeat(0, null)", "Int", "argument 2 (count)", "Null"),
         ],
     );
     assert_arity("repeat", "2", &[0, 1, 3]);
@@ -485,7 +493,7 @@ fn tile_checks_its_arguments() {
     assert_raises(&[
         (
             "tile('ab', -1)",
-            "Function tile requires argument 2 to be at least 0, got -1",
+            "Function tile requires argument 2 (count) to be at least 0, got -1",
         ),
         // A length past what memory can address is an error, not a crash.
         (
@@ -511,8 +519,8 @@ fn tile_checks_its_arguments() {
         &[
             ("tile({a: 1}, 2)", sequence, "argument 1", "Map"),
             ("tile(5, 2)", sequence, "argument 1", "Int"),
-            ("tile('a', 2.0)", "Int", "argument 2", "Float"),
-            ("tile('a', null)", "Int", "argument 2", "Null"),
+            ("tile('a', 2.0)", "Int", "argument 2 (count)", "Float"),
+            ("tile('a', null)", "Int", "argument 2 (count)", "Null"),
         ],
     );
     assert_arity("tile", "2", &[0, 1, 3]);
@@ -700,7 +708,7 @@ fn quantifiers_check_their_arguments() {
                 (
                     &format!("{function}([1], 1)"),
                     "Function",
-                    "argument 2",
+                    "argument 2 (predicate)",
                     "Int",
                 ),
             ],
@@ -938,7 +946,7 @@ fn take_drop_tail_and_drop_tail_check_their_arguments() {
     for function in ["take", "drop", "tail", "drop_tail"] {
         assert_raises(&[(
             &format!("{function}([1], -1)"),
-            &format!("Function {function} requires argument 2 to be at least 0, got -1"),
+            &format!("Function {function} requires argument 2 (count) to be at least 0, got -1"),
         )]);
         assert_type_errors(
             function,
@@ -952,13 +960,13 @@ fn take_drop_tail_and_drop_tail_check_their_arguments() {
                 (
                     &format!("{function}([1], 1.0)"),
                     "Int",
-                    "argument 2",
+                    "argument 2 (count)",
                     "Float",
                 ),
                 (
                     &format!("{function}([1], null)"),
                     "Int",
-                    "argument 2",
+                    "argument 2 (count)",
                     "Null",
                 ),
             ],
@@ -987,14 +995,14 @@ fn stride_checks_its_arguments() {
     for step in ["0", "-1"] {
         assert_raises(&[(
             &format!("stride([1], {step})"),
-            &format!("Function stride requires argument 2 to be at least 1, got {step}"),
+            &format!("Function stride requires argument 2 (step) to be at least 1, got {step}"),
         )]);
     }
     assert_type_errors(
         "stride",
         &[
             ("stride({}, 1)", SEQUENCE, "argument 1", "Map"),
-            ("stride([1], 1.0)", "Int", "argument 2", "Float"),
+            ("stride([1], 1.0)", "Int", "argument 2 (step)", "Float"),
         ],
     );
     assert_arity("stride", "2", &[0, 1, 3]);
@@ -1029,11 +1037,11 @@ fn slide_and_chunk_check_their_arguments() {
         assert_raises(&[
             (
                 &format!("{function}([1], 0)"),
-                &format!("Function {function} requires argument 2 to be at least 1, got 0"),
+                &format!("Function {function} requires argument 2 (size) to be at least 1, got 0"),
             ),
             (
                 &format!("{function}([1], -1)"),
-                &format!("Function {function} requires argument 2 to be at least 1, got -1"),
+                &format!("Function {function} requires argument 2 (size) to be at least 1, got -1"),
             ),
         ]);
         assert_type_errors(
@@ -1048,7 +1056,7 @@ fn slide_and_chunk_check_their_arguments() {
                 (
                     &format!("{function}([1], 1.0)"),
                     "Int",
-                    "argument 2",
+                    "argument 2 (size)",
                     "Float",
                 ),
             ],
@@ -1145,7 +1153,7 @@ fn take_while_and_drop_while_check_their_arguments() {
                 (
                     &format!("{function}([1], 1)"),
                     "Function",
-                    "argument 2",
+                    "argument 2 (predicate)",
                     "Int",
                 ),
             ],
@@ -1181,13 +1189,13 @@ fn flatten_flattens_to_a_depth() {
 fn flatten_checks_its_arguments() {
     assert_raises(&[(
         "flatten([1], -1)",
-        "Function flatten requires argument 2 to be at least 0, got -1",
+        "Function flatten requires argument 2 (depth) to be at least 0, got -1",
     )]);
     assert_type_errors(
         "flatten",
         &[
             ("flatten({})", "Array", "argument 1", "Map"),
-            ("flatten([1], 1.0)", "Int", "argument 2", "Float"),
+            ("flatten([1], 1.0)", "Int", "argument 2 (depth)", "Float"),
         ],
     );
     assert_arity("flatten", "between 1 and 2", &[0, 3]);
@@ -1259,7 +1267,12 @@ fn reject_checks_its_arguments() {
         "reject",
         &[
             ("reject(5, id)", "Structured", "argument 1", "Int"),
-            ("reject([1], 1)", "Function", "argument 2", "Int"),
+            (
+                "reject([1], 1)",
+                "Function",
+                "argument 2 (predicate)",
+                "Int",
+            ),
         ],
     );
     assert_arity("reject", "2", &[0, 1, 3]);
@@ -2022,7 +2035,7 @@ fn group_by_and_count_by_check_their_arguments() {
                 (
                     &format!("{function}([1], 1)"),
                     "Function",
-                    "argument 2",
+                    "argument 2 (projection)",
                     "Int",
                 ),
             ],
@@ -2076,7 +2089,12 @@ fn partition_splits_by_a_predicate() {
         "partition",
         &[
             ("partition({}, id)", "Array", "argument 1", "Map"),
-            ("partition([1], 1)", "Function", "argument 2", "Int"),
+            (
+                "partition([1], 1)",
+                "Function",
+                "argument 2 (predicate)",
+                "Int",
+            ),
         ],
     );
     assert_arity("partition", "2", &[0, 1, 3]);
@@ -2172,7 +2190,12 @@ fn chunk_by_checks_its_arguments() {
         "chunk_by",
         &[
             ("chunk_by({}, id)", "Array", "argument 1", "Map"),
-            ("chunk_by([1], 1)", "Function", "argument 2", "Int"),
+            (
+                "chunk_by([1], 1)",
+                "Function",
+                "argument 2 (predicate)",
+                "Int",
+            ),
         ],
     );
     assert_arity("chunk_by", "2", &[0, 1, 3]);
@@ -2458,7 +2481,12 @@ fn select_checks_its_arguments() {
         "select",
         &[
             ("select(5, id)", "Structured", "argument 1", "Int"),
-            ("select([1], 1)", "Function", "argument 2", "Int"),
+            (
+                "select([1], 1)",
+                "Function",
+                "argument 2 (predicate)",
+                "Int",
+            ),
         ],
     );
     assert_arity("select", "2", &[0, 1, 3]);

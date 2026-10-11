@@ -162,18 +162,14 @@ impl Reader {
         text(ctx.name(), rest)
     }
 
-    fn read_bytes(
-        &mut self,
-        #[frost(ctx)] ctx: &NativeCtx<'_>,
-        #[frost(unnamed)] n: u64,
-    ) -> FrostResult {
+    fn read_bytes(&mut self, #[frost(ctx)] ctx: &NativeCtx<'_>, count: u64) -> FrostResult {
         let bytes = self.with_source(ctx, |source| {
             let mut bytes = Vec::new();
-            source.take(n).read_to_end(&mut bytes)?;
+            source.take(count).read_to_end(&mut bytes)?;
             Ok(bytes)
         })?;
         // Nothing left to read is Null; a count of 0 reads nothing, at no end.
-        Ok(if bytes.is_empty() && n > 0 {
+        Ok(if bytes.is_empty() && count > 0 {
             Value::Null
         } else {
             Value::from(bytes)
@@ -197,11 +193,7 @@ impl Reader {
         Ok(position_value(position))
     }
 
-    fn seek(
-        &mut self,
-        #[frost(ctx)] ctx: &NativeCtx<'_>,
-        #[frost(unnamed)] position: u64,
-    ) -> Result<(), FrostError> {
+    fn seek(&mut self, #[frost(ctx)] ctx: &NativeCtx<'_>, position: u64) -> Result<(), FrostError> {
         self.with_source(ctx, |source| {
             seekable(source.seekable()).seek(SeekFrom::Start(position))
         })?;
@@ -376,11 +368,7 @@ impl Writer {
         Ok(position_value(position))
     }
 
-    fn seek(
-        &mut self,
-        #[frost(ctx)] ctx: &NativeCtx<'_>,
-        #[frost(unnamed)] position: u64,
-    ) -> Result<(), FrostError> {
+    fn seek(&mut self, #[frost(ctx)] ctx: &NativeCtx<'_>, position: u64) -> Result<(), FrostError> {
         self.with_sink(ctx, |sink| {
             seekable(sink.seekable()).seek(SeekFrom::Start(position))
         })?;

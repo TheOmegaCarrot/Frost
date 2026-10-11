@@ -99,36 +99,34 @@ fn find_bytes(haystack: &[u8], needle: &[u8], occurrence: Occurrence) -> Option<
 }
 
 fn index_of(name: &'static str, occurrence: Occurrence) -> Value {
-    frost_closure!(
-        name,
-        move |#[frost(unnamed)] haystack: Flat, #[frost(unnamed)] needle: Flat| {
-            let index = match (&haystack, &needle) {
-                (Flat::String(text), Flat::String(needle)) => {
-                    let byte = match occurrence {
-                        First => text.find(&**needle),
-                        Last => text.rfind(&**needle),
-                    };
-                    byte.map(|byte| text[..byte].chars().count())
-                }
-                _ => find_bytes(haystack.as_bytes(), needle.as_bytes(), occurrence),
-            };
-            index.map_or(Value::Null, |index| {
-                Value::Int(i64::try_from(index).expect("an index fits in an Int"))
-            })
-        }
-    )
+    frost_closure!(name, move |#[frost(unnamed)] haystack: Flat,
+                               needle: Flat| {
+        let index = match (&haystack, &needle) {
+            (Flat::String(text), Flat::String(needle)) => {
+                let byte = match occurrence {
+                    First => text.find(&**needle),
+                    Last => text.rfind(&**needle),
+                };
+                byte.map(|byte| text[..byte].chars().count())
+            }
+            _ => find_bytes(haystack.as_bytes(), needle.as_bytes(), occurrence),
+        };
+        index.map_or(Value::Null, |index| {
+            Value::Int(i64::try_from(index).expect("an index fits in an Int"))
+        })
+    })
 }
 
 #[frost_fn]
 fn count(
     #[frost(ctx)] ctx: &mut NativeCtx<'_>,
     #[frost(unnamed)] haystack: Flat,
-    #[frost(unnamed)] needle: Flat,
+    needle: Flat,
 ) -> FrostResult {
     let (haystack, needle) = (haystack.as_bytes(), needle.as_bytes());
     if needle.is_empty() {
         return Err(FrostError::from_string(format!(
-            "Function {} requires argument 2 to be non-empty",
+            "Function {} requires argument 2 (needle) to be non-empty",
             ctx.name()
         )));
     }

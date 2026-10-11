@@ -1399,8 +1399,11 @@ fn file_stream_members_check_their_arguments() {
         ("w", "fs.open_write(fs.concat(dir, 'out'))", "writer"),
     ] {
         for (argument, problem) in [
-            ("'0'", "requires Int as argument 1, got String"),
-            ("-1", "requires argument 1 to be at least 0, got -1"),
+            ("'0'", "requires Int as argument 1 (position), got String"),
+            (
+                "-1",
+                "requires argument 1 (position) to be at least 0, got -1",
+            ),
         ] {
             let source = format!(
                 r"

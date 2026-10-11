@@ -119,11 +119,7 @@ fn abs(#[frost(ctx)] ctx: &mut NativeCtx<'_>, #[frost(unnamed)] x: Numeric) -> F
 
 /// `pow`: an Int of an Int base and a non-negative Int exponent, else a Float.
 #[frost_fn]
-fn pow(
-    #[frost(ctx)] ctx: &mut NativeCtx<'_>,
-    #[frost(unnamed)] base: Numeric,
-    #[frost(unnamed)] exponent: Numeric,
-) -> FrostResult {
+fn pow(#[frost(ctx)] ctx: &mut NativeCtx<'_>, base: Numeric, exponent: Numeric) -> FrostResult {
     let name = ctx.name();
     match (base, exponent) {
         (Numeric::Int(base), Numeric::Int(exponent)) if exponent >= 0 => {

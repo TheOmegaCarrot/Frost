@@ -786,7 +786,7 @@ fn contains_checks_its_argument_types() {
         assert_eq!(
             raises(source),
             format!(
-                "Function contains requires String or Bytes as argument 2 for {searched}, \
+                "Function contains requires String or Bytes as argument 2 (needle) for {searched}, \
                  got {got}"
             ),
             "{source:?}"
@@ -796,7 +796,10 @@ fn contains_checks_its_argument_types() {
 
 #[test]
 fn starts_with_and_ends_with_check_their_argument_types() {
-    for function in ["starts_with", "ends_with"] {
+    for (function, affix) in [
+        ("starts_with", "argument 2 (prefix)"),
+        ("ends_with", "argument 2 (suffix)"),
+    ] {
         assert_rejects_non_flat(
             function,
             &[
@@ -804,9 +807,9 @@ fn starts_with_and_ends_with_check_their_argument_types() {
                 (&format!("{function}(null, 'a')"), "argument 1", "Null"),
                 (&format!("{function}({{a: 1}}, 'a')"), "argument 1", "Map"),
                 (&format!("{function}(['a'], 'a')"), "argument 1", "Array"),
-                (&format!("{function}('a', 1)"), "argument 2", "Int"),
-                (&format!("{function}('a', null)"), "argument 2", "Null"),
-                (&format!("{function}('a', ['a'])"), "argument 2", "Array"),
+                (&format!("{function}('a', 1)"), affix, "Int"),
+                (&format!("{function}('a', null)"), affix, "Null"),
+                (&format!("{function}('a', ['a'])"), affix, "Array"),
             ],
         );
     }

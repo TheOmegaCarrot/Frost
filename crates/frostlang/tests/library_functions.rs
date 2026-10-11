@@ -182,15 +182,15 @@ fn try_call_raises_its_own_argument_errors() {
         ),
         (
             "try_call(plus, 1)",
-            "Function try_call requires Array as argument 2, got Int",
+            "Function try_call requires Array as argument 2 (args), got Int",
         ),
         (
             "try_call(plus, null)",
-            "Function try_call requires Array as argument 2, got Null",
+            "Function try_call requires Array as argument 2 (args), got Null",
         ),
         (
             "try_call(plus, {a: 1})",
-            "Function try_call requires Array as argument 2, got Map",
+            "Function try_call requires Array as argument 2 (args), got Map",
         ),
     ]);
 }
