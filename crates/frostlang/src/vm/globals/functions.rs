@@ -4,6 +4,7 @@ use std::sync::Arc;
 
 use crate::bytecode::{Bytecode, CompiledFunction, FormatVersion};
 use crate::core::FrostResult;
+use crate::native::Function;
 use crate::{Arity, Closure, FrostArray, FrostType, MapKey, NativeCtx, Param, Params, Value};
 
 /// `call(f)` / `call(f, args)`: invoke `f`, spreading the elements of `args` (or
@@ -85,7 +86,7 @@ pub(super) fn try_call_global() -> Value {
 fn try_call(mut ctx: NativeCtx<'_>, args: &mut [Value]) -> FrostResult {
     // Preflight type-checking guarantees the first argument is a Function,
     // and the second is an Array (if present).
-    let function = args[0].take();
+    let function = Function::try_from(args[0].take())?;
     let call_args = match args.get_mut(1).map(Value::take) {
         Some(Value::Array(arr)) => arr,
         None => FrostArray::empty(),
@@ -137,7 +138,7 @@ pub(super) fn and_then_global() -> Value {
         let value = args[0].take();
         match value {
             Value::Null => Ok(Value::Null),
-            _ => ctx.invoke(&args[1], [value]),
+            _ => ctx.invoke(&Function::try_from(args[1].take())?, [value]),
         }
     })
 }
@@ -147,7 +148,7 @@ pub(super) fn or_else_global() -> Value {
     Value::checked_native("or_else", PARAMS, |mut ctx, args| {
         let value = args[0].take();
         match value {
-            Value::Null => ctx.invoke(&args[1], []),
+            Value::Null => ctx.invoke(&Function::try_from(args[1].take())?, []),
             _ => Ok(value),
         }
     })

@@ -9,7 +9,7 @@
 use std::collections::BTreeMap;
 use std::fmt::Debug;
 
-use frostlang::native::{Args, De, FromArg, FrostArg, Nullable, Optional, Rest};
+use frostlang::native::{Args, De, FromArg, FrostArg, Function, Nullable, Optional, Rest};
 use frostlang::{
     FrostArray, FrostBytes, FrostError, FrostFloat, FrostMap, FrostString, FrostType, MapKey,
     Param, Params, Value,
@@ -659,7 +659,7 @@ pub(crate) fn each() -> Value {
         let mut args = Args::new(ctx.name(), PARAMS, args);
         let sql: String = args.take()?;
         let Optional(bindings) = args.take::<Optional<Value>>()?;
-        let callback: Value = args.take()?;
+        let callback: Function = args.take()?;
         let count = match bindings {
             None => Value::Null,
             Some(Value::Array(array)) => Value::Int(array.len() as i64),

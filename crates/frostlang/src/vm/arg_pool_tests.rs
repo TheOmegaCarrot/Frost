@@ -11,6 +11,7 @@ use std::collections::BTreeMap;
 use std::sync::Arc;
 
 use super::*;
+use crate::native::Function;
 
 fn try_call_slot() -> usize {
     GLOBAL_NAMES
@@ -66,7 +67,7 @@ fn apply_native() -> Value {
         "apply",
         Arity::AtLeast(1),
         |mut ctx, args| {
-            let f = args[0].clone();
+            let f = Function::try_from(args[0].clone())?;
             ctx.invoke(&f, args[1..].iter_mut().map(Value::take))
         },
     )))

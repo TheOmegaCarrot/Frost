@@ -13,10 +13,10 @@ use std::sync::OnceLock;
 
 use regex_lite::Regex;
 
-use crate::native::{ArgSite, Bundle, FromArg};
+use crate::native::{Bundle, Function};
 use crate::{
-    FrostError, FrostResult, FrostString, FrostType, NativeCtx, Param, Params, StdlibModule,
-    TypeSet, Value, frost_bundle,
+    FrostError, FrostResult, FrostString, FrostType, NativeCtx, Param, Params, StdlibModule, Value,
+    frost_bundle,
 };
 
 /// The `std.regex` module: testing, replacing, splitting, and scanning text by
@@ -110,7 +110,12 @@ impl Pattern {
         Value::from(replaced.into_owned())
     }
 
-    fn replace_with(&self, ctx: &mut NativeCtx<'_>, text: &str, callback: &Value) -> FrostResult {
+    fn replace_with(
+        &self,
+        ctx: &mut NativeCtx<'_>,
+        text: &str,
+        callback: &Function,
+    ) -> FrostResult {
         // Built by hand: the callback can raise, which `Regex::replace_all`'s
         // closure has no way to report.
         let mut replaced = String::with_capacity(text.len());
@@ -216,7 +221,8 @@ fn replace_with() -> Value {
     ]);
     Value::checked_native("regex.replace_with", PARAMS, |mut ctx, args| {
         let pattern = Pattern::new("regex.replace_with", string_arg(&args[1]))?;
-        pattern.replace_with(&mut ctx, string_arg(&args[0]), &args[2])
+        let callback = Function::try_from(args[2].take())?;
+        pattern.replace_with(&mut ctx, string_arg(&args[0]), &callback)
     })
 }
 
@@ -259,9 +265,9 @@ impl Compiled {
         &self,
         #[frost(ctx)] ctx: &mut NativeCtx<'_>,
         #[frost(unnamed)] text: FrostString,
-        callback: Callback,
+        callback: Function,
     ) -> FrostResult {
-        self.0.replace_with(ctx, &text, &callback.0)
+        self.0.replace_with(ctx, &text, &callback)
     }
 
     fn split(&self, #[frost(unnamed)] text: FrostString) -> Value {
@@ -270,16 +276,5 @@ impl Compiled {
 
     fn scan_matches(&self, #[frost(unnamed)] text: FrostString) -> Value {
         self.0.scan_matches(&text)
-    }
-}
-
-/// A Function argument.
-struct Callback(Value);
-
-impl FromArg for Callback {
-    const TYPES: TypeSet = FrostType::FUNCTION;
-
-    fn from_arg(value: Value, _: &ArgSite<'_>) -> Result<Self, FrostError> {
-        Ok(Self(value))
     }
 }

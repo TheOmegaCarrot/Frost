@@ -9,7 +9,7 @@
 use std::panic::{AssertUnwindSafe, catch_unwind};
 use std::sync::Arc;
 
-use frostlang::native::{FrostArg, MutableBundle, PoisonedState, StateLock};
+use frostlang::native::{FrostArg, Function, MutableBundle, PoisonedState, StateLock};
 use frostlang::{Arity, FrostType, MapKey, Param, Params, Value};
 
 use crate::script::{Script, optimization_permutations};
@@ -30,7 +30,7 @@ fn counter(count: MutableBundle<i64>) -> Value {
             Ok(*count)
         })
         .function("counter.apply", CALLBACK, |ctx, mut args| {
-            let callback: Value = args.take()?;
+            let callback: Function = args.take()?;
             let count = *ctx.lock()?;
             let applied = ctx.native().invoke(&callback, [Value::Int(count)])?;
             let applied = applied.as_int().ok_or("counter.apply needs an Int back")?;

@@ -2,6 +2,7 @@
 
 use serde::Serialize;
 
+use crate::native::{Flat, Function, Nonnull, Numeric, Primitive, Structured};
 use crate::{
     FrostArray, FrostBytes, FrostError, FrostFloat, FrostMap, FrostResult, FrostString, Value,
     to_value,
@@ -67,7 +68,13 @@ into_value!(
     FrostString,
     FrostBytes,
     FrostArray,
-    FrostMap
+    FrostMap,
+    Numeric,
+    Flat,
+    Structured,
+    Primitive,
+    Nonnull,
+    Function
 );
 
 /// A non-finite `f64` is an error: a Float is always finite.

@@ -108,14 +108,14 @@ impl<S: Send + Sync + 'static> Bundle<S> {
 /// The state stays readable while the function calls back into Frost:
 ///
 /// ```
-/// use frostlang::native::Bundle;
+/// use frostlang::native::{Bundle, Function};
 /// use frostlang::{FrostType, Param, Params, Value};
 ///
 /// const CALLBACK: Params = Params::new(&[Param::of(FrostType::FUNCTION)]);
 ///
 /// let names = Bundle::new(vec![Value::from("Ada"), Value::from("Grace")])
 ///     .function("names.each", CALLBACK, |ctx, mut args| {
-///         let callback: Value = args.take()?;
+///         let callback: Function = args.take()?;
 ///         let names = ctx.state();
 ///         for name in names {
 ///             ctx.native().invoke(&callback, [name.clone()])?;

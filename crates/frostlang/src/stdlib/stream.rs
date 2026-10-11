@@ -11,10 +11,8 @@ use std::io::{
     self, BufRead, BufReader, BufWriter, Cursor, Read, Seek, SeekFrom, Stderr, Stdin, Stdout, Write,
 };
 
-use crate::native::{ArgSite, FromArg, MutableBundle};
-use crate::{
-    FrostBytes, FrostError, FrostResult, FrostType, NativeCtx, TypeSet, Value, frost_mutable_bundle,
-};
+use crate::native::{Flat, MutableBundle};
+use crate::{FrostBytes, FrostError, FrostResult, NativeCtx, Value, frost_mutable_bundle};
 
 /// Which operations a bundle offers, beyond those every reader or writer has.
 #[derive(Clone, Copy, PartialEq, Eq)]
@@ -314,17 +312,6 @@ pub(super) fn writer(sink: impl Sink, kind: Kind) -> Value {
 /// A writer's sink; `None` once closed.
 struct Writer(Option<Box<dyn Sink>>);
 
-/// Content to write: a String or Bytes, as its bytes.
-struct Content(Value);
-
-impl FromArg for Content {
-    const TYPES: TypeSet = FrostType::FLAT;
-
-    fn from_arg(value: Value, _: &ArgSite<'_>) -> Result<Self, FrostError> {
-        Ok(Self(value))
-    }
-}
-
 impl Writer {
     /// Runs `operation` on the sink, for the function `ctx` runs.
     fn with_sink<T>(
@@ -343,12 +330,11 @@ impl Writer {
     fn write_content(
         &mut self,
         ctx: &NativeCtx<'_>,
-        content: &Content,
+        content: &Flat,
         line: bool,
     ) -> Result<(), FrostError> {
-        let content = content.0.as_byte_slice().expect("type-checked as Flat");
         self.with_sink(ctx, |sink| {
-            sink.write_all(content)?;
+            sink.write_all(content.as_bytes())?;
             if line {
                 sink.write_all(b"\n")?;
             }
@@ -372,7 +358,7 @@ impl Writer {
     fn write(
         &mut self,
         #[frost(ctx)] ctx: &NativeCtx<'_>,
-        #[frost(unnamed)] content: Content,
+        #[frost(unnamed)] content: Flat,
     ) -> Result<(), FrostError> {
         self.write_content(ctx, &content, false)
     }
@@ -380,7 +366,7 @@ impl Writer {
     fn writeln(
         &mut self,
         #[frost(ctx)] ctx: &NativeCtx<'_>,
-        #[frost(unnamed)] content: Content,
+        #[frost(unnamed)] content: Flat,
     ) -> Result<(), FrostError> {
         self.write_content(ctx, &content, true)
     }

@@ -13,6 +13,7 @@ use crate::common;
 
 use common::Pop;
 use frostlang::bytecode::{Bytecode, CompiledFunction, FormatVersion, NameEntry};
+use frostlang::native::Function;
 use frostlang::{
     AbortReason, Arity, FrostError, ProgramResult, RunError, RunErrorKind, Value, Vm,
     VmRuntimeConfiguration,
@@ -99,7 +100,8 @@ fn boom() -> Value {
 /// Stands in for `try_call`: it *tries* to catch whatever the invoked function raises.
 fn catcher() -> Value {
     Value::native("catcher", Arity::Exact(1), |mut ctx, args| {
-        match ctx.invoke(&args[0], std::iter::empty()) {
+        let function = Function::try_from(args[0].clone())?;
+        match ctx.invoke(&function, std::iter::empty()) {
             Ok(value) => Ok(value),
             Err(_) => Ok(Value::from("swallowed")),
         }
@@ -114,8 +116,8 @@ fn recurse() -> Value {
         if n <= 0 {
             return Ok(Value::Int(0));
         }
-        let f = args[0].clone();
-        ctx.invoke(&f, [f.clone(), Value::Int(n - 1)])
+        let f = Function::try_from(args[0].clone())?;
+        ctx.invoke(&f, [f.clone().into_value(), Value::Int(n - 1)])
     })
 }
 

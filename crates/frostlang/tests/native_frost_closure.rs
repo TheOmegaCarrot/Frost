@@ -9,8 +9,10 @@
 use std::sync::Arc;
 use std::sync::atomic::{AtomicUsize, Ordering};
 
-use frostlang::native::{ArgSite, FromArg, FrostArg, IntoNativeResult, Nullable, Optional, Rest};
-use frostlang::{FrostError, FrostType, TypeSet, Value, frost_closure};
+use frostlang::native::{
+    FromArg, FrostArg, Function, IntoNativeResult, Nullable, Optional, Rest, Structured,
+};
+use frostlang::{FrostError, FrostType, Value, frost_closure};
 
 use crate::native_args;
 use crate::script::Script;
@@ -76,42 +78,19 @@ fn required_and_optional_nullable_parameters_are_alike() {
     );
 }
 
-/// Any Array or Map, as `native_args::each` declares its bindings.
-struct Bindings(Value);
-
-impl FromArg for Bindings {
-    const TYPES: TypeSet = FrostType::STRUCTURED;
-
-    fn from_arg(value: Value, _: &ArgSite<'_>) -> Result<Self, FrostError> {
-        Ok(Self(value))
-    }
-}
-
-/// Any Function, as `native_args::each` declares its callback.
-struct Callback(Value);
-
-impl FromArg for Callback {
-    const TYPES: TypeSet = FrostType::FUNCTION;
-
-    fn from_arg(value: Value, _: &ArgSite<'_>) -> Result<Self, FrostError> {
-        Ok(Self(value))
-    }
-}
-
 #[test]
 fn an_interior_optional_and_the_context_are_alike() {
     let each =
         frost_closure!("each", |#[frost(ctx)] ctx,
                                 sql: String,
-                                bindings: Optional<Bindings>,
-                                callback: Callback| {
-            let count = match bindings.0.map(|Bindings(value)| value) {
+                                bindings: Optional<Structured>,
+                                callback: Function| {
+            let count = match bindings.0 {
                 None => Value::Null,
-                Some(Value::Array(array)) => Value::Int(array.len() as i64),
-                Some(Value::Map(map)) => Value::Int(map.len() as i64),
-                Some(other) => unreachable!("type-checked, got {}", other.type_name()),
+                Some(Structured::Array(array)) => Value::Int(array.len() as i64),
+                Some(Structured::Map(map)) => Value::Int(map.len() as i64),
             };
-            ctx.invoke(&callback.0, [Value::from(sql), count])
+            ctx.invoke(&callback, [Value::from(sql), count])
         });
     assert_alike(
         "each",
@@ -290,13 +269,13 @@ fn typed_and_untyped_parameters_mix() {
 
 #[test]
 fn the_context_may_be_typed_or_not() {
-    let typed = frost_closure!("typed", |#[frost(ctx)] ctx: &mut frostlang::NativeCtx<
-        '_,
-    >,
-                                         function| {
-        ctx.invoke(&function, [])
-    });
-    let untyped = frost_closure!("untyped", |#[frost(ctx)] ctx, function| {
+    let typed = frost_closure!(
+        "typed",
+        |#[frost(ctx)] ctx: &mut frostlang::NativeCtx<'_>, function: Function| {
+            ctx.invoke(&function, [])
+        }
+    );
+    let untyped = frost_closure!("untyped", |#[frost(ctx)] ctx, function: Function| {
         ctx.invoke(&function, [])
     });
     assert_eq!(run(typed, "f(fn -> 7)"), Value::Int(7));

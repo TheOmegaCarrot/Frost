@@ -95,12 +95,13 @@ pub use vm::{
 /// leave it out of a function you also call from Rust.
 ///
 /// ```
+/// use frostlang::native::Function;
 /// use frostlang::{FrostResult, NativeCtx, Value, frost_fn};
 ///
 /// #[frost_fn(name = "apply_twice")]
 /// fn apply_twice(
 ///     #[frost(ctx)] ctx: &mut NativeCtx<'_>,
-///     function: Value,
+///     function: Function,
 ///     value: Value,
 /// ) -> FrostResult {
 ///     let once = ctx.invoke(&function, [value])?;
@@ -156,9 +157,10 @@ pub use frostlang_macros::frost_fn;
 /// The `#[frost(ctx)]` parameter may omit its type too:
 ///
 /// ```
+/// use frostlang::native::Function;
 /// use frostlang::{Value, frost_closure};
 ///
-/// let apply_for_frost: Value = frost_closure!("apply", |#[frost(ctx)] ctx, function, value| {
+/// let apply_for_frost: Value = frost_closure!("apply", |#[frost(ctx)] ctx, function: Function, value| {
 ///     ctx.invoke(&function, [value])
 /// });
 /// ```

@@ -123,14 +123,14 @@ impl std::error::Error for PoisonedState {}
 /// freely do either:
 ///
 /// ```
-/// use frostlang::native::MutableBundle;
+/// use frostlang::native::{Function, MutableBundle};
 /// use frostlang::{FrostType, Param, Params, Value};
 ///
 /// const CALLBACK: Params = Params::new(&[Param::of(FrostType::FUNCTION)]);
 ///
 /// let cell = MutableBundle::new(Value::Null)
 ///     .function("cell.update", CALLBACK, |ctx, mut args| {
-///         let callback: Value = args.take()?;
+///         let callback: Function = args.take()?;
 ///         let old = ctx.lock()?.clone();
 ///         let new = ctx.native().invoke(&callback, [old])?;
 ///         *ctx.lock()? = new.clone();
@@ -142,12 +142,13 @@ impl std::error::Error for PoisonedState {}
 /// Calling back into Frost while holding the state does not compile:
 ///
 /// ```compile_fail
-/// # use frostlang::native::MutableBundle;
-/// # use frostlang::{Params, Value};
-/// # const NO_PARAMS: Params = Params::new(&[]);
-/// MutableBundle::new(Value::Null).function("cell.call", NO_PARAMS, |ctx, _| {
+/// # use frostlang::native::{Function, MutableBundle};
+/// # use frostlang::{FrostType, Param, Params, Value};
+/// # const CALLBACK: Params = Params::new(&[Param::of(FrostType::FUNCTION)]);
+/// MutableBundle::new(Value::Null).function("cell.call", CALLBACK, |ctx, mut args| {
+///     let callback: Function = args.take()?;
 ///     let state = ctx.lock()?;
-///     let result = ctx.native().invoke(&state, []);
+///     let result = ctx.native().invoke(&callback, [state.clone()]);
 ///     drop(state);
 ///     result
 /// });

@@ -13,10 +13,10 @@ help: the trait `IntoNativeResult` is not implemented for `Opaque`
   = help: the following other types implement trait `IntoNativeResult`:
             &str
             ()
+            Flat
             FrostArray
             FrostBytes
             FrostFloat
             FrostMap
             FrostString
-            Option<T>
           and $N others

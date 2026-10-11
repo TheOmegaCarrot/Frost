@@ -11,12 +11,9 @@ use std::panic::{AssertUnwindSafe, catch_unwind};
 use std::sync::Arc;
 
 use frostlang::native::{
-    ArgSite, Bundle, BundleCtx, FromArg, MutableBundle, MutableBundleCtx, PoisonedState, StateLock,
+    Bundle, BundleCtx, Function, MutableBundle, MutableBundleCtx, PoisonedState, StateLock,
 };
-use frostlang::{
-    Arity, FrostError, FrostType, MapKey, NativeCtx, TypeSet, Value, frost_bundle,
-    frost_mutable_bundle,
-};
+use frostlang::{Arity, FrostError, MapKey, NativeCtx, Value, frost_bundle, frost_mutable_bundle};
 
 use crate::script::{Script, optimization_permutations};
 use crate::{native_bundle, native_mutable_bundle};
@@ -55,17 +52,6 @@ fn keys(bundle: &Value) -> Vec<String> {
         .collect()
 }
 
-/// Any Function.
-struct Callback(Value);
-
-impl FromArg for Callback {
-    const TYPES: TypeSet = FrostType::FUNCTION;
-
-    fn from_arg(value: Value, _: &ArgSite<'_>) -> Result<Self, FrostError> {
-        Ok(Self(value))
-    }
-}
-
 // ============================================================
 // Alike to hand-built bundles
 // ============================================================
@@ -87,11 +73,11 @@ impl Table {
     fn apply(
         &self,
         #[frost(ctx)] ctx: &mut NativeCtx<'_>,
-        callback: Callback,
+        callback: Function,
     ) -> Result<Value, FrostError> {
         self.0
             .iter()
-            .map(|&entry| ctx.invoke(&callback.0, [Value::Int(entry)]))
+            .map(|&entry| ctx.invoke(&callback, [Value::Int(entry)]))
             .collect()
     }
 }
@@ -136,10 +122,10 @@ impl Counter {
     /// Locks the state itself, calling back into Frost between locks.
     fn apply(
         #[frost(ctx)] ctx: &mut MutableBundleCtx<'_, Self>,
-        callback: Callback,
+        callback: Function,
     ) -> Result<i64, FrostError> {
         let count = ctx.lock()?.0;
-        let applied = ctx.native().invoke(&callback.0, [Value::Int(count)])?;
+        let applied = ctx.native().invoke(&callback, [Value::Int(count)])?;
         let applied = applied.as_int().ok_or("counter.apply needs an Int back")?;
         ctx.lock()?.0 = applied;
         Ok(applied)
@@ -238,9 +224,9 @@ impl Tally {
 
     fn record_each(
         #[frost(ctx)] ctx: &mut MutableBundleCtx<'_, Self>,
-        callback: Callback,
+        callback: Function,
     ) -> Result<Value, FrostError> {
-        let produced = ctx.native().invoke(&callback.0, [])?;
+        let produced = ctx.native().invoke(&callback, [])?;
         ctx.lock()?.0.push(produced.to_frost_string());
         Ok(produced)
     }

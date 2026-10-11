@@ -32,6 +32,7 @@
 
 mod arg;
 mod bundle;
+mod category;
 // White-box tests for `#[frost_fn]` used within this crate.
 #[cfg(test)]
 mod frost_fn_tests;
@@ -40,5 +41,6 @@ mod result;
 
 pub use arg::{ArgSite, Args, De, FromArg, FrostArg, Nullable, Optional, Rest};
 pub use bundle::{Bundle, BundleCtx};
+pub use category::{Flat, Function, Nonnull, Numeric, Primitive, Structured};
 pub use mutable_bundle::{MutableBundle, MutableBundleCtx, PoisonedState, StateGuard, StateLock};
 pub use result::{IntoNativeResult, Ser};

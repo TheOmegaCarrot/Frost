@@ -7,10 +7,10 @@
 
 use std::hash::{BuildHasher, RandomState};
 
-use crate::native::{ArgSite, FromArg, MutableBundle, Optional};
+use crate::native::{MutableBundle, Numeric, Optional};
 use crate::{
-    FrostArray, FrostError, FrostFloat, FrostResult, FrostType, Param, Params, StdlibModule,
-    TypeSet, Value, frost_mutable_bundle,
+    FrostArray, FrostError, FrostFloat, FrostResult, FrostType, Param, Params, StdlibModule, Value,
+    frost_mutable_bundle,
 };
 
 /// The configuration of [`random`].
@@ -71,19 +71,8 @@ fn engine(seed: u64) -> Value {
 /// An engine's generator.
 struct Engine(fastrand::Rng);
 
-/// A Numeric argument as given, so that an error can show it as written.
-struct Numeric(Value);
-
-impl FromArg for Numeric {
-    const TYPES: TypeSet = FrostType::NUMERIC;
-
-    fn from_arg(value: Value, _: &ArgSite<'_>) -> Result<Self, FrostError> {
-        Ok(Self(value))
-    }
-}
-
 /// The error for bounds whose low end, `low`, is above the high end, `high`.
-fn bounds_error(function: &str, low: &Value, high: &Value) -> FrostError {
+fn bounds_error(function: &str, low: Value, high: Value) -> FrostError {
     FrostError::from_string(format!(
         "Function {function} requires argument 1 (low) to be at most argument 2 (high), \
          got {} and {}",
@@ -92,54 +81,44 @@ fn bounds_error(function: &str, low: &Value, high: &Value) -> FrostError {
     ))
 }
 
-/// A type-checked Numeric argument, as a float.
-fn float_arg(arg: &Value) -> f64 {
-    match arg {
-        Value::Int(i) => *i as f64,
-        Value::Float(f) => f.get(),
-        other => unreachable!("type-checked as Numeric, got {}", other.type_name()),
-    }
-}
-
 #[frost_mutable_bundle(prefix = "rng")]
 impl Engine {
     fn int(&mut self, low: i64, high: i64) -> FrostResult {
         if low > high {
-            return Err(bounds_error("rng.int", &low.into(), &high.into()));
+            return Err(bounds_error("rng.int", low.into(), high.into()));
         }
         Ok(Value::Int(self.0.i64(low..=high)))
     }
 
     fn float(&mut self, low: Numeric, high: Numeric) -> FrostResult {
-        let [low_arg, high_arg] = [low.0, high.0];
-        let [low, high] = [&low_arg, &high_arg].map(float_arg);
-        if low > high {
-            return Err(bounds_error("rng.float", &low_arg, &high_arg));
+        let (from, to) = (low.to_f64(), high.to_f64());
+        if from > to {
+            return Err(bounds_error("rng.float", low.into(), high.into()));
         }
-        if low == high {
+        if from == to {
             return Ok(Value::Float(
-                FrostFloat::new(low).expect("a Numeric argument is finite"),
+                FrostFloat::new(from).expect("a Numeric argument is finite"),
             ));
         }
         let t = self.0.f64_inclusive();
-        // Weighting both ends, rather than `low + (high - low) * t`, cannot
-        // overflow, and gives exactly `low` and `high` at the ends. Rounding can
+        // Weighting both ends, rather than `from + (to - from) * t`, cannot
+        // overflow, and gives exactly `from` and `to` at the ends. Rounding can
         // still step just past an end, so the result is clamped.
-        let drawn = ((1.0 - t) * low + t * high).clamp(low, high);
+        let drawn = ((1.0 - t) * from + t * to).clamp(from, to);
         Ok(Value::Float(
             FrostFloat::new(drawn).expect("a point between two finite floats is finite"),
         ))
     }
 
     fn bool(&mut self, probability: Optional<Numeric>) -> FrostResult {
-        let Optional(Some(Numeric(probability))) = probability else {
+        let Optional(Some(probability)) = probability else {
             return Ok(Value::Bool(self.0.bool()));
         };
-        let p = float_arg(&probability);
+        let p = probability.to_f64();
         if !(0.0..=1.0).contains(&p) {
             return Err(FrostError::from_string(format!(
                 "Function rng.bool requires argument 1 (probability) to be from 0 to 1, got {}",
-                probability.to_frost_string()
+                Value::from(probability).to_frost_string()
             )));
         }
         // A draw from [0, 1) is below 1 always and below 0 never.

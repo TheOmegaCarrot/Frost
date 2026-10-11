@@ -17,6 +17,7 @@ use std::sync::Arc;
 
 use common::{entry, global_slot};
 use frostlang::bytecode::{Bytecode, CompiledFunction, FormatVersion, NameEntry};
+use frostlang::native::Function;
 use frostlang::{
     Arity, BacktraceFrame, FrostError, FrostMap, FrostResult, NativeCtx, NativeFunction,
     ProgramResult, Value, Vm,
@@ -105,7 +106,7 @@ fn run_with(
 /// error flowing through a native frame.
 fn apply_native() -> Value {
     native("apply", Arity::AtLeast(1), |mut ctx, args| {
-        let f = args[0].clone();
+        let f = Function::try_from(args[0].clone())?;
         ctx.invoke(
             &f,
             args[1..]

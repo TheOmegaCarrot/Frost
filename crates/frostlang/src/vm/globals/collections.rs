@@ -3,7 +3,7 @@
 use std::collections::{BTreeMap, BTreeSet};
 
 use crate::bytecode::Bytecode;
-use crate::native::{Args, FrostArg, Rest};
+use crate::native::{Args, FrostArg, Function, Rest};
 use crate::{
     Arity, FrostArray, FrostBytes, FrostError, FrostMap, FrostResult, FrostString, FrostType,
     MapKey, NativeCtx, Param, Params, TypeSet, Value, ValueMap,
@@ -101,7 +101,7 @@ pub(super) fn values_global() -> Value {
 pub(super) fn map_keys_global() -> Value {
     Value::checked_native("map_keys", MAP_AND_FUNCTION, |mut ctx, args| {
         let map = take_map(&mut args[0]).into_map();
-        let function = args[1].take();
+        let function = Function::try_from(args[1].take())?;
         let mut result = ValueMap::new();
         for (key, value) in map {
             let key = returned_key("map_keys", ctx.invoke(&function, [key.into()])?)?;
@@ -114,7 +114,7 @@ pub(super) fn map_keys_global() -> Value {
 pub(super) fn map_values_global() -> Value {
     Value::checked_native("map_values", MAP_AND_FUNCTION, |mut ctx, args| {
         let mut map = take_map(&mut args[0]).into_map();
-        let function = args[1].take();
+        let function = Function::try_from(args[1].take())?;
         for value in map.values_mut() {
             *value = ctx.invoke(&function, [value.take()])?;
         }
@@ -327,7 +327,7 @@ pub(super) fn dig_global() -> Value {
 fn any_answers(
     ctx: &mut NativeCtx<'_>,
     array: &FrostArray,
-    function: Option<&Value>,
+    function: Option<&Function>,
     wanted: bool,
 ) -> Result<bool, FrostError> {
     for element in array {
@@ -347,13 +347,22 @@ const ARRAY_AND_OPTIONAL_FUNCTION: Params = Params::new(&[
     Param::of(FrostType::FUNCTION).optional(),
 ]);
 
+/// The Function that `args` has second, if it was given, as
+/// [`ARRAY_AND_OPTIONAL_FUNCTION`] specifies.
+fn take_optional_function(args: &mut [Value]) -> Result<Option<Function>, FrostError> {
+    args.get_mut(1)
+        .map(|function| Function::try_from(function.take()))
+        .transpose()
+}
+
 pub(super) fn any_global() -> Value {
     Value::checked_native("any", ARRAY_AND_OPTIONAL_FUNCTION, |mut ctx, args| {
         let array = take_array(&mut args[0]);
+        let function = take_optional_function(args)?;
         Ok(Value::Bool(any_answers(
             &mut ctx,
             &array,
-            args.get(1),
+            function.as_ref(),
             true,
         )?))
     })
@@ -362,10 +371,11 @@ pub(super) fn any_global() -> Value {
 pub(super) fn all_global() -> Value {
     Value::checked_native("all", ARRAY_AND_OPTIONAL_FUNCTION, |mut ctx, args| {
         let array = take_array(&mut args[0]);
+        let function = take_optional_function(args)?;
         Ok(Value::Bool(!any_answers(
             &mut ctx,
             &array,
-            args.get(1),
+            function.as_ref(),
             false,
         )?))
     })
@@ -374,10 +384,11 @@ pub(super) fn all_global() -> Value {
 pub(super) fn none_global() -> Value {
     Value::checked_native("none", ARRAY_AND_OPTIONAL_FUNCTION, |mut ctx, args| {
         let array = take_array(&mut args[0]);
+        let function = take_optional_function(args)?;
         Ok(Value::Bool(!any_answers(
             &mut ctx,
             &array,
-            args.get(1),
+            function.as_ref(),
             true,
         )?))
     })
@@ -390,8 +401,9 @@ pub(super) fn find_global() -> Value {
     ]);
     Value::checked_native("find", PARAMS, |mut ctx, args| {
         let array = take_array(&mut args[0]);
+        let predicate = Function::try_from(args[1].take())?;
         for element in array.into_vec() {
-            if ctx.invoke_ref(&args[1], [&element])?.is_truthy() {
+            if ctx.invoke_ref(&predicate, [&element])?.is_truthy() {
                 return Ok(element);
             }
         }
@@ -406,8 +418,9 @@ pub(super) fn find_index_global() -> Value {
     ]);
     Value::checked_native("find_index", PARAMS, |mut ctx, args| {
         let array = take_array(&mut args[0]);
+        let predicate = Function::try_from(args[1].take())?;
         for (index, element) in array.iter().enumerate() {
-            if ctx.invoke_ref(&args[1], [element])?.is_truthy() {
+            if ctx.invoke_ref(&predicate, [element])?.is_truthy() {
                 return Ok(Value::Int(
                     i64::try_from(index).expect("an index fits in an Int"),
                 ));
@@ -614,7 +627,7 @@ pub(super) fn reverse_global() -> Value {
 fn leading_matches(
     ctx: &mut NativeCtx<'_>,
     array: &[Value],
-    predicate: &Value,
+    predicate: &Function,
 ) -> Result<usize, FrostError> {
     for (i, element) in array.iter().enumerate() {
         if !ctx.invoke_ref(predicate, [element])?.is_truthy() {
@@ -627,7 +640,8 @@ fn leading_matches(
 pub(super) fn take_while_global() -> Value {
     Value::checked_native("take_while", ARRAY_AND_FUNCTION, |mut ctx, args| {
         let mut elements = take_array(&mut args[0]).into_vec();
-        let kept = leading_matches(&mut ctx, &elements, &args[1])?;
+        let predicate = Function::try_from(args[1].take())?;
+        let kept = leading_matches(&mut ctx, &elements, &predicate)?;
         elements.truncate(kept);
         Ok(elements.into())
     })
@@ -636,7 +650,8 @@ pub(super) fn take_while_global() -> Value {
 pub(super) fn drop_while_global() -> Value {
     Value::checked_native("drop_while", ARRAY_AND_FUNCTION, |mut ctx, args| {
         let mut elements = take_array(&mut args[0]).into_vec();
-        let dropped = leading_matches(&mut ctx, &elements, &args[1])?;
+        let predicate = Function::try_from(args[1].take())?;
+        let dropped = leading_matches(&mut ctx, &elements, &predicate)?;
         elements.drain(..dropped);
         Ok(elements.into())
     })
@@ -645,13 +660,15 @@ pub(super) fn drop_while_global() -> Value {
 pub(super) fn chunk_by_global() -> Value {
     Value::checked_native("chunk_by", ARRAY_AND_FUNCTION, |mut ctx, args| {
         let elements = take_array(&mut args[0]).into_vec();
+        let same_chunk = Function::try_from(args[1].take())?;
         let mut chunks: Vec<Vec<Value>> = Vec::new();
         for element in elements {
             // Each adjacent pair is asked once: does the next element join the chunk?
             let joins = match chunks.last() {
                 Some(chunk) => {
                     let previous = chunk.last().expect("a chunk is never empty");
-                    ctx.invoke_ref(&args[1], [previous, &element])?.is_truthy()
+                    ctx.invoke_ref(&same_chunk, [previous, &element])?
+                        .is_truthy()
                 }
                 None => false,
             };
@@ -792,7 +809,7 @@ pub(super) fn zip_global() -> Value {
 pub(super) fn zip_with_global() -> Value {
     Value::checked_native("zip_with", FUNCTION_AND_ARRAYS, |mut ctx, args| {
         let mut args = Args::new(ctx.name(), FUNCTION_AND_ARRAYS, args);
-        let function: Value = args.take()?;
+        let function: Function = args.take()?;
         let arrays = take_arrays(&mut args)?;
         let results = map_zip_rows(&arrays, |i| ctx.invoke(&function, zip_row(&arrays, i)))?;
         Ok(results.into())
@@ -810,7 +827,7 @@ pub(super) fn xprod_global() -> Value {
 pub(super) fn xprod_with_global() -> Value {
     Value::checked_native("xprod_with", FUNCTION_AND_ARRAYS, |mut ctx, args| {
         let mut args = Args::new(ctx.name(), FUNCTION_AND_ARRAYS, args);
-        let function: Value = args.take()?;
+        let function: Function = args.take()?;
         let arrays = take_arrays(&mut args)?;
         let results = map_xprod_rows(&arrays, |indices| {
             ctx.invoke(&function, xprod_row(&arrays, indices))
@@ -824,7 +841,7 @@ pub(super) fn xprod_with_global() -> Value {
 pub(super) fn transform_global() -> Value {
     Value::checked_native("transform", STRUCTURE_AND_FUNCTION, |mut ctx, args| {
         let structure = args[0].take();
-        let function = args[1].take();
+        let function = Function::try_from(args[1].take())?;
 
         match structure {
             Value::Array(arr) => {
@@ -858,9 +875,10 @@ pub(super) fn transform_global() -> Value {
 pub(super) fn flat_map_global() -> Value {
     Value::checked_native("flat_map", ARRAY_AND_FUNCTION, |mut ctx, args| {
         let array = take_array(&mut args[0]);
+        let function = Function::try_from(args[1].take())?;
         let mut out = Vec::new();
         for element in array.into_vec() {
-            match ctx.invoke(&args[1], [element])? {
+            match ctx.invoke(&function, [element])? {
                 Value::Array(inner) => out.extend(inner.into_vec()),
                 other => out.push(other),
             }
@@ -874,7 +892,7 @@ pub(super) fn flat_map_global() -> Value {
 fn filter_structure(
     ctx: &mut NativeCtx<'_>,
     structure: Value,
-    predicate: &Value,
+    predicate: &Function,
     keep: bool,
 ) -> Result<Value, FrostError> {
     match structure {
@@ -904,13 +922,15 @@ fn filter_structure(
 
 pub(super) fn select_global() -> Value {
     Value::checked_native("select", STRUCTURE_AND_FUNCTION, |mut ctx, args| {
-        filter_structure(&mut ctx, args[0].take(), &args[1], true)
+        let predicate = Function::try_from(args[1].take())?;
+        filter_structure(&mut ctx, args[0].take(), &predicate, true)
     })
 }
 
 pub(super) fn reject_global() -> Value {
     Value::checked_native("reject", STRUCTURE_AND_FUNCTION, |mut ctx, args| {
-        filter_structure(&mut ctx, args[0].take(), &args[1], false)
+        let predicate = Function::try_from(args[1].take())?;
+        filter_structure(&mut ctx, args[0].take(), &predicate, false)
     })
 }
 
@@ -922,7 +942,7 @@ pub(super) fn fold_global() -> Value {
     ]);
     Value::checked_native("fold", PARAMS, |mut ctx, args| {
         let structure = args[0].take();
-        let function = args[1].take();
+        let function = Function::try_from(args[1].take())?;
 
         match structure {
             Value::Array(arr) => {
@@ -1015,7 +1035,8 @@ pub(super) fn sorted_global() -> Value {
     ]);
     Value::checked_native("sorted", PARAMS, |mut ctx, args| {
         let elements = take_array(&mut args[0]).into_vec();
-        let sorted = match args.get(1) {
+        let comparator = take_optional_function(args)?;
+        let sorted = match &comparator {
             Some(comparator) => merge_sort(elements, &mut |a, b| {
                 Ok(ctx.invoke_ref(comparator, [a, b])?.is_truthy())
             })?,
@@ -1032,10 +1053,11 @@ pub(super) fn sort_by_global() -> Value {
     ]);
     Value::checked_native("sort_by", PARAMS, |mut ctx, args| {
         let elements = take_array(&mut args[0]).into_vec();
+        let projection = Function::try_from(args[1].take())?;
         // Each element's key, from one projection call apiece.
         let keyed = elements
             .into_iter()
-            .map(|element| Ok((ctx.invoke_ref(&args[1], [&element])?, element)))
+            .map(|element| Ok((ctx.invoke_ref(&projection, [&element])?, element)))
             .collect::<Result<Vec<_>, FrostError>>()?;
         let sorted = merge_sort(keyed, &mut |(a, _), (b, _)| less_than(a, b))?;
         Ok(sorted.into_iter().map(|(_, element)| element).collect())
@@ -1082,7 +1104,8 @@ fn extreme_global(name: &'static str, end: End) -> Value {
     ]);
     Value::checked_native(name, PARAMS, move |mut ctx, args| {
         let elements = take_array(&mut args[0]).into_vec();
-        let found = match args.get(1) {
+        let comparator = take_optional_function(args)?;
+        let found = match &comparator {
             Some(comparator) => extreme(elements, end, &mut |a, b| {
                 Ok(ctx.invoke_ref(comparator, [a, b])?.is_truthy())
             })?,
@@ -1108,10 +1131,11 @@ fn extreme_by_global(name: &'static str, end: End) -> Value {
     ]);
     Value::checked_native(name, PARAMS, move |mut ctx, args| {
         let elements = take_array(&mut args[0]).into_vec();
+        let projection = Function::try_from(args[1].take())?;
         // Each element's key, from one projection call apiece.
         let keyed = elements
             .into_iter()
-            .map(|element| Ok((ctx.invoke_ref(&args[1], [&element])?, element)))
+            .map(|element| Ok((ctx.invoke_ref(&projection, [&element])?, element)))
             .collect::<Result<Vec<_>, FrostError>>()?;
         let found = extreme(keyed, end, &mut |(a, _), (b, _)| less_than(a, b))?;
         Ok(found.map_or(Value::Null, |(_, element)| element))
@@ -1173,8 +1197,9 @@ pub(super) fn unique_by_global() -> Value {
     Value::checked_native("unique_by", PARAMS, |mut ctx, args| {
         let mut seen = Seen::default();
         let mut kept = Vec::new();
+        let projection = Function::try_from(args[1].take())?;
         for element in take_array(&mut args[0]).into_vec() {
-            if seen.insert(ctx.invoke_ref(&args[1], [&element])?) {
+            if seen.insert(ctx.invoke_ref(&projection, [&element])?) {
                 kept.push(element);
             }
         }
@@ -1185,9 +1210,10 @@ pub(super) fn unique_by_global() -> Value {
 pub(super) fn group_by_global() -> Value {
     Value::checked_native("group_by", ARRAY_AND_FUNCTION, |mut ctx, args| {
         let array = take_array(&mut args[0]);
+        let projection = Function::try_from(args[1].take())?;
         let mut groups: BTreeMap<MapKey, Vec<Value>> = BTreeMap::new();
         for element in array.into_vec() {
-            let key = returned_key("group_by", ctx.invoke_ref(&args[1], [&element])?)?;
+            let key = returned_key("group_by", ctx.invoke_ref(&projection, [&element])?)?;
             groups.entry(key).or_default().push(element);
         }
         Ok(groups
@@ -1200,9 +1226,10 @@ pub(super) fn group_by_global() -> Value {
 pub(super) fn count_by_global() -> Value {
     Value::checked_native("count_by", ARRAY_AND_FUNCTION, |mut ctx, args| {
         let array = take_array(&mut args[0]);
+        let projection = Function::try_from(args[1].take())?;
         let mut counts: BTreeMap<MapKey, i64> = BTreeMap::new();
         for element in &array {
-            let key = returned_key("count_by", ctx.invoke_ref(&args[1], [element])?)?;
+            let key = returned_key("count_by", ctx.invoke_ref(&projection, [element])?)?;
             *counts.entry(key).or_default() += 1;
         }
         Ok(counts
@@ -1215,13 +1242,14 @@ pub(super) fn count_by_global() -> Value {
 pub(super) fn scan_global() -> Value {
     Value::checked_native("scan", ARRAY_AND_FUNCTION, |mut ctx, args| {
         let mut elements = take_array(&mut args[0]).into_vec().into_iter();
+        let function = Function::try_from(args[1].take())?;
         let Some(first) = elements.next() else {
             return Ok(Value::from(Vec::<Value>::new()));
         };
         let mut running = vec![first];
         for element in elements {
             let last = running.last().expect("running starts with an element");
-            let next = ctx.invoke(&args[1], [last.clone(), element])?;
+            let next = ctx.invoke(&function, [last.clone(), element])?;
             running.push(next);
         }
         Ok(running.into())
@@ -1231,9 +1259,10 @@ pub(super) fn scan_global() -> Value {
 pub(super) fn partition_global() -> Value {
     Value::checked_native("partition", ARRAY_AND_FUNCTION, |mut ctx, args| {
         let array = take_array(&mut args[0]);
+        let predicate = Function::try_from(args[1].take())?;
         let (mut pass, mut fail) = (Vec::new(), Vec::new());
         for element in array.into_vec() {
-            if ctx.invoke_ref(&args[1], [&element])?.is_truthy() {
+            if ctx.invoke_ref(&predicate, [&element])?.is_truthy() {
                 pass.push(element);
             } else {
                 fail.push(element);
@@ -1246,9 +1275,10 @@ pub(super) fn partition_global() -> Value {
 pub(super) fn map_into_global() -> Value {
     Value::checked_native("map_into", ARRAY_AND_FUNCTION, |mut ctx, args| {
         let array = take_array(&mut args[0]);
+        let function = Function::try_from(args[1].take())?;
         let mut result = ValueMap::new();
         for element in array.into_vec() {
-            match ctx.invoke(&args[1], [element])? {
+            match ctx.invoke(&function, [element])? {
                 Value::Map(entries) => result.extend(entries.into_map()),
                 other => {
                     return Err(FrostError::from_string(format!(
@@ -1265,7 +1295,7 @@ pub(super) fn map_into_global() -> Value {
 pub(super) fn each_global() -> Value {
     Value::checked_native("each", STRUCTURE_AND_FUNCTION, |mut ctx, params| {
         let structure = params[0].take();
-        let function = params[1].take();
+        let function = Function::try_from(params[1].take())?;
         match &structure {
             Value::Array(arr) => {
                 for v in arr {

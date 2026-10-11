@@ -18,6 +18,7 @@ use std::thread;
 use std::time::Duration;
 
 use frostlang::compile::{CompilerOptions, compile_in_scope};
+use frostlang::native::Function;
 use frostlang::{
     AbortReason, Arity, CancelToken, Closure, FrostError, ImportCtx, ImportResolver, Importer,
     ImporterBuilder, ProgramResult, RunError, RunErrorKind, Value, Vm, VmFactory,
@@ -317,8 +318,10 @@ fn a_native_that_swallows_a_cancellation_cannot_resume_frost() {
     // Once `first` is cancelled, the call to `second` is refused and the
     // native's result is ignored.
     let persist = Value::native("persist", Arity::Exact(2), |mut ctx, args| {
-        let _ = ctx.invoke(&args[0], []);
-        let _ = ctx.invoke(&args[1], []);
+        let first = Function::try_from(args[0].clone())?;
+        let second = Function::try_from(args[1].clone())?;
+        let _ = ctx.invoke(&first, []);
+        let _ = ctx.invoke(&second, []);
         Ok(Value::from("swallowed"))
     });
     let host = Host::new();

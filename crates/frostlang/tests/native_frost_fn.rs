@@ -5,8 +5,8 @@
 //! functions. The rest covers what only the macro decides: names, the
 //! context, return conversion, and how parameter types are named.
 
-use frostlang::native::{ArgSite, FromArg, IntoNativeResult, Nullable, Optional, Rest};
-use frostlang::{FrostError, FrostResult, FrostType, NativeCtx, TypeSet, Value, frost_fn};
+use frostlang::native::{Function, IntoNativeResult, Nullable, Optional, Rest, Structured};
+use frostlang::{FrostError, FrostResult, NativeCtx, Value, frost_fn};
 
 use crate::native_args;
 use crate::script::Script;
@@ -68,42 +68,19 @@ fn required_and_optional_nullable_parameters_are_alike() {
     );
 }
 
-/// Any Array or Map, as `native_args::each` declares its bindings.
-struct Bindings(Value);
-
-impl FromArg for Bindings {
-    const TYPES: TypeSet = FrostType::STRUCTURED;
-
-    fn from_arg(value: Value, _: &ArgSite<'_>) -> Result<Self, FrostError> {
-        Ok(Self(value))
-    }
-}
-
-/// Any Function, as `native_args::each` declares its callback.
-struct Callback(Value);
-
-impl FromArg for Callback {
-    const TYPES: TypeSet = FrostType::FUNCTION;
-
-    fn from_arg(value: Value, _: &ArgSite<'_>) -> Result<Self, FrostError> {
-        Ok(Self(value))
-    }
-}
-
 #[frost_fn(name = "each")]
 fn each(
     #[frost(ctx)] ctx: &mut NativeCtx<'_>,
     sql: String,
-    bindings: Optional<Bindings>,
-    callback: Callback,
+    bindings: Optional<Structured>,
+    callback: Function,
 ) -> FrostResult {
-    let count = match bindings.0.map(|Bindings(value)| value) {
+    let count = match bindings.0 {
         None => Value::Null,
-        Some(Value::Array(array)) => Value::Int(array.len() as i64),
-        Some(Value::Map(map)) => Value::Int(map.len() as i64),
-        Some(other) => unreachable!("type-checked, got {}", other.type_name()),
+        Some(Structured::Array(array)) => Value::Int(array.len() as i64),
+        Some(Structured::Map(map)) => Value::Int(map.len() as i64),
     };
-    ctx.invoke(&callback.0, [Value::from(sql), count])
+    ctx.invoke(&callback, [Value::from(sql), count])
 }
 
 #[test]

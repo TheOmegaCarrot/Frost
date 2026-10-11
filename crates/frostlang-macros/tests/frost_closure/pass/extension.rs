@@ -2,7 +2,7 @@
 // default features, so without the compiler. Captures, a runtime name, a
 // generic factory, untyped parameters, and an untyped context.
 
-use frostlang::native::{FromArg, IntoNativeResult, Optional, Rest};
+use frostlang::native::{FromArg, Function, IntoNativeResult, Optional, Rest};
 use frostlang::{Value, frost_closure};
 
 fn scaler(name: &'static str, factor: i64) -> Value {
@@ -20,7 +20,7 @@ fn first<T: FromArg + IntoNativeResult + 'static>(name: &'static str) -> Value {
 fn main() {
     let _: Value = scaler("ext.double", 2);
     let _: Value = first::<String>("ext.first");
-    let _: Value = frost_closure!("ext.call", |#[frost(ctx)] ctx, function, argument| {
+    let _: Value = frost_closure!("ext.call", |#[frost(ctx)] ctx, function: Function, argument| {
         ctx.invoke(&function, [argument])
     });
 }

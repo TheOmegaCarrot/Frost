@@ -4,7 +4,7 @@
 
 use std::sync::Arc;
 
-use crate::native::ArgSite;
+use crate::native::{ArgSite, Function};
 use crate::{FrostError, FrostResult, Value};
 
 use super::Vm;
@@ -27,13 +27,16 @@ pub struct NativeCtx<'a> {
 }
 
 impl NativeCtx<'_> {
-    /// Call a Frost function value from inside a native function.
+    /// Calls a Frost function from inside a native function.
     ///
-    /// Returns the callee's result, or the error it raised; calling a non-function value is an error.
-    /// The Vm is restored before an `Err` is returned, so the caller may catch it and continue.
+    /// Returns the callee's result, or the error it raised. The Vm is restored before
+    /// an `Err` is returned, so the caller may catch it and continue.
+    ///
+    /// A native takes a function argument as a [`Function`]; a host converts a
+    /// [`Value`] to one with `Function::try_from`.
     pub fn invoke(
         &mut self,
-        function: &Value,
+        function: &Function,
         args: impl IntoIterator<Item = Value>,
     ) -> FrostResult {
         // Once the run is fatally aborting, refuse to do any more Frost work; this is
@@ -44,6 +47,7 @@ impl NativeCtx<'_> {
         // A native calling back into Frost is itself a call: it burns fuel.
         self.vm.expend_fuel()?;
 
+        let function = function.as_value();
         match function {
             Value::NativeFunction(native) => {
                 let mut buf = self.vm.native_arg_pool.pop().unwrap_or_default();
@@ -101,14 +105,15 @@ impl NativeCtx<'_> {
                 self.vm.pop_vm_frame();
                 Ok(result)
             }
-            _ => Err(Vm::not_callable(function)),
+            other => unreachable!("a Function holds a function, not {}", other.type_name()),
         }
     }
 
-    /// Invoke a Frost function from within a native function, using an iterable over references.
+    /// Calls a Frost function as [`invoke`](Self::invoke) does, with arguments by
+    /// reference.
     pub fn invoke_ref<'a>(
         &mut self,
-        function: &Value,
+        function: &Function,
         args: impl IntoIterator<Item = &'a Value>,
     ) -> FrostResult {
         self.invoke(function, args.into_iter().cloned())

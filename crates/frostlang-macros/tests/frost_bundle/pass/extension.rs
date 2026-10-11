@@ -2,7 +2,7 @@
 // its default features, so without the compiler. Every way a function takes
 // the state, groups, and an unnamed parameter.
 
-use frostlang::native::{Bundle, BundleCtx, MutableBundle, MutableBundleCtx};
+use frostlang::native::{Bundle, BundleCtx, Function, MutableBundle, MutableBundleCtx};
 use frostlang::{FrostResult, NativeCtx, Value, frost_bundle, frost_mutable_bundle};
 
 struct Prefix(String);
@@ -13,7 +13,7 @@ impl Prefix {
         format!("{}{text}", self.0)
     }
 
-    fn call(&self, #[frost(ctx)] ctx: &mut NativeCtx<'_>, function: Value) -> FrostResult {
+    fn call(&self, #[frost(ctx)] ctx: &mut NativeCtx<'_>, function: Function) -> FrostResult {
         ctx.invoke(&function, [Value::from(self.0.as_str())])
     }
 
@@ -40,7 +40,7 @@ impl Log {
 
     fn push_from(
         #[frost(ctx)] ctx: &mut MutableBundleCtx<'_, Self>,
-        function: Value,
+        function: Function,
     ) -> FrostResult {
         let line = ctx.native().invoke(&function, [])?;
         ctx.lock()?.0.push(line.to_frost_string());

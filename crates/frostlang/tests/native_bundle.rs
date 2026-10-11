@@ -6,7 +6,7 @@ use std::panic::{AssertUnwindSafe, catch_unwind};
 use std::sync::Arc;
 use std::sync::atomic::{AtomicI64, Ordering};
 
-use frostlang::native::{Bundle, FrostArg};
+use frostlang::native::{Bundle, FrostArg, Function};
 use frostlang::{FrostType, MapKey, Param, Params, Value};
 
 use crate::script::{Script, optimization_permutations};
@@ -25,7 +25,7 @@ pub(crate) fn table(entries: Vec<i64>) -> Value {
         })
         .function("table.len", NO_PARAMS, |ctx, _| Ok(ctx.state().len()))
         .function("table.apply", CALLBACK, |ctx, mut args| {
-            let callback: Value = args.take()?;
+            let callback: Function = args.take()?;
             let entries = ctx.state();
             entries
                 .iter()
