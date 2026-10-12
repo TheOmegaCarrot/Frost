@@ -2,6 +2,7 @@
 name = "frostlang-astviz"
 version = "0.0.1"
 edition.workspace = true
+rust-version.workspace = true
 # Development tooling, not part of Frost.
 publish = false
 

@@ -2,6 +2,7 @@
 name = "frostlang"
 version = "0.0.1"
 edition.workspace = true
+rust-version.workspace = true
 # See `[[test]]`.
 autotests = false
 

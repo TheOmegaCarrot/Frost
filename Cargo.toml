@@ -16,10 +16,14 @@ resolver = "3"
 # Each crate carries its own version, released independently.
 [workspace.package]
 edition = "2024"
+rust-version = "1.95"
 
 # Workspace crates, for depending on one another. Each version is the minimum a
 # dependent requires.
 [workspace.dependencies]
+# A crate wanting this without default features depends on it by path instead:
+# overriding a workspace dependency's `default-features` needs a Cargo newer than
+# our `rust-version`.
 frostlang = { path = "crates/frostlang", version = "0.0.1" }
 frostlang-driver = { path = "crates/frostlang-driver", version = "0.0.1" }
 frostlang-fs-resolver = { path = "crates/frostlang-fs-resolver", version = "0.0.1" }

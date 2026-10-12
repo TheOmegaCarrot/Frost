@@ -27,7 +27,7 @@ pub use params::{InvalidParams, Param, Params};
 pub use print_sink::{PrintSink, StdoutSink};
 pub use serialize::FormatVersion;
 
-use std::{debug_assert_matches, num::NonZeroUsize, sync::Arc};
+use std::{num::NonZeroUsize, sync::Arc};
 
 use itertools::Itertools;
 
@@ -1452,9 +1452,8 @@ impl Vm {
         reclaim(self, buf);
 
         let popped = self.stack_frames.pop();
-        debug_assert_matches!(
-            popped,
-            Some(StackFrame::NativeFrame),
+        debug_assert!(
+            matches!(popped, Some(StackFrame::NativeFrame)),
             "run_native must pop the NativeFrame it pushed"
         );
 

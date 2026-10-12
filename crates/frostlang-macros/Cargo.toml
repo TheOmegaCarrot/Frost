@@ -2,6 +2,7 @@
 name = "frostlang-macros"
 version = "0.0.1"
 edition.workspace = true
+rust-version.workspace = true
 # See `[[test]]`.
 autotests = false
 
@@ -17,7 +18,7 @@ syn = { version = "3", features = ["full"] }
 [dev-dependencies]
 # The compile tests build against `frostlang` as an extension does: without its
 # compiler.
-frostlang = { workspace = true, default-features = false }
+frostlang = { path = "../frostlang", version = "0.0.1", default-features = false }
 # `diff` for readable failures.
 trybuild = { version = "1", features = ["diff"] }
 

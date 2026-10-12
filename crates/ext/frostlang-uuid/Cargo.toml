@@ -2,11 +2,12 @@
 name = "frostlang-uuid"
 version = "0.0.1"
 edition.workspace = true
+rust-version.workspace = true
 # See `[[test]]`.
 autotests = false
 
 [dependencies]
-frostlang = { workspace = true, default-features = false }
+frostlang = { path = "../../frostlang", version = "0.0.1", default-features = false }
 # `std` for its monotonic `Generator`.
 ulid = "3"
 uuid = { version = "1.28", features = ["v4", "v7"] }
