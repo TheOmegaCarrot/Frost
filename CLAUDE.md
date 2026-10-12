@@ -17,8 +17,12 @@ Frost is not yet stabilized or published.
 
 ## Build & Test
 
-The toolchain is the current stable Rust, unpinned; resolve it live (`rustc --version`)
-rather than assuming a version. Edition 2024.
+Development uses the current stable Rust, unpinned; resolve it live (`rustc --version`)
+rather than assuming a version. The minimum supported Rust version is the workspace's
+`rust-version` in `Cargo.toml`. Edition 2024.
+
+The `trybuild` compile tests in `frostlang-macros` compare against the current stable
+compiler's diagnostics, so they fail on older toolchains even when the code is correct.
 
 ```bash
 cargo build                       # debug build
@@ -209,7 +213,8 @@ The pipeline-friendly function forms are `transform`, `select`, and `fold`.
 
 ### Rust code
 
-- Stable Rust only, against the current toolchain. Recently-stabilized features are fine.
+- Stable Rust only, no newer than the workspace's `rust-version`; this holds for
+  dependencies too. Raising `rust-version` is a deliberate decision, never a side effect.
 - `unsafe` requires very strong justification.
 - Take full advantage of strong types. Make invalid states unrepresentable wherever possible.
 - Write idiomatic Rust.
