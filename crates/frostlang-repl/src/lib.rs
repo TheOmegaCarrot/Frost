@@ -56,8 +56,8 @@ use std::sync::Arc;
 
 use frostlang::compile::{CompilerOptions, Diagnostics, OptimizationOptions, compile_in_scope};
 use frostlang::{
-    AbortReason, CancelToken, Closure, FrostError, IdleVm, Importer, RunErrorKind, Value, Vm,
-    VmRuntimeConfiguration,
+    AbortReason, CancelToken, Closure, FrostError, IdleVm, Importer, ProgramParts, RunErrorKind,
+    Value, Vm, VmRuntimeConfiguration,
 };
 use frostlang_parse::{Token, tokens};
 
@@ -249,25 +249,25 @@ impl Repl {
         };
         match vm.with_cancel_token(token).run() {
             Ok(result) => {
-                let value = result.tail().clone();
-                self.bindings.extend(
-                    result
-                        .exports()
-                        .map(|(name, value)| (name.to_string(), value.clone())),
-                );
-                self.idle_vm = Some(result.into_idle_vm());
-                if self.results_kept > 0 && value != Value::Null {
+                let ProgramParts {
+                    tail,
+                    exports,
+                    idle_vm,
+                } = result.into_parts();
+                self.bindings.extend(exports);
+                self.idle_vm = Some(idle_vm);
+                if self.results_kept > 0 && tail != Value::Null {
                     if self.results.len() == self.results_kept {
                         self.results.pop_front();
                     }
-                    self.results.push_back(value.clone());
+                    self.results.push_back(tail.clone());
                 }
-                Ok(value)
+                Ok(tail)
             }
             Err(failure) => {
-                let error = failure.error().clone();
                 let cancelled = failure.kind() == RunErrorKind::Aborted(AbortReason::Cancelled);
-                self.idle_vm = Some(failure.into_idle_vm());
+                let (error, idle_vm) = failure.into_parts();
+                self.idle_vm = Some(idle_vm);
                 Err(if cancelled {
                     ReplError::Cancelled(error)
                 } else {

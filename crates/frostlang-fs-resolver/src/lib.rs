@@ -250,8 +250,10 @@ impl FsResolver {
             .run()
             .map_err(RunError::into_error)?;
         let exports: ValueMap = result
-            .exports()
-            .map(|(name, value)| (MapKey::from(name), value.clone()))
+            .into_parts()
+            .exports
+            .into_iter()
+            .map(|(name, value)| (MapKey::from(name), value))
             .collect();
         Ok(Value::Map(exports.into()))
     }

@@ -75,7 +75,10 @@ impl FoldVm {
             None => self.factory.build(closure),
         };
         let (value, idle) = match vm.run() {
-            Ok(result) => (Some(result.tail().clone()), result.into_idle_vm()),
+            Ok(result) => {
+                let parts = result.into_parts();
+                (Some(parts.tail), parts.idle_vm)
+            }
             Err(error) => (None, error.into_idle_vm()),
         };
         *self.parked.borrow_mut() = Some(idle);

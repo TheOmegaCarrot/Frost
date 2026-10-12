@@ -45,8 +45,8 @@ pub use vm::{
     ExtensionBuilder, ExtensionError, HostComponent, HostComponentBuilder, HostComponentError,
     IdleVm, ImportCtx, ImportResolver, Importer, ImporterBuilder, InvalidComponentName,
     InvalidParams, MissingCaptures, ModuleId, NativeCtx, NativeFn, NativeFunction, Param, Params,
-    PrintSink, ProgramResult, RunError, RunErrorKind, Stdlib, StdlibError, StdlibModule,
-    StdoutSink, TrustedProgram, Vm, VmFactory, VmRuntimeConfiguration,
+    PrintSink, ProgramParts, ProgramResult, RunError, RunErrorKind, Stdlib, StdlibError,
+    StdlibModule, StdoutSink, TrustedProgram, Vm, VmFactory, VmRuntimeConfiguration,
 };
 
 /// Makes a Frost function from a Rust function.

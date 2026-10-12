@@ -2,7 +2,7 @@
 //! its result and exports.
 
 use frostlang::compile::{CompilerOptions, compile_program};
-use frostlang::{Value, Vm};
+use frostlang::{ProgramParts, Value, Vm};
 
 #[test]
 fn a_host_compiles_and_runs_source() {
@@ -27,5 +27,52 @@ fn a_host_compiles_and_runs_source() {
         exports,
         [("answer", &Value::Int(42))],
         "the program's exports"
+    );
+}
+
+#[test]
+fn a_host_keeps_uniquely_owned_state_between_runs() {
+    // The script exports a handler; the host runs it once per event on a recycled
+    // Vm, passing the state in and taking the new state back out by value.
+    let source = r"
+        export defn step(state) -> state + [len(state)]
+    ";
+    let closure = compile_program("embedding.frst", source, CompilerOptions::new())
+        .expect("the source compiles")
+        .code
+        .into_closure()
+        .expect("the program needs no host captures");
+    let ProgramParts {
+        mut exports,
+        mut idle_vm,
+        ..
+    } = Vm::factory()
+        .build(closure)
+        .run()
+        .expect("the program runs")
+        .into_parts();
+    let Some((_, Value::Closure(step))) = exports.pop() else {
+        panic!("the program exports `step` as a closure");
+    };
+
+    let mut state = Vec::new();
+    for _ in 0..3 {
+        let parts = idle_vm
+            .build(step.clone())
+            .run_with_args([Value::from(state)])
+            .expect("`step` runs")
+            .into_parts();
+        idle_vm = parts.idle_vm;
+        state = parts
+            .tail
+            .try_into_array()
+            .expect("`step` returns an Array")
+            .try_into_vec()
+            .expect("the returned state is uniquely owned");
+    }
+    assert_eq!(
+        state,
+        [Value::Int(0), Value::Int(1), Value::Int(2)],
+        "each run appended its step to the state"
     );
 }

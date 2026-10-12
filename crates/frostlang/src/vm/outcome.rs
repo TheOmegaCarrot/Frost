@@ -87,7 +87,7 @@ impl RunError {
         &self.error
     }
 
-    /// Take the error, discarding the Vm. The cheap exit for a host that will not reuse it.
+    /// Take the error, discarding the Vm.
     pub fn into_error(self) -> FrostError {
         self.error
     }
@@ -153,12 +153,65 @@ impl ProgramResult {
     pub fn into_idle_vm(self) -> IdleVm {
         IdleVm(self.0)
     }
+
+    /// Take the result apart: its tail value, its exports, and the warm VM.
+    ///
+    /// Unlike cloning out through [`tail`](Self::tail) and [`exports`](Self::exports),
+    /// this leaves the [`IdleVm`] no copy of any value, so none becomes shared.
+    pub fn into_parts(self) -> ProgramParts {
+        let mut vm = self.0;
+        let tail = vm.stack.pop().unwrap_or(Value::Null);
+        let base = vm.base_frame();
+        let (function, slot_base) = (Arc::clone(&base.this_fn), base.slot_base);
+        // Draining every slot also drops the non-exported bindings,
+        // which may share a value with the tail or an export.
+        let exports = function
+            .name_table
+            .iter()
+            .zip(vm.slots.drain(slot_base..))
+            .filter(|(entry, _)| entry.exported)
+            .map(|(entry, slot)| {
+                let value = slot.expect("IMPOSSIBLE: exported slot unfilled after execution");
+                (entry.name.clone(), value)
+            })
+            .collect();
+        ProgramParts {
+            tail,
+            exports,
+            idle_vm: IdleVm(vm),
+        }
+    }
+}
+
+/// A successful run taken apart by value; see [`ProgramResult::into_parts`].
+pub struct ProgramParts {
+    /// The value of the script's tail expression, as [`ProgramResult::tail`] reads it.
+    pub tail: Value,
+    /// The exported bindings and their values, as [`ProgramResult::exports`] lists them.
+    pub exports: Vec<(String, Value)>,
+    /// The warm VM, for reuse.
+    pub idle_vm: IdleVm,
+}
+
+impl std::fmt::Debug for ProgramParts {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        // Elide the (large, indeterminate) Vm from `{:?}` output.
+        f.debug_struct("ProgramParts")
+            .field("tail", &self.tail)
+            .field("exports", &self.exports)
+            .finish_non_exhaustive()
+    }
 }
 
 impl RunError {
     /// Recover the warm VM as an [`IdleVm`] for reuse, discarding the error.
     pub fn into_idle_vm(self) -> IdleVm {
         IdleVm(self.vm)
+    }
+
+    /// Take the failure apart: the error that ended the run, and the warm VM.
+    pub fn into_parts(self) -> (FrostError, IdleVm) {
+        (self.error, IdleVm(self.vm))
     }
 }
 
