@@ -1473,11 +1473,11 @@ fn iterative_expressions_written_as_calls() {
     ]);
 }
 
-// `reduce` takes an initial value with `init:`; `fold` takes it last.
+// `reduce` takes an initial value with `init:`; `fold` takes it before the function.
 #[test]
 fn reduce_with_an_initial_value() {
     let seeded = "`reduce` is an expression, written `reduce xs init: v with f`; its function \
-                  form is `fold(xs, f, v)`";
+                  form is `fold(xs, v, f)`";
     let before_with = "an initial value goes before `with`: `reduce xs init: v with f`";
     assert_help(&[
         ("reduce(xs, 0, fn (a, x) -> a + x)", seeded),

@@ -108,7 +108,7 @@ fn a_recursive_pure_function_folds() {
 fn a_pure_lambda_folds_in_every_higher_order_global() {
     for (source, expected) in [
         ("select([1, 2, 3], fn v -> v > 1)", "[2, 3]"),
-        ("fold([1, 2, 3], fn a, b -> a + b, 0)", "6"),
+        ("fold([1, 2, 3], 0, fn a, b -> a + b)", "6"),
         ("each([1, 2], fn v -> v * 2)", "[1, 2]"),
         ("call(fn a, b -> a * b, [3, 4])", "12"),
         ("and_then(1, fn v -> v + 1)", "2"),

@@ -2497,27 +2497,30 @@ fn fold_combines_an_array() {
     assert_values(&[
         ("fold([1, 2, 3, 4], plus)", "10"),
         // The initializer starts the fold, and the accumulator comes first.
-        ("fold([1, 2, 3], plus, 10)", "16"),
-        ("fold([1, 2, 3], minus, 10)", "4"),
-        ("fold(['a', 'b'], plus, '')", "'ab'"),
+        ("fold([1, 2, 3], 10, plus)", "16"),
+        ("fold([1, 2, 3], 10, minus)", "4"),
+        ("fold(['a', 'b'], '', plus)", "'ab'"),
         // Without an initializer, the first element starts the fold.
         ("fold([10, 1, 2], minus)", "7"),
         ("fold([5], minus)", "5"),
         ("fold([], plus)", "null"),
-        ("fold([], plus, 0)", "0"),
+        ("fold([], 0, plus)", "0"),
         // A Null initializer is an initializer.
-        ("fold([1], fn acc, x -> [acc, x], null)", "[null, 1]"),
-        ("[1, 2, 3] @ fold(plus, 0)", "6"),
+        ("fold([1], null, fn acc, x -> [acc, x])", "[null, 1]"),
+        // A Function initializer is an initializer: with three arguments,
+        // the second is always the initializer.
+        ("fold([1], plus, fn acc, x -> acc)", "plus"),
+        ("[1, 2, 3] @ fold(0, plus)", "6"),
     ]);
 }
 
 #[test]
 fn fold_combines_a_map_from_an_initializer() {
     assert_values(&[
-        ("fold({a: 1, b: 2}, fn acc, k, v -> acc + v, 0)", "3"),
-        ("fold({}, fn acc, k, v -> acc + v, 0)", "0"),
+        ("fold({a: 1, b: 2}, 0, fn acc, k, v -> acc + v)", "3"),
+        ("fold({}, 0, fn acc, k, v -> acc + v)", "0"),
         (
-            "fold({a: 1}, fn acc, k, v -> [acc, k, v], null)",
+            "fold({a: 1}, null, fn acc, k, v -> [acc, k, v])",
             "[null, 'a', 1]",
         ),
     ]);
@@ -2538,7 +2541,7 @@ fn fold_raises_what_its_function_raises() {
     let script = script("fold([1, 2, 3], fn acc, x -> { print(x); error('boom') })");
     assert_eq!(script.raises(), "boom");
     assert_eq!(script.printed(), ["2"], "the first error ends the fold");
-    assert_raises(&[("fold({a: 1}, fn acc, k, v -> error('boom'), 0)", "boom")]);
+    assert_raises(&[("fold({a: 1}, 0, fn acc, k, v -> error('boom'))", "boom")]);
     // A single element with no initializer is never combined.
     assert_values(&[("fold([1], fn acc, x -> error('boom'))", "1")]);
 }
@@ -2549,7 +2552,12 @@ fn fold_checks_its_arguments() {
         "fold",
         &[
             ("fold(5, plus)", "Structured", "argument 1", "Int"),
+            ("fold(5, 0, plus)", "Structured", "argument 1", "Int"),
+            // With two arguments, the second is the function, never an initializer.
             ("fold([1], 1)", "Function", "argument 2", "Int"),
+            // With three, the function is the third.
+            ("fold([1], 0, 1)", "Function", "argument 3", "Int"),
+            ("fold([1], plus, 0)", "Function", "argument 3", "Int"),
         ],
     );
     assert_arity("fold", "between 2 and 3", &[0, 1, 4]);
@@ -2619,7 +2627,7 @@ fn array_globals_leave_a_shared_input_unchanged() {
             scan([a[0], a[1]], plus),
             each(a, id),
             sorted(select(a, is_int)),
-            fold(a, fn acc, x -> acc, 0),
+            fold(a, 0, fn acc, x -> acc),
         ]
         [a, len(results)]
     ";
@@ -2731,7 +2739,7 @@ fn large_maps_work_in_every_map_global() {
         ("select(m, fn k, v -> k < 20) @ len()", "20"),
         ("reject(m, fn k, v -> k < 20) @ len()", "20"),
         ("transform(m, fn k, v -> {[k]: v})", LARGE_MAP),
-        ("fold(m, fn acc, k, v -> acc + v, 0)", "1560"),
+        ("fold(m, 0, fn acc, k, v -> acc + v)", "1560"),
         ("each(m, fn k, v -> v)", LARGE_MAP),
         ("len(group_by(range(40), id))", "40"),
         ("count_by(range(40), id) @ values() @ sum()", "40"),

@@ -337,7 +337,7 @@ fn an_accumulator_built_in_place_holds_every_entry() {
     let source = r"
         defn build(n, acc) -> if n == 0: acc else: build(n - 1, acc + [n])
         def xs = build(200, [])
-        def m = fold(xs, fn m, x -> m + {[x % 7]: x}, {})
+        def m = fold(xs, {}, fn m, x -> m + {[x % 7]: x})
         [xs[0], xs[199], m[0], m[6]]
     ";
     assert_eq!(

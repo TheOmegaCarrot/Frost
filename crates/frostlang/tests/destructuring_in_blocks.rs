@@ -726,7 +726,7 @@ fn a_lambda_passed_to_a_higher_order_function_may_destructure() {
             "[{n: 5}, {n: 3}]",
         ),
         (
-            "fold([[1, 2], [3, 4]], fn acc, p -> { def [a, b] = p; acc + a * b }, 0)",
+            "fold([[1, 2], [3, 4]], 0, fn acc, p -> { def [a, b] = p; acc + a * b })",
             "14",
         ),
         (

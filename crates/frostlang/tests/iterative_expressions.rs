@@ -2,7 +2,7 @@
 //!
 //! Each form is syntax for a call to a global: `filter xs with f` is
 //! `select(xs, f)`, `map xs with f` is `transform(xs, f)`,
-//! `reduce xs [init: i] with f` is `fold(xs, f[, i])`, and `foreach xs with f` is
+//! `reduce xs [init: i] with f` is `fold(xs, [i,] f)`, and `foreach xs with f` is
 //! `each(xs, f)`. The globals' own semantics are the runtime's; these tests pin
 //! that each form calls the right one, with its operands in the right order,
 //! whatever the script names its own bindings.
@@ -180,7 +180,7 @@ fn each_form_equals_its_direct_call() {
         ),
         (
             "reduce [1, 2, 3] init: 4 with fn a, x -> a * x",
-            "fold([1, 2, 3], fn a, x -> a * x, 4)",
+            "fold([1, 2, 3], 4, fn a, x -> a * x)",
         ),
         (
             "foreach [1, 2, 3] with fn x -> x",
@@ -278,7 +278,7 @@ fn forms_compose() {
 // --- Evaluation and errors ---
 
 #[test]
-fn operands_are_evaluated_structure_then_operation_then_init() {
+fn operands_are_evaluated_in_the_order_written() {
     assert_raises(&[
         ("map (1 / 0) with (1 % 0)", "Division by zero"),
         ("filter (1 / 0) with (1 % 0)", "Division by zero"),
@@ -287,8 +287,8 @@ fn operands_are_evaluated_structure_then_operation_then_init() {
             "reduce (1 / 0) init: (1 % 0) with (null + true)",
             "Division by zero",
         ),
-        // The operation comes before `init`, though written after it.
-        ("reduce [1] init: (1 % 0) with (null + true)", "Null + Bool"),
+        // `init` comes before the operation, as written.
+        ("reduce [1] init: (null + true) with (1 % 0)", "Null + Bool"),
     ]);
 }
 

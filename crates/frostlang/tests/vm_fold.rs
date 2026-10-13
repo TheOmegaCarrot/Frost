@@ -1,6 +1,6 @@
 //! Tests for the `fold` global: the lowered form of `reduce foo with f`.
 //!
-//! `fold(structure, f)` / `fold(structure, f, init)` reduces `structure` to a
+//! `fold(structure, f)` / `fold(structure, init, f)` reduces `structure` to a
 //! single value by threading an accumulator through `f`:
 //!
 //!   * Array: `f(acc, elem)`, left to right. With `init`, that is the starting
@@ -100,12 +100,12 @@ fn run_main(caps: Vec<(&str, Value)>, body: Vec<Bytecode>) -> Result<Value, Fros
         .map(|r| r.tail().clone())
 }
 
-/// `fold(structure, f)` or `fold(structure, f, init)` through the full
+/// `fold(structure, f)` or `fold(structure, init, f)` through the full
 /// `LoadGlobal` + `Call` path, depending on whether `init` is supplied.
 fn fold(structure: Value, f: Value, init: Option<Value>) -> Result<Value, FrostError> {
     match init {
         Some(init) => run_main(
-            vec![("s", structure), ("f", f), ("i", init)],
+            vec![("s", structure), ("i", init), ("f", f)],
             vec![
                 LoadGlobal(global_slot("fold")),
                 LoadLocal(0),
@@ -280,11 +280,18 @@ fn first_argument_must_be_structured() {
 }
 
 #[test]
-fn second_argument_must_be_a_function() {
+fn the_last_argument_must_be_a_function() {
+    let err = fold(arr(vec![Value::Int(1)]), Value::Int(2), None).unwrap_err();
+    assert_eq!(
+        err.message(),
+        "Function fold requires Function as argument 2, got Int",
+        "without an initializer"
+    );
     let err = fold(arr(vec![Value::Int(1)]), Value::Int(2), Some(Value::Int(0))).unwrap_err();
     assert_eq!(
         err.message(),
-        "Function fold requires Function as argument 2, got Int"
+        "Function fold requires Function as argument 3, got Int",
+        "with an initializer"
     );
 }
 

@@ -2146,7 +2146,7 @@ fn a_named_lambda_recurses_through_a_higher_order_function() {
             "10",
         ),
         (
-            r"defn depth(t) -> if is_array(t): 1 + fold(transform(t, depth), fn a, b -> if a > b: a else: b, 0) else: 0
+            r"defn depth(t) -> if is_array(t): 1 + fold(transform(t, depth), 0, fn a, b -> if a > b: a else: b) else: 0
             depth([[1], [[2]]])",
             "3",
         ),
@@ -2199,13 +2199,13 @@ fn a_lambda_is_a_callback() {
         ("transform([1, 2, 3], fn x -> x * 2)", "[2, 4, 6]"),
         ("transform([1, 2, 3], $($ * 2))", "[2, 4, 6]"),
         ("select([1, 2, 3, 4], fn x -> x > 2)", "[3, 4]"),
-        ("fold([1, 2, 3], fn acc, x -> acc + x, 0)", "6"),
+        ("fold([1, 2, 3], 0, fn acc, x -> acc + x)", "6"),
         ("and_then(5, fn x -> x + 1)", "6"),
         ("and_then(null, fn x -> x + 1)", "null"),
         ("or_else(5, fn -> 99)", "5"),
         ("or_else(null, fn -> 99)", "99"),
     ]);
-    assert_raises(&[("fold([1, 2, 3], 0, fn acc, x -> acc + x)", "argument 2")]);
+    assert_raises(&[("fold([1, 2, 3], fn acc, x -> acc + x, 0)", "argument 3")]);
 }
 
 #[test]

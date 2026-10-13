@@ -826,8 +826,8 @@ pub(super) fn reject(
 pub(super) fn fold(
     #[frost(ctx)] ctx: &mut NativeCtx<'_>,
     #[frost(unnamed)] structure: Structured,
-    #[frost(unnamed)] function: Function,
     initial: Optional<Value>,
+    #[frost(unnamed)] function: Function,
 ) -> FrostResult {
     match structure {
         Structured::Array(arr) => {

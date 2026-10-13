@@ -13,7 +13,7 @@ pub(super) enum Iteration {
     /// `map structure with operation`: `transform(structure, operation)`
     Map,
     /// `reduce structure [init: init] with operation`:
-    /// `fold(structure, operation[, init])`
+    /// `fold(structure, [init,] operation)`
     Reduce,
     /// `foreach structure with operation`: `each(structure, operation)`
     Foreach,
@@ -47,9 +47,9 @@ impl FunctionBuilder<'_> {
             .unwrap_or_else(|| panic!("`{}` is a global", iteration.global()));
         let callee = self.load_global(slot);
 
-        let args = [structure, operation]
-            .into_iter()
+        let args = std::iter::once(structure)
             .chain(init)
+            .chain([operation])
             .map(|expr| self.compile_expression(expr, Position::Inner))
             .collect::<Result<Vec<_>, _>>()?;
 

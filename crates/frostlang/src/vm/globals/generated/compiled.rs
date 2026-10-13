@@ -484,8 +484,8 @@
 //        4  DefLocal       2   ; step
 //        5  LoadGlobal     80  ; fold
 //        6  ConsumeLocal   0   ; keys
-//        7  ConsumeLocal   2   ; step
-//        8  ConsumeLocal   1   ; structure
+//        7  ConsumeLocal   1   ; structure
+//        8  ConsumeLocal   2   ; step
 //        9  TailCall       3
 //
 // function step (child 0)
@@ -939,8 +939,8 @@ pub(super) fn functions() -> Value {
                 map([(string("DefLocal"), int(2))]),
                 map([(string("LoadGlobal"), int(80))]),
                 map([(string("ConsumeLocal"), int(0))]),
-                map([(string("ConsumeLocal"), int(2))]),
                 map([(string("ConsumeLocal"), int(1))]),
+                map([(string("ConsumeLocal"), int(2))]),
                 map([(string("TailCall"), int(3))]),
             ])),
             (string("constants"), array([])),

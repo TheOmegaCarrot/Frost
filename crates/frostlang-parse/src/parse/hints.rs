@@ -233,7 +233,7 @@ fn is_iterative_keyword(token: &Token) -> bool {
 fn iterative_help(keyword: &Token, seeded: bool) -> String {
     if seeded && *keyword == Token::KwReduce {
         return "`reduce` is an expression, written `reduce xs init: v with f`; \
-                its function form is `fold(xs, f, v)`"
+                its function form is `fold(xs, v, f)`"
             .to_owned();
     }
     format!(
