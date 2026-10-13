@@ -6,7 +6,7 @@
 //! call budget a real termination guarantee for untrusted scripts.
 
 use std::collections::BTreeMap;
-use std::num::NonZeroUsize;
+use std::num::NonZeroU64;
 use std::sync::Arc;
 
 use crate::common;
@@ -74,12 +74,12 @@ fn unlimited() -> VmRuntimeConfiguration {
     VmRuntimeConfiguration::default()
 }
 
-fn with_fuel(budget: usize) -> VmRuntimeConfiguration {
-    VmRuntimeConfiguration::default().with_fuel(NonZeroUsize::new(budget))
+fn with_fuel(budget: u64) -> VmRuntimeConfiguration {
+    VmRuntimeConfiguration::default().with_fuel(NonZeroU64::new(budget))
 }
 
-fn with_depth(max: usize) -> VmRuntimeConfiguration {
-    VmRuntimeConfiguration::default().with_max_call_depth(NonZeroUsize::new(max))
+fn with_depth(max: u64) -> VmRuntimeConfiguration {
+    VmRuntimeConfiguration::default().with_max_call_depth(NonZeroU64::new(max))
 }
 
 /// A nullary native that returns `null`.

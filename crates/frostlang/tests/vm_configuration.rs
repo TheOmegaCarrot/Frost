@@ -2,17 +2,17 @@
 //! What each setting does to a run is covered by `vm_limits.rs`,
 //! `vm_import.rs`, and `vm_print_sink.rs`.
 
-use std::num::NonZeroUsize;
+use std::num::NonZeroU64;
 use std::sync::Arc;
 
 use frostlang::{PrintSink, VmRuntimeConfiguration};
 
-fn limit(n: usize) -> Option<NonZeroUsize> {
-    NonZeroUsize::new(n)
+fn limit(n: u64) -> Option<NonZeroU64> {
+    NonZeroU64::new(n)
 }
 
 /// The limits of `config`, in declaration order, for comparing them whole.
-fn limits(config: &VmRuntimeConfiguration) -> [Option<NonZeroUsize>; 3] {
+fn limits(config: &VmRuntimeConfiguration) -> [Option<NonZeroU64>; 3] {
     [config.max_call_depth, config.fuel, config.max_import_depth]
 }
 

@@ -51,7 +51,7 @@ pub use terminal::TerminalFrontend;
 use std::collections::{BTreeMap, VecDeque};
 use std::fmt;
 use std::io;
-use std::num::NonZeroUsize;
+use std::num::NonZeroU64;
 use std::sync::Arc;
 
 use frostlang::compile::{CompilerOptions, Diagnostics, OptimizationOptions, compile_in_scope};
@@ -137,7 +137,7 @@ impl Default for Repl {
 /// runs inputs under unless given a configuration: deep enough for any sound
 /// recursion, and shallow enough that a runaway one fails before it exhausts
 /// memory.
-pub const DEFAULT_MAX_CALL_DEPTH: NonZeroUsize = NonZeroUsize::new(1_000_000).unwrap();
+pub const DEFAULT_MAX_CALL_DEPTH: NonZeroU64 = NonZeroU64::new(1_000_000).unwrap();
 
 impl Repl {
     /// A REPL with nothing bound, nothing importable, the default

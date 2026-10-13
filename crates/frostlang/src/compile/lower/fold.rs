@@ -24,7 +24,7 @@ mod tests;
 
 use std::cell::RefCell;
 use std::collections::BTreeMap;
-use std::num::NonZeroUsize;
+use std::num::NonZeroU64;
 use std::sync::Arc;
 
 use crate::bytecode::{Bytecode, CompiledFunction};
@@ -53,7 +53,7 @@ impl FoldVm {
         // Bounds a runaway fold. Reset per fold; generous because Frost iterates
         // by function call.
         let config = VmRuntimeConfiguration::default()
-            .with_fuel(NonZeroUsize::new(100_000))
+            .with_fuel(NonZeroU64::new(100_000))
             // `print` is impure, so no fold ever reaches it.
             .with_print_sink(Arc::new(|_: &str| unreachable!("a constant fold printed")));
         Self {

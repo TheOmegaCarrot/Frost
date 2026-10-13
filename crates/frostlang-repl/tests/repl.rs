@@ -3,7 +3,7 @@
 
 use std::error::Error;
 use std::io;
-use std::num::NonZeroUsize;
+use std::num::NonZeroU64;
 use std::sync::{Arc, Mutex};
 
 use frostlang::compile::{Diagnostics, OptimizationOptions};
@@ -405,7 +405,7 @@ fn bindings_lists_results_only_once_an_input_binds_it() {
 #[test]
 fn every_input_runs_under_the_configuration() {
     // Each input gets the whole budget: fuel does not carry over between inputs.
-    let config = VmRuntimeConfiguration::default().with_fuel(NonZeroUsize::new(20));
+    let config = VmRuntimeConfiguration::default().with_fuel(NonZeroU64::new(20));
     let mut repl = Repl::new().with_configuration(config);
     repl.evaluate("defn count(n) -> if n == 0: 0 else: count(n - 1)")
         .unwrap();
@@ -449,7 +449,7 @@ fn a_deep_but_bounded_recursion_fits_the_default_call_depth() {
 
 #[test]
 fn a_configuration_replaces_the_default_call_depth() {
-    let config = VmRuntimeConfiguration::default().with_max_call_depth(NonZeroUsize::new(50));
+    let config = VmRuntimeConfiguration::default().with_max_call_depth(NonZeroU64::new(50));
     let mut repl = Repl::new().with_configuration(config);
     repl.evaluate("defn depth(n) -> if n == 0: 0 else: 1 + depth(n - 1)")
         .unwrap();
@@ -492,7 +492,7 @@ fn inputs_import_from_the_importer() {
 fn inputs_compile_with_the_optimizations_chosen() {
     // Folded, this makes no calls at runtime; unfolded, it needs eleven.
     let foldable = "(fn f(n) -> if n == 0: 0 else: f(n - 1))(10)";
-    let config = || VmRuntimeConfiguration::default().with_fuel(NonZeroUsize::new(5));
+    let config = || VmRuntimeConfiguration::default().with_fuel(NonZeroU64::new(5));
     let mut folding = Repl::new().with_configuration(config());
     assert!(folding.evaluate(foldable).is_ok());
     let mut plain = Repl::new()

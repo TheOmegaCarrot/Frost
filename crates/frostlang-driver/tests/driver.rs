@@ -3,7 +3,7 @@
 
 use std::fs;
 use std::io::{self, Write};
-use std::num::NonZeroUsize;
+use std::num::NonZeroU64;
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
 
@@ -310,7 +310,7 @@ fn an_image_runs_as_compiled_whatever_the_optimizations_asked_for() {
     let run_under_small_budget = |args: &[&str]| {
         run_configured(
             Driver::new(),
-            |configuration| configuration.fuel = NonZeroUsize::new(5),
+            |configuration| configuration.fuel = NonZeroU64::new(5),
             args,
         )
         .exit
@@ -596,7 +596,7 @@ fn a_session_uses_the_drivers_configuration_and_the_chosen_optimizations() {
     let driver = Driver::new().with_importer(importer);
     let segments = ["import('ext.answer')", FOLDABLE];
     let small_budget = |configuration: &mut VmRuntimeConfiguration| {
-        configuration.fuel = NonZeroUsize::new(5);
+        configuration.fuel = NonZeroU64::new(5);
     };
     // Folded, FOLDABLE fits the budget; unfolded, it runs out.
     let folded = run_session_configured(
@@ -829,7 +829,7 @@ fn folds(args: &[&str]) -> bool {
     let args: Vec<&str> = args.iter().copied().chain(["-e", FOLDABLE]).collect();
     let ran = run_configured(
         Driver::new(),
-        |configuration| configuration.fuel = NonZeroUsize::new(5),
+        |configuration| configuration.fuel = NonZeroU64::new(5),
         &args,
     );
     match ran.exit {
@@ -869,7 +869,7 @@ fn optimizations_apply_to_a_subcommand_and_before_it() {
     for args in [["run", "-O", "none", &path], ["-O", "none", "run", &path]] {
         let ran = run_configured(
             Driver::new(),
-            |configuration| configuration.fuel = NonZeroUsize::new(5),
+            |configuration| configuration.fuel = NonZeroU64::new(5),
             &args,
         );
         assert_eq!(ran.exit, Exit::ScriptFailed, "{args:?}: {ran:?}");
@@ -897,7 +897,7 @@ fn an_invalid_optimization_setting_is_a_usage_error() {
 fn the_drivers_default_optimizations_apply_without_a_preset() {
     let ran = run_configured(
         Driver::new().with_optimization(OptimizationOptions::NONE),
-        |configuration| configuration.fuel = NonZeroUsize::new(5),
+        |configuration| configuration.fuel = NonZeroU64::new(5),
         &["-e", FOLDABLE],
     );
     assert_eq!(ran.exit, Exit::ScriptFailed, "{ran:?}");

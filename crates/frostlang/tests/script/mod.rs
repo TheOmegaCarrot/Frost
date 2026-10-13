@@ -21,7 +21,7 @@
 pub(crate) mod assertions;
 
 use std::collections::BTreeMap;
-use std::num::NonZeroUsize;
+use std::num::NonZeroU64;
 use std::sync::{Arc, Mutex};
 
 use frostlang::bytecode::{Bytecode, CompiledFunction};
@@ -88,8 +88,8 @@ pub(crate) struct Script {
     scope: Vec<String>,
     captures: BTreeMap<String, Value>,
     implicit_export: bool,
-    max_call_depth: Option<NonZeroUsize>,
-    max_import_depth: Option<NonZeroUsize>,
+    max_call_depth: Option<NonZeroU64>,
+    max_import_depth: Option<NonZeroU64>,
     importer: Arc<Importer>,
 }
 
@@ -114,14 +114,14 @@ impl Script {
     }
 
     /// Run with the VM's call depth limited to `depth` frames.
-    pub(crate) fn max_call_depth(mut self, depth: usize) -> Self {
-        self.max_call_depth = Some(NonZeroUsize::new(depth).expect("a depth limit is positive"));
+    pub(crate) fn max_call_depth(mut self, depth: u64) -> Self {
+        self.max_call_depth = Some(NonZeroU64::new(depth).expect("a depth limit is positive"));
         self
     }
 
     /// Run with imports limited to nesting `depth` deep.
-    pub(crate) fn max_import_depth(mut self, depth: usize) -> Self {
-        self.max_import_depth = Some(NonZeroUsize::new(depth).expect("a depth limit is positive"));
+    pub(crate) fn max_import_depth(mut self, depth: u64) -> Self {
+        self.max_import_depth = Some(NonZeroU64::new(depth).expect("a depth limit is positive"));
         self
     }
 

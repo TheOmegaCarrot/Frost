@@ -4,7 +4,7 @@
 //! `resolve_tests`; here the concern is the VM wiring: the opcode's stack effect and
 //! argument errors, and that the global is an ordinary callable `Function` value.
 
-use std::num::NonZeroUsize;
+use std::num::NonZeroU64;
 use std::sync::Arc;
 
 use crate::common;
@@ -251,7 +251,7 @@ fn import_depth_limit_stops_runaway_import_recursion() {
     // The resolver never terminates on its own (every module it serves imports
     // again), so only the depth limit can end this. Without it the native stack
     // would be exhausted, which is not a catchable error.
-    let config = VmRuntimeConfiguration::default().with_max_import_depth(NonZeroUsize::new(4));
+    let config = VmRuntimeConfiguration::default().with_max_import_depth(NonZeroU64::new(4));
     let err = run_with(Arc::new(RecursiveResolver), config, None).unwrap_err();
     assert!(
         err.message().contains("Import depth limit"),

@@ -1,6 +1,6 @@
 //! The REPL's own metacommands, run in sessions on a `ScriptedFrontend`.
 
-use std::num::NonZeroUsize;
+use std::num::NonZeroU64;
 use std::sync::{Arc, Mutex};
 
 use frostlang::compile::{Optimization, OptimizationOptions};
@@ -563,7 +563,7 @@ fn optimize_applies_to_every_later_input() {
     assert!(!folded.contains("Add"), "{folded}");
     assert!(unfolded.contains("Add"), "{unfolded}");
     // Evaluating, too: unfolded, this needs more fuel than the budget.
-    let configuration = VmRuntimeConfiguration::default().with_fuel(NonZeroUsize::new(5));
+    let configuration = VmRuntimeConfiguration::default().with_fuel(NonZeroU64::new(5));
     let foldable = "(fn f(n) -> if n == 0: 0 else: f(n - 1))(10)";
     let transcript = session_on(
         Repl::new().with_configuration(configuration),

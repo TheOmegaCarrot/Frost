@@ -27,7 +27,10 @@ pub use params::{InvalidParams, Param, Params};
 pub use print_sink::{PrintSink, StdoutSink};
 pub use serialize::FormatVersion;
 
-use std::{num::NonZeroUsize, sync::Arc};
+use std::{
+    num::{NonZeroU64, NonZeroUsize},
+    sync::Arc,
+};
 
 use itertools::Itertools;
 
@@ -85,7 +88,7 @@ pub struct Vm {
 
     // Function calls made so far (the fuel meter). Incremented on every call and
     // compared against `config.fuel`; zeroed on `rearm`.
-    fuel_used: usize,
+    fuel_used: u64,
 
     // The unrecoverable-error channel.
     // Once set (e.g. fuel exhaustion) the run is fatally aborting:
@@ -101,7 +104,7 @@ pub struct Vm {
     module_id: Option<ModuleId>,
 
     // How many imports deep this Vm is: 0 for a top-level script, 1 for a module it imported.
-    import_depth: usize,
+    import_depth: u64,
 
     // Stack heights saved by `MarkStack`, for every frame: each frame's own marks
     // sit above its `mark_base`.
@@ -118,12 +121,12 @@ pub struct Vm {
 /// The [`Default`] imposes no limits and prints to standard output.
 ///
 /// ```
-/// use std::num::NonZeroUsize;
+/// use std::num::NonZeroU64;
 ///
 /// use frostlang::VmRuntimeConfiguration;
 ///
-/// let config = VmRuntimeConfiguration::default().with_fuel(NonZeroUsize::new(1_000_000));
-/// assert_eq!(config.fuel, NonZeroUsize::new(1_000_000));
+/// let config = VmRuntimeConfiguration::default().with_fuel(NonZeroU64::new(1_000_000));
+/// assert_eq!(config.fuel, NonZeroU64::new(1_000_000));
 /// ```
 ///
 /// Each limit bounds how much work a program may do,
@@ -141,7 +144,7 @@ pub struct VmRuntimeConfiguration {
     /// recoverable error.
     /// Native calls and non-tail Vm calls contribute to the depth; tail calls do not.
     /// `None` leaves depth unbounded.
-    pub max_call_depth: Option<NonZeroUsize>,
+    pub max_call_depth: Option<NonZeroU64>,
 
     /// Call budget ("fuel"): execution fails once this many function calls have been made.
     /// `None` leaves execution unmetered.
@@ -156,7 +159,7 @@ pub struct VmRuntimeConfiguration {
     /// Because iteration is function calls, a Frost script makes many more calls than
     /// comparable code in a more procedural language like Lua.
     /// Consider setting this value higher than your intuition may lead you.
-    pub fuel: Option<NonZeroUsize>,
+    pub fuel: Option<NonZeroU64>,
 
     /// How deeply imports may nest:
     /// a module imported by a module imported by the top-level script is at depth 2.
@@ -169,7 +172,7 @@ pub struct VmRuntimeConfiguration {
     /// Each level runs in its own Vm, so [`max_call_depth`](Self::max_call_depth)
     /// bounds each of them separately but not the nesting.
     /// This is the backstop for an [`ImportResolver`] that does not detect cycles.
-    pub max_import_depth: Option<NonZeroUsize>,
+    pub max_import_depth: Option<NonZeroU64>,
 
     /// Receives the text of each `print`,
     /// in this Vm and in every Vm that runs a module it imports.
@@ -190,21 +193,21 @@ impl Default for VmRuntimeConfiguration {
 impl VmRuntimeConfiguration {
     /// This configuration with [`max_call_depth`](Self::max_call_depth) set to `limit`.
     #[must_use]
-    pub fn with_max_call_depth(mut self, limit: Option<NonZeroUsize>) -> Self {
+    pub fn with_max_call_depth(mut self, limit: Option<NonZeroU64>) -> Self {
         self.max_call_depth = limit;
         self
     }
 
     /// This configuration with [`fuel`](Self::fuel) set to `budget`.
     #[must_use]
-    pub fn with_fuel(mut self, budget: Option<NonZeroUsize>) -> Self {
+    pub fn with_fuel(mut self, budget: Option<NonZeroU64>) -> Self {
         self.fuel = budget;
         self
     }
 
     /// This configuration with [`max_import_depth`](Self::max_import_depth) set to `limit`.
     #[must_use]
-    pub fn with_max_import_depth(mut self, limit: Option<NonZeroUsize>) -> Self {
+    pub fn with_max_import_depth(mut self, limit: Option<NonZeroU64>) -> Self {
         self.max_import_depth = limit;
         self
     }
@@ -227,7 +230,7 @@ pub struct VmFactory {
     importer: Arc<Importer>,
     // Import nesting level for the Vms this factory builds.
     // Non-zero only inside a `ChildVmFactory`, whose `build` checks it against the limit.
-    import_depth: usize,
+    import_depth: u64,
 }
 
 impl VmFactory {
@@ -1271,15 +1274,15 @@ impl Vm {
     /// Called by the frame-push primitives; tail-call frame reuse is net-neutral so it
     /// never trips, and the top-level frame (depth 0 at entry) is always admitted.
     fn check_call_depth(&self) -> Result<(), FrostError> {
+        // usize is never wider than u64 on supported targets.
+        let depth = u64::try_from(self.stack_frames.len()).expect("frame count fits in u64");
         match self.config.max_call_depth {
-            Some(max) if self.stack_frames.len() >= max.get() => {
-                Err(Self::call_depth_exceeded(max.get()))
-            }
+            Some(max) if depth >= max.get() => Err(Self::call_depth_exceeded(max.get())),
             _ => Ok(()),
         }
     }
 
-    fn fuel_exhausted(limit: usize) -> FrostError {
+    fn fuel_exhausted(limit: u64) -> FrostError {
         FrostError::from_string(format!(
             "Execution exceeded its fuel limit of {limit} function calls"
         ))
@@ -1289,7 +1292,7 @@ impl Vm {
         FrostError::from_static("Execution was cancelled")
     }
 
-    fn call_depth_exceeded(limit: usize) -> FrostError {
+    fn call_depth_exceeded(limit: u64) -> FrostError {
         FrostError::from_string(format!(
             "Execution exceeded the maximum call depth of {limit}"
         ))

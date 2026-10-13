@@ -67,7 +67,7 @@ impl ProgramResult {
 impl ProgramResult {
     /// The number of function calls the program made: the fuel it consumed.
     /// Reported whether or not a [`fuel`](super::VmRuntimeConfiguration::fuel) limit was set.
-    pub fn fuel_consumed(&self) -> usize {
+    pub fn fuel_consumed(&self) -> u64 {
         self.0.fuel_used
     }
 }
@@ -101,7 +101,7 @@ impl RunError {
     }
 
     /// The number of function calls the program made before it failed.
-    pub fn fuel_consumed(&self) -> usize {
+    pub fn fuel_consumed(&self) -> u64 {
         self.vm.fuel_used
     }
 }

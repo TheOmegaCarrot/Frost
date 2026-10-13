@@ -1,7 +1,7 @@
 //! `frost`: the reference Frost command-line interface.
 
 use std::env;
-use std::num::NonZeroUsize;
+use std::num::NonZeroU64;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
@@ -11,11 +11,11 @@ use frostlang_fs_resolver::{DiagnosticStyle, FsResolver};
 
 /// How deeply imports may nest: far deeper than a sound module tree needs, and
 /// shallow enough that runaway nesting fails before the native stack runs out.
-const MAX_IMPORT_DEPTH: NonZeroUsize = NonZeroUsize::new(64).unwrap();
+const MAX_IMPORT_DEPTH: NonZeroU64 = NonZeroU64::new(64).unwrap();
 
 /// How deeply calls may nest: far deeper than any sound recursion needs, and
 /// shallow enough that runaway recursion fails before it exhausts memory.
-const MAX_CALL_DEPTH: NonZeroUsize = NonZeroUsize::new(1_000_000).unwrap();
+const MAX_CALL_DEPTH: NonZeroU64 = NonZeroU64::new(1_000_000).unwrap();
 
 fn main() -> Exit {
     Driver::new()
