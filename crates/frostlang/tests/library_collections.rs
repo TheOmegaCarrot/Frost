@@ -2054,22 +2054,59 @@ fn scan_returns_each_running_result() {
         ("scan([5], plus)", "[5]"),
         ("scan([], plus)", "[]"),
     ]);
+}
+
+#[test]
+fn scan_starts_from_an_initializer() {
+    // Each result is what `fold` gives over the elements so far, so the
+    // initializer is not itself a result, and every element gets one.
+    assert_values(&[
+        ("scan([1, 2, 3], 10, plus)", "[11, 13, 16]"),
+        ("scan([1, 2, 3], 10, minus)", "[9, 7, 4]"),
+        ("scan(['a', 'b'], '', plus)", "['a', 'ab']"),
+        ("scan([5], 1, plus)", "[6]"),
+        ("scan([], 0, plus)", "[]"),
+        // A Null initializer is an initializer.
+        ("scan([1], null, fn acc, x -> [acc, x])", "[[null, 1]]"),
+        // A Function initializer is an initializer: with three arguments,
+        // the second is always the initializer.
+        ("scan([1], plus, fn acc, x -> acc)", "[plus]"),
+        ("[1, 2, 3] @ scan(0, plus)", "[1, 3, 6]"),
+        // Each result agrees with `fold` over the elements so far.
+        (
+            "transform(range(1, 4), fn n -> fold(take([4, 5, 6], n), 1, times))",
+            "scan([4, 5, 6], 1, times)",
+        ),
+    ]);
+}
+
+#[test]
+fn scan_checks_its_arguments() {
     assert_type_errors(
         "scan",
         &[
             ("scan({}, plus)", "Array", "argument 1", "Map"),
+            ("scan({}, 0, plus)", "Array", "argument 1", "Map"),
+            // With two arguments, the second is the function, never an initializer.
             ("scan([1], 1)", "Function", "argument 2", "Int"),
+            // With three, the function is the third.
+            ("scan([1], 0, 1)", "Function", "argument 3", "Int"),
+            ("scan([1], plus, 0)", "Function", "argument 3", "Int"),
         ],
     );
-    assert_arity("scan", "2", &[0, 1, 3]);
+    assert_arity("scan", "between 2 and 3", &[0, 1, 4]);
 }
 
 #[test]
 fn scan_raises_what_its_function_raises() {
     // The first element starts the scan, so the function first sees the second.
-    let script = script("scan([1, 2, 3], fn a, b -> { print(b); error('boom') })");
-    assert_eq!(script.raises(), "boom");
-    assert_eq!(script.printed(), ["2"], "the first error ends the scan");
+    let unseeded = script("scan([1, 2, 3], fn a, b -> { print(b); error('boom') })");
+    assert_eq!(unseeded.raises(), "boom");
+    assert_eq!(unseeded.printed(), ["2"], "the first error ends the scan");
+    // With an initializer, the function first sees the first element.
+    let seeded = script("scan([1, 2, 3], 0, fn a, b -> { print(b); error('boom') })");
+    assert_eq!(seeded.raises(), "boom");
+    assert_eq!(seeded.printed(), ["1"], "the first error ends the scan");
 }
 
 #[test]

@@ -1111,17 +1111,26 @@ pub(super) fn count_by(
 pub(super) fn scan(
     #[frost(ctx)] ctx: &mut NativeCtx<'_>,
     #[frost(unnamed)] array: FrostArray,
+    initial: Optional<Value>,
     #[frost(unnamed)] function: Function,
 ) -> FrostResult {
+    // Each result is what `fold` gives over the elements so far:
+    // the initializer is not itself a result, but the first element is when it seeds.
     let mut elements = array.into_vec().into_iter();
-    let Some(first) = elements.next() else {
-        return Ok(Value::from(Vec::<Value>::new()));
+    let mut running = Vec::with_capacity(elements.len());
+    let mut accumulator = match initial.0 {
+        Some(initial) => initial,
+        None => {
+            let Some(first) = elements.next() else {
+                return Ok(running.into());
+            };
+            running.push(first.clone());
+            first
+        }
     };
-    let mut running = vec![first];
     for element in elements {
-        let last = running.last().expect("running starts with an element");
-        let next = ctx.invoke(&function, [last.clone(), element])?;
-        running.push(next);
+        accumulator = ctx.invoke(&function, [accumulator, element])?;
+        running.push(accumulator.clone());
     }
     Ok(running.into())
 }
