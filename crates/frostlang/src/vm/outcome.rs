@@ -67,6 +67,10 @@ impl ProgramResult {
 impl ProgramResult {
     /// The number of function calls the program made: the fuel it consumed.
     /// Reported whether or not a [`fuel`](super::VmRuntimeConfiguration::fuel) limit was set.
+    ///
+    /// Every call counts, to a Frost or a native function, tail calls included,
+    /// as does each call a native makes back into Frost.
+    /// A module the program imports runs on a Vm of its own, so its calls do not count.
     pub fn fuel_consumed(&self) -> u64 {
         self.0.fuel_used
     }
@@ -100,7 +104,8 @@ impl RunError {
         }
     }
 
-    /// The number of function calls the program made before it failed.
+    /// The number of function calls the program made before it failed,
+    /// counted as [`ProgramResult::fuel_consumed`] counts them.
     pub fn fuel_consumed(&self) -> u64 {
         self.vm.fuel_used
     }

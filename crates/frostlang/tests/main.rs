@@ -28,6 +28,7 @@ mod frost_bytes;
 mod frost_float;
 mod frost_map;
 mod frost_string;
+mod fuel_consumed;
 mod function_propagation;
 mod generated_globals;
 mod global_purity;
