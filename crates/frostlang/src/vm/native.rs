@@ -133,6 +133,12 @@ impl<'a> NativeCtx<'a> {
     pub fn name(&self) -> &'a str {
         &self.function.name
     }
+
+    /// Prints `text` as one Frost `print` does: to the run's
+    /// [`print_sink`](super::VmRuntimeConfiguration::print_sink).
+    pub fn print(&self, text: &str) {
+        self.vm.config.print_sink.print(text);
+    }
 }
 
 /// The bound every native function must satisfy.

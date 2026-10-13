@@ -7,7 +7,7 @@ use crate::{FrostError, FrostMap, FrostString, NativeCtx, Value, frost_fn};
 /// sink. Returns Null.
 #[frost_fn]
 pub(super) fn print(#[frost(ctx)] ctx: &mut NativeCtx<'_>, #[frost(unnamed)] value: Value) {
-    ctx.vm.config.print_sink.print(&value.to_frost_string());
+    ctx.print(&value.to_frost_string());
 }
 
 #[frost_fn]
@@ -22,10 +22,7 @@ pub(super) fn mprint(
     format: FrostString,
     replacements: FrostMap,
 ) -> Result<(), FrostError> {
-    ctx.vm
-        .config
-        .print_sink
-        .print(&fill_template(&format, &replacements)?);
+    ctx.print(&fill_template(&format, &replacements)?);
     Ok(())
 }
 

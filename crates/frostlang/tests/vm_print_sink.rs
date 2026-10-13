@@ -1,17 +1,20 @@
 //! Tests for [`PrintSink`]: where a Vm's printed text goes.
 //!
 //! The `print` global's own behavior is covered by `library_output.rs`; these
-//! cover the host's side, the sink it configures.
+//! cover the host's side, the sink it configures, and natives printing to it
+//! through `NativeCtx::print`.
 
 use std::sync::{Arc, Mutex};
 
 use crate::common;
+use crate::script::Script;
 
 use common::{Pop, global_slot};
 use frostlang::bytecode::{Bytecode, CompiledFunction, FormatVersion};
+use frostlang::native::MutableBundle;
 use frostlang::{
-    Arity, FrostError, ImportCtx, ImportResolver, ImporterBuilder, PrintSink, Value, Vm,
-    VmRuntimeConfiguration,
+    Arity, FrostError, ImportCtx, ImportResolver, ImporterBuilder, NativeCtx, PrintSink, Value, Vm,
+    VmRuntimeConfiguration, frost_fn, frost_mutable_bundle,
 };
 
 use Bytecode::*;
@@ -138,4 +141,75 @@ fn a_type_implementing_the_trait_is_a_sink() {
 fn a_configuration_with_a_sink_is_debuggable() {
     let rendered = format!("{:?}", VmRuntimeConfiguration::default());
     assert!(rendered.contains("print_sink"), "{rendered}");
+}
+
+// ============================================================
+// NativeCtx::print
+// ============================================================
+
+/// `say(text)`: prints `text` through `NativeCtx::print`.
+#[frost_fn]
+fn say(#[frost(ctx)] ctx: &mut NativeCtx<'_>, text: String) {
+    ctx.print(&text);
+}
+
+#[test]
+fn a_native_prints_to_the_configured_sink_in_order_with_frost() {
+    let printed = Script::new(
+        r"
+        print('first')
+        say('second')
+        print('third')
+        ",
+    )
+    .capture("say", say_frost().build())
+    .printed();
+    assert_eq!(printed, ["first", "second", "third"]);
+}
+
+#[test]
+fn a_native_print_reaches_the_sink_as_one_verbatim_text() {
+    // One call is one text, embedded newline included, with nothing added.
+    let printed = Script::new(r"say('one\ntwo')")
+        .capture("say", say_frost().build())
+        .printed();
+    assert_eq!(printed, ["one\ntwo"]);
+}
+
+#[test]
+fn a_native_called_back_from_frost_prints_to_the_sink() {
+    // `say` runs inside a callback that the native `transform` invokes.
+    let printed = Script::new(r"transform(['a', 'b'], fn text -> say(text))")
+        .capture("say", say_frost().build())
+        .printed();
+    assert_eq!(printed, ["a", "b"]);
+}
+
+/// A greeting that `greeter.greet()` prints.
+struct Greeter(String);
+
+#[frost_mutable_bundle(prefix = "greeter")]
+impl Greeter {
+    fn greet(&self, #[frost(ctx)] ctx: &NativeCtx<'_>) {
+        ctx.print(&self.0);
+    }
+}
+
+#[test]
+fn a_bundle_function_prints_while_holding_its_state() {
+    // Printing never runs Frost code, so it is open to a function holding the
+    // bundle's state. The state is never changed, since every optimization
+    // permutation runs against the same bundle.
+    let greeter = MutableBundle::new(Greeter(String::from("hello")))
+        .with(Greeter::frost_functions)
+        .build();
+    let printed = Script::new(
+        r"
+        greeter.greet()
+        greeter.greet()
+        ",
+    )
+    .capture("greeter", greeter)
+    .printed();
+    assert_eq!(printed, ["hello", "hello"]);
 }
