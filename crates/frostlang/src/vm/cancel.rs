@@ -16,8 +16,9 @@ use std::sync::atomic::{AtomicBool, Ordering};
 /// Cancellation is permanent; for a run that should be cancellable on its own,
 /// give it a fresh token.
 ///
-/// A Vm notices cancellation when its script makes a function call, not while a
-/// native function runs; a native that blocks or loops delays it until the native returns.
+/// A Vm notices cancellation when its script makes a function call,
+/// or when a native function checks [`NativeCtx::abort_reason`](super::NativeCtx::abort_reason).
+/// A native that blocks or loops without checking delays it until the native returns.
 ///
 /// ```
 /// use frostlang::CancelToken;

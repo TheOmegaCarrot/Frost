@@ -28,6 +28,7 @@ pub use print_sink::{PrintSink, StdoutSink};
 pub use serialize::FormatVersion;
 
 use std::{
+    cell::OnceCell,
     num::{NonZeroU64, NonZeroUsize},
     sync::Arc,
 };
@@ -93,7 +94,9 @@ pub struct Vm {
     // The unrecoverable-error channel.
     // Once set (e.g. fuel exhaustion) the run is fatally aborting:
     // unlike an ordinary error this cannot be caught.
-    abort: Option<Abort>,
+    // Set at most once per run, and settable through `&self`,
+    // so that a native's `&NativeCtx` can latch a cancellation it notices.
+    abort: OnceCell<Abort>,
 
     // The host's means to cancel this run, shared with the Vms of the modules it imports.
     // Dropped on `rearm`, so a cancellation never reaches the next run.
@@ -260,7 +263,7 @@ impl VmFactory {
             top_level: closure,
             config: self.config.clone(),
             fuel_used: 0,
-            abort: None,
+            abort: OnceCell::new(),
             cancel_token: None,
             module_id: None,
             import_depth: self.import_depth,
@@ -441,7 +444,7 @@ impl Vm {
         self.slots.clear();
         self.top_level = closure;
         self.fuel_used = 0;
-        self.abort = None;
+        self.abort = OnceCell::new();
         self.cancel_token = None;
         self.module_id = None;
         self
@@ -1166,7 +1169,7 @@ impl Vm {
         // append the frames to it and hand back a copy,
         // so a native above that swallows this copy can't drop the accumulated trace.
         // Otherwise grow the ordinary propagating error as it unwinds.
-        match self.abort.as_mut() {
+        match self.abort.get_mut() {
             Some(abort) => {
                 abort.error.backtrace.extend(frames);
                 abort.error.clone()
@@ -1238,7 +1241,7 @@ impl Vm {
     }
 
     /// Abort the run if its cancel token has been cancelled.
-    fn check_cancelled(&mut self) -> Result<(), FrostError> {
+    fn check_cancelled(&self) -> Result<(), FrostError> {
         if self
             .cancel_token
             .as_ref()
@@ -1249,25 +1252,33 @@ impl Vm {
         Ok(())
     }
 
-    /// Latch `error` into the unrecoverable-error channel and hand it back to propagate.
+    /// Latch an abort into the unrecoverable-error channel and hand back its error to propagate.
+    /// The first abort latched is the run's: if one already is, it is kept and its error returned.
     /// Once latched, `run_native`/`invoke` refuse to let any native resume Frost code.
-    fn abort_with(&mut self, reason: AbortReason, error: FrostError) -> FrostError {
-        self.abort = Some(Abort {
-            reason,
-            error: error.clone(),
-        });
-        error
+    fn abort_with(&self, reason: AbortReason, error: FrostError) -> FrostError {
+        self.abort
+            .get_or_init(|| Abort { reason, error })
+            .error
+            .clone()
     }
 
     /// The latched abort error if the run is fatally aborting, else `None`.
     /// Returns a clone: the slot stays latched so every enclosing native re-asserts it.
     fn abort_error(&self) -> Option<FrostError> {
-        self.abort.as_ref().map(|abort| abort.error.clone())
+        self.abort.get().map(|abort| abort.error.clone())
     }
 
     /// Why the run aborted, if it did.
     fn abort_reason(&self) -> Option<AbortReason> {
-        self.abort.as_ref().map(|abort| abort.reason)
+        self.abort.get().map(|abort| abort.reason)
+    }
+
+    /// Why the run is aborting, if it is, first latching a cancellation not yet noticed.
+    /// Once latched, the run ends aborted, and what the native that asked returns is ignored.
+    fn pending_abort_reason(&self) -> Option<AbortReason> {
+        // Only the latch matters here: `run_native` raises its error once the native returns.
+        let _ = self.check_cancelled();
+        self.abort_reason()
     }
 
     /// Fail if pushing another frame would exceed the configured call-depth limit.
@@ -1464,7 +1475,7 @@ impl Vm {
         // swallowed the error and returned `Ok`, override its result. Append this native's
         // frame to the latched fatal error and re-assert it, so the host still sees the
         // full trace to wherever the run aborted.
-        if let Some(abort) = self.abort.as_mut() {
+        if let Some(abort) = self.abort.get_mut() {
             abort
                 .error
                 .backtrace

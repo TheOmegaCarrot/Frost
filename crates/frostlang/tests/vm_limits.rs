@@ -7,7 +7,7 @@
 
 use std::collections::BTreeMap;
 use std::num::NonZeroU64;
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 
 use crate::common;
 
@@ -206,6 +206,37 @@ fn fuel_exhaustion_carries_the_full_backtrace() {
         err.backtrace().iter().any(|frame| frame.name() == "main"),
         "backtrace must reach the top level: {:?}",
         err.backtrace()
+    );
+}
+
+#[test]
+fn a_native_sees_fuel_exhaustion_from_its_call_back_into_frost() {
+    // Budget 1: the call to `checker` is call #1; its `invoke` is call #2, which
+    // exhausts the fuel. The native swallows that error, then checks for an abort.
+    let observed = Arc::new(Mutex::new(Vec::new()));
+    let checker = {
+        let observed = Arc::clone(&observed);
+        frost_closure!("checker", move |#[frost(ctx)] ctx, function: Function| {
+            observed.lock().unwrap().push(ctx.abort_reason());
+            let _ = ctx.invoke(&function, []);
+            observed.lock().unwrap().push(ctx.abort_reason());
+            "finished"
+        })
+    };
+    let failure = run_keeping_vm(
+        vec![("c", checker), ("f", noop())],
+        catch_call(),
+        with_fuel(1),
+    )
+    .unwrap_err();
+    assert_eq!(
+        *observed.lock().unwrap(),
+        [None, Some(AbortReason::FuelExhausted)],
+        "before and after exhausting the fuel"
+    );
+    assert_eq!(
+        failure.kind(),
+        RunErrorKind::Aborted(AbortReason::FuelExhausted)
     );
 }
 

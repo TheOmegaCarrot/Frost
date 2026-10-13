@@ -6,7 +6,7 @@ use std::borrow::Cow;
 use std::sync::Arc;
 
 use crate::native::{ArgSite, Function};
-use crate::{FrostError, FrostResult, Value};
+use crate::{AbortReason, FrostError, FrostResult, Value};
 
 use super::Vm;
 use super::function::Arity;
@@ -132,6 +132,20 @@ impl<'a> NativeCtx<'a> {
     /// context.
     pub fn name(&self) -> &'a str {
         &self.function.name
+    }
+
+    /// Why the run is aborting, or `None` while it is not.
+    ///
+    /// A native that works for a long time without calling back into Frost can check
+    /// this to stop early. The run is aborting with
+    /// [`Cancelled`](AbortReason::Cancelled) as soon as its
+    /// [`CancelToken`](crate::CancelToken) is cancelled, and with
+    /// [`FuelExhausted`](AbortReason::FuelExhausted) once a call has exceeded its fuel.
+    /// Once this returns a reason, the run fails with that reason
+    /// (see [`RunError::kind`](crate::RunError::kind)),
+    /// and anything the native returns is ignored.
+    pub fn abort_reason(&self) -> Option<AbortReason> {
+        self.vm.pending_abort_reason()
     }
 
     /// Prints `text` as one Frost `print` does: to the run's

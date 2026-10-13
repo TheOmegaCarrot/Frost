@@ -497,3 +497,164 @@ fn an_import_that_finishes_after_cancelling_still_cancels_the_importer() {
     let host = Host::new().serving_module("cancel()");
     assert_cancelled(host.vm("import('module')").run());
 }
+
+// ============================================================
+// A native checking for an abort
+// ============================================================
+
+/// What each check of `NativeCtx::abort_reason` saw, in order.
+type Observed = Arc<Mutex<Vec<Option<AbortReason>>>>;
+
+/// `check()`: records what `NativeCtx::abort_reason` reports.
+fn check_native(observed: &Observed) -> Value {
+    let observed = Arc::clone(observed);
+    frost_closure!("check", move |#[frost(ctx)] ctx| {
+        observed.lock().unwrap().push(ctx.abort_reason());
+    })
+}
+
+/// `cancel_and_stop()`: checks, cancels `token`, checks again, and then stops
+/// early, returning a value of its own.
+fn cancel_and_stop_native(token: &CancelToken, observed: &Observed) -> Value {
+    let (token, observed) = (token.clone(), Arc::clone(observed));
+    frost_closure!("cancel_and_stop", move |#[frost(ctx)] ctx| {
+        observed.lock().unwrap().push(ctx.abort_reason());
+        token.cancel();
+        observed.lock().unwrap().push(ctx.abort_reason());
+        "stopped early"
+    })
+}
+
+#[test]
+fn a_native_sees_no_abort_while_the_run_continues() {
+    let observed = Observed::default();
+    let host = Host::new();
+    let vm = host.vm_with("check()", &[("check", check_native(&observed))]);
+    assert_finishes_with(vm.run(), Value::Null);
+    assert_eq!(
+        *observed.lock().unwrap(),
+        [None],
+        "with a token not cancelled"
+    );
+
+    let observed = Observed::default();
+    let vm = host
+        .factory()
+        .build(host.program("check()", &[("check", check_native(&observed))]));
+    assert_finishes_with(vm.run(), Value::Null);
+    assert_eq!(*observed.lock().unwrap(), [None], "with no token");
+}
+
+#[test]
+fn a_native_sees_a_cancellation_before_any_call_notices_it() {
+    // The native cancels and checks again with no call in between, and then
+    // returns normally. Seeing the cancellation latches it, so the run is
+    // cancelled however the native returns.
+    let observed = Observed::default();
+    let host = Host::new();
+    let stop = cancel_and_stop_native(&host.token, &observed);
+    let vm = host.vm_with("cancel_and_stop()", &[("cancel_and_stop", stop)]);
+    assert_cancelled(vm.run());
+    assert_eq!(
+        *observed.lock().unwrap(),
+        [None, Some(AbortReason::Cancelled)],
+        "before and after cancelling"
+    );
+}
+
+#[test]
+fn a_native_that_raises_on_seeing_a_cancellation_still_ends_the_run_cancelled() {
+    // Even caught by `try_call`, the native's own error gives way to the cancellation.
+    let host = Host::new();
+    let token = host.token.clone();
+    let give_up = frost_closure!(
+        "give_up",
+        move |#[frost(ctx)] ctx| -> Result<Value, FrostError> {
+            token.cancel();
+            match ctx.abort_reason() {
+                Some(_) => Err(FrostError::from_static("gave up")),
+                None => Ok(Value::from("not cancelled")),
+            }
+        }
+    );
+    let vm = host.vm_with("try_call(give_up)", &[("give_up", give_up)]);
+    assert_cancelled(vm.run());
+}
+
+#[test]
+fn a_native_waiting_on_cancellation_from_another_thread_stops() {
+    // The native reports that it is running, then waits, making no call, until
+    // it sees the host's cancellation.
+    let host = Host::new();
+    let (started_sender, started) = mpsc::channel();
+    let wait = frost_closure!("wait", move |#[frost(ctx)] ctx| {
+        started_sender.send(()).expect("the test is waiting");
+        while ctx.abort_reason().is_none() {
+            thread::sleep(Duration::from_millis(1));
+        }
+    });
+    let vm = host.vm_with("wait()", &[("wait", wait)]);
+
+    let token = host.token.clone();
+    let canceller = thread::spawn(move || {
+        started.recv().expect("the native reports that it started");
+        token.cancel();
+    });
+    assert_cancelled(within_deadline(vm));
+    canceller.join().unwrap();
+}
+
+#[test]
+fn a_native_sees_a_cancellation_made_inside_its_call_back_into_frost() {
+    // The callback cancels and returns without making another call, so its
+    // return to `outer` notices nothing; `outer`'s check sees the cancellation.
+    let observed = Observed::default();
+    let outer = {
+        let observed = Arc::clone(&observed);
+        frost_closure!("outer", move |#[frost(ctx)] ctx, callback: Function| {
+            observed.lock().unwrap().push(ctx.abort_reason());
+            let _ = ctx.invoke(&callback, []);
+            observed.lock().unwrap().push(ctx.abort_reason());
+            "finished"
+        })
+    };
+    let host = Host::new();
+    let vm = host.vm_with("outer(fn -> cancel())", &[("outer", outer)]);
+    assert_cancelled(vm.run());
+    assert_eq!(
+        *observed.lock().unwrap(),
+        [None, Some(AbortReason::Cancelled)],
+        "before and after the callback"
+    );
+}
+
+#[test]
+fn a_native_nested_in_another_sees_a_cancellation_and_so_does_the_outer() {
+    // `cancel_and_stop` runs inside the callback `outer` invokes. Once it has
+    // seen the cancellation, `outer` sees it too.
+    let observed = Observed::default();
+    let outer = {
+        let observed = Arc::clone(&observed);
+        frost_closure!("outer", move |#[frost(ctx)] ctx, callback: Function| {
+            let _ = ctx.invoke(&callback, []);
+            observed.lock().unwrap().push(ctx.abort_reason());
+            "finished"
+        })
+    };
+    let host = Host::new();
+    let stop = cancel_and_stop_native(&host.token, &observed);
+    let vm = host.vm_with(
+        "outer(fn -> cancel_and_stop())",
+        &[("outer", outer), ("cancel_and_stop", stop)],
+    );
+    assert_cancelled(vm.run());
+    assert_eq!(
+        *observed.lock().unwrap(),
+        [
+            None,
+            Some(AbortReason::Cancelled),
+            Some(AbortReason::Cancelled)
+        ],
+        "the inner native before and after cancelling, then the outer"
+    );
+}
