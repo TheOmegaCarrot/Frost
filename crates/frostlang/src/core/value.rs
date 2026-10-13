@@ -53,6 +53,7 @@ const _: () = {
 
 // The size every Value pays. A change of representation that alters it should
 // be a deliberate edit to this line.
+#[cfg(target_pointer_width = "64")]
 const _: () = assert!(size_of::<Value>() == 24);
 
 impl Value {
