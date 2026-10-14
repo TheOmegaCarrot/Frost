@@ -9,9 +9,8 @@ use crate::parse::hints::{
     ALTERNATIVES_HELP, ANNOTATION_HELP, BITWISE_HELP, BLOCK_HELP, CALL_HELP, CATCH_ALL_HELP,
     DEFAULTS_HELP, EQUALITY_HELP, FORMAT_STRING_HELP, INEQUALITY_HELP, LAMBDA_HELP,
     LINE_CONTINUATION_HELP, MAP_ENTRY_HELP, MAP_REST_HELP, NAMED_ARGUMENTS_HELP, POWER_HELP,
-    REST_HELP, SEPARATORS_HELP, SLICE_HELP, SPREAD_HELP, Site, define_function_help,
-    destructure_help, float_point_help, is_iterative_keyword, raw_string_help, rebind_help,
-    walrus_help,
+    REST_HELP, SLICE_HELP, SPREAD_HELP, Site, define_function_help, destructure_help,
+    float_point_help, is_iterative_keyword, raw_string_help, rebind_help, walrus_help,
 };
 
 const PATH_HELP: &str = "Frost has no `::`; reach a module's entries with `.`, like `math.sqrt(x)`";
@@ -168,7 +167,7 @@ impl Site<'_, '_> {
     }
 
     /// Help for tokens touching with no space between, the shape of a token Frost lacks:
-    /// `**`, `===`, `++`, `<>`, `1_000`, `1e`, `t.0`, and the like.
+    /// `**`, `===`, `++`, `<>`, `1e`, `t.0`, and the like.
     pub(super) fn touching_help(&self) -> Option<String> {
         let found = self.token_at(0)?;
         let help = match (self.abutting_previous()?, found) {
@@ -198,9 +197,6 @@ impl Site<'_, '_> {
             (Token::IntLiteral(_) | Token::FloatLiteral(_), Token::Identifier(e @ ("e" | "E"))) => {
                 let number = self.ctx.source_text(self.at(-1)?.span.clone().into());
                 return Some(format!("an exponent needs digits, like `{number}{e}3`"));
-            }
-            (Token::IntLiteral(_), Token::Identifier(word)) if word.starts_with('_') => {
-                SEPARATORS_HELP
             }
             // `t.0` or `f().0`, but not `1.2.3`
             (

@@ -45,6 +45,98 @@ x
                       (identifier))))))))))))
 
 ==================
+numbers with separators
+==================
+
+[1_000, 1__2_, 0x_ff_FF, 0b_1, 1_000.000_1, 1e_1_0, 2_e+_5]
+
+---
+
+(source_file
+  (expression_statement
+    (or_expression
+      (and_expression
+        (equality_expression
+          (comparison_expression
+            (sum_expression
+              (product_expression
+                (unary_expression
+                  (postfix_expression
+                    (primary_expression
+                      (array_literal
+                        (array_elements
+                          (or_expression
+                            (and_expression
+                              (equality_expression
+                                (comparison_expression
+                                  (sum_expression
+                                    (product_expression
+                                      (unary_expression
+                                        (postfix_expression
+                                          (primary_expression
+                                            (integer))))))))))
+                          (or_expression
+                            (and_expression
+                              (equality_expression
+                                (comparison_expression
+                                  (sum_expression
+                                    (product_expression
+                                      (unary_expression
+                                        (postfix_expression
+                                          (primary_expression
+                                            (integer))))))))))
+                          (or_expression
+                            (and_expression
+                              (equality_expression
+                                (comparison_expression
+                                  (sum_expression
+                                    (product_expression
+                                      (unary_expression
+                                        (postfix_expression
+                                          (primary_expression
+                                            (integer))))))))))
+                          (or_expression
+                            (and_expression
+                              (equality_expression
+                                (comparison_expression
+                                  (sum_expression
+                                    (product_expression
+                                      (unary_expression
+                                        (postfix_expression
+                                          (primary_expression
+                                            (integer))))))))))
+                          (or_expression
+                            (and_expression
+                              (equality_expression
+                                (comparison_expression
+                                  (sum_expression
+                                    (product_expression
+                                      (unary_expression
+                                        (postfix_expression
+                                          (primary_expression
+                                            (float))))))))))
+                          (or_expression
+                            (and_expression
+                              (equality_expression
+                                (comparison_expression
+                                  (sum_expression
+                                    (product_expression
+                                      (unary_expression
+                                        (postfix_expression
+                                          (primary_expression
+                                            (float))))))))))
+                          (or_expression
+                            (and_expression
+                              (equality_expression
+                                (comparison_expression
+                                  (sum_expression
+                                    (product_expression
+                                      (unary_expression
+                                        (postfix_expression
+                                          (primary_expression
+                                            (float)))))))))))))))))))))))
+
+==================
 integers in other bases
 ==================
 

@@ -567,12 +567,17 @@ module.exports = grammar({
       $.format_string_single,
     ),
 
-    float: _ => token(/[0-9]+\.[0-9]+(e[+-]?[0-9]+)?|[0-9]+e[+-]?[0-9]+/),
+    // Digits may hold `_` separators anywhere after the first digit (or the base
+    // prefix), so long as a digit is present.
+    float: _ => token(choice(
+      /[0-9][0-9_]*\.[0-9][0-9_]*(e[+-]?_*[0-9][0-9_]*)?/,
+      /[0-9][0-9_]*e[+-]?_*[0-9][0-9_]*/,
+    )),
     integer: _ => token(choice(
-      /0[bB][01]+/,
-      /0[oO][0-7]+/,
-      /0[xX][0-9a-fA-F]+/,
-      /[0-9]+/,
+      /0[bB]_*[01][01_]*/,
+      /0[oO]_*[0-7][0-7_]*/,
+      /0[xX]_*[0-9a-fA-F][0-9a-fA-F_]*/,
+      /[0-9][0-9_]*/,
     )),
 
     boolean: $ => choice($.kw_true, $.kw_false),

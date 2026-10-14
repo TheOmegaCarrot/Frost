@@ -7,7 +7,7 @@ use crate::lex::{FormatStringEnd, IntBase, UnclosedInterpolation, scan_format_st
 use crate::parse::Diagnostic;
 use crate::parse::hints::{
     BITWISE_HELP, CONDITIONAL_HELP, FORMAT_STRING_HELP, GUARD_HELP, INEQUALITY_HELP, LAMBDA_HELP,
-    LINE_CONTINUATION_HELP, POWER_HELP, SEPARATORS_HELP, float_point_help, raw_string_help,
+    LINE_CONTINUATION_HELP, POWER_HELP, float_point_help, raw_string_help,
 };
 use crate::parse::match_expr::TYPE_CONSTRAINTS;
 use crate::parse::strings::ESCAPES;
@@ -234,31 +234,22 @@ fn invalid_based_int(literal: &str, start: usize) -> Option<Diagnostic> {
     let fault = literal[2..]
         .char_indices()
         .map(|(i, c)| (2 + i, c))
-        .find(|&(_, c)| !c.is_digit(base.radix()));
-    let (diagnostic, help) = match fault {
-        // The lexer reads any run of valid digits, so there are none.
-        None => (
-            Diagnostic::at(
-                format!("{name} Int literal with no digits"),
-                at(0..2),
-                format!("no digits follow this `{prefix}`"),
-            ),
-            digits_help,
+        .find(|&(_, c)| !(c.is_digit(base.radix()) || c == '_'));
+    let diagnostic = match fault {
+        // The lexer reads any run of valid digits and separators holding a digit,
+        // so there is none.
+        None => Diagnostic::at(
+            format!("{name} Int literal with no digits"),
+            at(0..2),
+            format!("no digits follow this `{prefix}`"),
         ),
-        Some((i, c)) => (
-            Diagnostic::at(
-                format!("invalid {} in {name} Int literal", describe_char(c)),
-                at(i..i + c.len_utf8()),
-                not_a_digit,
-            ),
-            if c == '_' {
-                SEPARATORS_HELP
-            } else {
-                digits_help
-            },
+        Some((i, c)) => Diagnostic::at(
+            format!("invalid {} in {name} Int literal", describe_char(c)),
+            at(i..i + c.len_utf8()),
+            not_a_digit,
         ),
     };
-    Some(diagnostic.with_help(Some(help.to_owned())))
+    Some(diagnostic.with_help(Some(digits_help.to_owned())))
 }
 
 /// What an error says of source the lexer could not read at `at`, a range of `line`,
@@ -286,16 +277,45 @@ fn unreadable_on_line(
         c.is_ascii_alphanumeric() || matches!(c, '_' | ')' | ']' | '}' | '\'' | '"')
     });
 
-    // `1.e3`, whose point has no digits after it: the one number the lexer rejects
+    // Whether `number` has an exponent of separators alone, as in `1e_`.
+    let has_digitless_exponent = |number: &str| {
+        number
+            .find(['e', 'E'])
+            .is_some_and(|e| !number[e..].contains(|c: char| c.is_ascii_digit()))
+    };
+    // `number`, with a digit supplied to an exponent of separators alone.
+    let with_exponent_digit = |number: &str| {
+        if has_digitless_exponent(number) {
+            format!("{}3", number.trim_end_matches('_'))
+        } else {
+            number.to_owned()
+        }
+    };
+    // `1.e3`, whose point has no digits after it, and perhaps `1.e_`, whose exponent
+    // has none either
     if let Some((whole, exponent)) = text.split_once('.')
-        && !whole.is_empty()
-        && whole.bytes().all(|byte| byte.is_ascii_digit())
+        && whole.starts_with(|c: char| c.is_ascii_digit())
+        && whole
+            .bytes()
+            .all(|byte| byte.is_ascii_digit() || byte == b'_')
         && exponent.starts_with(['e', 'E'])
     {
+        let example = with_exponent_digit(&format!("{whole}.0{exponent}"));
         return Reading {
             message: format!("invalid number `{text}`"),
             unclosed: None,
-            help: Some(float_point_help(&format!("{whole}.0{exponent}"))),
+            help: Some(float_point_help(&example)),
+        };
+    }
+    // `1e_`
+    if text.starts_with(|c: char| c.is_ascii_digit() || c == '.') && has_digitless_exponent(text) {
+        return Reading {
+            message: format!("invalid number `{text}`"),
+            unclosed: None,
+            help: Some(format!(
+                "an exponent needs digits, like `{}`",
+                with_exponent_digit(text)
+            )),
         };
     }
 

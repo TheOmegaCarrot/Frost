@@ -244,6 +244,89 @@ mod literals {
     }
 
     #[test]
+    fn separated_literal_patterns() {
+        for (pattern, n) in [
+            ("1_000", 1000),
+            ("-1_000", -1000),
+            ("1_", 1),
+            ("0xff_ff", 0xffff),
+            ("-0x_ff", -255),
+            ("0b1111_0000", 240),
+            ("-0o_7_7", -63),
+        ] {
+            let source = format!("match x {{ {pattern} => true }}");
+            let expr = parse_expr(&source);
+            let (_, arms) = assert_match(&expr);
+            let v = assert_value_pattern(&arms[0].node.pattern);
+            assert!(is_int(v, n), "{source:?} is {n}: {v:?}");
+        }
+    }
+
+    #[test]
+    fn separated_float_literal_patterns() {
+        for (pattern, x) in [
+            ("1_000.000_1", 1000.0001),
+            ("-1_000.5", -1000.5),
+            ("1_.5", 1.5),
+            ("1e1_0", 1e10),
+            ("-1e_5", -1e5),
+            (".5_", 0.5),
+        ] {
+            let source = format!("match x {{ {pattern} => true }}");
+            let expr = parse_expr(&source);
+            let (_, arms) = assert_match(&expr);
+            let v = assert_value_pattern(&arms[0].node.pattern);
+            assert!(
+                matches!(&v.node, Expr::Literal(Literal::Float(f)) if *f == x),
+                "{source:?} is {x}: {v:?}"
+            );
+        }
+    }
+
+    #[test]
+    fn separated_int_literals_at_the_ends_of_the_range() {
+        for (source, n) in [
+            ("match x { 9_223_372_036_854_775_807 => true }", i64::MAX),
+            ("match x { -9_223_372_036_854_775_808 => true }", i64::MIN),
+            ("match x { 0x7fff_ffff_ffff_ffff => true }", i64::MAX),
+            ("match x { -0x8000_0000_0000_0000 => true }", i64::MIN),
+        ] {
+            let expr = parse_expr(source);
+            let (_, arms) = assert_match(&expr);
+            let v = assert_value_pattern(&arms[0].node.pattern);
+            assert!(is_int(v, n), "{source:?}");
+        }
+    }
+
+    #[test]
+    fn separated_int_literals_out_of_range() {
+        for source in [
+            "match x { 9_223_372_036_854_775_808 => true }",
+            "match x { -9_223_372_036_854_775_809 => true }",
+            "match x { 0x8000_0000_0000_0000 => true }",
+            "match x { -0x8000_0000_0000_0001 => true }",
+        ] {
+            let err = parse_err(source);
+            assert!(
+                err.contains("Int literal out of range"),
+                "{source:?}: {err}"
+            );
+        }
+    }
+
+    #[test]
+    fn separated_literals_in_alternatives_and_nested_patterns() {
+        let expr = parse_expr("match x { 1_0 | 0x_f | -2_0 => true, [1_000, ...r] => false }");
+        let (_, arms) = assert_match(&expr);
+        let alts = assert_alternative(&arms[0].node.pattern);
+        assert!(is_int(assert_value_pattern(&alts[0]), 10));
+        assert!(is_int(assert_value_pattern(&alts[1]), 15));
+        assert!(is_int(assert_value_pattern(&alts[2]), -20));
+        let (elements, _) = assert_array_pattern(&arms[1].node.pattern);
+        assert!(is_int(assert_value_pattern(&elements[0]), 1000));
+    }
+
+    #[test]
     fn negative_float_literal() {
         let expr = parse_expr("match x { -3.14 => true }");
         let (_, arms) = assert_match(&expr);

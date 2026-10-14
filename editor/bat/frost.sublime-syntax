@@ -110,17 +110,19 @@ contexts:
       scope: variable.other.frost
 
   numbers:
-    - match: '\b\d+\.\d+(e[+-]?\d+)?\b'
+    # Digits may hold `_` separators after the first digit (or the base prefix),
+    # so long as a digit is present.
+    - match: '\b\d[\d_]*\.\d[\d_]*([eE][+-]?_*\d[\d_]*)?\b'
       scope: constant.numeric.float.frost
-    - match: '\b\d+e[+-]?\d+\b'
+    - match: '\b\d[\d_]*[eE][+-]?_*\d[\d_]*\b'
       scope: constant.numeric.float.frost
-    - match: '\b0[bB][01]+\b'
+    - match: '\b0[bB]_*[01][01_]*\b'
       scope: constant.numeric.integer.binary.frost
-    - match: '\b0[oO][0-7]+\b'
+    - match: '\b0[oO]_*[0-7][0-7_]*\b'
       scope: constant.numeric.integer.octal.frost
-    - match: '\b0[xX][0-9a-fA-F]+\b'
+    - match: '\b0[xX]_*[0-9a-fA-F][0-9a-fA-F_]*\b'
       scope: constant.numeric.integer.hexadecimal.frost
-    - match: '\b\d+\b'
+    - match: '\b\d[\d_]*\b'
       scope: constant.numeric.integer.frost
 
   operators:

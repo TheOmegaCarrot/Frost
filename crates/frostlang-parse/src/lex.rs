@@ -1,5 +1,6 @@
 //! The lexer: source text to [`Token`]s.
 
+use std::borrow::Cow;
 use std::ops::Range;
 
 use logos::Logos;
@@ -230,18 +231,24 @@ pub enum Token<'src> {
     /// An Int literal's magnitude, which may be out of the Int range: the parser
     /// checks it, since the largest negative Int's magnitude is not a positive
     /// Int. Past `u64::MAX` it saturates, being out of range all the same.
-    #[regex(r"[0-9]+", |lex| lex.slice().parse::<u64>().unwrap_or(u64::MAX))]
+    // A number's digits may hold `_` separators anywhere after its first digit, as
+    // Rust's do. An exponent's may also start with one, but must hold a digit.
+    #[regex(r"[0-9][0-9_]*", |lex| {
+        without_separators(lex.slice()).parse::<u64>().unwrap_or(u64::MAX)
+    })]
     // A literal in another base runs to the end of its word, so a stray digit or
     // letter, as in `0b12` or `0xfg`, makes the whole literal an error.
     #[regex(r"0[xXoObB][0-9a-zA-Z_]*", based_int)]
     IntLiteral(u64),
 
     /// A Float literal.
-    #[regex(r"[0-9]+\.[0-9]+([eE][+-]?[0-9]+)?", |lex| lex.slice().parse::<f64>().ok())]
-    #[regex(r"[0-9]+[eE][+-]?[0-9]+", |lex| lex.slice().parse::<f64>().ok())]
-    #[regex(r"\.[0-9]+([eE][+-]?[0-9]+)?", |lex| lex.slice().parse::<f64>().ok())]
+    // An exponent of separators alone, as in `1e_`, is an error, not the Int `1`
+    // touching the name `e_`.
+    #[regex(r"[0-9][0-9_]*\.[0-9][0-9_]*([eE][+-]?[0-9_]+)?", float)]
+    #[regex(r"[0-9][0-9_]*[eE][+-]?[0-9_]+", float)]
+    #[regex(r"\.[0-9][0-9_]*([eE][+-]?[0-9_]+)?", float)]
     // `1.e3` is an error, not the field `e3` of the Int `1`.
-    #[regex(r"[0-9]+\.[eE][+-]?[0-9]+", |_| None::<f64>)]
+    #[regex(r"[0-9][0-9_]*\.[eE][+-]?[0-9_]+", |_| None::<f64>)]
     FloatLiteral(f64),
 
     // -- Identifiers --
@@ -331,11 +338,31 @@ impl IntBase {
 fn based_int<'src>(lex: &logos::Lexer<'src, Token<'src>>) -> Option<u64> {
     let literal = lex.slice();
     let radix = IntBase::of(literal)?.radix();
-    let digits = &literal[2..];
+    let digits = without_separators(&literal[2..]);
     if digits.is_empty() || !digits.chars().all(|c| c.is_digit(radix)) {
         return None;
     }
-    Some(u64::from_str_radix(digits, radix).unwrap_or(u64::MAX))
+    Some(u64::from_str_radix(&digits, radix).unwrap_or(u64::MAX))
+}
+
+/// A Float literal's value; `None` if its exponent has no digits.
+fn float<'src>(lex: &logos::Lexer<'src, Token<'src>>) -> Option<f64> {
+    let literal = lex.slice();
+    if let Some(e) = literal.find(['e', 'E'])
+        && !literal[e..].contains(|c: char| c.is_ascii_digit())
+    {
+        return None;
+    }
+    without_separators(literal).parse().ok()
+}
+
+/// A number literal's text without its `_` separators.
+fn without_separators(text: &str) -> Cow<'_, str> {
+    if text.contains('_') {
+        Cow::Owned(text.replace('_', ""))
+    } else {
+        Cow::Borrowed(text)
+    }
 }
 
 fn lex_raw<'src>(lex: &mut logos::Lexer<'src, Token<'src>>, closer: &str) -> Option<&'src str> {

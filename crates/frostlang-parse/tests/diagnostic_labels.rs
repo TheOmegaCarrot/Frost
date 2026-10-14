@@ -73,7 +73,6 @@ fn a_multiline_statement_is_labeled_at_its_end() {
 fn a_token_touching_the_statement_is_labeled_alone() {
     // (source, the found token)
     let cases = [
-        ("def x = 1__0", "__0"),
         ("def a = 'it''s'", "'s'"),
         (r#"def x = r"abc""#, r#""abc""#),
     ];

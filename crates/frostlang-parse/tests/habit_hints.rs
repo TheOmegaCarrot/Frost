@@ -2182,13 +2182,56 @@ fn spaced_operators_get_no_operator_help() {
 #[test]
 fn number_forms_frost_lacks() {
     assert_help(&[
-        ("1_000", "Frost number literals have no `_` separators"),
         ("1.", "a Float needs digits after its point, like `1.0`"),
         ("1e", "an exponent needs digits, like `1e3`"),
         ("1e+", "an exponent needs digits, like `1e3`"),
         ("def x = 2E", "an exponent needs digits, like `2E3`"),
         ("1.5e", "an exponent needs digits, like `1.5e3`"),
     ]);
+}
+
+// Digit separators follow Rust's rules, so no form of them is an error or a hint.
+#[test]
+fn digit_separators_are_not_errors() {
+    let literals = [
+        "1_000",
+        "1__0",
+        "1_",
+        "1_000_000",
+        "0xff_ff",
+        "0xff_",
+        "0x_ff",
+        "0b1010_0101",
+        "0b_1",
+        "0o7_7",
+        "0o_7__7_",
+        "1_000.5",
+        "1_0.2_5",
+        "1.5_0",
+        "1_.5",
+        "1.0_",
+        "1_000e3",
+        "1e1_0",
+        "1e_3",
+        "1e+_3",
+        "1.5_e-1_0",
+        "1_0.2_5E+3",
+        ".5_5",
+        ".5e1_0",
+    ];
+    for literal in literals {
+        for source in [
+            format!("def x = {literal}"),
+            format!("{literal} + 1"),
+            format!("f({literal}, 2)"),
+            format!("[{literal}]"),
+            format!("def x = $'${{{literal}}}'"),
+        ] {
+            if let Err(err) = parse_program("test.frst", &source) {
+                panic!("{source:?} should parse, got {:?}", err.message());
+            }
+        }
+    }
 }
 
 #[test]

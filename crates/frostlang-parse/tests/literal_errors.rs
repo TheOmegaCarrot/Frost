@@ -1,5 +1,5 @@
-//! Errors inside String, Bytes, and based Int literals: what they say, where their
-//! label lands, and their help.
+//! Errors inside String, Bytes, based Int, and Float literals: what they say, where
+//! their label lands, and their help.
 
 use frostlang_parse::parse_program;
 
@@ -312,7 +312,6 @@ fn an_out_of_range_unicode_escape_has_no_help() {
 const BINARY_HELP: &str = "a binary Int's digits are `0` and `1`";
 const OCTAL_HELP: &str = "an octal Int's digits are `0` to `7`";
 const HEX_HELP: &str = "a hexadecimal Int's digits are `0` to `9` and `a` to `f`, in either case";
-const SEPARATORS_HELP: &str = "Frost number literals have no `_` separators";
 
 #[test]
 fn a_based_int_literal_with_an_invalid_digit_labels_it() {
@@ -361,13 +360,6 @@ fn a_based_int_literal_with_an_invalid_digit_labels_it() {
             "9",
             "not an octal digit",
             OCTAL_HELP,
-        ),
-        (
-            "def a = 0xff_ff",
-            "invalid character `_` in hexadecimal Int literal",
-            "_",
-            "not a hexadecimal digit",
-            SEPARATORS_HELP,
         ),
     ];
     for (source, message, character, label, help) in cases {
@@ -422,6 +414,296 @@ fn a_based_int_literal_with_no_digits_labels_its_prefix() {
             prefix,
             &format!("no digits follow this `{prefix}`"),
             Some(help),
+        );
+    }
+}
+
+// Digit separators (`_`) are never the fault: the error names the first real fault
+// and ignores the separators around it.
+
+#[test]
+fn a_based_int_literal_of_only_separators_has_no_digits() {
+    // (source, the prefix as written, message, help)
+    let cases = [
+        ("def a = 0b_", "0b", "binary", BINARY_HELP),
+        ("def a = 0b__", "0b", "binary", BINARY_HELP),
+        ("def a = 0B_", "0B", "binary", BINARY_HELP),
+        ("def a = 0o_", "0o", "octal", OCTAL_HELP),
+        ("def a = 0O___", "0O", "octal", OCTAL_HELP),
+        ("def a = 0x_", "0x", "hexadecimal", HEX_HELP),
+        ("def a = 0X__", "0X", "hexadecimal", HEX_HELP),
+        ("f(0x_, 1)", "0x", "hexadecimal", HEX_HELP),
+        ("def a = 0o_ + 1", "0o", "octal", OCTAL_HELP),
+        ("[0b_]", "0b", "binary", BINARY_HELP),
+    ];
+    for (source, prefix, base, help) in cases {
+        assert_error(
+            source,
+            &format!("{base} Int literal with no digits"),
+            prefix,
+            &format!("no digits follow this `{prefix}`"),
+            Some(help),
+        );
+    }
+}
+
+#[test]
+fn a_bad_character_among_separators_is_the_fault() {
+    // (source, the bad character, base, label, help)
+    let cases = [
+        (
+            "def a = 0x_g",
+            "g",
+            "hexadecimal",
+            "not a hexadecimal digit",
+            HEX_HELP,
+        ),
+        (
+            "def a = 0x__g__",
+            "g",
+            "hexadecimal",
+            "not a hexadecimal digit",
+            HEX_HELP,
+        ),
+        (
+            "def a = 0xff_fg",
+            "g",
+            "hexadecimal",
+            "not a hexadecimal digit",
+            HEX_HELP,
+        ),
+        (
+            "def a = 0xf_g_f",
+            "g",
+            "hexadecimal",
+            "not a hexadecimal digit",
+            HEX_HELP,
+        ),
+        (
+            "def a = 0XA_G",
+            "G",
+            "hexadecimal",
+            "not a hexadecimal digit",
+            HEX_HELP,
+        ),
+        (
+            "def a = 0b1_2",
+            "2",
+            "binary",
+            "not a binary digit",
+            BINARY_HELP,
+        ),
+        (
+            "def a = 0b_2",
+            "2",
+            "binary",
+            "not a binary digit",
+            BINARY_HELP,
+        ),
+        (
+            "def a = 0B1__0_2_1",
+            "2",
+            "binary",
+            "not a binary digit",
+            BINARY_HELP,
+        ),
+        (
+            "def a = 0b1_c",
+            "c",
+            "binary",
+            "not a binary digit",
+            BINARY_HELP,
+        ),
+        (
+            "def a = 0o7__8",
+            "8",
+            "octal",
+            "not an octal digit",
+            OCTAL_HELP,
+        ),
+        (
+            "def a = 0O_9",
+            "9",
+            "octal",
+            "not an octal digit",
+            OCTAL_HELP,
+        ),
+        (
+            "def a = 0o1_7_8_",
+            "8",
+            "octal",
+            "not an octal digit",
+            OCTAL_HELP,
+        ),
+        // The first fault is the one named, however many follow.
+        (
+            "def a = 0b1_23_4",
+            "2",
+            "binary",
+            "not a binary digit",
+            BINARY_HELP,
+        ),
+        (
+            "def a = 0x_gz",
+            "g",
+            "hexadecimal",
+            "not a hexadecimal digit",
+            HEX_HELP,
+        ),
+    ];
+    for (source, character, base, label, help) in cases {
+        assert_error(
+            source,
+            &format!("invalid character `{character}` in {base} Int literal"),
+            character,
+            label,
+            Some(help),
+        );
+    }
+}
+
+#[test]
+fn a_based_int_literal_with_separators_in_an_interpolation_adds_the_interpolation() {
+    // (source, message, the labeled text, its label, help)
+    let cases = [
+        (
+            "def a = $'${0x_}'",
+            "hexadecimal Int literal with no digits",
+            "0x",
+            "no digits follow this `0x`",
+            HEX_HELP,
+        ),
+        (
+            "def a = $'${0b__}'",
+            "binary Int literal with no digits",
+            "0b",
+            "no digits follow this `0b`",
+            BINARY_HELP,
+        ),
+        (
+            "def a = $'${0o7_8}'",
+            "invalid character `8` in octal Int literal",
+            "8",
+            "not an octal digit",
+            OCTAL_HELP,
+        ),
+        (
+            "def a = $\"x ${0b_2}\"",
+            "invalid character `2` in binary Int literal",
+            "2",
+            "not a binary digit",
+            BINARY_HELP,
+        ),
+    ];
+    for (src, message, covered, label, help) in cases {
+        let err = parse_program("test.frst", src).expect_err(src);
+        assert_eq!(err.message(), message, "{src:?}");
+        let labels: Vec<(&str, &str)> = err
+            .labels()
+            .iter()
+            .map(|label| (&src[label.span.start..label.span.end], label.text.as_str()))
+            .collect();
+        assert_eq!(
+            labels,
+            [(covered, label), ("${", "in this interpolation")],
+            "{src:?}"
+        );
+        assert_eq!(err.help(), Some(help), "{src:?}");
+    }
+}
+
+// -- Float literals --
+// A malformed Float or exponent is labeled whole, and the help shows the literal
+// repaired, separators kept.
+
+#[test]
+fn a_float_with_no_digits_after_its_point_before_an_exponent_suggests_a_zero() {
+    // (source, the literal, the help's example)
+    let cases = [
+        ("def a = 1.e3", "1.e3", "1.0e3"),
+        ("def a = 1.E3", "1.E3", "1.0E3"),
+        ("def a = 1.e+3", "1.e+3", "1.0e+3"),
+        ("def a = 1.E-3", "1.E-3", "1.0E-3"),
+        ("def a = 1_.e3", "1_.e3", "1_.0e3"),
+        ("def a = 1_000.e-3", "1_000.e-3", "1_000.0e-3"),
+        ("def a = 1__0.E+3", "1__0.E+3", "1__0.0E+3"),
+        ("def a = 1.e_3", "1.e_3", "1.0e_3"),
+        ("def a = 1.e+_3", "1.e+_3", "1.0e+_3"),
+        ("def a = 1_0.e_3_0", "1_0.e_3_0", "1_0.0e_3_0"),
+        // A trailing separator after an exponent digit is kept, not taken for a
+        // digitless exponent.
+        ("def a = 1.e3_", "1.e3_", "1.0e3_"),
+        ("def a = 1.E-3__", "1.E-3__", "1.0E-3__"),
+        ("f(1.e3)", "1.e3", "1.0e3"),
+        ("[2.E5, 1]", "2.E5", "2.0E5"),
+    ];
+    for (source, literal, example) in cases {
+        assert_error(
+            source,
+            &format!("invalid number `{literal}`"),
+            literal,
+            "unrecognized",
+            Some(&format!(
+                "a Float needs digits after its point, like `{example}`"
+            )),
+        );
+    }
+}
+
+// Nothing in the exponent is a digit either, so the example completes it too.
+#[test]
+fn a_float_with_no_digits_after_its_point_or_in_its_exponent_completes_both() {
+    // (source, the literal, the help's example)
+    let cases = [
+        ("def a = 1.e_", "1.e_", "1.0e3"),
+        ("def a = 1.e__", "1.e__", "1.0e3"),
+        ("def a = 1.E_", "1.E_", "1.0E3"),
+        ("def a = 1.e+__", "1.e+__", "1.0e+3"),
+        ("def a = 1.E-_", "1.E-_", "1.0E-3"),
+        ("def a = 1_0.e_", "1_0.e_", "1_0.0e3"),
+        ("def a = 1_.e+_", "1_.e+_", "1_.0e+3"),
+        ("f(1.e_)", "1.e_", "1.0e3"),
+    ];
+    for (source, literal, example) in cases {
+        assert_error(
+            source,
+            &format!("invalid number `{literal}`"),
+            literal,
+            "unrecognized",
+            Some(&format!(
+                "a Float needs digits after its point, like `{example}`"
+            )),
+        );
+    }
+}
+
+#[test]
+fn an_exponent_with_no_digit_suggests_one() {
+    // (source, the literal, the help's example)
+    let cases = [
+        ("def a = 1e_", "1e_", "1e3"),
+        ("def a = 1E_", "1E_", "1E3"),
+        ("def a = 1e__", "1e__", "1e3"),
+        ("def a = 1e+__", "1e+__", "1e+3"),
+        ("def a = 1e-_", "1e-_", "1e-3"),
+        ("def a = 1.5E-_", "1.5E-_", "1.5E-3"),
+        ("def a = 1.5e_", "1.5e_", "1.5e3"),
+        ("def a = .5e_", ".5e_", ".5e3"),
+        ("def a = .5E+_", ".5E+_", ".5E+3"),
+        ("def a = 1_000e_", "1_000e_", "1_000e3"),
+        ("def a = 1_0.2_5e-_", "1_0.2_5e-_", "1_0.2_5e-3"),
+        ("def a = 1.5_e_", "1.5_e_", "1.5_e3"),
+        ("def a = .5_e+__", ".5_e+__", ".5_e+3"),
+        ("f(1e_, 2)", "1e_", "1e3"),
+        ("[1.5E-_]", "1.5E-_", "1.5E-3"),
+    ];
+    for (source, literal, example) in cases {
+        assert_error(
+            source,
+            &format!("invalid number `{literal}`"),
+            literal,
+            "unrecognized",
+            Some(&format!("an exponent needs digits, like `{example}`")),
         );
     }
 }
