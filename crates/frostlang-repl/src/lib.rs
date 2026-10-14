@@ -27,6 +27,8 @@
 mod builtins;
 mod cancel;
 #[cfg(feature = "line-editor")]
+mod config;
+#[cfg(feature = "line-editor")]
 mod edit_dir;
 mod frontend;
 #[cfg(feature = "line-editor")]

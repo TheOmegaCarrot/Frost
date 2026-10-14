@@ -14,6 +14,7 @@ use reedline::{
     Reedline, SearchDirection, SearchQuery, Signal, StyledText, ValidationResult, Validator,
 };
 
+use crate::config::{self, Config, Context, Problem, Prompts};
 use crate::edit_dir::EditDir;
 use crate::highlight::{self, Class};
 use crate::{
@@ -39,6 +40,51 @@ use crate::{
 /// Each value other than Null is written as [`render_value`] renders it, to
 /// standard output; a failure is written to standard error.
 ///
+/// # Configuration
+///
+/// Before its first prompt, the frontend runs the Frost script `repl.frst`,
+/// in a `frost` directory in the platform's usual place for configuration,
+/// unless another is chosen (see [`with_config_file`](Self::with_config_file)
+/// and [`without_config`](Self::without_config)):
+///
+/// | Platform | Configuration file |
+/// | -------- | ------------------ |
+/// | Linux | `$XDG_CONFIG_HOME/frost/repl.frst`, or `~/.config/frost/repl.frst` |
+/// | macOS | `~/Library/Application Support/frost/repl.frst` |
+/// | Windows | `%APPDATA%\frost\repl.frst` |
+///
+/// Its exports are the settings:
+///
+/// - `prompt`, shown before the first line of each segment, and
+///   `continuation_prompt`, before each further line. Each is a String, or a
+///   function given a Map and returning one. The Map holds `number`, the
+///   segment's number in the session, from 1; `failed`, whether the input
+///   before it failed; and `cwd`, the working directory, or Null if it cannot
+///   be read. A prompt replaces the default entirely, colors included.
+///
+/// The script runs apart from the session, so its definitions are not bound in
+/// it. It runs, as its prompt functions do, under small limits, and may import
+/// only `std.string`, `std.math`, and `repl`, whose `repl.colors` and
+/// `repl.style` hold functions that wrap a String in ANSI codes:
+///
+/// ```frost
+/// def repl = import('repl')
+///
+/// export defn prompt(context) -> {
+///     def number = repl.style.bold(to_string(context.number))
+///     if context.failed: $'${number} ${repl.colors.red('!')}> '
+///     else: $'${number}> '
+/// }
+/// ```
+///
+/// Without color, those functions return their String unchanged.
+///
+/// A problem with the configuration is shown before the first prompt: if the
+/// script cannot be read or does not run, nothing is set, and an unknown
+/// export or a setting of the wrong type is ignored. A prompt function that
+/// fails or returns anything but a String is reported, and the default is used
+/// in its place from then on.
+///
 /// # Ctrl-C is process-wide
 ///
 /// A process has one Ctrl-C handler. The first session on a `TerminalFrontend`
@@ -56,6 +102,20 @@ pub struct TerminalFrontend {
     // Made with the editor, if an external editor is named; holds the file it
     // edits.
     edit_dir: Option<EditDir>,
+    config_file: ConfigFile,
+    // Loaded at the first read, so that its problems show before the first
+    // prompt.
+    config: Option<Config>,
+    segments_read: u64,
+    // Whether the outcome rendered since the last segment was read is a failure.
+    failed: bool,
+}
+
+/// Where a [`TerminalFrontend`]'s configuration comes from.
+enum ConfigFile {
+    Default,
+    Path(PathBuf),
+    None,
 }
 
 impl Default for TerminalFrontend {
@@ -82,7 +142,24 @@ impl TerminalFrontend {
             history: None,
             editor: None,
             edit_dir: None,
+            config_file: ConfigFile::Default,
+            config: None,
+            segments_read: 0,
+            failed: false,
         }
+    }
+
+    /// Read the [configuration](Self#configuration) from the file at `path`
+    /// instead.
+    pub fn with_config_file(mut self, path: PathBuf) -> Self {
+        self.config_file = ConfigFile::Path(path);
+        self
+    }
+
+    /// Read no [configuration](Self#configuration), keeping every default.
+    pub fn without_config(mut self) -> Self {
+        self.config_file = ConfigFile::None;
+        self
     }
 
     /// Set whether to color the prompt, the source being typed, and
@@ -125,6 +202,52 @@ impl TerminalFrontend {
         }
         self.editor.as_mut().expect("the editor was just built")
     }
+
+    /// The prompts for the next segment, after showing any problem the
+    /// configuration, at its first use, or computing them has.
+    fn prompt(&mut self) -> io::Result<FrostPrompt> {
+        if self.config.is_none() {
+            let (config, problems) = match &self.config_file {
+                ConfigFile::Default => match config::default_path() {
+                    Some(path) => Config::read(&path, self.color),
+                    None => (Config::default(), Vec::new()),
+                },
+                ConfigFile::Path(path) => Config::read(path, self.color),
+                ConfigFile::None => (Config::default(), Vec::new()),
+            };
+            self.config = Some(config);
+            self.report(problems)?;
+        }
+        let context = Context {
+            number: self.segments_read + 1,
+            failed: self.failed,
+            cwd: env::current_dir()
+                .ok()
+                .and_then(|dir| dir.into_os_string().into_string().ok()),
+        };
+        let config = self.config.as_mut().expect("the configuration was loaded");
+        let (prompts, problems) = config.prompts(&context);
+        self.report(problems)?;
+        Ok(FrostPrompt(prompts))
+    }
+
+    /// Show each of `problems`, on standard error.
+    fn report(&self, problems: Vec<Problem>) -> io::Result<()> {
+        if problems.is_empty() {
+            return Ok(());
+        }
+        let mut stderr = io::stderr().lock();
+        for problem in problems {
+            match problem {
+                #[cfg(feature = "graphical-diagnostics")]
+                Problem::Compile(diagnostics) if self.color => {
+                    write!(stderr, "{}", diagnostics.render_pretty())?;
+                }
+                problem => writeln!(stderr, "{problem}")?,
+            }
+        }
+        stderr.flush()
+    }
 }
 
 /// The editor `$VISUAL`, or else `$EDITOR`, names, if either is set.
@@ -156,9 +279,12 @@ fn default_history() -> FileBackedHistory {
 impl Frontend for TerminalFrontend {
     fn read_segment(&mut self) -> io::Result<Option<String>> {
         loop {
-            match self.editor().read_line(&FrostPrompt)? {
+            let prompt = self.prompt()?;
+            match self.editor().read_line(&prompt)? {
                 Signal::Success(segment) if segment.trim().is_empty() => {}
                 Signal::Success(segment) => {
+                    self.segments_read += 1;
+                    self.failed = false;
                     // The validator submits only what completes.
                     return Ok(Some(complete_segment(&segment).unwrap_or(segment)));
                 }
@@ -171,6 +297,7 @@ impl Frontend for TerminalFrontend {
     }
 
     fn render(&mut self, outcome: Result<&Value, &ReplError>) -> io::Result<()> {
+        self.failed = outcome.is_err();
         match outcome {
             Ok(Value::Null) => Ok(()),
             Ok(value) => {
@@ -325,8 +452,13 @@ impl TerminalFrontend {
     }
 }
 
-/// `~> `, and a wider `..>  ` before each further line of a segment.
-struct FrostPrompt;
+/// The prompts the configuration computed, or by default `~> `, and a wider
+/// `..>  ` before each further line of a segment, both light blue.
+struct FrostPrompt(Prompts);
+
+/// The color of a default prompt. A configured prompt is shown as written,
+/// colors included.
+const DEFAULT_PROMPT_COLOR: Color = Color::LightBlue;
 
 impl Prompt for FrostPrompt {
     fn render_prompt_left(&self) -> Cow<'_, str> {
@@ -338,11 +470,11 @@ impl Prompt for FrostPrompt {
     }
 
     fn render_prompt_indicator(&self, _mode: PromptEditMode) -> Cow<'_, str> {
-        Cow::Borrowed("~> ")
+        Cow::Borrowed(self.0.prompt.as_deref().unwrap_or("~> "))
     }
 
     fn render_prompt_multiline_indicator(&self) -> Cow<'_, str> {
-        Cow::Borrowed("..>  ")
+        Cow::Borrowed(self.0.continuation_prompt.as_deref().unwrap_or("..>  "))
     }
 
     fn render_prompt_history_search_indicator(&self, search: PromptHistorySearch) -> Cow<'_, str> {
@@ -350,11 +482,17 @@ impl Prompt for FrostPrompt {
     }
 
     fn get_indicator_color(&self) -> Color {
-        Color::LightBlue
+        match self.0.prompt {
+            Some(_) => Color::Default,
+            None => DEFAULT_PROMPT_COLOR,
+        }
     }
 
     fn get_prompt_multiline_color(&self) -> Color {
-        Color::LightBlue
+        match self.0.continuation_prompt {
+            Some(_) => Color::Default,
+            None => DEFAULT_PROMPT_COLOR,
+        }
     }
 }
 
