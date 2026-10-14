@@ -1,5 +1,5 @@
-//! Errors inside String and Bytes literals: what they say, where their label lands,
-//! and their help.
+//! Errors inside String, Bytes, and based Int literals: what they say, where their
+//! label lands, and their help.
 
 use frostlang_parse::parse_program;
 
@@ -303,6 +303,126 @@ fn an_out_of_range_unicode_escape_has_no_help() {
         let hex = &escape[3..escape.len() - 1];
         let message = format!(r"`\u{{{hex}}}` is not a valid Unicode scalar value");
         assert_error(source, &message, escape, "this escape", None);
+    }
+}
+
+// -- Int literals in other bases --
+// The error names the literal's first fault and labels it.
+
+const BINARY_HELP: &str = "a binary Int's digits are `0` and `1`";
+const OCTAL_HELP: &str = "an octal Int's digits are `0` to `7`";
+const HEX_HELP: &str = "a hexadecimal Int's digits are `0` to `9` and `a` to `f`, in either case";
+const SEPARATORS_HELP: &str = "Frost number literals have no `_` separators";
+
+#[test]
+fn a_based_int_literal_with_an_invalid_digit_labels_it() {
+    // (source, message, the character, label, help)
+    let cases = [
+        (
+            "def a = 0b102",
+            "invalid character `2` in binary Int literal",
+            "2",
+            "not a binary digit",
+            BINARY_HELP,
+        ),
+        (
+            "def a = 0o8",
+            "invalid character `8` in octal Int literal",
+            "8",
+            "not an octal digit",
+            OCTAL_HELP,
+        ),
+        (
+            "def a = 0xfg",
+            "invalid character `g` in hexadecimal Int literal",
+            "g",
+            "not a hexadecimal digit",
+            HEX_HELP,
+        ),
+        (
+            "def a = 0XAG",
+            "invalid character `G` in hexadecimal Int literal",
+            "G",
+            "not a hexadecimal digit",
+            HEX_HELP,
+        ),
+        // A letter that is a hex digit is not a binary one.
+        (
+            "def b = 0b1c",
+            "invalid character `c` in binary Int literal",
+            "c",
+            "not a binary digit",
+            BINARY_HELP,
+        ),
+        // The first fault is the one named.
+        (
+            "def a = 0o19z",
+            "invalid character `9` in octal Int literal",
+            "9",
+            "not an octal digit",
+            OCTAL_HELP,
+        ),
+        (
+            "def a = 0xff_ff",
+            "invalid character `_` in hexadecimal Int literal",
+            "_",
+            "not a hexadecimal digit",
+            SEPARATORS_HELP,
+        ),
+    ];
+    for (source, message, character, label, help) in cases {
+        assert_error(source, message, character, label, Some(help));
+    }
+}
+
+#[test]
+fn a_based_int_literal_in_an_interpolation_labels_the_digit_in_the_whole_source() {
+    let src = "def a = $'${0b3}'";
+    let err = parse_program("test.frst", src).expect_err(src);
+    assert_eq!(err.message(), "invalid character `3` in binary Int literal");
+    let labels: Vec<(&str, &str)> = err
+        .labels()
+        .iter()
+        .map(|label| (&src[label.span.start..label.span.end], label.text.as_str()))
+        .collect();
+    assert_eq!(
+        labels,
+        [("3", "not a binary digit"), ("${", "in this interpolation")]
+    );
+    assert_eq!(err.help(), Some(BINARY_HELP));
+}
+
+#[test]
+fn a_based_int_literal_with_no_digits_labels_its_prefix() {
+    // (source, message, the prefix, help)
+    let cases = [
+        (
+            "def a = 0b",
+            "binary Int literal with no digits",
+            "0b",
+            BINARY_HELP,
+        ),
+        (
+            "def a = 0O + 1",
+            "octal Int literal with no digits",
+            "0O",
+            OCTAL_HELP,
+        ),
+        (
+            "f(0x)",
+            "hexadecimal Int literal with no digits",
+            "0x",
+            HEX_HELP,
+        ),
+    ];
+    for (source, message, prefix, help) in cases {
+        assert_error(
+            source,
+            message,
+            prefix,
+            &format!("no digits follow this `{prefix}`"),
+            Some(help),
+        );
     }
 }
 

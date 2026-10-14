@@ -568,7 +568,12 @@ module.exports = grammar({
     ),
 
     float: _ => token(/[0-9]+\.[0-9]+(e[+-]?[0-9]+)?|[0-9]+e[+-]?[0-9]+/),
-    integer: _ => token(/[0-9]+/),
+    integer: _ => token(choice(
+      /0[bB][01]+/,
+      /0[oO][0-7]+/,
+      /0[xX][0-9a-fA-F]+/,
+      /[0-9]+/,
+    )),
 
     boolean: $ => choice($.kw_true, $.kw_false),
     null: $ => $.kw_null,

@@ -77,6 +77,53 @@ fn a_literals_payload_is_its_text_between_delimiters() {
 }
 
 #[test]
+fn an_int_literal_in_another_base_is_its_magnitude() {
+    for (source, n) in [
+        ("0b101", 5),
+        ("0B11", 3),
+        ("0o17", 15),
+        ("0O17", 15),
+        ("0xff", 255),
+        ("0XFF", 255),
+        ("0xAbC", 0xabc),
+        // The least Int's magnitude, which only a negated literal can be.
+        ("0x8000000000000000", 1 << 63),
+        ("0xffffffffffffffff", u64::MAX),
+        // Past `u64::MAX`, the magnitude saturates, as a decimal one does.
+        ("0x10000000000000000", u64::MAX),
+    ] {
+        assert_eq!(
+            lexed(source),
+            [(Ok(Token::IntLiteral(n)), source)],
+            "{source:?}"
+        );
+    }
+}
+
+#[test]
+fn a_malformed_based_int_literal_is_one_error() {
+    // The literal runs to the end of its word, so a stray character spoils all of
+    // it rather than starting a name.
+    for source in [
+        "0x", "0b", "0o", "0b2", "0b102", "0o8", "0xfg", "0xff_ff", "0bar",
+    ] {
+        assert_eq!(lexed(source), [(Err(LexError), source)], "{source:?}");
+    }
+    // A word ends at any other character.
+    assert_eq!(
+        lexed("0xff.x 0b1+0o7"),
+        [
+            (Ok(Token::IntLiteral(255)), "0xff"),
+            (Ok(Token::OpDot), "."),
+            (Ok(Token::Identifier("x")), "x"),
+            (Ok(Token::IntLiteral(1)), "0b1"),
+            (Ok(Token::OpPlus), "+"),
+            (Ok(Token::IntLiteral(7)), "0o7"),
+        ]
+    );
+}
+
+#[test]
 fn bytes_that_begin_no_token_are_an_error_and_lexing_resumes() {
     // A character Frost does not use.
     assert_eq!(

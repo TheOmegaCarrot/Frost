@@ -2182,14 +2182,8 @@ fn spaced_operators_get_no_operator_help() {
 #[test]
 fn number_forms_frost_lacks() {
     assert_help(&[
-        ("0xFF", "Frost number literals are decimal only"),
-        ("0b101", "Frost number literals are decimal only"),
-        ("0o17", "Frost number literals are decimal only"),
         ("1_000", "Frost number literals have no `_` separators"),
         ("1.", "a Float needs digits after its point, like `1.0`"),
-        ("0XFF", "Frost number literals are decimal only"),
-        ("0B1", "Frost number literals are decimal only"),
-        ("0O17", "Frost number literals are decimal only"),
         ("1e", "an exponent needs digits, like `1e3`"),
         ("1e+", "an exponent needs digits, like `1e3`"),
         ("def x = 2E", "an exponent needs digits, like `2E3`"),

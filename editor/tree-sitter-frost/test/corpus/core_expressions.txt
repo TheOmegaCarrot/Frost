@@ -45,6 +45,51 @@ x
                       (identifier))))))))))))
 
 ==================
+integers in other bases
+==================
+
+0b101
+0O17
+0xDeadBeef
+
+---
+
+(source_file
+  (expression_statement
+    (or_expression
+      (and_expression
+        (equality_expression
+          (comparison_expression
+            (sum_expression
+              (product_expression
+                (unary_expression
+                  (postfix_expression
+                    (primary_expression
+                      (integer)))))))))))
+  (expression_statement
+    (or_expression
+      (and_expression
+        (equality_expression
+          (comparison_expression
+            (sum_expression
+              (product_expression
+                (unary_expression
+                  (postfix_expression
+                    (primary_expression
+                      (integer)))))))))))
+  (expression_statement
+    (or_expression
+      (and_expression
+        (equality_expression
+          (comparison_expression
+            (sum_expression
+              (product_expression
+                (unary_expression
+                  (postfix_expression
+                    (primary_expression
+                      (integer))))))))))))
+
+==================
 if expression
 ==================
 

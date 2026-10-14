@@ -231,6 +231,9 @@ pub enum Token<'src> {
     /// checks it, since the largest negative Int's magnitude is not a positive
     /// Int. Past `u64::MAX` it saturates, being out of range all the same.
     #[regex(r"[0-9]+", |lex| lex.slice().parse::<u64>().unwrap_or(u64::MAX))]
+    // A literal in another base runs to the end of its word, so a stray digit or
+    // letter, as in `0b12` or `0xfg`, makes the whole literal an error.
+    #[regex(r"0[xXoObB][0-9a-zA-Z_]*", based_int)]
     IntLiteral(u64),
 
     /// A Float literal.
@@ -293,6 +296,46 @@ pub enum Token<'src> {
     #[regex(r"x'([0-9a-fA-F]{2})*'", bytes_slice)]
     #[regex(r#"x"([0-9a-fA-F]{2})*""#, bytes_slice)]
     BytesLiteral(&'src str),
+}
+
+/// A base other than decimal that an Int literal can be written in.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum IntBase {
+    Binary,
+    Octal,
+    Hexadecimal,
+}
+
+impl IntBase {
+    /// The base whose prefix, such as `0x`, starts `literal`.
+    pub(crate) fn of(literal: &str) -> Option<Self> {
+        match literal.as_bytes() {
+            [b'0', b'b' | b'B', ..] => Some(Self::Binary),
+            [b'0', b'o' | b'O', ..] => Some(Self::Octal),
+            [b'0', b'x' | b'X', ..] => Some(Self::Hexadecimal),
+            _ => None,
+        }
+    }
+
+    pub(crate) fn radix(self) -> u32 {
+        match self {
+            Self::Binary => 2,
+            Self::Octal => 8,
+            Self::Hexadecimal => 16,
+        }
+    }
+}
+
+/// The magnitude of a `0b`, `0o`, or `0x` Int literal, saturating as a decimal
+/// one does; `None` if it has no digits, or one its base lacks.
+fn based_int<'src>(lex: &logos::Lexer<'src, Token<'src>>) -> Option<u64> {
+    let literal = lex.slice();
+    let radix = IntBase::of(literal)?.radix();
+    let digits = &literal[2..];
+    if digits.is_empty() || !digits.chars().all(|c| c.is_digit(radix)) {
+        return None;
+    }
+    Some(u64::from_str_radix(digits, radix).unwrap_or(u64::MAX))
 }
 
 fn lex_raw<'src>(lex: &mut logos::Lexer<'src, Token<'src>>, closer: &str) -> Option<&'src str> {

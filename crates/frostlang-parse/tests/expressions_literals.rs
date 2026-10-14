@@ -53,6 +53,89 @@ fn int_literal_out_of_range() {
     }
 }
 
+// -- Int literals in other bases --
+// `0b`, `0o`, and `0x` prefixes, each in either case; hex digits in either case.
+
+#[test]
+fn based_int_literals_denote_the_value_written() {
+    for (source, n) in [
+        ("0b0", 0),
+        ("0b1", 1),
+        ("0b101", 5),
+        ("0B101", 5),
+        ("0o0", 0),
+        ("0o17", 15),
+        ("0O644", 0o644),
+        ("0x0", 0),
+        ("0xff", 255),
+        ("0xFF", 255),
+        ("0XfF", 255),
+        ("0xDeadBeef", 0xdead_beef),
+        // Leading zeros change nothing.
+        ("0x00ff", 255),
+        ("0b0001", 1),
+        ("0o007", 7),
+    ] {
+        let expr = parse_expr(source);
+        assert!(is_int(&expr, n), "{source:?} is {n}: {expr:?}");
+    }
+}
+
+#[test]
+fn based_int_literals_at_the_ends_of_the_range() {
+    for (source, n) in [
+        ("0x7fffffffffffffff", i64::MAX),
+        ("0o777777777777777777777", i64::MAX),
+        (
+            "0b111111111111111111111111111111111111111111111111111111111111111",
+            i64::MAX,
+        ),
+        // As in decimal, the least Int's magnitude is a literal only when negated.
+        ("-0x8000000000000000", i64::MIN),
+        ("-0o1000000000000000000000", i64::MIN),
+        (
+            "-0b1000000000000000000000000000000000000000000000000000000000000000",
+            i64::MIN,
+        ),
+    ] {
+        let expr = parse_expr(source);
+        assert!(is_int(&expr, n), "{source:?} is {n}: {expr:?}");
+        assert_eq!(
+            (expr.span.start, expr.span.end),
+            (0, source.len()),
+            "{source:?} is one literal"
+        );
+    }
+}
+
+#[test]
+fn based_int_literals_out_of_range() {
+    for source in [
+        "0x8000000000000000",
+        "-0x8000000000000001",
+        "0xffffffffffffffff",
+        // Past what 64 bits hold at all.
+        "0x10000000000000000",
+        "0o1000000000000000000000",
+        "0b1000000000000000000000000000000000000000000000000000000000000000",
+        "-0x8000000000000000.x",
+    ] {
+        let err = parse_err(source);
+        assert!(
+            err.contains("Int literal out of range"),
+            "{source:?}: {err}"
+        );
+    }
+}
+
+#[test]
+fn based_int_literals_are_operands_like_any_other() {
+    let expr = parse_expr("0x10 + 0b11");
+    let (lhs, _, rhs) = is_binop(&expr).expect("a binary operation");
+    assert!(is_int(lhs, 16), "{lhs:?}");
+    assert!(is_int(rhs, 3), "{rhs:?}");
+}
+
 #[test]
 fn float_literal() {
     let expr = parse_expr("3.14");

@@ -3,11 +3,11 @@
 use std::ops::Range;
 
 use crate::ast::SourceSpan;
-use crate::lex::{FormatStringEnd, UnclosedInterpolation, scan_format_string};
+use crate::lex::{FormatStringEnd, IntBase, UnclosedInterpolation, scan_format_string};
 use crate::parse::Diagnostic;
 use crate::parse::hints::{
     BITWISE_HELP, CONDITIONAL_HELP, FORMAT_STRING_HELP, GUARD_HELP, INEQUALITY_HELP, LAMBDA_HELP,
-    LINE_CONTINUATION_HELP, POWER_HELP, float_point_help, raw_string_help,
+    LINE_CONTINUATION_HELP, POWER_HELP, SEPARATORS_HELP, float_point_help, raw_string_help,
 };
 use crate::parse::match_expr::TYPE_CONSTRAINTS;
 use crate::parse::strings::ESCAPES;
@@ -22,6 +22,9 @@ pub(crate) fn unreadable(src: &str, span: Range<usize>, base_offset: usize) -> D
     let rest = &src[span.start..];
 
     if let Some(diagnostic) = unclosed_interpolation(src, span.start, base_offset) {
+        return diagnostic;
+    }
+    if let Some(diagnostic) = invalid_based_int(&src[span.clone()], span.start + base_offset) {
         return diagnostic;
     }
 
@@ -202,6 +205,60 @@ fn invalid_bytes(literal: &str, start: usize) -> Option<Diagnostic> {
         ),
     };
     Some(Diagnostic::at(message, span, label).with_help(Some(help)))
+}
+
+/// The error for `literal`, a `0b`, `0o`, or `0x` Int literal the lexer could not
+/// read, which starts at `start` in the whole source. The error names the literal's
+/// first fault and labels it.
+fn invalid_based_int(literal: &str, start: usize) -> Option<Diagnostic> {
+    let base = IntBase::of(literal)?;
+    let (name, not_a_digit, digits_help) = match base {
+        IntBase::Binary => (
+            "binary",
+            "not a binary digit",
+            "a binary Int's digits are `0` and `1`",
+        ),
+        IntBase::Octal => (
+            "octal",
+            "not an octal digit",
+            "an octal Int's digits are `0` to `7`",
+        ),
+        IntBase::Hexadecimal => (
+            "hexadecimal",
+            "not a hexadecimal digit",
+            "a hexadecimal Int's digits are `0` to `9` and `a` to `f`, in either case",
+        ),
+    };
+    let at = |range: Range<usize>| SourceSpan::from(start + range.start..start + range.end);
+    let prefix = &literal[..2];
+    let fault = literal[2..]
+        .char_indices()
+        .map(|(i, c)| (2 + i, c))
+        .find(|&(_, c)| !c.is_digit(base.radix()));
+    let (diagnostic, help) = match fault {
+        // The lexer reads any run of valid digits, so there are none.
+        None => (
+            Diagnostic::at(
+                format!("{name} Int literal with no digits"),
+                at(0..2),
+                format!("no digits follow this `{prefix}`"),
+            ),
+            digits_help,
+        ),
+        Some((i, c)) => (
+            Diagnostic::at(
+                format!("invalid {} in {name} Int literal", describe_char(c)),
+                at(i..i + c.len_utf8()),
+                not_a_digit,
+            ),
+            if c == '_' {
+                SEPARATORS_HELP
+            } else {
+                digits_help
+            },
+        ),
+    };
+    Some(diagnostic.with_help(Some(help.to_owned())))
 }
 
 /// What an error says of source the lexer could not read at `at`, a range of `line`,

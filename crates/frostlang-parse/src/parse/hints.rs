@@ -72,6 +72,8 @@ const POWER_HELP: &str = "for powers, the `std.math` module has `pow`";
 
 const BITWISE_HELP: &str = "Frost has no bitwise operators";
 
+const SEPARATORS_HELP: &str = "Frost number literals have no `_` separators";
+
 const LINE_CONTINUATION_HELP: &str = "a line continues only when the next line starts with `.` \
                                       or `@`; otherwise, wrap the expression in parentheses";
 

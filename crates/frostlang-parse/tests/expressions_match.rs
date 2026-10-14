@@ -217,6 +217,8 @@ mod literals {
         for (source, n) in [
             ("match x { 9223372036854775807 => true }", i64::MAX),
             ("match x { -9223372036854775808 => true }", i64::MIN),
+            ("match x { 0x7fffffffffffffff => true }", i64::MAX),
+            ("match x { -0x8000000000000000 => true }", i64::MIN),
         ] {
             let expr = parse_expr(source);
             let (_, arms) = assert_match(&expr);
@@ -230,6 +232,8 @@ mod literals {
         for source in [
             "match x { 9223372036854775808 => true }",
             "match x { -9223372036854775809 => true }",
+            "match x { 0x8000000000000000 => true }",
+            "match x { -0x8000000000000001 => true }",
         ] {
             let err = parse_err(source);
             assert!(

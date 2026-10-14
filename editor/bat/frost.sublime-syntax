@@ -114,6 +114,12 @@ contexts:
       scope: constant.numeric.float.frost
     - match: '\b\d+e[+-]?\d+\b'
       scope: constant.numeric.float.frost
+    - match: '\b0[bB][01]+\b'
+      scope: constant.numeric.integer.binary.frost
+    - match: '\b0[oO][0-7]+\b'
+      scope: constant.numeric.integer.octal.frost
+    - match: '\b0[xX][0-9a-fA-F]+\b'
+      scope: constant.numeric.integer.hexadecimal.frost
     - match: '\b\d+\b'
       scope: constant.numeric.integer.frost
 
