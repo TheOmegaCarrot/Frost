@@ -10,7 +10,11 @@ use crate::core::Value;
 ///
 /// Catchable by Frost's `try_call`. As the error propagates through call frames the VM
 /// accumulates the functions it passes through, readable via [`backtrace`](Self::backtrace).
-#[derive(Clone, Debug)]
+///
+/// [`Display`](fmt::Display) shows the [`message`](Self::message) alone, with no label
+/// such as `Error:`; adding one is the presenter's choice.
+#[derive(Clone, Debug, thiserror::Error)]
+#[error("{}", self.message())]
 pub struct FrostError {
     payload: ErrorPayload,
     // Crate-internal: the VM appends frames as the error unwinds. External callers get
@@ -120,14 +124,6 @@ impl FrostError {
     }
 }
 
-/// Shows the [`message`](FrostError::message) alone, with no label such as
-/// `Error:`; adding one is the presenter's choice.
-impl fmt::Display for FrostError {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.write_str(&self.message())
-    }
-}
-
 /// A [`FrostError`] shown with its backtrace; see
 /// [`FrostError::with_backtrace`].
 #[derive(Debug, Clone, Copy)]
@@ -144,8 +140,6 @@ impl fmt::Display for WithBacktrace<'_> {
         })
     }
 }
-
-impl std::error::Error for FrostError {}
 
 impl From<String> for FrostError {
     fn from(message: String) -> Self {

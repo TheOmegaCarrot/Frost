@@ -85,7 +85,7 @@ mod lookup;
 
 use std::collections::HashMap;
 use std::collections::hash_map::Entry;
-use std::fmt::{self, Display};
+use std::fmt::Display;
 use std::path::{Path, PathBuf};
 use std::sync::{Mutex, MutexGuard, PoisonError};
 use std::{fs, io};
@@ -137,9 +137,11 @@ pub enum DiagnosticStyle {
 
 /// A root that [`FsResolver::new`] cannot use: it is missing, inaccessible, or
 /// not a directory.
-#[derive(Debug)]
+#[derive(Debug, thiserror::Error)]
+#[error("cannot use '{}' as a module root: {error}", .root.display())]
 pub struct RootError {
     root: PathBuf,
+    #[source]
     error: io::Error,
 }
 
@@ -147,23 +149,6 @@ impl RootError {
     /// The root as it was given.
     pub fn root(&self) -> &Path {
         &self.root
-    }
-}
-
-impl Display for RootError {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(
-            f,
-            "cannot use '{}' as a module root: {}",
-            self.root.display(),
-            self.error
-        )
-    }
-}
-
-impl std::error::Error for RootError {
-    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
-        Some(&self.error)
     }
 }
 

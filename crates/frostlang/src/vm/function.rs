@@ -124,19 +124,12 @@ impl TrustedProgram {
 
 /// One or more required captures were absent from the map passed to [`TrustedProgram::close`];
 /// reports every missing name, not just the first.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, thiserror::Error)]
+#[error("missing capture(s): {}", .names.join(", "))]
 pub struct MissingCaptures {
     /// The missing capture names, in capture order.
     pub names: Vec<String>,
 }
-
-impl std::fmt::Display for MissingCaptures {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "missing capture(s): {}", self.names.join(", "))
-    }
-}
-
-impl std::error::Error for MissingCaptures {}
 
 /// One slot's entry in a [`CompiledFunction`]'s [`name_table`](CompiledFunction::name_table).
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]

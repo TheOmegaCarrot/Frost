@@ -436,16 +436,9 @@ pub(crate) fn accepted_types<T: DeserializeOwned>() -> TypeSet {
 }
 
 /// The types a target accepts, carried out of [`Probe`] as its error.
-#[derive(Debug)]
+#[derive(Debug, thiserror::Error)]
+#[error("accepts {0:?}")]
 struct Probed(TypeSet);
-
-impl fmt::Display for Probed {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "accepts {:?}", self.0)
-    }
-}
-
-impl std::error::Error for Probed {}
 
 impl de::Error for Probed {
     /// A visitor's own failure tells nothing of the types it accepts.

@@ -34,7 +34,8 @@ use miette::{GraphicalReportHandler, GraphicalTheme};
 /// plain text with [`render_narrated`](Self::render_narrated). With the
 /// [`graphical-diagnostics`](crate#features) feature, `render_pretty`,
 /// `render_unicode`, and `render_plain` draw it in a fixed style.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, thiserror::Error)]
+#[error("{}", self.render())]
 pub struct Diagnostic(Diag);
 
 /// The data behind a [`Diagnostic`], and its `miette` view.
@@ -43,7 +44,8 @@ pub struct Diagnostic(Diag);
 /// is the bare headline: the graphical handler uses it for the block header, so
 /// it must not itself invoke rendering. The pretty, whole-report rendering lives
 /// on [`Diagnostic`], keeping the two roles on distinct types.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, thiserror::Error)]
+#[error("{message}")]
 struct Diag {
     severity: Severity,
     message: String,
@@ -55,8 +57,8 @@ struct Diag {
     ///
     /// A related diagnostic may leave this `None` to inherit its parent's
     /// source; set it when the diagnostic points into a different source.
-    source: Option<NamedSource<String>>,
-    /// Labeled spans, all resolved against `source`. A primary label (see
+    source_code: Option<NamedSource<String>>,
+    /// Labeled spans, all resolved against `source_code`. A primary label (see
     /// [`Diagnostic::label_primary`]) frames the snippet.
     labels: Vec<LabeledSpan>,
     /// Sub-diagnostics, each rendered as its own block.
@@ -73,7 +75,7 @@ impl Diagnostic {
             message,
             code: None,
             help: None,
-            source: None,
+            source_code: None,
             labels: Vec::new(),
             related: Vec::new(),
         })
@@ -108,7 +110,7 @@ impl Diagnostic {
 
     /// Attach the source these labels point into, by filename and text.
     pub(crate) fn source(mut self, filename: String, text: String) -> Self {
-        self.0.source = Some(NamedSource::new(filename, text));
+        self.0.source_code = Some(NamedSource::new(filename, text));
         self
     }
 
@@ -206,14 +208,6 @@ impl Diagnostic {
     }
 }
 
-impl fmt::Display for Diagnostic {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.write_str(&self.render())
-    }
-}
-
-impl std::error::Error for Diagnostic {}
-
 impl Diag {
     #[cfg(feature = "graphical-diagnostics")]
     fn render_themed(&self, theme: GraphicalTheme) -> String {
@@ -223,14 +217,6 @@ impl Diag {
         out
     }
 }
-
-impl fmt::Display for Diag {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.write_str(&self.message)
-    }
-}
-
-impl std::error::Error for Diag {}
 
 impl MietteDiagnostic for Diag {
     fn severity(&self) -> Option<Severity> {
@@ -250,7 +236,7 @@ impl MietteDiagnostic for Diag {
     }
 
     fn source_code(&self) -> Option<&dyn SourceCode> {
-        self.source.as_ref().map(|s| s as &dyn SourceCode)
+        self.source_code.as_ref().map(|s| s as &dyn SourceCode)
     }
 
     fn labels(&self) -> Option<Box<dyn Iterator<Item = LabeledSpan> + '_>> {
@@ -274,7 +260,8 @@ impl MietteDiagnostic for Diag {
 ///
 /// Held on the error channel of the compiler's result. Ordinarily a single hard
 /// error, but the type is plural so a pass can report several at once.
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug, Default, thiserror::Error)]
+#[error("{}", self.render())]
 pub struct Diagnostics(Vec<Diagnostic>);
 
 // -- Construction (crate-internal) --
@@ -363,11 +350,3 @@ impl IntoIterator for Diagnostics {
         self.0.into_iter()
     }
 }
-
-impl fmt::Display for Diagnostics {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.write_str(&self.render())
-    }
-}
-
-impl std::error::Error for Diagnostics {}

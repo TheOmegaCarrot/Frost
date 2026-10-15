@@ -17,8 +17,6 @@
 //! # }
 //! ```
 
-use std::fmt;
-
 use crate::TrustedProgram;
 use crate::bytecode::{CompiledFunction, FormatVersion};
 use crate::vm::serialize::VERSION;
@@ -63,31 +61,19 @@ pub fn decode(image: &[u8]) -> Result<CompiledFunction, ImageError> {
 }
 
 /// Why [`decode`] cannot load an image.
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, thiserror::Error)]
 #[non_exhaustive]
 pub enum ImageError {
     /// The bytes are not an image at all; see [`is_image`].
+    #[error("not a Frost image")]
     NotAnImage,
     /// The image was written by another version of this runtime.
+    #[error("the image was written by frostlang {found}, but this is {VERSION}")]
     VersionMismatch {
         /// The version that wrote it.
         found: String,
     },
     /// The image is truncated or corrupt.
+    #[error("the image is damaged")]
     Damaged,
 }
-
-impl fmt::Display for ImageError {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            Self::NotAnImage => f.write_str("not a Frost image"),
-            Self::VersionMismatch { found } => write!(
-                f,
-                "the image was written by frostlang {found}, but this is {VERSION}"
-            ),
-            Self::Damaged => f.write_str("the image is damaged"),
-        }
-    }
-}
-
-impl std::error::Error for ImageError {}

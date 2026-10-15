@@ -15,6 +15,7 @@ graphical-diagnostics = ["miette/fancy-no-backtrace"]
 logos = "0.15"
 miette = { version = "7", default-features = false }
 serde = { version = "1", features = ["derive"] }
+thiserror = "2"
 
 [dev-dependencies]
 # The tests assert on the graphical rendering.

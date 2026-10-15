@@ -115,16 +115,9 @@ impl<S: fmt::Debug> fmt::Debug for StateLock<S> {
 }
 
 /// The error locking a [`StateLock`] that a panic poisoned.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, thiserror::Error)]
+#[error("a panic poisoned the state")]
 pub struct PoisonedState;
-
-impl fmt::Display for PoisonedState {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.write_str("a panic poisoned the state")
-    }
-}
-
-impl std::error::Error for PoisonedState {}
 
 /// What a [`MutableBundle`] function runs with: its [`NativeCtx`] and the
 /// bundle's state.

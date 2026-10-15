@@ -8,7 +8,6 @@
 //! their own body instead.
 
 use std::borrow::Cow;
-use std::fmt;
 use std::ops::Range;
 
 use crate::{Arity, FrostType, TypeSet, Value};
@@ -144,57 +143,42 @@ pub struct Params {
 }
 
 /// Why a parameter spec was rejected.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, thiserror::Error)]
 #[non_exhaustive]
 pub enum InvalidParams {
     /// A parameter's type set is empty: it accepts no value, so every call fails.
+    #[error(
+        "invalid param spec: parameter at index {index} has an empty type set and accepts no value"
+    )]
     EmptyTypeSet {
         /// Position of the offending parameter.
         index: usize,
     },
     /// An optional parameter is apart from the earlier ones, so which
     /// receives an argument would be unclear.
+    #[error(
+        "invalid param spec: optional parameter at index {index} is apart from the earlier optionals (optionals must be contiguous)"
+    )]
     OptionalsNotContiguous {
         /// Position of the first optional parameter of the second group.
         index: usize,
     },
     /// A rest parameter is not the last parameter.
+    #[error("invalid param spec: rest parameter at index {index} is not the last parameter")]
     RestNotLast {
         /// Position of the rest parameter.
         index: usize,
     },
     /// The spec has both optional parameters and a rest parameter, so which
     /// takes an argument would be unclear.
+    #[error(
+        "invalid param spec: rest parameter at index {index} follows optional parameters (a spec has optionals or a rest, not both)"
+    )]
     OptionalsAndRest {
         /// Position of the rest parameter.
         index: usize,
     },
 }
-
-impl fmt::Display for InvalidParams {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            Self::EmptyTypeSet { index } => write!(
-                f,
-                "invalid param spec: parameter at index {index} has an empty type set and accepts no value",
-            ),
-            Self::OptionalsNotContiguous { index } => write!(
-                f,
-                "invalid param spec: optional parameter at index {index} is apart from the earlier optionals (optionals must be contiguous)",
-            ),
-            Self::RestNotLast { index } => write!(
-                f,
-                "invalid param spec: rest parameter at index {index} is not the last parameter",
-            ),
-            Self::OptionalsAndRest { index } => write!(
-                f,
-                "invalid param spec: rest parameter at index {index} follows optional parameters (a spec has optionals or a rest, not both)",
-            ),
-        }
-    }
-}
-
-impl std::error::Error for InvalidParams {}
 
 impl Params {
     /// Builds a spec from a `'static` slice, panicking if it is invalid

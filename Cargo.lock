@@ -497,6 +497,7 @@ dependencies = [
  "serde",
  "serde_json",
  "strsim",
+ "thiserror",
 ]
 
 [[package]]
@@ -539,6 +540,7 @@ version = "0.0.1"
 dependencies = [
  "frostlang",
  "frostlang-fs-resolver",
+ "thiserror",
 ]
 
 [[package]]
@@ -560,6 +562,7 @@ dependencies = [
  "logos",
  "miette",
  "serde",
+ "thiserror",
 ]
 
 [[package]]
@@ -575,6 +578,7 @@ dependencies = [
  "nu-ansi-term",
  "reedline",
  "serde",
+ "thiserror",
 ]
 
 [[package]]

@@ -28,6 +28,7 @@ nu-ansi-term = { version = "0.50", optional = true }
 reedline = { version = "0.52", optional = true }
 # Reading the config file's sections, through the serde bridge.
 serde = { version = "1", features = ["derive"] }
+thiserror = "2"
 
 [dev-dependencies]
 # The tests assert on the graphical rendering.

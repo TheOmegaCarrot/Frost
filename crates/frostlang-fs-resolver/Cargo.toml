@@ -12,6 +12,7 @@ graphical-diagnostics = ["frostlang/graphical-diagnostics"]
 
 [dependencies]
 frostlang.workspace = true
+thiserror = "2"
 
 [dev-dependencies]
 # The tests assert on the graphical rendering.

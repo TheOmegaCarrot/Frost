@@ -1,7 +1,6 @@
 //! Metacommands: instructions to the REPL or its frontend, typed in place of
 //! Frost source.
 
-use std::fmt;
 use std::io;
 
 /// A metacommand as typed: `:` and its name, then whatever argument follows.
@@ -174,7 +173,8 @@ impl<F> MetacommandTable<F> {
 }
 
 /// A frontend's metacommand the REPL refuses.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, thiserror::Error)]
+#[error("the frontend's metacommand `:{name}` {}", .problem.predicate())]
 pub struct InvalidMetacommand {
     name: String,
     problem: MetacommandProblem,
@@ -204,27 +204,27 @@ impl InvalidMetacommand {
     }
 }
 
-impl fmt::Display for InvalidMetacommand {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let problem = match self.problem {
-            MetacommandProblem::InvalidName => {
+impl MetacommandProblem {
+    /// What the refused metacommand does wrong, to follow its name.
+    fn predicate(self) -> &'static str {
+        match self {
+            Self::InvalidName => {
                 "has an invalid name: use lowercase letters, digits, and `-`, starting with a letter"
             }
-            MetacommandProblem::Builtin => "would replace a built-in metacommand",
-            MetacommandProblem::Duplicate => "is given more than once",
-        };
-        write!(f, "the frontend's metacommand `:{}` {problem}", self.name)
+            Self::Builtin => "would replace a built-in metacommand",
+            Self::Duplicate => "is given more than once",
+        }
     }
 }
 
-impl std::error::Error for InvalidMetacommand {}
-
 /// Why a metacommand failed, the REPL's own or a frontend's.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, thiserror::Error)]
 pub enum MetacommandError {
     /// No metacommand has this name.
+    #[error("there is no metacommand `:{0}`; `:help` lists them")]
     Unknown(String),
     /// The metacommand cannot take the argument it was given.
+    #[error("`:{metacommand}`: {reason}")]
     InvalidArgument {
         /// The metacommand's name, without its `:`.
         metacommand: String,
@@ -232,6 +232,7 @@ pub enum MetacommandError {
         reason: String,
     },
     /// The metacommand understood its argument, but could not carry it out.
+    #[error("`:{metacommand}`: {reason}")]
     Failed {
         /// The metacommand's name, without its `:`.
         metacommand: String,
@@ -239,26 +240,6 @@ pub enum MetacommandError {
         reason: String,
     },
 }
-
-impl fmt::Display for MetacommandError {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            Self::Unknown(name) => {
-                write!(f, "there is no metacommand `:{name}`; `:help` lists them")
-            }
-            Self::InvalidArgument {
-                metacommand,
-                reason,
-            }
-            | Self::Failed {
-                metacommand,
-                reason,
-            } => write!(f, "`:{metacommand}`: {reason}"),
-        }
-    }
-}
-
-impl std::error::Error for MetacommandError {}
 
 /// One of the REPL's own metacommands.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

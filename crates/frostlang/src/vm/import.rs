@@ -208,25 +208,14 @@ impl Stdlib {
 
 /// Rejection from [`Stdlib::with_module`]: a module of the same name is already
 /// present. Carries the untouched library and the rejected module back.
-#[derive(Debug)]
+#[derive(Debug, thiserror::Error)]
+#[error("standard library module `{}` is already present", .1.name())]
 pub struct StdlibError(Stdlib, StdlibModule);
 
 impl StdlibError {
     /// Recovers the library and the rejected module.
     pub fn into_parts(self) -> (Stdlib, StdlibModule) {
         (self.0, self.1)
-    }
-}
-
-impl std::error::Error for StdlibError {}
-
-impl std::fmt::Display for StdlibError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(
-            f,
-            "standard library module `{}` is already present",
-            self.1.name()
-        )
     }
 }
 
@@ -238,7 +227,10 @@ impl std::fmt::Display for StdlibError {
 pub struct Extension(Module);
 
 /// A rejected name for an [`Extension`] or [`HostComponent`]: not identifier-like, or a Frost keyword.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, thiserror::Error)]
+#[error(
+    "invalid component name {0:?}: names must be identifier-like and must not be a Frost keyword"
+)]
 pub struct InvalidComponentName(String);
 
 impl InvalidComponentName {
@@ -247,18 +239,6 @@ impl InvalidComponentName {
         &self.0
     }
 }
-
-impl std::fmt::Display for InvalidComponentName {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(
-            f,
-            "invalid component name {:?}: names must be identifier-like and must not be a Frost keyword",
-            self.0
-        )
-    }
-}
-
-impl std::error::Error for InvalidComponentName {}
 
 impl Extension {
     /// Returns this extension under a new `name`, validated as in [`new`](Self::new).
@@ -523,12 +503,14 @@ impl HostComponent {
 /// Rejection from [`ImporterBuilder::with_component`]: the component's name is
 /// not claimable. Carries the untouched builder and the rejected component back
 /// so the caller can [`rename`](HostComponent::rename) and retry.
-#[derive(Debug)]
+#[derive(Debug, thiserror::Error)]
 #[non_exhaustive]
 pub enum HostComponentError {
     /// The name is reserved for the runtime (`std`, `ext`) and can never be claimed.
+    #[error("component name `{}` is reserved", .1.name())]
     ReservedName(ImporterBuilder, HostComponent),
     /// The name was already claimed by an earlier registration.
+    #[error("component name `{}` is already registered", .1.name())]
     NameCollision(ImporterBuilder, HostComponent),
 }
 
@@ -543,21 +525,6 @@ impl HostComponentError {
     }
 }
 
-impl std::fmt::Display for HostComponentError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Self::ReservedName(_, c) => {
-                write!(f, "component name `{}` is reserved", c.name())
-            }
-            Self::NameCollision(_, c) => {
-                write!(f, "component name `{}` is already registered", c.name())
-            }
-        }
-    }
-}
-
-impl std::error::Error for HostComponentError {}
-
 impl Default for ImporterBuilder {
     fn default() -> Self {
         Self::new()
@@ -567,25 +534,14 @@ impl Default for ImporterBuilder {
 /// Rejection from [`ImporterBuilder::with_extension`]: the name is already
 /// claimed under `ext`. Carries the untouched builder and the rejected
 /// extension back so the caller can [`rename`](Extension::rename) and retry.
-#[derive(Debug)]
+#[derive(Debug, thiserror::Error)]
+#[error("extension name `{}` is already registered", .1.name())]
 pub struct ExtensionError(ImporterBuilder, Extension);
 
 impl ExtensionError {
     /// Recovers the builder and the rejected extension.
     pub fn into_parts(self) -> (ImporterBuilder, Extension) {
         (self.0, self.1)
-    }
-}
-
-impl std::error::Error for ExtensionError {}
-
-impl std::fmt::Display for ExtensionError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(
-            f,
-            "extension name `{}` is already registered",
-            self.1.name()
-        )
     }
 }
 

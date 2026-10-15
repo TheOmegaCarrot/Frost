@@ -52,7 +52,6 @@ pub use segment::complete_segment;
 pub use terminal::TerminalFrontend;
 
 use std::collections::{BTreeMap, VecDeque};
-use std::fmt;
 use std::io;
 use std::num::NonZeroU64;
 use std::path::PathBuf;
@@ -462,86 +461,49 @@ impl Repl {
 }
 
 /// Why [`Repl::run`] ended a session early.
-#[derive(Debug)]
+#[derive(Debug, thiserror::Error)]
 pub enum SessionError {
     /// The frontend failed.
-    Frontend(io::Error),
+    #[error("{0}")]
+    Frontend(#[from] io::Error),
     /// The REPL refused one of the frontend's metacommands, before reading
     /// anything.
-    Metacommand(InvalidMetacommand),
-}
-
-impl From<io::Error> for SessionError {
-    fn from(error: io::Error) -> Self {
-        Self::Frontend(error)
-    }
-}
-
-impl fmt::Display for SessionError {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            Self::Frontend(error) => write!(f, "{error}"),
-            Self::Metacommand(invalid) => write!(f, "{invalid}"),
-        }
-    }
-}
-
-impl std::error::Error for SessionError {
-    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
-        match self {
-            Self::Frontend(error) => Some(error),
-            Self::Metacommand(invalid) => Some(invalid),
-        }
-    }
+    #[error("{0}")]
+    Metacommand(#[source] InvalidMetacommand),
 }
 
 /// Why an input failed, or what is wrong with the
 /// [config file](Repl#config-file). A failed input left the REPL's bindings
 /// unchanged.
 ///
-/// [`Display`](fmt::Display) shows it as plain text: the diagnostics, the
+/// [`Display`](std::fmt::Display) shows it as plain text: the diagnostics, the
 /// error and its backtrace, the metacommand's failure, or the config file's
 /// problem.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, thiserror::Error)]
 pub enum ReplError {
     /// The input did not compile.
-    Compile(Diagnostics),
+    #[cfg_attr(
+        feature = "graphical-diagnostics",
+        error("{}", .0.render_plain().trim_end())
+    )]
+    #[cfg_attr(
+        not(feature = "graphical-diagnostics"),
+        error("{}", .0.render_narrated().trim_end())
+    )]
+    Compile(#[source] Diagnostics),
     /// The input raised an error while running.
-    Run(FrostError),
+    #[error("Error: {}", .0.with_backtrace())]
+    Run(#[source] FrostError),
     /// The input was cancelled through a [`CancelHandle`] before it finished.
     /// The error says where it was running when it stopped.
-    Cancelled(FrostError),
+    #[error("Error: {}", .0.with_backtrace())]
+    Cancelled(#[source] FrostError),
     /// The input was a [metacommand](Repl#metacommands), which failed.
-    Metacommand(MetacommandError),
+    #[error("Error: {0}")]
+    Metacommand(#[source] MetacommandError),
     /// The config file has a problem, which no input caused.
-    Config(ConfigError),
-}
-
-impl fmt::Display for ReplError {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            #[cfg(feature = "graphical-diagnostics")]
-            Self::Compile(diagnostics) => f.write_str(diagnostics.render_plain().trim_end()),
-            #[cfg(not(feature = "graphical-diagnostics"))]
-            Self::Compile(diagnostics) => f.write_str(diagnostics.render_narrated().trim_end()),
-            Self::Run(error) | Self::Cancelled(error) => {
-                write!(f, "Error: {}", error.with_backtrace())
-            }
-            Self::Metacommand(error) => write!(f, "Error: {error}"),
-            Self::Config(error) => write!(f, "{error}"),
-        }
-    }
-}
-
-impl std::error::Error for ReplError {
-    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
-        match self {
-            Self::Compile(diagnostics) => Some(diagnostics),
-            Self::Run(error) | Self::Cancelled(error) => Some(error),
-            Self::Metacommand(error) => Some(error),
-            Self::Config(error) => Some(error),
-        }
-    }
+    #[error("{0}")]
+    Config(#[source] ConfigError),
 }
 
 /// Check that Frost source can refer to `name`, so that binding it is of use:
@@ -557,7 +519,8 @@ pub fn check_name(name: &str) -> Result<(), InvalidName> {
 }
 
 /// A name Frost source cannot refer to; see [`check_name`].
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, thiserror::Error)]
+#[error("`{name}` is not a name Frost source can refer to")]
 pub struct InvalidName {
     name: String,
 }
@@ -568,11 +531,3 @@ impl InvalidName {
         &self.name
     }
 }
-
-impl fmt::Display for InvalidName {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "`{}` is not a name Frost source can refer to", self.name)
-    }
-}
-
-impl std::error::Error for InvalidName {}

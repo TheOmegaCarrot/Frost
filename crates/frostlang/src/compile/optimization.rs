@@ -3,7 +3,7 @@
 #[cfg(test)]
 mod tests;
 
-use std::fmt;
+use itertools::Itertools;
 
 /// Which optimizations the compiler applies. None changes what a program
 /// computes, only how it computes it.
@@ -240,14 +240,20 @@ impl Optimization {
 }
 
 /// A setting [`OptimizationOptions::with_settings`] refuses.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, thiserror::Error)]
 #[non_exhaustive]
 pub enum InvalidOptimizationSetting {
     /// Neither `<name>=<value>`, `all`, nor `none`.
+    #[error("`{0}` should be `<optimization>=true|false`, `preset=all|none`, `all`, or `none`")]
     Malformed(String),
     /// No optimization has this name.
+    #[error(
+        "there is no optimization `{0}`; there are {names}",
+        names = Optimization::ALL.iter().map(|o| o.name()).join(", ")
+    )]
     UnknownOptimization(String),
     /// An optimization set to something other than `true` or `false`.
+    #[error("`{}` is `true` or `false`, not `{value}`", .optimization.name())]
     InvalidValue {
         /// The optimization.
         optimization: Optimization,
@@ -255,35 +261,6 @@ pub enum InvalidOptimizationSetting {
         value: String,
     },
     /// `preset` set to something other than `all` or `none`.
+    #[error("`preset` is `all` or `none`, not `{0}`")]
     UnknownPreset(String),
 }
-
-impl fmt::Display for InvalidOptimizationSetting {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            Self::Malformed(setting) => write!(
-                f,
-                "`{setting}` should be `<optimization>=true|false`, `preset=all|none`, `all`, or `none`"
-            ),
-            Self::UnknownOptimization(name) => {
-                let names: Vec<&str> = Optimization::ALL.iter().map(|o| o.name()).collect();
-                write!(
-                    f,
-                    "there is no optimization `{name}`; there are {}",
-                    names.join(", ")
-                )
-            }
-            Self::InvalidValue {
-                optimization,
-                value,
-            } => write!(
-                f,
-                "`{}` is `true` or `false`, not `{value}`",
-                optimization.name()
-            ),
-            Self::UnknownPreset(value) => write!(f, "`preset` is `all` or `none`, not `{value}`"),
-        }
-    }
-}
-
-impl std::error::Error for InvalidOptimizationSetting {}

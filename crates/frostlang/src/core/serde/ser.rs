@@ -18,16 +18,9 @@ thread_local! {
 
 // -- Error --
 
-#[derive(Debug)]
+#[derive(Debug, thiserror::Error)]
+#[error("{0}")]
 pub(super) struct SerError(String);
-
-impl fmt::Display for SerError {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        f.write_str(&self.0)
-    }
-}
-
-impl std::error::Error for SerError {}
 
 impl ser::Error for SerError {
     fn custom<T: fmt::Display>(msg: T) -> Self {

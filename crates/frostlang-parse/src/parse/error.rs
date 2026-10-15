@@ -1,5 +1,4 @@
-use std::error::Error;
-use std::fmt::{self, Display};
+use std::fmt::Display;
 
 use miette::{
     Diagnostic as MietteDiagnostic, LabeledSpan, NamedSource, NarratableReportHandler, SourceCode,
@@ -120,11 +119,12 @@ impl Diagnostic {
 ///
 /// Inspect it with [`message`](Self::message), [`labels`](Self::labels), and
 /// [`help`](Self::help). Render it against the source through
-/// [`Display`](fmt::Display), the same as [`render`](Self::render), or as plain
+/// [`Display`], the same as [`render`](Self::render), or as plain
 /// text with [`render_narrated`](Self::render_narrated). With the
 /// [`graphical-diagnostics`](crate#features) feature, `render_pretty`,
 /// `render_unicode`, and `render_plain` draw it in a fixed style.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, thiserror::Error)]
+#[error("{}", self.render())]
 pub struct ParseError(Report);
 
 /// The data behind a [`ParseError`], and its `miette` view.
@@ -133,10 +133,11 @@ pub struct ParseError(Report);
 /// the bare message: the graphical handler uses it for the block header, so it
 /// must not itself invoke rendering. The whole-report rendering lives on
 /// [`ParseError`], keeping the two roles on distinct types.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, thiserror::Error)]
+#[error("{}", .diagnostic.message())]
 struct Report {
     diagnostic: Diagnostic,
-    source: NamedSource<String>,
+    source_code: NamedSource<String>,
 }
 
 impl ParseError {
@@ -144,7 +145,7 @@ impl ParseError {
     pub(crate) fn new(diagnostic: Diagnostic, filename: &str, source: &str) -> Self {
         Self(Report {
             diagnostic,
-            source: NamedSource::new(filename, source.to_owned()),
+            source_code: NamedSource::new(filename, source.to_owned()),
         })
     }
 
@@ -170,7 +171,7 @@ impl ParseError {
         self.0.diagnostic.help()
     }
 
-    /// Render for humans. This is what [`Display`](fmt::Display) uses.
+    /// Render for humans. This is what [`Display`] uses.
     ///
     /// With the [`graphical-diagnostics`](crate#features) feature, it draws the
     /// source snippet with its labels, adapting to the output: unicode and color
@@ -214,14 +215,6 @@ impl ParseError {
     }
 }
 
-impl Display for ParseError {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.write_str(&self.render())
-    }
-}
-
-impl Error for ParseError {}
-
 impl Report {
     #[cfg(feature = "graphical-diagnostics")]
     fn render_themed(&self, theme: GraphicalTheme) -> String {
@@ -232,14 +225,6 @@ impl Report {
     }
 }
 
-impl Display for Report {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.write_str(self.diagnostic.message())
-    }
-}
-
-impl Error for Report {}
-
 impl MietteDiagnostic for Report {
     fn help<'a>(&'a self) -> Option<Box<dyn Display + 'a>> {
         self.diagnostic
@@ -248,7 +233,7 @@ impl MietteDiagnostic for Report {
     }
 
     fn source_code(&self) -> Option<&dyn SourceCode> {
-        Some(&self.source)
+        Some(&self.source_code)
     }
 
     // The first label is primary: the one the snippet is framed around.
