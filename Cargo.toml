@@ -8,6 +8,7 @@ members = [
     "crates/frostlang-repl",
     "crates/frostlang-cli",
     "crates/frostlang-astviz",
+    "crates/frostlang-corpus",
     # The first-party extensions, one crate each.
     "crates/ext/*",
 ]

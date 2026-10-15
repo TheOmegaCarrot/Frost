@@ -50,6 +50,7 @@ independently:
 | `frostlang-repl` | An interactive read-eval-print loop. |
 | `frostlang-cli` | The `frost` binary, built on `frostlang-driver`. |
 | `frostlang-astviz` | AST visualization; compiles the tree-sitter Frost grammar from `editor/`. Unpublished. |
+| `frostlang-corpus` | The core-language test corpus (`corpus/`, one script per file, each pinning its expected outcome) and its runner, run by `cargo test`. Its `corpus/README.md` and `corpus/MAINTENANCE.md` give the format and the rules for keeping it. Unpublished. |
 
 First-party extensions (the `ext.*` modules) live in `crates/ext/<crate name>/`, one crate each,
 named `frostlang-<name>`. Each exposes `extension(/* its configuration */) -> Extension` for a

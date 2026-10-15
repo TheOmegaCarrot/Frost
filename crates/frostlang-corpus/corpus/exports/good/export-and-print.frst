@@ -1,0 +1,10 @@
+# A completed run's exports and printed output are part of its outcome,
+# alongside its tail value.
+#= {
+#=     result: 42,
+#=     exports: {answer: 42},
+#=     printed: ['computing'],
+#= }
+print('computing')
+export def answer = 6 * 7
+answer

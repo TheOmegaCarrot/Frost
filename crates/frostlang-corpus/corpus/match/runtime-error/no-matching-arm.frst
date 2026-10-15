@@ -1,0 +1,7 @@
+# A `match` with no arm for the value raises, rather than producing Null.
+#= {raises: 'no match arm'}
+def v = 5
+match v {
+    1 => 'one',
+    2 => 'two',
+}

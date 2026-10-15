@@ -1,0 +1,8 @@
+# A binding in a `do` block shadows the outer one only until the block ends.
+#= {result: [2, 1]}
+def x = 1
+def inner = do {
+    def x = 2
+    x
+}
+[inner, x]

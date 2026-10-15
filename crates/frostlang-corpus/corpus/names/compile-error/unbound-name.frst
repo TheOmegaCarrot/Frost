@@ -1,0 +1,3 @@
+# A name that is neither bound nor a global is a compile error, not Null.
+#= {rejects: ['`undefined_name`', 'not defined']}
+undefined_name + 1

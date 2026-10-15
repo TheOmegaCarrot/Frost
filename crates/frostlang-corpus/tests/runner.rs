@@ -1,0 +1,435 @@
+//! The corpus runner's own tests: that it passes what behaves as expected,
+//! and fails, flags, or rejects everything else, each for the right reason.
+//!
+//! Scripts here are written inline and checked by name, as if they sat at
+//! that path in the corpus, so the corpus itself holds only real entries.
+
+use std::path::Path;
+
+use frostlang_corpus::{
+    Entry, Kind, KnownIssue, Mode, Report, Tally, check, check_source, discover,
+};
+
+/// The report for `source`, named `name`, under the default options.
+fn report(name: &str, source: &str) -> Report {
+    check_source(name, source, Mode::Default).report
+}
+
+/// The reason `source` fails, which it must.
+fn failure(name: &str, source: &str) -> String {
+    match report(name, source) {
+        Report::Failed(reason) => reason,
+        other => panic!("{name} should fail, but was reported as {other:?}"),
+    }
+}
+
+/// The reason `source` is malformed, which it must be.
+fn malformation(name: &str, source: &str) -> String {
+    match report(name, source) {
+        Report::Malformed(reason) => reason,
+        other => panic!("{name} should be malformed, but was reported as {other:?}"),
+    }
+}
+
+fn assert_mentions(text: &str, fragment: &str) {
+    assert!(
+        text.contains(fragment),
+        "expected the report to mention {fragment:?}, but it reads:\n{text}"
+    );
+}
+
+// -- Passing --
+
+#[test]
+fn a_good_script_matching_its_expectation_passes() {
+    let source = r"
+#= {result: [1, 'two', 3.0, null]}
+[1, 'two', 3.0, null]
+";
+    assert_eq!(report("area/good/script", source), Report::Passed);
+}
+
+#[test]
+fn a_null_result_is_an_expectation_not_an_absent_one() {
+    let source = r"
+#= {result: null}
+null
+";
+    assert_eq!(report("area/good/script", source), Report::Passed);
+}
+
+#[test]
+fn exports_and_printed_output_are_compared() {
+    let source = r"
+#= {
+#=     result: 3,
+#=     exports: {a: 1, b: 'b'},
+#=     printed: ['first', 'second'],
+#= }
+print('first')
+export def a = 1
+print('second')
+export def b = 'b'
+3
+";
+    assert_eq!(report("area/good/script", source), Report::Passed);
+}
+
+#[test]
+fn a_runtime_error_passes_when_its_message_contains_every_fragment_ignoring_case() {
+    let source = r"
+#= {raises: ['NO MATCH', 'arm']}
+match 5 {
+    1 => 'one',
+}
+";
+    assert_eq!(report("area/runtime-error/script", source), Report::Passed);
+}
+
+#[test]
+fn a_compile_error_passes_when_its_diagnostics_contain_every_fragment() {
+    let source = r"
+#= {rejects: ['`missing`', 'not defined']}
+missing
+";
+    assert_eq!(report("area/compile-error/script", source), Report::Passed);
+}
+
+#[test]
+fn a_script_passes_under_every_permutation_mode() {
+    let source = r"
+#= {result: 6}
+def add = fn x, y -> x + y
+add(1, 5)
+";
+    for mode in [Mode::Default, Mode::Permutations, Mode::Exhaustive] {
+        assert_eq!(
+            check_source("area/good/script", source, mode).report,
+            Report::Passed,
+            "under {mode:?}"
+        );
+    }
+}
+
+// -- Failing --
+
+#[test]
+fn a_wrong_result_fails_showing_both_values() {
+    let reason = failure("area/good/script", "#= {result: 'one'}\n'two'\n");
+    assert_mentions(&reason, r#"expected "one", got "two""#);
+}
+
+#[test]
+fn equality_is_frosts_own_so_an_int_never_matches_a_float() {
+    let reason = failure("area/good/script", "#= {result: 3}\n3.0\n");
+    assert_mentions(&reason, "result: expected 3, got 3.0");
+}
+
+#[test]
+fn unexpected_printed_output_fails() {
+    let reason = failure("area/good/script", "#= {result: null}\nprint('surprise')\n");
+    assert_mentions(&reason, "printed");
+    assert_mentions(&reason, "surprise");
+}
+
+#[test]
+fn an_unexpected_export_fails() {
+    let reason = failure("area/good/script", "#= {result: 1}\nexport def a = 1\na\n");
+    assert_mentions(&reason, "exports");
+}
+
+#[test]
+fn a_good_script_that_raises_fails() {
+    let reason = failure(
+        "area/good/script",
+        "#= {result: 1}\nmatch 2 {\n    1 => 1,\n}\n",
+    );
+    assert_mentions(&reason, "expected it to complete");
+}
+
+#[test]
+fn a_good_script_that_does_not_compile_fails() {
+    let reason = failure("area/good/script", "#= {result: 1}\nmissing\n");
+    assert_mentions(&reason, "expected it to compile");
+}
+
+#[test]
+fn a_runtime_error_script_that_completes_fails() {
+    let reason = failure("area/runtime-error/script", "#= {raises: 'boom'}\n1\n");
+    assert_mentions(&reason, "expected it to raise");
+}
+
+#[test]
+fn a_runtime_error_missing_a_fragment_fails() {
+    let reason = failure(
+        "area/runtime-error/script",
+        "#= {raises: ['no match', 'unrelated']}\nmatch 2 {\n    1 => 1,\n}\n",
+    );
+    assert_mentions(&reason, r#"does not mention ["unrelated"]"#);
+}
+
+#[test]
+fn a_compile_error_script_that_compiles_fails() {
+    let reason = failure("area/compile-error/script", "#= {rejects: 'nope'}\n1\n");
+    assert_mentions(&reason, "expected it not to compile");
+}
+
+#[test]
+fn a_compile_error_fragment_cannot_match_the_echoed_source() {
+    // The diagnostics quote the offending line, which holds the fragment.
+    let source = r"
+#= {rejects: 'sentinel_text'}
+missing + 'sentinel_text'
+";
+    let reason = failure("area/compile-error/script", source);
+    assert_mentions(&reason, r#"does not mention ["sentinel_text"]"#);
+}
+
+// -- Known issues --
+
+#[test]
+fn a_known_issue_that_still_fails_counts_as_a_success() {
+    let source = r"
+#= {result: 1, known_issue: 'FROST-1'}
+2
+";
+    let report = report("area/good/script", source);
+    let Report::KnownIssue { issue, detail } = &report else {
+        panic!("expected a known issue, got {report:?}");
+    };
+    assert_eq!(
+        issue,
+        &KnownIssue {
+            task: "FROST-1".to_string(),
+            regression: false
+        }
+    );
+    assert_mentions(detail, "result");
+    assert!(report.is_success(), "a known issue does not fail the run");
+}
+
+#[test]
+fn a_known_issue_can_be_marked_a_regression() {
+    let source = r"
+#= {result: 1, known_issue: 'FROST-12.3', regression: true}
+2
+";
+    let report = report("area/good/script", source);
+    assert!(
+        matches!(&report, Report::KnownIssue { issue, .. } if issue.regression && issue.task == "FROST-12.3"),
+        "expected a regression known issue, got {report:?}"
+    );
+}
+
+#[test]
+fn a_known_issue_that_now_passes_fails_the_run() {
+    let source = r"
+#= {result: 1, known_issue: 'FROST-1'}
+1
+";
+    let report = report("area/good/script", source);
+    assert!(
+        matches!(&report, Report::Resolved(issue) if issue.task == "FROST-1"),
+        "expected a resolved known issue, got {report:?}"
+    );
+    assert!(!report.is_success(), "a stale marker fails the run");
+    assert_mentions(
+        &report.failure().unwrap(),
+        "remove its `known_issue` marker",
+    );
+}
+
+#[test]
+fn a_known_issue_does_not_excuse_a_malformed_script() {
+    let reason = malformation(
+        "area/runtime-error/script",
+        "#= {result: 1, known_issue: 'FROST-1'}\n1\n",
+    );
+    assert_mentions(&reason, "`runtime-error` directory");
+}
+
+// -- Malformed scripts --
+
+#[test]
+fn a_script_outside_an_outcome_directory_is_malformed() {
+    let reason = malformation("area/script", "#= {result: 1}\n1\n");
+    assert_mentions(&reason, "good, runtime-error, compile-error");
+}
+
+#[test]
+fn a_script_in_the_wrong_outcome_directory_is_malformed() {
+    let reason = malformation("area/compile-error/script", "#= {result: 1}\n1\n");
+    assert_mentions(&reason, "good script");
+}
+
+#[test]
+fn a_script_without_an_expectation_is_malformed() {
+    let reason = malformation("area/good/script", "# just prose\n1\n");
+    assert_mentions(&reason, "no `#=` expectation block");
+}
+
+#[test]
+fn an_expectation_split_in_two_is_malformed() {
+    let source = r"
+#= {
+#=     result: 1,
+# a gap
+#= }
+1
+";
+    let reason = malformation("area/good/script", source);
+    assert_mentions(&reason, "contiguous");
+}
+
+#[test]
+fn an_expectation_must_name_exactly_one_outcome() {
+    for expectation in [
+        "{}",
+        "{result: 1, raises: 'x'}",
+        "{raises: 'x', rejects: 'y'}",
+    ] {
+        let reason = malformation("area/good/script", &format!("#= {expectation}\n1\n"));
+        assert_mentions(&reason, "exactly one of");
+    }
+}
+
+#[test]
+fn an_expectation_with_an_unknown_field_is_malformed() {
+    let reason = malformation("area/good/script", "#= {result: 1, reslut: 1}\n1\n");
+    assert_mentions(&reason, "reslut");
+}
+
+#[test]
+fn exports_and_printed_belong_only_to_a_good_script() {
+    let reason = malformation(
+        "area/runtime-error/script",
+        "#= {raises: 'x', printed: []}\n1\n",
+    );
+    assert_mentions(&reason, "only an expectation with `result`");
+}
+
+#[test]
+fn blank_or_empty_fragments_are_malformed() {
+    for fragments in ["''", "' '", "[]", "['ok', '']"] {
+        let reason = malformation(
+            "area/runtime-error/script",
+            &format!("#= {{raises: {fragments}}}\n1\n"),
+        );
+        assert_mentions(&reason, "at least one fragment");
+    }
+}
+
+#[test]
+fn a_known_issue_must_name_a_task() {
+    for task in ["'123'", "'FROST-'", "'FROST-1.'", "'frost-1'", "1"] {
+        let reason = malformation(
+            "area/good/script",
+            &format!("#= {{result: 1, known_issue: {task}}}\n1\n"),
+        );
+        assert!(
+            reason.contains("known_issue"),
+            "{task}: expected the report to mention known_issue, but it reads:\n{reason}"
+        );
+    }
+}
+
+#[test]
+fn a_regression_without_a_known_issue_is_malformed() {
+    let reason = malformation("area/good/script", "#= {result: 1, regression: true}\n1\n");
+    assert_mentions(&reason, "requires a `known_issue`");
+}
+
+#[test]
+fn an_expectation_that_is_not_a_map_is_malformed() {
+    let reason = malformation("area/good/script", "#= [1]\n1\n");
+    assert_mentions(&reason, "malformed");
+}
+
+#[test]
+fn an_expectation_that_does_not_compile_is_malformed() {
+    let reason = malformation("area/good/script", "#= {result: missing}\n1\n");
+    assert_mentions(&reason, "does not compile");
+}
+
+#[test]
+fn an_expectation_that_raises_is_malformed() {
+    let reason = malformation("area/good/script", "#= {result: match 1 { 2 => 2 }}\n1\n");
+    assert_mentions(&reason, "raised");
+}
+
+// -- Discovery and summary --
+
+#[test]
+fn discovery_names_scripts_by_path_and_skips_documentation() {
+    let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/discovery");
+    let names: Vec<String> = discover(&root)
+        .expect("the fixture is readable")
+        .into_iter()
+        .map(|entry| entry.name)
+        .collect();
+    assert_eq!(names, ["a/good/first", "b/nested/runtime-error/second"]);
+}
+
+#[test]
+fn discovery_rejects_a_file_that_is_neither_script_nor_documentation() {
+    let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/misnamed");
+    let error = discover(&root).expect_err("a misnamed script is an error");
+    assert!(
+        error.to_string().contains("script.frost"),
+        "expected the error to name the file, but it reads: {error}"
+    );
+}
+
+#[test]
+fn an_unreadable_entry_is_malformed() {
+    let entry = Entry {
+        name: "area/good/absent".to_string(),
+        path: Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/absent.frst"),
+    };
+    let verdict = check(&entry, Mode::Default);
+    assert_eq!(verdict.kind, Some(Kind::Good));
+    assert!(
+        matches!(&verdict.report, Report::Malformed(reason) if reason.contains("cannot read")),
+        "expected an unreadable script to be malformed, got {:?}",
+        verdict.report
+    );
+}
+
+#[test]
+fn the_tally_counts_each_verdict_in_its_bucket() {
+    let scripts = [
+        ("a/good/pass", "#= {result: 1}\n1\n"),
+        ("a/good/fail", "#= {result: 1}\n2\n"),
+        (
+            "a/good/known",
+            "#= {result: 1, known_issue: 'FROST-1', regression: true}\n2\n",
+        ),
+        (
+            "a/good/resolved",
+            "#= {result: 1, known_issue: 'FROST-2'}\n1\n",
+        ),
+        (
+            "a/runtime-error/pass",
+            "#= {raises: 'no match'}\nmatch 1 {\n    2 => 2,\n}\n",
+        ),
+        (
+            "a/compile-error/pass",
+            "#= {rejects: 'not defined'}\nmissing\n",
+        ),
+        ("a/compile-error/malformed", "1\n"),
+        ("a/elsewhere", "#= {result: 1}\n1\n"),
+    ];
+    let mut tally = Tally::new(Mode::Default);
+    for (name, source) in scripts {
+        tally.record(name, &check_source(name, source, Mode::Default));
+    }
+    let expected = r"corpus summary (default optimizations)
+                    pass    fail   panic   known issue  (regression)
+good                   1       1       0             1             1
+runtime-error          1       0       0             0             0
+compile-error          1       0       0             0             0
+malformed: 2
+known issues now behaving as expected: 1
+    a/good/resolved (FROST-2)";
+    assert_eq!(tally.to_string(), expected);
+}
