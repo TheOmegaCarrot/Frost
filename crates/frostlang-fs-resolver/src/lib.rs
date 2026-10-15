@@ -213,7 +213,11 @@ impl FsResolver {
             )
         })?;
         let filename = path.to_string_lossy();
-        let options = CompilerOptions::new().with_optimization(self.optimization);
+        // TODO: an import has no way to report its module's lints, so none are
+        // looked for.
+        let options = CompilerOptions::new()
+            .with_optimization(self.optimization)
+            .with_lints(false);
         let program = compile_program(&filename, &source, options).map_err(|errors| {
             cannot_import(
                 spec,

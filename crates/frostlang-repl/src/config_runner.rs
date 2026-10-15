@@ -69,7 +69,9 @@ impl ConfigRunner {
         filename: &str,
         source: &str,
     ) -> Result<Vec<(String, Value)>, ScriptFailure> {
-        let program = compile_program(filename, source, CompilerOptions::new())
+        // Lints in a config file are not shown, so are not found.
+        let options = CompilerOptions::new().with_lints(false);
+        let program = compile_program(filename, source, options)
             .map_err(ScriptFailure::Compile)?
             .code;
         let closure = program

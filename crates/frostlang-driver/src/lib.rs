@@ -533,9 +533,16 @@ impl Session<'_> {
     /// `--no-args` says otherwise, or the exit for its diagnostics.
     fn compile(&mut self, filename: &str, source: &str) -> Result<TrustedProgram, Exit> {
         let scope: &[&str] = if self.no_args { &[] } else { &[ARGS] };
-        compile_in_scope(filename, source, self.options, scope)
-            .map(|output| output.code)
-            .map_err(|errors| self.report_diagnostics(&errors))
+        match compile_in_scope(filename, source, self.options, scope) {
+            Ok(output) => {
+                if !output.lints.is_empty() {
+                    let rendered = self.render_diagnostics(&output.lints);
+                    write_out(self.stderr, &rendered);
+                }
+                Ok(output.code)
+            }
+            Err(errors) => Err(self.report_diagnostics(&errors)),
+        }
     }
 
     /// Whether to color output to a stream, which is a terminal if `terminal`
@@ -589,16 +596,21 @@ impl Session<'_> {
     }
 
     fn report_diagnostics(&mut self, errors: &Diagnostics) -> Exit {
-        #[cfg(feature = "graphical-diagnostics")]
-        let rendered = if self.colors(self.terminals.stderr) {
-            errors.render_pretty()
-        } else {
-            errors.render_plain()
-        };
-        #[cfg(not(feature = "graphical-diagnostics"))]
-        let rendered = errors.render_narrated();
+        let rendered = self.render_diagnostics(errors);
         write_out(self.stderr, &rendered);
         Exit::ScriptFailed
+    }
+
+    /// `diagnostics` as they are written to standard error.
+    fn render_diagnostics(&self, diagnostics: &Diagnostics) -> String {
+        #[cfg(feature = "graphical-diagnostics")]
+        if self.colors(self.terminals.stderr) {
+            diagnostics.render_pretty()
+        } else {
+            diagnostics.render_plain()
+        }
+        #[cfg(not(feature = "graphical-diagnostics"))]
+        diagnostics.render_narrated()
     }
 
     fn report_error(&mut self, error: &FrostError) -> Exit {

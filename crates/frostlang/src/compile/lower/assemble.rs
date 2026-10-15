@@ -22,6 +22,7 @@ use std::sync::Arc;
 use crate::Arity;
 use crate::bytecode::{Bytecode, CompiledFunction, FormatVersion};
 
+use crate::compile::Diagnostic;
 use crate::compile::lower::assemble::pool::Pool;
 use crate::compile::lower::locals::SlotPlan;
 use crate::compile::lower::passes::run_passes;
@@ -29,8 +30,9 @@ use crate::compile::lower::{ConstKeyOp, FunctionBuilder, Ir, JumpType, LoweredFu
 
 impl FunctionBuilder<'_> {
     /// End lowering: package this function's fused IR with its metadata, and
-    /// run the IR passes over it.
-    pub(super) fn finish(self, code: Vec<Ir>) -> LoweredFunction {
+    /// run the IR passes over it. The lints found in it, nested functions'
+    /// included, come back beside it, for the enclosing function to take on.
+    pub(super) fn finish(self, code: Vec<Ir>) -> (LoweredFunction, Vec<Diagnostic>) {
         let function = LoweredFunction {
             name: self.name,
             origin: self.origin,
@@ -41,13 +43,15 @@ impl FunctionBuilder<'_> {
             effectful: self.effectful,
             deduplicate_constants: self.options.optimization_options.deduplicate_constants,
         };
-        run_passes(function, &self.options.optimization_options)
+        let function = run_passes(function, &self.options.optimization_options);
+        (function, self.lints)
     }
 
-    /// [`finish`](Self::finish) then [`LoweredFunction::assemble`], for a
-    /// function whose lowered form is not otherwise needed.
+    /// [`finish`](Self::finish) then [`LoweredFunction::assemble`], for a test
+    /// that needs neither the lowered form nor the lints.
+    #[cfg(test)]
     pub(super) fn assemble(self, code: Vec<Ir>) -> Arc<CompiledFunction> {
-        self.finish(code).assemble()
+        self.finish(code).0.assemble()
     }
 }
 

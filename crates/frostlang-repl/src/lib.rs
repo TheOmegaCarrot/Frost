@@ -444,7 +444,9 @@ impl Repl {
         let options = CompilerOptions::new()
             .with_optimization(self.optimization)
             // Each top-level binding is exported, to be kept for later inputs.
-            .with_implicit_export(true);
+            .with_implicit_export(true)
+            // A session shows no lints, so finds none.
+            .with_lints(false);
         let program = compile_in_scope(INPUT_NAME, source, options, &scope)
             .map_err(ReplError::Compile)?
             .code;

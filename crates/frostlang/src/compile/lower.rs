@@ -173,6 +173,9 @@ struct FunctionBuilder<'a> {
     // Whether this function's body loads an impure global. Every effect starts
     // at one, so a function that loads none is safe to call during a fold.
     effectful: bool,
+    // The lints found in this function so far, nested functions' included, in
+    // source order.
+    lints: Vec<Diagnostic>,
 }
 
 impl<'a> FunctionBuilder<'a> {
@@ -199,6 +202,7 @@ impl<'a> FunctionBuilder<'a> {
             fold_vm: self.fold_vm,
             top_level: false,
             effectful: false,
+            lints: Vec::new(),
         }
     }
 
@@ -212,6 +216,25 @@ impl<'a> FunctionBuilder<'a> {
     /// Routing every error through here keeps any from being emitted sourceless.
     fn error(&self, message: String) -> Diagnostic {
         Diagnostic::error(message).source(self.filename.to_owned(), self.source.to_owned())
+    }
+
+    /// Whether to look for lints. A check costs nothing when this is false, so
+    /// every check is behind it.
+    fn lints_on(&self) -> bool {
+        self.options.lints
+    }
+
+    /// Start a warning for the lint `code`, already carrying this function's
+    /// source, for [`lint`](Self::lint) to report.
+    fn warning(&self, code: &str, message: String) -> Diagnostic {
+        Diagnostic::warning(message)
+            .code(code.to_owned())
+            .source(self.filename.to_owned(), self.source.to_owned())
+    }
+
+    /// Report `lint`. Unlike an error, it does not stop compilation.
+    fn lint(&mut self, lint: Diagnostic) {
+        self.lints.push(lint);
     }
 
     /// The error for binding `name` at `span` in a scope that already binds it
@@ -280,6 +303,7 @@ pub fn compile_in_scope(
         fold_vm: Some(&fold_vm),
         top_level: true,
         effectful: false,
+        lints: Vec::new(),
     };
 
     // Consume the top-level's own function value (see the calling convention on `Bytecode`).
@@ -292,10 +316,11 @@ pub fn compile_in_scope(
         ir.extend(fn_builder.compile_statement(tail, Position::Tail)?.code);
     }
 
-    let func = fn_builder.finish(ir).assemble();
+    let (lowered, lints) = fn_builder.finish(ir);
 
     Ok(CompilerOutput {
-        code: func.assert_trusted(),
+        code: lowered.assemble().assert_trusted(),
+        lints: Diagnostics::of(lints),
     })
 }
 

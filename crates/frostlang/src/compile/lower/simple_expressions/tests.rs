@@ -14,6 +14,7 @@ fn options() -> CompilerOptions {
     CompilerOptions {
         optimization_options: OptimizationOptions::NONE,
         implicit_export: false,
+        lints: false,
     }
 }
 
@@ -31,6 +32,7 @@ fn builder(options: &CompilerOptions) -> FunctionBuilder<'_> {
         fold_vm: None,
         top_level: false,
         effectful: false,
+        lints: Vec::new(),
     }
 }
 

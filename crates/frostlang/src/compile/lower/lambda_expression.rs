@@ -202,9 +202,10 @@ impl FunctionBuilder<'_> {
             .chain(compiled_tail.code)
             .collect();
 
-        let lowered = child.finish(child_ir);
+        let (lowered, lints) = child.finish(child_ir);
 
         self.effectful |= lowered.effectful;
+        self.lints.extend(lints);
 
         // Creating the closure is safe in a fold if calling it is (it has no
         // effects) and every captured value is known now.

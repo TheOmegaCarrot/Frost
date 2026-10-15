@@ -39,6 +39,53 @@ fn with_implicit_export_sets_only_implicit_export() {
 }
 
 #[test]
+fn new_turns_lints_on() {
+    assert!(CompilerOptions::new().lints);
+    assert!(CompilerOptions::default().lints, "Default agrees");
+}
+
+#[test]
+fn with_lints_sets_only_lints() {
+    let fold_only = OptimizationOptions::NONE.with(Optimization::ConstantFold, true);
+    let options = CompilerOptions::new()
+        .with_optimization(fold_only)
+        .with_implicit_export(true)
+        .with_lints(false);
+    assert!(!options.lints);
+    assert_eq!(
+        options.optimization_options, fold_only,
+        "the optimizations are left as they were"
+    );
+    assert!(options.implicit_export, "implicit export is left as it was");
+    assert!(
+        options.with_lints(true).lints,
+        "lints can be turned back on"
+    );
+}
+
+#[test]
+fn with_lints_leaves_the_other_options_when_they_are_set_afterward() {
+    let options = CompilerOptions::new()
+        .with_lints(false)
+        .with_implicit_export(true)
+        .with_optimization(OptimizationOptions::NONE);
+    assert!(!options.lints, "setting other options keeps lints off");
+}
+
+#[test]
+fn lints_can_be_set_in_a_constant() {
+    const OPTIONS: CompilerOptions = CompilerOptions::new().with_lints(false);
+    let lints = OPTIONS.lints;
+    assert!(!lints, "lints are off");
+    assert_eq!(OPTIONS, CompilerOptions::default().with_lints(false));
+    assert_ne!(
+        OPTIONS,
+        CompilerOptions::new(),
+        "lints take part in equality"
+    );
+}
+
+#[test]
 fn options_can_be_built_in_a_constant() {
     const OPTIONS: CompilerOptions = CompilerOptions::new()
         .with_optimization(OptimizationOptions::NONE)

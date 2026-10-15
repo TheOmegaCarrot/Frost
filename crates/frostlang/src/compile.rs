@@ -37,14 +37,18 @@ pub struct CompilerOptions {
     pub optimization_options: OptimizationOptions,
     /// Export every top-level binding, as if each carried `export`.
     pub implicit_export: bool,
+    /// Look for [lints](CompilerOutput::lints). Off, the compiler spends no
+    /// time looking.
+    pub lints: bool,
 }
 
 impl CompilerOptions {
-    /// Every optimization on, and no implicit export.
+    /// Every optimization on, no implicit export, and lints on.
     pub const fn new() -> Self {
         Self {
             optimization_options: OptimizationOptions::ALL,
             implicit_export: false,
+            lints: true,
         }
     }
 
@@ -62,6 +66,13 @@ impl CompilerOptions {
         self.implicit_export = on;
         self
     }
+
+    /// These options with [`lints`](Self::lints) on or off.
+    #[must_use]
+    pub const fn with_lints(mut self, on: bool) -> Self {
+        self.lints = on;
+        self
+    }
 }
 
 /// [`CompilerOptions::new`].
@@ -77,4 +88,9 @@ impl Default for CompilerOptions {
 pub struct CompilerOutput {
     /// The compiled program; [`close`](TrustedProgram::close) it to run it.
     pub code: TrustedProgram,
+    /// What the compiler noticed that did not stop it, in source order: code
+    /// that is probably a mistake, as a warning, or could be clearer, as
+    /// advice. Each renders with a code naming its lint. Empty if
+    /// [`lints`](CompilerOptions::lints) are off.
+    pub lints: Diagnostics,
 }

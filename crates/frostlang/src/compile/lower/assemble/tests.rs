@@ -28,6 +28,7 @@ fn options() -> CompilerOptions {
     CompilerOptions {
         optimization_options: OptimizationOptions::NONE,
         implicit_export: false,
+        lints: false,
     }
 }
 
@@ -50,13 +51,18 @@ fn with_name(options: &CompilerOptions, name: String, arity: Arity) -> FunctionB
         fold_vm: None,
         top_level: false,
         effectful: false,
+        lints: Vec::new(),
     }
 }
 
 /// The closure-creation op for a trivial child function, for exercising
 /// closure pooling.
 fn child_closure(options: &CompilerOptions) -> Ir {
-    Ir::closure(builder(options).finish(vec![Ir::Ready(Bytecode::PushNull)]))
+    Ir::closure(
+        builder(options)
+            .finish(vec![Ir::Ready(Bytecode::PushNull)])
+            .0,
+    )
 }
 
 /// The assembled child function a closure op carries.
@@ -300,7 +306,7 @@ fn finishing_a_builder_keeps_its_metadata() {
     b.next_label();
     b.effectful = true;
 
-    let lowered = b.finish(vec![Ir::Ready(Bytecode::PushNull)]);
+    let (lowered, _) = b.finish(vec![Ir::Ready(Bytecode::PushNull)]);
     assert_eq!(lowered.name, "named");
     assert_eq!(lowered.arity, Arity::AtLeast(1));
     assert_eq!(

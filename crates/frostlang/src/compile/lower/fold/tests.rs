@@ -30,6 +30,7 @@ fn options(constant_fold: bool) -> CompilerOptions {
             ..OptimizationOptions::NONE
         },
         implicit_export: false,
+        lints: false,
     }
 }
 
@@ -40,7 +41,7 @@ fn a_fragment_ending_in_closure_creation_is_not_evaluated() {
     // panic: the test passing proves no evaluation is attempted.
     let options = options(true);
     let fold_vm = FoldVm::new();
-    let child = builder(&options, &fold_vm).finish(vec![Ir::Ready(Bytecode::PushNull)]);
+    let (child, _) = builder(&options, &fold_vm).finish(vec![Ir::Ready(Bytecode::PushNull)]);
     let fragment = ExprFragment {
         code: vec![Ir::LoadLocal(LocalId(0)), Ir::closure(child)],
         foldable: true,
@@ -63,6 +64,7 @@ fn builder<'a>(options: &'a CompilerOptions, fold_vm: &'a FoldVm) -> FunctionBui
         fold_vm: Some(fold_vm),
         top_level: false,
         effectful: false,
+        lints: Vec::new(),
     }
 }
 
@@ -290,6 +292,7 @@ fn folding_without_a_fold_vm_leaves_the_fragment_unchanged() {
         fold_vm: None,
         top_level: false,
         effectful: false,
+        lints: Vec::new(),
     };
     let folded = no_fold_vm.fold_if_eligible(arithmetic(Bytecode::Add));
     assert_eq!(

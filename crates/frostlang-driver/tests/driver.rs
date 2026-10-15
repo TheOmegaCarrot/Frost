@@ -1682,3 +1682,239 @@ fn the_importer_set_last_is_the_one_used() {
         "a per-script importer replaces a fixed one"
     );
 }
+
+// --- Lints ---
+
+const LINT: &str = "unreachable match arm";
+
+/// A script with two unreachable arms, which prints `a`.
+const LINTED: &str = r#"
+match 1 {
+    n => print("a"),
+    _ => print("b"),
+    3 => print("c")
+}
+"#;
+
+/// [`LINTED`] without its unreachable arms.
+const UNLINTED: &str = r#"
+match 1 {
+    n => print("a")
+}
+"#;
+
+/// [`LINTED`] followed by a runtime error.
+const LINTED_THEN_RAISES: &str = r#"
+match 1 {
+    n => print("a"),
+    _ => print("b")
+}
+print("before")
+1 / 0
+"#;
+
+/// [`LINTED`] followed by a compile error.
+const LINTED_AND_BROKEN: &str = r#"
+match 1 {
+    n => print("a"),
+    _ => print("b")
+}
+nope
+"#;
+
+/// Assert that `ran` warned of exactly `count` unreachable arms in the script
+/// named `file`.
+fn assert_linted(ran: &Ran, file: &str, count: usize, context: &str) {
+    assert_eq!(
+        ran.stderr.matches(LINT).count(),
+        count,
+        "{context}: {}",
+        ran.stderr
+    );
+    assert!(
+        ran.stderr.contains(file),
+        "{context}: names {file}: {}",
+        ran.stderr
+    );
+}
+
+#[test]
+fn run_warns_of_an_unreachable_arm_and_runs_the_script() {
+    let linted = script("lint-run.frst", LINTED);
+    let clean = script("lint-run-clean.frst", UNLINTED);
+    let ran = run(&["--color", "never", &linted]);
+    assert_eq!(ran.exit, Exit::Success, "{ran:?}");
+    assert_eq!(ran.stdout, run(&[&clean]).stdout, "{ran:?}");
+    assert_eq!(ran.printed(), ["a"], "{ran:?}");
+    assert_linted(&ran, "lint-run.frst", 2, "run");
+    let run_subcommand = run(&["run", "--color", "never", &linted]);
+    assert_eq!(run_subcommand.exit, Exit::Success, "{run_subcommand:?}");
+    assert_linted(&run_subcommand, "lint-run.frst", 2, "run subcommand");
+}
+
+#[test]
+fn a_script_with_no_lint_writes_nothing_to_stderr() {
+    let clean = script("lint-none.frst", UNLINTED);
+    for args in [
+        vec!["--color", "never", clean.as_str()],
+        vec!["--color", "always", clean.as_str()],
+        vec!["check", clean.as_str()],
+        vec!["list", clean.as_str()],
+    ] {
+        let ran = run(&args);
+        assert_eq!(ran.exit, Exit::Success, "{args:?}: {ran:?}");
+        assert_eq!(ran.stderr, "", "{args:?}");
+    }
+    let ran = run(&["-e", "1 + 1"]);
+    assert_eq!(ran.stderr, "", "-e: {ran:?}");
+    let ran = run_with_stdin("print(1)", &["-"]);
+    assert_eq!(ran.stderr, "", "stdin: {ran:?}");
+}
+
+#[test]
+fn stdin_warns_of_an_unreachable_arm_and_runs_the_script() {
+    let ran = run_with_stdin(LINTED, &["--color", "never", "-"]);
+    assert_eq!(ran.exit, Exit::Success, "{ran:?}");
+    assert_eq!(ran.stdout, run_with_stdin(UNLINTED, &["-"]).stdout);
+    assert_eq!(ran.printed(), ["a"], "{ran:?}");
+    assert_linted(&ran, "<stdin>", 2, "stdin");
+    let bare = run_with_stdin(LINTED, &["--color", "never"]);
+    assert_eq!(bare.exit, Exit::Success, "{bare:?}");
+    assert_linted(&bare, "<stdin>", 2, "no arguments");
+}
+
+#[test]
+fn eval_warns_of_an_unreachable_arm_and_runs_the_code() {
+    let ran = run(&["--color", "never", "-e", LINTED]);
+    assert_eq!(ran.exit, Exit::Success, "{ran:?}");
+    assert_eq!(ran.stdout, run(&["-e", UNLINTED]).stdout, "{ran:?}");
+    assert_eq!(ran.printed(), ["a"], "{ran:?}");
+    assert_linted(&ran, "<eval>", 2, "-e");
+}
+
+#[test]
+fn check_warns_of_an_unreachable_arm_and_succeeds() {
+    let linted = script("lint-check.frst", LINTED);
+    let clean = script("lint-check-clean.frst", UNLINTED);
+    let ran = run(&["check", "--color", "never", &linted]);
+    assert_eq!(ran.exit, Exit::Success, "{ran:?}");
+    assert_eq!(ran.stdout, run(&["check", &clean]).stdout, "{ran:?}");
+    assert_eq!(ran.stdout, "", "{ran:?}");
+    assert_linted(&ran, "lint-check.frst", 2, "check");
+}
+
+#[test]
+fn compile_warns_of_an_unreachable_arm_and_writes_the_image() {
+    let linted = script("lint-compile.frst", LINTED);
+    let output = scratch_path("lint-compile-image");
+    let ran = run(&["compile", "--color", "never", &linted, "-o", &output]);
+    assert_eq!(ran.exit, Exit::Success, "{ran:?}");
+    assert_eq!(ran.stdout, "", "{ran:?}");
+    assert_linted(&ran, "lint-compile.frst", 2, "compile");
+    assert_eq!(
+        run(&["run", &output]).printed(),
+        ["a"],
+        "the image is written"
+    );
+}
+
+#[test]
+fn list_warns_of_an_unreachable_arm_and_lists_the_bytecode() {
+    let linted = script("lint-list.frst", LINTED);
+    let ran = run(&["list", "--color", "never", &linted]);
+    assert_eq!(ran.exit, Exit::Success, "{ran:?}");
+    assert!(!ran.stdout.is_empty(), "{ran:?}");
+    assert!(!ran.stdout.contains(LINT), "lints stay off stdout: {ran:?}");
+    assert_linted(&ran, "lint-list.frst", 2, "list");
+    let again = run(&["list", "--color", "never", &linted]);
+    assert_eq!(ran.stdout, again.stdout, "listing is unaffected by lints");
+}
+
+#[test]
+fn a_lint_and_a_compile_error_report_only_the_error() {
+    let path = script("lint-broken.frst", LINTED_AND_BROKEN);
+    for args in [
+        vec!["--color", "never", path.as_str()],
+        vec!["check", "--color", "never", path.as_str()],
+        vec!["list", "--color", "never", path.as_str()],
+    ] {
+        let ran = run(&args);
+        assert_eq!(ran.exit, Exit::ScriptFailed, "{args:?}: {ran:?}");
+        assert!(
+            ran.stderr.contains("`nope` is not defined"),
+            "{args:?}: {}",
+            ran.stderr
+        );
+        assert!(!ran.stderr.contains(LINT), "{args:?}: {}", ran.stderr);
+        assert!(ran.printed().is_empty(), "{args:?}: {ran:?}");
+    }
+    let ran = run(&["--color", "never", "-e", LINTED_AND_BROKEN]);
+    assert_eq!(ran.exit, Exit::ScriptFailed, "{ran:?}");
+    assert!(!ran.stderr.contains(LINT), "-e: {}", ran.stderr);
+    let output = scratch_path("lint-broken-image");
+    let ran = run(&["compile", "--color", "never", &path, "-o", &output]);
+    assert_eq!(ran.exit, Exit::ScriptFailed, "{ran:?}");
+    assert!(!ran.stderr.contains(LINT), "compile: {}", ran.stderr);
+}
+
+#[test]
+fn lints_come_before_a_runtime_error_on_stderr() {
+    let path = script("lint-raises.frst", LINTED_THEN_RAISES);
+    let ran = run(&["--color", "never", &path]);
+    assert_eq!(ran.exit, Exit::ScriptFailed, "{ran:?}");
+    assert_eq!(ran.printed(), ["a", "before"], "{ran:?}");
+    assert_linted(&ran, "lint-raises.frst", 1, "runtime error");
+    let lint = ran.stderr.find(LINT).unwrap();
+    let error = ran
+        .stderr
+        .find("Error: Division by zero")
+        .unwrap_or_else(|| {
+            panic!("the runtime error is reported: {}", ran.stderr);
+        });
+    assert!(lint < error, "lint first: {}", ran.stderr);
+}
+
+#[test]
+fn a_lint_renders_in_color_on_request_and_plain_otherwise() {
+    let escape = '\u{1b}';
+    let path = script("lint-color.frst", LINTED);
+    let colored = run(&["--color", "always", &path]);
+    let plain = run(&["--color", "never", &path]);
+    assert_eq!(colored.exit, Exit::Success, "{colored:?}");
+    assert_eq!(plain.exit, Exit::Success, "{plain:?}");
+    assert!(colored.stderr.contains(escape), "{:?}", colored.stderr);
+    assert!(!plain.stderr.contains(escape), "{:?}", plain.stderr);
+    assert_ne!(colored.stderr, plain.stderr, "rendered differently");
+    assert_linted(&colored, "lint-color.frst", 2, "always");
+    assert_linted(&plain, "lint-color.frst", 2, "never");
+}
+
+#[test]
+fn running_an_image_shows_no_lint() {
+    let image = image("lint-image", LINTED, &[]);
+    let ran = run(&["--color", "never", &image]);
+    assert_eq!(ran.exit, Exit::Success, "{ran:?}");
+    assert_eq!(ran.printed(), ["a"], "{ran:?}");
+    assert_eq!(ran.stderr, "", "an image is not compiled: {ran:?}");
+    let ran = run(&["run", &image]);
+    assert_eq!(ran.stderr, "", "run: {ran:?}");
+}
+
+#[test]
+fn a_repl_session_shows_no_lint() {
+    let session = run_session(
+        &[
+            r#"match 1 { n => "first", _ => "second" }"#,
+            r#"match 2 { n => n + 1, 5 => 0 }"#,
+        ],
+        &["repl"],
+    );
+    assert_eq!(session.ran.exit, Exit::Success, "{session:?}");
+    assert_eq!(
+        session.values(),
+        [Value::from("first"), Value::Int(3)],
+        "{session:?}"
+    );
+    assert_eq!(session.ran.stderr, "", "no lint: {session:?}");
+    assert_eq!(session.ran.stdout, "", "{session:?}");
+}

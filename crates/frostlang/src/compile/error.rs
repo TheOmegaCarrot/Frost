@@ -256,10 +256,11 @@ impl MietteDiagnostic for Diag {
     }
 }
 
-/// The diagnostics produced by a failed compilation.
+/// Diagnostics from a compilation: why it failed, on the error channel of the
+/// compiler's result, or its [lints](crate::compile::CompilerOutput::lints).
 ///
-/// Held on the error channel of the compiler's result. Ordinarily a single hard
-/// error, but the type is plural so a pass can report several at once.
+/// A failure is ordinarily a single hard error, but the type is plural so a
+/// pass can report several at once.
 #[derive(Clone, Debug, Default, thiserror::Error)]
 #[error("{}", self.render())]
 pub struct Diagnostics(Vec<Diagnostic>);
@@ -270,6 +271,11 @@ impl Diagnostics {
     /// An empty set.
     pub(crate) fn new() -> Self {
         Self::default()
+    }
+
+    /// The set of `diagnostics`, in order.
+    pub(crate) fn of(diagnostics: Vec<Diagnostic>) -> Self {
+        Self(diagnostics)
     }
 
     /// Append a diagnostic.
