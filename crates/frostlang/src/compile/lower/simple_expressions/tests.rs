@@ -7,7 +7,7 @@ use crate::Arity;
 use frostlang_parse::ast::SourceSpan;
 
 use crate::compile::lower::locals::Locals;
-use crate::compile::lower::{FunctionBuilder, Label};
+use crate::compile::lower::{FunctionBuilder, Label, NO_SOURCE};
 use crate::compile::{CompilerOptions, OptimizationOptions};
 
 fn options() -> CompilerOptions {
@@ -26,6 +26,7 @@ fn builder(options: &CompilerOptions) -> FunctionBuilder<'_> {
         name: "<test>".to_string(),
         arity: Arity::Exact(0),
         source: "",
+        shared_source: &NO_SOURCE,
         filename: "",
         origin: None,
         options,

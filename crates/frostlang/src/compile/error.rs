@@ -15,8 +15,11 @@
 
 #[cfg(test)]
 mod demo;
+#[cfg(test)]
+mod tests;
 
 use std::fmt;
+use std::sync::Arc;
 
 use frostlang_parse::ParseError;
 use frostlang_parse::ast::SourceSpan;
@@ -57,7 +60,7 @@ struct Diag {
     ///
     /// A related diagnostic may leave this `None` to inherit its parent's
     /// source; set it when the diagnostic points into a different source.
-    source_code: Option<NamedSource<String>>,
+    source_code: Option<NamedSource<Arc<str>>>,
     /// Labeled spans, all resolved against `source_code`. A primary label (see
     /// [`Diagnostic::label_primary`]) frames the snippet.
     labels: Vec<LabeledSpan>,
@@ -108,8 +111,9 @@ impl Diagnostic {
         self
     }
 
-    /// Attach the source these labels point into, by filename and text.
-    pub(crate) fn source(mut self, filename: String, text: String) -> Self {
+    /// Attach the source these labels point into, by filename and text. The
+    /// text is shared, so many diagnostics of one source hold one copy of it.
+    pub(crate) fn source(mut self, filename: String, text: Arc<str>) -> Self {
         self.0.source_code = Some(NamedSource::new(filename, text));
         self
     }
@@ -157,7 +161,7 @@ impl Diagnostic {
         // The parser stops at its first error, so this is one diagnostic. Its
         // first label is primary; the rest add context.
         let mut diagnostic = Self::error(error.message().to_string())
-            .source(filename.to_string(), source.to_string());
+            .source(filename.to_string(), Arc::from(source));
         for (i, label) in error.labels().iter().enumerate() {
             diagnostic = if i == 0 {
                 diagnostic.label_primary(label.span, label.text.clone())

@@ -5,7 +5,7 @@ use crate::bytecode::Bytecode;
 use crate::compile::lower::assemble::assemble_code;
 use crate::compile::lower::fold::{FoldVm, constant_of, value_to_ir};
 use crate::compile::lower::locals::{Locals, SlotPlan};
-use crate::compile::lower::{ExprFragment, FunctionBuilder, Ir, Label, LocalId};
+use crate::compile::lower::{ExprFragment, FunctionBuilder, Ir, Label, LocalId, NO_SOURCE};
 use crate::compile::{CompilerOptions, OptimizationOptions};
 use crate::{Arity, FrostFloat, MapKey, Value};
 
@@ -58,6 +58,7 @@ fn builder<'a>(options: &'a CompilerOptions, fold_vm: &'a FoldVm) -> FunctionBui
         name: "<test>".to_string(),
         arity: Arity::Exact(0),
         source: "",
+        shared_source: &NO_SOURCE,
         filename: "",
         origin: None,
         options,
@@ -287,6 +288,7 @@ fn folding_without_a_fold_vm_leaves_the_fragment_unchanged() {
         name: "<test>".to_string(),
         arity: Arity::Exact(0),
         source: "",
+        shared_source: &NO_SOURCE,
         filename: "",
         origin: None,
         options: &options,

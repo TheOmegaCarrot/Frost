@@ -20,7 +20,7 @@ mod structure_literals;
 
 use std::ffi::OsStr;
 use std::path::Path;
-use std::sync::Arc;
+use std::sync::{Arc, OnceLock};
 
 use crate::compile::{
     CompilerOptions, CompilerOutput, Diagnostic, Diagnostics, OptimizationOptions,
@@ -153,6 +153,10 @@ enum Position {
     Inner,
 }
 
+/// The shared source of a test's builder, whose `source` is always empty.
+#[cfg(test)]
+static NO_SOURCE: OnceLock<Arc<str>> = OnceLock::new();
+
 #[derive(Debug)]
 struct FunctionBuilder<'a> {
     locals: Locals,
@@ -160,6 +164,9 @@ struct FunctionBuilder<'a> {
     name: String,
     arity: Arity,
     source: &'a str,
+    // `source` as the compilation's diagnostics share it, made at the first
+    // diagnostic so that a compilation with none never copies the source.
+    shared_source: &'a OnceLock<Arc<str>>,
     filename: &'a str,
     // Every function of one compilation shares its origin.
     origin: Option<Arc<str>>,
@@ -198,6 +205,7 @@ impl<'a> FunctionBuilder<'a> {
             name,
             arity,
             source: self.source,
+            shared_source: self.shared_source,
             filename: self.filename,
             origin: self.origin.clone(),
             options: self.options,
@@ -215,10 +223,17 @@ impl<'a> FunctionBuilder<'a> {
         label
     }
 
+    /// Give `diagnostic` this compilation's source, which every diagnostic of
+    /// the compilation shares, copied from `source` at the first.
+    fn with_source(&self, diagnostic: Diagnostic) -> Diagnostic {
+        let shared = self.shared_source.get_or_init(|| Arc::from(self.source));
+        diagnostic.source(self.filename.to_owned(), Arc::clone(shared))
+    }
+
     /// Start a hard-error diagnostic already carrying this function's source.
     /// Routing every error through here keeps any from being emitted sourceless.
     fn error(&self, message: String) -> Diagnostic {
-        Diagnostic::error(message).source(self.filename.to_owned(), self.source.to_owned())
+        self.with_source(Diagnostic::error(message))
     }
 
     /// Whether to look for lints. A check costs nothing when this is false, so
@@ -230,17 +245,13 @@ impl<'a> FunctionBuilder<'a> {
     /// Start a warning for the lint `code`, already carrying this function's
     /// source, for [`lint`](Self::lint) to report.
     fn warning(&self, code: &str, message: String) -> Diagnostic {
-        Diagnostic::warning(message)
-            .code(code.to_owned())
-            .source(self.filename.to_owned(), self.source.to_owned())
+        self.with_source(Diagnostic::warning(message).code(code.to_owned()))
     }
 
     /// Start advice for the lint `code`, already carrying this function's
     /// source, for [`lint`](Self::lint) to report.
     fn advice(&self, code: &str, message: String) -> Diagnostic {
-        Diagnostic::advice(message)
-            .code(code.to_owned())
-            .source(self.filename.to_owned(), self.source.to_owned())
+        self.with_source(Diagnostic::advice(message).code(code.to_owned()))
     }
 
     /// Report `lint`. Unlike an error, it does not stop compilation.
@@ -315,12 +326,14 @@ pub fn compile_in_scope(
         .map(|name| (name, None));
 
     let fold_vm = FoldVm::new();
+    let shared_source = OnceLock::new();
     let mut fn_builder = FunctionBuilder {
         locals: Locals::with_captures(captures, []),
         next_label: Label(0),
         name: "<main>".to_string(),
         arity: Arity::Exact(0),
         source: script,
+        shared_source: &shared_source,
         filename,
         origin: Path::new(filename)
             .file_name()

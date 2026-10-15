@@ -15,6 +15,8 @@
 //! The Frost snippets are illustrative: they show where labels land, not exact
 //! grammar.
 
+use std::sync::Arc;
+
 use miette::Severity;
 
 use crate::compile::{Diagnostic, Diagnostics};
@@ -53,7 +55,7 @@ print(foo)
     errors.push(
         Diagnostic::error("`x` is already bound".to_string())
             .code("duplicate binding".to_string())
-            .source("main.frst".to_string(), main.to_string())
+            .source("main.frst".to_string(), Arc::from(main))
             .label_primary(span(main, "x", 1), "`x` redefined here".to_string())
             .help("bindings are immutable; choose a different name".to_string())
             .related(
@@ -66,7 +68,7 @@ print(foo)
     errors.push(
         Diagnostic::warning("`y` is never used".to_string())
             .code("unused binding".to_string())
-            .source("main.frst".to_string(), main.to_string())
+            .source("main.frst".to_string(), Arc::from(main))
             .label(span(main, "y", 0), "bound but never read".to_string())
             .help("remove the binding if it is not needed".to_string()),
     );
@@ -80,7 +82,7 @@ print(foo)
             "`foo` is not exported by module `other`".to_string(),
         )
         .code("unexported import".to_string())
-        .source("main.frst".to_string(), main.to_string())
+        .source("main.frst".to_string(), Arc::from(main))
         .label_primary(
             span(main, "foo", 0),
             "required by this destructuring".to_string(),
@@ -88,7 +90,7 @@ print(foo)
         .help("add `export` to the definition in `other`".to_string())
         .related(
             Diagnostic::advice("`foo` is defined here, but not exported".to_string())
-                .source("other.frst".to_string(), other.to_string())
+                .source("other.frst".to_string(), Arc::from(other))
                 .label(
                     span(other, "foo", 0),
                     "add `export` before this".to_string(),

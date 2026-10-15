@@ -7,7 +7,7 @@
 //! (empty body, target one past the end, large offsets).
 
 use crate::compile::lower::locals::{LocalInfo, LocalKind, Locals};
-use crate::compile::lower::{ConstKeyOp, FunctionBuilder, Ir, JumpType, Label};
+use crate::compile::lower::{ConstKeyOp, FunctionBuilder, Ir, JumpType, Label, NO_SOURCE};
 use crate::compile::{CompilerOptions, OptimizationOptions};
 
 use crate::bytecode::{Bytecode, CompiledFunction};
@@ -45,6 +45,7 @@ fn with_name(options: &CompilerOptions, name: String, arity: Arity) -> FunctionB
         name,
         arity,
         source: "",
+        shared_source: &NO_SOURCE,
         filename: "",
         origin: None,
         options,
