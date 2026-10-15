@@ -2,22 +2,33 @@
 
 use std::collections::BTreeMap;
 use std::fmt;
+use std::path::PathBuf;
 use std::sync::Arc;
 
 use frostlang::Value;
 use frostlang_repl::{Frontend, InvalidName, Repl};
 
 /// How a [`Driver`](crate::Driver)'s interactive sessions start: their
-/// [`Frontend`], and what is bound before the first input.
+/// [`Frontend`], their [config file](Repl#config-file), and what is bound
+/// before the first input.
 ///
 /// Every session starts afresh from these settings.
 #[derive(Debug, Clone)]
 pub struct ReplSettings {
     // `None` for the default frontend, which takes the command line's color.
     frontend: Option<FrontendFactory>,
+    config_file: ConfigFile,
     bindings: BTreeMap<String, Value>,
     // `None` for the `Repl`'s own default.
     results_kept: Option<usize>,
+}
+
+/// Which config file sessions read.
+#[derive(Debug, Clone)]
+enum ConfigFile {
+    Default,
+    Path(PathBuf),
+    None,
 }
 
 /// Makes the frontend for each session.
@@ -38,15 +49,31 @@ impl Default for ReplSettings {
 
 impl ReplSettings {
     /// Sessions on [`frostlang_repl::default_frontend`], colored as the command
-    /// line's `--color` says, with nothing bound, and keeping as many recent
-    /// results as [`Repl::new`] does. With `repl --basic`, sessions are on
-    /// [`LineFrontend::stdin`](frostlang_repl::LineFrontend::stdin) instead.
+    /// line's `--color` says, reading the default config file (see
+    /// [`Repl::with_default_config_file`]), with nothing bound, and keeping as
+    /// many recent results as [`Repl::new`] does. With `repl --basic`,
+    /// sessions are on [`LineFrontend::stdin`](frostlang_repl::LineFrontend::stdin)
+    /// instead. With `repl --no-config`, they read no config file.
     pub fn new() -> Self {
         Self {
             frontend: None,
+            config_file: ConfigFile::Default,
             bindings: BTreeMap::new(),
             results_kept: None,
         }
+    }
+
+    /// Have sessions read the config file at `path` instead, as
+    /// [`Repl::with_config_file`] does.
+    pub fn with_config_file(mut self, path: impl Into<PathBuf>) -> Self {
+        self.config_file = ConfigFile::Path(path.into());
+        self
+    }
+
+    /// Have sessions read no config file.
+    pub fn without_config(mut self) -> Self {
+        self.config_file = ConfigFile::None;
+        self
     }
 
     /// Set how many recent results each session keeps, as
@@ -95,17 +122,25 @@ impl ReplSettings {
     }
 
     /// A new session's frontend, made by `default_frontend` if these settings
-    /// give none, and `repl` with these settings' bindings and recent results.
+    /// give none, and `repl` with these settings' bindings, recent results,
+    /// and, if `config` is true, config file.
     pub(crate) fn start(
         &self,
         repl: Repl,
         default_frontend: impl FnOnce() -> Box<dyn Frontend>,
+        config: bool,
     ) -> (Box<dyn Frontend>, Repl) {
         let mut repl = repl
             .with_bindings(self.bindings.clone())
             .expect("each name was checked when it was bound");
         if let Some(count) = self.results_kept {
             repl = repl.with_results_kept(count);
+        }
+        match &self.config_file {
+            _ if !config => {}
+            ConfigFile::Default => repl = repl.with_default_config_file(),
+            ConfigFile::Path(path) => repl = repl.with_config_file(path.clone()),
+            ConfigFile::None => {}
         }
         let frontend = match &self.frontend {
             Some(make) => (make.0)(),

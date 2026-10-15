@@ -59,6 +59,27 @@ pub trait Frontend {
     fn set_cancel_handle(&mut self, handle: CancelHandle) {
         let _ = handle;
     }
+
+    /// The name this frontend's section of the
+    /// [config file](crate::Repl#config-file) is exported under, other than
+    /// `session`, which is the REPL's own. By default, it has none.
+    fn config_key(&self) -> Option<&str> {
+        None
+    }
+
+    /// Take the settings in this frontend's section of the
+    /// [config file](crate::Repl#config-file): the value exported under
+    /// [`config_key`](Self::config_key), or `None` if nothing is, which asks
+    /// for the defaults. The REPL gives it each time it reads the config file
+    /// without error, or finds no file there. What the value means, and what to do
+    /// with a problem in it, is the frontend's to decide. An error ends the
+    /// session.
+    ///
+    /// By default, it is ignored.
+    fn configure(&mut self, section: Option<Value>) -> io::Result<()> {
+        let _ = section;
+        Ok(())
+    }
 }
 
 /// `value` as the REPL's own frontends show an input's value: a String quoted

@@ -1,5 +1,7 @@
 //! The REPL's own metacommands.
 
+use std::path::PathBuf;
+
 use frostlang::compile::{Diagnostic, Diagnostics, Optimization};
 use frostlang_parse::parse_program;
 
@@ -14,6 +16,8 @@ pub(crate) enum Reply {
     Nothing,
     /// The session is to end.
     Quit,
+    /// The config file at this path is to be read again.
+    ReadConfig(PathBuf),
 }
 
 /// `builtin` refusing its argument, for `reason`.
@@ -74,6 +78,18 @@ impl Repl {
                     .with_settings(argument)
                     .map_err(|invalid| invalid_argument(builtin, invalid.to_string()))?;
                 Ok(Reply::Nothing)
+            }
+            Builtin::Config => {
+                if argument != "reload" {
+                    return Err(invalid_argument(builtin, "takes `reload`"));
+                }
+                match &self.config_file {
+                    Some(path) => Ok(Reply::ReadConfig(path.clone())),
+                    None => Err(ReplError::Metacommand(MetacommandError::Failed {
+                        metacommand: builtin.name().to_string(),
+                        reason: "this REPL reads no config file".to_string(),
+                    })),
+                }
             }
         }
     }

@@ -103,6 +103,9 @@ enum Command {
         /// Read plain lines, without line editing, even at a terminal
         #[arg(long)]
         basic: bool,
+        /// Read no config file
+        #[arg(long)]
+        no_config: bool,
     },
     /// List the bytecode a script compiles to, or an image holds
     List { script: String },
@@ -172,6 +175,7 @@ pub(crate) enum Action {
     },
     Repl {
         basic: bool,
+        no_config: bool,
     },
     List(Script),
     Ast(Script),
@@ -200,7 +204,7 @@ impl Cli {
                     script: script.into(),
                     output,
                 },
-                Command::Repl { basic } => Action::Repl { basic },
+                Command::Repl { basic, no_config } => Action::Repl { basic, no_config },
                 Command::List { script } => Action::List(script.into()),
                 Command::Ast { script } => Action::Ast(script.into()),
             }),

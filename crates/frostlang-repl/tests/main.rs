@@ -2,6 +2,7 @@
 
 mod builtins;
 mod cancel;
+mod config;
 mod line_frontend;
 mod metacommand;
 mod repl;

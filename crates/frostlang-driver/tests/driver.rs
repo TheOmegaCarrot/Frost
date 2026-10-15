@@ -484,9 +484,15 @@ fn run_session_configured(
     }
 }
 
+/// [`ReplSettings`] that read no config file, so a developer's own does not
+/// reach the tests.
+fn settings() -> ReplSettings {
+    ReplSettings::new().without_config()
+}
+
 /// [`run_session_configured`] on the default driver and settings.
 fn run_session(segments: &[&str], args: &[&str]) -> Session {
-    run_session_configured(Driver::new(), ReplSettings::new(), segments, |_| {}, args)
+    run_session_configured(Driver::new(), settings(), segments, |_| {}, args)
 }
 
 #[test]
@@ -521,7 +527,7 @@ fn repl_help_lists_basic() {
 #[test]
 fn no_arguments_away_from_a_terminal_run_the_script_on_standard_input() {
     // `Driver::run` takes standard input not to be a terminal.
-    let session = run_session_configured(Driver::new(), ReplSettings::new(), &["1"], |_| {}, &[]);
+    let session = run_session_configured(Driver::new(), settings(), &["1"], |_| {}, &[]);
     assert!(session.outcomes.is_empty(), "no session: {session:?}");
     assert_eq!(session.ran.exit, Exit::Success, "{session:?}");
     let ran = run_with_stdin("print(1 + 2)\nprint(args)", &[]);
@@ -564,7 +570,7 @@ fn each_session_starts_afresh() {
     let transcript = Transcript::default();
     let settings = {
         let transcript = transcript.clone();
-        ReplSettings::new().with_frontend(move || {
+        settings().with_frontend(move || {
             Box::new(ScriptedFrontend::new(["x", "def x = 1"]).with_transcript(transcript.clone()))
         })
     };
@@ -601,7 +607,7 @@ fn a_session_uses_the_drivers_configuration_and_the_chosen_optimizations() {
     // Folded, FOLDABLE fits the budget; unfolded, it runs out.
     let folded = run_session_configured(
         driver.clone(),
-        ReplSettings::new(),
+        settings(),
         &segments,
         small_budget,
         &["repl"],
@@ -609,7 +615,7 @@ fn a_session_uses_the_drivers_configuration_and_the_chosen_optimizations() {
     assert_eq!(folded.values(), [Value::Int(42), Value::Int(0)]);
     let unfolded = run_session_configured(
         driver,
-        ReplSettings::new(),
+        settings(),
         &segments,
         small_budget,
         &["repl", "-O", "none"],
@@ -636,7 +642,7 @@ fn a_session_whose_frontend_fails_is_a_usage_error() {
             panic!("nothing was read, so nothing should be rendered");
         }
     }
-    let driver = Driver::new().with_repl(ReplSettings::new().with_frontend(|| Box::new(Broken)));
+    let driver = Driver::new().with_repl(settings().with_frontend(|| Box::new(Broken)));
     let ran = run_configured(driver, |_| {}, &["repl"]);
     assert_eq!(ran.exit, Exit::UsageError, "{ran:?}");
     assert!(ran.stderr.contains("input is gone"), "{}", ran.stderr);
@@ -660,7 +666,7 @@ fn a_session_whose_frontend_brings_a_refused_metacommand_is_a_usage_error() {
             vec![MetacommandSpec::new("help", "Help, but mine")]
         }
     }
-    let driver = Driver::new().with_repl(ReplSettings::new().with_frontend(|| Box::new(Usurper)));
+    let driver = Driver::new().with_repl(settings().with_frontend(|| Box::new(Usurper)));
     let ran = run_configured(driver, |_| {}, &["repl"]);
     assert_eq!(ran.exit, Exit::UsageError, "{ran:?}");
     assert!(
@@ -682,13 +688,13 @@ fn a_session_ends_at_quit() {
 fn every_session_starts_with_the_seeded_bindings() -> Result<(), InvalidName> {
     // A seed shadows a global, and a session may rebind it; the next session
     // starts from the seed again.
-    let settings = ReplSettings::new()
+    let seeded = settings()
         .with_binding("answer", Value::Int(41))?
         .with_bindings([("id", Value::from("seeded"))])?;
     for _ in 0..2 {
         let session = run_session_configured(
             Driver::new(),
-            settings.clone(),
+            seeded.clone(),
             &["[answer, id]", "def answer = answer + 1", "answer"],
             |_| {},
             &["repl"],
@@ -710,7 +716,7 @@ fn every_session_keeps_the_chosen_number_of_recent_results() {
     let segments = ["1", "2", "results"];
     let chosen = run_session_configured(
         Driver::new(),
-        ReplSettings::new().with_results_kept(1),
+        settings().with_results_kept(1),
         &segments,
         |_| {},
         &["repl"],
@@ -735,6 +741,307 @@ fn a_seed_name_frost_cannot_refer_to_is_refused() {
             .expect_err(name);
         assert_eq!(refused.name(), name);
     }
+}
+
+// --- Interactive sessions: the config file ---
+
+/// A config file named `name` holding `source`, returning its path.
+fn config_file(name: &str, source: &str) -> String {
+    script(name, source)
+}
+
+/// A driver that can import `ext.answer`, which is 42.
+fn answering_driver() -> Driver {
+    let importer = ImporterBuilder::new()
+        .with_extension(Extension::new("answer", Value::Int(42)).unwrap())
+        .unwrap()
+        .build();
+    Driver::new().with_importer(importer)
+}
+
+/// Config source that keeps one recent result.
+const KEEP_ONE: &str = r"
+export def session = {results_kept: 1}
+";
+
+/// Config source that preloads `ext.answer` as `answer`.
+const PRELOAD_ANSWER: &str = r"
+export def session = {preload: {answer: 'ext.answer'}}
+";
+
+/// The values of a session of `1`, `2`, then `results`, as `args` and
+/// `settings` run it.
+fn results_after_two(settings: ReplSettings, args: &[&str]) -> Session {
+    run_session_configured(
+        Driver::new(),
+        settings,
+        &["1", "2", "results"],
+        |_| {},
+        args,
+    )
+}
+
+#[test]
+fn a_config_file_is_applied_to_repl_sessions() {
+    let path = config_file("keep_one.frst", KEEP_ONE);
+    let session = results_after_two(settings().with_config_file(&path), &["repl"]);
+    assert_eq!(session.ran.exit, Exit::Success, "{session:?}");
+    assert_eq!(
+        session.values(),
+        [Value::Int(1), Value::Int(2), Value::array([2])],
+        "the config's results_kept should apply"
+    );
+}
+
+#[test]
+fn a_config_file_overrides_the_settings_results_kept() {
+    let path = config_file("keep_one_over_three.frst", KEEP_ONE);
+    let session = results_after_two(
+        settings().with_results_kept(3).with_config_file(&path),
+        &["repl"],
+    );
+    assert_eq!(
+        session.values(),
+        [Value::Int(1), Value::Int(2), Value::array([2])],
+        "{session:?}"
+    );
+}
+
+#[test]
+fn a_config_file_applies_with_repl_basic_too() {
+    let path = config_file("keep_one_basic.frst", KEEP_ONE);
+    let session = results_after_two(settings().with_config_file(&path), &["repl", "--basic"]);
+    assert_eq!(
+        session.values(),
+        [Value::Int(1), Value::Int(2), Value::array([2])],
+        "{session:?}"
+    );
+}
+
+#[test]
+fn a_configs_preload_binds_a_module_the_drivers_importer_serves() {
+    let path = config_file("preload.frst", PRELOAD_ANSWER);
+    let with_config = run_session_configured(
+        answering_driver(),
+        settings().with_config_file(&path),
+        &["answer"],
+        |_| {},
+        &["repl"],
+    );
+    assert_eq!(with_config.ran.exit, Exit::Success, "{with_config:?}");
+    assert_eq!(with_config.values(), [Value::Int(42)]);
+    let without = run_session_configured(
+        answering_driver(),
+        settings(),
+        &["answer"],
+        |_| {},
+        &["repl"],
+    );
+    assert!(
+        matches!(without.outcomes.as_slice(), [Err(ReplError::Compile(_))]),
+        "nothing binds `answer` without the config: {without:?}"
+    );
+}
+
+#[test]
+fn repl_no_config_reads_no_config_file_even_when_one_is_named() {
+    let path = config_file("keep_one_unread.frst", KEEP_ONE);
+    let session = results_after_two(
+        ReplSettings::new().with_config_file(&path),
+        &["repl", "--no-config"],
+    );
+    assert_eq!(session.ran.exit, Exit::Success, "{session:?}");
+    assert_eq!(
+        session.values(),
+        [Value::Int(1), Value::Int(2), Value::array([1, 2])],
+        "the REPL's default of recent results should hold"
+    );
+}
+
+#[test]
+fn repl_no_config_works_with_basic() {
+    let path = config_file("keep_one_basic_unread.frst", KEEP_ONE);
+    let session = results_after_two(
+        ReplSettings::new().with_config_file(&path),
+        &["repl", "--basic", "--no-config"],
+    );
+    assert_eq!(session.ran.exit, Exit::Success, "{session:?}");
+    assert_eq!(
+        session.values(),
+        [Value::Int(1), Value::Int(2), Value::array([1, 2])],
+        "{session:?}"
+    );
+}
+
+#[test]
+fn repl_no_config_skips_a_preload() {
+    let path = config_file("preload_unread.frst", PRELOAD_ANSWER);
+    let session = run_session_configured(
+        answering_driver(),
+        ReplSettings::new().with_config_file(&path),
+        &["answer"],
+        |_| {},
+        &["repl", "--no-config"],
+    );
+    assert!(
+        matches!(session.outcomes.as_slice(), [Err(ReplError::Compile(_))]),
+        "{session:?}"
+    );
+}
+
+#[test]
+fn without_config_reads_no_config_file() {
+    let path = config_file("keep_one_dropped.frst", KEEP_ONE);
+    let session = results_after_two(
+        ReplSettings::new().with_config_file(&path).without_config(),
+        &["repl"],
+    );
+    assert_eq!(
+        session.values(),
+        [Value::Int(1), Value::Int(2), Value::array([1, 2])],
+        "{session:?}"
+    );
+}
+
+#[test]
+fn a_later_with_config_file_replaces_without_config() {
+    let path = config_file("keep_one_restored.frst", KEEP_ONE);
+    let session = results_after_two(
+        ReplSettings::new().without_config().with_config_file(&path),
+        &["repl"],
+    );
+    assert_eq!(
+        session.values(),
+        [Value::Int(1), Value::Int(2), Value::array([2])],
+        "{session:?}"
+    );
+}
+
+#[test]
+fn a_config_that_does_not_compile_is_shown_and_the_session_carries_on() {
+    let path = config_file("broken.frst", "export def session = (");
+    let session = run_session_configured(
+        Driver::new(),
+        settings().with_config_file(&path),
+        &["1 + 1", "results"],
+        |_| {},
+        &["repl"],
+    );
+    assert_eq!(session.ran.exit, Exit::Success, "{session:?}");
+    assert!(
+        matches!(
+            session.outcomes.as_slice(),
+            [
+                Err(ReplError::Config(_)),
+                Ok(Value::Int(2)),
+                Ok(Value::Array(_)),
+            ]
+        ),
+        "the config problem is shown, then later segments evaluate: {session:?}"
+    );
+}
+
+#[test]
+fn a_config_file_that_is_missing_is_not_a_problem() {
+    let path = scratch_path("never_written.frst");
+    let session = run_session_configured(
+        Driver::new(),
+        settings().with_config_file(&path),
+        &["1"],
+        |_| {},
+        &["repl"],
+    );
+    assert_eq!(session.ran.exit, Exit::Success, "{session:?}");
+    assert_eq!(session.values(), [Value::Int(1)]);
+}
+
+/// A frontend that reads nothing and records each section it is configured
+/// with.
+struct Recording {
+    sections: Arc<Mutex<Vec<Option<Value>>>>,
+}
+
+impl Frontend for Recording {
+    fn read_segment(&mut self) -> io::Result<Option<String>> {
+        Ok(None)
+    }
+
+    fn render(&mut self, _: Result<&Value, &ReplError>) -> io::Result<()> {
+        Ok(())
+    }
+
+    fn render_text(&mut self, _: &str) -> io::Result<()> {
+        Ok(())
+    }
+
+    fn config_key(&self) -> Option<&str> {
+        Some("host")
+    }
+
+    fn configure(&mut self, section: Option<Value>) -> io::Result<()> {
+        self.sections.lock().unwrap().push(section);
+        Ok(())
+    }
+}
+
+/// Run a session on a [`Recording`] frontend under `settings`, returning the
+/// sections it was configured with.
+fn sections_given(settings: ReplSettings, args: &[&str]) -> Vec<Option<Value>> {
+    let sections = Arc::new(Mutex::new(Vec::new()));
+    let settings = {
+        let sections = Arc::clone(&sections);
+        settings.with_frontend(move || {
+            Box::new(Recording {
+                sections: Arc::clone(&sections),
+            })
+        })
+    };
+    let ran = run_configured(Driver::new().with_repl(settings), |_| {}, args);
+    assert_eq!(ran.exit, Exit::Success, "{ran:?}");
+    sections.lock().unwrap().clone()
+}
+
+#[test]
+fn a_host_frontend_is_given_its_section_of_the_config_file() {
+    let path = config_file(
+        "host_section.frst",
+        r"
+export def session = {results_kept: 1}
+export def host = {theme: 'dark'}
+export def other = {theme: 'light'}
+",
+    );
+    let given = sections_given(settings().with_config_file(&path), &["repl"]);
+    assert_eq!(
+        given,
+        [Some(Value::map([("theme", Value::from("dark"))]))],
+        "only the `host` export should reach the frontend"
+    );
+}
+
+#[test]
+fn a_host_frontend_is_given_no_section_when_the_config_exports_none() {
+    let path = config_file("no_host_section.frst", KEEP_ONE);
+    let given = sections_given(settings().with_config_file(&path), &["repl"]);
+    assert_eq!(given, [None], "a missing section asks for the defaults");
+}
+
+#[test]
+fn a_host_frontend_is_not_configured_without_a_config_file() {
+    let given = sections_given(settings(), &["repl"]);
+    assert!(given.is_empty(), "{given:?}");
+    let path = config_file("host_section_unread.frst", "export def host = {a: 1}");
+    let given = sections_given(
+        ReplSettings::new().with_config_file(&path),
+        &["repl", "--no-config"],
+    );
+    assert!(given.is_empty(), "{given:?}");
+}
+
+#[test]
+fn repl_help_lists_no_config() {
+    let help = run(&["repl", "--help"]).stdout;
+    assert!(help.contains("--no-config"), "{help}");
 }
 
 // --- Listing bytecode ---
@@ -1030,6 +1337,11 @@ fn a_bad_command_line_is_a_usage_error() {
         vec!["--basic", "repl"],
         vec!["check", "--basic", "a.frst"],
         vec!["repl", "--basic=yes"],
+        // `--no-config` is `repl`'s alone.
+        vec!["--no-config"],
+        vec!["--no-config", "repl"],
+        vec!["check", "--no-config", "a.frst"],
+        vec!["repl", "--no-config=yes"],
         vec!["check", "a.frst", "b.frst"],
     ] {
         let ran = run(&args);

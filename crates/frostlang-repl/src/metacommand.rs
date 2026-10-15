@@ -270,11 +270,12 @@ pub(crate) enum Builtin {
     Disassemble,
     Ast,
     Optimize,
+    Config,
 }
 
 impl Builtin {
     /// Every built-in, in the order `:help` lists them.
-    const ALL: [Self; 7] = [
+    const ALL: [Self; 8] = [
         Self::Help,
         Self::Quit,
         Self::Bindings,
@@ -282,6 +283,7 @@ impl Builtin {
         Self::Disassemble,
         Self::Ast,
         Self::Optimize,
+        Self::Config,
     ];
 
     fn spec(self) -> MetacommandSpec {
@@ -299,6 +301,7 @@ impl Builtin {
                 "[<setting>, ...]",
                 "Show the optimizations, or set them: `<name>=true|false`, `all`, or `none`",
             ),
+            Self::Config => ("reload", "Read the config file again"),
         };
         MetacommandSpec::new(self.name(), summary).with_arguments(arguments)
     }
@@ -312,6 +315,7 @@ impl Builtin {
             Self::Disassemble => "disassemble",
             Self::Ast => "ast",
             Self::Optimize => "optimize",
+            Self::Config => "config",
         }
     }
 }

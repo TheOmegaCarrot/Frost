@@ -9,7 +9,7 @@ autotests = false
 [features]
 default = ["line-editor"]
 # A terminal input with line editing, history, and highlighting.
-line-editor = ["dep:reedline", "dep:nu-ansi-term", "dep:dirs", "dep:fastrand", "dep:ctrlc"]
+line-editor = ["dep:reedline", "dep:nu-ansi-term", "dep:fastrand", "dep:ctrlc"]
 # Draw compile errors as source snippets with their labels rather than
 # narrating them as plain text.
 graphical-diagnostics = ["frostlang/graphical-diagnostics"]
@@ -17,8 +17,8 @@ graphical-diagnostics = ["frostlang/graphical-diagnostics"]
 [dependencies]
 # Ctrl-C cancelling a running input, on every platform.
 ctrlc = { version = "3.5", optional = true }
-# Where the platform keeps history.
-dirs = { version = "7", optional = true }
+# Where the platform keeps configuration and history.
+dirs = "7"
 # Unpredictable names for the external editor's directory.
 fastrand = { version = "2.5", optional = true }
 frostlang.workspace = true
@@ -26,6 +26,8 @@ frostlang-parse.workspace = true
 # The version reedline uses, for the styles its highlighter takes.
 nu-ansi-term = { version = "0.50", optional = true }
 reedline = { version = "0.52", optional = true }
+# Reading the config file's sections, through the serde bridge.
+serde = { version = "1", features = ["derive"] }
 
 [dev-dependencies]
 # The tests assert on the graphical rendering.

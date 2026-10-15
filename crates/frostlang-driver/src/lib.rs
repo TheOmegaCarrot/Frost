@@ -287,10 +287,10 @@ impl Driver {
             Action::Eval { code, args } => session.run_source("<eval>", &code, args),
             Action::Check(script) => session.check_file(&script),
             Action::Compile { script, output } => session.compile_file(&script, &output),
-            Action::Repl { basic } => session.run_repl(&self.repl, basic),
+            Action::Repl { basic, no_config } => session.run_repl(&self.repl, basic, !no_config),
             Action::List(script) => session.list_file(&script, &mut stdout),
             Action::Ast(script) => session.show_ast(&script, &mut stdout),
-            Action::Nothing if terminals.stdin => session.run_repl(&self.repl, false),
+            Action::Nothing if terminals.stdin => session.run_repl(&self.repl, false, true),
             Action::Nothing => session.run_file(&Script::Stdin, Vec::new()),
         }
     }
@@ -483,8 +483,9 @@ impl Session<'_> {
     }
 
     /// Run a session on the frontend `settings` give, or, if they give none,
-    /// on a [`LineFrontend`] if `basic` is true, else on the default.
-    fn run_repl(mut self, settings: &ReplSettings, basic: bool) -> Exit {
+    /// on a [`LineFrontend`] if `basic` is true, else on the default. It reads
+    /// the config file `settings` name only if `config` is true.
+    fn run_repl(mut self, settings: &ReplSettings, basic: bool, config: bool) -> Exit {
         // A terminal frontend paints both streams.
         let color = self.colors(self.terminals.stdout && self.terminals.stderr);
         let repl = Repl::new()
@@ -498,7 +499,7 @@ impl Session<'_> {
                 frostlang_repl::default_frontend(color)
             }
         };
-        let (mut frontend, mut repl) = settings.start(repl, default_frontend);
+        let (mut frontend, mut repl) = settings.start(repl, default_frontend, config);
         match repl.run(&mut *frontend) {
             Ok(()) => Exit::Success,
             Err(error) => self.usage_error(&format!("the session ended: {error}")),

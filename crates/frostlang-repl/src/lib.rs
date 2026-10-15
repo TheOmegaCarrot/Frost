@@ -26,8 +26,8 @@
 
 mod builtins;
 mod cancel;
-#[cfg(feature = "line-editor")]
 mod config;
+mod config_runner;
 #[cfg(feature = "line-editor")]
 mod edit_dir;
 mod frontend;
@@ -40,6 +40,7 @@ mod segment;
 mod terminal;
 
 pub use cancel::CancelHandle;
+pub use config::{ConfigError, SessionProblem};
 pub use frontend::{Frontend, LineFrontend, render_value};
 pub use metacommand::{
     InvalidMetacommand, Invocation, MetacommandError, MetacommandHandler, MetacommandProblem,
@@ -54,6 +55,7 @@ use std::collections::{BTreeMap, VecDeque};
 use std::fmt;
 use std::io;
 use std::num::NonZeroU64;
+use std::path::PathBuf;
 use std::sync::Arc;
 
 use frostlang::compile::{CompilerOptions, Diagnostics, OptimizationOptions, compile_in_scope};
@@ -64,6 +66,7 @@ use frostlang::{
 use frostlang_parse::{Token, tokens};
 
 use builtins::Reply;
+use config::Reading;
 use metacommand::{Handler, Registry};
 
 /// The name diagnostics give an input.
@@ -113,15 +116,61 @@ const RESULTS: &str = "results";
 /// [argument](Invocation::argument).
 ///
 /// The REPL's own are `:help`, `:quit`, `:bindings`, `:undef`,
-/// `:disassemble`, `:ast`, and `:optimize`. `:help` describes them, with any its frontend
+/// `:disassemble`, `:ast`, `:optimize`, and `:config`. `:help` describes them, with any its frontend
 /// adds (see [`Frontend::metacommands`]). A failed metacommand is shown as a
 /// failed input is, and the session carries on.
+///
+/// # Config file
+///
+/// A session [`run`](Self::run) may start by reading a config file (see
+/// [`with_config_file`](Self::with_config_file) and
+/// [`with_default_config_file`](Self::with_default_config_file)), and reads it
+/// again at `:config reload`. It is a Frost script, run apart from the
+/// session, so its definitions are not bound in it. It runs under small
+/// limits, and may import only `std.string`, `std.math`, and `repl`. `repl`'s
+/// `colors` and `style` hold functions that wrap a String in ANSI codes, or,
+/// if the frontend takes no [ANSI styling](Frontend::ansi_styling), return it
+/// unchanged. `repl.colors` holds the terminal's 16: `black`, `red`, `green`,
+/// `yellow`, `blue`, `magenta`, `cyan`, and `white`, and each of them with
+/// `bright_` before it. `repl.style` holds `bold`, `dim`, `italic`, and
+/// `underline`.
+///
+/// Its exports are sections, each a Map of the settings for one part of the
+/// session. The REPL takes `session`, and the frontend takes the one its
+/// [`config_key`](Frontend::config_key) names (see [`Frontend::configure`]).
+/// Any other export is left alone, as another frontend's.
+///
+/// `session` holds:
+///
+/// - `results_kept`: how many [recent results](#recent-results) to keep, in
+///   place of [`with_results_kept`](Self::with_results_kept)'s count.
+/// - `preload`: a Map from names to module paths. As the session starts, each
+///   name is bound to its module, as though the first input were
+///   `def name = import(path)`.
+///
+/// ```frost
+/// export def session = {results_kept: 10, preload: {string: 'std.string'}}
+/// ```
+///
+/// With no file there, nothing is set. A problem with the file is shown on
+/// the frontend as a [`ReplError::Config`]. A file that cannot be read, does
+/// not compile, or fails sets nothing, as does a `session` holding an unknown
+/// setting or one of the wrong type. A setting left out, or Null, keeps its
+/// default.
+///
+/// `:config reload` applies `results_kept` and the frontend's section again,
+/// but `preload` only applies as a session starts. If the file sets nothing,
+/// for one of those problems, the settings stay as they were.
 pub struct Repl {
     configuration: VmRuntimeConfiguration,
     importer: Arc<Importer>,
     optimization: OptimizationOptions,
     bindings: BTreeMap<String, Value>,
+    // `None` for no config file.
+    config_file: Option<PathBuf>,
     results_kept: usize,
+    // In place of `results_kept`, if the config file sets it.
+    config_results_kept: Option<usize>,
     // Oldest first.
     results: VecDeque<Value>,
     // The Vm the last input ran on, kept warm for the next.
@@ -144,8 +193,8 @@ pub const DEFAULT_MAX_CALL_DEPTH: NonZeroU64 = NonZeroU64::new(1_000_000).unwrap
 impl Repl {
     /// A REPL with nothing bound, nothing importable, the default
     /// [`VmRuntimeConfiguration`] but with a call depth of
-    /// [`DEFAULT_MAX_CALL_DEPTH`], every optimization on, and five recent
-    /// results kept.
+    /// [`DEFAULT_MAX_CALL_DEPTH`], every optimization on, five recent results
+    /// kept, and no [config file](Self#config-file).
     pub fn new() -> Self {
         Self {
             configuration: VmRuntimeConfiguration::default()
@@ -153,7 +202,9 @@ impl Repl {
             importer: Arc::default(),
             optimization: OptimizationOptions::ALL,
             bindings: BTreeMap::new(),
+            config_file: None,
             results_kept: 5,
+            config_results_kept: None,
             results: VecDeque::new(),
             idle_vm: None,
             cancel: CancelHandle::default(),
@@ -173,6 +224,29 @@ impl Repl {
         self
     }
 
+    /// Read the [config file](Self#config-file) at `path` as each session
+    /// starts.
+    pub fn with_config_file(mut self, path: impl Into<PathBuf>) -> Self {
+        self.config_file = Some(path.into());
+        self
+    }
+
+    /// Read the [config file](Self#config-file) `repl.frst`, in a `frost`
+    /// directory in the platform's usual place for configuration, as each
+    /// session starts:
+    ///
+    /// | Platform | Config file |
+    /// | -------- | ----------- |
+    /// | Linux | `$XDG_CONFIG_HOME/frost/repl.frst`, or `~/.config/frost/repl.frst` |
+    /// | macOS | `~/Library/Application Support/frost/repl.frst` |
+    /// | Windows | `%APPDATA%\frost\repl.frst` |
+    ///
+    /// If the platform has no such place, no file is read.
+    pub fn with_default_config_file(mut self) -> Self {
+        self.config_file = config::default_path();
+        self
+    }
+
     /// Set the optimizations inputs compile with.
     pub fn with_optimization(mut self, optimization: OptimizationOptions) -> Self {
         self.optimization = optimization;
@@ -183,9 +257,19 @@ impl Repl {
     /// 0, the REPL binds no `results` at all.
     pub fn with_results_kept(mut self, count: usize) -> Self {
         self.results_kept = count;
-        let excess = self.results.len().saturating_sub(count);
-        self.results.drain(..excess);
+        self.forget_excess_results();
         self
+    }
+
+    /// How many recent results to keep.
+    fn results_limit(&self) -> usize {
+        self.config_results_kept.unwrap_or(self.results_kept)
+    }
+
+    /// Forget the oldest results, past those to keep.
+    fn forget_excess_results(&mut self) {
+        let excess = self.results.len().saturating_sub(self.results_limit());
+        self.results.drain(..excess);
     }
 
     /// Bind `name` to `value`, as though an earlier input had defined it.
@@ -242,6 +326,24 @@ impl Repl {
         token: CancelToken,
     ) -> Result<Value, ReplError> {
         let closure = self.compile(source)?;
+        let (tail, exports) = self.run_closure(closure, token)?;
+        self.bindings.extend(exports);
+        if self.results_limit() > 0 && tail != Value::Null {
+            if self.results.len() == self.results_limit() {
+                self.results.pop_front();
+            }
+            self.results.push_back(tail.clone());
+        }
+        Ok(tail)
+    }
+
+    /// The tail and exports of `closure`, run as an input is, stopping when
+    /// `token` is cancelled.
+    fn run_closure(
+        &mut self,
+        closure: Arc<Closure>,
+        token: CancelToken,
+    ) -> Result<(Value, Vec<(String, Value)>), ReplError> {
         let vm = match self.idle_vm.take() {
             Some(idle_vm) => idle_vm.build(closure),
             None => Vm::factory()
@@ -256,15 +358,8 @@ impl Repl {
                     exports,
                     idle_vm,
                 } = result.into_parts();
-                self.bindings.extend(exports);
                 self.idle_vm = Some(idle_vm);
-                if self.results_kept > 0 && tail != Value::Null {
-                    if self.results.len() == self.results_kept {
-                        self.results.pop_front();
-                    }
-                    self.results.push_back(tail.clone());
-                }
-                Ok(tail)
+                Ok((tail, exports))
             }
             Err(failure) => {
                 let cancelled = failure.kind() == RunErrorKind::Aborted(AbortReason::Cancelled);
@@ -301,10 +396,14 @@ impl Repl {
     /// nothing.
     ///
     /// The session starts by giving `frontend` this REPL's [`CancelHandle`]
-    /// (see [`Frontend::set_cancel_handle`]).
+    /// (see [`Frontend::set_cancel_handle`]), and then reading the
+    /// [config file](Self#config-file), if there is one.
     pub fn run(&mut self, frontend: &mut dyn Frontend) -> Result<(), SessionError> {
         let registry = Registry::new(frontend.metacommands()).map_err(SessionError::Metacommand)?;
         frontend.set_cancel_handle(self.cancel_handle());
+        if let Some(path) = self.config_file.clone() {
+            self.read_config(&path, frontend, Reading::Start)?;
+        }
         while let Some(segment) = frontend.read_segment()? {
             let Some(invocation) = Invocation::parse(&segment) else {
                 frontend.render(self.evaluate(&segment).as_ref())?;
@@ -326,6 +425,9 @@ impl Repl {
                 Ok(Reply::Text(text)) => frontend.render_text(&text)?,
                 Ok(Reply::Nothing) => {}
                 Ok(Reply::Quit) => break,
+                Ok(Reply::ReadConfig(path)) => {
+                    self.read_config(&path, frontend, Reading::Reload)?;
+                }
                 Err(error) => frontend.render(Err(&error))?,
             }
         }
@@ -355,7 +457,7 @@ impl Repl {
     /// Whether the REPL binds `results`: it keeps some, and no input or seed
     /// has taken the name.
     fn keeps_results(&self) -> bool {
-        self.results_kept > 0 && !self.bindings.contains_key(RESULTS)
+        self.results_limit() > 0 && !self.bindings.contains_key(RESULTS)
     }
 }
 
@@ -393,11 +495,13 @@ impl std::error::Error for SessionError {
     }
 }
 
-/// Why an input failed. Whatever the reason, it left the REPL's bindings
+/// Why an input failed, or what is wrong with the
+/// [config file](Repl#config-file). A failed input left the REPL's bindings
 /// unchanged.
 ///
 /// [`Display`](fmt::Display) shows it as plain text: the diagnostics, the
-/// error and its backtrace, or the metacommand's failure.
+/// error and its backtrace, the metacommand's failure, or the config file's
+/// problem.
 #[derive(Debug, Clone)]
 pub enum ReplError {
     /// The input did not compile.
@@ -409,6 +513,8 @@ pub enum ReplError {
     Cancelled(FrostError),
     /// The input was a [metacommand](Repl#metacommands), which failed.
     Metacommand(MetacommandError),
+    /// The config file has a problem, which no input caused.
+    Config(ConfigError),
 }
 
 impl fmt::Display for ReplError {
@@ -422,6 +528,7 @@ impl fmt::Display for ReplError {
                 write!(f, "Error: {}", error.with_backtrace())
             }
             Self::Metacommand(error) => write!(f, "Error: {error}"),
+            Self::Config(error) => write!(f, "{error}"),
         }
     }
 }
@@ -432,6 +539,7 @@ impl std::error::Error for ReplError {
             Self::Compile(diagnostics) => Some(diagnostics),
             Self::Run(error) | Self::Cancelled(error) => Some(error),
             Self::Metacommand(error) => Some(error),
+            Self::Config(error) => Some(error),
         }
     }
 }

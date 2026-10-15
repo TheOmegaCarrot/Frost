@@ -3,10 +3,12 @@
 use std::io::Write;
 use std::process::{Command, Output, Stdio};
 
-/// What `frost repl` writes, given `input` on a pipe for standard input.
+/// What `frost repl --no-config` writes, given `input` on a pipe for standard
+/// input. It reads no config file, so a developer's own does not reach the
+/// tests.
 fn repl_on_piped_input(input: &str) -> Output {
     let mut child = Command::new(env!("CARGO_BIN_EXE_frost"))
-        .arg("repl")
+        .args(["repl", "--no-config"])
         .stdin(Stdio::piped())
         .stdout(Stdio::piped())
         .stderr(Stdio::piped())

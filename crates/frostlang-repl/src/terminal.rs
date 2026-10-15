@@ -10,17 +10,21 @@ use std::sync::{LazyLock, Mutex, MutexGuard, Once, PoisonError};
 use frostlang::Value;
 use nu_ansi_term::{Color, Style};
 use reedline::{
-    FileBackedHistory, HISTORY_SIZE, Highlighter, Prompt, PromptEditMode, PromptHistorySearch,
-    Reedline, SearchDirection, SearchQuery, Signal, StyledText, ValidationResult, Validator,
+    Emacs, FileBackedHistory, HISTORY_SIZE, Highlighter, Prompt, PromptEditMode,
+    PromptHistorySearch, Reedline, SearchDirection, SearchQuery, Signal, StyledText,
+    ValidationResult, Validator, Vi,
 };
 
-use crate::config::{self, Config, Context, Problem, Prompts};
 use crate::edit_dir::EditDir;
 use crate::highlight::{self, Class};
 use crate::{
     CancelHandle, Frontend, Invocation, MetacommandError, MetacommandSpec, MetacommandTable,
     ReplError, complete_segment, render_value,
 };
+
+mod settings;
+
+use settings::{Context, EditMode, Problem, Prompts, Settings};
 
 /// A [`Frontend`] for a person at a terminal, with line editing, history, and
 /// syntax highlighting.
@@ -42,48 +46,40 @@ use crate::{
 ///
 /// # Configuration
 ///
-/// Before its first prompt, the frontend runs the Frost script `repl.frst`,
-/// in a `frost` directory in the platform's usual place for configuration,
-/// unless another is chosen (see [`with_config_file`](Self::with_config_file)
-/// and [`without_config`](Self::without_config)):
+/// The frontend takes its settings from the `terminal` section of the
+/// [config file](crate::Repl#config-file), a Map of them:
 ///
-/// | Platform | Configuration file |
-/// | -------- | ------------------ |
-/// | Linux | `$XDG_CONFIG_HOME/frost/repl.frst`, or `~/.config/frost/repl.frst` |
-/// | macOS | `~/Library/Application Support/frost/repl.frst` |
-/// | Windows | `%APPDATA%\frost\repl.frst` |
-///
-/// Its exports are the settings:
-///
-/// - `prompt`, shown before the first line of each segment, and
-///   `continuation_prompt`, before each further line. Each is a String, or a
+/// - `prompt`, shown before the first line of each segment;
+///   `continuation_prompt`, before each further line; and `right_prompt`, at
+///   the right of the first line, and by default empty. Each is a String, or a
 ///   function given a Map and returning one. The Map holds `number`, the
 ///   segment's number in the session, from 1; `failed`, whether the input
 ///   before it failed; and `cwd`, the working directory, or Null if it cannot
 ///   be read. A prompt replaces the default entirely, colors included.
+/// - `edit_mode`: `'emacs'`, by default, or `'vi'`, for the keys lines are
+///   edited with. Ctrl-C, Ctrl-D, and Ctrl-O work as described above in
+///   either.
 ///
-/// The script runs apart from the session, so its definitions are not bound in
-/// it. It runs, as its prompt functions do, under small limits, and may import
-/// only `std.string`, `std.math`, and `repl`, whose `repl.colors` and
-/// `repl.style` hold functions that wrap a String in ANSI codes:
+/// Its functions run as the config file does, under the same limits and with
+/// the same imports:
 ///
 /// ```frost
 /// def repl = import('repl')
 ///
-/// export defn prompt(context) -> {
+/// defn prompt(context) -> {
 ///     def number = repl.style.bold(to_string(context.number))
 ///     if context.failed: $'${number} ${repl.colors.red('!')}> '
 ///     else: $'${number}> '
 /// }
+///
+/// export def terminal = {prompt, right_prompt: fn context -> context.cwd or ''}
 /// ```
 ///
-/// Without color, those functions return their String unchanged.
-///
-/// A problem with the configuration is shown before the first prompt: if the
-/// script cannot be read or does not run, nothing is set, and an unknown
-/// export or a setting of the wrong type is ignored. A prompt function that
-/// fails or returns anything but a String is reported, and the default is used
-/// in its place from then on.
+/// A problem with the section is shown as the frontend takes it: a section
+/// holding an unknown setting, or one of the wrong type, sets nothing. A
+/// setting left out, or Null, keeps its default. A prompt function that fails
+/// or returns anything but a String is reported, and the default is used in its
+/// place from then on.
 ///
 /// # Ctrl-C is process-wide
 ///
@@ -102,20 +98,11 @@ pub struct TerminalFrontend {
     // Made with the editor, if an external editor is named; holds the file it
     // edits.
     edit_dir: Option<EditDir>,
-    config_file: ConfigFile,
-    // Loaded at the first read, so that its problems show before the first
-    // prompt.
-    config: Option<Config>,
+    // `None` until configured, or for a configuration with no section here.
+    settings: Option<Settings>,
     segments_read: u64,
     // Whether the outcome rendered since the last segment was read is a failure.
     failed: bool,
-}
-
-/// Where a [`TerminalFrontend`]'s configuration comes from.
-enum ConfigFile {
-    Default,
-    Path(PathBuf),
-    None,
 }
 
 impl Default for TerminalFrontend {
@@ -142,24 +129,10 @@ impl TerminalFrontend {
             history: None,
             editor: None,
             edit_dir: None,
-            config_file: ConfigFile::Default,
-            config: None,
+            settings: None,
             segments_read: 0,
             failed: false,
         }
-    }
-
-    /// Read the [configuration](Self#configuration) from the file at `path`
-    /// instead.
-    pub fn with_config_file(mut self, path: PathBuf) -> Self {
-        self.config_file = ConfigFile::Path(path);
-        self
-    }
-
-    /// Read no [configuration](Self#configuration), keeping every default.
-    pub fn without_config(mut self) -> Self {
-        self.config_file = ConfigFile::None;
-        self
     }
 
     /// Set whether to color the prompt, the source being typed, and
@@ -187,6 +160,7 @@ impl TerminalFrontend {
         if self.editor.is_none() {
             let history = self.history.take().unwrap_or_else(default_history);
             let mut editor = Reedline::create()
+                .with_edit_mode(self.edit_mode())
                 .with_validator(Box::new(FrostValidator))
                 .with_highlighter(Box::new(FrostHighlighter))
                 .with_history(Box::new(history))
@@ -203,21 +177,25 @@ impl TerminalFrontend {
         self.editor.as_mut().expect("the editor was just built")
     }
 
-    /// The prompts for the next segment, after showing any problem the
-    /// configuration, at its first use, or computing them has.
-    fn prompt(&mut self) -> io::Result<FrostPrompt> {
-        if self.config.is_none() {
-            let (config, problems) = match &self.config_file {
-                ConfigFile::Default => match config::default_path() {
-                    Some(path) => Config::read(&path, self.color),
-                    None => (Config::default(), Vec::new()),
-                },
-                ConfigFile::Path(path) => Config::read(path, self.color),
-                ConfigFile::None => (Config::default(), Vec::new()),
-            };
-            self.config = Some(config);
-            self.report(problems)?;
+    /// How the settings say to edit lines.
+    fn edit_mode(&self) -> Box<dyn reedline::EditMode> {
+        let mode = self
+            .settings
+            .as_ref()
+            .map(Settings::edit_mode)
+            .unwrap_or_default();
+        match mode {
+            EditMode::Emacs => Box::<Emacs>::default(),
+            EditMode::Vi => Box::<Vi>::default(),
         }
+    }
+
+    /// The prompts for the next segment, after showing any problem computing
+    /// them.
+    fn prompt(&mut self) -> io::Result<FrostPrompt> {
+        let Some(settings) = &mut self.settings else {
+            return Ok(FrostPrompt(Prompts::default()));
+        };
         let context = Context {
             number: self.segments_read + 1,
             failed: self.failed,
@@ -225,8 +203,7 @@ impl TerminalFrontend {
                 .ok()
                 .and_then(|dir| dir.into_os_string().into_string().ok()),
         };
-        let config = self.config.as_mut().expect("the configuration was loaded");
-        let (prompts, problems) = config.prompts(&context);
+        let (prompts, problems) = settings.prompts(&context);
         self.report(problems)?;
         Ok(FrostPrompt(prompts))
     }
@@ -238,13 +215,7 @@ impl TerminalFrontend {
         }
         let mut stderr = io::stderr().lock();
         for problem in problems {
-            match problem {
-                #[cfg(feature = "graphical-diagnostics")]
-                Problem::Compile(diagnostics) if self.color => {
-                    write!(stderr, "{}", diagnostics.render_pretty())?;
-                }
-                problem => writeln!(stderr, "{problem}")?,
-            }
+            writeln!(stderr, "{problem}")?;
         }
         stderr.flush()
     }
@@ -297,7 +268,8 @@ impl Frontend for TerminalFrontend {
     }
 
     fn render(&mut self, outcome: Result<&Value, &ReplError>) -> io::Result<()> {
-        self.failed = outcome.is_err();
+        // A problem with the configuration is no input's failure.
+        self.failed = matches!(outcome, Err(error) if !matches!(error, ReplError::Config(_)));
         match outcome {
             Ok(Value::Null) => Ok(()),
             Ok(value) => {
@@ -306,7 +278,10 @@ impl Frontend for TerminalFrontend {
                 stdout.flush()
             }
             #[cfg(feature = "graphical-diagnostics")]
-            Err(ReplError::Compile(diagnostics)) if self.color => {
+            Err(
+                ReplError::Compile(diagnostics)
+                | ReplError::Config(crate::ConfigError::Compile(diagnostics)),
+            ) if self.color => {
                 let mut stderr = io::stderr().lock();
                 write!(stderr, "{}", diagnostics.render_pretty())?;
                 stderr.flush()
@@ -339,6 +314,29 @@ impl Frontend for TerminalFrontend {
 
     fn set_cancel_handle(&mut self, handle: CancelHandle) {
         cancel_on_ctrl_c(handle);
+    }
+
+    fn config_key(&self) -> Option<&str> {
+        Some(settings::KEY)
+    }
+
+    fn configure(&mut self, section: Option<Value>) -> io::Result<()> {
+        let problems = match section {
+            Some(section) => {
+                let (settings, problems) = Settings::from_section(section, self.color);
+                self.settings = Some(settings);
+                problems
+            }
+            None => {
+                self.settings = None;
+                Vec::new()
+            }
+        };
+        // An editor not yet built takes the edit mode as it is built.
+        if let Some(editor) = self.editor.take() {
+            self.editor = Some(editor.with_edit_mode(self.edit_mode()));
+        }
+        self.report(problems)
     }
 }
 
@@ -466,7 +464,11 @@ impl Prompt for FrostPrompt {
     }
 
     fn render_prompt_right(&self) -> Cow<'_, str> {
-        Cow::Borrowed("")
+        Cow::Borrowed(self.0.right_prompt.as_deref().unwrap_or(""))
+    }
+
+    fn get_prompt_right_color(&self) -> Color {
+        Color::Default
     }
 
     fn render_prompt_indicator(&self, _mode: PromptEditMode) -> Cow<'_, str> {

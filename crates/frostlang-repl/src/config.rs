@@ -1,22 +1,97 @@
-//! The [`TerminalFrontend`](crate::TerminalFrontend)'s configuration: a Frost
-//! script whose exports set its prompts.
+//! The [`Repl`](crate::Repl)'s [config file](crate::Repl#config-file):
+//! reading it, and the settings in its `session` section.
 
 use std::collections::BTreeMap;
 use std::fmt;
 use std::fs;
 use std::io;
-use std::num::NonZeroU64;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
-use frostlang::compile::{CompilerOptions, Diagnostics, compile_in_scope, compile_program};
-use frostlang::{
-    Closure, FrostError, HostComponent, IdleVm, Importer, ImporterBuilder, MapKey, ProgramParts,
-    Stdlib, Value, Vm, VmRuntimeConfiguration, frost_closure, stdlib,
-};
+use frostlang::compile::{CompilerOptions, Diagnostics, compile_in_scope};
+use frostlang::{FrostError, Value, from_value};
+use serde::Deserialize;
 
-#[cfg(test)]
-mod tests;
+use crate::config_runner::{ConfigRunner, ScriptFailure};
+use crate::{Frontend, InvalidName, Repl, ReplError, check_name};
+
+/// The export the REPL takes its own settings from.
+const SESSION: &str = "session";
+
+/// Whether the config file is read as a session starts, or again.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum Reading {
+    Start,
+    Reload,
+}
+
+impl Repl {
+    /// Read the config file at `path`, apply what it sets, and show any
+    /// problem on `frontend`. If it sets nothing, for an error, nothing
+    /// changes.
+    pub(crate) fn read_config(
+        &mut self,
+        path: &Path,
+        frontend: &mut dyn Frontend,
+        reading: Reading,
+    ) -> io::Result<()> {
+        let mut exports = match load(path, frontend.ansi_styling()) {
+            Ok(exports) => exports,
+            Err(error) => return frontend.render(Err(&ReplError::Config(error))),
+        };
+        let mut take = |key: &str| {
+            let at = exports.iter().position(|(name, _)| name == key)?;
+            Some(exports.swap_remove(at).1)
+        };
+        let mut problems = Vec::new();
+        let settings = SessionSettings::from_section(take(SESSION)).unwrap_or_else(|problem| {
+            problems.push(problem);
+            SessionSettings::default()
+        });
+        let section = frontend.config_key().and_then(take);
+        self.config_results_kept = settings.results_kept;
+        self.forget_excess_results();
+        if reading == Reading::Start {
+            for (Name(name), path) in settings.preload.unwrap_or_default() {
+                if let Err(error) = self.preload(&name, &path) {
+                    problems.push(Problem::PreloadFailed { name, error }.into());
+                }
+            }
+        }
+        for problem in problems {
+            frontend.render(Err(&ReplError::Config(problem)))?;
+        }
+        frontend.configure(section)
+    }
+
+    /// Bind `name` to the module at `path`, imported as an input imports it.
+    fn preload(&mut self, name: &str, path: &str) -> Result<(), FrostError> {
+        let program = compile_in_scope(
+            "<preload>",
+            "import(path)",
+            CompilerOptions::new(),
+            &["path"],
+        )
+        .expect("the import compiles")
+        .code;
+        let closure = program
+            .close(BTreeMap::from([("path".to_owned(), Value::from(path))]))
+            .expect("the import captures only `path`");
+        let token = self.cancel.begin();
+        let outcome = self.run_closure(closure, token);
+        self.cancel.end();
+        match outcome {
+            Ok((module, _)) => {
+                self.bindings.insert(name.to_owned(), module);
+                Ok(())
+            }
+            Err(ReplError::Run(error) | ReplError::Cancelled(error)) => Err(error),
+            Err(other) => {
+                unreachable!("a run fails only by raising or by being cancelled: {other}")
+            }
+        }
+    }
+}
 
 /// The configuration file in the platform's configuration directory, if it
 /// has one.
@@ -24,390 +99,84 @@ pub(crate) fn default_path() -> Option<PathBuf> {
     dirs::config_dir().map(|dir| dir.join("frost").join("repl.frst"))
 }
 
-/// A setting the configuration may export.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(crate) enum Setting {
-    Prompt,
-    ContinuationPrompt,
-}
-
-impl Setting {
-    const ALL: [Self; 2] = [Self::Prompt, Self::ContinuationPrompt];
-
-    /// The name the configuration exports it as.
-    fn name(self) -> &'static str {
-        match self {
-            Self::Prompt => "prompt",
-            Self::ContinuationPrompt => "continuation_prompt",
+/// The exports of the configuration in the file at `path`, run with
+/// `repl.colors` and `repl.style` coloring only if `color` is true. With no
+/// file there, there are none.
+fn load(path: &Path, color: bool) -> Result<Vec<(String, Value)>, ConfigError> {
+    let source = match fs::read_to_string(path) {
+        Ok(source) => source,
+        Err(error) if error.kind() == io::ErrorKind::NotFound => return Ok(Vec::new()),
+        Err(error) => {
+            return Err(ConfigError::Unreadable {
+                path: path.to_owned(),
+                error: Arc::new(error),
+            });
         }
-    }
-
-    /// What the frontend shows in its place, by default.
-    fn default_description(self) -> &'static str {
-        match self {
-            Self::Prompt => "the default prompt",
-            Self::ContinuationPrompt => "the default continuation prompt",
-        }
-    }
+    };
+    ConfigRunner::new(color)
+        .run_script(&path.display().to_string(), &source)
+        .map_err(|failure| match failure {
+            ScriptFailure::Compile(diagnostics) => ConfigError::Compile(diagnostics),
+            ScriptFailure::Run(error) => ConfigError::Run(error),
+        })
 }
 
-/// A prompt the configuration sets: as written, or computed by a function.
-enum Prompt {
-    Text(String),
-    Computed(Arc<Closure>),
+/// What the `session` section sets.
+#[derive(Debug, Default, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct SessionSettings {
+    results_kept: Option<usize>,
+    /// Each name to bind, and the path to import it from.
+    preload: Option<BTreeMap<Name, String>>,
 }
 
-/// What the configuration sets, and the Vm its functions run on.
-#[derive(Default)]
-pub(crate) struct Config {
-    prompt: Option<Prompt>,
-    continuation_prompt: Option<Prompt>,
-    runner: Runner,
-}
-
-/// What a segment's prompts are computed from.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub(crate) struct Context {
-    /// The segment's number in the session, from 1.
-    pub(crate) number: u64,
-    /// Whether the input before it failed.
-    pub(crate) failed: bool,
-    /// The working directory, if it can be read and is UTF-8.
-    pub(crate) cwd: Option<String>,
-}
-
-impl Context {
-    fn to_value(&self) -> Value {
-        let number = i64::try_from(self.number).unwrap_or(i64::MAX);
-        let cwd = self.cwd.clone().map_or(Value::Null, Value::from);
-        Value::Map(
-            [
-                (MapKey::from("number"), Value::from(number)),
-                (MapKey::from("failed"), Value::from(self.failed)),
-                (MapKey::from("cwd"), cwd),
-            ]
-            .into_iter()
-            .collect(),
+impl SessionSettings {
+    /// What `section`, the `session` export if there is one, sets.
+    fn from_section(section: Option<Value>) -> Result<Self, ConfigError> {
+        section.map_or_else(
+            || Ok(Self::default()),
+            |section| from_value(section).map_err(|error| Problem::Invalid(error).into()),
         )
     }
 }
 
-/// A segment's prompts: `None` for the frontend's default.
-#[derive(Debug, Clone, Default, PartialEq, Eq)]
-pub(crate) struct Prompts {
-    pub(crate) prompt: Option<String>,
-    pub(crate) continuation_prompt: Option<String>,
-}
+/// A name Frost source can refer to.
+#[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Deserialize)]
+#[serde(try_from = "String")]
+struct Name(String);
 
-impl Config {
-    /// The configuration in the file at `path`, and the problems found in it.
-    /// With no file there, nothing is set, and there is no problem.
-    pub(crate) fn read(path: &Path, color: bool) -> (Self, Vec<Problem>) {
-        match fs::read_to_string(path) {
-            Ok(source) => Self::load(&path.display().to_string(), &source, color),
-            Err(error) if error.kind() == io::ErrorKind::NotFound => (Self::default(), Vec::new()),
-            Err(error) => (
-                Self::default(),
-                vec![Problem::Unreadable {
-                    path: path.to_owned(),
-                    error,
-                }],
-            ),
-        }
-    }
+impl TryFrom<String> for Name {
+    type Error = InvalidName;
 
-    /// The configuration `source`, from the file `filename`, sets, and the
-    /// problems found in it. `color` is whether `repl.colors` and `repl.style`
-    /// may color their text.
-    pub(crate) fn load(filename: &str, source: &str, color: bool) -> (Self, Vec<Problem>) {
-        let mut runner = Runner::new(color);
-        let exports = match runner.run_script(filename, source) {
-            Ok(exports) => exports,
-            Err(problem) => return (Self::default(), vec![problem]),
-        };
-        let mut config = Self {
-            prompt: None,
-            continuation_prompt: None,
-            runner,
-        };
-        let mut problems = Vec::new();
-        for (name, value) in exports {
-            let Some(setting) = Setting::ALL.into_iter().find(|s| s.name() == name) else {
-                problems.push(Problem::UnknownExport(name));
-                continue;
-            };
-            match config.prompt_from(setting, value) {
-                Ok(prompt) => *config.slot(setting) = Some(prompt),
-                Err(problem) => problems.push(problem),
-            }
-        }
-        (config, problems)
-    }
-
-    /// The prompts for the segment `context` describes, and the problems
-    /// computing them. A prompt function that fails is not called again.
-    pub(crate) fn prompts(&mut self, context: &Context) -> (Prompts, Vec<Problem>) {
-        let context = context.to_value();
-        let mut problems = Vec::new();
-        let mut compute = |setting| match self.compute(setting, &context) {
-            Ok(prompt) => prompt,
-            Err(problem) => {
-                problems.push(problem);
-                None
-            }
-        };
-        let prompts = Prompts {
-            prompt: compute(Setting::Prompt),
-            continuation_prompt: compute(Setting::ContinuationPrompt),
-        };
-        (prompts, problems)
-    }
-
-    fn slot(&mut self, setting: Setting) -> &mut Option<Prompt> {
-        match setting {
-            Setting::Prompt => &mut self.prompt,
-            Setting::ContinuationPrompt => &mut self.continuation_prompt,
-        }
-    }
-
-    /// The prompt `value`, the export of `setting`, sets.
-    fn prompt_from(&mut self, setting: Setting, value: Value) -> Result<Prompt, Problem> {
-        match value {
-            Value::String(text) => Ok(Prompt::Text(text.as_str().to_owned())),
-            Value::Closure(closure) => Ok(Prompt::Computed(closure)),
-            Value::NativeFunction(_) => self
-                .runner
-                .wrap(value)
-                .map(Prompt::Computed)
-                .map_err(Problem::Run),
-            other => Err(Problem::WrongType {
-                setting,
-                type_name: other.type_name(),
-            }),
-        }
-    }
-
-    /// The prompt `setting` sets for `context`, or `None` for the default. A
-    /// function that fails is dropped, leaving the default from then on.
-    fn compute(&mut self, setting: Setting, context: &Value) -> Result<Option<String>, Problem> {
-        let closure = match self.slot(setting) {
-            None => return Ok(None),
-            Some(Prompt::Text(text)) => return Ok(Some(text.clone())),
-            Some(Prompt::Computed(closure)) => Arc::clone(closure),
-        };
-        let outcome = match self.runner.call(closure, context.clone()) {
-            Ok(Value::String(text)) => return Ok(Some(text.as_str().to_owned())),
-            Ok(other) => Problem::PromptNotString {
-                setting,
-                type_name: other.type_name(),
-            },
-            Err(error) => Problem::PromptFailed { setting, error },
-        };
-        *self.slot(setting) = None;
-        Err(outcome)
+    fn try_from(name: String) -> Result<Self, InvalidName> {
+        check_name(&name).map(|()| Self(name))
     }
 }
 
-/// What the configuration and its functions may spend. A prompt is computed
-/// before every segment, so one that runs away must fail fast.
-fn limits() -> VmRuntimeConfiguration {
-    const FUEL: NonZeroU64 = NonZeroU64::new(100_000).unwrap();
-    const CALL_DEPTH: NonZeroU64 = NonZeroU64::new(256).unwrap();
-    const IMPORT_DEPTH: NonZeroU64 = NonZeroU64::new(4).unwrap();
-    VmRuntimeConfiguration::default()
-        .with_fuel(Some(FUEL))
-        .with_max_call_depth(Some(CALL_DEPTH))
-        .with_max_import_depth(Some(IMPORT_DEPTH))
-}
-
-/// Runs the configuration and its functions, on a Vm kept warm between runs.
-#[derive(Default)]
-struct Runner {
-    importer: Arc<Importer>,
-    idle_vm: Option<IdleVm>,
-}
-
-impl Runner {
-    /// A runner whose scripts may import `std.string`, `std.math`, and the
-    /// `repl` component.
-    fn new(color: bool) -> Self {
-        let stdlib = Stdlib::new()
-            .with_module(stdlib::string())
-            .and_then(|stdlib| stdlib.with_module(stdlib::math()))
-            .expect("the modules are distinct");
-        let importer = ImporterBuilder::new()
-            .with_stdlib(stdlib)
-            .with_component(component(color))
-            .expect("`repl` is free to claim")
-            .build();
-        Self {
-            importer,
-            idle_vm: None,
-        }
-    }
-
-    /// The exports of the script `source`, from the file `filename`.
-    fn run_script(
-        &mut self,
-        filename: &str,
-        source: &str,
-    ) -> Result<Vec<(String, Value)>, Problem> {
-        let program = compile_program(filename, source, CompilerOptions::new())
-            .map_err(Problem::Compile)?
-            .code;
-        let closure = program
-            .close(BTreeMap::new())
-            .expect("a whole script captures nothing");
-        self.run(closure, None)
-            .map(|parts| parts.exports)
-            .map_err(Problem::Run)
-    }
-
-    /// `function`, a native, as a closure, so that it runs as a script does.
-    fn wrap(&mut self, function: Value) -> Result<Arc<Closure>, FrostError> {
-        const SOURCE: &str = "fn context -> function(context)";
-        let program = compile_in_scope("<prompt>", SOURCE, CompilerOptions::new(), &["function"])
-            .expect("the wrapper compiles")
-            .code;
-        let closure = program
-            .close(BTreeMap::from([("function".to_owned(), function)]))
-            .expect("the wrapper captures only `function`");
-        match self.run(closure, None)?.tail {
-            Value::Closure(wrapper) => Ok(wrapper),
-            other => unreachable!("the wrapper is a lambda, not {}", other.type_name()),
-        }
-    }
-
-    /// What `closure` returns, given `argument`.
-    fn call(&mut self, closure: Arc<Closure>, argument: Value) -> Result<Value, FrostError> {
-        self.run(closure, Some(argument)).map(|parts| parts.tail)
-    }
-
-    /// The tail and exports of `closure`, given `argument`, if any.
-    fn run(&mut self, closure: Arc<Closure>, argument: Option<Value>) -> Result<Ran, FrostError> {
-        let vm = match self.idle_vm.take() {
-            Some(idle_vm) => idle_vm.build(closure),
-            None => Vm::factory()
-                .configuration(limits())
-                .with_importer(Arc::clone(&self.importer))
-                .build(closure),
-        };
-        match vm.run_with_args(argument) {
-            Ok(result) => {
-                let ProgramParts {
-                    tail,
-                    exports,
-                    idle_vm,
-                } = result.into_parts();
-                self.idle_vm = Some(idle_vm);
-                Ok(Ran { tail, exports })
-            }
-            Err(failure) => {
-                let (error, idle_vm) = failure.into_parts();
-                self.idle_vm = Some(idle_vm);
-                Err(error)
-            }
-        }
-    }
-}
-
-/// What a run gave back.
-struct Ran {
-    tail: Value,
-    exports: Vec<(String, Value)>,
-}
-
-/// The `repl` component: `repl.colors` and `repl.style` hold functions that
-/// wrap a String in ANSI codes, or, if `color` is false, return it unchanged.
-fn component(color: bool) -> HostComponent {
-    HostComponent::builder("repl")
-        .module("colors", |colors| {
-            COLORS
-                .into_iter()
-                .fold(colors, |colors, (key, name, code)| {
-                    colors.value(key, painter(name, color, code, FOREGROUND_RESET))
-                })
-        })
-        .module("style", |style| {
-            STYLES
-                .into_iter()
-                .fold(style, |style, (key, name, on, off)| {
-                    style.value(key, painter(name, color, on, off))
-                })
-        })
-        .build()
-}
-
-/// The SGR code that returns the foreground to the terminal's default.
-const FOREGROUND_RESET: u8 = 39;
-
-/// Each of `repl.colors`: its key, its function's name, and its SGR code.
-const COLORS: [(&str, &str, u8); 16] = [
-    ("black", "repl.colors.black", 30),
-    ("red", "repl.colors.red", 31),
-    ("green", "repl.colors.green", 32),
-    ("yellow", "repl.colors.yellow", 33),
-    ("blue", "repl.colors.blue", 34),
-    ("magenta", "repl.colors.magenta", 35),
-    ("cyan", "repl.colors.cyan", 36),
-    ("white", "repl.colors.white", 37),
-    ("bright_black", "repl.colors.bright_black", 90),
-    ("bright_red", "repl.colors.bright_red", 91),
-    ("bright_green", "repl.colors.bright_green", 92),
-    ("bright_yellow", "repl.colors.bright_yellow", 93),
-    ("bright_blue", "repl.colors.bright_blue", 94),
-    ("bright_magenta", "repl.colors.bright_magenta", 95),
-    ("bright_cyan", "repl.colors.bright_cyan", 96),
-    ("bright_white", "repl.colors.bright_white", 97),
-];
-
-/// Each of `repl.style`: its key, its function's name, and the SGR codes that
-/// turn it on and off.
-const STYLES: [(&str, &str, u8, u8); 4] = [
-    ("bold", "repl.style.bold", 1, 22),
-    ("dim", "repl.style.dim", 2, 22),
-    ("italic", "repl.style.italic", 3, 23),
-    ("underline", "repl.style.underline", 4, 24),
-];
-
-/// A function named `name` that wraps a String between the SGR codes `on` and
-/// `off`, or, if `color` is false, returns it unchanged.
-fn painter(name: &'static str, color: bool, on: u8, off: u8) -> Value {
-    frost_closure!(name, move |text: String| {
-        if color {
-            format!("\x1b[{on}m{text}\x1b[{off}m")
-        } else {
-            text
-        }
-    })
-}
-
-/// Something wrong with the configuration, or with a prompt it computes.
-#[derive(Debug)]
-pub(crate) enum Problem {
-    /// The file is there but cannot be read.
-    Unreadable { path: PathBuf, error: io::Error },
-    /// The configuration does not compile.
+/// Something wrong with the [config file](crate::Repl#config-file). The
+/// session carries on without the part of it that is wrong.
+///
+/// [`Display`](fmt::Display) shows it as plain text, saying whether it is an
+/// error or a warning.
+#[derive(Debug, Clone)]
+pub enum ConfigError {
+    /// The file is there, but cannot be read, so it sets nothing.
+    Unreadable {
+        /// The file.
+        path: PathBuf,
+        /// Why it cannot be read.
+        error: Arc<io::Error>,
+    },
+    /// The configuration did not compile, so it sets nothing.
     Compile(Diagnostics),
-    /// The configuration raised an error while running.
+    /// The configuration raised an error while running, so it sets nothing.
     Run(FrostError),
-    /// The configuration exports a name that is no setting.
-    UnknownExport(String),
-    /// A setting is neither a String nor a Function.
-    WrongType {
-        setting: Setting,
-        type_name: &'static str,
-    },
-    /// A prompt function raised an error, perhaps by exceeding its limits.
-    PromptFailed { setting: Setting, error: FrostError },
-    /// A prompt function returned something other than a String.
-    PromptNotString {
-        setting: Setting,
-        type_name: &'static str,
-    },
+    /// The `session` section is wrong, so it sets nothing, or a module it
+    /// preloads failed to import.
+    Session(SessionProblem),
 }
 
-impl fmt::Display for Problem {
+impl fmt::Display for ConfigError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Self::Unreadable { path, error } => write!(
@@ -424,30 +193,52 @@ impl fmt::Display for Problem {
                 "Error: the REPL configuration failed: {}",
                 error.with_backtrace()
             ),
-            Self::UnknownExport(name) => write!(
+            Self::Session(problem) => write!(f, "{problem}"),
+        }
+    }
+}
+
+impl std::error::Error for ConfigError {
+    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+        match self {
+            Self::Unreadable { error, .. } => Some(&**error),
+            Self::Compile(diagnostics) => Some(diagnostics),
+            Self::Run(error) => Some(error),
+            Self::Session(_) => None,
+        }
+    }
+}
+
+/// What is wrong with the [config file](crate::Repl#config-file)'s `session`
+/// section; [`Display`](fmt::Display) says what.
+#[derive(Debug, Clone)]
+pub struct SessionProblem(Problem);
+
+#[derive(Debug, Clone)]
+enum Problem {
+    /// The section does not hold the settings, as their types say.
+    Invalid(FrostError),
+    /// A module to preload failed to import.
+    PreloadFailed { name: String, error: FrostError },
+}
+
+impl From<Problem> for ConfigError {
+    fn from(problem: Problem) -> Self {
+        Self::Session(SessionProblem(problem))
+    }
+}
+
+impl fmt::Display for SessionProblem {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match &self.0 {
+            Problem::Invalid(error) => write!(
                 f,
-                "Warning: the REPL configuration exports `{name}`, which is not a setting; \
-                 the settings are `prompt` and `continuation_prompt`"
+                "Warning: the REPL configuration's `{SESSION}` sets nothing: {error}"
             ),
-            Self::WrongType { setting, type_name } => write!(
+            Problem::PreloadFailed { name, error } => write!(
                 f,
-                "Warning: the REPL configuration's `{}` must be a String or a Function, got \
-                 {type_name}; {} is used instead",
-                setting.name(),
-                setting.default_description()
-            ),
-            Self::PromptFailed { setting, error } => write!(
-                f,
-                "Error: `{}` failed, so {} is used from now on: {}",
-                setting.name(),
-                setting.default_description(),
+                "Error: the REPL configuration's `session.preload.{name}` failed to import: {}",
                 error.with_backtrace()
-            ),
-            Self::PromptNotString { setting, type_name } => write!(
-                f,
-                "Error: `{}` must return a String, got {type_name}, so {} is used from now on",
-                setting.name(),
-                setting.default_description()
             ),
         }
     }

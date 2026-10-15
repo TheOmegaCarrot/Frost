@@ -98,7 +98,8 @@ fn help_lists_each_built_in_with_its_arguments_and_summary() {
 :undef <name>...            Remove bindings
 :disassemble <source>       Show the bytecode source compiles to, without running it
 :ast <source>               Show the syntax tree source parses to
-:optimize [<setting>, ...]  Show the optimizations, or set them: `<name>=true|false`, `all`, or `none`";
+:optimize [<setting>, ...]  Show the optimizations, or set them: `<name>=true|false`, `all`, or `none`
+:config reload              Read the config file again";
     assert_eq!(help, expected);
 }
 
