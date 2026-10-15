@@ -25,8 +25,7 @@ mod tests;
 use std::collections::BTreeSet;
 
 use frostlang_parse::ast::{
-    Binding, Destructure, Expr, FormatSegment, MatchArm, MatchPattern, SourceSpan, Spanned,
-    Statement,
+    Binding, Expr, FormatSegment, MatchArm, Pattern, SourceSpan, Spanned, Statement,
 };
 
 use crate::compile::lower::{
@@ -148,11 +147,9 @@ impl Scanner {
         match &statement.node {
             // The right-hand side is evaluated before the binding exists, so a
             // use of the bound name in the rhs is free.
-            Statement::Def {
-                destructure, expr, ..
-            } => {
+            Statement::Def { pattern, expr, .. } => {
                 self.expr(expr);
-                self.destructure(destructure);
+                self.pattern(pattern);
             }
             Statement::Expr(expr) => self.expr(expr),
         }
@@ -267,12 +264,12 @@ impl Scanner {
         self.scope.exit();
     }
 
-    fn pattern(&mut self, pattern: &Spanned<MatchPattern>) {
+    fn pattern(&mut self, pattern: &Spanned<Pattern>) {
         match &pattern.node {
-            MatchPattern::Binding { name, .. } => self.define_binding(&name.node),
+            Pattern::Binding { name, .. } => self.define_binding(&name.node),
             // A value pattern compares against an expression, e.g. `(existing)`.
-            MatchPattern::Value(expr) => self.expr(expr),
-            MatchPattern::Array { elements, rest } => {
+            Pattern::Value(expr) => self.expr(expr),
+            Pattern::Array { elements, rest } => {
                 for element in elements {
                     self.pattern(element);
                 }
@@ -280,7 +277,7 @@ impl Scanner {
                     self.define_binding(&rest.node);
                 }
             }
-            MatchPattern::Map {
+            Pattern::Map {
                 entries,
                 bind_whole,
             } => {
@@ -295,37 +292,11 @@ impl Scanner {
             // Each branch sees only the names in view before the alternative and
             // its own. Every branch binds the same names, so those the last one
             // leaves in view are the alternative's.
-            MatchPattern::Alternative(branches) => {
+            Pattern::Alternative(branches) => {
                 let before = self.scope.checkpoint();
                 for branch in branches {
                     self.scope.rewind(before);
                     self.pattern(branch);
-                }
-            }
-        }
-    }
-
-    fn destructure(&mut self, destructure: &Spanned<Destructure>) {
-        match &destructure.node {
-            Destructure::Binding(binding) => self.define_binding(&binding.node),
-            Destructure::Array { elements, rest } => {
-                for element in elements {
-                    self.destructure(element);
-                }
-                if let Some(rest) = rest {
-                    self.define_binding(&rest.node);
-                }
-            }
-            Destructure::Map {
-                entries,
-                bind_whole,
-            } => {
-                for entry in entries {
-                    self.expr(&entry.node.key);
-                    self.destructure(&entry.node.destructure);
-                }
-                if let Some(whole) = bind_whole {
-                    self.define_binding(&whole.node);
                 }
             }
         }

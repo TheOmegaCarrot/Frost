@@ -60,13 +60,14 @@ impl FunctionBuilder<'_> {
             // A compile-time-known binding is fold-eligible, and propagated as its
             // constant. A known value that cannot be a constant, such as a
             // function, is still loaded from the local, but a fold can use it.
+            // So is a pending one (see `Locals::mark_pending`).
             let constant = self.locals.constant(id);
             let load = constant
                 .and_then(|value| value_to_ir(value.clone()))
                 .unwrap_or(Ir::LoadLocal(id));
             return Ok(ExprFragment {
                 code: vec![load],
-                foldable: constant.is_some(),
+                foldable: constant.is_some() || self.locals.is_pending(id),
             });
         }
         if let Some(slot) = global_slot(name) {

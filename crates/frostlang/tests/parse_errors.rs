@@ -74,10 +74,11 @@ fn parse_error_keeps_its_help() {
 
 #[test]
 fn parse_error_preserves_the_labeled_span() {
-    // `def 5 = 1`: the parser labels the offending token. The lift keeps that
-    // label, so it renders pointing at the `5` in the snippet.
-    let rendered = errors("def 5 = 1").render_plain();
-    assert!(rendered.contains("def 5 = 1"), "snippet shown:\n{rendered}");
+    // `def + = 1`: the parser labels the offending token, which cannot start a
+    // pattern. The lift keeps that label, so it renders pointing at the `+` in
+    // the snippet.
+    let rendered = errors("def + = 1").render_plain();
+    assert!(rendered.contains("def + = 1"), "snippet shown:\n{rendered}");
     assert!(
         rendered.contains("unexpected"),
         "the parser's label text is preserved:\n{rendered}"
@@ -93,7 +94,7 @@ fn multiple_labels_survive_the_lift() {
     // Some parser diagnostics attach more than one label; the lift makes the
     // first primary and keeps the rest. This just asserts the render is
     // well-formed and framed for a multi-token error.
-    let rendered = errors("def 5 = 1").render_plain();
+    let rendered = errors("def + = 1").render_plain();
     assert!(rendered.contains("script.frst"));
     assert!(
         rendered.contains("`----"),

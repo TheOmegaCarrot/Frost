@@ -755,7 +755,7 @@ mod errors {
         ";
         assert_eq!(
             parse_err_message(source),
-            "expected a name, `[`, or `{`, but found `$3`"
+            "expected a pattern, but found `$3`"
         );
     }
 

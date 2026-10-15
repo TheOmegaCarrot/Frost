@@ -1,4 +1,4 @@
-use crate::ast::{Binding, Destructure, Expr, SourceSpan, Spanned, Statement};
+use crate::ast::{Binding, Expr, Pattern, SourceSpan, Spanned, Statement};
 use crate::lex::Token;
 use crate::parse::{Diagnostic, ParseResult, ctx::ParseCtx};
 
@@ -112,9 +112,12 @@ impl<'src> ParseCtx<'src> {
 
         self.expect(Token::KwDef)?;
 
-        let destructure = self.parse_destructure()?;
+        let pattern = self.parse_pattern()?;
 
-        if let Destructure::Binding(binding) = &destructure.node
+        if let Pattern::Binding {
+            name: binding,
+            type_constraint: None,
+        } = &pattern.node
             && let Binding::Named(name) = &binding.node
             && let Some(open) = self.peek()
             && open.token == Token::OpenParen
@@ -135,7 +138,7 @@ impl<'src> ParseCtx<'src> {
         Ok(Spanned::new(
             Statement::Def {
                 exported,
-                destructure,
+                pattern,
                 expr,
             },
             (start..end).into(),
@@ -183,8 +186,11 @@ impl<'src> ParseCtx<'src> {
         Ok(Spanned::new(
             Statement::Def {
                 exported,
-                destructure: Spanned::new(
-                    Destructure::Binding(Spanned::new(Binding::Named(name), name_span)),
+                pattern: Spanned::new(
+                    Pattern::Binding {
+                        name: Spanned::new(Binding::Named(name), name_span),
+                        type_constraint: None,
+                    },
                     name_span,
                 ),
                 expr,

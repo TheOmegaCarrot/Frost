@@ -1092,69 +1092,69 @@ fn type_tests_from_other_languages() {
     ]);
 }
 
-// Outside a `match` pattern, a type is tested with a function.
+// Outside a pattern, a type is tested with a function.
 #[test]
 fn type_tests_outside_a_match() {
     assert_help(&[
         (
             "x is None",
-            "`is` works only in a `match` pattern; elsewhere, use `is_null(x)`",
+            "`is` works only in a pattern; elsewhere, use `is_null(x)`",
         ),
         (
             "x is not None",
-            "`is` works only in a `match` pattern; elsewhere, use `not is_null(x)`",
+            "`is` works only in a pattern; elsewhere, use `not is_null(x)`",
         ),
         (
             "if x is Int: 1",
-            "`is` works only in a `match` pattern; elsewhere, use `is_int(x)`",
+            "`is` works only in a pattern; elsewhere, use `is_int(x)`",
         ),
         (
             "if x is not Int: 1",
-            "`is` works only in a `match` pattern; elsewhere, use `not is_int(x)`",
+            "`is` works only in a pattern; elsewhere, use `not is_int(x)`",
         ),
         (
             "def ok = n is String",
-            "`is` works only in a `match` pattern; elsewhere, use `is_string(n)`",
+            "`is` works only in a pattern; elsewhere, use `is_string(n)`",
         ),
         // The name before `is` is echoed only when it is the whole value tested.
         (
             "if m.k is Int: 1",
-            "`is` works only in a `match` pattern; elsewhere, use `is_int(x)`",
+            "`is` works only in a pattern; elsewhere, use `is_int(x)`",
         ),
         (
             "def r = m.k is Int",
-            "`is` works only in a `match` pattern; elsewhere, use `is_int(x)`",
+            "`is` works only in a pattern; elsewhere, use `is_int(x)`",
         ),
         (
             "if a + b is Int: 1",
-            "`is` works only in a `match` pattern; elsewhere, use `is_int(x)`",
+            "`is` works only in a pattern; elsewhere, use `is_int(x)`",
         ),
         // `and`, `or`, and `not` bind loosely, so the name after one is the whole value.
         (
             "if x and a is Int: 1",
-            "`is` works only in a `match` pattern; elsewhere, use `is_int(a)`",
+            "`is` works only in a pattern; elsewhere, use `is_int(a)`",
         ),
         (
             "if not a is Int: 1",
-            "`is` works only in a `match` pattern; elsewhere, use `is_int(a)`",
+            "`is` works only in a pattern; elsewhere, use `is_int(a)`",
         ),
         (
             "if a or b is Int: 1",
-            "`is` works only in a `match` pattern; elsewhere, use `is_int(b)`",
+            "`is` works only in a pattern; elsewhere, use `is_int(b)`",
         ),
         (
             "x is Number",
-            "`is` works only in a `match` pattern; elsewhere, test a type with a function \
+            "`is` works only in a pattern; elsewhere, test a type with a function \
              like `is_int(x)`",
         ),
         // Python's identity test
         (
             "a is b",
-            "`is` works only in a `match` pattern; to compare values, use `==` or `!=`",
+            "`is` works only in a pattern; to compare values, use `==` or `!=`",
         ),
         (
             "if a is not b: 1",
-            "`is` works only in a `match` pattern; to compare values, use `==` or `!=`",
+            "`is` works only in a pattern; to compare values, use `==` or `!=`",
         ),
     ]);
 }

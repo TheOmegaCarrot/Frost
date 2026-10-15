@@ -64,6 +64,8 @@ pub(super) struct Locals {
     used: Vec<bool>,
     live: Vec<LocalId>,
     marks: Vec<usize>,
+    // The pending locals: see `mark_pending`.
+    pending: Vec<LocalId>,
 }
 
 impl Locals {
@@ -151,6 +153,40 @@ impl Locals {
     /// The compile-time value of a local, if it is known.
     pub(super) fn constant(&self, id: LocalId) -> Option<&Value> {
         self.info(id).constant.as_ref()
+    }
+
+    /// Record a local's compile-time value, for the lookups compiled after it.
+    pub(super) fn set_constant(&mut self, id: LocalId, value: Value) {
+        self.infos[id.0].constant = Some(value);
+    }
+
+    /// Mark a local pending: its value is compile-time known, but only once the
+    /// code that defines it has run, as for a part of a known value a pattern
+    /// binds. Code that reads it and defines it too can be evaluated alone.
+    pub(super) fn mark_pending(&mut self, id: LocalId) {
+        self.pending.push(id);
+    }
+
+    pub(super) fn is_pending(&self, id: LocalId) -> bool {
+        self.pending.contains(&id)
+    }
+
+    /// End the pending state of `ids`.
+    pub(super) fn settle(&mut self, ids: &[LocalId]) {
+        self.pending.retain(|id| !ids.contains(id));
+    }
+
+    /// Whether `code` reads a pending local it does not define, so that it
+    /// cannot be evaluated alone.
+    pub(super) fn reads_pending(&self, code: &[Ir]) -> bool {
+        let defines = |id| {
+            code.iter()
+                .any(|ir| matches!(ir, Ir::DefLocal(defined) if *defined == id))
+        };
+        code.iter().any(|ir| match ir {
+            Ir::LoadLocal(id) => self.is_pending(*id) && !defines(*id),
+            _ => false,
+        })
     }
 
     /// Whether a local is exported: its slot is read once the function finishes.

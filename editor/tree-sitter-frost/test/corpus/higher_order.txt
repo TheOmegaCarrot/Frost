@@ -12,7 +12,10 @@ def d = reduce b init: 0 with fn (acc, x) -> { acc + x }
 (source_file
   (definition
     (kw_def)
-    (identifier)
+    (pattern
+      (pattern_atom
+        (binding_pattern
+          (identifier))))
     (or_expression
       (and_expression
         (equality_expression
@@ -69,7 +72,10 @@ def d = reduce b init: 0 with fn (acc, x) -> { acc + x }
                                                                   (integer)))))))))))))))))))))))))))))))))
   (definition
     (kw_def)
-    (identifier)
+    (pattern
+      (pattern_atom
+        (binding_pattern
+          (identifier))))
     (or_expression
       (and_expression
         (equality_expression
@@ -126,7 +132,10 @@ def d = reduce b init: 0 with fn (acc, x) -> { acc + x }
                                                                   (integer)))))))))))))))))))))))))))))))))
   (definition
     (kw_def)
-    (identifier)
+    (pattern
+      (pattern_atom
+        (binding_pattern
+          (identifier))))
     (or_expression
       (and_expression
         (equality_expression
@@ -161,7 +170,10 @@ def d = reduce b init: 0 with fn (acc, x) -> { acc + x }
                                           (identifier)))))))))))))))))))))
   (definition
     (kw_def)
-    (identifier)
+    (pattern
+      (pattern_atom
+        (binding_pattern
+          (identifier))))
     (or_expression
       (and_expression
         (equality_expression

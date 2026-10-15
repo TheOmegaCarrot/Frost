@@ -954,8 +954,8 @@ fn a_named_lambdas_own_name_is_never_linted() {
 #[test]
 fn an_underscore_is_never_linted() {
     assert_unused_cases(&[
-        ("def _ = 1\n0", &[]),
-        ("def [_, _] = [1, 2]\n0", &[]),
+        ("def [_, a] = [1, 2]\na", &[]),
+        ("def [_, _, a] = [1, 2, 3]\na", &[]),
         ("def [a, _] = [1, 2]\na", &[]),
         ("match 1 {\n_ => 0,\n}", &[]),
         ("match [1, 2] {\n[_, ...rest] => rest,\n}", &[]),

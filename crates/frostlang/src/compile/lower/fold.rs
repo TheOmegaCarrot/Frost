@@ -29,7 +29,7 @@ use std::sync::Arc;
 
 use crate::bytecode::{Bytecode, CompiledFunction};
 use crate::compile::lower::assemble::assemble_code;
-use crate::compile::lower::{ExprFragment, FunctionBuilder, Ir};
+use crate::compile::lower::{ExprFragment, FunctionBuilder, Ir, LocalId};
 use crate::{Arity, IdleVm, MapKey, Value, ValueMap, Vm, VmFactory, VmRuntimeConfiguration};
 
 // TODO: A function is effectful once it loads an impure global, even if branch
@@ -196,6 +196,20 @@ impl FunctionBuilder<'_> {
         (fragment, Some(value))
     }
 
+    /// Evaluate `code`, a foldable `( -- )` fragment that binds `bound`, and
+    /// return each one's value, in order; `None` if the code errors.
+    pub(super) fn fold_bindings(&self, code: Vec<Ir>, bound: &[LocalId]) -> Option<Vec<Value>> {
+        let collect = bound
+            .iter()
+            .map(|id| Ir::LoadLocal(*id))
+            .chain([Ir::Ready(Bytecode::MakeArray(bound.len()))]);
+        let values = self.evaluate(code.into_iter().chain(collect).collect())?;
+        let values = values
+            .as_array()
+            .expect("the fragment's value is the Array of its bindings");
+        Some(values.as_slice().to_vec())
+    }
+
     /// Apply the folding rule (see the module doc) to one node's children: if any
     /// is not foldable, fold each that is. Also returns whether all are foldable.
     pub(super) fn fold_siblings<const N: usize>(
@@ -229,9 +243,13 @@ impl FunctionBuilder<'_> {
     }
 
     /// Assemble a self-contained `( -- v )` fragment and evaluate it on the
-    /// shared fold VM, returning its value, or `None` if there is no fold VM or
-    /// the program errors.
+    /// shared fold VM, returning its value, or `None` if there is no fold VM,
+    /// the fragment [`reads_pending`](crate::compile::lower::locals::Locals::reads_pending), or the program
+    /// errors.
     fn evaluate(&self, code: Vec<Ir>) -> Option<Value> {
+        if self.locals.reads_pending(&code) {
+            return None;
+        }
         // Wrap as a zero-arg top-level function: the runner pushes the closure,
         // which the leading Pop discards; the fragment then leaves the value.
         let mut wrapped = vec![Ir::Ready(Bytecode::Pop)];

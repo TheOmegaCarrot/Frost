@@ -476,17 +476,17 @@ fn keys_may_be_left_out_or_taken_twice() {
         ),
         (
             r"
-            def {} = {a: 1}
-            0
+            def {} as m = {a: 1}
+            m
             ",
-            "0",
+            "{a: 1}",
         ),
         (
             r"
-            def {} = {}
-            0
+            def {} as m = {}
+            m
             ",
-            "0",
+            "{}",
         ),
     ]);
 }
@@ -502,28 +502,28 @@ fn a_discard_still_requires_its_key() {
     )]);
     assert_raises(&[(
         r"
-        def {a: _} = {}
-        0
+        def {a: _, b} = {b: 1}
+        b
         ",
         "no value at key 'a'",
     )]);
 }
 
 #[test]
-fn a_shorthand_underscore_requires_the_key_but_binds_nothing() {
+fn a_shorthand_underscore_requires_the_key_but_binds_no_name() {
     // `{_}` is the String key "_", discarded.
     assert_values(&[
         (
             r#"
-            def {_} = {["_"]: 1}
-            0
+            def {_, x} = {["_"]: 1, x: 0}
+            x
             "#,
             "0",
         ),
         (
             r#"
-            def {_, _} = {["_"]: 1}
-            0
+            def {_, _, x} = {["_"]: 1, x: 0}
+            x
             "#,
             "0",
         ),
@@ -537,8 +537,8 @@ fn a_shorthand_underscore_requires_the_key_but_binds_nothing() {
     ]);
     assert_raises(&[(
         r"
-        def {_} = {a: 1}
-        0
+        def {_, a} = {a: 1}
+        a
         ",
         "no value at key '_'",
     )]);
@@ -549,25 +549,25 @@ fn discards_never_collide() {
     assert_values(&[
         (
             r"
-            def {a: _, b: _} as _ = {a: 1, b: 2}
-            0
+            def {a: _, b: _, c} as _ = {a: 1, b: 2, c: 0}
+            c
             ",
             "0",
         ),
         (
             r"
-            def {a: [_, _], b: {c: _}} = {a: [1, 2], b: {c: 3}}
-            0
+            def {a: [_, _], b: {c: _}, d} = {a: [1, 2], b: {c: 3}, d: 0}
+            d
             ",
             "0",
         ),
         (
             r"
-            def {a: _} as _ = {a: 1}
-            def {a: _} as _ = {a: 2}
-            0
+            def {a: _, b} as _ = {a: 1, b: 3}
+            def {a: _, b: c} as _ = {a: 2, b: 4}
+            [b, c]
             ",
-            "0",
+            "[3, 4]",
         ),
     ]);
 }
@@ -584,16 +584,16 @@ fn as_may_discard_the_whole_map() {
         ),
         (
             r"
-            def {} as _ = {}
-            0
+            def {a, b} as _ = {a: 0, b: 1}
+            b
             ",
-            "0",
+            "1",
         ),
     ]);
     assert_raises(&[(
         r"
-        def {} as _ = [1]
-        0
+        def {a} as _ = [1]
+        a
         ",
         "expected a Map",
     )]);
@@ -1126,7 +1126,7 @@ fn entries_are_looked_up_in_source_order() {
 #[test]
 fn a_non_map_raises() {
     for value in ["5", "null", r#""ab""#, "[1]", "x'00'", "plus"] {
-        for pattern in ["{a}", "{}", "{} as m", "{[1]: x}"] {
+        for pattern in ["{a}", "{a: _, b}", "{} as m", "{[1]: x}"] {
             let message = raises(&format!(
                 r"
                 def {pattern} = {value}
@@ -1134,6 +1134,24 @@ fn a_non_map_raises() {
                 "
             ));
             assert!(message.contains("Map"), "{pattern} = {value}: {message}");
+        }
+    }
+}
+
+/// An empty Map pattern nested beside a bound name still requires a Map.
+#[test]
+fn a_nested_empty_map_pattern_still_requires_a_map() {
+    for value in ["5", "null", r#""ab""#, "[1]", "x'00'", "plus"] {
+        for pattern in ["[{}, a]", "[a, {}]", "{k: {}, a}"] {
+            let source = match pattern {
+                "{k: {}, a}" => format!("def {pattern} = {{k: {value}, a: 0}}"),
+                _ => format!("def {pattern} = [{value}, {value}]"),
+            };
+            let message = raises(&format!("{source}\n0"));
+            assert!(
+                message.contains("Cannot destructure: expected a Map"),
+                "{pattern} = {value}: {message}"
+            );
         }
     }
 }
@@ -1468,7 +1486,7 @@ fn a_block_whose_computed_key_is_invalid_is_left_for_runtime() {
 fn a_block_whose_value_is_not_a_map_is_left_for_runtime() {
     let source = r"
         do {
-            def {} = [1]
+            def {a} = [1]
             5
         }
     ";

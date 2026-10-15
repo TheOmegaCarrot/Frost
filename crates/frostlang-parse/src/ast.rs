@@ -99,15 +99,15 @@ impl Program {
 #[derive(Clone, Debug, PartialEq, Serialize)]
 #[serde(tag = "type", content = "value")]
 pub enum Statement {
-    /// `def name = expr` or `export def name = expr`
+    /// `def pattern = expr` or `export def pattern = expr`
     ///
     /// `defn name(params) -> body` (optionally `export`ed) also produces this variant,
     /// as `def name = fn name(params) -> body`.
     Def {
         /// Whether the definition is prefixed with `export`.
         exported: bool,
-        /// The binding target left of `=`.
-        destructure: Spanned<Destructure>,
+        /// The pattern left of `=`.
+        pattern: Spanned<Pattern>,
         /// The value right of `=`.
         expr: Spanned<Expr>,
     },
@@ -366,17 +366,19 @@ pub enum FormatSegment {
 #[derive(Clone, Debug, PartialEq, Serialize)]
 pub struct MatchArm {
     /// The pattern.
-    pub pattern: Spanned<MatchPattern>,
+    pub pattern: Spanned<Pattern>,
     /// The `if:` guard; `None` when omitted.
     pub guard: Option<Spanned<Expr>>,
     /// The arm's value when it matches.
     pub result: Spanned<Expr>,
 }
 
-/// A pattern in a [`MatchArm`].
+// -- Patterns --
+
+/// A pattern: the left side of a [`Statement::Def`], or of a [`MatchArm`].
 #[derive(Clone, Debug, PartialEq, Serialize)]
 #[serde(tag = "type", content = "value")]
-pub enum MatchPattern {
+pub enum Pattern {
     /// `name` or `name is Type` or `_` or `_ is Type`.
     Binding {
         /// The bound name, or `_`.
@@ -384,12 +386,12 @@ pub enum MatchPattern {
         /// The type after `is`; `None` when omitted.
         type_constraint: Option<Spanned<TypeConstraint>>,
     },
-    /// `(expr)` or a literal: compare by value.
+    /// `(expr)`, a literal, or a format string: compare by value.
     Value(Spanned<Expr>),
     /// `[p1, p2, ...rest]`
     Array {
         /// The element patterns, before any rest.
-        elements: Vec<Spanned<MatchPattern>>,
+        elements: Vec<Spanned<Pattern>>,
         /// The `...rest` binding; `None` when omitted.
         rest: Option<Spanned<Binding>>,
     },
@@ -401,22 +403,22 @@ pub enum MatchPattern {
         bind_whole: Option<Spanned<Binding>>,
     },
     /// `p1 | p2 | p3`
-    Alternative(Vec<Spanned<MatchPattern>>),
+    Alternative(Vec<Spanned<Pattern>>),
 }
 
-/// One `key: pattern` entry of a [`MatchPattern::Map`].
+/// One `key: pattern` entry of a [`Pattern::Map`].
 ///
 /// The shorthand `name` (or `name is Type`) is represented as the String key `"name"`
-/// with a [`MatchPattern::Binding`] of `name`.
+/// with a [`Pattern::Binding`] of `name`.
 #[derive(Clone, Debug, PartialEq, Serialize)]
 pub struct MapPatternEntry {
     /// The key; a bare `name` key is a String literal.
     pub key: Spanned<Expr>,
     /// The pattern the entry's value must match.
-    pub pattern: Spanned<MatchPattern>,
+    pub pattern: Spanned<Pattern>,
 }
 
-/// The type named after `is` in a [`MatchPattern::Binding`].
+/// The type named after `is` in a [`Pattern::Binding`].
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize)]
 pub enum TypeConstraint {
     /// `is Null`
@@ -449,40 +451,4 @@ pub enum TypeConstraint {
     Flat,
     /// `is Nonnull`
     Nonnull,
-}
-
-// -- Destructuring (for `def`) --
-
-/// The binding target of a [`Statement::Def`].
-#[derive(Clone, Debug, PartialEq, Serialize)]
-#[serde(tag = "type", content = "value")]
-pub enum Destructure {
-    /// `def name = ...`
-    Binding(Spanned<Binding>),
-    /// `def [a, b, ...rest] = ...`
-    Array {
-        /// The element targets, before any rest.
-        elements: Vec<Spanned<Destructure>>,
-        /// The `...rest` binding; `None` when omitted.
-        rest: Option<Spanned<Binding>>,
-    },
-    /// `def {key: name, ...} as whole? = ...`
-    Map {
-        /// The entries.
-        entries: Vec<Spanned<MapDestructureEntry>>,
-        /// The `as` binding for the whole Map; `None` when omitted.
-        bind_whole: Option<Spanned<Binding>>,
-    },
-}
-
-/// One `key: target` entry of a [`Destructure::Map`].
-///
-/// The shorthand `name` is represented as the String key `"name"`
-/// with a [`Destructure::Binding`] of `name`.
-#[derive(Clone, Debug, PartialEq, Serialize)]
-pub struct MapDestructureEntry {
-    /// The key; a bare `name` key is a String literal.
-    pub key: Spanned<Expr>,
-    /// The target the entry's value binds to.
-    pub destructure: Spanned<Destructure>,
 }

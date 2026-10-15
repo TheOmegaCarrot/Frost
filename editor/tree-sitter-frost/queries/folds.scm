@@ -6,8 +6,8 @@
   (no_nl_arguments)
   (array_literal)
   (map_literal)
-  (array_destructure_pattern)
-  (map_destructure_pattern)
+  (array_pattern)
+  (map_pattern)
   (triple_string_double)
   (triple_string_single)
 ] @fold

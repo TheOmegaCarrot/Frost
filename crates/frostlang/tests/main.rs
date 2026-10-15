@@ -16,6 +16,7 @@ mod constant_deduplication;
 mod constant_propagation;
 mod consume_locals;
 mod dead_code;
+mod def_patterns;
 mod destructuring_in_blocks;
 mod disassemble;
 mod do_expressions;

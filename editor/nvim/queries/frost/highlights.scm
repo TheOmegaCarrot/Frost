@@ -81,13 +81,10 @@
 (map_entry
   key: (identifier) @property)
 
-(map_destructure_entry
+(map_pattern_entry
   key: (identifier) @property)
 
-(match_map_entry
-  key: (identifier) @property)
-
-(match_type_constraint
+(type_constraint
   type: (identifier) @type)
 
 [

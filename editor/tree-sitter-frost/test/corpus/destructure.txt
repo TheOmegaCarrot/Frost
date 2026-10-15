@@ -1,5 +1,5 @@
 ==================
-array destructure
+def array pattern
 ==================
 
 def [a, b, ...rest] = arr
@@ -9,15 +9,20 @@ def [a, b, ...rest] = arr
 (source_file
   (definition
     (kw_def)
-    (array_destructure_pattern
-      (array_destructure_elements
-        (destructure_name
-          (identifier))
-        (destructure_name
-          (identifier))
-        (rest_pattern
-          (destructure_name
-            (identifier)))))
+    (pattern
+      (pattern_atom
+        (array_pattern
+          (array_pattern_elements
+            (pattern
+              (pattern_atom
+                (binding_pattern
+                  (identifier))))
+            (pattern
+              (pattern_atom
+                (binding_pattern
+                  (identifier))))
+            (rest_pattern
+              (identifier))))))
     (or_expression
       (and_expression
         (equality_expression
@@ -30,7 +35,7 @@ def [a, b, ...rest] = arr
                       (identifier))))))))))))
 
 ==================
-map destructure
+def map pattern with computed key
 ==================
 
 def {foo: bar, [1 + 1]: baz} = m
@@ -40,31 +45,86 @@ def {foo: bar, [1 + 1]: baz} = m
 (source_file
   (definition
     (kw_def)
-    (map_destructure_pattern
-      (map_destructure_entry_list
-        (map_destructure_entry
+    (pattern
+      (pattern_atom
+        (map_pattern
+          (map_pattern_entry_list
+            (map_pattern_entry
+              (identifier)
+              (pattern
+                (pattern_atom
+                  (binding_pattern
+                    (identifier)))))
+            (map_pattern_entry
+              (map_key_expression
+                (or_expression
+                  (and_expression
+                    (equality_expression
+                      (comparison_expression
+                        (sum_expression
+                          (sum_expression
+                            (product_expression
+                              (unary_expression
+                                (postfix_expression
+                                  (primary_expression
+                                    (integer))))))
+                          (product_expression
+                            (unary_expression
+                              (postfix_expression
+                                (primary_expression
+                                  (integer)))))))))))
+              (pattern
+                (pattern_atom
+                  (binding_pattern
+                    (identifier)))))))))
+    (or_expression
+      (and_expression
+        (equality_expression
+          (comparison_expression
+            (sum_expression
+              (product_expression
+                (unary_expression
+                  (postfix_expression
+                    (primary_expression
+                      (identifier))))))))))))
+
+==================
+def type constraint
+==================
+
+def x is Int = 1
+def _ is Int = x
+
+---
+
+(source_file
+  (definition
+    (kw_def)
+    (pattern
+      (pattern_atom
+        (binding_pattern
           (identifier)
-          (destructure_name
-            (identifier)))
-        (map_destructure_entry
-          (map_key_expression
-            (or_expression
-              (and_expression
-                (equality_expression
-                  (comparison_expression
-                    (sum_expression
-                      (sum_expression
-                        (product_expression
-                          (unary_expression
-                            (postfix_expression
-                              (primary_expression
-                                (integer))))))
-                      (product_expression
-                        (unary_expression
-                          (postfix_expression
-                            (primary_expression
-                              (integer)))))))))))
-          (destructure_name
+          (type_constraint
+            (kw_is)
+            (identifier)))))
+    (or_expression
+      (and_expression
+        (equality_expression
+          (comparison_expression
+            (sum_expression
+              (product_expression
+                (unary_expression
+                  (postfix_expression
+                    (primary_expression
+                      (integer)))))))))))
+  (definition
+    (kw_def)
+    (pattern
+      (pattern_atom
+        (binding_pattern
+          (identifier)
+          (type_constraint
+            (kw_is)
             (identifier)))))
     (or_expression
       (and_expression
@@ -78,18 +138,30 @@ def {foo: bar, [1 + 1]: baz} = m
                       (identifier))))))))))))
 
 ==================
-export definitions
+def literal and pin patterns
 ==================
 
-export def out = {ok: true}
+def [a, 1] = xs
+def [-1, -2.5, null, true, 'a', "b"] = xs
+def {name, age: (expected)} = person
 
 ---
 
 (source_file
-  (export_definition
-    (kw_export)
+  (definition
     (kw_def)
-    (identifier)
+    (pattern
+      (pattern_atom
+        (array_pattern
+          (array_pattern_elements
+            (pattern
+              (pattern_atom
+                (binding_pattern
+                  (identifier))))
+            (pattern
+              (pattern_atom
+                (value_pattern
+                  (integer))))))))
     (or_expression
       (and_expression
         (equality_expression
@@ -99,18 +171,365 @@ export def out = {ok: true}
                 (unary_expression
                   (postfix_expression
                     (primary_expression
-                      (map_literal
-                        (map_entries
-                          (map_entry
-                            (identifier)
-                            (or_expression
-                              (and_expression
-                                (equality_expression
-                                  (comparison_expression
-                                    (sum_expression
-                                      (product_expression
-                                        (unary_expression
-                                          (postfix_expression
-                                            (primary_expression
-                                              (boolean
-                                                (kw_true)))))))))))))))))))))))))
+                      (identifier)))))))))))
+  (definition
+    (kw_def)
+    (pattern
+      (pattern_atom
+        (array_pattern
+          (array_pattern_elements
+            (pattern
+              (pattern_atom
+                (value_pattern
+                  (integer))))
+            (pattern
+              (pattern_atom
+                (value_pattern
+                  (float))))
+            (pattern
+              (pattern_atom
+                (value_pattern
+                  (null
+                    (kw_null)))))
+            (pattern
+              (pattern_atom
+                (value_pattern
+                  (boolean
+                    (kw_true)))))
+            (pattern
+              (pattern_atom
+                (value_pattern
+                  (single_string))))
+            (pattern
+              (pattern_atom
+                (value_pattern
+                  (double_string))))))))
+    (or_expression
+      (and_expression
+        (equality_expression
+          (comparison_expression
+            (sum_expression
+              (product_expression
+                (unary_expression
+                  (postfix_expression
+                    (primary_expression
+                      (identifier)))))))))))
+  (definition
+    (kw_def)
+    (pattern
+      (pattern_atom
+        (map_pattern
+          (map_pattern_entry_list
+            (map_pattern_entry
+              (identifier))
+            (map_pattern_entry
+              (identifier)
+              (pattern
+                (pattern_atom
+                  (value_pattern
+                    (or_expression
+                      (and_expression
+                        (equality_expression
+                          (comparison_expression
+                            (sum_expression
+                              (product_expression
+                                (unary_expression
+                                  (postfix_expression
+                                    (primary_expression
+                                      (identifier))))))))))))))))))
+    (or_expression
+      (and_expression
+        (equality_expression
+          (comparison_expression
+            (sum_expression
+              (product_expression
+                (unary_expression
+                  (postfix_expression
+                    (primary_expression
+                      (identifier))))))))))))
+
+==================
+def map shorthand and constraints
+==================
+
+def {host is String, port is Int} = config
+def {version: 2, data} = load(path)
+
+---
+
+(source_file
+  (definition
+    (kw_def)
+    (pattern
+      (pattern_atom
+        (map_pattern
+          (map_pattern_entry_list
+            (map_pattern_entry
+              (identifier)
+              (type_constraint
+                (kw_is)
+                (identifier)))
+            (map_pattern_entry
+              (identifier)
+              (type_constraint
+                (kw_is)
+                (identifier)))))))
+    (or_expression
+      (and_expression
+        (equality_expression
+          (comparison_expression
+            (sum_expression
+              (product_expression
+                (unary_expression
+                  (postfix_expression
+                    (primary_expression
+                      (identifier)))))))))))
+  (definition
+    (kw_def)
+    (pattern
+      (pattern_atom
+        (map_pattern
+          (map_pattern_entry_list
+            (map_pattern_entry
+              (identifier)
+              (pattern
+                (pattern_atom
+                  (value_pattern
+                    (integer)))))
+            (map_pattern_entry
+              (identifier))))))
+    (or_expression
+      (and_expression
+        (equality_expression
+          (comparison_expression
+            (sum_expression
+              (product_expression
+                (unary_expression
+                  (postfix_expression
+                    (postfix_expression
+                      (primary_expression
+                        (identifier)))
+                    (no_nl_arguments
+                      (no_nl_call_open)
+                      (argument_list
+                        (or_expression
+                          (and_expression
+                            (equality_expression
+                              (comparison_expression
+                                (sum_expression
+                                  (product_expression
+                                    (unary_expression
+                                      (postfix_expression
+                                        (primary_expression
+                                          (identifier))))))))))))))))))))))
+
+==================
+def alternatives
+==================
+
+def {kind: 'a' | 'b', x} = v
+def [a] | a = v
+
+---
+
+(source_file
+  (definition
+    (kw_def)
+    (pattern
+      (pattern_atom
+        (map_pattern
+          (map_pattern_entry_list
+            (map_pattern_entry
+              (identifier)
+              (pattern
+                (pattern_atom
+                  (value_pattern
+                    (single_string)))
+                (pattern_atom
+                  (value_pattern
+                    (single_string)))))
+            (map_pattern_entry
+              (identifier))))))
+    (or_expression
+      (and_expression
+        (equality_expression
+          (comparison_expression
+            (sum_expression
+              (product_expression
+                (unary_expression
+                  (postfix_expression
+                    (primary_expression
+                      (identifier)))))))))))
+  (definition
+    (kw_def)
+    (pattern
+      (pattern_atom
+        (array_pattern
+          (array_pattern_elements
+            (pattern
+              (pattern_atom
+                (binding_pattern
+                  (identifier)))))))
+      (pattern_atom
+        (binding_pattern
+          (identifier))))
+    (or_expression
+      (and_expression
+        (equality_expression
+          (comparison_expression
+            (sum_expression
+              (product_expression
+                (unary_expression
+                  (postfix_expression
+                    (primary_expression
+                      (identifier))))))))))))
+
+==================
+def nested map with whole binding
+==================
+
+def {a: {b}} as whole = m
+
+---
+
+(source_file
+  (definition
+    (kw_def)
+    (pattern
+      (pattern_atom
+        (map_pattern
+          (map_pattern_entry_list
+            (map_pattern_entry
+              (identifier)
+              (pattern
+                (pattern_atom
+                  (map_pattern
+                    (map_pattern_entry_list
+                      (map_pattern_entry
+                        (identifier))))))))
+          (kw_as)
+          (identifier))))
+    (or_expression
+      (and_expression
+        (equality_expression
+          (comparison_expression
+            (sum_expression
+              (product_expression
+                (unary_expression
+                  (postfix_expression
+                    (primary_expression
+                      (identifier))))))))))))
+
+==================
+def format string pattern
+==================
+
+def [$'x${y}', z] = w
+
+---
+
+(source_file
+  (definition
+    (kw_def)
+    (pattern
+      (pattern_atom
+        (array_pattern
+          (array_pattern_elements
+            (pattern
+              (pattern_atom
+                (value_pattern
+                  (format_string_single
+                    (format_content_single)
+                    (format_placeholder
+                      (or_expression
+                        (and_expression
+                          (equality_expression
+                            (comparison_expression
+                              (sum_expression
+                                (product_expression
+                                  (unary_expression
+                                    (postfix_expression
+                                      (primary_expression
+                                        (identifier)))))))))))))))
+            (pattern
+              (pattern_atom
+                (binding_pattern
+                  (identifier))))))))
+    (or_expression
+      (and_expression
+        (equality_expression
+          (comparison_expression
+            (sum_expression
+              (product_expression
+                (unary_expression
+                  (postfix_expression
+                    (primary_expression
+                      (identifier))))))))))))
+
+==================
+export def with match patterns
+==================
+
+export def {name, age: (expected)} = person
+export def [first, ...rest] = xs
+
+---
+
+(source_file
+  (export_definition
+    (kw_export)
+    (kw_def)
+    (pattern
+      (pattern_atom
+        (map_pattern
+          (map_pattern_entry_list
+            (map_pattern_entry
+              (identifier))
+            (map_pattern_entry
+              (identifier)
+              (pattern
+                (pattern_atom
+                  (value_pattern
+                    (or_expression
+                      (and_expression
+                        (equality_expression
+                          (comparison_expression
+                            (sum_expression
+                              (product_expression
+                                (unary_expression
+                                  (postfix_expression
+                                    (primary_expression
+                                      (identifier))))))))))))))))))
+    (or_expression
+      (and_expression
+        (equality_expression
+          (comparison_expression
+            (sum_expression
+              (product_expression
+                (unary_expression
+                  (postfix_expression
+                    (primary_expression
+                      (identifier)))))))))))
+  (export_definition
+    (kw_export)
+    (kw_def)
+    (pattern
+      (pattern_atom
+        (array_pattern
+          (array_pattern_elements
+            (pattern
+              (pattern_atom
+                (binding_pattern
+                  (identifier))))
+            (rest_pattern
+              (identifier))))))
+    (or_expression
+      (and_expression
+        (equality_expression
+          (comparison_expression
+            (sum_expression
+              (product_expression
+                (unary_expression
+                  (postfix_expression
+                    (primary_expression
+                      (identifier))))))))))))

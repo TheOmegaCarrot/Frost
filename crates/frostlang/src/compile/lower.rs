@@ -2,7 +2,6 @@ mod assemble;
 mod binary_operations;
 mod call_expression;
 mod def;
-mod destructure;
 mod do_expression;
 mod fold;
 mod format_string;
@@ -14,6 +13,7 @@ mod lambda_expression;
 mod locals;
 mod match_expression;
 mod passes;
+mod pattern;
 mod prewalk;
 mod simple_expressions;
 mod structure_literals;
@@ -385,9 +385,9 @@ impl FunctionBuilder<'_> {
         match &stmt.node {
             Statement::Def {
                 exported,
-                destructure,
+                pattern,
                 expr,
-            } => self.compile_def(expr, destructure, *exported),
+            } => self.compile_def(expr, pattern, *exported),
             // A bare expression is a fold point. In tail position its value is
             // kept; otherwise it is evaluated for effect and dropped.
             Statement::Expr(expr) => {

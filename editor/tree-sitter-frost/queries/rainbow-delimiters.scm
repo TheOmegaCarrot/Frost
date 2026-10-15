@@ -21,11 +21,11 @@
   "{" @delimiter
   "}" @delimiter @sentinel) @container
 
-(array_destructure_pattern
+(array_pattern
   "[" @delimiter
   "]" @delimiter @sentinel) @container
 
-(map_destructure_pattern
+(map_pattern
   "{" @delimiter
   "}" @delimiter @sentinel) @container
 

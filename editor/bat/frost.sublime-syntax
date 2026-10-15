@@ -49,8 +49,8 @@ contexts:
     - match: '(?<=[{,])\s*\b({{ident}})\b(?=\s*:)'
       captures:
         1: support.type.property-name.frost
-    # Inline shorthand entries: { foo } or { foo, bar }
-    - match: '(?<=[{,])\s*\b({{ident}})\b(?=\s*[,}])'
+    # Inline shorthand entries: { foo }, { foo, bar }, or a pattern { foo is Int }
+    - match: '(?<=[{,])\s*\b({{ident}})\b(?=\s*[,}]|\s+is\b)'
       captures:
         1: support.type.property-name.frost
     # Multiline entries:
@@ -66,7 +66,7 @@ contexts:
       captures:
         1: support.type.property-name.frost
     # Multiline shorthand entries
-    - match: '^\s*\b({{ident}})\b(?=\s*[,}])'
+    - match: '^\s*\b({{ident}})\b(?=\s*[,}]|\s+is\b)'
       captures:
         1: support.type.property-name.frost
 

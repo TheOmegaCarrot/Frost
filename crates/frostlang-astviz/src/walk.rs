@@ -132,11 +132,11 @@ impl<'a> Walker<'a> {
         match &s.node {
             Statement::Def {
                 exported,
-                destructure,
+                pattern,
                 expr,
             } => {
                 let label = if *exported { "Def (export)" } else { "Def" };
-                let binding = self.destructure(destructure);
+                let binding = self.pattern(pattern);
                 let binding = self.wrap("binding", vec![binding]);
                 let value = self.expr(expr);
                 let value = self.wrap("value", vec![value]);
@@ -349,11 +349,11 @@ impl<'a> Walker<'a> {
         self.ranged(label.to_string(), span, children)
     }
 
-    // -- Match patterns --
+    // -- Patterns --
 
-    fn pattern(&mut self, p: &Spanned<MatchPattern>) -> Node {
+    fn pattern(&mut self, p: &Spanned<Pattern>) -> Node {
         match &p.node {
-            MatchPattern::Binding {
+            Pattern::Binding {
                 name,
                 type_constraint,
             } => {
@@ -363,11 +363,11 @@ impl<'a> Walker<'a> {
                 }
                 self.ranged(label, p.span, vec![])
             }
-            MatchPattern::Value(expr) => {
+            Pattern::Value(expr) => {
                 let inner = self.expr(expr);
                 self.ranged("Value".to_string(), p.span, vec![inner])
             }
-            MatchPattern::Array { elements, rest } => {
+            Pattern::Array { elements, rest } => {
                 let children = elements.iter().map(|el| self.pattern(el)).collect();
                 let mut label = "Array".to_string();
                 if let Some(rest) = rest {
@@ -375,7 +375,7 @@ impl<'a> Walker<'a> {
                 }
                 self.ranged(label, p.span, children)
             }
-            MatchPattern::Map {
+            Pattern::Map {
                 entries,
                 bind_whole,
             } => {
@@ -392,44 +392,9 @@ impl<'a> Walker<'a> {
                 }
                 self.ranged(label, p.span, children)
             }
-            MatchPattern::Alternative(patterns) => {
+            Pattern::Alternative(patterns) => {
                 let children = patterns.iter().map(|pat| self.pattern(pat)).collect();
                 self.ranged("Alternative".to_string(), p.span, children)
-            }
-        }
-    }
-
-    // -- Destructure patterns (def) --
-
-    fn destructure(&mut self, d: &Spanned<Destructure>) -> Node {
-        match &d.node {
-            Destructure::Binding(b) => {
-                self.ranged(format!("Binding {}", binding_str(b)), d.span, vec![])
-            }
-            Destructure::Array { elements, rest } => {
-                let children = elements.iter().map(|el| self.destructure(el)).collect();
-                let mut label = "Array".to_string();
-                if let Some(rest) = rest {
-                    label.push_str(&format!(" ...{}", binding_str(rest)));
-                }
-                self.ranged(label, d.span, children)
-            }
-            Destructure::Map {
-                entries,
-                bind_whole,
-            } => {
-                let mut children = vec![];
-                for ent in entries {
-                    let k = self.expr(&ent.node.key);
-                    let k = self.wrap("key", vec![k]);
-                    let inner = self.destructure(&ent.node.destructure);
-                    children.push(self.wrap("entry", vec![k, inner]));
-                }
-                let mut label = "Map".to_string();
-                if let Some(whole) = bind_whole {
-                    label.push_str(&format!(" as {}", binding_str(whole)));
-                }
-                self.ranged(label, d.span, children)
             }
         }
     }

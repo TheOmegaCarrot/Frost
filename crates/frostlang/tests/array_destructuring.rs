@@ -105,8 +105,8 @@ fn each_element_binds_in_order() {
         ),
         (
             r"
-            def [] = []
-            1
+            def [[], a] = [[], 1]
+            a
             ",
             "1",
         ),
@@ -180,10 +180,10 @@ fn a_discard_skips_a_part() {
         ),
         (
             r"
-            def [_, ..._] = [1, 2, 3]
-            0
+            def [_, a, ..._] = [1, 2, 3]
+            a
             ",
-            "0",
+            "2",
         ),
     ]);
 }
@@ -193,17 +193,17 @@ fn discards_never_collide() {
     assert_values(&[
         (
             r"
-            def [_, _, _] = [1, 2, 3]
-            0
+            def [_, _, _, a] = [1, 2, 3, 4]
+            a
             ",
-            "0",
+            "4",
         ),
         (
             r"
-            def [_, [_, _], ..._] = [1, [2, 3], 4, 5]
-            0
+            def [_, [_, _], a, ..._] = [1, [2, 3], 4, 5]
+            a
             ",
-            "0",
+            "4",
         ),
         (
             r"
@@ -214,11 +214,11 @@ fn discards_never_collide() {
         ),
         (
             r"
-            def [_] = [1]
-            def [_] = [2]
-            0
+            def [_, a] = [1, 3]
+            def [_, b] = [2, 4]
+            [a, b]
             ",
-            "0",
+            "[3, 4]",
         ),
     ]);
 }
@@ -228,15 +228,15 @@ fn a_discarded_rest_may_appear_at_every_level() {
     assert_values(&[
         (
             r"
-            def [..._] = [1, 2]
-            0
+            def [[..._], a] = [[1, 2], 0]
+            a
             ",
             "0",
         ),
         (
             r"
-            def [..._] = []
-            0
+            def [[..._], a] = [[], 0]
+            a
             ",
             "0",
         ),
@@ -367,8 +367,10 @@ fn a_pattern_may_span_lines() {
         ),
         (
             r"def [
-            ] = []
-            0",
+                [],
+                a
+            ] = [[], 0]
+            a",
             "0",
         ),
         (
@@ -530,8 +532,8 @@ fn a_nested_pattern_may_be_empty() {
         ),
         (
             r"
-            def [[[]]] = [[[]]]
-            0
+            def [[[]], a] = [[[]], 0]
+            a
             ",
             "0",
         ),
@@ -1097,8 +1099,8 @@ fn a_wrong_length_raises() {
         ),
         (
             r"
-            def [] = [1]
-            0
+            def [[], a] = [[1], 0]
+            a
             ",
             "exactly 0 elements",
         ),
@@ -1147,13 +1149,15 @@ fn a_non_array_raises() {
 }
 
 #[test]
-fn a_pattern_with_no_elements_still_requires_an_array() {
+/// An Array pattern with no element to bind, nested beside a bound name, still
+/// requires its value to be an Array.
+fn a_nested_array_pattern_with_no_elements_still_requires_an_array() {
     for pattern in ["[]", "[..._]", "[...r]", "[[]]"] {
         for value in ["5", "null", r#""""#, "{}"] {
             let message = raises(&format!(
                 r"
-                def {pattern} = {value}
-                0
+                def [{pattern}, a] = [{value}, 0]
+                a
                 "
             ));
             assert!(message.contains("Array"), "{pattern} = {value}: {message}");

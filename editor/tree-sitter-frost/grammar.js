@@ -51,7 +51,6 @@ module.exports = grammar({
     $.statement,
     $.expression,
     $.literal,
-    $.pattern,
   ],
 
   conflicts: $ => [
@@ -104,51 +103,6 @@ module.exports = grammar({
       field('parameters', $.lambda_parameters_parenthesized),
       '->',
       field('body', choice($.block, $.expression)),
-    ),
-
-    pattern: $ => choice(
-      $.identifier,
-      $.array_destructure_pattern,
-      $.map_destructure_pattern,
-    ),
-
-    array_destructure_pattern: $ => seq(
-      '[',
-      optional(field('elements', $.array_destructure_elements)),
-      ']',
-    ),
-
-    array_destructure_elements: $ => choice(
-      $.rest_pattern,
-      seq(
-        commaSep1NoTrailing($.pattern),
-        optional(seq(',', $.rest_pattern)),
-      ),
-    ),
-
-    rest_pattern: $ => seq('...', field('name', $.identifier)),
-
-    map_destructure_pattern: $ => seq(
-      '{',
-      optional(field('entries', $.map_destructure_entry_list)),
-      '}',
-      optional(seq($.kw_as, field('as', $.identifier))),
-    ),
-
-    map_destructure_entry_list: $ => commaSep1NoTrailing($.map_destructure_entry),
-
-    map_destructure_entry: $ => choice(
-      // Computed key: binding always required.
-      seq(
-        field('key', $.map_key_expression),
-        ':',
-        field('name', $.pattern),
-      ),
-      // Identifier key: explicit binding, or shorthand (key name used as binding).
-      seq(
-        field('key', $.identifier),
-        optional(seq(':', field('name', $.pattern))),
-      ),
     ),
 
     map_key_expression: $ => seq('[', field('expression', $.expression), ']'),
@@ -438,7 +392,7 @@ module.exports = grammar({
     ),
 
     match_arm: $ => seq(
-      field('pattern', $.match_pattern),
+      field('pattern', $.pattern),
       optional(field('guard', $.match_guard)),
       '=>',
       field('result', $.expression),
@@ -452,88 +406,91 @@ module.exports = grammar({
       field('condition', $.expression),
     ),
 
-    match_pattern: $ => seq(
-      $.match_pattern_atom,
-      repeat(seq('|', $.match_pattern_atom)),
+    // Shared by `def` and `match` arms.
+    pattern: $ => seq(
+      $.pattern_atom,
+      repeat(seq('|', $.pattern_atom)),
     ),
 
-    match_pattern_atom: $ => choice(
-      $.match_binding_pattern,
-      $.match_value_pattern,
-      $.match_array_pattern,
-      $.match_map_pattern,
+    pattern_atom: $ => choice(
+      $.binding_pattern,
+      $.value_pattern,
+      $.array_pattern,
+      $.map_pattern,
     ),
 
     // Identifier (or `_` discard) optionally followed by `is TYPE`. Type
-    // names are contextual keywords -- they're parsed as identifiers here
+    // names are contextual keywords: they are parsed as identifiers here
     // and validated by the AST builder.
-    match_binding_pattern: $ => seq(
+    binding_pattern: $ => seq(
       field('name', $.identifier),
-      optional(field('constraint', $.match_type_constraint)),
+      optional(field('constraint', $.type_constraint)),
     ),
 
-    match_type_constraint: $ => seq(
+    type_constraint: $ => seq(
       $.kw_is,
       field('type', $.identifier),
     ),
 
-    // Primitive literal OR a parenthesized expression. The parens
-    // explicitly mark "this is a value to compare against, not a binding".
-    match_value_pattern: $ => choice(
+    // Primitive literal (optionally a negated number) OR a parenthesized
+    // expression. The parens explicitly mark "this is a value to compare
+    // against, not a binding".
+    value_pattern: $ => choice(
       $.literal,
+      seq('-', choice($.integer, $.float)),
       seq('(', field('expression', $.expression), ')'),
     ),
 
-    match_array_pattern: $ => seq(
+    array_pattern: $ => seq(
       '[',
-      optional(field('elements', $.match_array_elements)),
+      optional(field('elements', $.array_pattern_elements)),
       ']',
     ),
 
-    match_array_elements: $ => choice(
-      $.match_rest_pattern,
+    array_pattern_elements: $ => choice(
+      $.rest_pattern,
       seq(
-        $.match_pattern,
-        repeat(seq(',', $.match_pattern)),
-        optional(seq(',', optional($.match_rest_pattern))),
+        $.pattern,
+        repeat(seq(',', $.pattern)),
+        optional(seq(',', optional($.rest_pattern))),
       ),
     ),
 
     // `...name` (named rest) or `..._` (discard rest).
-    match_rest_pattern: $ => seq('...', field('name', $.identifier)),
+    rest_pattern: $ => seq('...', field('name', $.identifier)),
 
-    match_map_pattern: $ => seq(
+    map_pattern: $ => seq(
       '{',
-      optional(field('entries', $.match_map_entry_list)),
+      optional(field('entries', $.map_pattern_entry_list)),
       '}',
       optional(seq($.kw_as, field('as', $.identifier))),
     ),
 
-    match_map_entry_list: $ => seq(
-      $.match_map_entry,
-      repeat(seq(',', $.match_map_entry)),
+    map_pattern_entry_list: $ => seq(
+      $.map_pattern_entry,
+      repeat(seq(',', $.map_pattern_entry)),
       optional(','),
     ),
 
     // Four forms:
-    //   [expr]: pattern         -- computed key
-    //   identifier: pattern     -- named key with explicit pattern
-    //   identifier              -- shorthand: key name doubles as binding
-    //   identifier is TYPE      -- shorthand with type constraint
-    match_map_entry: $ => choice(
+    //   [expr]: pattern         computed key
+    //   identifier: pattern     named key with explicit pattern
+    //   identifier              shorthand: key name doubles as binding
+    //   identifier is TYPE      shorthand with type constraint
+    map_pattern_entry: $ => choice(
       seq(
         field('key', $.map_key_expression),
         ':',
-        field('pattern', $.match_pattern),
+        field('pattern', $.pattern),
       ),
       seq(
         field('key', $.identifier),
         ':',
-        field('pattern', $.match_pattern),
+        field('pattern', $.pattern),
       ),
       seq(
         field('key', $.identifier),
-        field('constraint', $.match_type_constraint),
+        field('constraint', $.type_constraint),
       ),
       field('key', $.identifier),
     ),

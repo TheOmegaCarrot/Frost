@@ -7,8 +7,8 @@
   (no_nl_arguments)
   (array_literal)
   (map_literal)
-  (array_destructure_pattern)
-  (map_destructure_pattern)
+  (array_pattern)
+  (map_pattern)
   (map_key_expression)
   (lambda_parameters_parenthesized)
 ] @indent.begin

@@ -10,9 +10,9 @@ fn assert_match(expr: &Spanned<Expr>) -> (&Spanned<Expr>, &[Spanned<MatchArm>]) 
     }
 }
 
-fn assert_binding(pat: &Spanned<MatchPattern>) -> (&Binding, Option<TypeConstraint>) {
+fn assert_binding(pat: &Spanned<Pattern>) -> (&Binding, Option<TypeConstraint>) {
     match &pat.node {
-        MatchPattern::Binding {
+        Pattern::Binding {
             name,
             type_constraint,
         } => (&name.node, type_constraint.as_ref().map(|tc| tc.node)),
@@ -20,27 +20,23 @@ fn assert_binding(pat: &Spanned<MatchPattern>) -> (&Binding, Option<TypeConstrai
     }
 }
 
-fn assert_value_pattern(pat: &Spanned<MatchPattern>) -> &Spanned<Expr> {
+fn assert_value_pattern(pat: &Spanned<Pattern>) -> &Spanned<Expr> {
     match &pat.node {
-        MatchPattern::Value(expr) => expr,
+        Pattern::Value(expr) => expr,
         other => panic!("expected Value pattern, got {other:?}"),
     }
 }
 
-fn assert_array_pattern(
-    pat: &Spanned<MatchPattern>,
-) -> (&[Spanned<MatchPattern>], Option<&Binding>) {
+fn assert_array_pattern(pat: &Spanned<Pattern>) -> (&[Spanned<Pattern>], Option<&Binding>) {
     match &pat.node {
-        MatchPattern::Array { elements, rest } => (elements, rest.as_ref().map(|b| &b.node)),
+        Pattern::Array { elements, rest } => (elements, rest.as_ref().map(|b| &b.node)),
         other => panic!("expected Array pattern, got {other:?}"),
     }
 }
 
-fn assert_map_pattern(
-    pat: &Spanned<MatchPattern>,
-) -> (&[Spanned<MapPatternEntry>], Option<&Binding>) {
+fn assert_map_pattern(pat: &Spanned<Pattern>) -> (&[Spanned<MapPatternEntry>], Option<&Binding>) {
     match &pat.node {
-        MatchPattern::Map {
+        Pattern::Map {
             entries,
             bind_whole,
         } => (entries, bind_whole.as_ref().map(|b| &b.node)),
@@ -48,9 +44,9 @@ fn assert_map_pattern(
     }
 }
 
-fn assert_alternative(pat: &Spanned<MatchPattern>) -> &[Spanned<MatchPattern>] {
+fn assert_alternative(pat: &Spanned<Pattern>) -> &[Spanned<Pattern>] {
     match &pat.node {
-        MatchPattern::Alternative(alts) => alts,
+        Pattern::Alternative(alts) => alts,
         other => panic!("expected Alternative pattern, got {other:?}"),
     }
 }

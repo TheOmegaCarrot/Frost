@@ -10,7 +10,10 @@ def msg2 = $'value=${x}'
 (source_file
   (definition
     (kw_def)
-    (identifier)
+    (pattern
+      (pattern_atom
+        (binding_pattern
+          (identifier))))
     (or_expression
       (and_expression
         (equality_expression
@@ -26,7 +29,10 @@ def msg2 = $'value=${x}'
                           (identifier)))))))))))))
   (definition
     (kw_def)
-    (identifier)
+    (pattern
+      (pattern_atom
+        (binding_pattern
+          (identifier))))
     (or_expression
       (and_expression
         (equality_expression
@@ -52,7 +58,10 @@ def bad = $"${1}"
 (source_file
   (definition
     (kw_def)
-    (identifier)
+    (pattern
+      (pattern_atom
+        (binding_pattern
+          (identifier))))
     (or_expression
       (and_expression
         (equality_expression

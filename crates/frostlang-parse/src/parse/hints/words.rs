@@ -10,7 +10,7 @@ use crate::parse::hints::{
     CALL_HELP, CATCH_ALL_HELP, CONDITIONAL_HELP, ELIF_HELP, LAMBDA_HELP, RETURN_TYPE_HELP, Site,
     bare_name_help, define_function_help, function_form, is_iterative_keyword,
 };
-use crate::parse::match_expr::TYPE_CONSTRAINTS;
+use crate::parse::pattern::TYPE_CONSTRAINTS;
 
 /// Words other languages use to declare a variable.
 const DECLARATION_WORDS: &[&str] = &["let", "var", "const", "local", "val", "mut"];
@@ -304,13 +304,13 @@ impl<'src> Site<'_, 'src> {
                 keyword_name_help(found)
             ));
         }
-        let in_destructure = matches!(kind, Some(Bracket::MapPattern | Bracket::ArrayPattern))
+        let in_pattern = matches!(kind, Some(Bracket::MapPattern | Bracket::ArrayPattern))
             && matches!(
                 self.token_before(self.found),
                 Some(Token::OpenBrace | Token::OpenBracket | Token::Comma | Token::Colon)
             )
             && pattern_name();
-        let names_here = in_destructure
+        let names_here = in_pattern
             || matches!(
                 previous,
                 Some(Token::KwDef | Token::KwDefn | Token::KwFn | Token::DotDotDot | Token::KwAs)
@@ -336,7 +336,7 @@ impl<'src> Site<'_, 'src> {
             // `x not in xs`
             Token::OpNot if self.token_at(1) == Some(&Token::Identifier("in")) => IN_HELP,
             // `x is None`; in a pattern, `is` is Frost's own.
-            Token::KwIs if !self.in_patterns() => return Some(self.type_test_outside_a_match()),
+            Token::KwIs if !self.in_patterns() => return Some(self.type_test_outside_a_pattern()),
             // `_ unless: c => 1`
             Token::Identifier("unless") if self.arm_part() == Some(ArmPart::Pattern) => {
                 "a guard is written `if:`; negate it with `not`, like `_ if: not cond => ...`"
@@ -369,8 +369,8 @@ impl<'src> Site<'_, 'src> {
         Some(help.to_owned())
     }
 
-    /// Help for `is` outside a `match` pattern, as in `x is None` or `x is not Int`.
-    fn type_test_outside_a_match(&self) -> String {
+    /// Help for `is` outside a pattern, as in `x is None` or `x is not Int`.
+    fn type_test_outside_a_pattern(&self) -> String {
         let negated = self.token_at(1) == Some(&Token::OpNot);
         let tested = self.token_at(if negated { 2 } else { 1 });
         let type_name = tested.and_then(|token| match token {
@@ -381,11 +381,11 @@ impl<'src> Site<'_, 'src> {
         let Some(type_name) = type_name else {
             // `a is b`, Python's identity test
             if matches!(tested, Some(Token::Identifier(name)) if !is_type_like(name)) {
-                return "`is` works only in a `match` pattern; to compare values, use `==` \
+                return "`is` works only in a pattern; to compare values, use `==` \
                         or `!=`"
                     .to_owned();
             }
-            return "`is` works only in a `match` pattern; elsewhere, test a type with a \
+            return "`is` works only in a pattern; elsewhere, test a type with a \
                     function like `is_int(x)`"
                 .to_owned();
         };
@@ -405,7 +405,7 @@ impl<'src> Site<'_, 'src> {
         };
         let not = if negated { "not " } else { "" };
         format!(
-            "`is` works only in a `match` pattern; elsewhere, use `{not}is_{}({value})`",
+            "`is` works only in a pattern; elsewhere, use `{not}is_{}({value})`",
             type_name.to_lowercase()
         )
     }

@@ -596,7 +596,7 @@ pub(super) fn starts_an_expression(token: &Token) -> bool {
             ))
 }
 
-/// Whether `token` can start a `match` pattern.
+/// Whether `token` can start a pattern.
 pub(super) fn starts_a_pattern(token: &Token) -> bool {
     is_literal(token)
         || matches!(

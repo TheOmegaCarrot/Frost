@@ -440,8 +440,8 @@ fn a_constant_destructuring_block_folds_whole() {
         "#,
         r"
         do {
-            def [_, ..._] = [1, 2]
-            def {a: _} as _ = {a: 1}
+            def [_, x, ..._] = [1, 2]
+            def {a: _, b} as _ = {a: 1, b: 2}
             5
         }
         ",

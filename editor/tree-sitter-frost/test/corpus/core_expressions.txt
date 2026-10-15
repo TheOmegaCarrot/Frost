@@ -10,7 +10,10 @@ x
 (source_file
   (definition
     (kw_def)
-    (identifier)
+    (pattern
+      (pattern_atom
+        (binding_pattern
+          (identifier))))
     (or_expression
       (and_expression
         (equality_expression
@@ -269,7 +272,10 @@ def a = [1, 2, 3,]
 (source_file
   (definition
     (kw_def)
-    (identifier)
+    (pattern
+      (pattern_atom
+        (binding_pattern
+          (identifier))))
     (or_expression
       (and_expression
         (equality_expression
@@ -323,7 +329,10 @@ def a = [1, 2, 3,]
                                               (integer)))))))))))))))))))))))
   (definition
     (kw_def)
-    (identifier)
+    (pattern
+      (pattern_atom
+        (binding_pattern
+          (identifier))))
     (or_expression
       (and_expression
         (equality_expression
