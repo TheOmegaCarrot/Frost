@@ -32,7 +32,10 @@ impl FunctionBuilder<'_> {
     /// End lowering: package this function's fused IR with its metadata, and
     /// run the IR passes over it. The lints found in it, nested functions'
     /// included, come back beside it, for the enclosing function to take on.
-    pub(super) fn finish(self, code: Vec<Ir>) -> (LoweredFunction, Vec<Diagnostic>) {
+    pub(super) fn finish(mut self, code: Vec<Ir>) -> (LoweredFunction, Vec<Diagnostic>) {
+        if self.lints_on() {
+            self.lint_unused_bindings();
+        }
         let function = LoweredFunction {
             name: self.name,
             origin: self.origin,

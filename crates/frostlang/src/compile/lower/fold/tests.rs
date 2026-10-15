@@ -65,6 +65,7 @@ fn builder<'a>(options: &'a CompilerOptions, fold_vm: &'a FoldVm) -> FunctionBui
         top_level: false,
         effectful: false,
         lints: Vec::new(),
+        abbreviated: None,
     }
 }
 
@@ -293,6 +294,7 @@ fn folding_without_a_fold_vm_leaves_the_fragment_unchanged() {
         top_level: false,
         effectful: false,
         lints: Vec::new(),
+        abbreviated: None,
     };
     let folded = no_fold_vm.fold_if_eligible(arithmetic(Bytecode::Add));
     assert_eq!(

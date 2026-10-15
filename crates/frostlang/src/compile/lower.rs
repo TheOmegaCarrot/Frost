@@ -173,9 +173,11 @@ struct FunctionBuilder<'a> {
     // Whether this function's body loads an impure global. Every effect starts
     // at one, so a function that loads none is safe to call during a fold.
     effectful: bool,
-    // The lints found in this function so far, nested functions' included, in
-    // source order.
+    // The lints found in this function so far, nested functions' included.
     lints: Vec<Diagnostic>,
+    // If this function is an abbreviated lambda not yet linted for holding a
+    // lambda, its span.
+    abbreviated: Option<SourceSpan>,
 }
 
 impl<'a> FunctionBuilder<'a> {
@@ -203,6 +205,7 @@ impl<'a> FunctionBuilder<'a> {
             top_level: false,
             effectful: false,
             lints: Vec::new(),
+            abbreviated: None,
         }
     }
 
@@ -232,9 +235,33 @@ impl<'a> FunctionBuilder<'a> {
             .source(self.filename.to_owned(), self.source.to_owned())
     }
 
+    /// Start advice for the lint `code`, already carrying this function's
+    /// source, for [`lint`](Self::lint) to report.
+    fn advice(&self, code: &str, message: String) -> Diagnostic {
+        Diagnostic::advice(message)
+            .code(code.to_owned())
+            .source(self.filename.to_owned(), self.source.to_owned())
+    }
+
     /// Report `lint`. Unlike an error, it does not stop compilation.
     fn lint(&mut self, lint: Diagnostic) {
         self.lints.push(lint);
+    }
+
+    /// Lint each binding this function never reads.
+    fn lint_unused_bindings(&mut self) {
+        let unused: Vec<(String, SourceSpan)> = self
+            .locals
+            .unused_bindings()
+            .map(|info| (info.name.clone(), info.span))
+            .collect();
+        for (name, span) in unused {
+            let lint = self
+                .warning("unused binding", format!("`{name}` is never used"))
+                .label_primary(span, "bound here".into())
+                .help("remove it, or bind `_` instead".into());
+            self.lint(lint);
+        }
     }
 
     /// The error for binding `name` at `span` in a scope that already binds it
@@ -304,6 +331,7 @@ pub fn compile_in_scope(
         top_level: true,
         effectful: false,
         lints: Vec::new(),
+        abbreviated: None,
     };
 
     // Consume the top-level's own function value (see the calling convention on `Bytecode`).
@@ -316,7 +344,10 @@ pub fn compile_in_scope(
         ir.extend(fn_builder.compile_statement(tail, Position::Tail)?.code);
     }
 
-    let (lowered, lints) = fn_builder.finish(ir);
+    let (lowered, mut lints) = fn_builder.finish(ir);
+    // Each function's lints come after its nested functions', so put them back
+    // in source order.
+    lints.sort_by_key(Diagnostic::offset);
 
     Ok(CompilerOutput {
         code: lowered.assemble().assert_trusted(),

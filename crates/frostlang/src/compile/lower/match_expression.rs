@@ -113,22 +113,12 @@ impl FunctionBuilder<'_> {
         position: Position,
     ) -> Result<ExprFragment, Diagnostics> {
         let target = self.compile_expression(target, Position::Inner)?;
-        // If lints are on, the first arm that matches every value: no value
-        // reaches an arm after it.
-        let catch_all = arms
-            .iter()
-            .position(|arm| self.lints_on() && matches_everything(&arm.node));
+        if self.lints_on() {
+            self.lint_unreachable_arms(arms);
+        }
         let arms = arms
             .iter()
-            .enumerate()
-            .map(|(at, arm)| {
-                // Linted as the arm is reached, so that its lint comes before
-                // any of its own, in source order.
-                if let Some(catch_all) = catch_all.filter(|&catch_all| at > catch_all) {
-                    self.lint_unreachable_arm(arm, arms[catch_all].node.pattern.span);
-                }
-                self.in_scope(|this| this.compile_arm(&arm.node, position))
-            })
+            .map(|arm| self.in_scope(|this| this.compile_arm(&arm.node, position)))
             .collect::<Result<Vec<_>, _>>()?;
 
         // TODO: with a constant target, branch elimination could pick the arm at
@@ -170,21 +160,27 @@ impl FunctionBuilder<'_> {
         })
     }
 
-    /// Lint `arm` as never reached, for following the arm at `catch_all`,
-    /// which matches every value.
-    fn lint_unreachable_arm(&mut self, arm: &Spanned<MatchArm>, catch_all: SourceSpan) {
-        let lint = self
-            .warning(
-                "unreachable match arm",
-                "this match arm is never reached".to_owned(),
-            )
-            .label_primary(arm.node.pattern.span, "never tried".into())
-            .related(
-                Diagnostic::advice("an earlier arm matches every value".to_owned())
-                    .label(catch_all, "matches every value".into()),
-            )
-            .help("remove the arm, or move it before the one that matches everything".into());
-        self.lint(lint);
+    /// Lint each arm after the first that matches every value, which no value
+    /// can reach.
+    fn lint_unreachable_arms(&mut self, arms: &[Spanned<MatchArm>]) {
+        let Some(catch_all) = arms.iter().position(|arm| matches_everything(&arm.node)) else {
+            return;
+        };
+        let catch_all_span = arms[catch_all].node.pattern.span;
+        for arm in &arms[catch_all + 1..] {
+            let lint = self
+                .warning(
+                    "unreachable match arm",
+                    "this match arm is never reached".to_owned(),
+                )
+                .label_primary(arm.node.pattern.span, "never tried".into())
+                .related(
+                    Diagnostic::advice("an earlier arm matches every value".to_owned())
+                        .label(catch_all_span, "matches every value".into()),
+                )
+                .help("remove the arm, or move it before the one that matches everything".into());
+            self.lint(lint);
+        }
     }
 
     /// Compile an arm, in its own scope: its bindings are visible to its guard

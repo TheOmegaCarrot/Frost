@@ -1696,11 +1696,18 @@ match 1 {
 }
 "#;
 
-/// [`LINTED`] without its unreachable arms.
+/// [`LINTED`] without its unreachable arms, and with no unused binding.
 const UNLINTED: &str = r#"
 match 1 {
-    n => print("a")
+    _ => print("a")
 }
+"#;
+
+/// A script that prints `a` and holds one unused binding, which is not an
+/// unreachable arm.
+const UNUSED_BINDING: &str = r#"
+def unused = 1
+print("a")
 "#;
 
 /// [`LINTED`] followed by a runtime error.
@@ -1769,6 +1776,29 @@ fn a_script_with_no_lint_writes_nothing_to_stderr() {
     assert_eq!(ran.stderr, "", "-e: {ran:?}");
     let ran = run_with_stdin("print(1)", &["-"]);
     assert_eq!(ran.stderr, "", "stdin: {ran:?}");
+}
+
+#[test]
+fn run_warns_of_an_unused_binding_and_runs_the_script() {
+    let path = script("lint-unused.frst", UNUSED_BINDING);
+    let ran = run(&["--color", "never", &path]);
+    assert_eq!(ran.exit, Exit::Success, "{ran:?}");
+    assert_eq!(ran.printed(), ["a"], "{ran:?}");
+    assert!(
+        ran.stderr.contains("unused binding"),
+        "names the lint: {}",
+        ran.stderr
+    );
+    assert!(
+        ran.stderr.contains("`unused` is never used"),
+        "names the binding: {}",
+        ran.stderr
+    );
+    assert!(
+        !ran.stderr.contains(LINT),
+        "no unreachable arm: {}",
+        ran.stderr
+    );
 }
 
 #[test]

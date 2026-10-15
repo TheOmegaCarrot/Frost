@@ -52,6 +52,7 @@ fn with_name(options: &CompilerOptions, name: String, arity: Arity) -> FunctionB
         top_level: false,
         effectful: false,
         lints: Vec::new(),
+        abbreviated: None,
     }
 }
 

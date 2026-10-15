@@ -122,6 +122,26 @@ impl FunctionBuilder<'_> {
         &mut self,
         lambda: &Spanned<Expr>,
     ) -> Result<ExprFragment, Diagnostics> {
+        if let Some(outer) = self.abbreviated.take()
+            && self.lints_on()
+        {
+            let lint = self
+                .advice(
+                    "lambda in abbreviated lambda",
+                    "this abbreviated lambda holds a lambda".to_owned(),
+                )
+                // Only its `$(`, so that the label does not hold the other one.
+                .label_primary(
+                    SourceSpan::from(outer.start..outer.start + "$(".len()),
+                    "abbreviated lambda".into(),
+                )
+                .label(lambda.span, "the lambda it holds".into())
+                .help("write it as a `fn` lambda, naming its parameters".into());
+            self.lint(lint);
+        }
+        let abbreviated = matches!(lambda.node, Expr::AbbreviatedLambda { .. });
+        let abbreviated = abbreviated.then_some(lambda.span);
+
         // A free name this function binds is a capture, seated in the order
         // `free_names` finds them; the order is arbitrary, but both sides of the
         // closure must agree on it. Any other free name is the child's to
@@ -157,6 +177,7 @@ impl FunctionBuilder<'_> {
 
         let lambda = NormalizedLambda::new(&lambda.node);
         let mut child = self.child(lambda.name.to_owned(), lambda.arity(), captures, hoisted);
+        child.abbreviated = abbreviated;
 
         // The call leaves `[closure, arg1 .. argN, rest?]` on the stack, which is
         // also source order. Define the names in that order, so a duplicate is

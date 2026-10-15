@@ -56,6 +56,7 @@ impl FunctionBuilder<'_> {
         // win over globals; a name that is neither is a compile error.
         let name = canonical_name(name);
         if let Some(id) = self.locals.resolve(name) {
+            self.locals.mark_used(id);
             // A compile-time-known binding is fold-eligible, and propagated as its
             // constant. A known value that cannot be a constant, such as a
             // function, is still loaded from the local, but a fold can use it.

@@ -60,6 +60,8 @@ pub(super) struct LocalInfo {
 #[derive(Debug, Default)]
 pub(super) struct Locals {
     infos: Vec<LocalInfo>,
+    // Parallel to `infos`: whether the code reads each local.
+    used: Vec<bool>,
     live: Vec<LocalId>,
     marks: Vec<usize>,
 }
@@ -116,8 +118,25 @@ impl Locals {
         }
         let id = LocalId(self.infos.len());
         self.infos.push(info);
+        self.used.push(false);
         self.live.push(id);
         Ok(id)
+    }
+
+    /// Record that the code reads a local.
+    pub(super) fn mark_used(&mut self, id: LocalId) {
+        self.used[id.0] = true;
+    }
+
+    /// Every binding, in or out of view, that the code never reads and that is
+    /// not exported, in definition order. Parameters and captures are not
+    /// bindings.
+    pub(super) fn unused_bindings(&self) -> impl Iterator<Item = &LocalInfo> {
+        self.infos
+            .iter()
+            .zip(&self.used)
+            .filter(|(info, used)| info.kind == LocalKind::Binding && !info.exported && !**used)
+            .map(|(info, _)| info)
     }
 
     /// Resolve `name` to its id, innermost binding first (shadowing).

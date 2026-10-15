@@ -1,9 +1,15 @@
 //! Lints: nonfatal diagnostics in `CompilerOutput::lints`.
 //!
-//! The one lint so far is `unreachable match arm`: every arm after the first
-//! arm that matches everything. An arm matches everything when it has no guard
-//! and its pattern cannot fail: a name or `_` with no `is` constraint, or an
-//! alternative with such a branch. Every other pattern can fail.
+//! `unreachable match arm`: every arm after the first arm that matches
+//! everything. An arm matches everything when it has no guard and its pattern
+//! cannot fail: a name or `_` with no `is` constraint, or an alternative with
+//! such a branch. Every other pattern can fail.
+//!
+//! `unused binding`: a `def` or match name that its function never reads and
+//! that is not exported. `lambda in abbreviated lambda`: a `$(...)` that holds
+//! a lambda.
+//!
+//! Each test filters to the lint it covers, since one source may raise several.
 //!
 //! A lint never changes what a program does, so the cases that run a program
 //! check its result too.
@@ -29,12 +35,20 @@ fn lints(source: &str) -> Diagnostics {
     compile_with(source, CompilerOptions::new()).lints
 }
 
-/// The narrated text of each lint of `source`, in order.
-fn narrated(source: &str) -> Vec<String> {
+/// The narrated text of each lint of `source` that names `code`, in order.
+/// Other lints of `source` are left out, so a test sees only the lint it
+/// covers.
+fn lints_with_code(source: &str, code: &str) -> Vec<String> {
     lints(source)
         .iter()
         .map(Diagnostic::render_narrated)
+        .filter(|text| text.contains(code))
         .collect()
+}
+
+/// The narrated text of each unreachable match arm lint of `source`, in order.
+fn narrated(source: &str) -> Vec<String> {
+    lints_with_code(source, CODE)
 }
 
 /// Assert `source` has exactly `count` lints, each an unreachable match arm.
@@ -125,13 +139,16 @@ fn never_tried_lines(source: &str) -> Vec<usize> {
 }
 
 /// The line of the label `label` in the narrated `text`, which has a line like
-/// `label at line 3, column 5: never tried`.
+/// `label at line 3, columns 5 to 9: never tried`, or `label starting at line
+/// 3, column 5: never tried` when the label spans lines.
 fn label_line(text: &str, label: &str) -> usize {
-    let prefix = "label at line ";
     text.lines()
         .filter(|line| line.trim_end().ends_with(&format!(": {label}")))
         .find_map(|line| {
-            let rest = line.trim().strip_prefix(prefix)?;
+            let line = line.trim();
+            let rest = line
+                .strip_prefix("label at line ")
+                .or_else(|| line.strip_prefix("label starting at line "))?;
             rest.split(',').next()?.parse().ok()
         })
         .unwrap_or_else(|| panic!("no label {label:?} in:\n{text}"))
@@ -803,4 +820,857 @@ fn a_match_over_a_constant_is_still_linted() {
     ";
     assert_unreachable_arms(source, 1);
     assert_eq!(Script::new(source).run(), Value::from("three"));
+}
+
+// Unused bindings.
+//
+// A binding is a name `def`, a destructuring, or a match pattern introduces. A
+// binding that no code in its function reads is linted, unless it is exported.
+
+const UNUSED: &str = "unused binding";
+
+/// The names `source` is linted for never using, in report order, read from
+/// each lint's message.
+fn unused_names(source: &str) -> Vec<String> {
+    unused_names_with(source, CompilerOptions::new(), &[])
+}
+
+/// [`unused_names`] under `options`, with `outer` names already in scope.
+fn unused_names_with(source: &str, options: CompilerOptions, outer: &[&str]) -> Vec<String> {
+    let output = compile_in_scope(FILENAME, source, options, outer)
+        .unwrap_or_else(|errors| panic!("{source:?} should compile:\n{}", errors.render_plain()));
+    output
+        .lints
+        .iter()
+        .map(Diagnostic::render_narrated)
+        .filter(|text| text.contains(UNUSED))
+        .map(|text| {
+            let (name, _) = text
+                .split_once("` is never used")
+                .unwrap_or_else(|| panic!("no 'is never used' message in:\n{text}"));
+            let (_, name) = name.rsplit_once('`').expect("a quoted name");
+            name.to_owned()
+        })
+        .collect()
+}
+
+/// Assert each `(source, names)` case is linted for exactly `names`, in order.
+fn assert_unused_cases(cases: &[(&str, &[&str])]) {
+    for (source, names) in cases {
+        assert_eq!(
+            unused_names(source),
+            *names,
+            "wrong unused bindings for:\n{source}"
+        );
+    }
+}
+
+#[test]
+fn an_unread_def_is_linted() {
+    assert_unused_cases(&[
+        ("def a = 1\n0", &["a"]),
+        ("def a = 1", &["a"]),
+        ("def a = 1\ndef b = 2\n0", &["a", "b"]),
+    ]);
+}
+
+#[test]
+fn an_unread_defn_is_linted() {
+    assert_unused_cases(&[
+        ("defn f(x) -> x\n0", &["f"]),
+        // The function's own name inside its body is not a read of the def.
+        ("defn f(x) -> f(x)\n0", &["f"]),
+    ]);
+}
+
+#[test]
+fn unread_array_destructured_names_are_linted() {
+    assert_unused_cases(&[
+        ("def [a, b] = [1, 2]\n0", &["a", "b"]),
+        ("def [a, b] = [1, 2]\na", &["b"]),
+        ("def [a, ...rest] = [1, 2]\na", &["rest"]),
+        ("def [a, ...rest] = [1, 2]\nrest", &["a"]),
+        ("def [[a, b], c] = [[1, 2], 3]\nb", &["a", "c"]),
+    ]);
+}
+
+#[test]
+fn unread_map_destructured_names_are_linted() {
+    assert_unused_cases(&[
+        ("def {k} = {k: 1}\n0", &["k"]),
+        ("def {k: v} = {k: 1}\n0", &["v"]),
+        ("def {k, j: v} = {k: 1, j: 2}\nk", &["v"]),
+        ("def {k} as whole = {k: 1}\nk", &["whole"]),
+        ("def {k} as whole = {k: 1}\nwhole", &["k"]),
+    ]);
+}
+
+#[test]
+fn unread_match_pattern_names_are_linted() {
+    assert_unused_cases(&[
+        ("match 1 {\nn => 0,\n}", &["n"]),
+        ("match [1] {\n[a, ...r] => a,\n}", &["r"]),
+        ("match [1, 2] {\n[a, b] => b,\n_ => 0,\n}", &["a"]),
+        ("match {k: 1} {\n{k} => 0,\n_ => 1,\n}", &["k"]),
+        ("match {k: 1} {\n{k: v} => 0,\n_ => 1,\n}", &["v"]),
+        ("match {k: 1} {\n{k} as whole => k,\n_ => 1,\n}", &["whole"]),
+        ("match 1 {\nn is Int => 0,\n_ => 1,\n}", &["n"]),
+    ]);
+}
+
+#[test]
+fn an_unread_name_in_every_alternative_is_linted_once() {
+    assert_unused_cases(&[
+        ("match [1] {\n[x] | x => 0,\n}", &["x"]),
+        ("match [1] {\n[x] | x => x,\n}", &[]),
+        ("match [1] {\n[x] | [x, _] | x => 0,\n}", &["x"]),
+    ]);
+}
+
+#[test]
+fn lambda_parameters_are_never_linted() {
+    assert_unused_cases(&[
+        ("fn a, b -> 0", &[]),
+        ("fn a, ...rest -> 0", &[]),
+        ("fn ...rest -> 0", &[]),
+        ("$(0)", &[]),
+        ("$($1)", &[]),
+        ("$($2)", &[]),
+        ("$($$)", &[]),
+        ("fn a -> fn b -> 0", &[]),
+        ("map [1] with fn x -> 0", &[]),
+        ("reduce [1] with fn (acc, x) -> 0", &[]),
+    ]);
+}
+
+#[test]
+fn a_named_lambdas_own_name_is_never_linted() {
+    assert_unused_cases(&[
+        ("fn fact(n) -> 0", &[]),
+        ("fn fact(n) -> if n <= 1: 1 else: n * fact(n - 1)", &[]),
+    ]);
+}
+
+#[test]
+fn an_underscore_is_never_linted() {
+    assert_unused_cases(&[
+        ("def _ = 1\n0", &[]),
+        ("def [_, _] = [1, 2]\n0", &[]),
+        ("def [a, _] = [1, 2]\na", &[]),
+        ("match 1 {\n_ => 0,\n}", &[]),
+        ("match [1, 2] {\n[_, ...rest] => rest,\n}", &[]),
+    ]);
+}
+
+#[test]
+fn a_captured_name_is_not_a_binding_of_the_capturing_function() {
+    // `a` is read by the lambda, so the top level's binding is used; the
+    // lambda's capture is not itself a binding to lint.
+    assert_unused_cases(&[
+        ("def a = 1\nfn -> a", &[]),
+        ("def a = 1\nfn -> fn -> a", &[]),
+        ("def a = 1\n$(a)", &[]),
+    ]);
+}
+
+#[test]
+fn a_binding_inside_a_lambda_is_linted_in_that_lambda() {
+    assert_unused_cases(&[
+        ("fn -> {\ndef a = 1\n0\n}", &["a"]),
+        ("fn x -> {\ndef a = x\n0\n}", &["a"]),
+        ("fn x -> {\ndef a = x\na\n}", &[]),
+        ("defn f(x) -> {\ndef a = x\n0\n}\nf", &["a"]),
+    ]);
+}
+
+#[test]
+fn a_read_in_a_later_statement_counts() {
+    assert_unused_cases(&[
+        ("def a = 1\na", &[]),
+        ("def a = 1\ndef b = a\nb", &[]),
+        ("def a = 1\nprint(a)\n0", &[]),
+        ("def a = 1\n[a]", &[]),
+        ("def a = 1\na + 1", &[]),
+    ]);
+}
+
+#[test]
+fn a_read_in_a_guard_counts() {
+    assert_unused_cases(&[
+        (
+            "def limit = 5\nmatch 1 {\nn if: n < limit => n,\n_ => 0,\n}",
+            &[],
+        ),
+        ("match 1 {\nn if: n > 0 => 0,\n_ => 1,\n}", &[]),
+    ]);
+}
+
+#[test]
+fn a_read_in_a_nested_lambda_counts() {
+    assert_unused_cases(&[
+        ("def a = 1\ndef f = fn -> a\nf", &[]),
+        ("def a = 1\ndef f = fn x -> fn y -> a + x + y\nf", &[]),
+        ("def a = 1\ndef f = $($ + a)\nf", &[]),
+        ("def a = 1\nmap [1] with fn x -> x + a", &[]),
+    ]);
+}
+
+#[test]
+fn a_read_in_a_format_string_counts() {
+    assert_unused_cases(&[
+        ("def name = 'x'\n$'hello, ${name}'", &[]),
+        ("def a = 1\ndef b = 2\n$'${a + b}'", &[]),
+    ]);
+}
+
+#[test]
+fn a_read_as_a_match_target_counts() {
+    assert_unused_cases(&[
+        ("def v = 1\nmatch v {\n_ => 0,\n}", &[]),
+        ("def v = 1\nmatch v {\n(v) => 0,\n_ => 1,\n}", &[]),
+    ]);
+}
+
+#[test]
+fn a_read_in_a_value_pattern_counts() {
+    assert_unused_cases(&[("def y = 1\nmatch 1 {\n(y) => 0,\n_ => 1,\n}", &[])]);
+}
+
+#[test]
+fn a_read_in_an_iterative_expression_counts() {
+    assert_unused_cases(&[
+        ("def xs = [1, 2]\nmap xs with fn x -> x", &[]),
+        ("def xs = [1, 2]\nfilter xs with fn x -> true", &[]),
+        (
+            "def xs = [1, 2]\nreduce xs with fn (acc, x) -> acc + x",
+            &[],
+        ),
+        ("def n = 2\nmap [1, 2] with $($ * n)", &[]),
+        ("def f = fn x -> x\nmap [1, 2] with f", &[]),
+    ]);
+}
+
+#[test]
+fn a_read_in_every_kind_of_expression_counts() {
+    assert_unused_cases(&[
+        ("def a = [1]\na[0]", &[]),
+        ("def m = {k: 1}\nm.k", &[]),
+        ("def a = 1\n-a", &[]),
+        ("def a = true\nnot a", &[]),
+        ("def a = true\na and 1", &[]),
+        ("def a = true\nif a: 1 else: 2", &[]),
+        ("def f = fn x -> x\nf(1)", &[]),
+        ("def f = fn x -> x\n1 @ f()", &[]),
+        ("def a = 1\n{k: a}", &[]),
+        ("def a = 1\ndo {\na\n}", &[]),
+    ]);
+}
+
+#[test]
+fn a_read_in_dead_code_still_counts() {
+    // The lint is about the source, not about what the optimizer keeps.
+    assert_unused_cases(&[
+        ("def a = 1\nif false: a else: 0", &[]),
+        ("def a = 1\nmatch 3 {\n3 => 0,\n_ => a,\n}", &[]),
+    ]);
+}
+
+#[test]
+fn a_binding_read_only_by_itself_in_a_nested_def_is_still_unused_outside() {
+    // The inner `a` shadows the outer; only the inner is read.
+    let source = r"
+        def a = 1
+        def r = do {
+            def a = 2
+            a
+        }
+        r
+    ";
+    assert_unused_cases(&[(source, &["a"])]);
+}
+
+#[test]
+fn shadowing_in_a_do_block_lints_each_binding_on_its_own() {
+    let outer_read = r"
+        def a = 1
+        def r = do {
+            def a = 2
+            0
+        }
+        [a, r]
+    ";
+    assert_unused_cases(&[(outer_read, &["a"])]);
+    let both_unread = r"
+        def a = 1
+        def r = do {
+            def a = 2
+            0
+        }
+        r
+    ";
+    assert_unused_cases(&[(both_unread, &["a", "a"])]);
+}
+
+#[test]
+fn a_shadowed_binding_is_labeled_where_it_is_bound() {
+    let source = "def a = 1\ndef r = do {\n    def a = 2\n    a\n}\nr";
+    let plain = lints_with_code(source, UNUSED);
+    assert_eq!(plain.len(), 1, "{plain:?}");
+    assert_eq!(
+        label_line(&plain[0], "bound here"),
+        1,
+        "the outer a:\n{}",
+        plain[0]
+    );
+}
+
+#[test]
+fn a_binding_shadowing_a_global_is_linted_when_unread() {
+    assert_unused_cases(&[
+        ("def print = 1\n0", &["print"]),
+        ("def print = 1\nprint", &[]),
+    ]);
+}
+
+#[test]
+fn an_unread_binding_in_a_match_arm_result_is_linted() {
+    let source = r"
+        match 1 {
+            1 => do {
+                def inside = 5
+                0
+            },
+            _ => 2,
+        }
+    ";
+    assert_unused_cases(&[(source, &["inside"])]);
+}
+
+#[test]
+fn a_match_name_is_scoped_to_its_arm() {
+    // Each arm's `n` is its own binding.
+    let source = r"
+        match 1 {
+            2 => 0,
+            n if: n > 5 => 1,
+            n => 2,
+        }
+    ";
+    assert_unused_cases(&[(source, &["n"])]);
+}
+
+#[test]
+fn an_explicit_export_is_not_linted() {
+    assert_unused_cases(&[
+        ("export def a = 1", &[]),
+        ("export defn f(x) -> x", &[]),
+        ("export def a = 1\ndef b = 2\n0", &["b"]),
+        ("export def [a, b] = [1, 2]", &[]),
+        ("export def {k, j: v} = {k: 1, j: 2}", &[]),
+        ("export def {k} as whole = {k: 1}", &[]),
+    ]);
+}
+
+#[test]
+fn with_implicit_export_every_top_level_binding_is_exported() {
+    let options = || CompilerOptions::new().with_implicit_export(true);
+    for source in [
+        "def a = 1",
+        "defn f(x) -> x",
+        "def [a, b] = [1, 2]",
+        "def {k, j: v} = {k: 1, j: 2}",
+        "def a = 1\ndef b = 2",
+    ] {
+        assert_eq!(
+            unused_names_with(source, options(), &[]),
+            Vec::<String>::new(),
+            "implicitly exported, so not linted:\n{source}"
+        );
+        assert!(
+            !unused_names(source).is_empty(),
+            "without implicit export it is linted:\n{source}"
+        );
+    }
+}
+
+#[test]
+fn implicit_export_does_not_excuse_a_binding_in_a_nested_scope() {
+    let source = r"
+        def f = fn -> {
+            def inner = 1
+            0
+        }
+        f
+    ";
+    let options = CompilerOptions::new().with_implicit_export(true);
+    assert_eq!(unused_names_with(source, options, &[]), ["inner"]);
+}
+
+#[test]
+fn match_names_are_still_linted_with_implicit_export() {
+    let source = "match 1 {\nn => 0,\n}";
+    let options = CompilerOptions::new().with_implicit_export(true);
+    assert_eq!(unused_names_with(source, options, &[]), ["n"]);
+}
+
+#[test]
+fn names_supplied_by_the_outer_scope_are_not_linted() {
+    let options = CompilerOptions::new;
+    assert_eq!(
+        unused_names_with("0", options(), &["outer"]),
+        Vec::<String>::new()
+    );
+    assert_eq!(
+        unused_names_with("outer", options(), &["outer"]),
+        Vec::<String>::new()
+    );
+    assert_eq!(
+        unused_names_with("def mine = outer\n0", options(), &["outer"]),
+        ["mine"],
+        "a binding of the script is still linted"
+    );
+    assert_eq!(
+        unused_names_with("fn -> outer", options(), &["a", "b", "outer"]),
+        Vec::<String>::new()
+    );
+}
+
+#[test]
+fn the_unused_binding_lint_names_the_code_the_message_the_label_and_the_help() {
+    let texts = lints_with_code("def spare = 1\n0", UNUSED);
+    assert_eq!(texts.len(), 1);
+    let text = &texts[0];
+    for expected in [
+        UNUSED,
+        "`spare` is never used",
+        "bound here",
+        "remove it, or bind `_` instead",
+        "severity: warning",
+        FILENAME,
+    ] {
+        assert!(
+            text.contains(expected),
+            "the lint should mention {expected:?}:\n{text}"
+        );
+    }
+    assert_eq!(label_line(text, "bound here"), 1);
+    assert!(
+        text.contains("columns 5 to 9: bound here"),
+        "the label starts at the name:\n{text}"
+    );
+}
+
+#[test]
+fn the_unused_binding_label_covers_exactly_the_name() {
+    let plain = lints_with_code("def spare = 1\n0", UNUSED);
+    assert_eq!(plain.len(), 1);
+    let rendered = lints("def spare = 1\n0").render_plain();
+    assert_eq!(
+        underlined(&rendered, "def spare = 1"),
+        "spare",
+        "the name, not the whole definition:\n{rendered}"
+    );
+    let destructured = lints("def [first, second] = [1, 2]\nsecond").render_plain();
+    assert_eq!(
+        underlined(&destructured, "def [first, second] = [1, 2]"),
+        "first",
+        "the destructured name:\n{destructured}"
+    );
+}
+
+#[test]
+fn the_unused_binding_lint_is_a_warning() {
+    let output = compile_with("def a = 1\n0", CompilerOptions::new());
+    assert_eq!(output.lints.len(), 1);
+    let narrated = output.lints.render_narrated();
+    assert!(narrated.contains("severity: warning"), "{narrated}");
+}
+
+#[test]
+fn unused_binding_lints_are_in_source_order() {
+    let source = r"
+        def first = 1
+        def second = fn -> {
+            def inner = 1
+            0
+        }
+        def third = 3
+        second
+    ";
+    assert_eq!(unused_names(source), ["first", "inner", "third"]);
+}
+
+#[test]
+fn lints_across_nested_functions_and_kinds_are_in_source_order() {
+    let source = r"
+        def a = 1
+        def f = fn x -> {
+            def b = 2
+            match x {
+                _ => 0,
+                2 => 0,
+            }
+        }
+        def c = 3
+        f
+    ";
+    let order: Vec<String> = lints(source)
+        .iter()
+        .map(|lint| {
+            let text = lint.render_narrated();
+            if text.contains(UNUSED) {
+                format!("unused line {}", label_line(&text, "bound here"))
+            } else {
+                format!("arm line {}", label_line(&text, "never tried"))
+            }
+        })
+        .collect();
+    assert_eq!(
+        order,
+        [
+            "unused line 2",
+            "unused line 4",
+            "arm line 7",
+            "unused line 10"
+        ],
+        "source order holds across nesting and across lint kinds"
+    );
+}
+
+#[test]
+fn lints_of_a_lambda_nested_deeper_are_in_source_order() {
+    let source = r"
+        def outer = fn -> {
+            def one = 1
+            def inner = fn -> {
+                def two = 2
+                0
+            }
+            def three = 3
+            inner
+        }
+        outer
+    ";
+    assert_eq!(unused_names(source), ["one", "two", "three"]);
+}
+
+#[test]
+fn unused_bindings_behave_the_same_with_lints_off() {
+    let source = "def a = 1\nmatch 1 {\nn => 0,\n}";
+    let on = compile_with(source, CompilerOptions::new());
+    let off = compile_with(source, CompilerOptions::new().with_lints(false));
+    assert_eq!(on.lints.len(), 2, "on, both are reported");
+    assert!(off.lints.is_empty(), "off, none is reported");
+}
+
+#[test]
+fn lints_off_reports_no_unused_binding_in_nested_functions() {
+    let source = r"
+        def f = fn -> {
+            def inner = 1
+            0
+        }
+        f
+    ";
+    let off = compile_with(source, CompilerOptions::new().with_lints(false));
+    assert!(off.lints.is_empty());
+    let off_scoped = compile_in_scope(
+        FILENAME,
+        "def a = 1",
+        CompilerOptions::new().with_lints(false),
+        &[],
+    )
+    .expect("compiles");
+    assert!(off_scoped.lints.is_empty());
+}
+
+#[test]
+fn an_unused_binding_does_not_change_what_the_program_does() {
+    let source = r"
+        def spare = 100
+        def [a, extra] = [1, 2]
+        def f = fn x -> {
+            def unused_inner = x
+            x + a
+        }
+        f(10)
+    ";
+    assert_eq!(unused_names(source), ["spare", "extra", "unused_inner"]);
+    assert_eq!(Script::new(source).run(), Value::Int(11));
+}
+
+#[test]
+fn an_unused_binding_is_linted_under_every_optimization() {
+    let source = "def a = 1\ndef b = a\n0";
+    for optimization in script::optimization_permutations() {
+        let options = CompilerOptions::new().with_optimization(optimization);
+        assert_eq!(
+            unused_names_with(source, options, &[]),
+            ["b"],
+            "under {optimization:?}"
+        );
+    }
+}
+
+#[test]
+fn a_binding_read_only_where_constant_propagation_inlines_it_is_used() {
+    // Propagation replaces the read with the constant; the read still counts.
+    let source = "def a = 1\ndef b = a + 1\nb";
+    for optimization in script::optimization_permutations() {
+        let options = CompilerOptions::new().with_optimization(optimization);
+        assert_eq!(
+            unused_names_with(source, options, &[]),
+            Vec::<String>::new(),
+            "under {optimization:?}"
+        );
+    }
+}
+
+#[test]
+fn a_failed_compilation_returns_no_unused_binding_lint() {
+    let errors = compile_program(
+        FILENAME,
+        "def a = 1\nundefined_name",
+        CompilerOptions::new(),
+    )
+    .expect_err("an unbound name fails to compile");
+    assert!(!errors.render_plain().contains(UNUSED));
+}
+
+// Lambda in abbreviated lambda.
+
+const IN_ABBREVIATED: &str = "lambda in abbreviated lambda";
+
+fn abbreviated_lints(source: &str) -> Vec<String> {
+    lints_with_code(source, IN_ABBREVIATED)
+}
+
+#[test]
+fn an_abbreviated_lambda_holding_a_lambda_is_linted() {
+    for source in [
+        "$(fn x -> x)",
+        "$(fn -> 0)",
+        "$(fn x -> fn y -> y)",
+        "def f = $(fn x -> x)\nf",
+        "map [1] with $(fn x -> x)",
+        "$($1 + 1 @ transform(fn x -> x))",
+    ] {
+        assert_eq!(
+            abbreviated_lints(source).len(),
+            1,
+            "one lint for:\n{source}"
+        );
+    }
+}
+
+#[test]
+fn an_abbreviated_lambda_with_no_lambda_is_not_linted() {
+    for source in [
+        "$(0)",
+        "$($ * 2)",
+        "$($1 + $2)",
+        "$($$)",
+        "$([$, 1])",
+        "def f = fn x -> $(x)\nf",
+        "map [1, 2] with $($ * 2)",
+    ] {
+        assert!(
+            abbreviated_lints(source).is_empty(),
+            "no lint for:\n{source}"
+        );
+    }
+}
+
+#[test]
+fn an_abbreviated_lambda_is_linted_once_however_many_lambdas_it_holds() {
+    let source = "$([fn a -> a, fn b -> b, fn c -> c])";
+    assert_eq!(abbreviated_lints(source).len(), 1);
+    let nested = "$(fn a -> fn b -> fn c -> c)";
+    assert_eq!(abbreviated_lints(nested).len(), 1);
+}
+
+#[test]
+fn a_lambda_nested_deeper_does_not_lint_the_abbreviated_lambda_again() {
+    let source = "$(fn a -> [fn b -> b, fn c -> fn d -> d])";
+    assert_eq!(abbreviated_lints(source).len(), 1);
+}
+
+#[test]
+fn a_fn_lambda_holding_an_abbreviated_lambda_is_not_linted_when_it_holds_no_lambda() {
+    let source = "fn x -> $(0)";
+    assert!(abbreviated_lints(source).is_empty());
+}
+
+#[test]
+fn an_abbreviated_lambda_inside_a_fn_lambda_lints_on_its_own() {
+    let source = "def f = fn a -> $(fn b -> b)\nf";
+    let found = abbreviated_lints(source);
+    assert_eq!(
+        found.len(),
+        1,
+        "the abbreviated lambda holds a lambda:\n{found:?}"
+    );
+    assert!(
+        found[0].contains("columns 17 to 18: abbreviated lambda"),
+        "the inner abbreviated lambda is the primary label, not the outer fn:\n{}",
+        found[0]
+    );
+}
+
+#[test]
+fn an_abbreviated_lambda_cannot_be_nested_in_another_so_it_never_nests_the_lint() {
+    for source in ["$($(1))", "$(fn x -> $(x + $))"] {
+        let errors = compile_program(FILENAME, source, CompilerOptions::new())
+            .expect_err("a nested abbreviated lambda is an error");
+        assert!(
+            errors
+                .render_plain()
+                .contains("an abbreviated lambda cannot be nested in another"),
+            "{source}:\n{}",
+            errors.render_plain()
+        );
+    }
+}
+
+#[test]
+fn the_abbreviated_lambda_lint_names_the_code_the_message_the_labels_and_the_help() {
+    let found = abbreviated_lints("def f = $(fn x -> x)\nf");
+    assert_eq!(found.len(), 1);
+    let text = &found[0];
+    for expected in [
+        IN_ABBREVIATED,
+        "this abbreviated lambda holds a lambda",
+        "abbreviated lambda",
+        "the lambda it holds",
+        "write it as a `fn` lambda, naming its parameters",
+        FILENAME,
+    ] {
+        assert!(
+            text.contains(expected),
+            "the lint should mention {expected:?}:\n{text}"
+        );
+    }
+}
+
+#[test]
+fn the_abbreviated_lambda_lint_is_advice_not_a_warning() {
+    let output = compile_with("$(fn x -> x)", CompilerOptions::new());
+    assert_eq!(output.lints.len(), 1);
+    let narrated = output.lints.render_narrated();
+    assert!(narrated.contains("severity: advice"), "{narrated}");
+    assert!(!narrated.contains("severity: warning"), "{narrated}");
+}
+
+/// The primary label covers only the `$(`, not the whole abbreviated lambda,
+/// so that it does not overlap the label on the lambda it holds.
+#[test]
+fn the_abbreviated_lambda_lint_labels_its_opener_and_the_lambda_it_holds() {
+    let source = "def f = $(fn x -> x)\nf";
+    let plain = lints(source).render_plain();
+    let found = abbreviated_lints(source);
+    assert_eq!(label_line(&found[0], "abbreviated lambda"), 1);
+    assert_eq!(label_line(&found[0], "the lambda it holds"), 1);
+    assert!(
+        found[0].contains("columns 9 to 10: abbreviated lambda"),
+        "the primary label is the `$(`:\n{}",
+        found[0]
+    );
+    assert!(
+        found[0].contains("columns 11 to 19: the lambda it holds"),
+        "the secondary label starts at `fn`:\n{}",
+        found[0]
+    );
+    assert!(plain.contains("$(fn x -> x)"), "{plain}");
+}
+
+#[test]
+fn the_abbreviated_lambda_lint_is_off_with_lints_off() {
+    let off = compile_with("$(fn x -> x)", CompilerOptions::new().with_lints(false));
+    assert!(off.lints.is_empty());
+    let off_scoped = compile_in_scope(
+        FILENAME,
+        "$(fn x -> outer)",
+        CompilerOptions::new().with_lints(false),
+        &["outer"],
+    )
+    .expect("compiles");
+    assert!(off_scoped.lints.is_empty());
+}
+
+#[test]
+fn the_abbreviated_lambda_lint_is_reported_by_compile_in_scope() {
+    let output = compile_in_scope(
+        FILENAME,
+        "$(fn x -> outer)",
+        CompilerOptions::new(),
+        &["outer"],
+    )
+    .expect("compiles");
+    assert_eq!(output.lints.len(), 1);
+    assert!(output.lints.render_narrated().contains(IN_ABBREVIATED));
+}
+
+#[test]
+fn the_abbreviated_lambda_lint_does_not_change_what_the_program_does() {
+    let source = "$(fn x -> x + $)(3)(4)";
+    assert_eq!(abbreviated_lints(source).len(), 1);
+    assert_eq!(Script::new(source).run(), Value::Int(7));
+}
+
+#[test]
+fn the_abbreviated_lambda_lint_is_independent_of_the_optimizations() {
+    let source = "def f = $(fn x -> x)\nf";
+    for optimization in script::optimization_permutations() {
+        let options = CompilerOptions::new().with_optimization(optimization);
+        let output = compile_with(source, options);
+        assert_eq!(output.lints.len(), 1, "under {optimization:?}");
+    }
+}
+
+#[test]
+fn lints_of_an_abbreviated_lambda_are_in_source_order_with_the_others() {
+    let source = r"
+        def first = 1
+        def f = $(fn x -> {
+            def inner = 2
+            match x {
+                _ => 0,
+                3 => 0,
+            }
+        })
+        def last = 4
+        f
+    ";
+    let order: Vec<String> = lints(source)
+        .iter()
+        .map(|lint| {
+            let text = lint.render_narrated();
+            let (kind, label) = if text.contains(UNUSED) {
+                ("unused", "bound here")
+            } else if text.contains(IN_ABBREVIATED) {
+                ("abbreviated", "abbreviated lambda")
+            } else {
+                ("arm", "never tried")
+            };
+            format!("{kind} {}", label_line(&text, label))
+        })
+        .collect();
+    assert_eq!(
+        order,
+        [
+            "unused 2",
+            "abbreviated 3",
+            "unused 4",
+            "arm 7",
+            "unused 10"
+        ],
+        "sorted by the start of each primary label"
+    );
+}
+
+#[test]
+fn an_abbreviated_lambda_holding_a_lambda_that_binds_an_unused_name_lints_both() {
+    let source = "def f = $(fn x -> {\ndef spare = 1\nx\n})\nf";
+    assert_eq!(unused_names(source), ["spare"]);
+    assert_eq!(abbreviated_lints(source).len(), 1);
 }

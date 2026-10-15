@@ -140,6 +140,17 @@ impl Diagnostic {
         self
     }
 
+    /// Where in its source the diagnostic is: the start of its primary label,
+    /// else of its first label, else the source's start.
+    pub(crate) fn offset(&self) -> usize {
+        let labels = &self.0.labels;
+        labels
+            .iter()
+            .find(|label| label.primary())
+            .or_else(|| labels.first())
+            .map_or(0, LabeledSpan::offset)
+    }
+
     /// Lift `error`, from parsing `source` as `filename`, into a compiler
     /// diagnostic, so that parse and compile failures can be reported alike.
     pub fn from_parse_error(error: &ParseError, filename: &str, source: &str) -> Self {
