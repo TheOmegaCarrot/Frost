@@ -147,6 +147,12 @@ impl Value {
 
     /// Frost ordered comparison, backing `<`, `<=`, `>`, and `>=`.
     /// Returns the [`Ordering`] of two values, or a type error when they are not orderable.
+    ///
+    /// Arrays order lexicographically: element pairs that are equal (by `==`, or
+    /// as an `Int` and `Float` of the same value) are passed over, and the first
+    /// remaining pair decides, failing only if it cannot be ordered. With no such
+    /// pair, the shorter Array orders first. So two equal Arrays order as equal,
+    /// whatever they hold.
     pub fn compare(&self, rhs: &Value) -> Result<Ordering, FrostError> {
         match (self, rhs) {
             (Value::Int(l), Value::Int(r)) => Ok(l.cmp(r)),
@@ -158,6 +164,10 @@ impl Value {
 
             (Value::Array(a), Value::Array(b)) => {
                 for (x, y) in a.iter().zip(b.iter()) {
+                    // An equal pair is not ordered, so it may hold unorderable values.
+                    if x == y {
+                        continue;
+                    }
                     match x.compare(y)? {
                         Ordering::Equal => continue,
                         ordering => return Ok(ordering),

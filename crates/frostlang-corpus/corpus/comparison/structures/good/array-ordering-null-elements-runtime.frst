@@ -1,8 +1,4 @@
 # Equal Arrays known only at runtime order as equal even when they begin with
 # Null: the equal Nulls are passed over, never ordered.
-#= {
-#=     result: true,
-#=     inputs: {a: [null, 1], b: [null, 1]},
-#=     known_issue: 'FROST-154',
-#= }
+#= {result: true, inputs: {a: [null, 1], b: [null, 1]}}
 a <= b

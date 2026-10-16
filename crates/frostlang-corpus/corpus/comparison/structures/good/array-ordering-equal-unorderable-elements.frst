@@ -1,5 +1,5 @@
 # Ordering passes over element pairs that are `==` without ordering them, so
 # two Arrays both holding `true` are not `<` one another, though Bool itself
 # is not orderable.
-#= {result: false, known_issue: 'FROST-154'}
+#= {result: false}
 [true] < [true]

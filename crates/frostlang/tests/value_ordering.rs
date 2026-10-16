@@ -248,6 +248,97 @@ fn array_incomparable_element_short_circuited_away() {
     assert_eq!(a.compare(&b).unwrap(), Ordering::Less);
 }
 
+/// An Array of `elements`.
+fn array(elements: Vec<Value>) -> Value {
+    Value::from(FrostArray::from(elements))
+}
+
+#[test]
+fn equal_arrays_order_as_equal_whatever_they_hold() {
+    // Each element is compared with an equal copy, never ordered.
+    let unorderable = [
+        Value::Null,
+        Value::from(true),
+        Value::from(frostlang::FrostMap::empty()),
+        Value::opaque(frostlang::SpecialFloat::new(f64::INFINITY).unwrap()),
+        array(vec![Value::Null]),
+        array(vec![Value::from(1i64), Value::from("x")]),
+    ];
+    for element in unorderable {
+        let a = array(vec![element.clone(), Value::from(1i64)]);
+        let b = array(vec![element.clone(), Value::from(1i64)]);
+        assert_eq!(
+            a.compare(&b).ok(),
+            Some(Ordering::Equal),
+            "[{element:?}, 1] orders as equal to itself"
+        );
+    }
+}
+
+#[test]
+fn an_equal_unorderable_pair_is_passed_over_for_the_next() {
+    let a = array(vec![Value::Null, Value::from(1i64)]);
+    let b = array(vec![Value::Null, Value::from(2i64)]);
+    assert_eq!(a.compare(&b).ok(), Some(Ordering::Less));
+    assert_eq!(b.compare(&a).ok(), Some(Ordering::Greater));
+}
+
+#[test]
+fn a_prefix_orders_first_even_before_unorderable_elements() {
+    let short = array(vec![Value::Null]);
+    let long = array(vec![Value::Null, Value::from(true), Value::Null]);
+    assert_eq!(short.compare(&long).ok(), Some(Ordering::Less));
+    assert_eq!(long.compare(&short).ok(), Some(Ordering::Greater));
+}
+
+#[test]
+fn equal_unorderable_elements_are_passed_over_in_nested_arrays() {
+    let a = array(vec![
+        array(vec![Value::Null, Value::from(1i64)]),
+        Value::Null,
+    ]);
+    let b = array(vec![
+        array(vec![Value::Null, Value::from(2i64)]),
+        Value::Null,
+    ]);
+    assert_eq!(a.compare(&b).ok(), Some(Ordering::Less));
+}
+
+#[test]
+fn an_int_and_float_of_the_same_value_are_passed_over() {
+    // Not equal by `==`, but they order as equal, so the next pair decides.
+    let a = array(vec![Value::from(1i64), Value::from(3i64)]);
+    let b = array(vec![
+        Value::from(frostlang::FrostFloat::new(1.0).unwrap()),
+        Value::from(2i64),
+    ]);
+    assert_eq!(a.compare(&b).ok(), Some(Ordering::Greater));
+}
+
+#[test]
+fn the_first_unequal_pair_raises_if_it_cannot_be_ordered() {
+    let cases = [
+        (
+            Value::from(true),
+            Value::from(false),
+            "Type Bool is not orderable",
+        ),
+        (
+            Value::Null,
+            Value::from(1i64),
+            "Cannot compare incompatible types: Null and Int",
+        ),
+    ];
+    for (x, y, message) in cases {
+        let a = array(vec![Value::Null, x.clone(), Value::from(1i64)]);
+        let b = array(vec![Value::Null, y.clone(), Value::from(2i64)]);
+        let Err(error) = a.compare(&b) else {
+            panic!("the pair {x:?}, {y:?} cannot be ordered");
+        };
+        assert_eq!(error.message(), message, "comparing {x:?} with {y:?}");
+    }
+}
+
 // -- Non-orderable types are a type error --
 
 #[test]

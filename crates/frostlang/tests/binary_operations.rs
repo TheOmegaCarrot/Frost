@@ -288,6 +288,35 @@ fn ordering_extends_to_bytes_and_arrays() {
 }
 
 #[test]
+fn array_ordering_passes_over_equal_pairs_folded_or_at_runtime() {
+    // Each comparison runs on constants, which folding may decide, and on the
+    // same Arrays captured, which only the run can know.
+    let source = r"
+        def len_fn = len
+        [
+            xs <= ys, xs >= ys, xs < ys, xs > ys,
+            [null, len] <= [null, len_fn],
+            [[true], 1] < [[true], 2],
+            [null] < [null, true],
+            [1, 3] > [1.0, 2],
+        ]
+        ";
+    let expected = "[true, true, false, false, true, true, true, true]";
+    let element = || Value::from_iter([Value::Null, Value::from(true)]);
+    let captured = Script::new(source)
+        .capture("xs", element())
+        .capture("ys", element())
+        .run();
+    let constant = run(&format!(
+        "def xs = [null, true]\ndef ys = [null, true]\n{source}"
+    ));
+    assert_eq!(captured, run(expected), "at runtime");
+    assert_eq!(constant, run(expected), "on constants");
+    let message = raises("[null, true, 1] < [null, false, 2]");
+    assert!(message.contains("Bool is not orderable"), "{message}");
+}
+
+#[test]
 fn the_left_operand_is_evaluated_first() {
     // Both operands raise, so the error reveals which ran first.
     let message = raises("(1 / 0) + (1 % 0)");

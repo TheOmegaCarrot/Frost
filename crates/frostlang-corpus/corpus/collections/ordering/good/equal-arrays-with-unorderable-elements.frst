@@ -1,13 +1,5 @@
-# Two equal Arrays holding Null (or Maps, or Bools) are `==`, yet `<=`
-# between them raises "Type Null is not orderable", while `[1, null] <
-# [2, null]` is true because ordering stops at the first difference. Whether
-# an unorderable element raises thus depends on whether an earlier element
-# differs. Unclear which is intended; this expectation assumes equal Arrays
-# order as equal (the prefix up to the first unequal element decides, as
-# with `==`), so `<=` and `>=` are true and `<` is false.
-#= {
-#=     result: [true, true, false, true],
-#=     inputs: {a: [null], b: [null], m: [{}]},
-#=     known_issue: 'FROST-154',
-#= }
+# Equal Arrays order as equal whatever they hold: element pairs equal by `==`
+# are passed over without being ordered, so `<=` and `>=` are true and `<` is
+# false. Subtle: Null and Map are not orderable themselves.
+#= {result: [true, true, false, true], inputs: {a: [null], b: [null], m: [{}]}}
 [a <= b, a >= b, a < b, m <= [{}]]
