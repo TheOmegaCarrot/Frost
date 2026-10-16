@@ -1,0 +1,8 @@
+# A line indented with a tab under a closing delimiter indented with spaces does not
+# carry the closer's indentation, however many spaces a tab is taken to stand for.
+# Subtle: an editor may show the tab as exactly the closer's four columns.
+#= {rejects: 'indented with different whitespace than the closing delimiter'}
+def text = '''
+	x
+    '''
+text

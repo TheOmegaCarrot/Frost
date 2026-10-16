@@ -1,7 +1,7 @@
 # A line of only whitespace, shorter than the closing delimiter's indentation, reads
 # as an empty line: it holds no text that could be under-indented. An editor that
 # trims trailing whitespace makes it truly empty, and that is already accepted.
-#= {result: 'x\n\ny', known_issue: 'FROST-151'}
+#= {result: 'x\n\ny'}
 def text = '''
     x
   

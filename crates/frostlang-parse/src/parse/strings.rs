@@ -314,11 +314,23 @@ fn expand_escapes(text: &str, kind: EscapingString, text_start: usize) -> ParseR
     Ok(out)
 }
 
+/// The whitespace that lays out a multiline String: indentation, and the trailing
+/// whitespace it ignores.
+const BLANKS: [char; 2] = [' ', '\t'];
+
 /// The lines of a multiline String's `raw` text, without the indentation its closing
-/// delimiter sets, each with the index in `raw` where its text starts.
-/// A CRLF line break is a line break like LF.
+/// delimiter sets or their trailing spaces and tabs, each with the index in `raw` where
+/// its text starts. A CRLF line break is a line break like LF.
+///
+/// Trailing whitespace is invisible and often trimmed by editors, so it is never text:
+/// a line of only whitespace is an empty line, and whitespace wanted at a line's end is
+/// written as an escape.
 fn multiline_lines(raw: &str) -> Result<Vec<(usize, &str)>, String> {
-    let Some(content) = raw.strip_prefix("\r\n").or_else(|| raw.strip_prefix('\n')) else {
+    let after_opener = raw.trim_start_matches(BLANKS);
+    let Some(content) = after_opener
+        .strip_prefix("\r\n")
+        .or_else(|| after_opener.strip_prefix('\n'))
+    else {
         return Err(
             "multiline String must begin with a newline after the opening delimiter".into(),
         );
@@ -329,20 +341,18 @@ fn multiline_lines(raw: &str) -> Result<Vec<(usize, &str)>, String> {
     // indentation (whitespace only). Split on the last newline.
     // Special case: if the content is whitespace-only, the string is empty.
     let Some(last_nl) = content.rfind('\n') else {
-        if content.chars().all(|c| c == ' ' || c == '\t') {
+        if content.trim_start_matches(BLANKS).is_empty() {
             return Ok(Vec::new());
         }
         return Err("closing delimiter of multiline String must be on its own line".into());
     };
 
     let body = &content[..last_nl];
-    let closing_indent = &content[last_nl + 1..];
+    let indent = &content[last_nl + 1..];
 
-    if !closing_indent.chars().all(|c| c == ' ' || c == '\t') {
+    if !indent.trim_start_matches(BLANKS).is_empty() {
         return Err("closing delimiter of multiline String must be on its own line".into());
     }
-
-    let indent = closing_indent.len();
 
     body.split('\n')
         .scan(content_start, |line_start, line| {
@@ -351,21 +361,24 @@ fn multiline_lines(raw: &str) -> Result<Vec<(usize, &str)>, String> {
             Some((at, line.strip_suffix('\r').unwrap_or(line)))
         })
         .map(|(at, line)| {
-            // The prefix is checked as bytes: space and tab are single-byte ASCII, so when all
-            // `indent` leading bytes are one of them, `indent` is a char boundary and the slice
-            // below is safe. A multibyte character inside the prefix fails the check instead of
-            // panicking the slice.
+            let line = line.trim_end_matches(BLANKS);
             if line.is_empty() {
-                Ok((at, line))
-            } else if line.len() >= indent
-                && line.as_bytes()[..indent]
-                    .iter()
-                    .all(|&b| b == b' ' || b == b'\t')
-            {
-                Ok((at + indent, &line[indent..]))
-            } else {
-                Err("multiline String content is indented less than the closing delimiter".into())
+                return Ok((at, line));
             }
+            // A line's indentation must be the closing delimiter's, character for
+            // character: a tab and some number of spaces are never the same indentation.
+            if let Some(text) = line.strip_prefix(indent) {
+                return Ok((at + indent.len(), text));
+            }
+            let text = line.trim_start_matches(BLANKS);
+            let line_indent = &line[..line.len() - text.len()];
+            Err(if indent.starts_with(line_indent) {
+                "multiline String content is indented less than the closing delimiter"
+            } else {
+                "multiline String content is indented with different whitespace than the \
+                 closing delimiter"
+            }
+            .into())
         })
         .collect()
 }

@@ -1,7 +1,8 @@
 # A line indented with spaces under a closing delimiter indented with a tab does not
-# carry the closer's indentation: a tab and a space are different characters, so
-# the line is under-indented rather than losing one space per tab.
-#= {rejects: 'indented less than the closing delimiter', known_issue: 'FROST-152'}
+# carry the closer's indentation: a tab and a space are different characters, and
+# no number of spaces stands for a tab, so the line is rejected rather than losing
+# one space per tab.
+#= {rejects: 'indented with different whitespace than the closing delimiter'}
 def text = '''
   x
 	'''

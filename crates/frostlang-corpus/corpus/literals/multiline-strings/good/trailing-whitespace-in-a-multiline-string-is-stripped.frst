@@ -2,7 +2,7 @@
 # whitespace-only line, even one indented past the closing delimiter, is empty.
 # Subtle: the whitespace is invisible, and editors may or may not trim it, so the
 # String's value must not depend on it.
-#= {result: 'a\n\nb', known_issue: 'FROST-151'}
+#= {result: 'a\n\nb'}
 def text = '''
     a  
       

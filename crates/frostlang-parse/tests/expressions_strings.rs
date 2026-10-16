@@ -330,6 +330,129 @@ fn error_multiline_closing_not_own_line() {
     assert!(err.contains("own line"), "error was: {err}");
 }
 
+// -- Multiline whitespace and indentation --
+//
+// These sources are written with escapes, not raw literals, so that the trailing
+// whitespace and the tabs under test stay visible and survive editors trimming them.
+
+/// Each multiline String delimiter.
+const DELIMITERS: [&str; 2] = ["'''", "\"\"\""];
+
+/// The text of the multiline String `{q}` + `body` + `{q}`, for each delimiter `q`,
+/// asserting it is `expected`, under LF and CRLF line breaks alike.
+fn assert_multiline_text(body: &str, expected: &str) {
+    for q in DELIMITERS {
+        let source = format!("{q}{body}{q}");
+        for source in [source.clone(), source.replace('\n', "\r\n")] {
+            assert_eq!(
+                str_text(&parse_expr(&source)),
+                expected,
+                "source: {source:?}"
+            );
+        }
+    }
+}
+
+/// The error message for the multiline String `{q}` + `body` + `{q}`, for each
+/// delimiter `q`, asserting it is `expected`.
+fn assert_multiline_error(body: &str, expected: &str) {
+    for q in DELIMITERS {
+        let source = format!("{q}{body}{q}");
+        assert_eq!(parse_err_message(&source), expected, "source: {source:?}");
+    }
+}
+
+const LESS_INDENTED: &str = "multiline String content is indented less than the closing delimiter";
+
+const DIFFERENTLY_INDENTED: &str =
+    "multiline String content is indented with different whitespace than the closing delimiter";
+
+#[test]
+fn multiline_trailing_spaces_and_tabs_are_stripped() {
+    assert_multiline_text("\n    a  \n    b\t\n    c \t \n    ", "a\nb\nc");
+}
+
+#[test]
+fn multiline_trailing_whitespace_on_an_unindented_line_is_stripped() {
+    assert_multiline_text("\na  \nb\t\n", "a\nb");
+}
+
+#[test]
+fn multiline_whitespace_only_lines_are_empty_lines() {
+    // Indented past the closing delimiter, as far as it, and less than it
+    assert_multiline_text("\n    a\n        \n    b\n    ", "a\n\nb");
+    assert_multiline_text("\n    a\n    \n    b\n    ", "a\n\nb");
+    assert_multiline_text("\n    a\n  \n    b\n    ", "a\n\nb");
+    // Whitespace of the other kind than the closing delimiter's indentation
+    assert_multiline_text("\n    a\n\t\n    b\n    ", "a\n\nb");
+    assert_multiline_text("\n\ta\n    \n\tb\n\t", "a\n\nb");
+}
+
+#[test]
+fn multiline_escaped_trailing_whitespace_is_kept() {
+    assert_multiline_text(
+        "\n    a\\t\n    b\\u{20}\n    c\\u{9}  \n    ",
+        "a\t\nb \nc\t",
+    );
+}
+
+#[test]
+fn multiline_whitespace_after_the_opener_is_ignored() {
+    assert_multiline_text("  \n    a\n    ", "a");
+    assert_multiline_text("\t\n    a\n    ", "a");
+    assert_multiline_text(" \t \n    a\n    ", "a");
+    assert_multiline_text(" \n    ", "");
+}
+
+#[test]
+fn error_multiline_text_after_the_opener_and_its_whitespace() {
+    let message = "multiline String must begin with a newline after the opening delimiter";
+    assert_multiline_error("  a\n    ", message);
+    assert_multiline_error(" \t# not a comment\n    ", message);
+}
+
+#[test]
+fn multiline_extra_indentation_of_either_kind_is_kept() {
+    assert_multiline_text("\n  \tx\n    y\n  ", "\tx\n  y");
+    assert_multiline_text("\n\t\tx\n\t  y\n\t", "\tx\n  y");
+}
+
+#[test]
+fn multiline_mixed_indentation_matching_the_closer_exactly_is_stripped() {
+    assert_multiline_text("\n\t  x\n\t    y\n\t  ", "x\n  y");
+}
+
+#[test]
+fn error_multiline_tab_indentation_under_space_indentation() {
+    // However many spaces a tab is taken to stand for
+    assert_multiline_error("\n\tx\n    ", DIFFERENTLY_INDENTED);
+    assert_multiline_error("\n\t\tx\n    ", DIFFERENTLY_INDENTED);
+    assert_multiline_error("\n    a\n\tb\n    ", DIFFERENTLY_INDENTED);
+}
+
+#[test]
+fn error_multiline_space_indentation_under_tab_indentation() {
+    // Whether the spaces are fewer bytes than the closer's indentation or more
+    assert_multiline_error("\n x\n\t", DIFFERENTLY_INDENTED);
+    assert_multiline_error("\n  x\n\t", DIFFERENTLY_INDENTED);
+    assert_multiline_error("\n    x\n\t", DIFFERENTLY_INDENTED);
+    assert_multiline_error("\n\ta\n    b\n\t", DIFFERENTLY_INDENTED);
+}
+
+#[test]
+fn error_multiline_mixed_indentation_in_another_order() {
+    assert_multiline_error("\n  \tx\n\t  ", DIFFERENTLY_INDENTED);
+    assert_multiline_error("\n \t x\n\t  ", DIFFERENTLY_INDENTED);
+}
+
+#[test]
+fn error_multiline_a_prefix_of_the_closers_indentation_is_less_indented() {
+    assert_multiline_error("\n  x\n    ", LESS_INDENTED);
+    assert_multiline_error("\nx\n\t", LESS_INDENTED);
+    assert_multiline_error("\n\tx\n\t\t", LESS_INDENTED);
+    assert_multiline_error("\n\t x\n\t  ", LESS_INDENTED);
+}
+
 // -- Additional escape edge cases --
 
 #[test]
