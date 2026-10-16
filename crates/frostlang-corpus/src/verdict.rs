@@ -4,6 +4,7 @@ use std::fmt;
 use std::panic::{AssertUnwindSafe, catch_unwind};
 
 use frostlang::{Value, write_quoted_string};
+use rayon::prelude::*;
 
 use crate::discover::Entry;
 use crate::expectation::{Expectation, Expected, Kind, KnownIssue};
@@ -57,7 +58,8 @@ impl Report {
     }
 }
 
-/// Check the script `entry` under each of `mode`'s options.
+/// Check the script `entry` under each of `mode`'s options, as
+/// [`check_source`] does.
 pub fn check(entry: &Entry, mode: Mode) -> Verdict {
     match std::fs::read_to_string(&entry.path) {
         Ok(source) => check_source(&entry.name, &source, mode),
@@ -69,7 +71,8 @@ pub fn check(entry: &Entry, mode: Mode) -> Verdict {
 }
 
 /// Check the script `source`, named `name` as [`Entry::name`] names it, under
-/// each of `mode`'s options.
+/// each of `mode`'s options. The options run in parallel on the current rayon
+/// thread pool.
 pub fn check_source(name: &str, source: &str, mode: Mode) -> Verdict {
     let kind = declared_kind(name);
     Verdict {
@@ -115,19 +118,25 @@ fn report(name: &str, source: &str, kind: Option<Kind>, mode: Mode) -> Report {
     }
 }
 
-/// Run the script under each of `mode`'s options, requiring them to agree,
-/// and compare the outcome to `expectation`.
+/// Run the script under each of `mode`'s options, in parallel on the current
+/// rayon pool, requiring them to agree, and compare the outcome to
+/// `expectation`.
 fn run(name: &str, source: &str, expectation: &Expectation, mode: Mode) -> Report {
     let filename = format!("{name}.frst");
     let inputs = &expectation.inputs;
-    let mut options = mode.options().into_iter();
-    let baseline_options = options.next().expect("every mode has options");
-    let baseline = match guarded(|| observe(&filename, source, inputs, baseline_options)) {
+    let options = mode.options();
+    let observations: Vec<_> = options
+        .par_iter()
+        .map(|&options| guarded(|| observe(&filename, source, inputs, options)))
+        .collect();
+    let mut runs = options.into_iter().zip(observations);
+    let (baseline_options, baseline) = runs.next().expect("every mode has options");
+    let baseline = match baseline {
         Ok(observed) => observed,
         Err(message) => return Report::Panicked(message),
     };
-    for other_options in options {
-        match guarded(|| observe(&filename, source, inputs, other_options)) {
+    for (other_options, observed) in runs {
+        match observed {
             Ok(observed) if observed == baseline => {}
             Ok(observed) => {
                 return Report::Failed(format!(

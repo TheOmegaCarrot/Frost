@@ -42,5 +42,6 @@ when a script itself was wrong. The format is described in `README.md`.
 - **One concern per script.** Its file name says what it covers, and a brief
   prose comment says what it checks and, for a subtle case, why it is subtle.
 - **Stay in scope.** Scripts cover the core language only: the domain of the
-  compiler and the VM. They are deterministic: no clock, randomness,
+  compiler and the VM, plus the globals `README.md` names as in scope. They
+  are deterministic: no clock, randomness,
   filesystem, or environment dependence.

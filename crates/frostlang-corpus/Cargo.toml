@@ -13,6 +13,8 @@ doctest = false
 
 [dependencies]
 frostlang.workspace = true
+# Runs a script's option sets in parallel.
+rayon = "1.12"
 serde = { version = "1", features = ["derive"] }
 
 [dev-dependencies]

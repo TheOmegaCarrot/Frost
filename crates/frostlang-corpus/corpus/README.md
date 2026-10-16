@@ -1,12 +1,22 @@
 # The Frost core-language corpus
 
 A large body of standalone Frost scripts, each pinning what the core language
-should do with it. Its subject is the domain of the compiler and the VM;
-library behavior (globals, `std.*`, `ext.*`) belongs to the stdlib's own tests,
-and the VM's runtime limits and host-facing configuration (fuel, call and
-import depth, cancellation) to the unit tests.
-A script may use a few globals to build or observe its result, but never to
-test them.
+should do with it. Its subject is the domain of the compiler and the VM.
+Library behavior (most globals, `std.*`, `ext.*`) belongs to the stdlib's own
+tests, and the VM's runtime limits and host-facing configuration (fuel, call
+and import depth, cancellation) to the unit tests.
+
+Two kinds of global are in scope all the same:
+
+- Those bound up with the compiler, which it may inline or optimize: the
+  function forms `transform`, `select`, `fold`, and `each`, and `call` and the
+  `is_*` type predicates.
+- Those written in Frost itself, in
+  [`source.frst`](../../frostlang/src/vm/globals/generated/source.frst): they
+  are compiled code like any script.
+
+Any other global may help a script build or observe its result, but is never
+its subject.
 
 The corpus states intended behavior, never merely current behavior. A script
 that shows a bug keeps the correct expectation and carries a known-issue
@@ -130,7 +140,8 @@ variable may be set to any value. Optimization must never change what a
 program does, so under each mode the options must all agree.
 
 A script's test name is its path under `corpus/`, without the extension.
-Scripts run in parallel; the usual test-harness options (`--test-threads`,
-`--list`, `--skip`) apply.
+Scripts, and each script's option sets, run in parallel; the usual test-harness options (`--test-threads`,
+`--list`, `--skip`) apply, and so does `RUST_TEST_THREADS`, which
+`--test-threads` overrides.
 
 The corpus runs as part of `cargo test`, under the default optimizations.
