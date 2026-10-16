@@ -452,3 +452,33 @@ pub enum TypeConstraint {
     /// `is Nonnull`
     Nonnull,
 }
+
+impl TypeConstraint {
+    /// The constraint written `name` after `is`, such as [`TypeConstraint::Int`] for
+    /// `Int`, or `None` if `name` names no type.
+    pub fn from_name(name: &str) -> Option<Self> {
+        TYPE_CONSTRAINTS
+            .iter()
+            .find(|(type_name, _)| *type_name == name)
+            .map(|&(_, constraint)| constraint)
+    }
+}
+
+/// Each type a constraint can name after `is`, by its name.
+pub(crate) const TYPE_CONSTRAINTS: &[(&str, TypeConstraint)] = &[
+    ("Null", TypeConstraint::Null),
+    ("Int", TypeConstraint::Int),
+    ("Float", TypeConstraint::Float),
+    ("Bool", TypeConstraint::Bool),
+    ("String", TypeConstraint::String),
+    ("Bytes", TypeConstraint::Bytes),
+    ("Array", TypeConstraint::Array),
+    ("Map", TypeConstraint::Map),
+    ("Function", TypeConstraint::Function),
+    ("Opaque", TypeConstraint::Opaque),
+    ("Primitive", TypeConstraint::Primitive),
+    ("Numeric", TypeConstraint::Numeric),
+    ("Structured", TypeConstraint::Structured),
+    ("Flat", TypeConstraint::Flat),
+    ("Nonnull", TypeConstraint::Nonnull),
+];

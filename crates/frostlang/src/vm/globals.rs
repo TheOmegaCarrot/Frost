@@ -21,7 +21,7 @@ mod types;
 use std::sync::{Arc, LazyLock};
 
 use crate::bytecode::{Bytecode, CompiledFunction, FormatVersion};
-use crate::{Arity, Closure, Value};
+use crate::{Arity, Closure, Params, Value};
 
 use collections::*;
 use debug::*;
@@ -247,6 +247,24 @@ fn bytecode_global(name: &'static str, arity: Arity, code: Vec<Bytecode>) -> Val
             code,
         }),
     }))
+}
+
+/// A native named `name` that returns, as a value, the error a native with
+/// `params` raises when its arguments have the wrong types. A hand-rolled
+/// bytecode global calls it only once its own fast type check has failed, then
+/// raises the result with `ProduceError`. Raised from the global's own frame,
+/// the error names the global once in the backtrace; raised from this native,
+/// it would name it twice, once for each.
+fn type_error_native(name: &'static str, params: Params) -> Value {
+    Value::native(name, params.arity(), move |ctx, args| {
+        match ctx.check_args(args, &params) {
+            Err(error) => Ok(error.into_value()),
+            Ok(()) => unreachable!(
+                "{} calls its type error native only when an argument has a wrong type",
+                ctx.name()
+            ),
+        }
+    })
 }
 
 static DEFAULT_GLOBALS: LazyLock<Arc<GlobalSet>> =

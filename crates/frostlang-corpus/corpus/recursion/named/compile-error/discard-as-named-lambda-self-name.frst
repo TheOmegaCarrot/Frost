@@ -1,6 +1,6 @@
 # A named lambda cannot take `_` as its self-name, so it cannot recurse
 # through `_`. Subtle: `_` reads as a name here, but binding `_` anywhere
 # discards, so it can never name the function.
-#= {rejects: '`_`', known_issue: 'FROST-157'}
+#= {rejects: '`_`'}
 def f = fn _(n) -> if n == 0: 'done' else: _(n - 1)
 f(3)

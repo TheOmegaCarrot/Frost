@@ -89,8 +89,9 @@ impl<'src> ParseCtx<'src> {
     /// help wins. Only rules that can apply at the end of input run there.
     pub(crate) fn habit_help(&self, found: usize, expected: Option<&Token>) -> Option<String> {
         let site = Site { ctx: self, found };
-        let help = expected
-            .and_then(|expected| site.expected_token_help(expected))
+        let help = site
+            .reversed_less_or_equal_help()
+            .or_else(|| expected.and_then(|expected| site.expected_token_help(expected)))
             .or_else(|| site.dots_help())
             .or_else(|| site.missing_digits_help())
             .or_else(|| site.increment_help());
@@ -101,6 +102,7 @@ impl<'src> ParseCtx<'src> {
             .or_else(|| site.statement_word_help())
             .or_else(|| site.comment_help())
             .or_else(|| site.touching_help())
+            .or_else(|| site.nested_guard_help())
             .or_else(|| site.keyword_as_name_help())
             .or_else(|| site.brace_help())
             .or_else(|| site.operand_word_help())

@@ -2,7 +2,6 @@
 #= {
 #=     raises: 'no value at key "missing"',
 #=     inputs: {m: {}},
-#=     known_issue: 'FROST-155',
 #= }
 def {missing, [null]: x} = m
 [x, missing]

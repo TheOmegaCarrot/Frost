@@ -348,7 +348,7 @@ fn hard_index_miss_suggests_a_similar_key() {
     let message = hard_index_miss(&["bla", "other"], skey("ble"));
     assert_eq!(
         message,
-        "Map has no value at key 'ble'; did you mean 'bla'?"
+        r#"Map has no value at key "ble"; did you mean "bla"?"#
     );
 }
 
@@ -371,7 +371,7 @@ fn hard_index_miss_suggests_a_key_only_if_close_enough() {
         let message = hard_index_miss(keys, skey(missing));
         match suggested {
             Some(key) => assert!(
-                message.ends_with(&format!("did you mean '{key}'?")),
+                message.ends_with(&format!("did you mean \"{key}\"?")),
                 "{missing} among {keys:?}: {message}"
             ),
             None => assert!(
@@ -388,7 +388,7 @@ fn hard_index_miss_suggests_the_closest_key() {
     for keys in [["abcaaf", "abcdez"], ["abcdez", "abcaaf"]] {
         let message = hard_index_miss(&keys, skey("abcdef"));
         assert!(
-            message.ends_with("did you mean 'abcdez'?"),
+            message.ends_with(r#"did you mean "abcdez"?"#),
             "among {keys:?}: {message}"
         );
     }
@@ -396,7 +396,8 @@ fn hard_index_miss_suggests_the_closest_key() {
     for keys in [["bag", "bar"], ["bar", "bag"]] {
         let message = hard_index_miss(&keys, skey("bat"));
         assert!(
-            message.ends_with("did you mean 'bag'?") || message.ends_with("did you mean 'bar'?"),
+            message.ends_with(r#"did you mean "bag"?"#)
+                || message.ends_with(r#"did you mean "bar"?"#),
             "among {keys:?}: {message}"
         );
     }

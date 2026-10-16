@@ -1,4 +1,4 @@
 # An exported Map pattern over a constant Map missing its key raises, however
 # the optimizer treats the constant.
-#= {raises: ['no value', "'a'"]}
+#= {raises: 'no value at key "a"'}
 export def {a} = {b: 1}

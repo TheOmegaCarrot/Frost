@@ -3,7 +3,6 @@
 #= {
 #=     raises: 'no value at key "a"',
 #=     inputs: {xs: [{}, 5]},
-#=     known_issue: 'FROST-155',
 #= }
 def [{a}, [b]] = xs
 [a, b]

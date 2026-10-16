@@ -1,5 +1,5 @@
 # A single `call` that fails its argument check appears once in the
 # backtrace, like any other native that fails (`len(3)` gives `['len', ...]`).
-#= {result: ['call', 'g'], known_issue: 'FROST-158'}
+#= {result: ['call', 'g']}
 defn g() -> [call(len, 3)]
 try_call(g, []).trace

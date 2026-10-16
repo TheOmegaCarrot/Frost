@@ -1,5 +1,6 @@
 //! Rules for words: keywords, and words other languages use that Frost does not.
 
+use crate::ast::TYPE_CONSTRAINTS;
 use crate::lex::Token;
 use crate::parse::ctx::Bracket;
 use crate::parse::hints::site::{
@@ -10,7 +11,6 @@ use crate::parse::hints::{
     CALL_HELP, CATCH_ALL_HELP, CONDITIONAL_HELP, ELIF_HELP, LAMBDA_HELP, RETURN_TYPE_HELP, Site,
     bare_name_help, define_function_help, function_form, is_iterative_keyword,
 };
-use crate::parse::pattern::TYPE_CONSTRAINTS;
 
 /// Words other languages use to declare a variable.
 const DECLARATION_WORDS: &[&str] = &["let", "var", "const", "local", "val", "mut"];
@@ -437,12 +437,23 @@ impl<'src> Site<'_, 'src> {
         }
     }
 
-    /// Help for `else` or `elif` starting a statement after a complete one: after an
-    /// `if` whose branch took several statements, or with no `if` before it to continue.
+    /// Help for `else` or `elif` where an expression begins, which continues no `if`:
+    /// starting a statement after a complete one, as after an `if` whose branch took
+    /// several statements, or anywhere else an expression begins, as after `;`, an
+    /// operator, or `(`.
     pub(super) fn stray_branch_help(&self) -> Option<String> {
+        let after_an_operand = self
+            .token_before(self.found)
+            .is_some_and(ends_an_expression);
+        if !after_an_operand {
+            return self
+                .begins_an_expression()
+                .then(|| CONDITIONAL_HELP.to_owned());
+        }
+        // After an operand, only a new statement begins an expression: not in
+        // `f(1 else)`, where a `,` or `)` belongs.
         if !self.starts_statement(self.found)
             || !self.at_statement_level(self.ctx.innermost_bracket())
-            || !self.token_before(self.found).is_none_or(ends_an_expression)
         {
             return None;
         }
@@ -459,6 +470,21 @@ impl<'src> Site<'_, 'src> {
         } else {
             CONDITIONAL_HELP.to_owned()
         })
+    }
+
+    /// Whether the error, following no operand, is where an expression begins rather
+    /// than a pattern, a parameter, or a Map entry's key.
+    fn begins_an_expression(&self) -> bool {
+        let at_an_entry_start = matches!(
+            self.token_before(self.found),
+            Some(Token::OpenBrace | Token::Comma)
+        );
+        match self.innermost_kind() {
+            Some(Bracket::MapLiteral) => !at_an_entry_start,
+            Some(Bracket::MatchArms) => self.arm_part() != Some(ArmPart::Pattern),
+            Some(Bracket::MapPattern | Bracket::ArrayPattern | Bracket::Parameters) => false,
+            _ => true,
+        }
     }
 
     /// Help for a `{` after what reads as a function's header: a return type, as in

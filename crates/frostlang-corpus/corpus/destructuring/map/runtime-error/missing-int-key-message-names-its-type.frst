@@ -1,6 +1,6 @@
 # A missing Int key is named in the error as `to_string` renders it, so it
 # cannot be mistaken for the String key that spells it. Subtle: the Map does
 # hold the String key '1', which the Int key 1 does not match.
-#= {raises: 'no value at key 1', inputs: {m: {['1']: 1}}, known_issue: 'FROST-155'}
+#= {raises: 'no value at key 1', inputs: {m: {['1']: 1}}}
 def {[1]: x} = m
 x

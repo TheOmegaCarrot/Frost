@@ -240,6 +240,65 @@ mod named {
         assert_eq!(lam.params.len(), 1);
         assert!(matches!(&lam.return_expr.node, Expr::If { .. }));
     }
+
+    // A self-name is a name, not a pattern: `_` would discard the binding, so it
+    // is rejected whatever the body does, as `defn _` is.
+    #[test]
+    fn discard_as_self_name_is_rejected() {
+        let sources = [
+            "fn _() -> 1",
+            "fn _(n) -> n",
+            "fn _(n) -> if n == 0: 'done' else: _(n - 1)",
+            "fn _(a, ...rest) -> rest",
+            "fn _(...args) -> args",
+            r"
+                fn _(x) -> {
+                    def y = _(x)
+                    y
+                }
+            ",
+        ];
+        for source in sources {
+            let err = frostlang_parse::parse_program("test.frst", source).expect_err(source);
+            assert_eq!(
+                err.message(),
+                "a named lambda requires a function name, not `_`",
+                "message for {source:?}"
+            );
+            let span = err.primary_span();
+            assert_eq!(
+                &source[span.start..span.end],
+                "_",
+                "the error for {source:?} points at the self-name"
+            );
+            assert_eq!(
+                err.help(),
+                Some("for an unnamed lambda, write `fn (...) -> ...`"),
+                "help for {source:?}"
+            );
+        }
+    }
+
+    #[test]
+    fn discard_as_defn_name_is_rejected() {
+        assert_eq!(
+            parse_err_message("defn _(n) -> n"),
+            "`defn` requires a function name, not `_`"
+        );
+    }
+
+    // Only a self-name is held to being a name; `_` still discards a parameter.
+    #[test]
+    fn discard_parameters_beside_a_self_name_are_accepted() {
+        let expr = parse_expr("fn f(_, ..._) -> 1");
+        let lam = assert_lambda(&expr);
+        assert_eq!(lam.self_name, Some("f"));
+        assert!(matches!(lam.params, [p] if p.node == Binding::Discarded));
+        assert!(matches!(
+            lam.variadic_param,
+            Some(rest) if rest.node == Binding::Discarded
+        ));
+    }
 }
 
 // ============================================================

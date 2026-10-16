@@ -91,7 +91,7 @@ fn an_absent_key_raises_naming_it() {
     let map = Value::map([("a", Value::Int(1))]);
     let error = extract_const_key(map, MapKey::from("z")).unwrap_err();
     assert!(
-        error.message().contains("no value at key 'z'"),
+        error.message().contains(r#"no value at key "z""#),
         "{}",
         error.message()
     );
@@ -103,7 +103,7 @@ fn an_absent_key_suggests_a_similar_string_key() {
     let error = extract_const_key(map, MapKey::from("nmae")).unwrap_err();
     assert_eq!(
         error.message(),
-        "Map has no value at key 'nmae'; did you mean 'name'?"
+        r#"Map has no value at key "nmae"; did you mean "name"?"#
     );
 }
 

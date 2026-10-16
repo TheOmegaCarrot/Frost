@@ -2,6 +2,6 @@
 # no initial value, so the help should point to `fold(xs, f)`. Subtle: the
 # lambda's own parameter list holds a comma, which must not count as a
 # separate argument.
-#= {rejects: '`fold(xs, f)`', known_issue: 'FROST-160'}
+#= {rejects: '`fold(xs, f)`'}
 def xs = [1]
 reduce(xs, fn acc, x -> acc + x)

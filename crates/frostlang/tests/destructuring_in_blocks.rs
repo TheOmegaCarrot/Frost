@@ -366,7 +366,7 @@ fn a_caught_destructuring_failure_leaves_the_stack_balanced() {
 fn a_failed_destructure_ends_the_block() {
     assert_raises(&[
         ("do { def [a] = [1, 2]; a }", "exactly 1 element"),
-        ("do { def {a} = {}; a }", "no value at key 'a'"),
+        ("do { def {a} = {}; a }", r#"no value at key "a""#),
         (
             r"
             do {

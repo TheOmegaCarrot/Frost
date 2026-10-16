@@ -1,6 +1,6 @@
 # A discarded hard index of a key a known Map lacks still raises: an index is
 # not a mere load, since it can fail.
-#= {raises: 'no value at key "b"', known_issue: 'FROST-155'}
+#= {raises: 'no value at key "b"'}
 def m = {a: 1}
 m.b
 'unreached'

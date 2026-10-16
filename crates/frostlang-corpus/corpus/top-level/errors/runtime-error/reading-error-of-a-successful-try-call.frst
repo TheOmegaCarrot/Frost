@@ -1,4 +1,4 @@
 # A successful `try_call` result has no `error` key, so reading it raises.
-#= {raises: ['no value', "'error'"]}
+#= {raises: 'no value at key "error"'}
 def outcome = try_call(fn -> 1)
 outcome.error

@@ -2,6 +2,5 @@
 #= {
 #=     raises: 'did you mean "name"?',
 #=     inputs: {m: {name: 'ada', age: 36}},
-#=     known_issue: 'FROST-155',
 #= }
 m.nmae

@@ -226,7 +226,7 @@ fn a_mistyped_field_suggests_the_intended_one() {
     ] {
         let message = raises_with_data(source);
         assert!(
-            message.contains(&format!("did you mean '{suggested}'?")),
+            message.contains(&format!("did you mean \"{suggested}\"?")),
             "{source:?}: {message}"
         );
     }

@@ -333,7 +333,7 @@ fn keys_of_every_type_match_only_their_own_type() {
             def {a} = {[x'61']: 1}
             a
             ",
-            "no value at key 'a'",
+            r#"no value at key "a""#,
         ),
     ]);
 }
@@ -505,7 +505,7 @@ fn a_discard_still_requires_its_key() {
         def {a: _, b} = {b: 1}
         b
         ",
-        "no value at key 'a'",
+        r#"no value at key "a""#,
     )]);
 }
 
@@ -540,7 +540,7 @@ fn a_shorthand_underscore_requires_the_key_but_binds_no_name() {
         def {_, a} = {a: 1}
         a
         ",
-        "no value at key '_'",
+        r#"no value at key "_""#,
     )]);
 }
 
@@ -1056,28 +1056,28 @@ fn a_missing_key_raises() {
             def {a} = {b: 1}
             a
             ",
-            "no value at key 'a'",
+            r#"no value at key "a""#,
         ),
         (
             r"
             def {x, y} = {y: 1}
             x
             ",
-            "no value at key 'x'",
+            r#"no value at key "x""#,
         ),
         (
             r"
             def {a, b} = {}
             a
             ",
-            "no value at key 'a'",
+            r#"no value at key "a""#,
         ),
         (
             r"
             def {a: {b}} = {a: {c: 1}}
             b
             ",
-            "no value at key 'b'",
+            r#"no value at key "b""#,
         ),
     ]);
 }
@@ -1111,14 +1111,14 @@ fn entries_are_looked_up_in_source_order() {
             def {first, second} = {}
             0
             ",
-            "'first'",
+            r#""first""#,
         ),
         (
             r"
             def {second, first} = {}
             0
             ",
-            "'second'",
+            r#""second""#,
         ),
     ]);
 }
@@ -1149,7 +1149,7 @@ fn a_nested_empty_map_pattern_still_requires_a_map() {
             };
             let message = raises(&format!("{source}\n0"));
             assert!(
-                message.contains("Cannot destructure: expected a Map"),
+                message.contains("Pattern does not match: expected a Map"),
                 "{pattern} = {value}: {message}"
             );
         }
@@ -1204,31 +1204,90 @@ fn an_invalid_computed_key_raises() {
     ]);
 }
 
+/// A missing key renders as `to_string` renders it inside a collection, so the
+/// message tells keys of different types apart.
 #[test]
-fn a_missing_key_is_named_in_the_error() {
-    assert_raises(&[
-        (
-            r"
-            def {[1]: x} = {}
-            x
-            ",
-            "no value at key '1'",
-        ),
+fn a_missing_key_is_named_in_the_error_as_to_string_renders_it_in_a_collection() {
+    let cases = [
         (
             r"
             def {[true]: x} = {}
             x
             ",
-            "no value at key 'true'",
+            "Map has no value at key true",
+        ),
+        (
+            r"
+            def {[1]: x} = {}
+            x
+            ",
+            "Map has no value at key 1",
+        ),
+        (
+            r"
+            def {[1.5]: x} = {}
+            x
+            ",
+            "Map has no value at key 1.5",
+        ),
+        (
+            r"
+            def {[2.0]: x} = {}
+            x
+            ",
+            "Map has no value at key 2.0",
         ),
         (
             r#"
             def {["two words"]: x} = {}
             x
             "#,
-            "no value at key 'two words'",
+            r#"Map has no value at key "two words""#,
         ),
-    ]);
+        (
+            r#"
+            def {["say \"hi\"\n"]: x} = {}
+            x
+            "#,
+            r#"Map has no value at key "say \"hi\"\n""#,
+        ),
+        (
+            r"
+            def {[x'00ff']: x} = {}
+            x
+            ",
+            "Map has no value at key x'00ff'",
+        ),
+    ];
+    for (source, message) in cases {
+        assert_eq!(raises(source), message, "the error for {source:?}");
+    }
+}
+
+/// An Int key missing from a Map that holds the String key spelling it is named
+/// as an Int, not confused with that String.
+#[test]
+fn a_missing_int_key_is_told_apart_from_the_string_key_spelling_it() {
+    let source = r"
+        def m = {['1']: 'one'}
+        def {[1]: x} = m
+        x
+    ";
+    assert_eq!(
+        raises(source),
+        "Map has no value at key 1",
+        "the Int key 1 is named bare, unlike the String key \"1\" the Map holds"
+    );
+    let source = r"
+        def m = {[1]: 'one'}
+        def {['1']: x} = m
+        x
+    ";
+    assert_eq!(
+        raises(source),
+        r#"Map has no value at key "1""#,
+        "the String key \"1\" is named quoted, unlike the Int key 1 the Map holds"
+    );
 }
 
 #[test]
@@ -1239,14 +1298,21 @@ fn a_mistyped_key_suggests_the_intended_one() {
             def {nmae} = {name: 1}
             nmae
             ",
-            "no value at key 'nmae'; did you mean 'name'?",
+            r#"no value at key "nmae"; did you mean "name"?"#,
         ),
         (
             r"
             def {a: {widht}} = {a: {width: 1}}
             widht
             ",
-            "did you mean 'width'?",
+            r#"did you mean "width"?"#,
+        ),
+        (
+            r#"
+            def {['say "ho"']: x} = {['say "hi"']: 1}
+            x
+            "#,
+            r#"no value at key "say \"ho\""; did you mean "say \"hi\""?"#,
         ),
     ]);
 }
@@ -1299,7 +1365,7 @@ fn each_entry_destructures_completely_before_the_next_key() {
             def {a: {b}, [1 / 0]: y} = {a: {}}
             b
             ",
-            "no value at key 'b'",
+            r#"no value at key "b""#,
         ),
         (
             r"
@@ -1321,7 +1387,7 @@ fn each_entry_destructures_completely_before_the_next_key() {
             def {missing, [null]: x} = {}
             x
             ",
-            "no value at key 'missing'",
+            r#"no value at key "missing""#,
         ),
     ]);
 }
@@ -1388,7 +1454,7 @@ fn errors_come_from_the_value_first_then_each_key_in_turn() {
             def {missing, [1 / 0]: x} = {a: 1}
             x
             ",
-            "no value at key 'missing'",
+            r#"no value at key "missing""#,
         ),
     ]);
 }
@@ -1513,7 +1579,7 @@ fn a_block_whose_destructuring_fails_is_left_for_runtime() {
         1,
         "the lookup is kept: {emitted:?}"
     );
-    assert_raises(&[(source, "no value at key 'a'")]);
+    assert_raises(&[(source, r#"no value at key "a""#)]);
 }
 
 #[test]

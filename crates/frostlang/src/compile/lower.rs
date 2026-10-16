@@ -29,7 +29,7 @@ use crate::compile::{
 use crate::bytecode::{Bytecode, CompiledFunction};
 use crate::{Arity, MapKey, Value};
 use frostlang_parse::{
-    ast::{Expr, SourceSpan, Spanned, Statement},
+    ast::{Expr, SourceSpan, Spanned, Statement, TypeConstraint},
     parse_program,
 };
 
@@ -273,6 +273,58 @@ impl<'a> FunctionBuilder<'a> {
                 .help("remove it, or bind `_` instead".into());
             self.lint(lint);
         }
+    }
+
+    /// Lint `name`, bound at `span`, if it is a type's name: in a match pattern,
+    /// it binds every value rather than testing the type.
+    fn lint_type_name_binding(&mut self, name: &str, span: SourceSpan) {
+        if !self.lints_on() || TypeConstraint::from_name(name).is_none() {
+            return;
+        }
+        let lint = self
+            .warning(
+                "type name binding",
+                format!("`{name}` is a type name, but here it binds a name"),
+            )
+            .label_primary(span, "binds a name".into())
+            .help(format!(
+                "to test for the type in a match pattern, write `_ is {name}`; \
+                 otherwise, choose another name"
+            ));
+        self.lint(lint);
+    }
+
+    /// Lint the `-` operator at `op` if it starts a run of `-` with no space
+    /// between, which reads as another language's decrement.
+    fn lint_consecutive_minus(&mut self, op: SourceSpan) {
+        if !self.lints_on() {
+            return;
+        }
+        // Only an operator writes a `-`: no other token ends with one, and none
+        // but an operator starts with one.
+        let starts_run = !self.source[..op.start].ends_with('-');
+        let run = self.source[op.start..]
+            .bytes()
+            .take_while(|&byte| byte == b'-')
+            .count();
+        if !starts_run || run < 2 {
+            return;
+        }
+        let lint = self
+            .warning(
+                "consecutive minus",
+                "Frost has no `--` decrement; these are separate `-` operators".to_owned(),
+            )
+            .label_primary(
+                SourceSpan::from(op.start..op.start + run),
+                "separate `-` operators".into(),
+            )
+            .help(
+                "for a double negation or subtracting a negation, \
+                 put a space between them, as in `- -x` or `a - -b`"
+                    .into(),
+            );
+        self.lint(lint);
     }
 
     /// The error for binding `name` at `span` in a scope that already binds it

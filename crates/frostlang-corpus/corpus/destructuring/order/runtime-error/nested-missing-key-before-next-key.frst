@@ -3,7 +3,6 @@
 #= {
 #=     raises: 'no value at key "b"',
 #=     inputs: {n: 0, m: {a: {}}},
-#=     known_issue: 'FROST-155',
 #= }
 def {a: {b}, [1 / n]: y} = m
 [b, y]

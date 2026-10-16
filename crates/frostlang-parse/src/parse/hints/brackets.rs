@@ -12,6 +12,9 @@ use crate::parse::hints::{
     Site, destructure_help, is_iterative_keyword, iterative_help,
 };
 
+const NESTED_GUARD_HELP: &str =
+    "an arm's guard follows its whole pattern, before `=>`, like `[x] if: x > 0 => ...`";
+
 impl<'src> Site<'_, 'src> {
     /// Help for braces whose contents were read as one thing where another was meant:
     /// a Map where a block was meant, a block where a Map was, or a Map key not written
@@ -150,6 +153,23 @@ impl<'src> Site<'_, 'src> {
             ));
         }
         Some(key_help(key))
+    }
+
+    /// Help for a guard written after part of a `match` arm's pattern, inside an Array
+    /// or Map pattern, as in `[x if: x > 0] => x`.
+    pub(super) fn nested_guard_help(&self) -> Option<String> {
+        if self.token_at(0) != Some(&Token::KwIf) || !self.follows_an_operand(0) {
+            return None;
+        }
+        let is_pattern =
+            |open: &OpenBracket| matches!(open.kind, Bracket::ArrayPattern | Bracket::MapPattern);
+        // Inside pattern brackets that `match` arms hold, not those of a `def`
+        let mut open = self.ctx.open_brackets();
+        let in_an_arm_pattern = open.next().is_some_and(|open| is_pattern(&open))
+            && open
+                .find(|open| !is_pattern(open))
+                .is_some_and(|holder| holder.kind == Bracket::MatchArms);
+        in_an_arm_pattern.then(|| NESTED_GUARD_HELP.to_owned())
     }
 
     /// Help for list items separated by something other than a comma: a line break, as

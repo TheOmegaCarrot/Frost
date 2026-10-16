@@ -667,7 +667,7 @@ fn nested_patterns_are_checked_left_to_right() {
             def [{a}, [b]] = [{}, 5]
             b
             ",
-            "no value at key 'a'",
+            r#"no value at key "a""#,
         ),
         (
             r"

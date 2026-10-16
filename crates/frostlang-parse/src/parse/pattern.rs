@@ -169,10 +169,10 @@ impl<'src> ParseCtx<'src> {
         let span: SourceSpan = peek.span.clone().into();
 
         let named = match peek.token {
-            Token::Identifier(name) => TYPE_CONSTRAINTS.iter().find(|(n, _)| *n == name),
+            Token::Identifier(name) => TypeConstraint::from_name(name),
             _ => None,
         };
-        let Some(&(_, constraint)) = named else {
+        let Some(constraint) = named else {
             return Err(self.expected("a type name", peek));
         };
 
@@ -289,25 +289,6 @@ impl<'src> ParseCtx<'src> {
         }
     }
 }
-
-/// Each type a constraint can name after `is`, by its name.
-pub(crate) const TYPE_CONSTRAINTS: &[(&str, TypeConstraint)] = &[
-    ("Null", TypeConstraint::Null),
-    ("Int", TypeConstraint::Int),
-    ("Float", TypeConstraint::Float),
-    ("Bool", TypeConstraint::Bool),
-    ("String", TypeConstraint::String),
-    ("Bytes", TypeConstraint::Bytes),
-    ("Array", TypeConstraint::Array),
-    ("Map", TypeConstraint::Map),
-    ("Function", TypeConstraint::Function),
-    ("Opaque", TypeConstraint::Opaque),
-    ("Primitive", TypeConstraint::Primitive),
-    ("Numeric", TypeConstraint::Numeric),
-    ("Structured", TypeConstraint::Structured),
-    ("Flat", TypeConstraint::Flat),
-    ("Nonnull", TypeConstraint::Nonnull),
-];
 
 fn value_pattern(expr: Spanned<Expr>) -> Spanned<Pattern> {
     let span = expr.span;

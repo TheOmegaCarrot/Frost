@@ -24,6 +24,8 @@ const COMMENT_HELP: &str = "a comment starts with `#`";
 
 const OR_HELP: &str = "Frost's \"or\" is `or`";
 
+const LESS_OR_EQUAL_HELP: &str = "Frost's less-than-or-equal is `<=`";
+
 const IMMUTABLE_HELP: &str =
     "Frost values are immutable; bind an updated value to a new name with `def`";
 
@@ -164,6 +166,15 @@ impl Site<'_, '_> {
             _ => return None,
         };
         Some(help.to_owned())
+    }
+
+    /// Help for `=<` after an operand, as in `a =< b`, failing at its `=` wherever the
+    /// parser stands, even where it expected a particular token.
+    pub(super) fn reversed_less_or_equal_help(&self) -> Option<String> {
+        (self.token_at(0) == Some(&Token::Assign)
+            && self.abutting_next() == Some(&Token::OpLt)
+            && self.follows_an_operand(0))
+        .then(|| LESS_OR_EQUAL_HELP.to_owned())
     }
 
     /// Help for tokens touching with no space between, the shape of a token Frost lacks:

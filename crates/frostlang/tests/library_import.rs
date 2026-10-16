@@ -140,3 +140,18 @@ fn import_requires_a_string() {
     ]);
     assert_arity("import", 1, &[0, 2]);
 }
+
+/// `import` names itself once in a backtrace when its argument check fails,
+/// like any other function there.
+#[test]
+fn import_of_a_wrong_type_appears_once_in_a_backtrace() {
+    let source = r"
+        defn g() -> [import(1)]
+        try_call(g, []).trace
+    ";
+    assert_eq!(
+        Script::new(source).run(),
+        Script::new("['import', 'g']").run(),
+        "`import` appears once, above the function that called it"
+    );
+}

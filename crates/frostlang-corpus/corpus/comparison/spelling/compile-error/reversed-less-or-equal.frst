@@ -1,4 +1,4 @@
 # `=<` is not an operator: its spelling is `<=`. The rejection should point
 # there, as the `===`, `!==`, and `<>` rejections point to the real operator.
-#= {rejects: '`<=`', inputs: {a: 1, b: 2}, known_issue: 'FROST-153'}
+#= {rejects: '`<=`', inputs: {a: 1, b: 2}}
 a =< b

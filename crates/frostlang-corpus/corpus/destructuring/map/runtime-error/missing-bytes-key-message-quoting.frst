@@ -1,5 +1,5 @@
 # A missing Bytes key is named in the error as `to_string` renders it inside a
 # collection: as a Bytes literal, quoted once.
-#= {raises: "no value at key x'00ff'", inputs: {m: {}}, known_issue: 'FROST-155'}
+#= {raises: "no value at key x'00ff'", inputs: {m: {}}}
 def {[x'00ff']: v} = m
 v

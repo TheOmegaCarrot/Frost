@@ -1496,13 +1496,19 @@ impl Vm {
 
 /// The error for `map` having no value at `key`, suggesting the key a mistyped
 /// String most likely meant.
+/// Each key renders as `to_string` renders it inside a collection,
+/// so keys of different types that print alike stay distinct.
 fn missing_key(map: &FrostMap, key: &MapKey) -> FrostError {
     let similar = match key {
         MapKey::String(name) => map.closest_string_key(name),
         _ => None,
     };
+    let key = Value::from(key.clone()).to_debug_string();
     FrostError::from_string(match similar {
-        Some(similar) => format!("Map has no value at key '{key}'; did you mean '{similar}'?"),
-        None => format!("Map has no value at key '{key}'"),
+        Some(similar) => {
+            let similar = Value::from(similar).to_debug_string();
+            format!("Map has no value at key {key}; did you mean {similar}?")
+        }
+        None => format!("Map has no value at key {key}"),
     })
 }

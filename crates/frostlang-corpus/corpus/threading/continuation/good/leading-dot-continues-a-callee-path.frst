@@ -2,7 +2,7 @@
 # lines were joined, since `.` cannot begin a statement. Inside the callee
 # path of a threaded call, the continuation extends the path: `n @ lib`
 # followed by `.math.double()` is `lib.math.double(n)`.
-#= {result: [6, 6], inputs: {n: 3}, known_issue: 'FROST-161'}
+#= {result: [6, 6], inputs: {n: 3}}
 def lib = {math: {double: fn x -> x * 2}}
 def spread_out = n @ lib
     .math

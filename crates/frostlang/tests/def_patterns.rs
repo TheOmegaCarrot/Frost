@@ -40,7 +40,7 @@ fn assert_compile_errors(cases: &[(&str, &str)]) {
 }
 
 /// The prefix of every message a failed pattern check raises.
-const CANNOT: &str = "Cannot destructure: ";
+const NO_MATCH: &str = "Pattern does not match: ";
 
 // --- Every form is accepted ---
 
@@ -143,7 +143,7 @@ fn a_literal_compares_without_cross_type_equality() {
             a
             "
         ),
-        format!("{CANNOT}expected `3`"),
+        format!("{NO_MATCH}expected `3`"),
         "an Int pattern does not match a Float"
     );
 }
@@ -547,27 +547,27 @@ fn a_wrong_array_shape_raises_its_message() {
     assert_raises_exactly(&[
         (
             "def [a, b] = [1]",
-            "Cannot destructure: expected an Array of exactly 2 elements",
+            "Pattern does not match: expected an Array of exactly 2 elements",
         ),
         (
             "def [a] = [1, 2]",
-            "Cannot destructure: expected an Array of exactly 1 element",
+            "Pattern does not match: expected an Array of exactly 1 element",
         ),
         (
             "def [a, ...r] = []",
-            "Cannot destructure: expected an Array of at least 1 element",
+            "Pattern does not match: expected an Array of at least 1 element",
         ),
         (
             "def [a, b, ...r] = [1]",
-            "Cannot destructure: expected an Array of at least 2 elements",
+            "Pattern does not match: expected an Array of at least 2 elements",
         ),
         (
             "def [a, [b]] = [1, 5]",
-            "Cannot destructure: expected an Array of exactly 1 element",
+            "Pattern does not match: expected an Array of exactly 1 element",
         ),
         (
             "def [a] = {a: 1}",
-            "Cannot destructure: expected an Array of exactly 1 element",
+            "Pattern does not match: expected an Array of exactly 1 element",
         ),
     ]);
 }
@@ -575,57 +575,75 @@ fn a_wrong_array_shape_raises_its_message() {
 #[test]
 fn a_non_map_raises_its_message() {
     assert_raises_exactly(&[
-        ("def {a} = 5", "Cannot destructure: expected a Map"),
-        ("def {a} = [1]", "Cannot destructure: expected a Map"),
+        ("def {a} = 5", "Pattern does not match: expected a Map"),
+        ("def {a} = [1]", "Pattern does not match: expected a Map"),
         (
             "def {a: {b}} = {a: null}",
-            "Cannot destructure: expected a Map",
+            "Pattern does not match: expected a Map",
         ),
-        ("def {} as m = 'x'", "Cannot destructure: expected a Map"),
+        (
+            "def {} as m = 'x'",
+            "Pattern does not match: expected a Map",
+        ),
     ]);
 }
 
 #[test]
 fn each_type_constraint_raises_its_message() {
     assert_raises_exactly(&[
-        ("def x is Null = 1", "Cannot destructure: expected Null"),
-        ("def x is Int = 's'", "Cannot destructure: expected an Int"),
-        ("def x is Float = 1", "Cannot destructure: expected a Float"),
-        ("def x is Bool = 1", "Cannot destructure: expected a Bool"),
+        ("def x is Null = 1", "Pattern does not match: expected Null"),
+        (
+            "def x is Int = 's'",
+            "Pattern does not match: expected an Int",
+        ),
+        (
+            "def x is Float = 1",
+            "Pattern does not match: expected a Float",
+        ),
+        (
+            "def x is Bool = 1",
+            "Pattern does not match: expected a Bool",
+        ),
         (
             "def x is String = 1",
-            "Cannot destructure: expected a String",
+            "Pattern does not match: expected a String",
         ),
-        ("def x is Bytes = 1", "Cannot destructure: expected Bytes"),
+        (
+            "def x is Bytes = 1",
+            "Pattern does not match: expected Bytes",
+        ),
         (
             "def x is Array = 1",
-            "Cannot destructure: expected an Array",
+            "Pattern does not match: expected an Array",
         ),
-        ("def x is Map = 1", "Cannot destructure: expected a Map"),
+        ("def x is Map = 1", "Pattern does not match: expected a Map"),
         (
             "def x is Function = 1",
-            "Cannot destructure: expected a Function",
+            "Pattern does not match: expected a Function",
         ),
         (
             "def x is Opaque = 1",
-            "Cannot destructure: expected an Opaque",
+            "Pattern does not match: expected an Opaque",
         ),
         (
             "def x is Primitive = [1]",
-            "Cannot destructure: expected a Primitive",
+            "Pattern does not match: expected a Primitive",
         ),
         (
             "def x is Numeric = 's'",
-            "Cannot destructure: expected a Numeric",
+            "Pattern does not match: expected a Numeric",
         ),
         (
             "def x is Structured = 1",
-            "Cannot destructure: expected a Structured",
+            "Pattern does not match: expected a Structured",
         ),
-        ("def x is Flat = [1]", "Cannot destructure: expected a Flat"),
+        (
+            "def x is Flat = [1]",
+            "Pattern does not match: expected a Flat",
+        ),
         (
             "def x is Nonnull = null",
-            "Cannot destructure: expected a Nonnull",
+            "Pattern does not match: expected a Nonnull",
         ),
     ]);
 }
@@ -635,19 +653,19 @@ fn a_type_constraint_raises_at_every_position() {
     assert_raises_exactly(&[
         (
             "def [a, b is String] = [1, 2]",
-            "Cannot destructure: expected a String",
+            "Pattern does not match: expected a String",
         ),
         (
             "def {host is String} = {host: 1}",
-            "Cannot destructure: expected a String",
+            "Pattern does not match: expected a String",
         ),
         (
             "def {a: {b is Bool}} = {a: {b: 1}}",
-            "Cannot destructure: expected a Bool",
+            "Pattern does not match: expected a Bool",
         ),
         (
             "def [_ is Int, a] = ['s', 2]",
-            "Cannot destructure: expected an Int",
+            "Pattern does not match: expected an Int",
         ),
     ]);
 }
@@ -655,43 +673,49 @@ fn a_type_constraint_raises_at_every_position() {
 #[test]
 fn a_literal_raises_quoting_its_source() {
     assert_raises_exactly(&[
-        ("def [a, 1] = [0, 2]", "Cannot destructure: expected `1`"),
-        ("def [a, -1] = [0, 1]", "Cannot destructure: expected `-1`"),
+        (
+            "def [a, 1] = [0, 2]",
+            "Pattern does not match: expected `1`",
+        ),
+        (
+            "def [a, -1] = [0, 1]",
+            "Pattern does not match: expected `-1`",
+        ),
         (
             "def [a, 1.5] = [0, 2.5]",
-            "Cannot destructure: expected `1.5`",
+            "Pattern does not match: expected `1.5`",
         ),
         (
             "def [a, 'ok'] = [0, 'no']",
-            "Cannot destructure: expected `'ok'`",
+            "Pattern does not match: expected `'ok'`",
         ),
         (
             r#"def [a, "ok"] = [0, "no"]"#,
-            r#"Cannot destructure: expected `"ok"`"#,
+            r#"Pattern does not match: expected `"ok"`"#,
         ),
         (
             r#"def [a, R"(raw)"] = [0, "no"]"#,
-            r#"Cannot destructure: expected `R"(raw)"`"#,
+            r#"Pattern does not match: expected `R"(raw)"`"#,
         ),
         (
             "def [a, x'01'] = [0, x'02']",
-            "Cannot destructure: expected `x'01'`",
+            "Pattern does not match: expected `x'01'`",
         ),
         (
             r#"def [a, $"q${1}"] = [0, "z"]"#,
-            r#"Cannot destructure: expected `$"q${1}"`"#,
+            r#"Pattern does not match: expected `$"q${1}"`"#,
         ),
         (
             "def [a, null] = [0, 1]",
-            "Cannot destructure: expected `null`",
+            "Pattern does not match: expected `null`",
         ),
         (
             "def [a, true] = [0, false]",
-            "Cannot destructure: expected `true`",
+            "Pattern does not match: expected `true`",
         ),
         (
             "def [a, false] = [0, null]",
-            "Cannot destructure: expected `false`",
+            "Pattern does not match: expected `false`",
         ),
     ]);
 }
@@ -701,11 +725,11 @@ fn a_pin_raises_quoting_its_source() {
     assert_raises_exactly(&[
         (
             "def [a, (1 + 1)] = [0, 3]",
-            "Cannot destructure: expected the value of `(1 + 1)`",
+            "Pattern does not match: expected the value of `(1 + 1)`",
         ),
         (
             "def [a, (a)] = [0, 1]",
-            "Cannot destructure: expected the value of `(a)`",
+            "Pattern does not match: expected the value of `(a)`",
         ),
     ]);
 }
@@ -715,31 +739,31 @@ fn an_alternative_nothing_matches_raises_at_any_depth() {
     assert_raises_exactly(&[
         (
             "def [a, 1] | [1, a] = [3, 4]",
-            "Cannot destructure: the value matches no alternative",
+            "Pattern does not match: the value matches no alternative",
         ),
         (
             "def [a] | a is Int = 's'",
-            "Cannot destructure: the value matches no alternative",
+            "Pattern does not match: the value matches no alternative",
         ),
         (
             "def [a, 1 | 2] = [0, 3]",
-            "Cannot destructure: the value matches no alternative",
+            "Pattern does not match: the value matches no alternative",
         ),
         (
             "def {k: 1 | 2, v} = {k: 3, v: 0}",
-            "Cannot destructure: the value matches no alternative",
+            "Pattern does not match: the value matches no alternative",
         ),
         (
             "def [a, [b] | [b, 0]] = [1, [2, 3]]",
-            "Cannot destructure: the value matches no alternative",
+            "Pattern does not match: the value matches no alternative",
         ),
         (
             "def [a, [b, 1 | 2] | b is Int] = [1, [3, 4]]",
-            "Cannot destructure: the value matches no alternative",
+            "Pattern does not match: the value matches no alternative",
         ),
         (
             "def x is Int | x is String = null",
-            "Cannot destructure: the value matches no alternative",
+            "Pattern does not match: the value matches no alternative",
         ),
     ]);
 }
@@ -749,15 +773,15 @@ fn a_missing_key_raises_its_lookup_error_outside_an_alternative() {
     assert_raises_exactly(&[
         (
             "def {a} = {b: 1}",
-            "Map has no value at key 'a'; did you mean 'b'?",
+            r#"Map has no value at key "a"; did you mean "b"?"#,
         ),
         (
             "def [{a}] = [{b: 1}]",
-            "Map has no value at key 'a'; did you mean 'b'?",
+            r#"Map has no value at key "a"; did you mean "b"?"#,
         ),
         (
             "def {k: [a] | a, z} = {k: 1}",
-            "Map has no value at key 'z'; did you mean 'k'?",
+            r#"Map has no value at key "z"; did you mean "k"?"#,
         ),
     ]);
 }
@@ -767,15 +791,15 @@ fn a_missing_key_inside_an_alternative_is_a_plain_mismatch() {
     assert_raises_exactly(&[
         (
             "def {a} | [a] = {b: 1}",
-            "Cannot destructure: the value matches no alternative",
+            "Pattern does not match: the value matches no alternative",
         ),
         (
             "def [{a} | {b: a}] = [{c: 1}]",
-            "Cannot destructure: the value matches no alternative",
+            "Pattern does not match: the value matches no alternative",
         ),
         (
             "def {k: {a} | {b: a}} = {k: {c: 1}}",
-            "Cannot destructure: the value matches no alternative",
+            "Pattern does not match: the value matches no alternative",
         ),
     ]);
     // A later branch still gets its turn after an earlier one lacks the key.
@@ -809,7 +833,7 @@ fn a_mismatch_ends_the_program() {
     );
     assert_eq!(
         script.raises(),
-        format!("{CANNOT}expected `1`"),
+        format!("{NO_MATCH}expected `1`"),
         "the literal check raises"
     );
     assert_eq!(script.printed(), vec!["before"], "nothing after it runs");

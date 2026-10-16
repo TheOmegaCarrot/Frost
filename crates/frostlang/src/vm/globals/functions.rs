@@ -23,7 +23,7 @@ pub(super) fn call_global() -> Value {
             // Slot-free: an empty name_table gives the frame no local slots. The body
             // drops `call`'s own value with `DropBelow`, so no slots are needed.
             name_table: Vec::new(),
-            constants: vec![call_type_check()],
+            constants: vec![call_type_error()],
             key_constants: Vec::new(),
             child_fns: Vec::new(),
             code: vec![
@@ -46,12 +46,12 @@ pub(super) fn call_global() -> Value {
                 Bytecode::PeekDown(0), // 10: ( call_self f arr arr )
                 Bytecode::TypeTest(FrostType::ARRAY), // 11
                 Bytecode::JumpIfTrue(5), // 12: an Array -> idx 18
-                // A wrong type: the check raises its error, naming `call`.
-                Bytecode::LoadConst(0), // 13: ( call_self f arr check )
+                // A wrong type: raise the error naming `call` from this frame.
+                Bytecode::LoadConst(0), // 13: ( call_self f arr type_error )
                 Bytecode::PeekDown(2),  // 14
-                Bytecode::PeekDown(2),  // 15: ( call_self f arr check f arr )
-                Bytecode::Call(2),      // 16: raises
-                Bytecode::Pop,          // 17
+                Bytecode::PeekDown(2),  // 15: ( call_self f arr type_error f arr )
+                Bytecode::Call(2),      // 16: ( call_self f arr error )
+                Bytecode::ProduceError, // 17: raises
                 // Drop call's own value (2 below the top) so the callee lands at
                 // this frame's base, then hand ( f arr ) to DynTailCall.
                 Bytecode::DropBelow(2), // 18: ( f arr )
@@ -61,13 +61,12 @@ pub(super) fn call_global() -> Value {
     }))
 }
 
-/// A native named `call` whose only work is checking `call`'s argument types,
-/// so a wrong type raises as a native's type check does. `call` runs it only
-/// once its own fast check has failed.
-fn call_type_check() -> Value {
+/// The native giving the error for `call`'s arguments having the wrong types
+/// (see `type_error_native`).
+fn call_type_error() -> Value {
     const PARAMS: Params =
         Params::new(&[Param::of(FrostType::FUNCTION), Param::of(FrostType::ARRAY)]);
-    Value::checked_native("call", PARAMS, |_, _| Ok(Value::Null))
+    crate::vm::globals::type_error_native("call", PARAMS)
 }
 
 /// `try_call(f, args)`: invoke `f` with `args` (an array) and reify the outcome into a result map

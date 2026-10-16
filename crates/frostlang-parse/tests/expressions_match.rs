@@ -389,27 +389,52 @@ mod bindings {
         assert!(matches!(tc, Some(TypeConstraint::String)));
     }
 
+    /// Every type constraint, by the name written after `is`.
+    const TYPE_CONSTRAINTS: [(&str, TypeConstraint); 15] = [
+        ("Null", TypeConstraint::Null),
+        ("Int", TypeConstraint::Int),
+        ("Float", TypeConstraint::Float),
+        ("Bool", TypeConstraint::Bool),
+        ("String", TypeConstraint::String),
+        ("Bytes", TypeConstraint::Bytes),
+        ("Array", TypeConstraint::Array),
+        ("Map", TypeConstraint::Map),
+        ("Function", TypeConstraint::Function),
+        ("Opaque", TypeConstraint::Opaque),
+        ("Primitive", TypeConstraint::Primitive),
+        ("Numeric", TypeConstraint::Numeric),
+        ("Structured", TypeConstraint::Structured),
+        ("Flat", TypeConstraint::Flat),
+        ("Nonnull", TypeConstraint::Nonnull),
+    ];
+
+    #[test]
+    fn from_name_reads_each_type_constraint_name() {
+        for (name, expected) in TYPE_CONSTRAINTS {
+            assert_eq!(
+                TypeConstraint::from_name(name),
+                Some(expected),
+                "failed for {name}"
+            );
+        }
+    }
+
+    #[test]
+    fn from_name_reads_no_other_name() {
+        for name in [
+            "", "int", "INT", "Ints", "Integer", "None", "nil", "x", "is",
+        ] {
+            assert_eq!(
+                TypeConstraint::from_name(name),
+                None,
+                "{name:?} names no type"
+            );
+        }
+    }
+
     #[test]
     fn all_type_constraints() {
-        let types = [
-            ("Null", TypeConstraint::Null),
-            ("Int", TypeConstraint::Int),
-            ("Float", TypeConstraint::Float),
-            ("Bool", TypeConstraint::Bool),
-            ("String", TypeConstraint::String),
-            ("Bytes", TypeConstraint::Bytes),
-            ("Array", TypeConstraint::Array),
-            ("Map", TypeConstraint::Map),
-            ("Function", TypeConstraint::Function),
-            ("Opaque", TypeConstraint::Opaque),
-            ("Primitive", TypeConstraint::Primitive),
-            ("Numeric", TypeConstraint::Numeric),
-            ("Structured", TypeConstraint::Structured),
-            ("Flat", TypeConstraint::Flat),
-            ("Nonnull", TypeConstraint::Nonnull),
-        ];
-
-        for (name, expected) in types {
+        for (name, expected) in TYPE_CONSTRAINTS {
             let src = format!("match x {{ _ is {name} => 1 }}");
             let expr = parse_expr(&src);
             let (_, arms) = assert_match(&expr);

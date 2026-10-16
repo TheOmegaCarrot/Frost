@@ -4,6 +4,5 @@
 #= {
 #=     rejects: ['found `else`', 'conditional is written `if a: b else: c`'],
 #=     inputs: {c: true},
-#=     known_issue: 'FROST-159',
 #= }
 if c: 1; else: 2

@@ -13,6 +13,9 @@ impl FunctionBuilder<'_> {
         op: &Spanned<BinOp>,
         right: &Spanned<Expr>,
     ) -> Result<ExprFragment, Diagnostics> {
+        if op.node == BinOp::Sub {
+            self.lint_consecutive_minus(op.span);
+        }
         let lhs = self.compile_expression(left, Position::Inner)?;
         let rhs = self.compile_expression(right, Position::Inner)?;
         let ([lhs, rhs], foldable) = self.fold_siblings([lhs, rhs]);

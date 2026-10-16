@@ -1,5 +1,5 @@
 # A def whose known Map lacks a key the pattern requires raises when the
 # program reaches it; the name is not silently bound to Null.
-#= {raises: 'no value at key "a"', known_issue: 'FROST-155'}
+#= {raises: 'no value at key "a"'}
 def {a} = {b: 1}
 a

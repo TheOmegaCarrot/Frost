@@ -1,5 +1,5 @@
 # A binding nothing reads, of a hard index of a key its constant Map lacks,
 # still raises.
-#= {raises: 'no value at key "b"', known_issue: 'FROST-155'}
+#= {raises: 'no value at key "b"'}
 def unused = {a: 1}.b
 2

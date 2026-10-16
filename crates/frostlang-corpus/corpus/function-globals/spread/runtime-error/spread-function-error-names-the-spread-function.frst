@@ -1,5 +1,5 @@
 # A spread function given a non-Array reports the error as its own, naming
 # `spread_fn`. Subtle: `spread_fn` hands its argument on to `call`, whose own
 # error would name `call` and an argument position the script never wrote.
-#= {raises: ['spread_fn', 'Array', 'got Int'], known_issue: 'FROST-165'}
+#= {raises: ['spread_fn', 'Array', 'got Int']}
 spread(collect)(5)

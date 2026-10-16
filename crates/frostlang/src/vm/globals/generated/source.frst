@@ -3,7 +3,8 @@
 # Each top-level function becomes the global of the same name.
 # A function may refer only to its parameters, its own name, and globals.
 # A function a global returns is named `<global>_fn`, for errors and backtraces.
-# A function argument is checked up front, raising as a native's type check does.
+# A function, whether a global or one a global returns, checks up front each
+# argument whose type it relies on, raising as a native's type check does.
 
 defn inv(f) -> {
     if not is_function(f): error($'Function inv requires Function as argument 1, got ${type(f)}')
@@ -24,7 +25,10 @@ defn collect(...e) -> e
 
 defn spread(f) -> {
     if not is_function(f): error($'Function spread requires Function as argument 1, got ${type(f)}')
-    fn spread_fn(arr) -> call(f, arr)
+    fn spread_fn(arr) -> {
+        if not is_array(arr): error($'Function spread_fn requires Array as argument 1, got ${type(arr)}')
+        call(f, arr)
+    }
 }
 
 defn rev_args(f) -> {

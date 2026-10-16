@@ -9,6 +9,10 @@
 //! that is not exported. `lambda in abbreviated lambda`: a `$(...)` that holds
 //! a lambda.
 //!
+//! `type name binding`: a type or category name, such as `String`, bound as a
+//! name in any definition position. `consecutive minus`: a run of `-`
+//! operators with no space between, such as `--x`.
+//!
 //! Each test filters to the lint it covers, since one source may raise several.
 //!
 //! A lint never changes what a program does, so the cases that run a program
@@ -1673,4 +1677,527 @@ fn an_abbreviated_lambda_holding_a_lambda_that_binds_an_unused_name_lints_both()
     let source = "def f = $(fn x -> {\ndef spare = 1\nx\n})\nf";
     assert_eq!(unused_names(source), ["spare"]);
     assert_eq!(abbreviated_lints(source).len(), 1);
+}
+
+// Type name binding.
+
+const TYPE_NAME: &str = "type name binding";
+
+/// Every type and category name a constraint may name after `is`.
+const TYPE_NAMES: [&str; 15] = [
+    "Null",
+    "Int",
+    "Float",
+    "Bool",
+    "String",
+    "Bytes",
+    "Array",
+    "Map",
+    "Function",
+    "Opaque",
+    "Primitive",
+    "Numeric",
+    "Structured",
+    "Flat",
+    "Nonnull",
+];
+
+/// The type names `source` is linted for binding, in report order, read from
+/// each lint's message.
+fn type_names_bound(source: &str) -> Vec<String> {
+    lints_with_code(source, TYPE_NAME)
+        .iter()
+        .map(|text| {
+            let (name, _) = text
+                .split_once("` is a type name")
+                .unwrap_or_else(|| panic!("no 'is a type name' message in:\n{text}"));
+            let (_, name) = name.rsplit_once('`').expect("a quoted name");
+            name.to_owned()
+        })
+        .collect()
+}
+
+/// Assert each `(source, names)` case is linted for binding exactly `names`, in
+/// order, and still runs.
+fn assert_type_name_cases(cases: &[(&str, &[&str])]) {
+    for (source, names) in cases {
+        assert_eq!(
+            type_names_bound(source),
+            *names,
+            "wrong type name bindings for:\n{source}"
+        );
+        Script::new(source).run();
+    }
+}
+
+#[test]
+fn every_type_and_category_name_bound_by_def_is_linted() {
+    for name in TYPE_NAMES {
+        let source = format!("def {name} = 1\n{name}");
+        assert_eq!(type_names_bound(&source), [name], "for:\n{source}");
+    }
+}
+
+#[test]
+fn a_type_name_bound_by_a_def_pattern_is_linted() {
+    assert_type_name_cases(&[
+        (
+            r"
+            export def Int = 1
+            ",
+            &["Int"],
+        ),
+        (
+            r"
+            def Array is Int = 1
+            Array
+            ",
+            &["Array"],
+        ),
+        (
+            r"
+            def [Float, b] = [1, 2]
+            [Float, b]
+            ",
+            &["Float"],
+        ),
+        (
+            r"
+            def {Map} = {Map: 1}
+            Map
+            ",
+            &["Map"],
+        ),
+        (
+            r"
+            def {k: Bool} = {k: 1}
+            Bool
+            ",
+            &["Bool"],
+        ),
+        (
+            r"
+            def [a, ...Bytes] = [1, 2]
+            [a, Bytes]
+            ",
+            &["Bytes"],
+        ),
+        (
+            r"
+            def {a} as Opaque = {a: 1}
+            [a, Opaque]
+            ",
+            &["Opaque"],
+        ),
+        (
+            r"
+            def [[Null]] = [[1]]
+            Null
+            ",
+            &["Null"],
+        ),
+    ]);
+}
+
+#[test]
+fn a_type_name_bound_by_a_match_pattern_is_linted() {
+    assert_type_name_cases(&[
+        ("match 1 { Numeric => Numeric }", &["Numeric"]),
+        (
+            "match [1, 2] { [a, ...Structured] => Structured }",
+            &["Structured"],
+        ),
+        (
+            "match {a: 1} { {a} as Primitive => [a, Primitive] }",
+            &["Primitive"],
+        ),
+        ("match {Map: 1} { {Map} => Map }", &["Map"]),
+        ("match 's' { String is String => String }", &["String"]),
+    ]);
+}
+
+#[test]
+fn a_type_name_bound_by_every_alternative_is_linted_once() {
+    assert_type_name_cases(&[("match [1] { [Null] | {k: Null} => Null }", &["Null"])]);
+}
+
+#[test]
+fn a_type_name_bound_as_a_lambda_parameter_is_linted() {
+    assert_type_name_cases(&[
+        ("(fn Function -> Function)(1)", &["Function"]),
+        ("(fn (Null, x) -> [Null, x])(1, 2)", &["Null"]),
+        ("(fn ...Nonnull -> Nonnull)(1)", &["Nonnull"]),
+        ("(fn a, Int -> [a, Int])(1, 2)", &["Int"]),
+        ("map [1] with fn Float -> Float", &["Float"]),
+        ("reduce [1, 2] with fn (acc, Map) -> acc + Map", &["Map"]),
+    ]);
+}
+
+#[test]
+fn a_type_name_naming_a_lambda_is_linted() {
+    assert_type_name_cases(&[("(fn Flat(x) -> x)(1)", &["Flat"])]);
+}
+
+#[test]
+fn a_type_name_defined_by_defn_is_linted_once() {
+    // `defn` binds its name twice, as the `def` and as the lambda's own name;
+    // the lint reports it once.
+    assert_type_name_cases(&[(
+        r"
+        defn Flat(x) -> x
+        Flat(1)
+        ",
+        &["Flat"],
+    )]);
+    // Not run: an exported Function's code may differ by optimization.
+    assert_eq!(type_names_bound("export defn Bool(x) -> x"), ["Bool"]);
+}
+
+#[test]
+fn type_names_bound_in_one_source_are_linted_in_source_order() {
+    assert_type_name_cases(&[(
+        r"
+        def Int = 1
+        defn Float(String) -> match String {
+            Bool => [Int, Bool],
+        }
+        Float(2)
+        ",
+        &["Int", "Float", "String", "Bool"],
+    )]);
+}
+
+#[test]
+fn a_type_name_used_as_a_constraint_is_not_linted() {
+    assert_type_name_cases(&[
+        (
+            r"
+            def x is String = 's'
+            x
+            ",
+            &[],
+        ),
+        ("match 1 { _ is Int => 0, n is Numeric => n }", &[]),
+        ("match [1] { [n is Int] => n }", &[]),
+        ("match {k: 1} { {k is Int} => k }", &[]),
+        ("(fn x -> match x { _ is Map => 1, _ => 0 })(1)", &[]),
+    ]);
+}
+
+#[test]
+fn reading_a_name_bound_to_a_type_name_is_not_linted_again() {
+    assert_type_name_cases(&[(
+        r"
+        def String = 1
+        [String, String + 1]
+        ",
+        &["String"],
+    )]);
+}
+
+#[test]
+fn a_name_that_only_resembles_a_type_name_is_not_linted() {
+    for name in [
+        "string", "INT", "Ints", "Integer", "Str", "None", "nil", "Type",
+    ] {
+        let source = format!("def {name} = 1\n{name}");
+        assert_eq!(
+            type_names_bound(&source),
+            Vec::<String>::new(),
+            "for:\n{source}"
+        );
+    }
+}
+
+#[test]
+fn a_type_name_pattern_still_binds_every_value() {
+    // The lint changes nothing: `String` is a name, matching a value of any type.
+    let source = r"
+        defn kind(v) -> match v {
+            String => ['bound', String],
+            _ => 'unreachable',
+        }
+        [kind('s'), kind(1), kind(null)]
+    ";
+    assert_eq!(type_names_bound(source), ["String"]);
+    assert_eq!(
+        Script::new(source).run(),
+        Script::new("[['bound', 's'], ['bound', 1], ['bound', null]]").run()
+    );
+}
+
+#[test]
+fn the_type_name_lint_names_the_code_the_message_the_label_and_the_help() {
+    let found = lints_with_code("def String = 1\nString", TYPE_NAME);
+    assert_eq!(found.len(), 1);
+    let text = &found[0];
+    for expected in [
+        TYPE_NAME,
+        "`String` is a type name, but here it binds a name",
+        "binds a name",
+        "to test for the type in a match pattern, write `_ is String`; \
+         otherwise, choose another name",
+        FILENAME,
+    ] {
+        assert!(
+            text.contains(expected),
+            "the lint should mention {expected:?}:\n{text}"
+        );
+    }
+}
+
+#[test]
+fn the_type_name_lint_is_a_warning() {
+    let output = compile_with("def Int = 1\nInt", CompilerOptions::new());
+    assert_eq!(output.lints.len(), 1);
+    let narrated = output.lints.render_narrated();
+    assert!(narrated.contains("severity: warning"), "{narrated}");
+}
+
+#[test]
+fn the_type_name_label_covers_exactly_the_name() {
+    let source = "match 1 {\n    Numeric => Numeric,\n}";
+    let plain = lints(source).render_plain();
+    assert_eq!(
+        underlined(&plain, "    Numeric => Numeric,"),
+        "Numeric",
+        "the bound name only:\n{plain}"
+    );
+}
+
+#[test]
+fn the_type_name_lint_is_off_with_lints_off() {
+    let source = "def Int = 1\nmatch 1 { String => Int }";
+    let off = compile_with(source, CompilerOptions::new().with_lints(false));
+    assert!(off.lints.is_empty(), "{}", off.lints.render_plain());
+}
+
+#[test]
+fn the_type_name_lint_is_independent_of_the_optimizations() {
+    let source = r"
+        def Int = 1
+        def [Float] = [2]
+        Int + Float
+    ";
+    for optimization in script::optimization_permutations() {
+        let options = CompilerOptions::new().with_optimization(optimization);
+        let found: Vec<String> = compile_with(source, options)
+            .lints
+            .iter()
+            .map(Diagnostic::render_narrated)
+            .filter(|text| text.contains(TYPE_NAME))
+            .collect();
+        assert_eq!(found.len(), 2, "under {optimization:?}:\n{found:?}");
+    }
+}
+
+// Consecutive minus.
+
+const CONSECUTIVE_MINUS: &str = "consecutive minus";
+
+fn consecutive_minus_lints(source: &str) -> Vec<String> {
+    lints_with_code(source, CONSECUTIVE_MINUS)
+}
+
+/// Assert each `(source, count)` case has exactly `count` consecutive minus
+/// lints, and that it runs to the same value as `spaced`, its form with a
+/// space between every `-`.
+fn assert_minus_cases(cases: &[(&str, usize, &str)]) {
+    for (source, count, spaced) in cases {
+        assert_eq!(
+            consecutive_minus_lints(source).len(),
+            *count,
+            "wrong lint count for:\n{source}"
+        );
+        assert_eq!(
+            Script::new(source).run(),
+            Script::new(spaced).run(),
+            "{source:?} runs as {spaced:?}"
+        );
+    }
+}
+
+#[test]
+fn a_prefix_double_negation_is_linted() {
+    assert_minus_cases(&[
+        ("--5", 1, "- -5"),
+        ("--5.5", 1, "- -5.5"),
+        ("--(2 + 3)", 1, "- -(2 + 3)"),
+        ("[--5]", 1, "[- -5]"),
+        ("not --5 == 5", 1, "not - -5 == 5"),
+        (
+            r"
+            def x = 5
+            --x
+            ",
+            1,
+            r"
+            def x = 5
+            - -x
+            ",
+        ),
+    ]);
+}
+
+#[test]
+fn an_infix_subtraction_of_a_negation_is_linted() {
+    assert_minus_cases(&[
+        ("1--1", 1, "1 - -1"),
+        ("1 --1", 1, "1 - -1"),
+        ("1-- 1", 1, "1 - - 1"),
+        (
+            r"
+            def x = 5
+            x--x
+            ",
+            1,
+            r"
+            def x = 5
+            x - -x
+            ",
+        ),
+    ]);
+}
+
+#[test]
+fn a_longer_run_is_linted_once() {
+    assert_minus_cases(&[
+        ("10---3", 1, "10 - - -3"),
+        ("----5", 1, "- - - -5"),
+        ("1----1", 1, "1 - - - -1"),
+        (
+            r"
+            def x = 5
+            x---3
+            ",
+            1,
+            r"
+            def x = 5
+            x - - -3
+            ",
+        ),
+    ]);
+}
+
+#[test]
+fn each_run_is_linted_on_its_own() {
+    assert_minus_cases(&[
+        ("--5 + --6", 2, "- -5 + - -6"),
+        ("1 - --1", 1, "1 - - -1"),
+        ("1-- -1", 1, "1 - - -1"),
+        ("--1 - --1", 2, "- -1 - - -1"),
+    ]);
+}
+
+#[test]
+fn spaced_minus_signs_are_not_linted() {
+    for source in [
+        "- -5", "1 - -1", "1 - - -1", "-5", "1 - 1", "1-1", "1 -1", "-(-5)", "1 -(-1)", "-[1][0]",
+    ] {
+        assert!(
+            consecutive_minus_lints(source).is_empty(),
+            "no lint for:\n{source}"
+        );
+    }
+}
+
+#[test]
+fn a_minus_run_is_linted_wherever_an_expression_may_be() {
+    for source in [
+        "$'${--5}'",
+        "(fn x -> --x)(1)",
+        "$(--$)(1)",
+        "match 1 { n if: --n == 1 => n, _ => 0 }",
+        "match 1 { (--1) => 'one', _ => 'other' }",
+        "{k: --1}",
+        "if --1 == 1: 'yes' else: 'no'",
+        "map [1] with fn x -> 1--x",
+    ] {
+        assert_eq!(
+            consecutive_minus_lints(source).len(),
+            1,
+            "one lint for:\n{source}"
+        );
+        Script::new(source).run();
+    }
+}
+
+#[test]
+fn a_minus_run_before_the_least_int_is_linted() {
+    // `-9223372036854775808` is one literal, but its `-` still follows another.
+    for source in ["--9223372036854775808", "1--9223372036854775808"] {
+        assert_eq!(
+            consecutive_minus_lints(source).len(),
+            1,
+            "one lint for:\n{source}"
+        );
+    }
+}
+
+#[test]
+fn a_constant_minus_run_is_linted_under_every_optimization() {
+    // Constant folding computes `--1` ahead of time; the lint is about the
+    // source, not the emitted code.
+    for source in ["--1", "1--1", "if false: --1 else: 0", "false and --1"] {
+        for optimization in script::optimization_permutations() {
+            let options = CompilerOptions::new().with_optimization(optimization);
+            let found: Vec<String> = compile_with(source, options)
+                .lints
+                .iter()
+                .map(Diagnostic::render_narrated)
+                .filter(|text| text.contains(CONSECUTIVE_MINUS))
+                .collect();
+            assert_eq!(
+                found.len(),
+                1,
+                "{source:?} under {optimization:?}:\n{found:?}"
+            );
+        }
+    }
+}
+
+#[test]
+fn the_consecutive_minus_lint_names_the_code_the_message_the_label_and_the_help() {
+    let found = consecutive_minus_lints("--5");
+    assert_eq!(found.len(), 1);
+    let text = &found[0];
+    for expected in [
+        CONSECUTIVE_MINUS,
+        "Frost has no `--` decrement; these are separate `-` operators",
+        "separate `-` operators",
+        "for a double negation or subtracting a negation, \
+         put a space between them, as in `- -x` or `a - -b`",
+        FILENAME,
+    ] {
+        assert!(
+            text.contains(expected),
+            "the lint should mention {expected:?}:\n{text}"
+        );
+    }
+}
+
+#[test]
+fn the_consecutive_minus_lint_is_a_warning() {
+    let output = compile_with("--5", CompilerOptions::new());
+    assert_eq!(output.lints.len(), 1);
+    let narrated = output.lints.render_narrated();
+    assert!(narrated.contains("severity: warning"), "{narrated}");
+}
+
+#[test]
+fn the_consecutive_minus_label_covers_exactly_the_run() {
+    for (line, run) in [("1--1", "--"), ("10---3", "---"), ("1 - ----1", "----")] {
+        let plain = lints(line).render_plain();
+        assert_eq!(
+            underlined(&plain, line),
+            run,
+            "the run of `-` only:\n{plain}"
+        );
+    }
+}
+
+#[test]
+fn the_consecutive_minus_lint_is_off_with_lints_off() {
+    let off = compile_with("--5 + 1--1", CompilerOptions::new().with_lints(false));
+    assert!(off.lints.is_empty(), "{}", off.lints.render_plain());
 }

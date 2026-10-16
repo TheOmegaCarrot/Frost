@@ -76,6 +76,33 @@ fn call_checks_its_argument_types_in_order() {
     ]);
 }
 
+/// `call` names itself once in a backtrace, like any other function there:
+/// whether its own argument check fails, or the native function it calls does.
+#[test]
+fn call_appears_once_in_a_backtrace() {
+    for (call, expected) in [
+        // Its own argument check fails, for either argument.
+        ("call(len, 3)", "['call', 'g']"),
+        ("call(3, [])", "['call', 'g']"),
+        ("call(3)", "['call', 'g']"),
+        // The native function it calls fails, beneath it.
+        ("call(len, [3])", "['len', 'call', 'g']"),
+    ] {
+        // The call is not in tail position, so `g` keeps its frame.
+        let source = format!(
+            r"
+            defn g() -> [{call}]
+            try_call(g, []).trace
+            "
+        );
+        assert_eq!(
+            run(&source),
+            run(expected),
+            "the backtrace of {call:?} is {expected}"
+        );
+    }
+}
+
 #[test]
 fn call_calls_a_runtime_function() {
     let wrap = frost_closure!("wrap", |value: Value| Value::array([value]));
@@ -435,10 +462,34 @@ fn spread_calls_its_function_with_an_arrays_elements() {
 
 #[test]
 fn a_spread_function_raises_as_its_call_does() {
-    assert_raises_as(&[
-        ("spread(minus)([1])", "minus(1)"),
-        ("spread(minus)(5)", "call(minus, 5)"),
-    ]);
+    assert_raises_as(&[("spread(minus)([1])", "minus(1)")]);
+}
+
+#[test]
+fn a_spread_function_requires_an_array() {
+    // The error is the spread function's own, naming it and its argument,
+    // not `call`'s, which it would otherwise hand the argument on to.
+    for (argument, type_name) in [
+        ("5", "Int"),
+        ("null", "Null"),
+        ("'ab'", "String"),
+        ("x'00'", "Bytes"),
+        ("{a: 1}", "Map"),
+        ("collect", "Function"),
+    ] {
+        let source = format!("spread(collect)({argument})");
+        assert_eq!(
+            raises(&source),
+            format!("Function spread_fn requires Array as argument 1, got {type_name}"),
+            "{source:?}"
+        );
+    }
+    // Raised with `error`, as a global's own check raises.
+    let trace = trace("spread(collect)(5)");
+    assert!(
+        trace.starts_with(&[Value::from("error"), Value::from("spread_fn")]),
+        "the spread function raises the error itself, beneath no `call`: {trace:?}"
+    );
 }
 
 #[test]

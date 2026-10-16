@@ -2,14 +2,13 @@
 
 use std::ops::Range;
 
-use crate::ast::SourceSpan;
+use crate::ast::{SourceSpan, TYPE_CONSTRAINTS};
 use crate::lex::{FormatStringEnd, IntBase, UnclosedInterpolation, scan_format_string};
 use crate::parse::Diagnostic;
 use crate::parse::hints::{
     BITWISE_HELP, CONDITIONAL_HELP, FORMAT_STRING_HELP, GUARD_HELP, INEQUALITY_HELP, LAMBDA_HELP,
     LINE_CONTINUATION_HELP, POWER_HELP, float_point_help, raw_string_help,
 };
-use crate::parse::pattern::TYPE_CONSTRAINTS;
 use crate::parse::strings::ESCAPES;
 
 const FALLBACK_HELP: &str = "for a fallback when a value is null, use `or`: `a or b`";

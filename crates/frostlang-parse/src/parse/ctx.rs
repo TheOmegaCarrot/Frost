@@ -294,6 +294,11 @@ impl<'src> ParseCtx<'src> {
         self.state.brackets.iter().rev().nth(1).copied()
     }
 
+    /// The brackets open where the parse is, innermost first.
+    pub(crate) fn open_brackets(&self) -> impl Iterator<Item = OpenBracket> {
+        self.state.brackets.iter().rev().copied()
+    }
+
     /// Whether a `kind` bracket is open where the parse is, at any depth.
     pub(crate) fn is_inside(&self, kind: Bracket) -> bool {
         self.state.brackets.iter().any(|open| open.kind == kind)

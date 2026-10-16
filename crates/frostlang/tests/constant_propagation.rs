@@ -340,7 +340,7 @@ fn a_known_value_of_the_wrong_shape_still_raises() {
             def {a, b} = {a: 1}
             a
             ",
-            "no value at key 'b'",
+            r#"no value at key "b""#,
         ),
     ] {
         let raised = raises(source);
@@ -589,28 +589,28 @@ fn a_known_value_that_fails_the_pattern_records_nothing() {
             def [a, 1] = [7, 2]
             a
             ",
-            "Cannot destructure: expected `1`",
+            "Pattern does not match: expected `1`",
         ),
         (
             r"
             def x is String = 5
             x
             ",
-            "Cannot destructure: expected a String",
+            "Pattern does not match: expected a String",
         ),
         (
             r"
             def [a, (1 + 1)] = [7, 3]
             a
             ",
-            "Cannot destructure: expected the value of `(1 + 1)`",
+            "Pattern does not match: expected the value of `(1 + 1)`",
         ),
         (
             r"
             def [a, 1] | [1, a] = [3, 4]
             a
             ",
-            "Cannot destructure: the value matches no alternative",
+            "Pattern does not match: the value matches no alternative",
         ),
     ] {
         assert_eq!(raises(source), message, "{source:?}");
@@ -634,7 +634,7 @@ fn a_known_map_missing_a_key_records_nothing() {
     ";
     assert_eq!(
         raises(source),
-        "Map has no value at key 'a'; did you mean 'b'?"
+        r#"Map has no value at key "a"; did you mean "b"?"#
     );
     let emitted = Script::new(source).code(FOLD_AND_PROPAGATE);
     assert!(
@@ -651,7 +651,7 @@ fn a_function_that_fails_its_pattern_is_not_called_at_compile_time() {
     ";
     assert_eq!(
         raises(source),
-        "Cannot destructure: expected `1`",
+        "Pattern does not match: expected `1`",
         "the pattern fails before the call"
     );
     let emitted = Script::new(source).code(FOLD_AND_PROPAGATE);

@@ -288,17 +288,22 @@ impl<'src> Site<'_, 'src> {
         false
     }
 
-    /// The commas directly inside the bracket opened at `open`, not inside a bracket
-    /// within it, when the bracket closes.
+    /// The commas separating the items directly inside the bracket opened at `open`,
+    /// when the bracket closes. A comma inside a bracket within it, or between a
+    /// lambda's `fn` and its `->`, as in `fn a, b -> a + b`, separates no items.
     pub(super) fn commas_inside(&self, open: usize) -> Option<usize> {
         let close = self.matching_close(open)?;
         let mut depth = 0usize;
+        let mut in_parameters = false;
         let mut commas = 0;
         for index in open + 1..close {
             match &self.ctx.get(index)?.token {
                 token if is_opener(token) => depth += 1,
                 token if is_closer(token) => depth -= 1,
-                Token::Comma if depth == 0 => commas += 1,
+                _ if depth > 0 => {}
+                Token::KwFn => in_parameters = true,
+                Token::SlimArrow => in_parameters = false,
+                Token::Comma if !in_parameters => commas += 1,
                 _ => {}
             }
         }

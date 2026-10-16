@@ -652,6 +652,159 @@ fn newline_before_dot_inside_delimiters() {
     assert!(matches!(&expr.node, Expr::HardIndex { key, .. } if key.node =="foo"));
 }
 
+// -- A leading `.` line inside the callee path of `@` --
+// A line starting with `.` continues the callee path on the right of `@`,
+// parsing exactly as if the lines were joined.
+
+#[test]
+fn newline_before_dot_continues_a_threaded_callee_path() {
+    let cases = [
+        (
+            r"
+                n @ m
+                .f()
+            ",
+            "n @ m.f()",
+        ),
+        (
+            r"
+                n @ lib
+                    .math
+                    .double()
+            ",
+            "n @ lib.math.double()",
+        ),
+        (
+            r"
+                n @ lib
+                    .a
+                    .b
+                    .c(1, 2)
+            ",
+            "n @ lib.a.b.c(1, 2)",
+        ),
+        (
+            r"
+                n @ lib
+                    .fns[0]
+                    .f()
+            ",
+            "n @ lib.fns[0].f()",
+        ),
+        (
+            r"
+                n @ lib # a note
+
+                    .math.double()
+            ",
+            "n @ lib.math.double()",
+        ),
+        (
+            r"
+                n @ lib
+                    .f()
+                    .g
+            ",
+            "n @ lib.f().g",
+        ),
+        (
+            r"
+                n @ lib
+                    .f()
+                    @ lib
+                    .g()
+            ",
+            "n @ lib.f() @ lib.g()",
+        ),
+    ];
+    for (spread_out, joined) in cases {
+        assert_eq!(
+            parse_expr(spread_out),
+            parse_expr(joined),
+            "{spread_out:?} parses as {joined:?}"
+        );
+    }
+}
+
+#[test]
+fn newline_before_dot_continues_a_threaded_callee_path_inside_delimiters() {
+    let cases = [
+        (
+            r"
+                (n @ lib
+                    .math.double())
+            ",
+            "(n @ lib.math.double())",
+        ),
+        (
+            r"
+                (n @ lib
+                    .math
+                    .double())
+            ",
+            "(n @ lib.math.double())",
+        ),
+        (
+            r"
+                [
+                    n @ lib
+                        .math
+                        .double(),
+                    n @ m
+                        .f(),
+                ]
+            ",
+            "[n @ lib.math.double(), n @ m.f()]",
+        ),
+        (
+            r"
+                g(n @ lib
+                    .math
+                    .double())
+            ",
+            "g(n @ lib.math.double())",
+        ),
+    ];
+    for (spread_out, joined) in cases {
+        assert_eq!(
+            parse_expr(spread_out),
+            parse_expr(joined),
+            "{spread_out:?} parses as {joined:?}"
+        );
+    }
+}
+
+#[test]
+fn newline_before_dot_continues_a_threaded_callee_path_in_a_definition() {
+    let spread_out = r"
+        def doubled = n @ lib
+            .math
+            .double()
+        doubled
+    ";
+    let joined = r"
+        def doubled = n @ lib.math.double()
+        doubled
+    ";
+    assert_eq!(
+        parse(spread_out),
+        parse(joined),
+        "the continued callee path ends with its call, and the next line is a new statement"
+    );
+}
+
+// `[` and `(` can begin a statement, so neither continues the callee path.
+#[test]
+fn newline_before_bracket_or_call_does_not_continue_a_threaded_callee_path() {
+    for source in ["n @ lib\n[0]()", "n @ lib\n()", "n @ lib\n.math\n()"] {
+        let err = parse_err_message(source);
+        assert_eq!(
+            err, "the right side of `@` must be a call",
+            "{source:?} leaves the callee uncalled"
+        );
+    }
+}
+
 // -- Postfix error cases --
 
 #[test]
@@ -736,6 +889,20 @@ fn error_thread_no_parens_after_dot_access() {
 fn error_thread_no_parens_after_index() {
     let label = thread_without_call_label("xs @ fns[0]", "fns[0]");
     assert_eq!(label, "try `fns[0]()`");
+}
+
+// A callee path continued across lines is not quoted, as it would span lines.
+#[test]
+fn error_thread_no_parens_after_a_continued_callee_path() {
+    let source = r"
+        def a = xs @ lib
+            .math
+            .double
+        print(a)
+    ";
+    let callee = "lib\n            .math\n            .double";
+    let label = thread_without_call_label(source, callee);
+    assert_eq!(label, "try ending it with `()`");
 }
 
 #[test]

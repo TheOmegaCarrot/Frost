@@ -192,13 +192,32 @@
 //   slots
 //        0  f           capture
 //        1  arr
+//   constants
+//        0  "Function spread_fn requires Array as argument 1, got "
 //   code
 //        0  DefLocal      1    ; arr
 //        1  DropBelow     0
-//        2  LoadGlobal    108  ; call
-//        3  ConsumeLocal  0    ; f
-//        4  ConsumeLocal  1    ; arr
-//        5  TailCall      2
+//        2  LoadGlobal    6    ; is_array
+//        3  LoadLocal     1    ; arr
+//        4  Call          1
+//        5  LogicalNot
+//        6  JumpIfFalse   L0   ; +8
+//        7  LoadGlobal    110  ; error
+//        8  LoadConst     0    ; "Function spread_fn requires Array as...
+//        9  LoadGlobal    15   ; type
+//       10  LoadLocal     1    ; arr
+//       11  Call          1
+//       12  Concat        2
+//       13  Call          1
+//       14  Jump          L1   ; +1
+//   L0:
+//       15  PushNull
+//   L1:
+//       16  DropBelow     0
+//       17  LoadGlobal    108  ; call
+//       18  ConsumeLocal  0    ; f
+//       19  ConsumeLocal  1    ; arr
+//       20  TailCall      2
 //
 // function rev_args
 //   arity 1, 0 captures
@@ -1133,12 +1152,31 @@ pub(super) fn functions() -> Value {
                     (string("code"), array([
                         map([(string("DefLocal"), int(1))]),
                         map([(string("DropBelow"), int(0))]),
+                        map([(string("LoadGlobal"), int(6))]),
+                        map([(string("LoadLocal"), int(1))]),
+                        map([(string("Call"), int(1))]),
+                        string("LogicalNot"),
+                        map([(string("JumpIfFalse"), int(8))]),
+                        map([(string("LoadGlobal"), int(110))]),
+                        map([(string("LoadConst"), int(0))]),
+                        map([(string("LoadGlobal"), int(15))]),
+                        map([(string("LoadLocal"), int(1))]),
+                        map([(string("Call"), int(1))]),
+                        map([(string("Concat"), int(2))]),
+                        map([(string("Call"), int(1))]),
+                        map([(string("Jump"), int(1))]),
+                        string("PushNull"),
+                        map([(string("DropBelow"), int(0))]),
                         map([(string("LoadGlobal"), int(108))]),
                         map([(string("ConsumeLocal"), int(0))]),
                         map([(string("ConsumeLocal"), int(1))]),
                         map([(string("TailCall"), int(2))]),
                     ])),
-                    (string("constants"), array([])),
+                    (string("constants"), array([
+                        map([
+                            (string("String"), string("Function spread_fn requires Array as argument 1, got ")),
+                        ]),
+                    ])),
                     (string("key_constants"), array([])),
                     (string("name"), string("spread_fn")),
                     (string("name_table"), array([

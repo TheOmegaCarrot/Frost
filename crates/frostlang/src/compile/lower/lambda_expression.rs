@@ -175,9 +175,24 @@ impl FunctionBuilder<'_> {
             }
         }
 
+        let lambda_start = lambda.span.start;
         let lambda = NormalizedLambda::new(&lambda.node);
         let mut child = self.child(lambda.name.to_owned(), lambda.arity(), captures, hoisted);
         child.abbreviated = abbreviated;
+
+        // A `defn`'s name opens its lambda, which written out opens with `fn`.
+        // That name is linted where the `def` binds it.
+        let self_binding =
+            (lambda.self_binding.span.start != lambda_start).then_some(&lambda.self_binding);
+        for param in self_binding
+            .into_iter()
+            .chain(&lambda.params)
+            .chain(&lambda.variadic_param)
+        {
+            if let Binding::Named(name) = param.node.as_ref() {
+                child.lint_type_name_binding(name, param.span);
+            }
+        }
 
         // The call leaves `[closure, arg1 .. argN, rest?]` on the stack, which is
         // also source order. Define the names in that order, so a duplicate is

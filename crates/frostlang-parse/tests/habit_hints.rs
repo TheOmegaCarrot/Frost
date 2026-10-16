@@ -874,10 +874,87 @@ fn branches_without_their_if() {
             "if x: 1 elif: 2",
             Some("`elif` takes a condition; for the last branch, use `else:`"),
         ),
-        // The branch is missing, not a statement too many.
-        (empty_branch, None),
+        // The branch is missing, not a statement too many: the help shows where it goes.
+        (empty_branch, Some(CONDITIONAL_HELP)),
         // A Map entry, not a statement
         ("match x { 1 => { else => 2 } }", None),
+    ]);
+}
+
+// `else` and `elif` continue an `if` only where they follow its branch; wherever an
+// expression begins instead, they continue nothing.
+#[test]
+fn branches_where_an_expression_begins() {
+    let after_a_semicolon_in_a_block = r"
+        do {
+            if c: 1; else: 2
+        }
+    ";
+    let at_the_start_of_a_line_in_a_block = r"
+        do {
+            def x = 1
+            else: 2
+        }
+    ";
+    let as_an_arm_result = r"
+        match x {
+            _ => else,
+        }
+    ";
+    let as_a_guard = r"
+        match x {
+            n if: else => n,
+        }
+    ";
+    assert_help(&[
+        // After `;`
+        ("if c: 1; else: 2", CONDITIONAL_HELP),
+        ("if c: 1; elif d: 2", CONDITIONAL_HELP),
+        ("if c: f(1); f(2); else: 3", CONDITIONAL_HELP),
+        (after_a_semicolon_in_a_block, CONDITIONAL_HELP),
+        // As an operand
+        ("1 + else", CONDITIONAL_HELP),
+        ("1 + elif", CONDITIONAL_HELP),
+        ("-else", CONDITIONAL_HELP),
+        ("not elif", CONDITIONAL_HELP),
+        ("x @ else", CONDITIONAL_HELP),
+        ("map xs with else", CONDITIONAL_HELP),
+        // As an argument, element, entry value, index, or group
+        ("f(else)", CONDITIONAL_HELP),
+        ("f(a, elif)", CONDITIONAL_HELP),
+        ("[1, else]", CONDITIONAL_HELP),
+        ("{a: else}", CONDITIONAL_HELP),
+        ("{[else]: 1}", CONDITIONAL_HELP),
+        ("xs[else]", CONDITIONAL_HELP),
+        ("(else)", CONDITIONAL_HELP),
+        ("$($ + else)", CONDITIONAL_HELP),
+        ("$'${else}'", CONDITIONAL_HELP),
+        // After a binding, an arrow, or a keyword that takes an expression
+        ("def x = else: 1", CONDITIONAL_HELP),
+        ("fn -> else", CONDITIONAL_HELP),
+        ("if else: 1", CONDITIONAL_HELP),
+        ("if c: else: 2", CONDITIONAL_HELP),
+        ("if c: 1 elif else: 2", CONDITIONAL_HELP),
+        (as_an_arm_result, CONDITIONAL_HELP),
+        (as_a_guard, CONDITIONAL_HELP),
+        // At the start of a block or a line
+        ("do { else }", CONDITIONAL_HELP),
+        (at_the_start_of_a_line_in_a_block, CONDITIONAL_HELP),
+    ]);
+}
+
+// After an operand, an `else` that starts no statement stands where an operator or a
+// closer belongs, and where a pattern or a name belongs, it gets help of its own.
+#[test]
+fn branches_where_no_expression_begins() {
+    let keyword_name = "`else` is a keyword, so it cannot be a name";
+    assert_help_or_none(&[
+        ("f(1 else)", None),
+        ("[1 else]", None),
+        ("match x { [else] => 1 }", Some(keyword_name)),
+        ("match x { {a: else} => 1 }", Some(keyword_name)),
+        ("def [a, else] = xs", Some(keyword_name)),
+        ("fn (else) -> 1", Some(keyword_name)),
     ]);
 }
 
@@ -1018,6 +1095,59 @@ fn guards_out_of_place() {
         ("match x { 1 => b if a else c }", CONDITIONAL_HELP),
         ("match x { 1 => 2 } if y", CONDITIONAL_HELP),
     ]);
+}
+
+// A guard written after part of an arm's pattern, inside its Array or Map pattern,
+// belongs after the whole pattern. In a Map pattern, the `if` is no entry's key: no
+// comma comes before it.
+#[test]
+fn guards_inside_a_nested_pattern() {
+    let help = "an arm's guard follows its whole pattern, before `=>`, like `[x] if: x > 0 => ...`";
+    let after_other_arms = r"
+        match xs {
+            [] => 0,
+            [x if: x > 0, ...rest] => x,
+        }
+    ";
+    assert_help(&[
+        // In an Array pattern
+        ("match xs { [x if: x > 0] => x }", help),
+        ("match xs { [1, x if: x > 0] => x }", help),
+        ("match xs { [x if: x > 0, y] => x }", help),
+        ("match xs { [x if x > 0] => x }", help),
+        (after_other_arms, help),
+        // In a Map pattern
+        ("match m { {a: x if: x > 0} => x }", help),
+        ("match m { {a if: a > 0} => a }", help),
+        ("match m { {a: x if: x > 0, b} => x }", help),
+        // In patterns within patterns
+        ("match m { {a: [x if: x > 0]} => x }", help),
+        ("match xs { [{a: x if: x > 0}] => x }", help),
+        // In an alternative
+        ("match xs { [0] | [x if: x > 0] => 1 }", help),
+    ]);
+}
+
+// A `def` pattern takes no guard at all, so help on where an arm's guard goes would
+// mislead there.
+#[test]
+fn guards_inside_a_def_pattern_get_no_arm_guard_help() {
+    for source in ["def [x if: x > 0] = xs", "def {a: x if: x > 0} = m"] {
+        let (message, help) = diagnosis(source);
+        assert!(
+            !help.as_deref().is_some_and(|help| help.contains("arm")),
+            "{source:?} failed with {message:?}, and help about arms: {help:?}"
+        );
+    }
+}
+
+// Where a Map pattern's entry begins, `if` is a key, not a guard.
+#[test]
+fn if_as_a_key_in_an_arm_pattern() {
+    assert_help(&[(
+        "match m { {if: x} => x }",
+        "`if` is a keyword; write the key in brackets: `[\"if\"]: ...`",
+    )]);
 }
 
 // A declaration where a pattern starts: a bare name binds there.
@@ -1490,6 +1620,30 @@ fn reduce_with_an_initial_value() {
             "`reduce` is an expression, written `reduce xs with f`; its function form is \
              `fold(xs, f)`",
         ),
+    ]);
+}
+
+// Only commas between arguments count toward an initial value: not those in a lambda's
+// parameters, parenthesized or not, nor those in brackets within an argument.
+#[test]
+fn reduce_with_commas_inside_its_arguments() {
+    let seeded = "`reduce` is an expression, written `reduce xs init: v with f`; its function \
+                  form is `fold(xs, v, f)`";
+    let unseeded = "`reduce` is an expression, written `reduce xs with f`; its function form is \
+                    `fold(xs, f)`";
+    assert_help(&[
+        ("reduce(xs, fn acc, x -> acc + x)", unseeded),
+        ("reduce(xs, fn (acc, x) -> acc + x)", unseeded),
+        ("xs @ reduce(fn acc, x -> acc + x)", unseeded),
+        ("reduce(xs, fn acc, x -> [acc, x])", unseeded),
+        ("reduce([1, 2], f)", unseeded),
+        ("reduce(xs, g(1, 2))", unseeded),
+        ("reduce(xs, 0, fn acc, x -> acc + x)", seeded),
+        ("xs @ reduce(0, fn acc, x -> acc + x)", seeded),
+        ("reduce(xs, {a: 1, b: 2}, fn acc, x -> acc)", seeded),
+        // The lambda's body ends at the comma after it, so a value after it is an
+        // argument of its own.
+        ("reduce(xs, fn acc, x -> acc + x, 0)", seeded),
     ]);
 }
 
@@ -2143,6 +2297,38 @@ fn multi_character_operators() {
         ("1 !== 1", "Frost's inequality is `!=`"),
         ("1 << 2", "Frost has no shift operators"),
         ("8 >> 1", "Frost has no shift operators"),
+    ]);
+}
+
+// `=<` reads as `=` then `<`, so the error falls on the `=`, which would otherwise
+// get help on assignment or named arguments.
+#[test]
+fn reversed_less_or_equal() {
+    let help = "Frost's less-than-or-equal is `<=`";
+    let in_a_guard = r"
+        match x {
+            n if: n =< 1 => n,
+        }
+    ";
+    assert_help(&[
+        ("a =< b", help),
+        ("a=<b", help),
+        ("def ok = a =< b", help),
+        ("f(a =< b)", help),
+        ("if a =< b: 1 else: 2", help),
+        (in_a_guard, help),
+    ]);
+}
+
+// Only touching tokens spell `=<`; spaced apart, `=` and `<` are separate mistakes.
+#[test]
+fn spaced_equals_and_less_than_are_not_reversed_less_or_equal() {
+    assert_help(&[
+        (
+            "a = < b",
+            "Frost has no assignment; bind a new name with `def`: `def a = ...`",
+        ),
+        ("def ok = a = < b", IMMUTABLE_HELP),
     ]);
 }
 

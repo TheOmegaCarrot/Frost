@@ -97,6 +97,9 @@ impl FunctionBuilder<'_> {
         op: &Spanned<UnaryOp>,
         operand: &Spanned<Expr>,
     ) -> Result<ExprFragment, Diagnostics> {
+        if op.node == UnaryOp::Negate {
+            self.lint_consecutive_minus(op.span);
+        }
         let operand = self.compile_expression(operand, Position::Inner)?;
 
         let operation = Ir::Ready(match op.node {

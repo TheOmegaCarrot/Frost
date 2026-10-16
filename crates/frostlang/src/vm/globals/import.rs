@@ -21,7 +21,7 @@ pub(super) fn import_global() -> Value {
             arity: Arity::Exact(1),
             num_captures: 0,
             name_table: Vec::new(),
-            constants: vec![import_type_check()],
+            constants: vec![import_type_error()],
             key_constants: Vec::new(),
             child_fns: Vec::new(),
             code: vec![
@@ -30,21 +30,20 @@ pub(super) fn import_global() -> Value {
                 Bytecode::PeekDown(0),                 // 1: ( spec spec )
                 Bytecode::TypeTest(FrostType::STRING), // 2
                 Bytecode::JumpIfTrue(4),               // 3: a String -> idx 8
-                // A wrong type: the check raises its error, naming `import`.
-                Bytecode::LoadConst(0), // 4: ( spec check )
-                Bytecode::PeekDown(1),  // 5: ( spec check spec )
-                Bytecode::Call(1),      // 6: raises
-                Bytecode::Pop,          // 7
+                // A wrong type: raise the error naming `import` from this frame.
+                Bytecode::LoadConst(0), // 4: ( spec type_error )
+                Bytecode::PeekDown(1),  // 5: ( spec type_error spec )
+                Bytecode::Call(1),      // 6: ( spec error )
+                Bytecode::ProduceError, // 7: raises
                 Bytecode::Import,       // 8
             ],
         }),
     }))
 }
 
-/// A native named `import` whose only work is checking `import`'s argument
-/// type, so a wrong type raises as a native's type check does. `import` runs it
-/// only once its own fast check has failed.
-fn import_type_check() -> Value {
+/// The native giving the error for `import`'s argument having the wrong type
+/// (see `type_error_native`).
+fn import_type_error() -> Value {
     const PARAMS: Params = Params::new(&[Param::of(FrostType::STRING)]);
-    Value::checked_native("import", PARAMS, |_, _| Ok(Value::Null))
+    crate::vm::globals::type_error_native("import", PARAMS)
 }

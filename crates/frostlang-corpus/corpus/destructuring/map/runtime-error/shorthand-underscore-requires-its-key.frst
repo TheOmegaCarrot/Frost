@@ -3,7 +3,6 @@
 #= {
 #=     raises: 'no value at key "_"',
 #=     inputs: {m: {a: 1}},
-#=     known_issue: 'FROST-155',
 #= }
 def {_, a} = m
 a

@@ -31,6 +31,17 @@ impl<'src> ParseCtx<'src> {
                 self.advance(1);
 
                 if matches!(self.peek().map(|t| &t.token), Some(Token::OpenParen)) {
+                    // A self-name is a name, not a pattern, so it cannot discard.
+                    if name == "_" {
+                        return Err(Diagnostic::at(
+                            "a named lambda requires a function name, not `_`",
+                            name_span,
+                            "expected a name",
+                        )
+                        .with_help(Some(
+                            "for an unnamed lambda, write `fn (...) -> ...`".to_owned(),
+                        )));
+                    }
                     let (params, variadic) = self.parse_parenthesized_params()?;
                     (Some(Spanned::new(name, name_span)), params, variadic)
                 } else {

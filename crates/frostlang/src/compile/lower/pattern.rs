@@ -28,7 +28,7 @@ use crate::compile::{
 };
 
 /// The start of every message a raising pattern fails with.
-const CANNOT_DESTRUCTURE: &str = "Cannot destructure: ";
+const PATTERN_DOES_NOT_MATCH: &str = "Pattern does not match: ";
 
 /// A compiled pattern, `( x -- )`.
 pub(super) struct PatternFragment {
@@ -163,7 +163,10 @@ impl FunctionBuilder<'_> {
                         kind: JumpType::IfTrue,
                         label: passed,
                     },
-                    Ir::Const(Value::from(format!("{CANNOT_DESTRUCTURE}{}", expected()))),
+                    Ir::Const(Value::from(format!(
+                        "{PATTERN_DOES_NOT_MATCH}{}",
+                        expected()
+                    ))),
                     Ir::Ready(Bytecode::ProduceError),
                     Ir::Label(passed),
                 ])
@@ -343,7 +346,7 @@ impl FunctionBuilder<'_> {
         if let Mismatch::Raise = mismatch {
             code.extend([
                 Ir::Const(Value::from(format!(
-                    "{CANNOT_DESTRUCTURE}the value matches no alternative"
+                    "{PATTERN_DOES_NOT_MATCH}the value matches no alternative"
                 ))),
                 Ir::Ready(Bytecode::ProduceError),
             ]);
@@ -413,6 +416,7 @@ impl FunctionBuilder<'_> {
         name: &str,
         exported: bool,
     ) -> Result<LocalId, Diagnostics> {
+        self.lint_type_name_binding(name, binding.span);
         self.locals
             .define(LocalInfo {
                 name: name.to_owned(),

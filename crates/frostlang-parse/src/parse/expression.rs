@@ -157,10 +157,15 @@ impl<'src> ParseCtx<'src> {
 
         let mut callee = self.parse_atom()?;
 
-        while let Some(peek) = self.peek() {
-            match peek.token {
-                Token::OpDot => callee = self.parse_dot_access(callee)?,
-                Token::OpenBracket => callee = self.parse_index(callee)?,
+        loop {
+            // A `.` continues the callee path across line breaks, as it continues
+            // any expression in `parse_expr_bp`.
+            if matches!(self.peek_past_nl().map(|t| &t.token), Some(Token::OpDot)) {
+                self.skip_nl();
+            }
+            match self.peek().map(|t| &t.token) {
+                Some(Token::OpDot) => callee = self.parse_dot_access(callee)?,
+                Some(Token::OpenBracket) => callee = self.parse_index(callee)?,
                 _ => break,
             }
         }
@@ -186,9 +191,15 @@ impl<'src> ParseCtx<'src> {
     fn thread_without_call(&self, callee: &Spanned<Expr>) -> Diagnostic {
         // Suggest the call only where appending `()` makes one;
         // a trailing `()` on a lambda or `if` would join its body instead.
+        // A callee path continued across lines would quote as several lines.
         let label = match callee.node {
             Expr::NameLookup(_) | Expr::HardIndex { .. } | Expr::SoftIndex { .. } => {
-                format!("try `{}()`", self.source_text(callee.span))
+                let text = self.source_text(callee.span);
+                if text.contains('\n') {
+                    "try ending it with `()`".to_owned()
+                } else {
+                    format!("try `{text}()`")
+                }
             }
             _ => "not a call".to_owned(),
         };
