@@ -1,0 +1,3 @@
+# A match's arms go in braces after the target.
+#= {rejects: 'expected `{`'}
+match 1 1 => 2

@@ -1,0 +1,3 @@
+# A String callee raises; `'s' @ f()` is not a method call on the String.
+#= {raises: ['non-function', 'String'], inputs: {s: 'hello', name: 'len'}}
+s @ name()

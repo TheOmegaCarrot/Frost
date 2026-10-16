@@ -1,0 +1,5 @@
+# Inside an interpolation, the format String's own quote starts a nested String
+# rather than ending the format String. Subtle: here `'}'` is that nested
+# String, so the interpolation is left unclosed.
+#= {rejects: 'unclosed interpolation'}
+def s = $'${'}'

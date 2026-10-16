@@ -1,0 +1,9 @@
+# A guarded arm's result is in tail position; its guard is not, but the guard
+# finishes before the arm's result runs.
+#= {result: 'even'}
+defn parity(n) -> match n {
+    0 => 'even',
+    1 => 'odd',
+    m if: m > 1 => parity(m - 2),
+}
+parity(100000)

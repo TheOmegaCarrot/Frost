@@ -1,0 +1,6 @@
+# A `def` may shadow a global once, but a second `def` of the same global name
+# in that scope is a duplicate binding.
+#= {rejects: ['`len`', 'already bound']}
+def len = 1
+def len = 2
+len

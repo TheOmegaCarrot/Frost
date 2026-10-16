@@ -1,0 +1,4 @@
+# Currying `call` with a function fixes the function, leaving the argument
+# Array to supply later; reversing `call` takes the Array first.
+#= {result: [[1, 2], [3, 4]]}
+[curry(call, collect)([1, 2]), rev_args(call)([3, 4], collect)]

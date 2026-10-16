@@ -1,0 +1,3 @@
+# An escape no String takes is rejected rather than kept as text.
+#= {rejects: ['invalid escape sequence', R'(`\q`)', 'unrecognized']}
+'a\qb'

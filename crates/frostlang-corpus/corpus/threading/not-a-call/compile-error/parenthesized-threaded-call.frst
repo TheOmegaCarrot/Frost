@@ -1,0 +1,5 @@
+# A parenthesized call on the right of `@` is a value, not a call to thread
+# into: `@` needs its own argument list after the callee. Subtle because the
+# parentheses hold a call.
+#= {rejects: ['right side of `@` must be a call', 'not a call'], inputs: {one: 1, two: 2}}
+one @ (two @ collect())

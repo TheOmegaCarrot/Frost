@@ -1,0 +1,4 @@
+# Keywords are case-sensitive: `Null` is the type's name, not a literal, and is not
+# bound as a value.
+#= {rejects: '`Null` is not defined'}
+Null

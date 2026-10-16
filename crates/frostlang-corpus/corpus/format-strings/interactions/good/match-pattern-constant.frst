@@ -1,0 +1,10 @@
+# A constant format String pattern matches only an equal String, not the value
+# it interpolates. Subtle: `$'${3}'` is the String `3`, which never equals the
+# Int 3.
+#= {result: ['str', 'no', 'empty']}
+defn check(v) -> match v {
+    $'${3}' => 'str',
+    $'' => 'empty',
+    _ => 'no',
+}
+[check('3'), check(3), check('')]

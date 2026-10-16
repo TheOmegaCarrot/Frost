@@ -1,0 +1,5 @@
+# A rest parameter is a new Array on each call; extending it in one call never
+# shows in another.
+#= {result: [[1, 0], [1, 2, 0], [0], [1, 0]], inputs: {n: 1}}
+defn grow(...items) -> items + [0]
+[grow(n), grow(n, 2), grow(), grow(n)]

@@ -1,0 +1,7 @@
+# Values computed by abbreviated lambdas can be exported; the lambda itself
+# stays private.
+#= {result: 6, exports: {doubled: [2, 4], total: 6}}
+def double = $($ * 2)
+export def doubled = map [1, 2] with double
+export def total = reduce doubled init: 0 with $($1 + $2)
+total

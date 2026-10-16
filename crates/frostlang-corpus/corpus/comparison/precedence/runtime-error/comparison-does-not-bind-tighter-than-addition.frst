@@ -1,0 +1,4 @@
+# `+` binds tighter than `<`, so `'a' + 1 < 2` adds the String and the Int
+# first, and that addition raises; the comparison is never reached.
+#= {raises: ['add', 'String', 'Int']}
+'a' + 1 < 2

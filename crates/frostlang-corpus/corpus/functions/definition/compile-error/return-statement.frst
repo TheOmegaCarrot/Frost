@@ -1,0 +1,4 @@
+# Frost has no `return`: a function's value is its body's last expression,
+# and `return 1` is a name followed by a stray expression.
+#= {rejects: ['line break', '`return`']}
+def f = fn -> return 1

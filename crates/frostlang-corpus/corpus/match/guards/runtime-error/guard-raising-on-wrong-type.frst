@@ -1,0 +1,7 @@
+# A guard is not a type check: comparing an unconstrained binding of the wrong
+# type raises rather than failing the guard.
+#= {raises: 'cannot compare', inputs: {v: 'five'}}
+match v {
+    n if: n > 0 => 'positive',
+    _ => 'other',
+}

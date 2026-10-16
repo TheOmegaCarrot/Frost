@@ -1,0 +1,5 @@
+# A format string reading a binding before and after a value derived from it
+# shows the original at both reads.
+#= {result: '1|2|1', inputs: {n: 1}}
+def xs = [n]
+$'${len(xs)}|${len(xs + xs)}|${len(xs)}'

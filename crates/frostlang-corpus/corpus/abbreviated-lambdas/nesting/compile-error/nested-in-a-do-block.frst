@@ -1,0 +1,7 @@
+# A `do` block does not reset what `$` means either; an abbreviated lambda
+# in it is still nested.
+#= {rejects: 'cannot be nested'}
+def f = $(do {
+    def g = $($ + 1)
+    g($)
+})

@@ -1,0 +1,4 @@
+# Operator characters separated by a space are not one foreign operator:
+# `> =` is two tokens, and `=` cannot start an expression.
+#= {rejects: 'found `=`'}
+1 > = 1

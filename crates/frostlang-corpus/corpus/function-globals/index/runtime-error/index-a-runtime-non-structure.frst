@@ -1,0 +1,4 @@
+# The structure check happens at run time on a value the compiler cannot
+# see.
+#= {raises: ['Cannot index', 'Bytes'], inputs: {s: x'0102'}}
+index(0)(s)

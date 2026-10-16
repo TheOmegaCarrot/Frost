@@ -1,0 +1,8 @@
+# A `defn` in a lambda body is local to it, and captures the enclosing
+# lambda's parameters.
+#= {result: 10, inputs: {n: 4}}
+def sum_to = fn limit -> {
+    defn go(i, acc) -> if i > limit: acc else: go(i + 1, acc + i)
+    go(1, 0)
+}
+sum_to(n)

@@ -1,0 +1,3 @@
+# `*` is numeric only: Bytes times an Int is a type error, not repetition.
+#= {raises: 'Bytes * Int'}
+x'00' * 4

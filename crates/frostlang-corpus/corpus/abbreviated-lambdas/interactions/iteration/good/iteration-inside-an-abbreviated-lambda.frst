@@ -1,0 +1,5 @@
+# An abbreviated lambda's body may itself be a `map`, as long as its
+# operation is not another abbreviated lambda.
+#= {result: [2, 3]}
+def add_to_all = $(map $1 with fn x -> x + $2)
+add_to_all([1, 2], 1)

@@ -1,0 +1,4 @@
+# No branch matching a literal the optimizer can see still raises at runtime.
+#= {raises: 'matches no alternative'}
+def [a, 1] | [1, a] = [3, 4]
+a

@@ -1,0 +1,4 @@
+# A `#` after a format String's closing quote starts a comment as usual, even
+# when the String's text holds `#` too.
+#= {result: 'a # 7', inputs: {x: 7}}
+$'a # ${x}' # the comment, not part of the String

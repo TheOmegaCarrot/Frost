@@ -1,0 +1,5 @@
+# A def whose pattern is a pin of an unbound name reports that it binds
+# nothing.
+#= {rejects: 'binds no name'}
+def (x) = 5
+0

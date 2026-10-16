@@ -1,0 +1,5 @@
+# Every `export def` in a program is exported by its own name.
+#= {result: null, exports: {a: 1, b: 'two', c: [3]}}
+export def a = 1
+export def b = 'two'
+export def c = [3]

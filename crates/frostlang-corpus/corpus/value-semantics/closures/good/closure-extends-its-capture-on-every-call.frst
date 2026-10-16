@@ -1,0 +1,8 @@
+# A closure that derives a value from its capture builds from the original
+# on every call: one call's result never leaks into the next.
+#= {result: [[1, 2], [1, 3], [1, 2]], inputs: {n: 1}}
+def push = do {
+    def base = [n]
+    fn x -> base + [x]
+}
+[push(2), push(3), push(2)]

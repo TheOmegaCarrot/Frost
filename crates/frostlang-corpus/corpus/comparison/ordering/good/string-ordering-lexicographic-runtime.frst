@@ -1,0 +1,12 @@
+# Lexicographic String ordering on text known only at runtime.
+#= {
+#=     result: [true, true, false, true, true],
+#=     inputs: {abc: 'abc', ab: 'ab', empty: '', b: 'b'},
+#= }
+[
+    abc < 'abd',
+    ab < abc,
+    abc < ab,
+    empty < ab,
+    b > abc,
+]

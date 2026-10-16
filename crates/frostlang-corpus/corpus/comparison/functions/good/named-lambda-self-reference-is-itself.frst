@@ -1,0 +1,9 @@
+# The name a named lambda binds for recursion refers to that very Function, so
+# it equals the Function as seen from outside.
+#= {result: [true, true]}
+def me = fn self_ref() -> self_ref
+defn identify(n) -> if n == 0: identify else: identify(n - 1)
+[
+    me() == me,
+    identify(3) == identify,
+]

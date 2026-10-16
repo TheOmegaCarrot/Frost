@@ -1,0 +1,5 @@
+# A named lambda's own name may be captured by a lambda inside it, which then
+# returns the very same function.
+#= {result: true}
+def f = fn me() -> fn -> me
+f()() == f

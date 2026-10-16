@@ -1,0 +1,6 @@
+# A tail-recursive function threading an accumulator builds the right value,
+# and the seed passed in is unchanged afterward.
+#= {result: [[0, 3, 2, 1], [0]], inputs: {n: 0}}
+defn build(k, acc) -> if k == 0: acc else: build(k - 1, acc + [k])
+def seed = [n]
+[build(3, seed), seed]

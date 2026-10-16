@@ -1,0 +1,4 @@
+# Frost has no `? :` conditional operator; its conditional is `if`.
+#= {rejects: ['`?`', 'written `if a: b else: c`']}
+def c = true
+c ? 1 : 2

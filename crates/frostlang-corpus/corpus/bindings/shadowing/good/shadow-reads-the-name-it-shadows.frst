@@ -1,0 +1,9 @@
+# A shadowing `def`'s value is computed before the new binding exists, so the
+# name in its value still means the enclosing binding.
+#= {result: [2, 1]}
+def x = 1
+def inner = do {
+    def x = x + 1
+    x
+}
+[inner, x]

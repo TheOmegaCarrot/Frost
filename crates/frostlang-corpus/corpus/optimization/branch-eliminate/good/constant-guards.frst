@@ -1,0 +1,15 @@
+# A guard is evaluated only when its arm's pattern matches: a constant false
+# guard skips its arm, and a guard that would raise on constants never raises
+# behind a pattern that fails.
+#= {result: ['ok', 'guarded']}
+[
+    match 1 {
+        2 if: 1 / 0 => 'raised',
+        _ if: false => 'never',
+        _ => 'ok',
+    },
+    match 1 {
+        _ if: true => 'guarded',
+        _ => 'other',
+    },
+]

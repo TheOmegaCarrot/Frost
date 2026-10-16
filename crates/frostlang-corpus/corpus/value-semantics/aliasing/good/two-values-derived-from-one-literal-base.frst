@@ -1,0 +1,7 @@
+# Two values derived from the same constant base are independent, and the
+# base keeps neither element, however much of this the compiler computes.
+#= {result: [[1], [1, 2], [1, 3]]}
+def base = [1]
+def two = base + [2]
+def three = base + [3]
+[base, two, three]

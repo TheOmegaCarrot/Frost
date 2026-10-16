@@ -1,0 +1,4 @@
+# Calling a value that is not a function raises, naming its type.
+#= {raises: ['non-function', 'Int']}
+def n = 5
+n()

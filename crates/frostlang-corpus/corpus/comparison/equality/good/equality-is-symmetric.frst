@@ -1,0 +1,5 @@
+# `a == b` and `b == a` always agree, whatever the operand types.
+#= {result: true, inputs: {values: [null, false, 0, 0.0, -0.0, '', x'', 'a', [], [0], [0.0], {}, {a: 0}, {a: 0.0}]}}
+def forward = transform(values, fn a -> transform(values, fn b -> a == b))
+def backward = transform(values, fn a -> transform(values, fn b -> b == a))
+forward == backward

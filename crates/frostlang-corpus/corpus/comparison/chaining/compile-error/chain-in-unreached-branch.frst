@@ -1,0 +1,4 @@
+# A chained comparison is rejected even in a branch that could never run:
+# the rule is syntactic, so dead-code elimination cannot hide it.
+#= {rejects: 'cannot chain'}
+if false: 1 < 2 < 3 else: 0

@@ -1,0 +1,9 @@
+# Since `or` binds looser than `==`, `0 or 1 == 1` is `0 or (1 == 1)`, which
+# yields `0` (truthy, so `or` returns it), while `(0 or 1) == 1` compares
+# `0` with `1`.
+#= {result: [0, false, true]}
+[
+    0 or 1 == 1,
+    (0 or 1) == 1,
+    (null or 1) == 1,
+]

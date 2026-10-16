@@ -1,0 +1,3 @@
+# Abbreviated lambdas compose like any function.
+#= {result: 8, inputs: {n: 3}}
+compose($($ + 1), $($ * 2))(n)

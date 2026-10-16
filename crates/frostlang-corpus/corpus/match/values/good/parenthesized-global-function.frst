@@ -1,0 +1,8 @@
+# A parenthesized global compares a target Function with that global; a
+# different global does not match.
+#= {result: ['len', 'other']}
+defn which(f) -> match f {
+    (len) => 'len',
+    _ => 'other',
+}
+[which(len), which(type)]

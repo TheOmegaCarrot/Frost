@@ -1,0 +1,6 @@
+# A pin in a def's pattern may read a name the same pattern bound earlier; with
+# a known value, the pin compares against the part already taken.
+#= {result: [7, 'c', 3]}
+def [a, (a)] = [7, 7]
+def {k, [k]: v} = {k: 'c', c: 3}
+[a, k, v]

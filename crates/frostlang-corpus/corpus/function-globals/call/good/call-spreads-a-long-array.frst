@@ -1,0 +1,6 @@
+# `call` spreads an Array of any length as that many arguments, here a
+# thousand elements built at run time.
+#= {result: [1000, 1, 1000, 1000], inputs: {n: 1000}}
+defn build(k, acc) -> if k == 0: acc else: build(k - 1, [k] + acc)
+def gathered = call(collect, build(n, []))
+[len(gathered), gathered[0], gathered[-1], call(fn ...xs -> len(xs), gathered)]

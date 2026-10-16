@@ -1,0 +1,5 @@
+# An escaped `\${` is text even with a real interpolation right inside it.
+# Subtle: the text `${` is followed by the interpolation `${x}`, and the last
+# `}` is text again.
+#= {result: '${7}', inputs: {x: 7}}
+$'\${${x}}'

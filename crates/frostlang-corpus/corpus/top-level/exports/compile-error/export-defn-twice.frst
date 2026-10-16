@@ -1,0 +1,4 @@
+# Two `export defn`s of one name are a duplicate binding.
+#= {rejects: '`f` is already bound'}
+export defn f(x) -> x
+export defn f(x, y) -> x + y

@@ -1,0 +1,8 @@
+# An unbound name in a match arm inside a lambda is rejected, though the arm
+# may never run.
+#= {rejects: ['`missing`', 'not defined']}
+def f = fn v -> match v {
+    1 => 'one',
+    _ => missing,
+}
+f(1)

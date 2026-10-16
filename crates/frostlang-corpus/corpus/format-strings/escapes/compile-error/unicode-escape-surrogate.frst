@@ -1,0 +1,4 @@
+# A surrogate code point is not a Unicode scalar value, so a format String
+# cannot hold one: its text is always valid UTF-8.
+#= {rejects: 'not a valid Unicode scalar value'}
+def s = $'\u{d800}'

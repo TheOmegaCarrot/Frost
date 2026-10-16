@@ -1,0 +1,7 @@
+# A recursive call whose argument is itself a recursive call, on arguments
+# known only at runtime.
+#= {result: 61, inputs: {m: 3, n: 3}}
+defn ack(a, b) -> if a == 0: b + 1
+    elif b == 0: ack(a - 1, 1)
+    else: ack(a - 1, ack(a, b - 1))
+ack(m, n)

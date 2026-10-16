@@ -1,0 +1,6 @@
+# `{} as m` matches any Map and binds it whole, empty or not.
+#= {result: [{}, {a: 1}, 'not a Map'], inputs: {xs: [{}, {a: 1}, [1]]}}
+transform(xs, fn v -> match v {
+    {} as m => m,
+    _ => 'not a Map',
+})

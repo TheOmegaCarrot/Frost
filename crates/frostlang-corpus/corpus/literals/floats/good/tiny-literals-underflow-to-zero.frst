@@ -1,0 +1,9 @@
+# A literal too small to represent rounds to zero, an ordinary Float rather than an
+# error, unlike one too large. The least positive Float is still representable.
+#= {result: [true, true, true, true]}
+[
+    1e-400 == 0.0,
+    2e-324 == 0.0,
+    5e-324 > 0.0,
+    3e-324 == 5e-324,
+]

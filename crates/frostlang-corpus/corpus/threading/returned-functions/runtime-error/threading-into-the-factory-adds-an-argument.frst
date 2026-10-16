@@ -1,0 +1,5 @@
+# `10 @ adder(5)` is `adder(10, 5)`, not a call of the function `adder(5)`
+# returns: the factory receives one argument too many.
+#= {raises: ['expects 1', 'called with 2'], inputs: {n: 10}}
+defn adder(k) -> fn x -> x + k
+n @ adder(5)

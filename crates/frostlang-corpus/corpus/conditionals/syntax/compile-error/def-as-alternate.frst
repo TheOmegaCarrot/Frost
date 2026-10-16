@@ -1,0 +1,4 @@
+# An `else` branch cannot be a `def` either: it too is an expression.
+#= {rejects: ['found `def`', 'use a block']}
+def c = true
+if c: 1 else: def x = 2

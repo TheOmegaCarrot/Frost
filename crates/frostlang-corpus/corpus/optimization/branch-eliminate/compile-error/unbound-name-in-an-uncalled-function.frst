@@ -1,0 +1,5 @@
+# An unbound name is a compile error even in a function no code calls, whose
+# binding is never read.
+#= {rejects: ['`missing_name`', 'not defined']}
+def never = fn -> missing_name
+1

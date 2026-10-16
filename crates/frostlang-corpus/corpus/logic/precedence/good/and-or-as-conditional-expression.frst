@@ -1,0 +1,12 @@
+# Because `and` binds tighter than `or`, `c and a or b` reads as a conditional:
+# `a` when `c` is truthy, else `b`.
+#= {
+#=     result: ['yes', 'no', 'no', 'yes'],
+#=     inputs: {t: true, f: false, n: null, zero: 0},
+#= }
+[
+    t and 'yes' or 'no',
+    f and 'yes' or 'no',
+    n and 'yes' or 'no',
+    zero and 'yes' or 'no',
+]

@@ -1,0 +1,14 @@
+# Null equality on values known only at runtime: Null on either side, and
+# against falsy and empty values.
+#= {
+#=     result: [true, false, false, false, false, true],
+#=     inputs: {nothing: null, no: false, empty: [], zero: 0},
+#= }
+[
+    nothing == null,
+    nothing == no,
+    empty == nothing,
+    zero == nothing,
+    nothing != nothing,
+    nothing != no,
+]

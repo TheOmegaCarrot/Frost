@@ -1,0 +1,4 @@
+# Frost has no `++` increment.
+#= {rejects: 'no `++`'}
+def x = 1
+x++

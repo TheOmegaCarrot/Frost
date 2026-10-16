@@ -1,0 +1,5 @@
+# In brackets, a Map key may be the Bool `true` or the String `'null'`: each is its
+# own key, distinct from the other type's spelling of the same word.
+#= {result: [1, 2, 3, 3]}
+def m = {[true]: 1, ['true']: 2, ['null']: 3}
+[m[true], m['true'], m['null'], len(m)]

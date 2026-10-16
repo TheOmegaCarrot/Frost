@@ -1,0 +1,5 @@
+# A keyword's text is an ordinary String, so it works as a Map key written in
+# brackets, and is read back by indexing with brackets.
+#= {result: [1, 2, 3, 3]}
+def m = {['if']: 1, ['def']: 2, ['null']: 3}
+[m['if'], m['def'], m['null'], len(m)]

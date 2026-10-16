@@ -1,0 +1,13 @@
+# Memoization without mutation, on a count known only at runtime: each call
+# returns its value with the updated memo Map, which the caller destructures
+# and threads on.
+#= {result: [12586269025, 51], inputs: {n: 50}}
+defn fib(k, memo) -> if has(memo, k): [memo[k], memo]
+    elif k < 2: [k, memo + {[k]: k}]
+    else: do {
+        def [a, memo1] = fib(k - 1, memo)
+        def [b, memo2] = fib(k - 2, memo1)
+        [a + b, memo2 + {[k]: a + b}]
+    }
+def [value, memo] = fib(n, {})
+[value, len(memo)]

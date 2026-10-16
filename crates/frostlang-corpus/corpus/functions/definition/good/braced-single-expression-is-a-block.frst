@@ -1,0 +1,7 @@
+# A braced body holding a lone expression that cannot begin a Map entry is a
+# block returning that expression, not a Map.
+#= {result: [42, 4, 3]}
+def constant = fn -> { 42 }
+def field = fn m -> {m.b}
+def sum = fn a -> {a + 1}
+[constant(), field({b: 4}), sum(2)]

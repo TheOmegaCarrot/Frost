@@ -1,0 +1,5 @@
+# A line break ends `export`: the definition must follow on the same line.
+# Subtle because the next line holds exactly the `def` it would take.
+#= {rejects: '`export` takes a definition'}
+export
+def x = 1

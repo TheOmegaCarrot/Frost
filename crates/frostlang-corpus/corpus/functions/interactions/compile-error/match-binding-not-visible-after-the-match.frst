@@ -1,0 +1,9 @@
+# A name bound by a match arm in a lambda body is local to that arm.
+#= {rejects: ['`n`', 'not defined']}
+def f = fn v -> {
+    def r = match v {
+        n is Int => n,
+        _ => 0,
+    }
+    n
+}

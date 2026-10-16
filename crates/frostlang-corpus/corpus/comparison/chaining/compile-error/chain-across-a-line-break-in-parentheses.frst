@@ -1,0 +1,5 @@
+# Inside parentheses an expression continues across line breaks, so a chain
+# split over two lines there is still a chain.
+#= {rejects: 'cannot chain'}
+(1 < 2
+    < 3)

@@ -1,0 +1,4 @@
+# `/` is numeric only: a String divided by an Int is a type error, not a
+# split.
+#= {raises: 'String / Int'}
+'abcd' / 2

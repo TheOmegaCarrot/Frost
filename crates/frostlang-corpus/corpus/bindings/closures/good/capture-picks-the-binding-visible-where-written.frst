@@ -1,0 +1,10 @@
+# Two closures capturing the same name in different scopes each capture the
+# binding visible where they were written.
+#= {result: [1, 2]}
+def x = 1
+def f = fn -> x
+def g = do {
+    def x = 2
+    fn -> x
+}
+[f(), g()]

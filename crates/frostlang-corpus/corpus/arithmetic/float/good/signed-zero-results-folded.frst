@@ -1,0 +1,12 @@
+# Constant Float arithmetic keeps IEEE signed zeros exactly as runtime
+# arithmetic does: folding must not lose the sign of a zero.
+#= {result: ['-0.0', '-0.0', '-0.0', '-0.0', '0.0', '0.0', true]}
+[
+    to_string(0.0 * -1.0),
+    to_string(0.0 / -1.0),
+    to_string(0 * -1.0),
+    to_string(-0.0 + -0.0),
+    to_string(-0.0 + 0.0),
+    to_string(0.0 - 0.0),
+    0.0 * -1.0 == 0.0,
+]

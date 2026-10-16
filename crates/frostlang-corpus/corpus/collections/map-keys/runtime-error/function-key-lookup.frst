@@ -1,0 +1,4 @@
+# Looking up a Function key raises.
+#= {raises: ['not a valid Map key', 'Function']}
+def f = fn -> 1
+{a: 1}[f]

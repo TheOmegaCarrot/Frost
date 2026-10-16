@@ -1,0 +1,4 @@
+# The written arguments of a threaded call may end with a trailing comma,
+# as any call's may.
+#= {result: [1, 2, 3]}
+1 @ collect(2, 3,)

@@ -1,0 +1,4 @@
+# With only `$1` and `$$`, a Map entry's value arrives in `$$`, the rest of
+# the arguments after the key.
+#= {result: {a: [1], b: [2]}}
+map {a: 1, b: 2} with $({[$1]: $$})

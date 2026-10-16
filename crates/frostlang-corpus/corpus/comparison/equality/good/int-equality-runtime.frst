@@ -1,0 +1,23 @@
+# `==` and `!=` on Ints known only at runtime, so no fold decides them:
+# zero, negatives, and both ends of the Int range.
+#= {
+#=     result: [true, false, true, false, true, true, false, true],
+#=     inputs: {
+#=         five: 5,
+#=         six: 6,
+#=         zero: 0,
+#=         minus_one: -1,
+#=         max: 9223372036854775807,
+#=         min: -9223372036854775808,
+#=     },
+#= }
+[
+    five == 5,
+    five == six,
+    zero == 0,
+    minus_one == 1,
+    max == 9223372036854775807,
+    min == -9223372036854775808,
+    max == min,
+    five != six,
+]

@@ -1,0 +1,4 @@
+# `//` is not a comment in Frost; the error points to `#`.
+#= {rejects: 'a comment starts with `#`'}
+// a note
+1

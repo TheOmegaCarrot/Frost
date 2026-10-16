@@ -1,0 +1,7 @@
+# A block's line breaks end its statements even when the block sits inside
+# parentheses, where line breaks are otherwise insignificant.
+#= {rejects: 'a line continues only when'}
+print(do {
+    1 +
+        2
+})

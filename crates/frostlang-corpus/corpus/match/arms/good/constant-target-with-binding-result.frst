@@ -1,0 +1,6 @@
+# A constant target whose arm reads its bindings computes the same value as at
+# runtime.
+#= {result: [6, [2, 3]]}
+match [2 * 3, [2, 3]] {
+    [n, [a, b]] => [n, [a, b]],
+}

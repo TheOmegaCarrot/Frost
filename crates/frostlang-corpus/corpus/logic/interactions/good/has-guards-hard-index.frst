@@ -1,0 +1,7 @@
+# `has(m, k) and m.k` guards a hard index by the key's presence, so a missing
+# key yields false rather than raising.
+#= {
+#=     result: [false, null, 2],
+#=     inputs: {maps: [{}, {k: null}, {k: 2}]},
+#= }
+transform(maps, fn m -> has(m, 'k') and m.k)

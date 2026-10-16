@@ -1,0 +1,4 @@
+# An error raised while evaluating the operand surfaces as itself; the
+# negation never runs.
+#= {raises: 'division by zero'}
+-(1 / 0)

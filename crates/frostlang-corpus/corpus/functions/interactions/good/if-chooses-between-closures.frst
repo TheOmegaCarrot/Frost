@@ -1,0 +1,5 @@
+# An `if` may choose which closure to create, each capturing the call's own
+# parameters.
+#= {result: [8, 9], inputs: {x: 1, y: 2}}
+def choose = fn cond, p -> if cond: fn q -> x + p + q else: fn q -> y + p + q
+[choose(true, 3)(4), choose(false, 3)(4)]

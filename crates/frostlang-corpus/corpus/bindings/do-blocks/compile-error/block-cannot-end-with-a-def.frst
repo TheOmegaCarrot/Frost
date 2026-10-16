@@ -1,0 +1,7 @@
+# A `do` block yields its final expression, so it cannot end with a definition,
+# which has no value.
+#= {rejects: ['must end with an expression']}
+def y = do {
+    def x = 1
+}
+y

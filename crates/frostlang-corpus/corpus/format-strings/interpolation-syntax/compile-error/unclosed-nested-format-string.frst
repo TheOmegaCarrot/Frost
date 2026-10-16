@@ -1,0 +1,5 @@
+# A format String nested in an interpolation must close there. Subtle: here the
+# nested `$'a}'` swallows the `}` and the outer quote, so the outer
+# interpolation is left unclosed.
+#= {rejects: ['unclosed interpolation', 'nested in it']}
+def s = $'${$'a}'

@@ -1,0 +1,4 @@
+# A bracket opened inside an interpolation must close inside it: the
+# interpolation's `}` does not close a `(`.
+#= {rejects: ['expected `)`', 'in this interpolation']}
+def s = $'${(1 + 2}'

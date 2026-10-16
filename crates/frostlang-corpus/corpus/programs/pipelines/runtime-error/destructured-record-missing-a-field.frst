@@ -1,0 +1,11 @@
+# A pipeline step destructures each record with a Map pattern, which
+# requires every key it names: the second record lacks `price`, so the step
+# raises, naming the key, rather than binding Null.
+#= {
+#=     raises: ['no value at key', 'price'],
+#=     inputs: {sales: [{item: 'apple', qty: 3, price: 2}, {item: 'pear', qty: 1}]},
+#= }
+transform(sales, fn sale -> {
+    def {item, qty, price} = sale
+    $'${item}: ${qty * price}'
+})

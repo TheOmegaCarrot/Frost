@@ -1,0 +1,7 @@
+# A call as the right operand of `and` or `or` in tail position stays a tail
+# call, also when a constant left operand defers to it, so a deep recursion
+# through it does not grow the stack.
+#= {result: [true, 'done'], inputs: {steps: 200000}}
+defn down(n) -> (n == 0) or down(n - 1)
+defn deferring(n) -> if n == 0: 'done' else: true and deferring(n - 1)
+[down(steps), deferring(steps)]

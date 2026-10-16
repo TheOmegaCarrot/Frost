@@ -1,0 +1,6 @@
+# A returned lambda keeps the parameter of the call that created it, after
+# that call has returned.
+#= {result: 15, inputs: {n: 5}}
+def make_adder = fn k -> fn x -> x + k
+def add_n = make_adder(n)
+add_n(10)

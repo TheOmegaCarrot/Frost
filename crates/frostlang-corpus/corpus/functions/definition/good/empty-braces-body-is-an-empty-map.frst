@@ -1,0 +1,6 @@
+# `{}` after the arrow is an empty Map: a block must end in an expression, so
+# empty braces cannot be one.
+#= {result: [{}, {}]}
+def empty = fn -> {}
+def spaced = fn p, q -> { }
+[empty(), spaced(1, 2)]

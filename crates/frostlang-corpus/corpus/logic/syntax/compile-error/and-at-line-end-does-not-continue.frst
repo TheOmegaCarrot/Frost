@@ -1,0 +1,6 @@
+# Outside brackets, a line break ends the expression even after a trailing
+# `and`: the operator is left without a right operand.
+#= {rejects: ['expected an expression', 'line break']}
+def x = true and
+    false
+x

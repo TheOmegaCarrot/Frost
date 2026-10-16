@@ -1,0 +1,9 @@
+# Map values compare with `==`, so a value of `1` never equals a value of
+# `1.0`, and nested Map values compare structurally.
+#= {result: [false, true, false, true]}
+[
+    {a: 1} == {a: 1.0},
+    {a: {b: [1, {c: null}]}} == {a: {b: [1, {c: null}]}},
+    {a: {b: [1, {c: null}]}} == {a: {b: [1, {c: false}]}},
+    {a: 'x'} != {a: x'78'},
+]

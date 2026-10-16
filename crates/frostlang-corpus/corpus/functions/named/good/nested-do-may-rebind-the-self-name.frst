@@ -1,0 +1,11 @@
+# A `do` block in the body is its own scope, so it may rebind the self-name;
+# the self-name is the closure again after the block.
+#= {result: [1, true]}
+def f = fn me() -> {
+    def inner = do {
+        def me = 1
+        me
+    }
+    [inner, is_function(me)]
+}
+f()

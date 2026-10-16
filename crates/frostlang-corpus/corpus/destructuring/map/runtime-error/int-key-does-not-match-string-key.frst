@@ -1,0 +1,4 @@
+# An Int key does not find the String key that spells it.
+#= {raises: 'no value at key', inputs: {m: {['1']: 1}}}
+def {[1]: x} = m
+x

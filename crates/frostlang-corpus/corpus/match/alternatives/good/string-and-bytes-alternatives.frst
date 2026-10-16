@@ -1,0 +1,6 @@
+# String and Bytes literal alternatives each match only their own type.
+#= {result: ['yes', 'yes', 'yes', 'no'], inputs: {xs: ['y', 'yes', x'79', x'7965']}}
+transform(xs, fn v -> match v {
+    'y' | 'yes' | x'79' => 'yes',
+    _ => 'no',
+})

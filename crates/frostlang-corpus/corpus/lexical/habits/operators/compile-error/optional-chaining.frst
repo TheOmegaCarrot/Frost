@@ -1,0 +1,3 @@
+# Frost has no optional chaining `?.`.
+#= {rejects: 'no optional chaining', inputs: {p: null}}
+p?.a

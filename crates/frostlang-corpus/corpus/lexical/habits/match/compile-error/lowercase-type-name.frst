@@ -1,0 +1,4 @@
+# Type names are capitalized: `int` is not a type, and the help suggests
+# `Int`.
+#= {rejects: 'did you mean `Int`?', inputs: {x: 1}}
+match x { n is int => n }

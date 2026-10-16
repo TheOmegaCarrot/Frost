@@ -1,0 +1,5 @@
+# `a != b` is always exactly `not (a == b)`, across every pair of types,
+# including Int against Float and String against Bytes.
+#= {result: true, inputs: {values: [null, false, true, 0, 0.0, 1, 1.0, '', x'', 'a', x'61', [], [0], {}, {a: 0}]}}
+def pairs_agree = transform(values, fn a -> transform(values, fn b -> (a != b) == not (a == b)))
+pairs_agree == transform(values, fn _ -> transform(values, fn _ -> true))

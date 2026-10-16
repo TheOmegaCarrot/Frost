@@ -2,7 +2,9 @@
 
 A large body of standalone Frost scripts, each pinning what the core language
 should do with it. Its subject is the domain of the compiler and the VM;
-library behavior (globals, `std.*`, `ext.*`) belongs to the stdlib's own tests.
+library behavior (globals, `std.*`, `ext.*`) belongs to the stdlib's own tests,
+and the VM's runtime limits and host-facing configuration (fuel, call and
+import depth, cancellation) to the unit tests.
 A script may use a few globals to build or observe its result, but never to
 test them.
 
@@ -70,10 +72,23 @@ with the script's outcome directory.
 | `printed` | `good` | An Array of the text of each `print`, in order. Absent, the script must print nothing. |
 | `raises` | `runtime-error` | A String, or an Array of Strings, each of which the error's message must contain, ignoring case. |
 | `rejects` | `compile-error` | As `raises`, matched against the diagnostics: their messages, labels, help, and codes, but not the source lines they quote. |
+| `inputs` | any | A Map of values by name. Each name is in the script's enclosing scope, and its value is supplied only when the script runs. |
 | `known_issue` | any | The ID of the Backlog task tracking a bug that keeps the script from behaving as expected, such as `'FROST-123'`. |
 | `regression` | any | `true` if that bug is an accepted regression: the script once behaved as expected. Requires `known_issue`. |
 
 Any other field is an error.
+
+An input is unknown to the compiler, so no optimization can fold or propagate
+it. A script that must exercise runtime behavior, rather than what the
+optimizer computes ahead of time, takes its values as inputs:
+
+```frost
+# An Array pattern destructures a value only known at runtime.
+#= {result: [3, 2, 1], inputs: {xs: [1, 2, 3]}}
+match xs {
+    [a, b, c] => [c, b, a],
+}
+```
 
 Error fragments match loosely so that rewording a message does not break the
 corpus. Choose the smallest fragment that still tells this error from others.

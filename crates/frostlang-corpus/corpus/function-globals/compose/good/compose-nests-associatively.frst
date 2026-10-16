@@ -1,0 +1,11 @@
+# Composition nests either way to the same function as composing all three
+# at once.
+#= {result: [-4, -4, -4]}
+def inc = fn x -> x + 1
+def double = fn x -> x * 2
+def negate = fn x -> -x
+[
+    compose(compose(inc, double), negate)(1),
+    compose(inc, compose(double, negate))(1),
+    compose(inc, double, negate)(1),
+]

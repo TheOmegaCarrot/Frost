@@ -1,0 +1,10 @@
+# A function with several block locals tail-calls itself: each call starts
+# with fresh locals, never values left behind by the previous call.
+#= {result: [100000, 7]}
+defn go(n, acc) -> {
+    def a = n % 3
+    def b = n % 5
+    def c = a + b
+    if n == 0: [acc, c + 7] else: go(n - 1, acc + 1)
+}
+go(100000, 0)

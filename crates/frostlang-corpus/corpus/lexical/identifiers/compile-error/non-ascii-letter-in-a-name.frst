@@ -1,0 +1,4 @@
+# Names use only ASCII letters, digits, and `_`; an accented letter is an
+# unexpected character.
+#= {rejects: ['U+00E9', 'only ASCII']}
+def café = 1

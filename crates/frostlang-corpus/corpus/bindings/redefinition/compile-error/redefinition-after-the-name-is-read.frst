@@ -1,0 +1,7 @@
+# Reading a name between two of its `def`s does not make the second one legal:
+# Frost has no rebinding in one scope, even after the first value was used.
+#= {rejects: ['`x`', 'already bound']}
+def x = 1
+def y = x
+def x = 2
+[x, y]

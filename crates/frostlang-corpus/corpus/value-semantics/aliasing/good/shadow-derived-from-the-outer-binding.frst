@@ -1,0 +1,10 @@
+# A block binding that shadows an outer name with a value derived from it
+# leaves the outer binding unchanged when the block ends.
+#= {result: [[1], [1, 2]], inputs: {n: 1}}
+def xs = [n]
+def base = xs
+def inside = do {
+    def xs = base + [2]
+    xs
+}
+[xs, inside]

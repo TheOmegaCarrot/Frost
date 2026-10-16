@@ -1,0 +1,6 @@
+# An `and` condition takes the branch only when both sides are truthy.
+#= {
+#=     result: ['small', 'out of range', 'out of range', 'out of range'],
+#=     inputs: {xs: [5, 0, 50, -3]},
+#= }
+transform(xs, fn x -> if x > 0 and x < 10: 'small' else: 'out of range')

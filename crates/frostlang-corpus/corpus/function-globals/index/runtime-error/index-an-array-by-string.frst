@@ -1,0 +1,3 @@
+# An Array is indexed only by Int.
+#= {raises: ['index Array', 'String']}
+index('a')([1])

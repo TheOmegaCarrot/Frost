@@ -1,0 +1,10 @@
+# An `if` that is a block's statement but not its last passes no tail
+# position to its branches. Subtle: the same `if` would make a tail call were
+# it the block's final expression.
+#= {result: 495}
+defn down(n) -> do {
+    if n == 0: error('bottom') else: down(n - 1)
+    'unreached'
+}
+defn frames(n) -> len(try_call(down, [n]).trace)
+frames(500) - frames(5)

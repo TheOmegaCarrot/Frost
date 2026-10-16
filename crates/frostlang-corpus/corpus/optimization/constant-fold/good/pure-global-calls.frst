@@ -1,0 +1,12 @@
+# A call to a pure global over constant arguments folds to the value the call
+# returns at runtime.
+#= {result: [3, 'Float', '42', true, false, true, true]}
+[
+    len([1, 2, 3]),
+    type(1.5),
+    to_string(42),
+    is_int(1),
+    is_string(x'00'),
+    is_nonnull(0),
+    has({a: null}, 'a'),
+]

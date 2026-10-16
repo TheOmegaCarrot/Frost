@@ -1,0 +1,6 @@
+# A trailing comma in a parameter list adds no parameter: a one-parameter
+# function still rejects two arguments.
+#= {result: [1, false]}
+defn one(x,) -> x
+def r = try_call(fn -> one(1, 2))
+[one(1), r.ok]

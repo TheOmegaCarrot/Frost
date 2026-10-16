@@ -1,0 +1,8 @@
+# A variadic operation shows what `reduce` passes it: the accumulator and the
+# element over an Array, the accumulator, key, and value over a Map.
+#= {
+#=     result: [[0, 1], [0, 'a', 1]],
+#=     inputs: {xs: [1], m: {a: 1}},
+#= }
+def args = fn ...args -> args
+[reduce xs init: 0 with args, reduce m init: 0 with args]

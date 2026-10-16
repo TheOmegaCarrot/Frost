@@ -1,0 +1,4 @@
+# A comma inside a String is text, not a separator: the Array has two
+# elements.
+#= {result: 2}
+len(['a,', ',b'])

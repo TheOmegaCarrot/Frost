@@ -1,0 +1,5 @@
+# `$1`, `$2`, and `$3` bind the arguments by position, whatever order the
+# body mentions them in.
+#= {result: [3, 1, 2]}
+def f = $([$3, $1, $2])
+f(1, 2, 3)

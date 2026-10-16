@@ -1,0 +1,10 @@
+# `\\` is one backslash, so `'\\n'` is a backslash then an `n`, not a line break. The
+# decoding is left to right: `'\\\''` is a backslash then a quote.
+#= {result: [2, true, 2, true, 2]}
+[
+    len('\\n'),
+    '\\n' == R'(\n)',
+    len('\\\''),
+    '\\\'' == R'(\')',
+    len('\\\\'),
+]

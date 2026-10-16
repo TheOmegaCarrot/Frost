@@ -1,0 +1,5 @@
+# An impure native as the operation over a literal Array runs at runtime,
+# each call in order, and its results become the elements: `print` returns
+# Null.
+#= {result: [null, null], printed: ['a', 'b']}
+map ['a', 'b'] with print

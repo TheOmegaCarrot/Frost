@@ -1,0 +1,6 @@
+# A form may be a Map entry's value; the comma ends its operation.
+#= {result: {evens: [2], odds: [1, 3]}, inputs: {xs: [1, 2, 3]}}
+{
+    evens: filter xs with fn x -> x % 2 == 0,
+    odds: filter xs with fn x -> x % 2 == 1,
+}

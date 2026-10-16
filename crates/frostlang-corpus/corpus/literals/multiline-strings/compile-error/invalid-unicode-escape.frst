@@ -1,0 +1,6 @@
+# Unicode escapes in a multiline String are checked as in any other String.
+#= {rejects: R'(invalid `\u` escape `\u{zz}`)'}
+def text = '''
+    ok
+    \u{zz}
+    '''

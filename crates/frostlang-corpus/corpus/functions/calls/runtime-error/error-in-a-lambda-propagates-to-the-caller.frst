@@ -1,0 +1,5 @@
+# An error raised in a lambda's body propagates out through its caller.
+#= {raises: 'boom'}
+def inner = fn -> error('boom')
+def outer = fn -> inner() + 1
+outer()

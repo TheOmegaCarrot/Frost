@@ -1,0 +1,13 @@
+# A constant condition picks its branch by truthiness: only Null and false
+# are falsy, so zero, empty text, and empty structures pick the first branch.
+#= {result: ['t', 't', 't', 't', 't', 't', 'f', 'f']}
+[
+    if 0: 't' else: 'f',
+    if 0.0: 't' else: 'f',
+    if '': 't' else: 'f',
+    if x'': 't' else: 'f',
+    if []: 't' else: 'f',
+    if {}: 't' else: 'f',
+    if null: 't' else: 'f',
+    if false: 't' else: 'f',
+]

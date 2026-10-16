@@ -1,0 +1,5 @@
+# A binding never read is still evaluated, so a `dig` that cannot index is
+# raised.
+#= {raises: ['Cannot index', 'Int']}
+def unused = dig({a: 1}, 'a', 'b')
+'after'

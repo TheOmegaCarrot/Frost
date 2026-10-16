@@ -1,0 +1,3 @@
+# An error raised inside an interpolation propagates out of the format String.
+#= {raises: 'boom'}
+$'a${error("boom")}b'

@@ -1,0 +1,6 @@
+# Two runs of a tail-recursive builder from the same seed give the same
+# result: the first run's accumulation never reaches the seed.
+#= {result: [[0, 2, 1], [0, 2, 1]], inputs: {n: 0}}
+defn build(k, acc) -> if k == 0: acc else: build(k - 1, acc + [k])
+def seed = [n]
+[build(2, seed), build(2, seed)]

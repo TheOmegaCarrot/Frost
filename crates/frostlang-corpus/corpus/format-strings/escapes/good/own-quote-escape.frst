@@ -1,0 +1,3 @@
+# Each quote style escapes its own quote: `\'` in `$'...'` and `\"` in `$"..."`.
+#= {result: ["it's", 'say "hi"']}
+[$'it\'s', $"say \"hi\""]

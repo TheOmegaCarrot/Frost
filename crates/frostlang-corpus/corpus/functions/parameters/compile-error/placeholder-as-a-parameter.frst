@@ -1,0 +1,4 @@
+# `$`-names belong to abbreviated lambdas; a plain lambda may not name a
+# parameter `$1`.
+#= {rejects: ['expected parameters or `->`', '`$1`']}
+def f = fn $1 -> $1

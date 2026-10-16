@@ -1,0 +1,14 @@
+# An `or` chain mixing constant and runtime operands is decided by its first
+# truthy operand of either kind. Subtle because the optimizer may fold the
+# constant stretches, but must never skip past a runtime operand to do it.
+#= {
+#=     result: [1, 0, 'x', null],
+#=     printed: ['right of a falsy chain'],
+#=     inputs: {one: 1, n: null, f: false},
+#= }
+[
+    null or one or 3,
+    n or false or 0 or print('past a constant 0'),
+    f or null or n or 'x' or print('past a constant String'),
+    false or n or null or print('right of a falsy chain'),
+]

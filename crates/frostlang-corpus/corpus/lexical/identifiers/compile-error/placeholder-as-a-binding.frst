@@ -1,0 +1,3 @@
+# A placeholder cannot be bound with `def`.
+#= {rejects: 'placeholders work only inside'}
+def $ = 1

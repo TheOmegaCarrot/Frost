@@ -1,0 +1,12 @@
+# An Int and a Float of the same value order as equal, so `<=` and `>=` hold
+# and `<` and `>` do not, while `==` still says false: equality is strict
+# about type, ordering is not.
+#= {result: [false, false, true, true, false, true]}
+[
+    3 < 3.0,
+    3.0 > 3,
+    3 <= 3.0,
+    3.0 >= 3,
+    3 == 3.0,
+    3 <= 3.0 and 3 >= 3.0 and 3 != 3.0,
+]

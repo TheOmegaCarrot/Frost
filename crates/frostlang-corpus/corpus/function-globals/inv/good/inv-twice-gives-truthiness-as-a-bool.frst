@@ -1,0 +1,5 @@
+# Inverting twice does not restore the function: it gives the function's
+# truthiness as a Bool, so 0 becomes true rather than staying 0.
+#= {result: [true, false, true]}
+def truthy = inv(inv(fn x -> x))
+[truthy(0), truthy(null), truthy('')]

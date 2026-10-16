@@ -1,0 +1,4 @@
+# Non-ASCII text passes through a placeholder and a format string intact.
+#= {result: 'café: 日本 ✓', inputs: {word: '日本'}}
+def label = $($'${$1}: ${$2} ✓')
+label('café', word)

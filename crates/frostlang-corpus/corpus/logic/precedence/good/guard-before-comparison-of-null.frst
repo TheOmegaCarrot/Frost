@@ -1,0 +1,13 @@
+# `x and x > 0 and x < 10` tests `x` before comparing it, so a Null `x` stops
+# the chain instead of raising, and other values are range checked.
+#= {
+#=     result: [null, false, true, false, false],
+#=     inputs: {n: null, f: false, five: 5, zero: 0, fifty: 50},
+#= }
+[
+    n and n > 0 and n < 10,
+    f and f > 0 and f < 10,
+    five and five > 0 and five < 10,
+    zero and zero > 0 and zero < 10,
+    fifty and fifty > 0 and fifty < 10,
+]

@@ -1,0 +1,3 @@
+# Non-ASCII Strings pass through `filter` intact.
+#= {result: ['日本', '🧊'], inputs: {xs: ['a', '日本', 'b', '🧊']}}
+filter xs with fn s -> s != 'a' and s != 'b'

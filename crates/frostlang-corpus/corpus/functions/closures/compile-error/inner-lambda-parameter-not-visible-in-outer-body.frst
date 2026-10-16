@@ -1,0 +1,6 @@
+# A nested lambda's parameter is not in scope in the enclosing body.
+#= {rejects: ['`y`', 'not defined']}
+def f = fn -> {
+    def g = fn y -> y
+    y
+}

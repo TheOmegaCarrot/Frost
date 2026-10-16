@@ -1,0 +1,6 @@
+# Destructuring a freshly built Array and extending its rest leaves every
+# other value intact: no part aliases another.
+#= {result: [[1, 2], [2, 9], [2, 9, 10], 1], inputs: {xs: [1, 2]}}
+def [h, ...t] = xs + [9]
+def extended = t + [10]
+[xs, t, extended, h]

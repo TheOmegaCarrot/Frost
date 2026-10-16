@@ -1,0 +1,4 @@
+# Zero divided by zero raises as any division by zero does, rather than
+# producing some indeterminate value.
+#= {raises: 'division by zero'}
+0 / 0

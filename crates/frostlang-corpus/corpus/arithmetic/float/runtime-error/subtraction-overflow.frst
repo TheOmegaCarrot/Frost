@@ -1,0 +1,4 @@
+# A Float difference too large in magnitude to be finite raises, in the
+# negative direction too.
+#= {raises: 'infinity'}
+-1.7976931348623157e308 - 1.7976931348623157e308

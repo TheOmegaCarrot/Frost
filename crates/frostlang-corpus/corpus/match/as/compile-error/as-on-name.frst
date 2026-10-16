@@ -1,0 +1,5 @@
+# A name pattern already binds the whole value; it takes no `as`.
+#= {rejects: '`as` binds a whole Map pattern'}
+match 1 {
+    x as y => y,
+}

@@ -1,0 +1,7 @@
+# A pattern cannot assign or compare with `=`: `x = 1` is neither a binding
+# nor a value comparison.
+#= {rejects: ['expected `=>`', 'equality is `==`']}
+match 1 {
+    x = 1 => 'one',
+    _ => 'other',
+}

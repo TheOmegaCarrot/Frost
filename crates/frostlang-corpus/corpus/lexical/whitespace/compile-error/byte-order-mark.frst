@@ -1,0 +1,4 @@
+﻿# A byte order mark is not stripped from the start of a file; it is an
+# unexpected character, with help naming it.
+#= {rejects: 'byte order mark'}
+1

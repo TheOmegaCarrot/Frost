@@ -1,0 +1,3 @@
+# An exported Map pattern over a value that is not a Map raises.
+#= {raises: 'expected a Map', inputs: {xs: [1]}}
+export def {a} = xs

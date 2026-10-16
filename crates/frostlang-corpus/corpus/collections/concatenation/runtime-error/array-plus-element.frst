@@ -1,0 +1,3 @@
+# `+` joins two Arrays; it does not append a single element.
+#= {raises: ['Cannot add', 'Array + Int'], inputs: {xs: [1, 2]}}
+xs + 3

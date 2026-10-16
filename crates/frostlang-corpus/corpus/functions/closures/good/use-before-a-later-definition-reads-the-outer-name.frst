@@ -1,0 +1,10 @@
+# In a body, a name read before a definition of it reads the outer binding;
+# the definition shadows only the uses after it.
+#= {result: [12, 4], inputs: {outer: 10}}
+def x = outer
+def f = fn -> {
+    def before = x + 2
+    def x = 4
+    [before, x]
+}
+f()

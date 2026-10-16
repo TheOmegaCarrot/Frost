@@ -1,0 +1,6 @@
+# A computed key must refer to defined names, even in an arm never tried.
+#= {rejects: '`nope` is not defined'}
+match 1 {
+    1 => 0,
+    {[nope]: x} => x,
+}

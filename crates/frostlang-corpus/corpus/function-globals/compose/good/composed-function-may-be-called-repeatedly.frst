@@ -1,0 +1,4 @@
+# A composed function can be kept and called many times.
+#= {result: [[2], [3], [0]]}
+def wrapped_successor = compose(fn x -> x + 1, collect)
+[wrapped_successor(1), wrapped_successor(2), wrapped_successor(-1)]

@@ -1,0 +1,6 @@
+# An error raised in the body of the matching arm ends the program.
+#= {raises: 'negative: -1', inputs: {n: -1}}
+match n {
+    k if: k < 0 => error($'negative: ${k}'),
+    k => k,
+}

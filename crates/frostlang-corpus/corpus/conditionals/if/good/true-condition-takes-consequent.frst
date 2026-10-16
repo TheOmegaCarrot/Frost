@@ -1,0 +1,3 @@
+# A literal `true` condition takes the consequent and skips the alternate.
+#= {result: 'yes'}
+if true: 'yes' else: 'no'

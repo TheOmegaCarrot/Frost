@@ -1,0 +1,4 @@
+# `reduce` can build a Map from an Array by merging one entry per element;
+# a repeated key keeps the later element's value.
+#= {result: {a: 3, b: 2}, inputs: {words: [['a', 1], ['b', 2], ['a', 3]]}}
+reduce words init: {} with fn acc, pair -> acc + {[pair[0]]: pair[1]}

@@ -1,0 +1,3 @@
+# `is` is a keyword, so it cannot be bound by a `match` pattern.
+#= {rejects: 'keyword', inputs: {x: [1]}}
+match x { [is] => 1, }

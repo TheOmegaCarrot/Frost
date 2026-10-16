@@ -1,0 +1,5 @@
+# A form bound to a name that is never read still runs, effects and all:
+# leaving a binding unread never skips computing it.
+#= {result: 'end', printed: ['1', '2'], inputs: {xs: [1, 2]}}
+def unused = map xs with fn x -> print(x)
+'end'

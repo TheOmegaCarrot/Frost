@@ -1,0 +1,9 @@
+# Parentheses are the escape from the chaining rule: a parenthesized
+# comparison may be an operand of another, on either side.
+#= {result: [true, true, true, false]}
+[
+    (1 < 2) == true,
+    true == (1 < 2),
+    (1 < 2) == (3 < 4),
+    (1 == 1) != (2 == 2),
+]

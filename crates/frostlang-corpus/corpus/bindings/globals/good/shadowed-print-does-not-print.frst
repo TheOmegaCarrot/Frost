@@ -1,0 +1,4 @@
+# Shadowing `print` replaces it in that scope, so nothing is printed.
+#= {result: 'kept: hello'}
+def print = fn s -> 'kept: ' + s
+print('hello')

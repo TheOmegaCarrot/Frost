@@ -1,0 +1,5 @@
+# A rest needs a name or `_` after its `...`.
+#= {rejects: 'expected a name after `...`'}
+match [1, 2] {
+    [a, ...] => a,
+}

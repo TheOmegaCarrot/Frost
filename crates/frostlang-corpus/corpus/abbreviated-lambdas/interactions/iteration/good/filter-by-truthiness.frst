@@ -1,0 +1,4 @@
+# `filter` with `$($)` keeps the truthy elements: only Null and false are
+# dropped; 0, the empty String, and the empty Array stay.
+#= {result: [0, '', []], inputs: {xs: [0, null, '', false, []]}}
+filter xs with $($)

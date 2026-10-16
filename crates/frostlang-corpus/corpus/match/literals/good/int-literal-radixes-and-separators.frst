@@ -1,0 +1,11 @@
+# Int patterns may be written in any radix and with `_` separators, and match
+# by value however they are written.
+#= {result: ['hex', 'binary', 'octal', 'separated', 'negative hex'], inputs: {xs: [255, 10, 63, 1000, -255]}}
+defn name(n) -> match n {
+    0xff => 'hex',
+    0b1010 => 'binary',
+    0o77 => 'octal',
+    1_000 => 'separated',
+    -0x_ff => 'negative hex',
+}
+transform(xs, name)

@@ -1,0 +1,5 @@
+# The Strings 'and', 'or', and 'not' are ordinary Map keys: written as computed
+# keys and indexed with brackets, they do not clash with the keywords.
+#= {result: [1, 2, 3, {['and']: 1, ['or']: 2, ['not']: 3}]}
+def m = {['and']: 1, ['or']: 2, ['not']: 3}
+[m['and'], m['or'], m['not'], m]

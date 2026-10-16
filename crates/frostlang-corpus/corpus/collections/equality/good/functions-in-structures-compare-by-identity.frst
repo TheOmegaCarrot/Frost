@@ -1,0 +1,6 @@
+# A Function inside a structure compares by identity: the same function value
+# is equal to itself, while two separately made functions are unequal even
+# when written identically.
+#= {result: [true, true, false]}
+def f = fn x -> x
+[[f] == [f], {k: f} == {k: f}, [fn x -> x] == [fn x -> x]]

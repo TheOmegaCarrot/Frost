@@ -1,0 +1,8 @@
+# A match binding named like a global shadows it in its arm only.
+#= {result: [10, 1]}
+[
+    match 5 {
+        len => len * 2,
+    },
+    len([1]),
+]

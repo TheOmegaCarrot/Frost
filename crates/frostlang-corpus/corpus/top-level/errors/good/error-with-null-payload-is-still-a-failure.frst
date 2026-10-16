@@ -1,0 +1,5 @@
+# Raising null is still a failure: `ok` is false and `error` is present and
+# null, so a caught null is distinct from a returned one.
+#= {result: [false, null, true, false]}
+def outcome = try_call(fn -> error(null))
+[outcome.ok, outcome.error, has(outcome, 'error'), has(outcome, 'value')]

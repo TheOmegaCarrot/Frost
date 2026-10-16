@@ -1,0 +1,8 @@
+# A constant `if` may be a format String's interpolation, including one with
+# no `else`, whose Null is interpolated as text.
+#= {result: ['<yes>', '<null>', '<42>']}
+[
+    $'<${if true: 'yes' else: 'no'}>',
+    $'<${if false: 'yes'}>',
+    $'<${if 0: 42}>',
+]

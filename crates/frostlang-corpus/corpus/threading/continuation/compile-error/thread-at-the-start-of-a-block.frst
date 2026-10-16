@@ -1,0 +1,5 @@
+# A leading `@` as a block's first statement has nothing to continue.
+#= {rejects: 'expected an expression'}
+do {
+    @ len()
+}

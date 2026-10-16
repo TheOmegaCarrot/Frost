@@ -1,0 +1,5 @@
+# A statement may begin with a Map literal at the top level, and a field or
+# index read on it.
+#= {result: 2}
+{a: 1}.a
+{a: [1, 2]}.a[1]

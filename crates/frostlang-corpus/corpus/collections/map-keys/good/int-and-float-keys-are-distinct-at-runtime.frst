@@ -1,0 +1,7 @@
+# A runtime Float lookup does not find an equal-valued Int key, nor the
+# reverse: map keys never cross numeric types.
+#= {
+#=     result: [null, null, 'int', 'float'],
+#=     inputs: {m: {[1]: 'int', [2.0]: 'float'}, i: 2, f: 1.0},
+#= }
+[m[f], m[i], m[1], m[2.0]]

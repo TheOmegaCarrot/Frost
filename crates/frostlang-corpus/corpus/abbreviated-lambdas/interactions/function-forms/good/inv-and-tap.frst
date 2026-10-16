@@ -1,0 +1,5 @@
+# `inv` negates an abbreviated predicate, and `tap` runs one for its effect
+# while returning its own input.
+#= {result: [true, false, 5], printed: ['saw 5']}
+def positive = $($ > 0)
+[inv(positive)(-1), inv(positive)(1), tap(5, $(print($'saw ${$}')))]

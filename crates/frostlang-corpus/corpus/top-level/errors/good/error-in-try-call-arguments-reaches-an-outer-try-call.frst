@@ -1,0 +1,5 @@
+# An error raised while building an inner `try_call`'s arguments escapes that
+# `try_call` and is caught by the enclosing one.
+#= {result: [false, 'in the arguments'], inputs: {payload: 'in the arguments'}}
+def outer = try_call(fn -> try_call(fn x -> x, [error(payload)]))
+[outer.ok, outer.error]

@@ -1,0 +1,3 @@
+# `_` binds nothing, so it cannot be read as a name.
+#= {rejects: ['`_`', 'not defined']}
+def f = fn _ -> _

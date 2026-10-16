@@ -1,0 +1,11 @@
+# Checking that an Array is in ascending order compares each adjacent pair; an
+# Array of mixed Ints and Floats is ordered by value.
+#= {
+#=     result: [true, false, true, true],
+#=     inputs: {sorted: [1, 1.5, 2, 2.0, 3], unsorted: [1, 3, 2], one: [7], empty: []},
+#= }
+defn ascending(xs) -> {
+    defn from(i) -> if i >= len(xs) - 1: true else: xs[i] <= xs[i + 1] and from(i + 1)
+    from(0)
+}
+[ascending(sorted), ascending(unsorted), ascending(one), ascending(empty)]

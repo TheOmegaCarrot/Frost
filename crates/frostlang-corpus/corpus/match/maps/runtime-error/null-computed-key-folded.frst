@@ -1,0 +1,7 @@
+# An invalid constant key raises at runtime when looked up in a constant Map
+# target; the optimizer must not turn it into a mismatch.
+#= {raises: 'not a valid Map key'}
+match {a: 1} {
+    {[null]: x} => x,
+    _ => 'fallback',
+}

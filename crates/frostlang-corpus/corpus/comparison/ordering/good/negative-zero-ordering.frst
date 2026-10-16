@@ -1,0 +1,11 @@
+# Negative zero orders equal to zero: neither is less than the other, and each
+# is less than or equal to the other.
+#= {result: [false, false, true, true, true, true]}
+[
+    -0.0 < 0.0,
+    0.0 > -0.0,
+    -0.0 <= 0.0,
+    -0.0 >= 0.0,
+    0.0 <= -0.0,
+    0.0 >= -0.0,
+]

@@ -1,0 +1,11 @@
+# A word tally that bumps a count with `+=` is rejected: there is no
+# compound assignment, so a tally must build a new Map from the old one.
+#= {
+#=     rejects: 'no `+=`',
+#=     inputs: {words: ['a', 'b', 'a']},
+#= }
+defn tally(items) -> fold(items, {}, fn counts, word -> {
+    counts[word] += 1
+    counts
+})
+tally(words)

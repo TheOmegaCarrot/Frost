@@ -1,0 +1,5 @@
+# `${x}` outside a format String is neither a placeholder nor an
+# interpolation; the help shows how to write a format String.
+#= {rejects: ['found `$`', 'a format String is written']}
+def x = 1
+def s = ${x}

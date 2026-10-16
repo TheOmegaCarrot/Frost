@@ -1,0 +1,9 @@
+# `export def` with a Map pattern exports every bound name: shorthand, explicit,
+# computed, nested, and `as`, but not a discarded entry.
+#= {
+#=     result: 0,
+#=     exports: {a: 1, x: 2, y: 3, z: 4, m: {a: 1, b: 2, [1]: 3, c: [4], f: 5}},
+#=     inputs: {data: {a: 1, b: 2, [1]: 3, c: [4], f: 5}},
+#= }
+export def {a, b: x, [1]: y, c: [z], f: _} as m = data
+0

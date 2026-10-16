@@ -1,0 +1,3 @@
+# Frost binds names with `def`, not Lua's `local`.
+#= {rejects: 'no `local`'}
+local x = 1

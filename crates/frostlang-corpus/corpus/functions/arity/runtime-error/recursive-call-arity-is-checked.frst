@@ -1,0 +1,4 @@
+# A recursive call is checked for arity like any other, once it is reached.
+#= {raises: ['expects 1 argument', 'called with 2']}
+defn countdown(n) -> if n == 0: 0 else: countdown(n - 1, 0)
+countdown(2)

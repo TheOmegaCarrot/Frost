@@ -1,0 +1,7 @@
+# A guard sees only its own arm's bindings and the enclosing scope, not a name
+# a later arm binds.
+#= {rejects: ['`m`', 'not defined']}
+match [1, 2] {
+    [a, _] if: a > m => 'first',
+    [_, m] => 'second',
+}

@@ -1,0 +1,8 @@
+# An `or` chain evaluates its operands left to right, once each, and stops at
+# the first truthy one, which is the result. Zero is that truthy operand here.
+#= {result: 0, printed: ['false', 'null', '0']}
+defn note(v) -> {
+    print(v)
+    v
+}
+note(false) or note(null) or note(0) or note(4)

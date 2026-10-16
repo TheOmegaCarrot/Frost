@@ -1,0 +1,14 @@
+# A `map ... with` lambda destructures Map elements, constants or not.
+#= {
+#=     result: [['ada', 'bo'], ['cy']],
+#=     inputs: {people: [{name: 'ada', age: 36}, {name: 'bo', age: 2}]},
+#= }
+def from_input = map people with fn person -> {
+    def {name} = person
+    name
+}
+def from_literal = map [{name: 'cy'}] with fn person -> {
+    def {name} = person
+    name
+}
+[from_input, from_literal]

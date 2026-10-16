@@ -1,0 +1,7 @@
+# A format String after a block cannot interpolate the block's binding.
+#= {rejects: ['`inner`', 'not defined']}
+def v = do {
+    def inner = 1
+    inner
+}
+$'${inner}'

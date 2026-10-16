@@ -1,0 +1,11 @@
+# `transform` over a Map with every kind of key builds a new Map keyed the
+# same way, and leaves the input unchanged.
+#= {
+#=     result: [
+#=         {[true]: [1], [2]: [2], [2.5]: [3], s: [4], [x'ff']: [5]},
+#=         {[true]: [1, 0], [2]: [2, 0], [2.5]: [3, 0], s: [4, 0], [x'ff']: [5, 0]},
+#=     ],
+#=     inputs: {n: 1},
+#= }
+def m = {[true]: [n], [2]: [2], [2.5]: [3], s: [4], [x'ff']: [5]}
+[m, transform(m, fn k, v -> {[k]: v + [0]})]

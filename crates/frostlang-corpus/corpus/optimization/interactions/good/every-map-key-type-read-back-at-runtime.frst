@@ -1,0 +1,10 @@
+# The reads of every-map-key-type-read-back, of a Map and keys only known at
+# runtime, give the same values.
+#= {
+#=     result: ['int', 'float', 'bool', 'string', 'bytes', null, null, null],
+#=     inputs: {
+#=         m: {[1]: 'int', [1.5]: 'float', [true]: 'bool', s: 'string', [x'01']: 'bytes'},
+#=         keys_in: [1, 1.5, true, 's', x'01', false, 1.0, '1'],
+#=     },
+#= }
+map keys_in with fn k -> m[k]

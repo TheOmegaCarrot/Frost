@@ -1,0 +1,5 @@
+# With `init:`, `reduce` starts the accumulator there and folds every element
+# left to right: ((10 - 1) - 2) - 3.
+#= {result: [4, 4], inputs: {xs: [1, 2, 3]}}
+def minus = fn acc, x -> acc - x
+[reduce [1, 2, 3] init: 10 with minus, reduce xs init: 10 with minus]

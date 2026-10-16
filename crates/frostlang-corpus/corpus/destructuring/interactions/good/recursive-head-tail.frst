@@ -1,0 +1,7 @@
+# Recursion over an Array by destructuring head and rest at each step.
+#= {result: [3, 2, 1], inputs: {xs: [1, 2, 3]}}
+defn rev(items) -> if len(items) == 0: [] else: do {
+    def [head, ...tail] = items
+    rev(tail) + [head]
+}
+rev(xs)

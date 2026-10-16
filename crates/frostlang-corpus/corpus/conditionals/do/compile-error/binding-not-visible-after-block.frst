@@ -1,0 +1,7 @@
+# A block's binding is gone once the block ends.
+#= {rejects: ['`z`', 'not defined']}
+do {
+    def z = 1
+    z
+}
+z

@@ -1,0 +1,6 @@
+# A destructuring `def` may not bind a name an earlier `def` in the same scope
+# already bound.
+#= {rejects: ['`a`', 'already bound']}
+def a = 1
+def [a] = [2]
+a

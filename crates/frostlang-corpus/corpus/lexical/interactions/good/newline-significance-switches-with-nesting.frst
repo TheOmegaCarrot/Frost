@@ -1,0 +1,13 @@
+# Line-break significance switches with each level of nesting: insignificant
+# inside an Array, significant again inside a `do` block within it, and
+# insignificant again inside parentheses within that block.
+#= {result: [[3, 3], 4]}
+[
+    do {
+        def a = (1 +
+            2)
+        [a,
+            a]
+    },
+    4,
+]

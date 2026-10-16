@@ -1,0 +1,5 @@
+# A function that builds from its capture gives the same result on every call:
+# a call never takes the captured value away from the next call.
+#= {result: [[1, 2, 3], [1, 2, 3], [1, 2]], inputs: {xs: [1, 2]}}
+def f = fn -> xs + [3]
+[f(), f(), xs]

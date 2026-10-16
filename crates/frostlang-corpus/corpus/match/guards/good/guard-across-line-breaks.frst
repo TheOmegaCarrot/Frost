@@ -1,0 +1,12 @@
+# Inside a match, a line break may fall before `if`, between `if` and `:`, or
+# after the colon.
+#= {result: ['a', 'b', 'c', 'none'], inputs: {xs: [1, 2, 3, 4]}}
+transform(xs, fn v -> match v {
+    n
+        if: n == 1 => 'a',
+    n if
+        : n == 2 => 'b',
+    n if:
+        n == 3 => 'c',
+    _ => 'none',
+})

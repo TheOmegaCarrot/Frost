@@ -1,0 +1,6 @@
+# A guard is written `if:`, with a colon, before its condition.
+#= {rejects: 'a guard is written `if:`'}
+match 1 {
+    x if x > 0 => x,
+    _ => 0,
+}

@@ -1,0 +1,3 @@
+# `match` takes the value to match before its braces.
+#= {rejects: '`match` takes the value to match'}
+match { 1 => 2 }

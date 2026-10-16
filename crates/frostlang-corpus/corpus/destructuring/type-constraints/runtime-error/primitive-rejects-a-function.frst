@@ -1,0 +1,4 @@
+# `is Primitive` rejects a Function.
+#= {raises: 'expected a Primitive'}
+def x is Primitive = fn -> 1
+x

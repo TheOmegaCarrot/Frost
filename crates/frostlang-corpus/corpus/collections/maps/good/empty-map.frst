@@ -1,0 +1,4 @@
+# An empty Map literal is a Map with no entries.
+#= {result: [{}, 0, 'Map']}
+def m = {}
+[m, len(m), type(m)]

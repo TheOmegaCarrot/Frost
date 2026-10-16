@@ -1,0 +1,5 @@
+# An Array pattern has at most one rest.
+#= {rejects: 'comes last'}
+match [1, 2] {
+    [...a, ...b] => a,
+}

@@ -1,0 +1,8 @@
+# `map` carries Floats through Float arithmetic; the results stay Floats.
+#= {
+#=     result: [[1.0, 3.0, -4.5], [1.0, 3.0, -4.5]],
+#=     inputs: {xs: [0.5, 1.5, -2.25]},
+#= }
+def literal = map [0.5, 1.5, -2.25] with fn x -> x * 2.0
+def runtime = map xs with fn x -> x * 2.0
+[literal, runtime]

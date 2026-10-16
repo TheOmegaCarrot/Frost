@@ -1,0 +1,5 @@
+# Each arm begins with a pattern.
+#= {rejects: ['expected a pattern', 'found `=>`']}
+match 1 {
+    => 1,
+}

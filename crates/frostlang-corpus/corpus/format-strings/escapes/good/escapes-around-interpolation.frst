@@ -1,0 +1,4 @@
+# Escapes decode on both sides of an interpolation, including right against
+# its `${` and its closing `}`.
+#= {result: "a\t'7\\$\nA", inputs: {x: 7}}
+$'a\t\'${x}\\\$\n\u{41}'

@@ -1,0 +1,3 @@
+# A `defn` must bind a name, so `_` is not allowed as its name.
+#= {rejects: ['requires a function name', '`_`']}
+defn _() -> 1

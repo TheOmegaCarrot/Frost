@@ -1,0 +1,8 @@
+# A variadic function recurses over its own arguments by spreading the rest
+# back in with `call`.
+#= {result: [6, 0, 7]}
+defn total(...xs) -> match xs {
+    [] => 0,
+    [head, ...tail] => head + call(total, tail),
+}
+[total(1, 2, 3), total(), total(7)]

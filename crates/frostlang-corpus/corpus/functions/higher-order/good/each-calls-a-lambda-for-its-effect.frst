@@ -1,0 +1,9 @@
+# `each` calls a lambda once per element in order, for its effect, and
+# returns the structure unchanged; over a Map it passes key and value.
+#= {
+#=     result: [[1, 2], {a: 2, b: 1}],
+#=     printed: ['1', '2', 'a=2', 'b=1'],
+#= }
+def arr = each([1, 2], fn x -> print(to_string(x)))
+def m = each({b: 1, a: 2}, fn k, v -> print($'${k}=${v}'))
+[arr, m]

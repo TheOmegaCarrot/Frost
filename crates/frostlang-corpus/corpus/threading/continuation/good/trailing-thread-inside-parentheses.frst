@@ -1,0 +1,8 @@
+# Inside parentheses a line may also end with `@`: the call on the next line
+# completes it.
+#= {result: 12, inputs: {n: 5}}
+defn inc(x) -> x + 1
+defn double(x) -> x * 2
+(n @
+    inc() @
+    double())

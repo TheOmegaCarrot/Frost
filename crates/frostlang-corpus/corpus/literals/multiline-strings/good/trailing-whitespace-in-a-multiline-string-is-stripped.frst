@@ -1,0 +1,11 @@
+# Trailing whitespace on each line of a multiline String is stripped, so a
+# whitespace-only line, even one indented past the closing delimiter, is empty.
+# Subtle: the whitespace is invisible, and editors may or may not trim it, so the
+# String's value must not depend on it.
+#= {result: 'a\n\nb', known_issue: 'FROST-151'}
+def text = '''
+    a  
+      
+    b
+    '''
+text

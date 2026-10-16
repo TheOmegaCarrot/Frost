@@ -1,0 +1,7 @@
+# An unbound name inside a `do` block nested in an uncalled lambda is an error.
+#= {rejects: ['`missing`', 'not defined']}
+def f = fn x -> do {
+    def y = x + missing
+    y
+}
+1

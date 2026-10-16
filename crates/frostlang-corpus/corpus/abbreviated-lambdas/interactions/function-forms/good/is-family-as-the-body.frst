@@ -1,0 +1,4 @@
+# An `is_*` check applied to a placeholder makes a type predicate for
+# `select`.
+#= {result: [1, 2], inputs: {mixed: [1, 'a', 2, null, 2.5]}}
+select(mixed, $(is_int($)))

@@ -1,0 +1,5 @@
+# Unary operators apply to placeholders.
+#= {result: [-3, true, false], inputs: {three: 3}}
+def negate = $(-$)
+def invert = $(not $)
+[negate(three), invert(false), invert(0)]

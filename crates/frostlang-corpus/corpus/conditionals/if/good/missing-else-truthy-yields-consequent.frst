@@ -1,0 +1,4 @@
+# With no `else`, a truthy condition still yields the consequent, constant or
+# runtime alike.
+#= {result: [7, 7], inputs: {c: 0}}
+[if true: 7, if c: 7]

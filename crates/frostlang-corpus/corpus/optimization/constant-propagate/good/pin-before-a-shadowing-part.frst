@@ -1,0 +1,21 @@
+# A pin or computed key in a def's pattern, written before the part that
+# shadows its name, reads the outer known binding; the part then binds the new
+# value.
+#= {result: [2, 5, [3, 'z']]}
+def b = 1
+def f = fn x -> x * 2
+def k = 'c'
+[
+    do {
+        def [(b), b] = [1, 2]
+        b
+    },
+    do {
+        def [(f(1)), f] = [2, 5]
+        f
+    },
+    do {
+        def {[k]: v, k} = {c: 3, k: 'z'}
+        [v, k]
+    },
+]

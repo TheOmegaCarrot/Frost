@@ -1,0 +1,4 @@
+# Negative zero is a Float like any other, so it is truthy; truthiness is not
+# numeric.
+#= {result: 'T'}
+if -0.0: 'T' else: 'F'

@@ -1,0 +1,4 @@
+# Two commas in a row leave a missing item between them; a trailing comma is
+# one comma.
+#= {rejects: 'found `,`'}
+[1, 2,,]

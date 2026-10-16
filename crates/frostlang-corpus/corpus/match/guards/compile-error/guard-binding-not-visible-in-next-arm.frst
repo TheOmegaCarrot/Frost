@@ -1,0 +1,7 @@
+# A name a guard's arm bound is out of scope in the next arm's guard.
+#= {rejects: '`x` is not defined'}
+match 1 {
+    x if: x > 5 => 0,
+    _ if: x > 0 => 1,
+    _ => 2,
+}

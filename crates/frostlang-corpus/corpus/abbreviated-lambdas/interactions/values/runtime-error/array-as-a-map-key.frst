@@ -1,0 +1,5 @@
+# An Array is not a valid Map key, so a computed key from an Array argument
+# raises.
+#= {raises: ['Array', 'not a valid Map key']}
+def entry = $({[$1]: $2})
+entry([1], 1)

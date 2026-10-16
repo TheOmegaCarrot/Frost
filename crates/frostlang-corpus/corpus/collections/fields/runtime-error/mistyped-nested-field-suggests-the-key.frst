@@ -1,0 +1,7 @@
+# The suggestion comes from the Map at the failing step of a chain.
+#= {
+#=     raises: 'did you mean "deep"?',
+#=     inputs: {m: {inner: {deep: 1}}},
+#=     known_issue: 'FROST-155',
+#= }
+m.inner.dep

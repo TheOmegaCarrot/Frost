@@ -1,0 +1,6 @@
+# A Map pattern binds its parts in source order, so a computed key may read a
+# name bound earlier in the same pattern, even when the whole Map is a constant
+# the optimizer may match ahead of time.
+#= {result: ['x', 5]}
+def {k, [k]: v} = {k: 'x', x: 5}
+[k, v]

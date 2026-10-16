@@ -1,0 +1,3 @@
+# A chained comparison as a Map value is rejected.
+#= {rejects: 'cannot chain'}
+{ok: 1 <= 2 <= 3}

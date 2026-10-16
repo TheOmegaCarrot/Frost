@@ -1,0 +1,3 @@
+# A Bool is not an Int, so it cannot index an Array.
+#= {raises: ['Cannot index Array', 'Bool']}
+[10, 20][true]

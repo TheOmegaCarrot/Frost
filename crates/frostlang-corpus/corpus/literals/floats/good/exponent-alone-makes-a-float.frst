@@ -1,0 +1,4 @@
+# An exponent makes a literal a Float even with no point and a whole value: `1e2` is
+# the Float 100.0, so it does not equal the Int 100.
+#= {result: ['Float', 'Float', false, true]}
+[type(1e2), type(1e0), 1e2 == 100, 1e2 == 100.0]

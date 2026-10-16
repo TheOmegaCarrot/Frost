@@ -1,0 +1,7 @@
+# A carriage return right before a CRLF line break in a multiline String is
+# text, kept in the value; the CRLF itself becomes LF.
+#= {result: 'a\r\nb'}
+"""
+    a
+    b
+    """

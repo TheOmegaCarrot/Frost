@@ -1,0 +1,16 @@
+# The iteration forms are eager: a `map` runs every call of its operation
+# before the next statement starts, not when its result is first used.
+#= {
+#=     result: [1, 2],
+#=     printed: ['map 1', 'map 2', 'after', 'filter 1', 'filter 2'],
+#=     inputs: {xs: [1, 2]},
+#= }
+def ys = map xs with fn x -> {
+    print($'map ${x}')
+    x
+}
+print('after')
+filter ys with fn y -> {
+    print($'filter ${y}')
+    true
+}

@@ -1,0 +1,5 @@
+# A def whose value mixes literals and runtime inputs destructures each part
+# correctly, whatever the optimizer can see.
+#= {result: [1, 5, 'k', [7]], inputs: {rt: 5, key: 'k'}}
+def [a, b, {[key]: c}, ...d] = [1, rt, {k: key}, 7]
+[a, b, c, d]

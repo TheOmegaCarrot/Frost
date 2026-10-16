@@ -1,0 +1,3 @@
+# An Array plus Null raises; Null is not the empty Array.
+#= {raises: ['Cannot add', 'Array + Null'], inputs: {n: null}}
+[] + n

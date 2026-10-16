@@ -1,0 +1,4 @@
+# Escapes in a String literal each make one code point, so the length counts
+# the characters they stand for, a NUL among them.
+#= {result: [2, 1, 1, 1]}
+[len('\n\t'), len('\u{0}'), len('\\'), len('\u{1f600}')]

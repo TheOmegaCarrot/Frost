@@ -1,0 +1,9 @@
+# Iterating a constant Map folds, visiting its entries in sorted key order as
+# a runtime iteration does: the reduce sees the keys in order, and the map
+# merges the Maps its operation returns.
+#= {result: [{a: 10, b: 20, c: 30}, 'abc']}
+def m = {c: 3, a: 1, b: 2}
+[
+    map m with fn k, v -> {[k]: v * 10},
+    reduce m init: '' with fn acc, k, v -> acc + k,
+]

@@ -1,0 +1,7 @@
+# A guard on alternatives sees the names bound by whichever alternative
+# matched, and if it fails, the next arm is tried.
+#= {result: ['big', 'small'], inputs: {xs: [{n: 7}, [2]]}}
+transform(xs, fn v -> match v {
+    {n} | [n] if: n > 5 => 'big',
+    _ => 'small',
+})

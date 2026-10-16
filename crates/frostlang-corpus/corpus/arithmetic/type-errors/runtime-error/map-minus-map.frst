@@ -1,0 +1,4 @@
+# `-` is numeric only: a Map minus a Map is a type error, not removal of keys,
+# though `+` merges Maps.
+#= {raises: 'Map - Map'}
+{a: 1, b: 2} - {b: 2}

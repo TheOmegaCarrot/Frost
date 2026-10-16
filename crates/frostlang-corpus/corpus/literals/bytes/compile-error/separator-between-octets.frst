@@ -1,0 +1,3 @@
+# Number literals' `_` separators do not carry over to Bytes literals.
+#= {rejects: ['invalid character `_`', 'Bytes literal']}
+x'00_ff'

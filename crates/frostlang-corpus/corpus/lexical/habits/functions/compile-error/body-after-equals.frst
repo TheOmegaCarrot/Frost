@@ -1,0 +1,3 @@
+# A function body follows `->`, not `=`.
+#= {rejects: 'a function body follows `->`, not `=`'}
+defn f(x) = x

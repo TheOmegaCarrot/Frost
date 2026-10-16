@@ -1,0 +1,6 @@
+# A match's arms go in braces; parentheses after the target read as a call.
+#= {rejects: '`match` arms go in braces'}
+def v = 1
+match v (
+    _ => 1
+)

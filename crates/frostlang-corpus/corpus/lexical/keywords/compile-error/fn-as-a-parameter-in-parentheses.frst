@@ -1,0 +1,3 @@
+# `fn` is a keyword, so it cannot name a parameter in a parenthesized list.
+#= {rejects: 'keyword'}
+defn f(a, fn) -> a

@@ -1,0 +1,15 @@
+# An operation destructures each element with `def` in its body, Arrays and
+# Maps alike.
+#= {
+#=     result: [[3, 7], ['a1', 'b2']],
+#=     inputs: {pairs: [[1, 2], [3, 4]], records: [{name: 'a', n: 1}, {name: 'b', n: 2}]},
+#= }
+def sums = map pairs with fn pair -> {
+    def [a, b] = pair
+    a + b
+}
+def labels = map records with fn record -> {
+    def {name, n} = record
+    name + to_string(n)
+}
+[sums, labels]

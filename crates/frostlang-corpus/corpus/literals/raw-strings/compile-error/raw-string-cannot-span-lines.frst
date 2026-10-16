@@ -1,0 +1,4 @@
+# A raw String is single-line: a closer on a later line does not close it.
+#= {rejects: 'unclosed raw String'}
+def a = R'(first
+second)'

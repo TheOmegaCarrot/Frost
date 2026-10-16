@@ -1,0 +1,3 @@
+# A Bytes literal's hex digits take either case, mixed freely, naming the same octets.
+#= {result: [true, true, false]}
+[x'DEADbeef' == x'deadbeef', x'aB' == x'Ab', x'ab' == x'ba']

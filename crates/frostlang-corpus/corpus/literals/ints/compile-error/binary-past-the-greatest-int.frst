@@ -1,0 +1,3 @@
+# A binary literal with 64 significant bits is past the greatest Int.
+#= {rejects: 'Int literal out of range'}
+0b1000000000000000000000000000000000000000000000000000000000000000

@@ -1,0 +1,10 @@
+# Parentheses group an operation first, overriding precedence and
+# associativity alike.
+#= {result: [20, 9, 9, 1, 16], inputs: {two: 2, three: 3, four: 4, ten: 10, twelve: 12}}
+[
+    (two + three) * four,
+    ten - (three - two),
+    twelve / (two * three) * (four + ten / two) / two,
+    ((two + three) * (four - two) - ten + 1),
+    (two * (three + (four - (two - three)))),
+]

@@ -1,0 +1,4 @@
+# A chain over a runtime value and runtime functions applies its calls left
+# to right.
+#= {result: [12, 11], inputs: {n: 5, inc: fn x -> x + 1, double: fn x -> x * 2}}
+[n @ inc() @ double(), n @ double() @ inc()]

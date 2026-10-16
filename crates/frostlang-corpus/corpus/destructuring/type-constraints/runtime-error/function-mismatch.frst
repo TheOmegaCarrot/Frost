@@ -1,0 +1,4 @@
+# `is Function` rejects a non-Function.
+#= {raises: 'expected a Function', inputs: {v: 'plus'}}
+def f is Function = v
+f

@@ -1,0 +1,4 @@
+# `a @ f()` calls `f` with `a` as its only argument, for a value and a
+# function known only at runtime, so no optimization can compute the call.
+#= {result: 6, inputs: {n: 3, double: fn x -> x * 2}}
+n @ double()

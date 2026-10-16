@@ -1,0 +1,3 @@
+# A chained comparison inside a format-string interpolation is rejected.
+#= {rejects: 'cannot chain'}
+$'answer: ${1 < 2 < 3}'

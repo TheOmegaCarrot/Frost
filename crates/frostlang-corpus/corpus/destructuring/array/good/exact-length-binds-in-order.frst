@@ -1,0 +1,4 @@
+# An Array pattern of exact length binds each element to its name, in order.
+#= {result: [3, 2, 1]}
+def [a, b, c] = [1, 2, 3]
+[c, b, a]

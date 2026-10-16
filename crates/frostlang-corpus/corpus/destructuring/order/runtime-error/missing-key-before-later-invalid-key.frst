@@ -1,0 +1,8 @@
+# A missing key raises before a later entry's invalid key is evaluated.
+#= {
+#=     raises: 'no value at key "missing"',
+#=     inputs: {m: {}},
+#=     known_issue: 'FROST-155',
+#= }
+def {missing, [null]: x} = m
+[x, missing]

@@ -1,0 +1,6 @@
+# Alternatives are tried left to right: when several match, the leftmost one
+# decides the bindings.
+#= {result: 1, inputs: {v: [1, 2]}}
+match v {
+    [x, _] | [_, x] => x,
+}

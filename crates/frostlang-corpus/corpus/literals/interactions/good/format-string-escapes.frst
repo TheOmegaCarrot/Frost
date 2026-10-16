@@ -1,0 +1,12 @@
+# A format String takes the quoted escapes, its own quote's escape, and `\$`, which
+# keeps `${` from interpolating.
+#= {result: [true, true, true, true, true, true]}
+def x = 1
+[
+    $'\$' == '$',
+    $'\${x}' == '${x}',
+    $'it\'s' == "it's",
+    $"say \"hi\"" == 'say "hi"',
+    $'\n\r\t\\\0' == '\u{a}\u{d}\u{9}\u{5c}\u{0}',
+    $"\u{e9}${x}" == 'é1',
+]

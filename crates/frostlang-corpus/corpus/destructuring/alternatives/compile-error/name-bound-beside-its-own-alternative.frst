@@ -1,0 +1,4 @@
+# A name bound by an alternative may not also be bound beside it.
+#= {rejects: '`x` is already bound'}
+def [x, [x] | [x]] = [1, [2]]
+x

@@ -1,0 +1,4 @@
+# A plain `def` may not rebind a name already exported at the top level.
+#= {rejects: '`x` is already bound'}
+export def x = 1
+def x = 2

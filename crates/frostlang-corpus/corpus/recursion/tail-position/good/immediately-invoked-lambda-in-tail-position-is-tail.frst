@@ -1,0 +1,6 @@
+# A lambda invoked where it is written, in tail position, is a tail call, and
+# the call in its own body is a tail call too, so neither keeps a frame.
+#= {result: 0}
+defn down(n) -> if n == 0: error('bottom') else: (fn -> down(n - 1))()
+defn frames(n) -> len(try_call(down, [n]).trace)
+frames(500) - frames(5)

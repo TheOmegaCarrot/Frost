@@ -1,0 +1,13 @@
+# `inv(f)` is a function yielding `not f(...)`: always a Bool, true exactly when
+# `f` yields Null or false.
+#= {result: [false, true, false, true, true, 'Bool']}
+def is_present = inv(is_null)
+def is_falsy = inv(fn x -> x)
+[
+    is_present(null),
+    is_present(0),
+    is_falsy(0),
+    is_falsy(false),
+    is_falsy(null),
+    type(is_falsy('a')),
+]

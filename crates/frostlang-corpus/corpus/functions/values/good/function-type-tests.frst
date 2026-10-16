@@ -1,0 +1,26 @@
+# A function is a Function and Nonnull, and no other type or category: of
+# the `is_*` tests, only those two hold, for a lambda and a native alike.
+#= {
+#=     result: [
+#=         [true, true, false, false, false, false, false, false, false, false, false, false, false, false, false],
+#=         [true, true, false, false, false, false, false, false, false, false, false, false, false, false, false],
+#=     ],
+#= }
+defn tests(v) -> [
+    is_function(v),
+    is_nonnull(v),
+    is_null(v),
+    is_int(v),
+    is_float(v),
+    is_bool(v),
+    is_string(v),
+    is_bytes(v),
+    is_array(v),
+    is_map(v),
+    is_opaque(v),
+    is_numeric(v),
+    is_primitive(v),
+    is_structured(v),
+    is_flat(v),
+]
+[tests(fn -> 1), tests(len)]

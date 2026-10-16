@@ -1,0 +1,3 @@
+# A lone hex digit is not an octet.
+#= {rejects: 'odd number of hex digits'}
+x"a"

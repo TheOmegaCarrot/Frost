@@ -1,0 +1,4 @@
+# A String of non-ASCII text is truthy like any other, and flows through a
+# branch unchanged.
+#= {result: 'héllo, 世界 ❄', inputs: {s: 'héllo, 世界 ❄'}}
+if s: s else: 'missing'

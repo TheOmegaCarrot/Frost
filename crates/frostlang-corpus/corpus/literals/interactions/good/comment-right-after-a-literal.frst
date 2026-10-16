@@ -1,0 +1,10 @@
+# A comment may follow a literal with no space between: the `#` ends the literal's
+# token, and is not taken into it.
+#= {result: [1, 2.5, 'a', x'00', true, null]}
+def a = 1# one
+def b = 2.5# two and a half
+def c = 'a'# a String
+def d = x'00'# Bytes
+def e = true# a Bool
+def f = null# nothing
+[a, b, c, d, e, f]

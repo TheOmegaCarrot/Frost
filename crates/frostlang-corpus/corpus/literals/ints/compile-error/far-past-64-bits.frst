@@ -1,0 +1,3 @@
+# A decimal literal past what 64 bits hold at all is out of range, not truncated.
+#= {rejects: 'Int literal out of range'}
+99999999999999999999999999

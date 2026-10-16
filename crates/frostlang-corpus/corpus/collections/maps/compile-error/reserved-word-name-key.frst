@@ -1,0 +1,3 @@
+# A reserved word cannot be a `name:` key.
+#= {rejects: 'expected a name or `[`'}
+def m = {if: 1}

@@ -1,0 +1,9 @@
+# `and` and `or` whose constant left operand does not decide the result take
+# the right operand's value, running its effect.
+#= {result: [null, null, 2, 'd'], printed: ['and', 'or']}
+[
+    true and print('and'),
+    false or print('or'),
+    1 and 2,
+    null or 'd',
+]

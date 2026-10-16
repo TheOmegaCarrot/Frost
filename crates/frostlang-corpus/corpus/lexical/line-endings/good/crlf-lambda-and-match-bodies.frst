@@ -1,0 +1,10 @@
+# A block body and `match` arms spanning CRLF lines parse as with LF.
+#= {result: ['one', 'many']}
+defn name(n) -> {
+    def word = match n {
+        1 => 'one',
+        _ => 'many',
+    }
+    word
+}
+[name(1), name(5)]

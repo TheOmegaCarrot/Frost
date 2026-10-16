@@ -1,0 +1,3 @@
+# `-` is numeric only: it does not remove text from a String.
+#= {raises: ['Cannot subtract', 'String - String']}
+'abc' - 'c'

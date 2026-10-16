@@ -1,0 +1,5 @@
+# A falsy payload does not read as success: raising false gives `ok: false`
+# with `error: false`.
+#= {result: [false, false]}
+def outcome = try_call(fn -> error(false))
+[outcome.ok, outcome.error]

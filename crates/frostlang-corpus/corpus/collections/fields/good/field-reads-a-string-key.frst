@@ -1,0 +1,3 @@
+# `m.name` reads the String key `'name'`, the same entry `m['name']` reads.
+#= {result: ['ada', 36, true], inputs: {m: {name: 'ada', age: 36}}}
+[m.name, m.age, m.name == m['name']]

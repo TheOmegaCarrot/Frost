@@ -1,0 +1,4 @@
+# An `elif` condition compares with `==` too; a single `=` there is an error.
+#= {rejects: ['found `=`', 'equality is `==`']}
+def x = 1
+if false: 1 elif x = 2: 3

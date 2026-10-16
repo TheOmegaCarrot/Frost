@@ -1,0 +1,4 @@
+# `is` is a keyword (the type constraint), so it cannot be bound as a name.
+#= {rejects: ['`is`', 'keyword']}
+def is = 1
+1

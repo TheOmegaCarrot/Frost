@@ -1,0 +1,8 @@
+# Two empty lines between the delimiters make one line break: each line is joined to
+# the next by a break, and none follows the last.
+#= {result: ['\n', 1]}
+def text = '''
+
+
+'''
+[text, len(text)]

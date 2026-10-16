@@ -1,0 +1,5 @@
+# A named lambda recurses through its `if`: the base case stops it.
+#= {result: [1, 1, 120, 55]}
+defn fact(n) -> if n <= 1: 1 else: n * fact(n - 1)
+defn fib(n) -> if n < 2: n else: fib(n - 1) + fib(n - 2)
+[fact(0), fact(1), fact(5), fib(10)]

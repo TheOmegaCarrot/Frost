@@ -1,0 +1,4 @@
+# A nested `[]` binds nothing, yet still requires an empty Array there.
+#= {raises: 'expected an Array', inputs: {xs: [null, 1]}}
+def [[], a] = xs
+a

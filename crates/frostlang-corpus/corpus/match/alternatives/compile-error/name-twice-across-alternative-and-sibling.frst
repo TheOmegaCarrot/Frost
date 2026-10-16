@@ -1,0 +1,6 @@
+# A name bound by an alternative cannot also be bound beside it in the same
+# pattern.
+#= {rejects: '`x` is already bound'}
+match [1, 1] {
+    [x, x | x] => 0,
+}

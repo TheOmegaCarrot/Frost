@@ -1,0 +1,8 @@
+# Destructuring an argument in a body raises when the argument does not fit
+# the pattern; there are no pattern parameters to reject it at the call.
+#= {raises: 'expected an Array', inputs: {n: 5}}
+def first = fn xs -> {
+    def [head, ..._] = xs
+    head
+}
+first(n)

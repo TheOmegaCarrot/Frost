@@ -1,0 +1,4 @@
+# A comparison of constants that cannot be ordered never raises in a branch
+# that never runs.
+#= {result: 'ok'}
+if false: null < 1 else: 'ok'

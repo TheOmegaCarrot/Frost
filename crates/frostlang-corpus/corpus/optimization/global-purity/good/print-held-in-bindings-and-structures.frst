@@ -1,0 +1,10 @@
+# `print` reached through a binding, a Map, or an Array prints when called,
+# as a direct call does.
+#= {result: 'done', printed: ['via binding', 'via map', 'via array']}
+def say = print
+def io = {say: print}
+def table = [print]
+say('via binding')
+io.say('via map')
+table[0]('via array')
+'done'

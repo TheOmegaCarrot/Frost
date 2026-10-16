@@ -1,0 +1,4 @@
+# A function is passed as an argument and called by the receiver.
+#= {result: [6, 'abb!']}
+def apply_twice = fn f, x -> f(f(x))
+[apply_twice(fn v -> v + 3, 0), apply_twice(fn s -> s + 'b', 'a') + '!']

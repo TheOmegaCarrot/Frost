@@ -1,0 +1,4 @@
+# An error raised partway through a fold that has been building its
+# accumulator propagates out of the fold unchanged.
+#= {raises: 'stop at 3', inputs: {xs: [1, 2, 3, 4]}}
+fold(xs, [], fn acc, x -> if x == 3: error('stop at 3') else: acc + [x])

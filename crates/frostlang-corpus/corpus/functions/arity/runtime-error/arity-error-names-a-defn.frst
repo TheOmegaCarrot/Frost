@@ -1,0 +1,4 @@
+# An arity error from a `defn` function names it.
+#= {raises: ['scale', 'expects 2 argument']}
+defn scale(x, factor) -> x * factor
+scale(3)

@@ -1,0 +1,9 @@
+# A `def` runs only when control reaches it: one whose value would raise, in a
+# branch not taken at runtime, raises nothing.
+#= {result: ['safe', 'safe'], inputs: {no: false}}
+defn pick(c) -> if c: do {
+    def x = error('boom')
+    x
+}
+else: 'safe'
+[pick(no), pick(false)]

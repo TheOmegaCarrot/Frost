@@ -1,0 +1,4 @@
+# Null is not an empty Array: adding it to an Array raises a type error.
+#= {raises: ['cannot add', 'Array + Null'], inputs: {n: 1, nothing: null}}
+def xs = [n]
+xs + nothing

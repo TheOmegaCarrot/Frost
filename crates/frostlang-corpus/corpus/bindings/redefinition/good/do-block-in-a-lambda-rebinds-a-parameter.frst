@@ -1,0 +1,12 @@
+# A `do` block inside a lambda body opens a nested scope, so it may bind a
+# parameter's name; its value reads the parameter, since the new binding does
+# not exist until its `def` completes.
+#= {result: [20, 2]}
+def f = fn x -> {
+    def inner = do {
+        def x = x * 10
+        x
+    }
+    [inner, x]
+}
+f(2)

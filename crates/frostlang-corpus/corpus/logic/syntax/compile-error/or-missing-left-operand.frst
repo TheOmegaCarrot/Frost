@@ -1,0 +1,3 @@
+# `or` is infix only: with nothing before it, it has no left operand.
+#= {rejects: ['expected an expression', '`or`']}
+or true

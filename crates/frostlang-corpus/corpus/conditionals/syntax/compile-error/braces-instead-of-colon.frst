@@ -1,0 +1,5 @@
+# A branch is not written in braces after the condition: `if` takes a colon,
+# and a block in a branch is a `do` block.
+#= {rejects: ['expected `:`', 'if x: do {']}
+def c = true
+if c { 1 }

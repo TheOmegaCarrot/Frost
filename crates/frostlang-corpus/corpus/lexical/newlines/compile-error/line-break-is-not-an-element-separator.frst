@@ -1,0 +1,6 @@
+# A line break does not separate Array elements; they still need commas.
+#= {rejects: 'separate Array elements with `,`'}
+[
+    1
+    2
+]

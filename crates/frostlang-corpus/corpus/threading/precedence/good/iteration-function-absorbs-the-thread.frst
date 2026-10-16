@@ -1,0 +1,8 @@
+# The function operand after `with` is a whole expression, so a trailing `@`
+# threads into it, not the `map` expression's result: `map xs with f @ g()`
+# maps with `g(f)`. Parentheses thread the whole `map` instead. Subtle
+# because it reads like a pipeline continuing from the `map`.
+#= {result: [[200, 300], 2], inputs: {xs: [1, 2]}}
+defn inc(x) -> x + 1
+defn hundredfold(f) -> fn x -> f(x) * 100
+[map xs with inc @ hundredfold(), (map xs with inc) @ len()]

@@ -1,0 +1,14 @@
+# Float keys at the edges of the Float range, the smallest subnormal among
+# them, are ordinary keys: each is found by an equal key, and they sort by
+# value, the subnormal just after zero.
+#= {
+#=     result: [['min', 'zero', 'tiny', 'max'], 'tiny', 'max'],
+#=     inputs: {tiny: 5e-324, max: 1.7976931348623157e308},
+#= }
+def m = {
+    [max]: 'max',
+    [tiny]: 'tiny',
+    [0.0]: 'zero',
+    [-1.7976931348623157e308]: 'min',
+}
+[fold(m, [], fn acc, k, v -> acc + [v]), m[5e-324], m[1.7976931348623157e308]]

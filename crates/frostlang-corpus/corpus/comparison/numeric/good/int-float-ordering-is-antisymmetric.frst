@@ -1,0 +1,12 @@
+# Swapping an Int and a Float swaps `<` with `>` and `<=` with `>=`, at
+# boundary values where a rounding conversion would give a wrong answer.
+#= {
+#=     result: true,
+#=     inputs: {
+#=         ints: [0, 3, -3, 9007199254740993, 9223372036854775807, -9223372036854775808],
+#=         floats: [-0.0, 2.5, -3.5, 9007199254740992.0, 9223372036854775808.0, 5e-324],
+#=     },
+#= }
+def agree = fn i, f -> [i < f, i <= f, i > f, i >= f] == [f > i, f >= i, f < i, f <= i]
+def results = transform(ints, fn i -> transform(floats, fn f -> agree(i, f)))
+results == transform(ints, fn _ -> transform(floats, fn _ -> true))

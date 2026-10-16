@@ -1,0 +1,5 @@
+# `true` in the name position is the Bool literal pattern, not a name, so the
+# `def` binds nothing.
+#= {rejects: ['binds no name']}
+def true = true
+1

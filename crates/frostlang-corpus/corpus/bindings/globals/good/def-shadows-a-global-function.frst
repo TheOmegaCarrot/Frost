@@ -1,0 +1,5 @@
+# A `def` may bind a global's name; the binding wins over the global from then
+# on in its scope.
+#= {result: 42}
+def len = fn x -> 42
+len([1, 2])

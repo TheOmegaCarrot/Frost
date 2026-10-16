@@ -1,0 +1,6 @@
+# An arm's result may start on the line after its `=>`.
+#= {result: 42}
+match 1 {
+    1 =>
+        42,
+}

@@ -1,0 +1,3 @@
+# Null modulo an Int is a type error: Null is not zero.
+#= {raises: 'Null % Int'}
+null % 2

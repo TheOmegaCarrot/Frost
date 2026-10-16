@@ -1,0 +1,5 @@
+# A function whose constant body divides by zero raises when called, though
+# its definition alone does not.
+#= {raises: 'division by zero'}
+defn boom() -> 1 / 0
+boom()

@@ -1,0 +1,4 @@
+# A `$` placeholder cannot be the whole pattern of a def, even constrained.
+#= {rejects: 'expected a pattern'}
+def $ is Int = 1
+0

@@ -1,0 +1,4 @@
+# `export` takes a definition, not an expression: a lambda is exported with
+# `export defn` or `export def`, never `export fn`.
+#= {rejects: ['expected `def`', '`fn`']}
+export fn f() -> 1

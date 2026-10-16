@@ -1,0 +1,5 @@
+# A call must supply every parameter: a missing argument is an error, not
+# Null.
+#= {raises: ['expects 2 argument', 'called with 1']}
+def f = fn x, y -> x
+f(1)

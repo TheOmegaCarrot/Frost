@@ -1,0 +1,6 @@
+# `$3` sits in a branch a constant condition never takes, yet the lambda
+# still takes three arguments. Subtle: the optimizer may delete the branch,
+# but must not change the arity.
+#= {raises: 'expects 3 argument'}
+def f = $(if true: $1 else: $3)
+f(1)

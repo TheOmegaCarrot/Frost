@@ -1,0 +1,9 @@
+# A lambda's block body is one scope: binding a name twice in it is an error,
+# even though the lambda is never called.
+#= {rejects: ['`y`', 'already bound']}
+def f = fn -> {
+    def y = 1
+    def y = 2
+    y
+}
+1

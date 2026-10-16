@@ -1,0 +1,7 @@
+# A type constraint cannot be negated with `not`; excluding a type takes a
+# guard instead.
+#= {rejects: ['`not`', 'guard']}
+match 2 {
+    n is not Int => 'not an Int',
+    _ => 'an Int',
+}

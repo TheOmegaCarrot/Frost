@@ -1,0 +1,5 @@
+# Bound to another name, `call` keeps its arity, and its errors still name
+# `call`.
+#= {raises: ['call', 'between 1 and 2', 'called with 0']}
+def apply = call
+apply()

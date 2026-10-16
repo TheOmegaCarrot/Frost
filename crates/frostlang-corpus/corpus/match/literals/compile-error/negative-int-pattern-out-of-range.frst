@@ -1,0 +1,6 @@
+# A negative Int literal pattern one below the smallest Int is rejected.
+#= {rejects: 'Int literal out of range'}
+match 1 {
+    -9223372036854775809 => 'too small',
+    _ => 'other',
+}

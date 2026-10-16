@@ -1,0 +1,12 @@
+# A format string whose interpolations are computed from constants folds to
+# the same text built at runtime, propagated bindings included.
+#= {result: ['3 and ab', 'hello, world', '', 'ab2c', 'héllo 日本']}
+def name = 'world'
+def accent = 'é'
+[
+    $'${1 + 2} and ${'a' + 'b'}',
+    $'hello, ${name}',
+    $'',
+    $'a${$'b${1 + 1}'}c',
+    $'h${accent}llo ${'日本'}',
+]

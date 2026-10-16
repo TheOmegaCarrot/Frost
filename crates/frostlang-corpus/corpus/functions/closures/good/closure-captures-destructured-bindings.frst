@@ -1,0 +1,9 @@
+# Names bound by destructuring are captured like any other binding.
+#= {result: [1, [2, 3], {a: 1}, 'v']}
+def f = fn arr, m -> {
+    def [h, ...t] = arr
+    def {a} as whole = m
+    def {k: v} = {k: 'v'}
+    fn -> [h, t, whole, v]
+}
+f([1, 2, 3], {a: 1})()

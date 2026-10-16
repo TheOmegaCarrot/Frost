@@ -1,0 +1,5 @@
+# A call of a known function with the wrong number of arguments, in a branch
+# that never runs, never raises.
+#= {result: 'ok'}
+def f = fn x -> x
+if false: f(1, 2) else: 'ok'

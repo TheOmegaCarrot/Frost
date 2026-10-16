@@ -1,0 +1,7 @@
+# Digits that would put an Int literal out of range are fine in a Float literal: a
+# Float rounds rather than overflowing until past the greatest finite Float.
+#= {result: [true, 'Float']}
+[
+    123456789012345678901234567890.0 == 1.2345678901234568e29,
+    type(99999999999999999999.0),
+]

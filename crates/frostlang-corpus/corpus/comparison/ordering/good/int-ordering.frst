@@ -1,0 +1,16 @@
+# The four ordering operators on Ints, each with its operand below, equal to,
+# and above the other: the left operand is the one compared.
+#= {
+#=     result: [
+#=         [true, false, false],
+#=         [true, true, false],
+#=         [false, false, true],
+#=         [false, true, true],
+#=     ],
+#= }
+[
+    [3 < 10, 10 < 10, 11 < 10],
+    [3 <= 10, 10 <= 10, 11 <= 10],
+    [3 > 10, 10 > 10, 11 > 10],
+    [3 >= 10, 10 >= 10, 11 >= 10],
+]

@@ -1,0 +1,5 @@
+# A Map literal may open right after `${`, and its braces nest inside the
+# interpolation's. Subtle: `${{` is the interpolation's brace then the Map's,
+# and `}}` closes the Map then the interpolation.
+#= {result: ['1', '2', 'x2y']}
+[$'${{a: 1}.a}', $'${ {a: {b: 2}}.a.b }', $'x${{k: {v: 2}}.k.v}y']

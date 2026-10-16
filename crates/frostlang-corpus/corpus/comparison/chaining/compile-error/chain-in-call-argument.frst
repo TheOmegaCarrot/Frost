@@ -1,0 +1,3 @@
+# A chained comparison as a call argument is rejected.
+#= {rejects: 'cannot chain'}
+type(1 == 1 == true)

@@ -1,0 +1,18 @@
+# A match on a constant whose arm reads what its pattern binds computes the
+# same result as at runtime: the binding takes the matched part of the value.
+#= {result: [3, 'Ada', [2, 3], 'guarded']}
+[
+    match [1, 2] {
+        [a, b] => a + b,
+    },
+    match {name: 'Ada', age: 36} {
+        {name} => name,
+    },
+    match [1, 2, 3] {
+        [_, ...rest] => rest,
+    },
+    match 10 {
+        n if: n > 5 => 'guarded',
+        _ => 'not',
+    },
+]

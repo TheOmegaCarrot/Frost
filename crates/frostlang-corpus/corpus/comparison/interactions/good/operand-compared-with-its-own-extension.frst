@@ -1,0 +1,17 @@
+# A binding compared with a value built from it is compared as it was before
+# the build. Subtle: in `ys == ys + [3]` the second `ys` is the binding's last
+# use, so its storage may be reused for the concatenation; the left operand,
+# already loaded, must still be the original two-element Array.
+#= {result: [[false, true], [false, true]], inputs: {n: 1}}
+defn extend_after(x) -> {
+    def ys = [x, 2]
+    [ys == ys + [3], ys + [] == [x, 2]]
+}
+defn extend_before(x) -> {
+    def ys = [x, 2]
+    [ys + [3] == ys, [x, 2] == ys + []]
+}
+[
+    extend_after(n),
+    extend_before(n),
+]

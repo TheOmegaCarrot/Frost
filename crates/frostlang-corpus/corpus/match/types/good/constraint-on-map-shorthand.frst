@@ -1,0 +1,7 @@
+# A Map pattern's shorthand entry may carry a type constraint, which the
+# entry's value must satisfy.
+#= {result: ['named ada', 'unnamed', 'unnamed'], inputs: {xs: [{name: 'ada'}, {name: 7}, {}]}}
+transform(xs, fn v -> match v {
+    {name is String} => 'named ' + name,
+    _ => 'unnamed',
+})

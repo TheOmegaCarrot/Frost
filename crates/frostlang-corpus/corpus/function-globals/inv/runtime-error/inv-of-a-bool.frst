@@ -1,0 +1,3 @@
+# `inv` requires a Function, and its error names it as a native's would.
+#= {raises: ['inv', 'Function as argument 1', 'got Bool']}
+inv(true)

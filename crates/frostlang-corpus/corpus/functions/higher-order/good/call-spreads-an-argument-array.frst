@@ -1,0 +1,4 @@
+# `call(f, args)` calls `f` with the elements of `args`; `call(f)` calls it
+# with none.
+#= {result: [7, 42, [1, [2, 3]]]}
+[call(fn x, y -> x + y, [3, 4]), call(fn -> 42), call(fn a, ...rest -> [a, rest], [1, 2, 3])]

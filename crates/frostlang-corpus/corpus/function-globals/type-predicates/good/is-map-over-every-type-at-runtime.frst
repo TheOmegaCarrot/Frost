@@ -1,0 +1,17 @@
+# `is_map` is true for Map alone, on values known only at run time.
+#= {
+#=     result: [false, false, false, false, false, false, false, true, false, false],
+#=     inputs: {n: null, b: false, i: 0, f: 0.0, s: '', y: x'', a: [], m: {}, g: fn -> null, h: len},
+#= }
+[
+    is_map(n),
+    is_map(b),
+    is_map(i),
+    is_map(f),
+    is_map(s),
+    is_map(y),
+    is_map(a),
+    is_map(m),
+    is_map(g),
+    is_map(h),
+]

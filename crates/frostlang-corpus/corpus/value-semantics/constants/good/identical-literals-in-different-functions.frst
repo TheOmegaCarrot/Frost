@@ -1,0 +1,6 @@
+# Identical literals in different functions are independent: one function
+# extending its literal never changes what the other returns.
+#= {result: [[1, 2], [1], [1, 2], [1]], inputs: {n: 2}}
+defn grow() -> [1] + [n]
+defn plain() -> [1]
+[grow(), plain(), grow(), plain()]

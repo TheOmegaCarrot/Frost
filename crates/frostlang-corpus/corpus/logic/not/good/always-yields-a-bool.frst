@@ -1,0 +1,14 @@
+# Unlike `and` and `or`, `not` coerces: its result is always a Bool, never the
+# operand, so `not not x` is a truthiness test.
+#= {
+#=     result: [true, false, true, true, 'Bool', 'Bool'],
+#=     inputs: {five: 5, n: null},
+#= }
+[
+    not not 5,
+    not not null,
+    not not '',
+    not not five,
+    type(not five),
+    type(not n),
+]

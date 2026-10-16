@@ -1,0 +1,6 @@
+# A `//` comment inside a block body is still no comment.
+#= {rejects: 'a comment starts with `#`'}
+defn f(x) -> {
+    // double it
+    x * 2
+}

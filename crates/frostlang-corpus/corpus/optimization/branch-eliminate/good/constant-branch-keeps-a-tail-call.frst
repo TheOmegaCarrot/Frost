@@ -1,0 +1,5 @@
+# A call in tail position stays a tail call through an `if` whose constant
+# condition picks it, so a deep recursion through it does not grow the stack.
+#= {result: 'done', inputs: {steps: 200000}}
+defn loop(n) -> if n == 0: 'done' else: if true: loop(n - 1) else: error('never')
+loop(steps)

@@ -1,0 +1,5 @@
+# A lambda's self-name must be a name, so `_` is not allowed there, as it is
+# not allowed as a `defn` name. An unnamed lambda is written `fn () -> ...`.
+#= {rejects: '`_`', known_issue: 'FROST-157'}
+def f = fn _() -> 1
+f()

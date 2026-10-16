@@ -1,0 +1,7 @@
+# A match guard is an expression in the arm's scope; an unbound name in it is
+# an error.
+#= {rejects: ['`missing`', 'not defined']}
+match 1 {
+    n if: n > missing => 'big',
+    _ => 'small',
+}

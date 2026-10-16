@@ -1,0 +1,4 @@
+# When no branch matches, the def raises once, saying so.
+#= {raises: 'matches no alternative', inputs: {v: [3, 4]}}
+def [a, 1] | [1, a] = v
+a

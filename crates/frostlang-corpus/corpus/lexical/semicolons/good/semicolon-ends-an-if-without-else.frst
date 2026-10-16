@@ -1,0 +1,4 @@
+# A `;` ends an `if` without `else` as a line break does; the next statement
+# follows on the same line.
+#= {result: 2, inputs: {c: false}}
+if c: 1; 2

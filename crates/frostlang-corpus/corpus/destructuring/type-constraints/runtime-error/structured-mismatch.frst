@@ -1,0 +1,4 @@
+# `is Structured` rejects a String.
+#= {raises: 'expected a Structured', inputs: {v: 'ab'}}
+def x is Structured = v
+x

@@ -1,0 +1,3 @@
+# A plain String in an interpolation decodes its own escapes.
+#= {result: "a\nb\tc\\d"}
+$'${"a\nb\tc\\d"}'

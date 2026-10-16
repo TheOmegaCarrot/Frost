@@ -1,0 +1,11 @@
+# The defs of alternative-patterns, over values only known at runtime, bind
+# the same parts.
+#= {
+#=     result: [2, 3, 5, [1, 3]],
+#=     inputs: {one_two: [1, 2], three_one: [3, 1], single: [5], nested: [1, [3, 2]]},
+#= }
+def [a, 1] | [1, a] = one_two
+def [b, 1] | [1, b] = three_one
+def {c} | [c] = single
+def [d, [e, 1 | 2] | e] = nested
+[a, b, c, [d, e]]

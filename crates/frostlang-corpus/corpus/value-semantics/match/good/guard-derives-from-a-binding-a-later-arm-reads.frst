@@ -1,0 +1,8 @@
+# A guard that derives a value from an outer binding, then fails, leaves that
+# binding unchanged for the arm that follows.
+#= {result: [1], inputs: {n: 1}}
+def xs = [n]
+match 1 {
+    _ if: len(xs + [0]) == 5 => 'never',
+    _ => xs,
+}

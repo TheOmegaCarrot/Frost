@@ -1,0 +1,8 @@
+# An arm takes one guard; several conditions combine within it with `and` and
+# `or`.
+#= {result: ['teen', 'other', 'other', 'edge'], inputs: {xs: [15, 25, 9, 0]}}
+transform(xs, fn n -> match n {
+    x if: x >= 13 and x <= 19 => 'teen',
+    x if: x == 0 or x < 0 => 'edge',
+    _ => 'other',
+})

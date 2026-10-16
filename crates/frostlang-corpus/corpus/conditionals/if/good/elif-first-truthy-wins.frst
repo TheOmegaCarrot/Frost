@@ -1,0 +1,7 @@
+# In an `elif` chain, the first truthy condition wins, even when later ones are
+# truthy too.
+#= {result: 2}
+if false: 1
+elif true: 2
+elif true: 3
+else: 4

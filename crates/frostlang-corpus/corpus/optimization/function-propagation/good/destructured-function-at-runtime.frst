@@ -1,0 +1,16 @@
+# The functions of destructured-function, bound out of structures only known at
+# runtime, are called as themselves.
+#= {
+#=     result: [42, 3, 1764, 11],
+#=     inputs: {
+#=         pair: [fn x -> x + 1, 41],
+#=         ops: {add: fn a, b -> a + b},
+#=         nested: {g: [fn x -> x * x]},
+#=         boxed: [fn x -> x + 10],
+#=     },
+#= }
+def [inc, n] = pair
+def {add} = ops
+def {g: [sq]} = nested
+def [h] | h = boxed
+[inc(n), add(1, 2), sq(42), h(1)]

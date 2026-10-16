@@ -1,0 +1,3 @@
+# A reserved word cannot be a name shorthand entry.
+#= {rejects: 'expected a name or `[`'}
+def m = {if}

@@ -1,0 +1,9 @@
+# A closure created in a lambda's body reads both that lambda's local
+# binding and a binding from the scope around the lambda.
+#= {result: 'outer-inner'}
+def prefix = 'outer'
+def make = fn -> {
+    def suffix = 'inner'
+    fn -> prefix + '-' + suffix
+}
+make()()

@@ -1,0 +1,8 @@
+# Leading zeros never push a literal out of the Int range, however many there are:
+# only the value counts, not the number of digits written.
+#= {result: [9223372036854775807, -9223372036854775808, 1]}
+[
+    0000000000000000000009223372036854775807,
+    -0000000000000000000009223372036854775808,
+    000000000000000000000000000000000000000001,
+]

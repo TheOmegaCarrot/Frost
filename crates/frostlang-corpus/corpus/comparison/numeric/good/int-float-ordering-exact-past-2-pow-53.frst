@@ -1,0 +1,13 @@
+# Int against Float ordering is exact even where a Float cannot hold every Int.
+# 2^53 + 1 is no Float; converting it to one would round it to 2^53 and call
+# the two equal. Compared exactly, it is greater than 2^53 and less than the
+# next Float, 2^53 + 2.
+#= {result: [true, true, false, true, true, true]}
+[
+    9007199254740993 > 9007199254740992.0,
+    9007199254740993 < 9007199254740994.0,
+    9007199254740993 <= 9007199254740992.0,
+    9007199254740992 <= 9007199254740992.0,
+    -9007199254740993 < -9007199254740992.0,
+    9007199254740992.0 < 9007199254740993,
+]

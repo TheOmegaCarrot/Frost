@@ -1,0 +1,6 @@
+# A closure called with the very value it captured, deriving from each, keeps
+# both the capture and the argument unchanged.
+#= {result: [[1, 2], [1, 3], [1], [1]], inputs: {n: 1}}
+def xs = [n]
+def f = fn ys -> [xs + [2], ys + [3], xs, ys]
+f(xs)

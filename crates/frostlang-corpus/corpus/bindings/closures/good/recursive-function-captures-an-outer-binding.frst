@@ -1,0 +1,5 @@
+# A recursive function reads its own name and an enclosing binding in the same
+# body.
+#= {result: 13, inputs: {base: 10}}
+defn count_down(n) -> if n == 0: base else: 1 + count_down(n - 1)
+count_down(3)

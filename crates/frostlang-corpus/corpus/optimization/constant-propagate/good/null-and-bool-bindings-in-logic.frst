@@ -1,0 +1,15 @@
+# Known Null and Bool bindings drive `and`, `or`, and `not` exactly as their
+# values do: the operators return an operand, not a coerced Bool.
+#= {result: ['default', null, false, 0, true, 'yes']}
+def nothing = null
+def no = false
+def zero = 0
+def yes = true
+[
+    nothing or 'default',
+    nothing and 'unreached',
+    no and 'unreached',
+    no or zero,
+    not nothing,
+    yes and 'yes',
+]

@@ -1,0 +1,11 @@
+# `and` and `or` with a constant left operand that decides the result never
+# evaluate the right operand, so an error there is never raised; the result
+# is the deciding operand itself.
+#= {result: [false, null, true, 0, '']}
+[
+    false and error('never'),
+    null and 1 / 0,
+    true or error('never'),
+    0 or {a: 1}.b,
+    '' or len(5),
+]

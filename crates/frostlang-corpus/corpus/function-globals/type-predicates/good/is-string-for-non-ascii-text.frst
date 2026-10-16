@@ -1,0 +1,9 @@
+# Text beyond ASCII is still a String, and still flat.
+#= {result: [true, true, true, true, false]}
+[
+    is_string('é'),
+    is_string('日本語'),
+    is_string('🎉'),
+    is_flat('ü'),
+    is_bytes('é'),
+]

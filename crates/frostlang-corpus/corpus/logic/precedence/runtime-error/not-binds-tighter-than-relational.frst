@@ -1,0 +1,4 @@
+# `not` binds tighter than `<`, so `not a < b` compares the Bool that `not`
+# yields with an Int, which raises rather than negating the comparison.
+#= {raises: ['compare', 'Bool'], inputs: {a: 1, b: 2}}
+not a < b

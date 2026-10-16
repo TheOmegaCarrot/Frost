@@ -1,0 +1,8 @@
+# A binary operator evaluates its left operand before its right, observable
+# through the order of their prints.
+#= {result: 7, printed: ['left', 'right']}
+defn noisy(label, n) -> {
+    print(label)
+    n
+}
+noisy('left', 10) - noisy('right', 3)

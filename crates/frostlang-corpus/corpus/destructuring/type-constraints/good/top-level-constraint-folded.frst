@@ -1,0 +1,4 @@
+# A constrained def over a literal the optimizer may check ahead of time.
+#= {result: 'five'}
+def x is String = 'five'
+x

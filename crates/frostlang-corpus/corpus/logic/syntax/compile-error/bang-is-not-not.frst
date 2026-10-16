@@ -1,0 +1,3 @@
+# Frost spells logical negation as the keyword `not`; `!` is not an operator.
+#= {rejects: ['`!`', '`not`']}
+!true

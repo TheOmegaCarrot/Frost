@@ -1,0 +1,4 @@
+# `$$` interpolated in a format string is the Array of all arguments.
+#= {result: ['count: 3', 'count: 0']}
+def count = $($'count: ${len($$)}')
+[count('a', 'b', 'c'), count()]

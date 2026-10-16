@@ -1,0 +1,3 @@
+# Extra elements are an arity error, not silently dropped.
+#= {raises: ['expects 1', 'called with 3']}
+call(fn x -> x, [1, 2, 3])

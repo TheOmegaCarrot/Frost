@@ -1,0 +1,43 @@
+# An audit pass that prints as it goes: `each` and `foreach` run their
+# operation for its effect, in Array order and in Map key order, and yield
+# the structure itself, so the pipeline can keep using it. Only the totals
+# computed afterward differ from the input.
+#= {
+#=     result: {
+#=         accounts: {ann: 30, bob: -5, cy: 0},
+#=         overdrawn: ['bob'],
+#=         total: 25,
+#=     },
+#=     printed: [
+#=         'deposit ann 50',
+#=         'withdraw ann 20',
+#=         'withdraw bob 5',
+#=         'deposit cy 0',
+#=         'ann: 30',
+#=         'bob: -5 (overdrawn)',
+#=         'cy: 0',
+#=     ],
+#=     inputs: {
+#=         entries: [
+#=             {who: 'ann', amount: 50},
+#=             {who: 'ann', amount: -20},
+#=             {who: 'bob', amount: -5},
+#=             {who: 'cy', amount: 0},
+#=         ],
+#=     },
+#= }
+defn describe(entry) -> {
+    def kind = if entry.amount < 0: 'withdraw' else: 'deposit'
+    def size = if entry.amount < 0: -entry.amount else: entry.amount
+    $'${kind} ${entry.who} ${size}'
+}
+
+def logged = each(entries, fn entry -> print(describe(entry)))
+def accounts = fold(logged, {}, fn acc, e -> acc + {[e.who]: (acc[e.who] or 0) + e.amount})
+def reported = foreach accounts with fn who, balance ->
+    print(if balance < 0: $'${who}: ${balance} (overdrawn)' else: $'${who}: ${balance}')
+{
+    accounts: reported,
+    overdrawn: reduce reported init: [] with fn acc, who, balance -> if balance < 0: acc + [who] else: acc,
+    total: reduce reported init: 0 with fn acc, who, balance -> acc + balance,
+}

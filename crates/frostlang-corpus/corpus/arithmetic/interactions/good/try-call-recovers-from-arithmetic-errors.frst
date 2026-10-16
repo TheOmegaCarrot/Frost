@@ -1,0 +1,9 @@
+# An arithmetic error inside `try_call` is reified rather than ending the run,
+# and arithmetic continues normally afterward.
+#= {result: [false, false, false, true, 3]}
+defn divide(a, b) -> a / b
+def by_zero = try_call(divide, [7, 0])
+def mismatched = try_call(divide, ['7', 1])
+def overflowed = try_call(fn -> 1e308 * 10.0, [])
+def fine = try_call(divide, [7, 2])
+[by_zero.ok, mismatched.ok, overflowed.ok, fine.ok, fine.value]

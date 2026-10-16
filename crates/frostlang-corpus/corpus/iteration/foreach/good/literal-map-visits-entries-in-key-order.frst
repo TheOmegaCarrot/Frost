@@ -1,0 +1,4 @@
+# A `foreach` over a Map literal runs its effects at runtime, in ascending key
+# order, whatever order the literal wrote them in.
+#= {result: {a: 1, b: 2}, printed: ['a', 'b']}
+foreach {b: 2, a: 1} with fn k, v -> print(k)

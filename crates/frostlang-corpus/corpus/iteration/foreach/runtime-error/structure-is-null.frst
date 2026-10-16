@@ -1,0 +1,3 @@
+# `foreach` over Null is a type error, not a no-op.
+#= {raises: ['Structured', 'argument 1', 'Null'], inputs: {nothing: null}}
+foreach nothing with fn x -> x

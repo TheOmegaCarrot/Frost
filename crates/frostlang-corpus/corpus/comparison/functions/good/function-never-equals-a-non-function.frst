@@ -1,0 +1,12 @@
+# A Function never equals a value of another type, and comparing one for
+# equality never raises.
+#= {result: [false, false, false, false, false, true]}
+def f = fn -> null
+[
+    f == null,
+    f == f(),
+    len == 'len',
+    [f] == [null],
+    {f: f} == {f: 'f'},
+    f != null,
+]

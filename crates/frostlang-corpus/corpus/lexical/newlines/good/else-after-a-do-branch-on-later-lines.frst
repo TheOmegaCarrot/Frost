@@ -1,0 +1,9 @@
+# A `do` block branch may close on its own line, with `else` on the line
+# after its closing brace.
+#= {result: ['yes', 'no']}
+defn pick(c) -> if c: do {
+    def word = 'yes'
+    word
+}
+else: 'no'
+[pick(true), pick(false)]

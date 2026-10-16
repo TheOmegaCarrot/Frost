@@ -1,0 +1,4 @@
+# Two expression statements touching after a closing paren still need a `;`
+# or a line break between them.
+#= {rejects: 'a line break or `;`'}
+print(1)print(2)

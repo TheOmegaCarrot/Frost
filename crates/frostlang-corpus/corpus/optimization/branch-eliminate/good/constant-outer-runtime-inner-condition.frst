@@ -1,0 +1,5 @@
+# An `if` with a constant condition around one with a runtime condition picks
+# its branch, and the inner `if` still decides at runtime.
+#= {result: ['inner yes', 'inner no'], inputs: {yes: true, no: false}}
+defn pick(flag) -> if true: (if flag: 'inner yes' else: 'inner no') else: error('never')
+[pick(yes), pick(no)]

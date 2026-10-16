@@ -1,0 +1,6 @@
+# A value threaded into `error` on a continuation line raises it as the
+# error, after the earlier steps of the chain run.
+#= {raises: 'boom', inputs: {s: 'boom'}}
+s
+    @ tap(fn v -> v)
+    @ error()

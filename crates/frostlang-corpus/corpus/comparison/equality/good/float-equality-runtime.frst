@@ -1,0 +1,12 @@
+# `==` and `!=` on Floats known only at runtime.
+#= {
+#=     result: [true, false, true, false, true],
+#=     inputs: {a: 2.5, b: 2.6, big: 1.7976931348623157e308, tiny: 5e-324},
+#= }
+[
+    a == 2.5,
+    a == b,
+    big == 1.7976931348623157e308,
+    tiny == 0.0,
+    a != b,
+]

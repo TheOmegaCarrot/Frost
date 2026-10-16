@@ -1,0 +1,4 @@
+# A double-quoted raw String can hold `)'`, the single-quoted closer, and the
+# reverse: only its own closer ends it.
+#= {result: [")'", 2, ')"', 2]}
+[R"()')", len(R"()')"), R'()")', len(R'()")')]

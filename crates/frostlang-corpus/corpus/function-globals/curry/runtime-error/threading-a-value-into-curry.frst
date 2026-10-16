@@ -1,0 +1,4 @@
+# Threading puts the value first, so `5 @ curry(plus)` is `curry(5, plus)`:
+# the value lands where the function belongs.
+#= {raises: ['curry', 'Function as argument 1', 'got Int']}
+5 @ curry(plus)

@@ -1,0 +1,4 @@
+# A union of constraints rejects a value of a type in none of them.
+#= {raises: 'matches no alternative', inputs: {v: null}}
+def x is Int | x is String = v
+x

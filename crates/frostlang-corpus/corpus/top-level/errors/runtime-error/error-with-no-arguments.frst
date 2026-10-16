@@ -1,0 +1,4 @@
+# `error` takes exactly one argument; with none it raises an arity error
+# rather than raising a null payload.
+#= {raises: ['Function error', 'called with 0']}
+error()

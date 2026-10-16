@@ -1,0 +1,8 @@
+# A recursion stepping by two past its only base case reaches a value no arm
+# matches, which raises rather than producing Null.
+#= {raises: 'no match arm'}
+defn f(n) -> match n {
+    0 => 'zero',
+    m if: m > 0 => f(m - 2),
+}
+f(5)

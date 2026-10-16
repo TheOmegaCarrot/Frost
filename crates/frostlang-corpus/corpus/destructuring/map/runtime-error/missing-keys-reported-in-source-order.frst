@@ -1,0 +1,9 @@
+# Keys are looked up in source order, not sorted order: with both missing, the
+# one written first is reported.
+#= {
+#=     raises: 'no value at key "second"',
+#=     inputs: {m: {}},
+#=     known_issue: 'FROST-155',
+#= }
+def {second, first} = m
+[first, second]

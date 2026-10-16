@@ -1,0 +1,10 @@
+# A call in a `match` guard is not in tail position: the arm's result, or the
+# next arm, runs after it.
+#= {result: 495}
+defn down(n) -> match n {
+    0 => error('bottom'),
+    m if: down(m - 1) => 'unreached',
+    _ => 'unreached',
+}
+defn frames(n) -> len(try_call(down, [n]).trace)
+frames(500) - frames(5)

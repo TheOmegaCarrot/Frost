@@ -1,0 +1,4 @@
+# A function body follows `->`, not Python's `:`.
+#= {rejects: 'a function body follows `->`, not `:`'}
+defn add(a, b):
+    a + b

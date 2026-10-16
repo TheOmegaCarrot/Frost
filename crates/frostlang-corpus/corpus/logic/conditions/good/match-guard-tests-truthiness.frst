@@ -1,0 +1,10 @@
+# A `match` guard need not be a Bool: any truthy value passes it, and only Null
+# and false fail it.
+#= {
+#=     result: ['falsy', 'falsy', 'truthy', 'truthy', 'truthy'],
+#=     inputs: {values: [null, false, 0, '', []]},
+#= }
+transform(values, fn v -> match v {
+    w if: w => 'truthy',
+    _ => 'falsy',
+})

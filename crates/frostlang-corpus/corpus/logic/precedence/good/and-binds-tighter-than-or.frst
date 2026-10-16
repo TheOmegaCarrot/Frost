@@ -1,0 +1,12 @@
+# `and` binds tighter than `or`, whichever side of the `or` it is on. Each case
+# would yield a different value if `or` bound tighter.
+#= {
+#=     result: [true, true, 1, 2],
+#=     inputs: {f: false, one: 1, two: 2, n: null},
+#= }
+[
+    true or false and false,
+    false and true or true,
+    one or n and two,
+    f and one or two,
+]

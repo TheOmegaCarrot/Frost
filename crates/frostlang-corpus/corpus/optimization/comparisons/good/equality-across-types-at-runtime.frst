@@ -1,0 +1,26 @@
+# The equalities of folded-equality-across-types, over values only known at
+# runtime, give the same answers.
+#= {
+#=     result: [false, false, false, false, true, true, true, false, true],
+#=     inputs: {
+#=         three: 3,
+#=         one: 1,
+#=         nothing: null,
+#=         a: 'a',
+#=         nested: [1, [2]],
+#=         m: {a: 1, b: 2},
+#=         zero: 0.0,
+#=         single: [1],
+#=     },
+#= }
+[
+    three == 3.0,
+    one == '1',
+    nothing == false,
+    a == x'61',
+    nested == [1, [2]],
+    m == {b: 2, a: 1},
+    zero == -0.0,
+    single != [1],
+    nothing == null,
+]

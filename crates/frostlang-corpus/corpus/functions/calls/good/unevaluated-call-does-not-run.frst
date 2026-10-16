@@ -1,0 +1,4 @@
+# A call in a branch that is not taken never runs.
+#= {result: 'skipped', printed: []}
+def loud = fn -> print('ran')
+if false: loud() else: 'skipped'

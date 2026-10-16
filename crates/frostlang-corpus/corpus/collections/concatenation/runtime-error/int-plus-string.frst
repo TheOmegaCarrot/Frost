@@ -1,0 +1,3 @@
+# An Int plus a String raises; neither is converted.
+#= {raises: ['Cannot add', 'Int + String']}
+1 + '1'

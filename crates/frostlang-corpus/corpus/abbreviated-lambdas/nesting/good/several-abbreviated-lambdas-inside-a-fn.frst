@@ -1,0 +1,6 @@
+# One `fn` may hold several abbreviated lambdas side by side; none is nested
+# in another.
+#= {result: [3, 20]}
+def make = fn k -> [$($ + k), $($ * k)]
+def pair = make(10)
+[pair[0](-7), pair[1](2)]

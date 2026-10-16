@@ -1,0 +1,15 @@
+# The pure global calls of pure-global-calls, over arguments only known at
+# runtime, give exactly the values the folder computes.
+#= {
+#=     result: [3, 'Float', '42', true, false, true, true],
+#=     inputs: {xs: [1, 2, 3], f: 1.5, n: 42, one: 1, bytes: x'00', zero: 0, m: {a: null}},
+#= }
+[
+    len(xs),
+    type(f),
+    to_string(n),
+    is_int(one),
+    is_string(bytes),
+    is_nonnull(zero),
+    has(m, 'a'),
+]

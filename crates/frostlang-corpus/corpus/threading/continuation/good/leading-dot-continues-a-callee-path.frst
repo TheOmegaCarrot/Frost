@@ -1,0 +1,12 @@
+# A line starting with `.` continues the expression before it as if the
+# lines were joined, since `.` cannot begin a statement. Inside the callee
+# path of a threaded call, the continuation extends the path: `n @ lib`
+# followed by `.math.double()` is `lib.math.double(n)`.
+#= {result: [6, 6], inputs: {n: 3}, known_issue: 'FROST-161'}
+def lib = {math: {double: fn x -> x * 2}}
+def spread_out = n @ lib
+    .math
+    .double()
+def in_parens = (n @ lib
+    .math.double())
+[spread_out, in_parens]

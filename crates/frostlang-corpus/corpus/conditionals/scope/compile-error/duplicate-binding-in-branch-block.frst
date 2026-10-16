@@ -1,0 +1,8 @@
+# A branch's block rejects binding the same name twice.
+#= {rejects: ['`y`', 'already bound']}
+def x = true
+if x: do {
+    def y = 1
+    def y = 2
+    y
+} else: 0

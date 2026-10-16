@@ -1,0 +1,5 @@
+# An input lives in the script's enclosing scope, so a top-level `def` may
+# shadow it once, reading the input in its own value.
+#= {result: 2, inputs: {n: 1}}
+def n = n + 1
+n

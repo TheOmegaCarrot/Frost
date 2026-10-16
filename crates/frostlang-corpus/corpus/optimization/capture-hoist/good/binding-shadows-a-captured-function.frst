@@ -1,0 +1,10 @@
+# In a function body, a binding may shadow a captured known function: a call
+# before it calls the capture, and a call after it calls the binding.
+#= {result: [1, 2]}
+def h = fn -> 1
+def p = fn -> {
+    def before = h()
+    def h = fn -> 2
+    [before, h()]
+}
+p()

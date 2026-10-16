@@ -1,0 +1,6 @@
+# A tail expression after a run of `def`s sees every binding before it.
+#= {result: [1, 2, 3]}
+def a = 1
+def b = a + 1
+def c = b + 1
+[a, b, c]

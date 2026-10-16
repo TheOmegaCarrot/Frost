@@ -1,0 +1,5 @@
+# A comment ends at a CRLF line break; its carriage return is not code.
+#= {result: [1, 2]}
+def a = 1 # first
+def b = 2 #
+[a, b] # last

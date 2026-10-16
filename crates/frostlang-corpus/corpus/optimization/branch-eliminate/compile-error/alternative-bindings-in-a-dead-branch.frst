@@ -1,0 +1,6 @@
+# Alternatives that bind different names are a compile error even in a branch
+# a constant condition rules out.
+#= {rejects: 'bind the same names'}
+if false: match 1 {
+    [a] | b => 0,
+} else: 0

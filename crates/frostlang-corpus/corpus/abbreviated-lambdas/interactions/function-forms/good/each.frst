@@ -1,0 +1,4 @@
+# `each` calls an abbreviated lambda on each element for its effect and
+# returns the structure unchanged.
+#= {result: ['x', 'y'], printed: ['x', 'y']}
+each(['x', 'y'], $(print($)))

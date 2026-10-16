@@ -1,0 +1,3 @@
+# `inv` takes exactly one argument.
+#= {raises: ['inv', 'expects 1', 'called with 0']}
+inv()

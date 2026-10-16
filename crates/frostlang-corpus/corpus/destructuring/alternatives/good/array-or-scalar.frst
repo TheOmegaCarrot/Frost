@@ -1,0 +1,8 @@
+# An alternative can accept differently shaped values: a one-element Array, or
+# anything else, bound whole.
+#= {result: [1, 5, [1, 2]]}
+defn unwrap(v) -> {
+    def [a] | a = v
+    a
+}
+[unwrap([1]), unwrap(5), unwrap([1, 2])]

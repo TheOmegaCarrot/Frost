@@ -1,0 +1,6 @@
+# An abbreviated lambda can build Arrays and Maps from its arguments,
+# including empty ones and Nulls.
+#= {result: [[], {a: null, b: [null]}]}
+def empty = $([])
+def pack = $({a: $1, b: $$})
+[empty(), pack(null, null)]

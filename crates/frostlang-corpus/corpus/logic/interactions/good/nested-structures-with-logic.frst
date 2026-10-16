@@ -1,0 +1,14 @@
+# Logic over nested data: each record's nickname, else its name, else a
+# placeholder, with records whose fields are absent or falsy.
+#= {
+#=     result: ['ace', 'bob', 'anonymous', 'zoë'],
+#=     inputs: {
+#=         people: [
+#=             {nick: 'ace', name: 'alice'},
+#=             {nick: null, name: 'bob'},
+#=             {},
+#=             {nick: false, name: 'zoë'},
+#=         ],
+#=     },
+#= }
+transform(people, fn p -> p['nick'] or p['name'] or 'anonymous')

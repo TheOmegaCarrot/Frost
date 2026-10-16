@@ -1,0 +1,4 @@
+# A Float needs digits after its point: `5.` is the Int 5 and a `.` with no field
+# name after it.
+#= {rejects: 'a name after `.`'}
+5.

@@ -1,0 +1,4 @@
+# `init` is reserved, so it cannot be a Map pattern's `as` name.
+#= {rejects: ['`init`', 'keyword']}
+def {a} as init = {a: 1}
+a

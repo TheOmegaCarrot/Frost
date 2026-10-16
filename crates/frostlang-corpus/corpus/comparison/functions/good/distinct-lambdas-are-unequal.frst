@@ -1,0 +1,10 @@
+# Functions compare by identity, never by their code: two separately written
+# lambdas are unequal even when written identically.
+#= {result: [false, false, true]}
+def f = fn x -> x
+def g = fn x -> x
+[
+    f == g,
+    (fn -> 1) == (fn -> 1),
+    f != g,
+]

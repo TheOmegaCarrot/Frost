@@ -1,0 +1,5 @@
+# Defining a function that raises raises nothing; only calling it would.
+#= {result: 'fine'}
+def never_called = fn -> error('never')
+defn also_never_called(x) -> error(x)
+'fine'

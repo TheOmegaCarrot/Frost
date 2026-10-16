@@ -1,0 +1,11 @@
+# A condition computed from constants, by arithmetic, comparison, a pure call,
+# or a known binding, picks its branch as at runtime, and the other branch
+# never runs.
+#= {result: ['yes', 'empty', 'quiet', 'ordered']}
+def debug = false
+[
+    if 1 + 1 == 2: 'yes' else: error('no'),
+    if len([]) == 0: 'empty' else: error('not empty'),
+    if debug: print('debugging') else: 'quiet',
+    if 'b' > 'a': 'ordered' else: error('unordered'),
+]

@@ -1,0 +1,8 @@
+# `a > b and a or b` picks the larger of two numbers: the comparison guards
+# `a`, and `or` falls through to `b` otherwise. It is safe only because no
+# number is falsy, so a chosen `a` of zero is still the result.
+#= {
+#=     result: [5, 5, 0, -1, 2.5],
+#=     inputs: {pairs: [[5, 3], [3, 5], [0, -2], [-1, -1], [2.5, 2]]},
+#= }
+transform(pairs, fn pair -> pair[0] > pair[1] and pair[0] or pair[1])

@@ -1,0 +1,5 @@
+# `dig` is a plain reduction over indexing: once a step finds Null, the
+# remaining keys index nothing, so even keys that could never index a
+# structure raise no error.
+#= {result: [null, null, null]}
+[dig({}, 'a', null), dig({}, 'a', [1]), dig(null, {})]

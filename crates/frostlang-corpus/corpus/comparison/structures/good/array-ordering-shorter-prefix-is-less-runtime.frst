@@ -1,0 +1,11 @@
+# A proper prefix sorts first, with Arrays known only at runtime.
+#= {
+#=     result: [true, false, true, true],
+#=     inputs: {short: [1, 2], long: [1, 2, 3], empty: []},
+#= }
+[
+    short < long,
+    long < short,
+    empty < short,
+    empty <= empty,
+]

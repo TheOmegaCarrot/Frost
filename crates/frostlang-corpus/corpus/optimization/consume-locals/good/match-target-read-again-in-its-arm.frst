@@ -1,0 +1,8 @@
+# A parameter used as a match target and read again in the matching arm has
+# its value there, and the caller's argument stays unchanged.
+#= {result: [[1, 1], [2, 3], [1]], inputs: {xs: [1], pair: [2, 3]}}
+defn grow(v) -> match v {
+    [x] => v + [x],
+    _ => v,
+}
+[grow(xs), grow(pair), xs]

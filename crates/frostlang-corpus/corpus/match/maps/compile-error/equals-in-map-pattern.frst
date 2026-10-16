@@ -1,0 +1,6 @@
+# A Map pattern entry names its value with `:`, not `=`.
+#= {rejects: ['expected `,` or `}`', '`key: value`']}
+match {a: 1} {
+    {a = 1} => 'one',
+    _ => 'other',
+}

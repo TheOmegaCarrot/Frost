@@ -1,0 +1,5 @@
+# `export def name is Type = value` exports the name once the value passes the
+# constraint.
+#= {result: null, exports: {n: 7, s: 'x'}}
+export def n is Int = 7
+export def s is String = 'x'

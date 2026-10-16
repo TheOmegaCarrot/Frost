@@ -1,0 +1,7 @@
+# Binding an Array to a second name shares no mutable state: a value derived
+# through one name leaves the Array under both names unchanged.
+#= {result: [[1, 2], [1, 2], [1, 2, 3]]}
+def a = [1, 2]
+def b = a
+def c = b + [3]
+[a, b, c]

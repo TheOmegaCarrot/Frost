@@ -1,0 +1,48 @@
+# Arbitrary-size addition past the Int range, on Arrays of decimal digits
+# stored least significant first: a recursive add carries between positions
+# and runs on while either number or the carry has digits left. Multiplying
+# by repeated doubling reaches 2^100, far beyond any Int.
+#= {
+#=     result: {
+#=         carry_out: '100000000000000000000',
+#=         uneven: '1000000000000000000015998',
+#=         zero: '0',
+#=         power: '1267650600228229401496703205376',
+#=     },
+#=     inputs: {
+#=         nines: [9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9],
+#=         one: [1],
+#=         long: [9, 9, 9, 9, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+#=         short: [9, 9, 9, 5],
+#=         exponent: 100,
+#=     },
+#= }
+defn add(xs, ys, carry) -> match [xs, ys] {
+    [[], []] => if carry == 0: [] else: [carry],
+    _ => do {
+        def [x, xrest] = match xs {
+            [] => [0, []],
+            [d, ...rest] => [d, rest],
+        }
+        def [y, yrest] = match ys {
+            [] => [0, []],
+            [d, ...rest] => [d, rest],
+        }
+        def sum = x + y + carry
+        [sum % 10] + add(xrest, yrest, sum / 10)
+    },
+}
+
+defn show(digits) -> if digits == []: '0' else: fold(digits, '', fn text, d -> to_string(d) + text)
+
+defn power_of_two(n) -> if n == 0: [1] else: do {
+    def half = power_of_two(n - 1)
+    add(half, half, 0)
+}
+
+{
+    carry_out: show(add(nines, one, 0)),
+    uneven: show(add(long, short, 0)),
+    zero: show(add([], [], 0)),
+    power: show(power_of_two(exponent)),
+}

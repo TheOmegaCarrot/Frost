@@ -1,0 +1,7 @@
+# A continued `@` call's arguments may span lines inside its parentheses,
+# with a trailing comma.
+#= {result: [3, 4, 5]}
+[1, 2, 3]
+    @ transform(
+        fn x -> x + 2,
+    )

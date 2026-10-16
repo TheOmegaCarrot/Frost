@@ -1,0 +1,6 @@
+# A match on a constant that no arm matches raises when the program reaches it.
+#= {raises: 'no match arm'}
+match 3 {
+    1 => 'one',
+    2 => 'two',
+}

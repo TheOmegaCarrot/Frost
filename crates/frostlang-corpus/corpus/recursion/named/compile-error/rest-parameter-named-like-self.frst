@@ -1,0 +1,4 @@
+# A rest parameter may not reuse a named lambda's self-name either.
+#= {rejects: '`f` is already bound'}
+def g = fn f(...f) -> null
+g()

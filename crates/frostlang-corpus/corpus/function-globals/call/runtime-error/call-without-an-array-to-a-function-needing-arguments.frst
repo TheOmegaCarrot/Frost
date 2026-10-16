@@ -1,0 +1,4 @@
+# `call(f)` passes no arguments, so a function that needs one fails its arity
+# check.
+#= {raises: ['expects 1', 'called with 0']}
+call(fn x -> x)

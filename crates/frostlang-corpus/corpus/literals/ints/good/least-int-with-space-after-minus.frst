@@ -1,0 +1,4 @@
+# A space between the `-` and the least Int's magnitude changes nothing: it is still
+# a negation of that magnitude, so still the least Int.
+#= {result: -9223372036854775808}
+- 9223372036854775808

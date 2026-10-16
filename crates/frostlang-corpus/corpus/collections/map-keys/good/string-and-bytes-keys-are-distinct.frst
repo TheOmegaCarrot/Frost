@@ -1,0 +1,10 @@
+# A String key and a Bytes key with the same underlying bytes are different
+# keys, including the empty ones.
+#= {result: [4, 'string', 'bytes', 'empty string', 'empty bytes']}
+def m = {
+    ['a']: 'string',
+    [x'61']: 'bytes',
+    ['']: 'empty string',
+    [x'']: 'empty bytes',
+}
+[len(m), m['a'], m[x'61'], m[''], m[x'']]

@@ -1,0 +1,3 @@
+# An interpolated String contributes its text as is, without quotes.
+#= {result: 'hello, ada!', inputs: {name: 'ada'}}
+$'hello, ${name}!'

@@ -1,0 +1,4 @@
+# `const(v)` makes a function that returns `v` for any number of arguments.
+#= {result: [7, 7, 7]}
+def seven = const(7)
+[seven(), seven(1), seven(1, 2, 3)]

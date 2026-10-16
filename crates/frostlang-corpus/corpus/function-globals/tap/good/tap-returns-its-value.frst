@@ -1,0 +1,4 @@
+# `tap(v, f)` calls `f(v)` but returns `v` itself, discarding what `f`
+# returned.
+#= {result: [5, [1], null]}
+[tap(5, fn x -> x * 100), tap([1], fn x -> null), tap(null, fn x -> 'ignored')]

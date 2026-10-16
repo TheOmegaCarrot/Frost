@@ -1,0 +1,10 @@
+# An `elif` chain of constant conditions picks the first truthy one, and no
+# other branch runs.
+#= {result: 3, printed: ['picked']}
+if false: print('one')
+elif null: print('two')
+elif 0: do {
+    print('picked')
+    3
+}
+else: print('four')

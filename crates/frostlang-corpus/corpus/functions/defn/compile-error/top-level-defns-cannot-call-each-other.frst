@@ -1,0 +1,6 @@
+# A name is bound only from its definition on, so an earlier `defn` cannot
+# call a later one: top-level functions are not mutually recursive.
+#= {rejects: ['`is_odd`', 'not defined']}
+defn is_even(k) -> if k == 0: true else: is_odd(k - 1)
+defn is_odd(k) -> if k == 0: false else: is_even(k - 1)
+is_even(4)

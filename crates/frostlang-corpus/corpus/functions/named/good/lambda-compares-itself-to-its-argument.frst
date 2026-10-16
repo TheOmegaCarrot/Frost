@@ -1,0 +1,4 @@
+# A self-name compares equal to the same closure passed as an argument.
+#= {result: [true, false]}
+def f = fn me(other) -> other == me
+[f(f), f(fn x -> x)]

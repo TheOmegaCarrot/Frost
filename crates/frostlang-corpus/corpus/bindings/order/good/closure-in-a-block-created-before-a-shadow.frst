@@ -1,0 +1,9 @@
+# In a `do` block, a closure written before the block shadows a name keeps the
+# enclosing binding of that name.
+#= {result: ['outer', 'inner']}
+def later = 'outer'
+do {
+    def g = fn -> later
+    def later = 'inner'
+    [g(), later]
+}

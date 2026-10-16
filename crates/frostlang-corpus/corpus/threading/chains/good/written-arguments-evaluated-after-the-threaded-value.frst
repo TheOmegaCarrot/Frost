@@ -1,0 +1,8 @@
+# The threaded value is the first argument, so it is evaluated before the
+# written arguments, which follow left to right.
+#= {result: [1, 2, 3], printed: ['threaded', 'first', 'second']}
+defn noisy(x, name) -> {
+    print(name)
+    x
+}
+noisy(1, 'threaded') @ collect(noisy(2, 'first'), noisy(3, 'second'))

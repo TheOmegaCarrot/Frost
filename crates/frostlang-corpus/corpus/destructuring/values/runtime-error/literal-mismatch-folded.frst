@@ -1,0 +1,5 @@
+# A literal mismatch the optimizer can see ahead of time still raises at
+# runtime.
+#= {raises: 'expected `1`'}
+def [a, 1] = [0, 2]
+a

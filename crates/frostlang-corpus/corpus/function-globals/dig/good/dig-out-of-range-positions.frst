@@ -1,0 +1,3 @@
+# Positions past either end read as Null, including the extreme Ints.
+#= {result: [null, null, null]}
+[dig([1, 2], 5), dig([1, 2], -3), dig([1], -9223372036854775808)]

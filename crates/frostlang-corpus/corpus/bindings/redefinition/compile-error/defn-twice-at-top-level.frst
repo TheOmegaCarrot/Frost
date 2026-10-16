@@ -1,0 +1,6 @@
+# `defn` is a binding, so defining the same function name twice in one scope is
+# an error rather than an overload or a replacement.
+#= {rejects: ['`f`', 'already bound']}
+defn f() -> 1
+defn f() -> 2
+f()

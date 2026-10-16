@@ -1,0 +1,7 @@
+# The `is_*` type predicates work as `map` operations and `filter`
+# predicates.
+#= {
+#=     result: [[true, false, false], [[1], {}], [1, 'a']],
+#=     inputs: {xs: ['a', 1, null], ys: [[1], 1, {}], zs: [1, null, 'a']},
+#= }
+[map xs with is_string, filter ys with is_structured, filter zs with is_nonnull]

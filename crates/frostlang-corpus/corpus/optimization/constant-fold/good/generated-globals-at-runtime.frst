@@ -1,0 +1,26 @@
+# The calls of generated-globals, over arguments only known at runtime, give
+# exactly the values the folder computes.
+#= {
+#=     result: [7, 3, -7, 12, 7, 42, [1, 2], 5, false, 'deep', null, 5],
+#=     inputs: {
+#=         ten: 10,
+#=         subtract: fn a, b -> a - b,
+#=         nested: {a: [10, {b: 'deep'}]},
+#=         holey: {a: null},
+#=         five: 5,
+#=     },
+#= }
+[
+    curry(subtract, ten)(3),
+    bcurry(subtract, ten)(13),
+    rev_args(subtract)(ten, 3),
+    compose(fn x -> x + 1, fn x -> x * 2)(five),
+    const(7)(1, ten),
+    spread(fn a, b -> a * b)([6, 7 + five - 5]),
+    collect(1, ten - 8),
+    index('k')({k: five}),
+    inv(is_int)(five),
+    dig(nested, 'a', 1, 'b'),
+    dig(holey, 'a', 'b'),
+    tap(five, fn x -> x * 100),
+]

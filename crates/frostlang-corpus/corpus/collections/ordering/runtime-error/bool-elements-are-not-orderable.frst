@@ -1,0 +1,3 @@
+# Bools have no order, so Arrays that must compare Bool elements raise.
+#= {raises: 'Type Bool is not orderable'}
+[false] < [true]

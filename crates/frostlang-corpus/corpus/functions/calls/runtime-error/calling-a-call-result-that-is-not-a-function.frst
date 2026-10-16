@@ -1,0 +1,5 @@
+# Chained calls call each result in turn; a result that is not a function
+# raises at the next call.
+#= {raises: ['non-function', 'Int']}
+def f = fn -> 1
+f()()

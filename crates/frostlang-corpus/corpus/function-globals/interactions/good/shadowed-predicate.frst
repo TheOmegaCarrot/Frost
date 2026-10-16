@@ -1,0 +1,5 @@
+# A script's own binding named like a predicate shadows the global: calls by
+# that name reach the script's function, not the predicate.
+#= {result: ['shadowed', 'shadowed']}
+def is_int = fn v -> 'shadowed'
+[is_int(1), is_int('a')]

@@ -1,0 +1,5 @@
+# Each arm separates its pattern from its result with `=>`.
+#= {rejects: ['expected `=>`', 'found `2`']}
+match 1 {
+    1 2,
+}

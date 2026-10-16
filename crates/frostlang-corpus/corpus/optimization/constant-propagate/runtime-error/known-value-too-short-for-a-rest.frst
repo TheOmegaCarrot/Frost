@@ -1,0 +1,5 @@
+# A def with a rest binding whose known value is too short raises when the
+# program reaches it.
+#= {raises: 'at least 2 elements'}
+def [a, b, ...rest] = [1]
+a

@@ -1,0 +1,7 @@
+# The conditions of truthiness-of-constant-conditions, only known at runtime,
+# pick the same branches.
+#= {
+#=     result: ['t', 't', 't', 't', 't', 't', 'f', 'f'],
+#=     inputs: {conditions: [0, 0.0, '', x'', [], {}, null, false]},
+#= }
+map conditions with fn c -> if c: 't' else: 'f'

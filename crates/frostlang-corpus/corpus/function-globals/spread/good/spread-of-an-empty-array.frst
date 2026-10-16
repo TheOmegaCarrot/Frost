@@ -1,0 +1,3 @@
+# An empty Array calls the function with no arguments.
+#= {result: [[], 'none']}
+[spread(collect)([]), spread(fn -> 'none')([])]

@@ -1,0 +1,6 @@
+# An alternative may sit at any depth of a pattern.
+#= {result: [[1, 2], [1, 2], 4], inputs: {flat: [1, 2], wrapped: [1, [2]], m: {k: {a: 4}}}}
+def [a, [b] | b] = flat
+def [c, [d] | d] = wrapped
+def {k: [e] | {a: e}} = m
+[[a, b], [c, d], e]

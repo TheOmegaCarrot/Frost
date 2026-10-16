@@ -1,0 +1,8 @@
+# A parenthesized name may refer to a binding made earlier in the same pattern,
+# requiring two parts to be equal.
+#= {result: ['same', 'different'], inputs: {a: [1, 1], b: [1, 2]}}
+defn pair(v) -> match v {
+    [x, (x)] => 'same',
+    _ => 'different',
+}
+[pair(a), pair(b)]

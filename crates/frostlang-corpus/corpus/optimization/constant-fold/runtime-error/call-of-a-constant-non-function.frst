@@ -1,0 +1,5 @@
+# Calling a constant that is not a function raises when the program reaches
+# the call.
+#= {raises: 'non-function'}
+def n = 5
+n(1)

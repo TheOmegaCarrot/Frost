@@ -1,0 +1,9 @@
+# An exported Map pattern may name keys of every key type with computed-key
+# syntax; each part is exported under the name it binds, not its key.
+#= {result: null, exports: {one: 'i', yes: 'b', half: 'f', raw: 'x'}}
+export def {[1]: one, [true]: yes, [0.5]: half, [x'01']: raw} = {
+    [1]: 'i',
+    [true]: 'b',
+    [0.5]: 'f',
+    [x'01']: 'x',
+}

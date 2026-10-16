@@ -1,0 +1,7 @@
+# A computed key may use a name an earlier entry of the same pattern bound:
+# here the value under `a` names the key to look up next.
+#= {result: [3, 'missing'], inputs: {xs: [{a: 'c', c: 3}, {a: 'z', c: 3}]}}
+transform(xs, fn v -> match v {
+    {a, [a]: b} => b,
+    _ => 'missing',
+})

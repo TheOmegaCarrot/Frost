@@ -1,0 +1,4 @@
+# An Array's length counts its own elements, Null ones included, and not the
+# elements of nested structures.
+#= {result: [3, 2, 1, 3], inputs: {xs: [[1, 2], [3]]}}
+[len([1, 2, 3]), len(xs), len([[]]), len([null, null, null])]

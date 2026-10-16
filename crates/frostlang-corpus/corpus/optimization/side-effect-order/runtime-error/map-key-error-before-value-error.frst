@@ -1,0 +1,4 @@
+# A Map literal evaluates an entry's key before its value, so the key's error
+# raises first.
+#= {raises: 'key raised'}
+{[error('key raised')]: error('value raised')}

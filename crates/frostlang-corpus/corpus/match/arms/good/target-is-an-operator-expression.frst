@@ -1,0 +1,7 @@
+# The target may be any expression, such as an arithmetic one, evaluated before
+# the arms.
+#= {result: 'three', inputs: {a: 1, b: 2}}
+match a + b {
+    2 => 'two',
+    3 => 'three',
+}

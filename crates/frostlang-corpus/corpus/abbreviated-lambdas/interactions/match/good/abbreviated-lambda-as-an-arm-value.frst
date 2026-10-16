@@ -1,0 +1,8 @@
+# A match arm outside any abbreviated lambda may produce one, which can
+# capture the arm's bindings.
+#= {result: [6, 1]}
+defn pick(kind) -> match kind {
+    {scale: k} => $($ * k),
+    _ => $($),
+}
+[pick({scale: 3})(2), pick(null)(1)]

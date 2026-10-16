@@ -1,0 +1,4 @@
+# A function is not a structure: indexing it raises rather than calling it.
+#= {raises: ['index', 'Function']}
+def f = fn -> [1, 2]
+f[0]

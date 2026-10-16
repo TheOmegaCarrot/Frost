@@ -1,0 +1,9 @@
+# A lambda body that shadows a captured name with a value derived from it, then
+# closes over the new binding, captures the new value.
+#= {result: [2, 1]}
+def x = 1
+def f = fn -> {
+    def x = x + 1
+    fn -> x
+}
+[f()(), x]

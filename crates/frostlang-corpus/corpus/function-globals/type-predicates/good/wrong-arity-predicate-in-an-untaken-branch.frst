@@ -1,0 +1,4 @@
+# A predicate called with the wrong number of arguments raises only if the
+# call runs; the compiler does not reject or raise it early.
+#= {result: 'fine'}
+if false: is_int(1, 2) else: 'fine'

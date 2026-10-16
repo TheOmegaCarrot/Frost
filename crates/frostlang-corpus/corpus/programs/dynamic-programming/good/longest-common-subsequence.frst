@@ -1,0 +1,28 @@
+# The length of a longest common subsequence, by dynamic programming with no
+# memo table: an outer fold produces each row of the table from the previous
+# one, and an inner fold builds that row cell by cell, reading the row so far
+# by index. An empty side gives 0 without the inner fold ever running.
+#= {
+#=     result: [4, 2, 0, 0, 3],
+#=     inputs: {
+#=         pairs: [
+#=             [['A', 'B', 'C', 'B', 'D', 'A', 'B'], ['B', 'D', 'C', 'A', 'B', 'A']],
+#=             [['日', '本', '語'], ['本', '語', '日']],
+#=             [[], ['a']],
+#=             [['a'], []],
+#=             [['a', 'b', 'c'], ['a', 'b', 'c']],
+#=         ],
+#=     },
+#= }
+defn larger(a, b) -> if a > b: a else: b
+
+defn lcs(xs, ys) -> {
+    def zero_row = fold(ys, [0], fn row, y -> row + [0])
+    def last = fold(xs, zero_row, fn prev, x -> fold(ys, [0], fn row, y -> {
+        def j = len(row) - 1
+        row + [if x == y: prev[j] + 1 else: larger(prev[j + 1], row[j])]
+    }))
+    last[-1]
+}
+
+transform(pairs, fn pair -> lcs(pair[0], pair[1]))

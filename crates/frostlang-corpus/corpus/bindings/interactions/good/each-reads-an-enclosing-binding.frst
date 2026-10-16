@@ -1,0 +1,6 @@
+# `each` calls its lambda for every element, and the lambda reads an enclosing
+# binding each time.
+#= {result: null, printed: ['item-1', 'item-2']}
+def prefix = 'item-'
+each([1, 2], fn x -> print(prefix + to_string(x)))
+null

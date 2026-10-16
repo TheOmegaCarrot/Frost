@@ -1,0 +1,3 @@
+# A runtime Float index into a runtime Array raises.
+#= {raises: ['Cannot index Array', 'Float'], inputs: {xs: [10, 20, 30], i: 0.0}}
+xs[i]

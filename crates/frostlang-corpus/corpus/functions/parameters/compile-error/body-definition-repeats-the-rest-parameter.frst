@@ -1,0 +1,6 @@
+# A `def` in the body may not rebind the rest parameter's name.
+#= {rejects: ['`rest`', 'already bound']}
+def f = fn(...rest) -> {
+    def rest = 2
+    rest
+}

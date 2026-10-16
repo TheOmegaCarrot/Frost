@@ -1,0 +1,7 @@
+# A lambda's body has its own tail position. A call in tail position of a
+# lambda invoked as an operand replaces only the lambda's frame: the frame of
+# the function that invoked it stays, one per level.
+#= {result: 495}
+defn down(n) -> if n == 0: error('bottom') else: (fn -> down(n - 1))() + 0
+defn frames(n) -> len(try_call(down, [n]).trace)
+frames(500) - frames(5)

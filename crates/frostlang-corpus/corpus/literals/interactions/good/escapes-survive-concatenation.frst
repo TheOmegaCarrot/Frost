@@ -1,0 +1,3 @@
+# Decoded escapes are ordinary characters to concatenation, folded or at runtime.
+#= {result: [true, true], inputs: {tail: "b\n"}}
+['a\t' + "b\n" == 'a\u{9}b\u{a}', 'a\t' + tail == 'a\u{9}b\u{a}']

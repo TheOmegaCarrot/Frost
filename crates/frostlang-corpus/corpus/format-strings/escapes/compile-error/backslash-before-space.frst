@@ -1,0 +1,4 @@
+# A backslash before a space is no escape. The error names the space by its
+# code point, since a space in backticks would be invisible.
+#= {rejects: ['invalid escape sequence', 'U+0020']}
+def s = $'a\ b'

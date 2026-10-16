@@ -1,0 +1,4 @@
+# A constant `map` whose operation fails is not folded into anything: the
+# error surfaces when the script runs.
+#= {raises: 'division by zero'}
+map [1, 0] with fn x -> 1 / x

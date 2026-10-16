@@ -1,0 +1,13 @@
+# Merging into a Map keeps keys of different types distinct even when they
+# look alike: Int 1, Float 1.0, and true are three keys, as are the String
+# 's' and the Bytes x'73'. The base Map is unchanged by the merge.
+#= {
+#=     result: [
+#=         {[1]: 'int', s: 'string'},
+#=         {[1]: 'int', [1.0]: 'float', [true]: 'bool', s: 'string', [x'73']: 'bytes'},
+#=     ],
+#=     inputs: {i: 1},
+#= }
+def base = {[i]: 'int', s: 'string'}
+def merged = base + {[1.0]: 'float', [true]: 'bool', [x'73']: 'bytes'}
+[base, merged]

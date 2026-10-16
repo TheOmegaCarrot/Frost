@@ -1,0 +1,5 @@
+# A lambda nested inside a named lambda captures the self-name and can
+# recurse through it.
+#= {result: 0}
+def f = fn outer(k) -> fn -> if k <= 0: 0 else: outer(k - 1)()
+f(3)()

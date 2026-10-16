@@ -1,0 +1,4 @@
+# A function is truthy, even one that returns `false` or Null.
+#= {result: [false, 2, 'yes', 'f']}
+def f = fn -> false
+[not f, (fn -> null) and 2, if f: 'yes' else: 'no', f and 'f']

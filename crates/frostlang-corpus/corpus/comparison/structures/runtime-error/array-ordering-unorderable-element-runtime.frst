@@ -1,0 +1,4 @@
+# Array ordering raises at the first pair of elements that cannot be ordered,
+# with the Arrays known only at runtime.
+#= {raises: ['incompatible types', 'String', 'Int'], inputs: {a: [1, 'x'], b: [1, 2]}}
+a > b

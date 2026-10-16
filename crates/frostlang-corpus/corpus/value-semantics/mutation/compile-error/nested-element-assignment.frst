@@ -1,0 +1,4 @@
+# An element of a nested Array cannot be assigned either.
+#= {rejects: ['`=`', 'immutable']}
+def xs = [[1]]
+xs[0][0] = 2

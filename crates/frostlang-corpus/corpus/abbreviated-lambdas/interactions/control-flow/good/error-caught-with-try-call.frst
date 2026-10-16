@@ -1,0 +1,7 @@
+# `try_call` catches an error an abbreviated lambda raises, and its result
+# when it does not.
+#= {result: [false, true, 3]}
+def check = $(if $ > 5: error('too big') else: $)
+def bad = try_call(check, [7])
+def good = try_call(check, [3])
+[bad.ok, good.ok, good.value]

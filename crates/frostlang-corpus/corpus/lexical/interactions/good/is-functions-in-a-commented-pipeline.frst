@@ -1,0 +1,13 @@
+# `select` with the `is_*` family across continuation lines, each step
+# commented.
+#= {result: [['a'], [1, 2.5], [null]], inputs: {xs: ['a', 1, null, 2.5]}}
+[
+    xs
+        # Strings
+        @ select(is_string),
+    xs
+        # numbers of either kind
+        @ select(is_numeric),
+    xs
+        @ select(is_null), # Null alone
+]

@@ -1,0 +1,11 @@
+# With operands only known at runtime, `error` in an operand that `and` or
+# `or` does evaluate raises.
+#= {
+#=     result: ['and', 'or', 'null or'],
+#=     inputs: {yes: true, no: false, nothing: null},
+#= }
+[
+    try_call(fn -> yes and error('and')).error,
+    try_call(fn -> no or error('or')).error,
+    try_call(fn -> nothing or error('null or')).error,
+]

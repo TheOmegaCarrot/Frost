@@ -1,0 +1,7 @@
+# A `do` block's bindings end with the block.
+#= {rejects: ['`z`', 'not defined']}
+def y = do {
+    def z = 1
+    z
+}
+z

@@ -1,0 +1,3 @@
+# Frost has no `while` loop; the help points to the iteration forms.
+#= {rejects: 'Frost has no `while` loop'}
+while true: print(1)

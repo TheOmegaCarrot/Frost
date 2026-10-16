@@ -1,0 +1,5 @@
+# A format String in a closure interpolates a value captured from the enclosing
+# function alongside its own parameter.
+#= {result: ['a-b', 'x-b']}
+def prefixer = fn p -> fn s -> $'${p}-${s}'
+[prefixer('a')('b'), prefixer('x')('b')]

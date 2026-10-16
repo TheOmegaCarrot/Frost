@@ -1,0 +1,7 @@
+# Two top-level functions cannot name each other, since a name is bound only
+# after its definition. They can recurse mutually by passing each other as an
+# argument; every call here is a tail call, so the depth is no concern.
+#= {result: ['pong', 'ping', 'ping']}
+defn ping(n, other) -> if n == 0: 'ping' else: other(n - 1, ping)
+defn pong(n, other) -> if n == 0: 'pong' else: other(n - 1, pong)
+[ping(100001, pong), ping(100000, pong), pong(1, ping)]

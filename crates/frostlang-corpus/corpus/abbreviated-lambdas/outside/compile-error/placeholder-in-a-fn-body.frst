@@ -1,0 +1,4 @@
+# A `fn` does not provide placeholders: `$` in a `fn` that is not inside an
+# abbreviated lambda is a syntax error, not its first parameter.
+#= {rejects: ['found `$`', 'only inside `$( ... )`']}
+defn f(x) -> $

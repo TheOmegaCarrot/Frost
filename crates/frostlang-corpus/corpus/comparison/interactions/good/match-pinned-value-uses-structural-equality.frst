@@ -1,0 +1,21 @@
+# A parenthesized pattern compares the value with `==`: a pinned Array or Map
+# matches an equal one whatever its entry order, but a pinned Map needs every
+# entry to match, unlike a Map pattern, which only requires its own keys.
+#= {
+#=     result: ['equal', 'equal', 'not equal', 'has a', 'not equal'],
+#=     inputs: {pair: [1, 2], small: {a: 1}, big: {b: 2, a: 1}},
+#= }
+defn compare_with(v, expected) -> match v {
+    (expected) => 'equal',
+    _ => 'not equal',
+}
+[
+    compare_with([1, 2], pair),
+    compare_with({a: 1, b: 2}, big),
+    compare_with(big, small),
+    match big {
+        {a: 1} => 'has a',
+        _ => 'no a',
+    },
+    compare_with([1.0, 2], pair),
+]

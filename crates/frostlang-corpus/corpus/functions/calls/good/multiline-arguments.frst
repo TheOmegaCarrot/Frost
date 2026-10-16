@@ -1,0 +1,8 @@
+# An argument list may span lines.
+#= {result: [1, 'two', [3]]}
+def triple = fn a, b, c -> [a, b, c]
+triple(
+    1,
+    'two',
+    [3],
+)

@@ -1,0 +1,4 @@
+# `_ is Type` checks a value but binds no name, so it cannot be a whole def.
+#= {rejects: 'binds no name', inputs: {v: 1}}
+def _ is Int = v
+0

@@ -1,0 +1,3 @@
+# A Unicode escape's body is hex digits only: a leading `+` is not allowed.
+#= {rejects: R'(invalid `\u` escape `\u{+41}`)'}
+'\u{+41}'

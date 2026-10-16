@@ -1,0 +1,11 @@
+# A falsy left operand leaves `or` undecided, so the right operand runs and its
+# value is the result: here, the Null that `print` returns.
+#= {
+#=     result: [null, null],
+#=     printed: ['literal left', 'runtime left'],
+#=     inputs: {f: false},
+#= }
+[
+    null or print('literal left'),
+    f or print('runtime left'),
+]

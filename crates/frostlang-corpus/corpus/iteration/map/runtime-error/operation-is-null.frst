@@ -1,0 +1,4 @@
+# A Null operation is a type error, even when the structure is empty and the
+# operation would never be called.
+#= {raises: ['Function', 'argument 2', 'Null'], inputs: {xs: []}}
+map xs with null

@@ -1,0 +1,8 @@
+# A `defn` inside a `do` block recurses, and its name is local to the block.
+#= {result: [120, 'outer']}
+def fact = 'outer'
+def r = do {
+    defn fact(n) -> if n <= 1: 1 else: n * fact(n - 1)
+    fact(5)
+}
+[r, fact]

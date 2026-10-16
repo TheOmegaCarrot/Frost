@@ -1,0 +1,10 @@
+# In a Map pattern with an `as` binding, extending the whole-Map binding and
+# an entry binding leaves each of them, and the scrutinee, unchanged.
+#= {
+#=     result: [{items: [1], extra: 1}, [1, 2], {items: [1]}, [1]],
+#=     inputs: {n: 1},
+#= }
+def m = {items: [n]}
+match m {
+    {items} as whole => [whole + {extra: 1}, items + [2], whole, items],
+}

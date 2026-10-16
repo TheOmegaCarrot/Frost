@@ -1,0 +1,7 @@
+# Int arithmetic in an interpolation wraps in two's complement, as it does
+# anywhere, and the wrapped value is what interpolates.
+#= {
+#=     result: ['-9223372036854775808', '9223372036854775807'],
+#=     inputs: {max: 9223372036854775807, min: -9223372036854775808},
+#= }
+[$'${max + 1}', $'${min - 1}']

@@ -1,0 +1,7 @@
+# Alternatives of type constraints accept a union of types.
+#= {result: ['a', 3]}
+defn int_or_string(v) -> {
+    def x is Int | x is String = v
+    x
+}
+[int_or_string('a'), int_or_string(3)]

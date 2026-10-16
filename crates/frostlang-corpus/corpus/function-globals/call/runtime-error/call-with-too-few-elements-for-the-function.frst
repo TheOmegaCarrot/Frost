@@ -1,0 +1,5 @@
+# The spread elements are checked against the callee's arity, which names
+# the callee rather than `call`.
+#= {raises: ['pair', 'expects 2', 'called with 1']}
+defn pair(a, b) -> [a, b]
+call(pair, [1])

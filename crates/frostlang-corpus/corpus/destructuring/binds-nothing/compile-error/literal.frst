@@ -1,0 +1,4 @@
+# A literal pattern binds no name.
+#= {rejects: 'binds no name', inputs: {v: 1}}
+def 1 = v
+0

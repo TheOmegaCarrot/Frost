@@ -1,0 +1,9 @@
+# `foreach` calls the operation once per element, first to last, for its
+# effects.
+#= {
+#=     result: null,
+#=     printed: ['1', '2', '3'],
+#=     inputs: {xs: [1, 2, 3]},
+#= }
+foreach xs with fn x -> print(x)
+null

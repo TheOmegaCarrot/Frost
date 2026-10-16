@@ -1,0 +1,4 @@
+# An export may hold the result of calling a private recursive function.
+#= {result: null, exports: {fact5: 120}}
+defn fact(n) -> if n <= 1: 1 else: n * fact(n - 1)
+export def fact5 = fact(5)

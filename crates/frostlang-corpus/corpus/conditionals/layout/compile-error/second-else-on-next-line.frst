@@ -1,0 +1,5 @@
+# An `if` takes at most one `else`; another on the next line continues
+# nothing.
+#= {rejects: ['found `else`', 'written `if a: b else: c`']}
+if true: 1 else: 2
+else: 3

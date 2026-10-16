@@ -1,0 +1,8 @@
+# Even inside an abbreviated lambda, where `$` is the first argument, a `def`
+# cannot bind a placeholder: placeholders are only ever read.
+#= {rejects: ['`$`', 'expected a pattern']}
+def f = $(do {
+    def $ = 1
+    $
+})
+1

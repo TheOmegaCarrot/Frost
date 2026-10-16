@@ -1,0 +1,7 @@
+# Arrays order lexicographically: by the first differing element, and when
+# one is a prefix of the other, the shorter first.
+#= {
+#=     result: [true, true, true, true, false, true],
+#=     inputs: {a: [1, 2], b: [1, 3]},
+#= }
+[a < b, [] < [1], [1] < [1, 0], [2] > [1, 5], a < a, a <= a]

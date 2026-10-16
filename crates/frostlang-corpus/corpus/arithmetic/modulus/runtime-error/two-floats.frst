@@ -1,0 +1,3 @@
+# `%` on two Floats is a type error, rather than a Float remainder.
+#= {raises: 'Float % Float'}
+7.5 % 2.5

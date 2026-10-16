@@ -1,0 +1,5 @@
+# An `if` statement whose value is dropped and whose branches are pure still
+# evaluates its condition, so the condition's side effect happens.
+#= {result: 5, printed: ['tested']}
+if print('tested'): 1 else: 2
+5

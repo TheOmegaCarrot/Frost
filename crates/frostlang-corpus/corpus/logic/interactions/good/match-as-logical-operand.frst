@@ -1,0 +1,21 @@
+# A `match` may be either operand of a logical expression, and an arm body may
+# be a logical expression.
+#= {
+#=     result: ['fallback', 'one', 'zero', 'default'],
+#=     inputs: {zero: 0, one: 1, n: null},
+#= }
+defn name(x) -> match x {
+    1 => 'one',
+    _ => null,
+}
+[
+    name(zero) or 'fallback',
+    name(one) or 'fallback',
+    n or match zero {
+        0 => 'zero',
+        _ => 'other',
+    },
+    match n {
+        v => v or 'default',
+    },
+]

@@ -1,0 +1,7 @@
+# `try_call` catches an error raised several calls deep, including an arity
+# error or a call of a non-function, and the run continues.
+#= {result: [false, false, false, 'continued']}
+def deep = fn -> (fn -> (fn -> error('deep'))())()
+def bad_arity = fn -> (fn x -> x)()
+def not_callable = fn -> (fn -> 5)()()
+[try_call(deep).ok, try_call(bad_arity).ok, try_call(not_callable).ok, 'continued']

@@ -1,0 +1,9 @@
+# A soft index of a missing key yields Null, which `==` tells apart from a
+# key present with a falsy value.
+#= {result: [true, false, true, false], inputs: {m: {present: false}, xs: [0]}}
+[
+    m['absent'] == null,
+    m['present'] == null,
+    xs[5] == null,
+    xs[0] == null,
+]

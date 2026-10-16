@@ -1,0 +1,5 @@
+# A `...rest` must be the last thing in an Array pattern.
+#= {rejects: 'comes last'}
+match [1, 2] {
+    [...front, last] => last,
+}

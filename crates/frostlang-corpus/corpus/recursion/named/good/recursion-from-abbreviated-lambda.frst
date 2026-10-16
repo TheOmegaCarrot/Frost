@@ -1,0 +1,5 @@
+# An abbreviated lambda has no self-name, but one inside a named lambda can
+# call the enclosing function.
+#= {result: 'done'}
+defn f(n) -> if n == 0: 'done' else: $(f($))(n - 1)
+f(5)

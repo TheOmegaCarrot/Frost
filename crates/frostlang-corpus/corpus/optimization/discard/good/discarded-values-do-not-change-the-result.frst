@@ -1,0 +1,19 @@
+# Statements whose values are discarded, of every kind that takes no
+# computation, leave the result unchanged: a binding, literals of each type, a
+# function, and an impure global's value loaded without being called, which
+# prints nothing.
+#= {result: 2}
+def x = 1
+x
+null
+true
+3
+2.5
+'text'
+x'00'
+[]
+{}
+fn -> 0
+print
+len
+x + 1

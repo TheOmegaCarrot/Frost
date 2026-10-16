@@ -1,0 +1,3 @@
+# A Bytes literal holds only hex digits; the first other character is named.
+#= {rejects: ['invalid character `g`', 'Bytes literal']}
+x'0g'

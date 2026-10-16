@@ -1,0 +1,8 @@
+# A line starting with `@` continues the expression on the line before, since
+# `@` cannot begin a statement.
+#= {result: 12, inputs: {n: 5}}
+defn inc(x) -> x + 1
+defn double(x) -> x * 2
+n
+    @ inc()
+    @ double()

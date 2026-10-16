@@ -1,0 +1,6 @@
+# A body may start on the line after the arrow; it still ends at its own
+# newline, so the next line is a separate statement.
+#= {result: 11}
+def f = fn x ->
+    x + 1
+f(10)

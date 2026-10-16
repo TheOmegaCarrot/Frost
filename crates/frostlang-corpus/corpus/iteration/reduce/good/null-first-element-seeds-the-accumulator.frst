@@ -1,0 +1,5 @@
+# Without `init:`, a Null first element is still the seed: it is passed to the
+# operation as the accumulator, not skipped.
+#= {result: [[null, 1], null], inputs: {xs: [null, 1], lone: [null]}}
+def pair = fn acc, x -> [acc, x]
+[reduce xs with pair, reduce lone with pair]

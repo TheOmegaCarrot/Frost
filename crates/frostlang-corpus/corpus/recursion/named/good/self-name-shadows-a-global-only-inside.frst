@@ -1,0 +1,5 @@
+# A named lambda's self-name may be a global's name: inside the lambda it is
+# the lambda, and outside the global is untouched.
+#= {result: ['mine', 'Int']}
+def g = fn type(n) -> if n == 0: 'mine' else: type(n - 1)
+[g(3), type(1)]

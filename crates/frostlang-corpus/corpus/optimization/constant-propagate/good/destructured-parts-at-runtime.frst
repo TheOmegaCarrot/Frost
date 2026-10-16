@@ -1,0 +1,18 @@
+# The patterns of destructured-parts, over values only known at runtime, take
+# the same parts.
+#= {
+#=     result: [42, [2, 3], 'c', 3, [1, {x: 1, y: [2]}], []],
+#=     inputs: {
+#=         pair: [6, {b: 7}],
+#=         three: [1, 2, 3],
+#=         keyed: {k: 'c', c: 3},
+#=         point: {x: 1, y: [2]},
+#=         single: [1],
+#=     },
+#= }
+def [a, {b}] = pair
+def [_, ...rest] = three
+def {k, [k]: v} = keyed
+def {x, y: [_]} as whole = point
+def [_, ...none] = single
+[a * b, rest, k, v, [x, whole], none]

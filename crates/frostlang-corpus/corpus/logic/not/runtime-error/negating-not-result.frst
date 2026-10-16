@@ -1,0 +1,3 @@
+# `-not 1` negates the Bool that `not` yields, and a Bool cannot be negated.
+#= {raises: ['negate', 'Bool']}
+-not 1

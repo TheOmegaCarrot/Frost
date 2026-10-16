@@ -1,0 +1,5 @@
+# A `try_call` catches only errors inside its call: an error raised after it
+# returns still ends the program.
+#= {raises: 'uncaught after caught'}
+def outcome = try_call(fn -> error('caught'))
+error('uncaught after ' + outcome.error)

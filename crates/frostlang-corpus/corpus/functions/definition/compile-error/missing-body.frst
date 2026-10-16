@@ -1,0 +1,5 @@
+# A lambda must have a body after its arrow, even when lines follow it.
+#= {rejects: ['expected an expression', 'end of input']}
+def f = fn x ->
+
+# only a comment follows

@@ -1,0 +1,14 @@
+# The orderings of folded-array-ordering, over Arrays only known at runtime,
+# give the same answers.
+#= {
+#=     result: [true, true, true, true, true, true],
+#=     inputs: {one_two: [1, 2], one: [1], empty: [], mixed: [1, 'x'], two: [2], b: ['b']},
+#= }
+[
+    one_two < [1, 3],
+    one < [1, 0],
+    empty < [0],
+    mixed < [2, 3],
+    two > [1, 5],
+    b >= ['a', 'z'],
+]

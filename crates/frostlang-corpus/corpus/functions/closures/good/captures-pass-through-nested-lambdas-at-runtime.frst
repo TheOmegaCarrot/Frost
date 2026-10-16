@@ -1,0 +1,4 @@
+# A runtime value captured at the top passes through several lambdas.
+#= {result: [7, 3, 2], inputs: {g: 7}}
+def outer = fn a -> fn b -> fn -> [g, a, b]
+outer(3)(2)()

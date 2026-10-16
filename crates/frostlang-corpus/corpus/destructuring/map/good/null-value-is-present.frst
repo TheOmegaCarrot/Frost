@@ -1,0 +1,4 @@
+# A key whose value is Null is present, so it matches and binds Null.
+#= {result: [null, null], inputs: {m: {a: null, b: [null]}}}
+def {a, b: [c]} = m
+[a, c]

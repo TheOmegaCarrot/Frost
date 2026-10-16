@@ -1,0 +1,4 @@
+# A constraint may follow a shorthand key or an explicit key's name.
+#= {result: ['h', 80], inputs: {m: {host: 'h', port: 80}}}
+def {host is String, port: p is Int} = m
+[host, p]

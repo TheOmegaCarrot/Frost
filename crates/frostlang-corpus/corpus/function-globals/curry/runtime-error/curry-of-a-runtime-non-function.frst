@@ -1,0 +1,3 @@
+# The Function check happens at run time on a value the compiler cannot see.
+#= {raises: ['curry', 'Function as argument 1', 'got Map'], inputs: {f: {}}}
+curry(f, 1)

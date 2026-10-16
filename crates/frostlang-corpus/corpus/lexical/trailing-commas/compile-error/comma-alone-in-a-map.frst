@@ -1,0 +1,3 @@
+# `{,}` is not an empty Map; the help shows how one is written.
+#= {rejects: 'an empty Map is written `{}`'}
+{,}

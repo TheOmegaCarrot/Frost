@@ -1,0 +1,5 @@
+# Every String literal form works as a literal part: single and double
+# quotes, raw, and a format String, each compared by its value.
+#= {result: 7, inputs: {xs: [7, 'q', 'q', 'raw\\n', 'q1']}}
+def [a, 'q', "q", R"(raw\n)", $"q${1}"] = xs
+a

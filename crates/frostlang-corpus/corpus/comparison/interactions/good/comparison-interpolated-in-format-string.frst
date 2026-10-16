@@ -1,0 +1,6 @@
+# A comparison interpolated into a format string renders as its Bool.
+#= {result: ['1 < 2.5 is true', '1 == 1.0 is false'], inputs: {i: 1, f: 2.5, g: 1.0}}
+[
+    $'${i} < ${f} is ${i < f}',
+    $'${i} == ${g} is ${i == g}',
+]

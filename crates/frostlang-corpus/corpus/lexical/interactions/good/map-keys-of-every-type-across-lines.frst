@@ -1,0 +1,12 @@
+# A Map literal spanning lines, with computed keys of every key type and a
+# trailing comma, reads back each entry.
+#= {result: [1, 2, 3, 4, 5, 5], inputs: {k: 'name'}}
+def m = {
+    [true]: 1,
+    [7]: 2,
+    [1.5]: 3,
+    [k]: 4,
+    [x'00ff']:
+        5,
+}
+[m[true], m[7], m[1.5], m.name, m[x'00ff'], len(m)]

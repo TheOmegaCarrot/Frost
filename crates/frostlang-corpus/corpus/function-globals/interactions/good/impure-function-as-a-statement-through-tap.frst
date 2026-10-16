@@ -1,0 +1,5 @@
+# A `tap` of `print` whose result is discarded still runs: the statement is
+# not dropped as unused.
+#= {result: 'end', printed: ['tapped']}
+tap('tapped', print)
+'end'

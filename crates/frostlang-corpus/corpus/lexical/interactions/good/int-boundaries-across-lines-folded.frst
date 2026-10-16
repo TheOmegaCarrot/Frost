@@ -1,0 +1,9 @@
+# The same wrapping arithmetic split across lines, with constants the
+# optimizer can fold: folding must wrap as the runtime does.
+#= {result: [-9223372036854775808, 9223372036854775807]}
+[
+    (9223372036854775807
+        + 1),
+    (-9223372036854775808
+        - 1),
+]

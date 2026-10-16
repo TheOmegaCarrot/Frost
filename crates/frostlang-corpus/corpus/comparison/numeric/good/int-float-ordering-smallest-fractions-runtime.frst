@@ -1,0 +1,16 @@
+# The smallest Float fractions break ties with Ints known only at runtime.
+#= {
+#=     result: [true, true, true, true],
+#=     inputs: {
+#=         zero: 0,
+#=         tiny: 5e-324,
+#=         near: 2251799813685248,
+#=         near_and_a_half: 2251799813685248.5,
+#=     },
+#= }
+[
+    zero < tiny,
+    zero > -tiny,
+    near < near_and_a_half,
+    near + 1 > near_and_a_half,
+]

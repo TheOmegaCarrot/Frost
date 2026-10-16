@@ -1,0 +1,5 @@
+# The threaded value is an argument like any other: one written argument to
+# a one-parameter function makes two, which is one too many.
+#= {raises: ['expects 1', 'called with 2'], inputs: {n: 5}}
+defn inc(x) -> x + 1
+n @ inc(1)

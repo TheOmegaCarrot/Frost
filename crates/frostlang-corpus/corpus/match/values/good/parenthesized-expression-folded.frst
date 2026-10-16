@@ -1,0 +1,7 @@
+# A constant parenthesized expression compares by value, whether or not the
+# optimizer computes it ahead of time.
+#= {result: ['four', 'ab']}
+[
+    match 4 { (2 + 3) => 'five', (2 + 2) => 'four', _ => 'other' },
+    match 'ab' { ('a' + 'b') => 'ab', _ => 'other' },
+]

@@ -1,0 +1,6 @@
+# An abbreviated lambda reads names bound around it, beside its
+# placeholders.
+#= {result: 6}
+def k = 3
+def scale = $($ * k)
+scale(2)

@@ -1,0 +1,8 @@
+# A `defn` named like a global recurses to itself, not to the global it
+# shadows, on an Array known only at runtime.
+#= {result: 103, inputs: {xs: [1, 2, 3]}}
+defn len(ys) -> match ys {
+    [] => 100,
+    [_, ...rest] => 1 + len(rest),
+}
+len(xs)

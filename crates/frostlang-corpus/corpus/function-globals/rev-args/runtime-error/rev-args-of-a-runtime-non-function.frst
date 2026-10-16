@@ -1,0 +1,3 @@
+# The Function check happens at run time on a value the compiler cannot see.
+#= {raises: ['rev_args', 'Function as argument 1', 'got Bytes'], inputs: {f: x'00'}}
+rev_args(f)

@@ -1,0 +1,3 @@
+# The function `index` returns takes exactly one structure.
+#= {raises: ['index_fn', 'expects 1', 'called with 0']}
+index('a')()

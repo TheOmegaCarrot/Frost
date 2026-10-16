@@ -1,0 +1,12 @@
+# The iteration forms and their global counterparts fold over a constant
+# structure and a pure operation to what they compute at runtime.
+#= {result: [[2, 4, 6], [2, 3], 6, 16, [20, 40], [3], 6]}
+[
+    map [1, 2, 3] with $($ * 2),
+    filter [1, 2, 3] with fn x -> x > 1,
+    reduce [1, 2, 3] with fn acc, x -> acc + x,
+    reduce [1, 2, 3] init: 10 with fn acc, x -> acc + x,
+    transform([10, 20], fn x -> x * 2),
+    select([1, 2, 3], fn x -> x > 2),
+    fold([1, 2, 3], 0, fn acc, x -> acc + x),
+]

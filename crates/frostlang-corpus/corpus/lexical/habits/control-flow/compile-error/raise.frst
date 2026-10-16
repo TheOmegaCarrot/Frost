@@ -1,0 +1,3 @@
+# Frost has no `raise`; `error(value)` raises an error.
+#= {rejects: 'no `raise`'}
+raise ValueError('x')

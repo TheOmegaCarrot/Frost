@@ -1,0 +1,8 @@
+# Braces after a branch's colon start a Map even when spread over lines like
+# a block; an expression inside them is not a Map entry.
+#= {rejects: '`{` starts a Map here'}
+def c = true
+def y = 1
+if c: {
+    y + 1
+}

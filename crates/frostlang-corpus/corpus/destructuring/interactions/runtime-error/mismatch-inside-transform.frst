@@ -1,0 +1,6 @@
+# A mismatch in a lambda run by `transform` raises out of the whole call.
+#= {raises: 'exactly 2 elements', inputs: {pairs: [[1, 2], [3]]}}
+transform(pairs, fn pair -> {
+    def [a, b] = pair
+    a + b
+})

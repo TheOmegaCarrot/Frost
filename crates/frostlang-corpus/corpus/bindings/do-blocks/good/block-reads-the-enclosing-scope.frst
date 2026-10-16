@@ -1,0 +1,7 @@
+# A `do` block reads the bindings of the scopes enclosing it.
+#= {result: 10, inputs: {n: 4}}
+def offset = 1
+do {
+    def y = n + offset
+    y * 2
+}

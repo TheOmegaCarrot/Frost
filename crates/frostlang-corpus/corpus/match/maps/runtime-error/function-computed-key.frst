@@ -1,0 +1,6 @@
+# A Function is not a valid Map key; looking one up in a Map raises.
+#= {raises: 'not a valid Map key', inputs: {v: {a: 1}}}
+match v {
+    {[len]: x} => x,
+    _ => 'fallback',
+}

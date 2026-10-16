@@ -1,0 +1,5 @@
+# An export taking a global's name may call that global in its own value: the
+# name means the export only after its `def`.
+#= {result: 2, exports: {len: 2}}
+export def len = len([1, 2])
+len

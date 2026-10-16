@@ -1,0 +1,7 @@
+# A lone name in braces after the arrow is a shorthand Map even when it sits
+# on its own line.
+#= {result: {a: 'x'}}
+def wrap = fn a -> {
+    a
+}
+wrap('x')

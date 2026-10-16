@@ -1,0 +1,12 @@
+# A left operand the optimizer can compute ahead of time, and that is truthy,
+# leaves `and` to its right operand, which still runs exactly once.
+#= {
+#=     result: [null, null, null, null],
+#=     printed: ['right of []', 'right of {}', 'right of a comparison', 'right of a call'],
+#= }
+[
+    [] and print('right of []'),
+    {} and print('right of {}'),
+    (1 + 1 == 2) and print('right of a comparison'),
+    len('') and print('right of a call'),
+]

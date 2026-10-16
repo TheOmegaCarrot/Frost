@@ -1,0 +1,7 @@
+# A constant parenthesized arithmetic value wraps on overflow when the
+# optimizer computes it ahead of time, too.
+#= {result: 'wrapped'}
+match -9223372036854775808 {
+    (9223372036854775807 + 1) => 'wrapped',
+    _ => 'not wrapped',
+}

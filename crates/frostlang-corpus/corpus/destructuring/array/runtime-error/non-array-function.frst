@@ -1,0 +1,4 @@
+# A Function is not an Array.
+#= {raises: 'expected an Array'}
+def [a] = fn -> [1]
+a

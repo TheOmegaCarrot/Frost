@@ -1,0 +1,6 @@
+# An interpolation is single-line, like its format String, so it cannot hold a
+# multiline String.
+#= {rejects: 'unclosed interpolation'}
+def s = $'${'''
+    text
+    '''}'

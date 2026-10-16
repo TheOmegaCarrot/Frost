@@ -1,0 +1,3 @@
+# A Bytes literal takes no escapes: a backslash is not a hex digit.
+#= {rejects: [R'(invalid character `\`)', 'Bytes literal']}
+x'\x00'

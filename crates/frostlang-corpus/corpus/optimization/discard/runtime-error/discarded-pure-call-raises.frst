@@ -1,0 +1,5 @@
+# A discarded call of a pure global with a constant argument of the wrong type
+# still raises: a pure call can fail.
+#= {raises: 'function len requires'}
+len(5)
+'unreached'

@@ -1,0 +1,8 @@
+# A `match` may choose a callee; if it yields a non-function, the call
+# raises.
+#= {raises: ['non-function', 'String'], inputs: {k: 2}}
+def pick = match k {
+    1 => fn -> 'one',
+    _ => 'not a function',
+}
+pick()

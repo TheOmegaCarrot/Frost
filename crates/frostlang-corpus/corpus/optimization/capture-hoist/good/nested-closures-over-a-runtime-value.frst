@@ -1,0 +1,6 @@
+# The nested functions of nested-closures-over-a-known-value, capturing a value
+# only known at runtime, compute the same results.
+#= {result: [13, 13], inputs: {ten: 10, one: 1, two: 2}}
+def n = ten
+def outer = fn x -> fn y -> x + y + n
+[outer(one)(two), outer(two)(one)]

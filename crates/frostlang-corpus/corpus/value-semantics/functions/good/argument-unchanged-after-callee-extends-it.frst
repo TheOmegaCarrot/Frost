@@ -1,0 +1,7 @@
+# A function that derives a value from its parameter leaves the caller's
+# argument unchanged.
+#= {result: [[1, 2], [1]], inputs: {n: 1}}
+defn push(xs, x) -> xs + [x]
+def base = [n]
+def grown = push(base, 2)
+[grown, base]

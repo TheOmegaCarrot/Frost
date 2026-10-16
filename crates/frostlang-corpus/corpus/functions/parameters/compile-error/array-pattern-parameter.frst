@@ -1,0 +1,4 @@
+# A parameter is a name or `_`, not a pattern: an Array pattern in the
+# parameter list is rejected (destructure with `def` in the body instead).
+#= {rejects: ['expected parameters or `->`', '`[`']}
+def f = fn [a, b] -> a

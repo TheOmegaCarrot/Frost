@@ -1,0 +1,4 @@
+# An exported function's body is compiled like any other, so an unbound
+# name in it is rejected even though nothing calls it.
+#= {rejects: ['`missing`', 'not defined']}
+export defn f() -> missing

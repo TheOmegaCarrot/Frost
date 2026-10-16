@@ -1,0 +1,4 @@
+# An interpolation whose `}` is missing, with the format String's quote later on
+# the line inside a nested String, is an unclosed interpolation.
+#= {rejects: 'unclosed interpolation'}
+def s = $'${"a" + '

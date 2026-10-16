@@ -1,0 +1,4 @@
+# In a format String's text, `$(`, `$1`, `$$`, and `$'` are literal text: only
+# `${` interpolates. Subtle: each is meaningful syntax outside a String.
+#= {result: "$(x) $1 $$ $'"}
+$"$(x) $1 $$ $'"

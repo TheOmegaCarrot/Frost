@@ -1,0 +1,6 @@
+# A recursive function also captures names from its enclosing scope, and reads
+# them at every level.
+#= {result: [42, 42]}
+def base = 42
+defn f(n) -> if n <= 0: base else: f(n - 1)
+[f(0), f(5)]

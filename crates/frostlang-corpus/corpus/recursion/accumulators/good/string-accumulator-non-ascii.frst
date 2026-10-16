@@ -1,0 +1,10 @@
+# A String accumulator joins non-ASCII pieces intact; its length counts
+# characters, not bytes.
+#= {result: ['', 'é-ü-日本-🦀', 8]}
+defn join(parts, acc) -> match parts {
+    [] => acc,
+    [part] => acc + part,
+    [part, ...rest] => join(rest, acc + part + '-'),
+}
+def joined = join(['é', 'ü', '日本', '🦀'], '')
+[join([], ''), joined, len(joined)]

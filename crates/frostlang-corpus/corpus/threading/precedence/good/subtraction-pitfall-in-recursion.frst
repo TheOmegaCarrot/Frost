@@ -1,0 +1,7 @@
+# `n - 1 @ f()` is `n - f(1)`, not `f(n - 1)`: a recursive call must
+# parenthesize its threaded argument. Subtle because the unparenthesized form
+# reads like the intended recursion.
+#= {result: [6, 2]}
+defn sum_to(n) -> if n <= 0: 0 else: n + (n - 1) @ sum_to()
+defn shifted(n) -> if n <= 1: n else: n - 1 @ shifted()
+[3 @ sum_to(), 3 @ shifted()]

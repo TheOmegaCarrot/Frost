@@ -1,0 +1,7 @@
+# Prints inside abbreviated lambdas happen when, and as often as, they are
+# called, not where they are written.
+#= {result: null, printed: ['start', 'hello a', 'hello b']}
+def greet = $(print($'hello ${$}'))
+print('start')
+greet('a')
+greet('b')

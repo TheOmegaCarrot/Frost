@@ -1,0 +1,3 @@
+# A comparison operator cannot begin an expression: `==` has no prefix form.
+#= {rejects: ['expected an expression', '`==`']}
+== 1

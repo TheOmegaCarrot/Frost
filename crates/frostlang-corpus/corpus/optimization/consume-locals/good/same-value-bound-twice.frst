@@ -1,0 +1,6 @@
+# Two bindings of one value, each built upon at its last read, build
+# independently: neither update shows in the other.
+#= {result: [[1, 'a'], [1, 'b'], [1]], inputs: {xs: [1]}}
+def a = xs
+def b = xs
+[a + ['a'], b + ['b'], xs]

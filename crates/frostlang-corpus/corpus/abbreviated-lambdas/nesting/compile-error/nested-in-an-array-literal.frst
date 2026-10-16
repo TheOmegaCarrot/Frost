@@ -1,0 +1,3 @@
+# An abbreviated lambda as an Array element inside another is nested.
+#= {rejects: 'cannot be nested'}
+def f = $([$1, $($2)])

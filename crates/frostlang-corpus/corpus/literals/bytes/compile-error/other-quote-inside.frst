@@ -1,0 +1,4 @@
+# In a double-quoted Bytes literal, a single quote is a character in it, not a
+# closer, and is not a hex digit.
+#= {rejects: ["invalid character `'`", 'Bytes literal']}
+x"00'ff"

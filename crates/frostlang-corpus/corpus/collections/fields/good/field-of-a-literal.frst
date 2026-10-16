@@ -1,0 +1,3 @@
+# A field is read from a Map literal directly, through nested literals.
+#= {result: [42, 5]}
+[{a: 42}.a, {a: {b: 5}}.a.b]

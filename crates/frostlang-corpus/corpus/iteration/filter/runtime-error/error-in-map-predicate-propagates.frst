@@ -1,0 +1,4 @@
+# An error the predicate raises while filtering a Map propagates out of
+# `filter`.
+#= {raises: 'division by zero', inputs: {m: {a: 1, b: 0}}}
+filter m with fn k, v -> 1 / v > 0

@@ -1,0 +1,4 @@
+# `spread(call)` takes a function and its argument Array as one pair.
+#= {result: [[1, 2], 2]}
+def apply_pair = spread(call)
+[apply_pair([collect, [1, 2]]), apply_pair([len, [[0, 0]]])]

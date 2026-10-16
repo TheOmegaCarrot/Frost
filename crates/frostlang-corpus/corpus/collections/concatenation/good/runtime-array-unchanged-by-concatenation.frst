@@ -1,0 +1,6 @@
+# A runtime Array used as the left operand of `+` is unchanged afterwards,
+# whether it is used again before or after.
+#= {result: [[1, 2], [1, 2, 3], [1, 2]], inputs: {a: [1, 2]}}
+def before = a
+def joined = a + [3]
+[before, joined, a]

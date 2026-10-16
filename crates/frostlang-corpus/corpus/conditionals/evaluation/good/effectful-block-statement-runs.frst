@@ -1,0 +1,12 @@
+# A block whose final value is a constant still runs its effectful
+# statements, bound or dropped alike.
+#= {result: 1, printed: ['bound', 'dropped']}
+def v = do {
+    print('bound')
+    1
+}
+do {
+    print('dropped')
+    2
+}
+v

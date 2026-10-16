@@ -1,0 +1,4 @@
+# A raw String in an interpolation stays raw: its backslashes are text, and
+# its `${...}` does not interpolate.
+#= {result: R'(\n${x})', inputs: {x: 7}}
+$'${R"(\n${x})"}'

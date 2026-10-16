@@ -1,0 +1,4 @@
+# Indexing Null is an error for `index`, unlike for `dig`, which passes a
+# Null along.
+#= {raises: ['Cannot index', 'Null']}
+index('a')(null)

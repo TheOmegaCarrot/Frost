@@ -1,0 +1,5 @@
+# An `if` statement whose value is dropped still runs its taken branch, so a
+# constant one that raises does raise: an optimizer must not discard it.
+#= {raises: 'division by zero'}
+if true: 1 / 0 else: 2
+5

@@ -1,0 +1,8 @@
+# `or` supplies a default for a missing entry, which reads as Null, but keeps
+# a present falsy-looking value such as an empty collection or zero, since
+# those are truthy. A present `false` is replaced, as `false` is falsy.
+#= {
+#=     result: ['default', [], 0, 'default'],
+#=     inputs: {m: {empty: [], zero: 0, off: false}},
+#= }
+[m['missing'] or 'default', m['empty'] or 'default', m['zero'] or 'default', m['off'] or 'default']

@@ -1,0 +1,6 @@
+# Negative zero equals zero, so as a key it finds the entry stored under zero.
+#= {result: 'found', inputs: {v: {[0.0]: 'found'}, k: -0.0}}
+match v {
+    {[k]: found} => found,
+    _ => 'missing',
+}

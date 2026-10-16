@@ -1,0 +1,5 @@
+# A key spelled like a keyword is matched with a computed String key.
+#= {result: [1, 2], inputs: {v: {['if']: 1, ['match']: 2}}}
+match v {
+    {['if']: a, ['match']: b} => [a, b],
+}

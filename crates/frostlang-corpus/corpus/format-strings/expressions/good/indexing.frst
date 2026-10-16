@@ -1,0 +1,4 @@
+# Indexing in an interpolation: an Array element, a Map field by `.name`, and a
+# Map entry by `[key]`.
+#= {result: 'b ada 2', inputs: {xs: ['a', 'b'], m: {name: 'ada', [1]: 2}}}
+$'${xs[1]} ${m.name} ${m[1]}'

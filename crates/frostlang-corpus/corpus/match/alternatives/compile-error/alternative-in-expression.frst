@@ -1,0 +1,6 @@
+# `|` separates alternatives in patterns only; it is not an expression
+# operator, so an arm's result cannot use it.
+#= {rejects: 'but found `|`'}
+match 1 {
+    _ => 1 | 2,
+}

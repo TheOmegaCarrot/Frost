@@ -1,0 +1,9 @@
+# A name an alternative binds and reads in its own pin, before the pin fails,
+# is bound again by the next alternative, and the arm sees the value that
+# alternative bound; when the first alternative matches, the arm sees its
+# value.
+#= {result: [[1, 0], [2, 0]], inputs: {same: [[1], [1]], different: [[1], [2]]}}
+defn pick(target) -> match target {
+    [a, (a)] | [_, a] => a + [0],
+}
+[pick(same), pick(different)]

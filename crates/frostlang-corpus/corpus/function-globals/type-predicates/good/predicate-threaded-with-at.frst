@@ -1,0 +1,3 @@
+# `v @ is_x()` threads `v` in as the one argument.
+#= {result: [true, false], inputs: {v: [1]}}
+[v @ is_array(), v @ is_map()]

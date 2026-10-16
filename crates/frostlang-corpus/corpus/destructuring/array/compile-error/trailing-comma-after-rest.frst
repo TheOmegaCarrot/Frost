@@ -1,0 +1,4 @@
+# No trailing comma may follow a rest: nothing else can follow it.
+#= {rejects: 'expected `]`'}
+def [a, ...rest,] = [1, 2]
+[a, rest]

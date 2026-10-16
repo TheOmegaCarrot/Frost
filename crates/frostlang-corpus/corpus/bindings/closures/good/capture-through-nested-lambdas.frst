@@ -1,0 +1,7 @@
+# A name captured by an innermost lambda passes through every lambda between it
+# and its binding, even ones that never read it themselves.
+#= {result: [1, 'n']}
+def x = 1
+def f = fn -> fn -> fn -> x
+def g = fn s -> fn -> fn -> fn -> s
+[f()()(), g('n')()()()]

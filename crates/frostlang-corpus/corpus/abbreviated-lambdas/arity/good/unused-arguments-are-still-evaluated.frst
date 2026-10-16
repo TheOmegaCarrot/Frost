@@ -1,0 +1,8 @@
+# An argument the body never reads is still evaluated, in order, at the
+# call; only its value is discarded.
+#= {result: 'second', printed: ['a', 'b']}
+def second = $($2)
+second(print('a'), do {
+    print('b')
+    'second'
+})

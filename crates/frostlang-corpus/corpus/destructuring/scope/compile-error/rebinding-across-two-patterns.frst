@@ -1,0 +1,6 @@
+# Two patterns in one scope may not bind the same name, even of different
+# kinds.
+#= {rejects: '`a` is already bound'}
+def [a] = [1]
+def {a} = {a: 2}
+a

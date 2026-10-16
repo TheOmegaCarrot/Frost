@@ -1,0 +1,7 @@
+# A tail call's arguments are all evaluated, left to right, before the call.
+#= {
+#=     result: 'done',
+#=     printed: ['first 2', 'second 2', 'first 1', 'second 1'],
+#= }
+defn go(n, a, b) -> if n == 0: 'done' else: go(n - 1, print($'first ${n}'), print($'second ${n}'))
+go(2, null, null)

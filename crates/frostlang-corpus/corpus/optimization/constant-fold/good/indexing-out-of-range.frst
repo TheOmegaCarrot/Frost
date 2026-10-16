@@ -1,0 +1,10 @@
+# A soft index that finds nothing folds to Null: an Array index past either
+# end, any index of an empty Array, and a key an empty Map lacks.
+#= {result: [null, null, null, null, null]}
+[
+    [10, 20, 30][3],
+    [10, 20, 30][-4],
+    [][0],
+    [][-1],
+    {}['a'],
+]

@@ -1,0 +1,11 @@
+# `==` has no cross-type numeric equality: an Int never equals a Float, even
+# of the same value, and `!=` agrees.
+#= {result: [false, false, false, false, true, true]}
+[
+    3 == 3.0,
+    3.0 == 3,
+    0 == 0.0,
+    0 == -0.0,
+    3 != 3.0,
+    0.0 != 0,
+]

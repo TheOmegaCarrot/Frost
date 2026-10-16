@@ -1,0 +1,7 @@
+# A block rejects binding the same name twice within itself.
+#= {rejects: ['`y`', 'already bound']}
+do {
+    def y = 1
+    def y = 2
+    y
+}

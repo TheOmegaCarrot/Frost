@@ -1,0 +1,3 @@
+# A body follows `->`, even a braced one.
+#= {rejects: 'add `->` before the body'}
+defn f(x) { x }

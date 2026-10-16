@@ -1,0 +1,21 @@
+# Each of the four ordering operators raises on unorderable pairs known only
+# at runtime.
+#= {
+#=     result: [
+#=         [false, false, false, false],
+#=         [false, false, false, false],
+#=         [false, false, false, false],
+#=         [false, false, false, false],
+#=         [false, false, false, false],
+#=     ],
+#=     inputs: {pairs: [[null, null], [true, true], [{a: 1}, {a: 1}], [1, '1'], ['a', x'61']]},
+#= }
+transform(pairs, fn pair -> {
+    def [a, b] = pair
+    [
+        try_call(fn -> a < b).ok,
+        try_call(fn -> a <= b).ok,
+        try_call(fn -> a > b).ok,
+        try_call(fn -> a >= b).ok,
+    ]
+})

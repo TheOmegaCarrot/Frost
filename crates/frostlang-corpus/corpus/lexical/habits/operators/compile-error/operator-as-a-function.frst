@@ -1,0 +1,4 @@
+# An operator section such as `(+ 1)` is not a function in Frost; an
+# abbreviated lambda is.
+#= {rejects: 'cannot use an operator as a function'}
+def inc = (+ 1)

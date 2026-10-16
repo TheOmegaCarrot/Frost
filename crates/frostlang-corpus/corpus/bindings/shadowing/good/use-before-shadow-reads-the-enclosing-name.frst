@@ -1,0 +1,9 @@
+# Within a block, a use that comes before the block's own `def` of a name sees
+# the enclosing binding; the shadow covers only what follows it.
+#= {result: [1, 2]}
+def y = 1
+do {
+    def z = y
+    def y = 2
+    [z, y]
+}

@@ -1,0 +1,3 @@
+# An Int modulo a String is a type error naming both operand types.
+#= {raises: 'Int % String'}
+5 % '2'

@@ -1,0 +1,5 @@
+# A destructuring `def` is a definition too, so a block cannot end with one.
+#= {rejects: 'must end with an expression'}
+do {
+    def [a, b] = [1, 2]
+}

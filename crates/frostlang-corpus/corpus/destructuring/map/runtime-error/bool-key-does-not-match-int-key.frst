@@ -1,0 +1,4 @@
+# A Bool key is not an Int: `false` does not find 0.
+#= {raises: 'no value at key', inputs: {m: {[0]: 1}}}
+def {[false]: x} = m
+x

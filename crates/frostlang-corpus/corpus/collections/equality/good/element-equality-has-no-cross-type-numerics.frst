@@ -1,0 +1,4 @@
+# Structure equality uses `==` on elements, so `[1] == [1.0]` is false just as
+# `1 == 1.0` is.
+#= {result: [false, false, true], inputs: {i: [1], f: [1.0], m: {a: 1}}}
+[i == f, m == {a: 1.0}, [1.0] == [1.0]]

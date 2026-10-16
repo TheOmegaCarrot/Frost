@@ -1,0 +1,14 @@
+# `is_null` is true for Null alone. False, the other falsy value, is not Null.
+#= {result: [true, false, false, false, false, false, false, false, false, false]}
+[
+    is_null(null),
+    is_null(false),
+    is_null(0),
+    is_null(0.0),
+    is_null(''),
+    is_null(x''),
+    is_null([]),
+    is_null({}),
+    is_null(fn -> null),
+    is_null(len),
+]

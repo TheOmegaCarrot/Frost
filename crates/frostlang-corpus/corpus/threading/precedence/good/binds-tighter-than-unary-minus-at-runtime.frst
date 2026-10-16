@@ -1,0 +1,3 @@
+# `-n @ inc()` is `-(inc(n))` for a runtime `n` as well.
+#= {result: [-4, -2], inputs: {n: 3, inc: fn x -> x + 1}}
+[-n @ inc(), (-n) @ inc()]

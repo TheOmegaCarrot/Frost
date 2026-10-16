@@ -1,0 +1,4 @@
+# With two constant raising interpolations, the leftmost one's error is the one
+# raised, whatever the optimizer does with them.
+#= {raises: 'modulus by zero'}
+$'${1 % 0}${1 / 0}'

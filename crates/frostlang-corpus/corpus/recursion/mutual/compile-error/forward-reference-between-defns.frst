@@ -1,0 +1,6 @@
+# Two top-level `defn`s cannot call each other by name: when the first
+# compiles, the second's name is not yet bound.
+#= {rejects: '`b` is not defined'}
+defn a(n) -> if n <= 0: 'done' else: b(n - 1)
+defn b(n) -> if n <= 0: 'done' else: a(n - 1)
+a(5)

@@ -1,0 +1,4 @@
+# Indexing an empty String raises rather than yielding Null as an empty
+# Array would.
+#= {raises: ['Cannot index value', 'String']}
+''[0]

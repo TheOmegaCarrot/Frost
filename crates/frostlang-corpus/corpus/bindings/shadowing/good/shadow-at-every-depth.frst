@@ -1,0 +1,19 @@
+# Each nested block shadows the name once more; reading it at each depth, both
+# before and after the deeper blocks, sees that depth's own binding.
+#= {result: [1, 2, 3, 4, 3, 2, 1]}
+def x = 1
+def seen = do {
+    def at1 = x
+    def x = 2
+    def rest = do {
+        def at2 = x
+        def x = 3
+        def deeper = do {
+            def x = 4
+            [x]
+        }
+        [at2, x] + deeper + [x]
+    }
+    [at1] + rest + [x]
+}
+[seen[0], seen[1], seen[2], seen[3], seen[4], seen[5], x]

@@ -1,0 +1,3 @@
+# Frost threads a value into a call with `@`, not `|>`.
+#= {rejects: 'threads a value into a call with `@`', inputs: {xs: [1]}}
+xs |> len()

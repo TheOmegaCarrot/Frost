@@ -1,0 +1,3 @@
+# A Bool is not indexable.
+#= {raises: ['Cannot index value', 'Bool']}
+true[0]

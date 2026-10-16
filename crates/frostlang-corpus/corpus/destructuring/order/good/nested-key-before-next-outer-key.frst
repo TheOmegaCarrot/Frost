@@ -1,0 +1,9 @@
+# Each entry destructures completely before the next key: a key nested in an
+# entry's part runs before the following key of the outer pattern.
+#= {result: [1, 2], printed: ['a', 'b', 'c']}
+defn note(k) -> {
+    print(k)
+    k
+}
+def {[note('a')]: {[note('b')]: x}, [note('c')]: y} = {a: {b: 1}, c: 2}
+[x, y]

@@ -1,0 +1,19 @@
+# A recursive sieve: take the head as a prime and filter its multiples out of
+# the rest, each level's predicate a closure over its own prime. The
+# candidates are built by recursion, and a bound below 2 has no primes.
+#= {
+#=     result: [
+#=         [2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47],
+#=         [],
+#=         [2],
+#=     ],
+#=     inputs: {bounds: [50, 1, 2]},
+#= }
+defn from_to(low, high) -> if low > high: [] else: [low] + from_to(low + 1, high)
+
+defn sieve(candidates) -> match candidates {
+    [] => [],
+    [p, ...rest] => [p] + sieve(filter rest with fn n -> n % p != 0),
+}
+
+transform(bounds, fn bound -> sieve(from_to(2, bound)))

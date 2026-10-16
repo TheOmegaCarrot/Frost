@@ -1,0 +1,14 @@
+# Null, false, 0, 0.0, the empty String, and the empty Bytes are distinct values:
+# each matches only its own literal, never another that is falsy or zero-like.
+#= {
+#=     result: ['Null', 'Bool', 'Int', 'Float', 'String', 'Bytes'],
+#=     inputs: {xs: [null, false, 0, 0.0, '', x'']},
+#= }
+transform(xs, fn v -> match v {
+    x'' => 'Bytes',
+    '' => 'String',
+    0.0 => 'Float',
+    0 => 'Int',
+    false => 'Bool',
+    null => 'Null',
+})

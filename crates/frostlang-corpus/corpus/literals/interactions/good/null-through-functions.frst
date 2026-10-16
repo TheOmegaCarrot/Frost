@@ -1,0 +1,13 @@
+# `null` is an ordinary value to a function: it may be an argument, a return value,
+# and a captured value, and arrives unchanged.
+#= {result: [null, null, null, 'Null', true]}
+defn identity(x) -> x
+def nothing = null
+defn captured() -> nothing
+[
+    identity(null),
+    (fn -> null)(),
+    captured(),
+    type(identity(null)),
+    identity(null) == null,
+]

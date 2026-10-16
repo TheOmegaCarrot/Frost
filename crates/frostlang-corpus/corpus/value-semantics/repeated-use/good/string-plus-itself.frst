@@ -1,0 +1,5 @@
+# A String concatenated with itself repeats its text, non-ASCII included,
+# and is unchanged.
+#= {result: ['ñandú ✓ñandú ✓', 'ñandú ✓'], inputs: {s: 'ñandú ✓'}}
+def t = s + ''
+[t + t, t]

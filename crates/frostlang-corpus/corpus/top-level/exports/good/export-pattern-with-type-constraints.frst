@@ -1,0 +1,4 @@
+# Type constraints inside an exported pattern check each part, and the
+# constrained names are exported.
+#= {result: null, exports: {n: 1, s: 'two'}}
+export def [n is Int, s is String] = [1, 'two']

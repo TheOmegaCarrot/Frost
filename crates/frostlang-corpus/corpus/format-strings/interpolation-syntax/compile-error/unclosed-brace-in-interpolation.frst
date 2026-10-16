@@ -1,0 +1,5 @@
+# A `{` opened inside an interpolation needs its own `}`. Subtle: here the one
+# `}` closes the Map, so the interpolation never closes, and the final quote
+# starts a String nested in it.
+#= {rejects: 'unclosed interpolation'}
+def s = $'${ {a: 1 }'

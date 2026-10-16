@@ -1,0 +1,5 @@
+# An operation that returns Null over an Array leaves a Null element: `map`
+# never drops or compacts elements, so the length is unchanged.
+#= {result: [[1, null, 3], [1, null, 3]], inputs: {xs: [1, 2, 3]}}
+def drop_two = fn x -> if x == 2: null else: x
+[map [1, 2, 3] with drop_two, map xs with drop_two]

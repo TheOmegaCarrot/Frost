@@ -1,0 +1,8 @@
+# A closure cannot assign a binding it captures: the capture is a value, not
+# a shared variable.
+#= {rejects: ['`=`', 'immutable']}
+def xs = [1]
+def f = fn -> {
+    xs = [2]
+    xs
+}

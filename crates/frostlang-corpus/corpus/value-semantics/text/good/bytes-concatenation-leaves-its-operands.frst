@@ -1,0 +1,5 @@
+# Concatenating Bytes leaves both operand bindings unchanged, and an empty
+# operand on either side gives an equal copy.
+#= {result: [x'00', x'ff80', x'00ff80', x'00', x'00'], inputs: {a: x'00', b: x'ff80'}}
+def joined = a + b
+[a, b, joined, a + x'', x'' + a]

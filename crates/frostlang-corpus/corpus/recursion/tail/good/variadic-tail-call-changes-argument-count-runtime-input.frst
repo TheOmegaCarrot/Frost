@@ -1,0 +1,6 @@
+# A variadic function tail-calls itself with a different number of arguments
+# each time, through `call`, on a count known only at runtime.
+#= {result: [[3, 2, 1], [1, 1]], inputs: {n: 3}}
+defn grow(k, ...rest) -> if k == 0: rest else: call(grow, [k - 1] + rest + [k])
+defn pair(k, ...rest) -> if k == 0: rest else: pair(k - 1, k, k)
+[grow(n), pair(n)]

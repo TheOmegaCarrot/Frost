@@ -1,0 +1,4 @@
+# A program of only a `;` has no statements: a separator with nothing before
+# it is an empty statement, so the tail is null.
+#= {result: null}
+;

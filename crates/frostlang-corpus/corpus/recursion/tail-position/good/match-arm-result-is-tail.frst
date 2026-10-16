@@ -1,0 +1,10 @@
+# A `match` arm's result in tail position is a tail call: by the time it runs,
+# the match has dropped what it held to try the arms. The backtrace from the
+# bottom does not grow with the depth.
+#= {result: 0}
+defn down(n) -> match n {
+    0 => error('bottom'),
+    _ => down(n - 1),
+}
+defn frames(n) -> len(try_call(down, [n]).trace)
+frames(500) - frames(5)

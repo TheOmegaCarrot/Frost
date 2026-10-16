@@ -1,0 +1,4 @@
+# `-` is numeric only: a String minus a String is a type error, not removal of
+# a substring.
+#= {raises: 'String - String'}
+'abc' - 'c'

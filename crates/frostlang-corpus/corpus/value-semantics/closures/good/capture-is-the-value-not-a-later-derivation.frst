@@ -1,0 +1,10 @@
+# A closure created inside a function captures the parameter's value at the
+# time of capture, not a value the function derives from it afterward.
+#= {result: [[1], [1, 2]], inputs: {n: 1}}
+defn split(xs) -> {
+    def read = fn -> xs
+    def grown = xs + [2]
+    [read, grown]
+}
+def parts = split([n])
+[parts[0](), parts[1]]

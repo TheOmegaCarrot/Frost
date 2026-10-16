@@ -1,0 +1,3 @@
+# A single-quoted format String escapes only its own quote: `\"` is invalid.
+#= {rejects: ['invalid escape sequence', 'needs no backslash']}
+def s = $'say \"hi\"'

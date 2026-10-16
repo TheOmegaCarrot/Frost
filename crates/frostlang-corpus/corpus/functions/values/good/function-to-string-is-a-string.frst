@@ -1,0 +1,5 @@
+# A function converts to some non-empty String; its exact text is not
+# pinned.
+#= {result: ['String', true]}
+def s = to_string(fn x -> x)
+[type(s), len(s) > 0]

@@ -1,0 +1,11 @@
+# A pipeline threads a value through functions bound by `def` and `defn`, each
+# reading a captured binding.
+#= {result: 40, inputs: {start: 3}}
+def factor = 2
+def offset = 10
+def scale = fn x -> x * factor
+defn shift(x, by) -> x + by + offset
+(start
+    @ scale()
+    @ shift(4)
+    @ scale())

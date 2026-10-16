@@ -1,0 +1,6 @@
+# An `as` name in one alternative and an ordinary binding in another bind the
+# same name.
+#= {result: [{a: 1}, 5], inputs: {xs: [{a: 1}, [5]]}}
+transform(xs, fn v -> match v {
+    {a: 1 | 2} as m | [m] => m,
+})

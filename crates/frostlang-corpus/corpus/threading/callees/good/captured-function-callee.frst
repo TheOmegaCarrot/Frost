@@ -1,0 +1,5 @@
+# A function captured by a closure can be the callee of a threaded call
+# inside it.
+#= {result: [6, 4], inputs: {n: 3}}
+defn applying(f) -> fn x -> x @ f()
+[applying(fn v -> v * 2)(n), applying(fn v -> v + 1)(n)]

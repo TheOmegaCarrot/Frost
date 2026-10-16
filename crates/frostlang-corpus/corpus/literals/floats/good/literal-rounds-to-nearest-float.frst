@@ -1,0 +1,8 @@
+# A Float literal denotes the nearest Float to the decimal written, so extra digits
+# past a Float's precision are rounded away, and `0.1` is not exactly a tenth.
+#= {result: [true, true, false]}
+[
+    0.1000000000000000055511151231257827 == 0.1,
+    0.30000000000000004 == 0.1 + 0.2,
+    0.3 == 0.1 + 0.2,
+]

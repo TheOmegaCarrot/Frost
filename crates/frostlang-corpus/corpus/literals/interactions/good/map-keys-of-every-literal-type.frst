@@ -1,0 +1,5 @@
+# A literal of every type that can key a Map does so in brackets, and looks up its
+# entry when written the same way.
+#= {result: ['bool', 'int', 'float', 'string', 'bytes', 5]}
+def m = {[true]: 'bool', [1]: 'int', [1.5]: 'float', ['s']: 'string', [x'00']: 'bytes'}
+[m[true], m[1], m[1.5], m['s'], m[x'00'], len(m)]

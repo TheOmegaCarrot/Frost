@@ -1,0 +1,4 @@
+# There is no in-place increment: `++` is not an operator.
+#= {rejects: '`++`'}
+def k = 1
+k++

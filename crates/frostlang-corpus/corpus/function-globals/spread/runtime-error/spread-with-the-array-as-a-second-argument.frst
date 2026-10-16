@@ -1,0 +1,4 @@
+# `spread` is not `call`: it takes only the function, and returns a function
+# that takes the Array.
+#= {raises: ['spread', 'expects 1', 'called with 2']}
+spread(collect, [1, 2])

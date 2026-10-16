@@ -1,0 +1,4 @@
+# Calling a literal compiles, and raises when run: the callee is checked by the run,
+# even when it is a literal in plain sight.
+#= {raises: ['non-function', 'Int']}
+5(1)

@@ -1,0 +1,3 @@
+# One lambda's parameter is not in scope in a sibling lambda.
+#= {rejects: ['`a`', 'not defined']}
+[fn a -> a, fn -> a]

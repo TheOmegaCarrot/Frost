@@ -1,0 +1,13 @@
+# Arrays are equal when they have the same length and equal elements in the
+# same order: equality is structural, not by identity.
+#= {result: [true, true, true, false, false, false, false, true]}
+[
+    [] == [],
+    [1] == [1],
+    [1, 'two', 3.0, null] == [1, 'two', 3.0, null],
+    [1, 2] == [2, 1],
+    [1, 2] == [1, 2, 3],
+    [1] == [],
+    [null] == [],
+    [1, 2] != [1, 3],
+]

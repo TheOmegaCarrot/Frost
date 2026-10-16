@@ -1,0 +1,12 @@
+# An `or` default inside a format string's interpolation yields the operand
+# itself, rendered as text, and `not` renders as its Bool.
+#= {
+#=     result: ['hello, anonymous', 'hello, ñandú', 'hello, 0', 'missing: true'],
+#=     inputs: {n: null, bird: 'ñandú', zero: 0},
+#= }
+[
+    $'hello, ${n or "anonymous"}',
+    $'hello, ${bird or "anonymous"}',
+    $'hello, ${zero or "anonymous"}',
+    $'missing: ${not n}',
+]

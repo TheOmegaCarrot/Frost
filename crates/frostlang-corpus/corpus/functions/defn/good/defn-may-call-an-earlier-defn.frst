@@ -1,0 +1,5 @@
+# A later `defn` can call an earlier one.
+#= {result: 9}
+defn square(x) -> x * x
+defn square_of_sum(a, b) -> square(a + b)
+square_of_sum(1, 2)

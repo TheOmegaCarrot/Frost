@@ -1,0 +1,5 @@
+# Alternatives that each bind the same name bind it from whichever matched.
+#= {result: [1, 2, 3], inputs: {xs: [[1], {x: 2}, 3]}}
+transform(xs, fn v -> match v {
+    [x] | {x} | x => x,
+})

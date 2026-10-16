@@ -1,0 +1,3 @@
+# An Array argument is one element of the result, never flattened into it.
+#= {result: [[1], [], [[2]]]}
+collect([1], [], [[2]])

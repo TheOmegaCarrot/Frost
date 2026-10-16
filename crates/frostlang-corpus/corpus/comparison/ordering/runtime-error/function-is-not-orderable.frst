@@ -1,0 +1,4 @@
+# Functions have no ordering, even a Function against itself.
+#= {raises: ['Function', 'not orderable']}
+def f = fn x -> x
+f <= f

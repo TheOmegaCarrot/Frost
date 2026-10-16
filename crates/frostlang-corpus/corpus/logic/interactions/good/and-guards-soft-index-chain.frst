@@ -1,0 +1,16 @@
+# `and` guards a chain of soft indexes: a missing key yields Null like any
+# other, so the chain stops there instead of indexing into Null.
+#= {
+#=     result: [null, null, null, false, null, 3, false],
+#=     inputs: {
+#=         a: null,
+#=         b: {},
+#=         c: {bar: null},
+#=         d: {bar: false},
+#=         e: {bar: {}},
+#=         g: {bar: {baz: 3}},
+#=         h: {bar: {baz: false}},
+#=     },
+#= }
+defn dig(foo) -> foo and foo['bar'] and foo['bar']['baz']
+[dig(a), dig(b), dig(c), dig(d), dig(e), dig(g), dig(h)]

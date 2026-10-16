@@ -1,0 +1,9 @@
+# Values computed by a function whose body is a match may be exported; the
+# function itself is not, as it is not a pinnable result.
+#= {result: ['one', 'many'], exports: {sizes: ['one', 'many']}, inputs: {xs: [[1], [1, 2]]}}
+defn describe(v) -> match v {
+    [_] => 'one',
+    _ => 'many',
+}
+export def sizes = transform(xs, describe)
+sizes

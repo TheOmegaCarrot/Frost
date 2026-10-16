@@ -1,0 +1,8 @@
+# Structure literals used as statements are built and discarded; only the
+# last statement is the tail value.
+#= {result: 5}
+[1, 2]
+{a: 1}
+[]
+{}
+5

@@ -1,0 +1,4 @@
+# `and`, `or`, and `not` are keywords spelled as words; a bracket touching
+# them separates them from their operands as a space would.
+#= {result: [true, 1, false, true]}
+[true and(true), null or(1), not(true), (not false)and(true)]

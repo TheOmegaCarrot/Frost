@@ -1,0 +1,3 @@
+# `print` returned by a constant function prints when finally called.
+#= {result: null, printed: ['const']}
+const(print)()('const')

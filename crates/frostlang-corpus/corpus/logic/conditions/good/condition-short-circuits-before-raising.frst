@@ -1,0 +1,7 @@
+# A short-circuited operand inside an `if` condition never runs, so a guard
+# can protect a remainder by zero that would raise.
+#= {
+#=     result: ['does not divide', 'divides', 'does not divide'],
+#=     inputs: {divisors: [0, 5, 3]},
+#= }
+transform(divisors, fn d -> if d != 0 and 10 % d == 0: 'divides' else: 'does not divide')

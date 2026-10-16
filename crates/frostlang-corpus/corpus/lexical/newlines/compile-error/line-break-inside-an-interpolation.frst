@@ -1,0 +1,5 @@
+# A format String and its interpolations are single-line, even where the
+# interpolated expression has brackets that would allow line breaks elsewhere.
+#= {rejects: 'unclosed format String'}
+def s = $'${[1,
+    2]}'

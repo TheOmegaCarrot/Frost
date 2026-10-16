@@ -1,0 +1,4 @@
+# A definition is a statement, not an expression, so it cannot be a branch
+# on its own.
+#= {rejects: 'a definition is a statement'}
+if true: def x = 1

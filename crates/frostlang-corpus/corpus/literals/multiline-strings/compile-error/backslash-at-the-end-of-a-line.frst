@@ -1,0 +1,7 @@
+# A backslash ending a line of a multiline String escapes nothing: there is no line
+# continuation.
+#= {rejects: 'at the end of a line'}
+def text = """
+    abc\
+    def
+    """

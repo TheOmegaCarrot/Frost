@@ -1,0 +1,12 @@
+# Work left pending after a non-tail recursive call runs as the calls return,
+# innermost first, so it happens in the reverse of the call order.
+#= {
+#=     result: null,
+#=     printed: ['down 3', 'down 2', 'down 1', 'up 1', 'up 2', 'up 3'],
+#= }
+defn walk(n) -> if n == 0: null else: do {
+    print($'down ${n}')
+    walk(n - 1)
+    print($'up ${n}')
+}
+walk(3)

@@ -1,0 +1,6 @@
+# Functions destructured out of a Map or an Array are called by their new
+# names.
+#= {result: ['run', 1, 2]}
+def {run} = {run: fn -> 'run'}
+def [first, ...rest] = [fn -> 1, fn -> 2]
+[run(), first(), rest[0]()]

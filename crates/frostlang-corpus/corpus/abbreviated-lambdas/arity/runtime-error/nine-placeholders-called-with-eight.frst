@@ -1,0 +1,4 @@
+# `$9` alone makes a nine-argument lambda; eight arguments are too few.
+#= {raises: 'expects 9 argument'}
+def ninth = $($9)
+ninth(1, 2, 3, 4, 5, 6, 7, 8)

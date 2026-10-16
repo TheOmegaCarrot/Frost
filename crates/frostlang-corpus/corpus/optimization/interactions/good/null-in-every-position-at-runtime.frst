@@ -1,0 +1,22 @@
+# The positions of null-in-every-position, holding a Null only known at
+# runtime, give the same values.
+#= {
+#=     result: [null, [null], {k: null}, null, true, null, 'null arm', true, 'null', null, null, false],
+#=     inputs: {n: null},
+#= }
+[
+    n,
+    [n],
+    {k: n},
+    n or n,
+    n == null,
+    if n: 1,
+    match n {
+        null => 'null arm',
+    },
+    has({k: n}, 'k'),
+    $'${n}',
+    {k: n}.k,
+    {k: n}['z'],
+    n != null,
+]

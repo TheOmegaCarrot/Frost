@@ -1,0 +1,10 @@
+# A recursive call reaches the closure itself, not whatever its name is bound
+# to where the call happens. Here a nested scope rebinds `f` before calling the
+# function through another name; its recursion is unaffected.
+#= {result: 'original'}
+defn f(n) -> if n == 0: 'original' else: f(n - 1)
+def g = f
+do {
+    def f = fn n -> 'impostor'
+    g(3)
+}

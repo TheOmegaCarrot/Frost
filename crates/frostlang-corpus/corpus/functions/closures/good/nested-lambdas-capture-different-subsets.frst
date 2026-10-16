@@ -1,0 +1,5 @@
+# Each nested lambda captures only what it needs, and each sees the right
+# values.
+#= {result: [3, [2, 1]]}
+def make = fn a, b, c -> fn -> [c, (fn -> [b, (fn -> a)()])()]
+make(1, 2, 3)()

@@ -1,0 +1,4 @@
+# A raw String takes its text verbatim: a backslash is just a backslash, so
+# sequences that would be escapes elsewhere stay two characters.
+#= {result: [true, 2, true, 8]}
+[R'(a\nb)' == 'a\\nb', len(R'(\n)'), R'(C:\dir\file)' == 'C:\\dir\\file', len(R'(\q\x\$\u)')]

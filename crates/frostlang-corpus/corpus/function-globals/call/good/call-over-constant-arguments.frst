@@ -1,0 +1,4 @@
+# A call through `call` over constants gives the same answer the optimizer
+# may compute ahead of time.
+#= {result: [7, [1, 2]]}
+[call(minus, [10, 3]), call(collect, [1, 2])]

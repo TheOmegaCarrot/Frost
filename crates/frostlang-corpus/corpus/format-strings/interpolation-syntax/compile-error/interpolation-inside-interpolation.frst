@@ -1,0 +1,4 @@
+# `${` interpolates only in a format String's text: written directly inside
+# another interpolation, it is a syntax error.
+#= {rejects: R'(`${` interpolates only in a format String)'}
+def s = $'${${1}}'

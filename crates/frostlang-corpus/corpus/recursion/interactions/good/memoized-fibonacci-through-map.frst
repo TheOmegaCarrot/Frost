@@ -1,0 +1,11 @@
+# Memoization without mutation: each call returns its value together with the
+# updated memo Map, which the caller destructures and threads on. Int keys.
+#= {result: [0, 55, 12586269025]}
+defn fib(n, memo) -> if has(memo, n): [memo[n], memo]
+    elif n < 2: [n, memo + {[n]: n}]
+    else: do {
+        def [a, memo1] = fib(n - 1, memo)
+        def [b, memo2] = fib(n - 2, memo1)
+        [a + b, memo2 + {[n]: a + b}]
+    }
+[fib(0, {})[0], fib(10, {})[0], fib(50, {})[0]]

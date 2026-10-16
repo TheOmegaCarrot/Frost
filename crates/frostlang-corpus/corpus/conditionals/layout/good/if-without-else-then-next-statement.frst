@@ -1,0 +1,5 @@
+# An `if` with no `else` ends at its line break; the next line is a new
+# statement, which becomes the script's value.
+#= {result: 2}
+if true: 1
+2

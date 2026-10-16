@@ -1,0 +1,5 @@
+# A self-name is bound only inside its lambda, not where the lambda is
+# written.
+#= {rejects: ['`inner`', 'not defined']}
+def g = fn inner() -> 1
+inner()

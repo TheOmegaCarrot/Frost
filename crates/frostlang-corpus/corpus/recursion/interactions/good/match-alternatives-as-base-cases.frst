@@ -1,0 +1,7 @@
+# Pattern alternatives give several base cases in one arm.
+#= {result: [0, 1, 1, 2, 8, 6765]}
+defn fib(n) -> match n {
+    0 | 1 => n,
+    _ => fib(n - 1) + fib(n - 2),
+}
+[fib(0), fib(1), fib(2), fib(3), fib(6), fib(20)]

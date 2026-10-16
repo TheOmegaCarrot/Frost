@@ -1,0 +1,9 @@
+# A Map pattern requires every key it names; a missing key raises, naming the
+# key, rather than binding Null.
+#= {
+#=     raises: 'no value at key "a"',
+#=     inputs: {m: {b: 1}},
+#=     known_issue: 'FROST-155',
+#= }
+def {a} = m
+a

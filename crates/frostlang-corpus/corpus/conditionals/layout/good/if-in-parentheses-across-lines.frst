@@ -1,0 +1,9 @@
+# Inside parentheses, line breaks are insignificant, so an `if` may spread its
+# parts over any lines there.
+#= {result: 12, inputs: {c: false}}
+(
+    if c:
+        1
+    else:
+        2
+) + 10

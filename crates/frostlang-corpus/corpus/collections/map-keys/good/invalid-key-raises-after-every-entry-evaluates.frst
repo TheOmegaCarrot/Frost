@@ -1,0 +1,9 @@
+# Every key and value is evaluated before the Map is built, so an entry after
+# an invalid key still runs its side effect before the build raises. Subtle
+# because the raise comes from the earlier entry.
+#= {result: false, printed: ['evaluated']}
+def outcome = try_call(fn -> {
+    [null]: 1,
+    b: print('evaluated'),
+})
+outcome.ok

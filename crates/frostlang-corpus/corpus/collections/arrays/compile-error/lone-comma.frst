@@ -1,0 +1,3 @@
+# A trailing comma needs an element before it: `[,]` is not an empty Array.
+#= {rejects: 'expected an expression'}
+def xs = [,]

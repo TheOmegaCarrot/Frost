@@ -1,0 +1,4 @@
+# A missing field of a constant Map raises at runtime; the optimizer does not
+# fold it away.
+#= {raises: ['no value at key', 'b']}
+{a: 1}.b

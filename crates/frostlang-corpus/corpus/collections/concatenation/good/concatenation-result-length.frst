@@ -1,0 +1,7 @@
+# A concatenation's length is the sum of its operands' lengths, while a
+# merge's counts colliding keys once.
+#= {
+#=     result: [5, 4, 3, 3],
+#=     inputs: {xs: [1, 2], ys: [3, 4, 5], s: 'ab', t: 'cé', a: {x: 1, y: 2}, b: {y: 3, z: 4}},
+#= }
+[len(xs + ys), len(s + t), len(a + b), len(x'01' + x'0203')]

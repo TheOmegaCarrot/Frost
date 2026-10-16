@@ -1,0 +1,6 @@
+# Outside brackets, a line starting with `and` does not continue the previous
+# line, and `and` cannot begin a statement.
+#= {rejects: ['expected an expression', '`and`']}
+def x = true
+    and false
+x

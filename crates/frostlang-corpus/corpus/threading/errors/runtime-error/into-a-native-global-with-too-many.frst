@@ -1,0 +1,3 @@
+# A native global's arity counts the threaded value too.
+#= {raises: ['expects 1', 'called with 2'],inputs: {xs: [1, 2]}}
+xs @ len(1)

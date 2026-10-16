@@ -1,0 +1,6 @@
+# A placeholder can reach into nested structures, and the lambda can build
+# new nested structures around its arguments.
+#= {result: [3, {outer: {inner: [1, [2]]}}], inputs: {data: {a: [1, {b: 3}]}}}
+def dig_b = $($.a[1].b)
+def wrap = $({outer: {inner: [$1, [$2]]}})
+[dig_b(data), wrap(1, 2)]

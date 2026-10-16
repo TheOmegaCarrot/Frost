@@ -1,0 +1,9 @@
+# An `if` used as a condition runs fully, its own condition and taken branch,
+# before the outer `if` tests the value it yields.
+#= {result: 'outer then', printed: ['inner cond', 'inner else', 'outer then']}
+defn note(label, value) -> {
+    print(label)
+    value
+}
+if (if note('inner cond', null): note('inner then', false) else: note('inner else', 0)): note('outer then', 'outer then')
+else: note('outer else', 'outer else')

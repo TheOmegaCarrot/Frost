@@ -1,0 +1,6 @@
+# A `match` arm's result is one expression, so `;` cannot add statements to
+# it; a `do` block can.
+#= {rejects: "arm's result is one expression", inputs: {x: 1}}
+match x {
+    1 => print(1); print(2),
+}

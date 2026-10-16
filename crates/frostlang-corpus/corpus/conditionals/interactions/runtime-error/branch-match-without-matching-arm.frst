@@ -1,0 +1,6 @@
+# A `match` in the taken branch that matches no arm raises; an `if` does not
+# turn the failure into Null.
+#= {raises: 'no match arm', inputs: {t: true, v: 3}}
+if t: match v {
+    1 => 'one',
+}

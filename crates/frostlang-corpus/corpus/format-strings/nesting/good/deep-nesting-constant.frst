@@ -1,0 +1,4 @@
+# Nested format Strings over constants, which the optimizer can fold, give the
+# same result as over runtime values.
+#= {result: 'abcd7efgh'}
+$'a${$"b${$'c${$"d${3 + 4}e"}f'}g"}h'

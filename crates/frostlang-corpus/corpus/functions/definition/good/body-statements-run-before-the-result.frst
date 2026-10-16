@@ -1,0 +1,10 @@
+# The statements of a block body run in order before its final expression.
+#= {result: 'three', printed: ['one', 'two', 'three']}
+def f = fn -> {
+    print('one')
+    print('two')
+    def last = 'three'
+    print(last)
+    last
+}
+f()

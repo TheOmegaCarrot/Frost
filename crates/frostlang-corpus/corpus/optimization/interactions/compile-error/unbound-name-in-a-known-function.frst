@@ -1,0 +1,6 @@
+# An unbound name inside a known function, in a branch its constant condition
+# rules out, is still a compile error, though a call of the function could be
+# computed ahead of time.
+#= {rejects: ['`missing_name`', 'not defined']}
+defn f() -> if false: missing_name else: 1
+f()

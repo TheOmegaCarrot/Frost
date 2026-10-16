@@ -1,0 +1,10 @@
+# Exactly two values are falsy: Null and false. A truthiness test over one
+# value of every other type finds it truthy.
+#= {
+#=     result: [
+#=         'falsy', 'falsy', 'truthy', 'truthy', 'truthy',
+#=         'truthy', 'truthy', 'truthy', 'truthy', 'truthy',
+#=     ],
+#= }
+def values = [null, false, true, 0, 0.0, '', x'', [], {}, len]
+transform(values, fn v -> if v: 'truthy' else: 'falsy')

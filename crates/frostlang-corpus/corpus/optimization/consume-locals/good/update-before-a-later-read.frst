@@ -1,0 +1,6 @@
+# A binding read again after a structure is built from it still holds its own
+# value at the later read.
+#= {result: [[1, 2], [1, 2, 4], [1, 2]], inputs: {xs: [1, 2]}}
+def a = xs
+def b = a + [4]
+[a, b, xs]

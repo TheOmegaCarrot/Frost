@@ -1,0 +1,3 @@
+# Bools are not numbers: a Bool minus a Bool is a type error.
+#= {raises: 'Bool - Bool'}
+true - false

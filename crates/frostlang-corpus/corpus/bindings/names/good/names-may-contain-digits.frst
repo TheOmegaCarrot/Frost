@@ -1,0 +1,6 @@
+# A name may contain digits after its first character.
+#= {result: [1, 2, 3]}
+def a1 = 1
+def item42 = 2
+def x2y3 = 3
+[a1, item42, x2y3]

@@ -1,0 +1,5 @@
+# A parenthesized conditional can choose the callee of a threaded call.
+#= {result: [6, 4], inputs: {n: 3, yes: true, no: false}}
+defn double(x) -> x * 2
+defn inc(x) -> x + 1
+[n @ (if yes: double else: inc)(), n @ (if no: double else: inc)()]

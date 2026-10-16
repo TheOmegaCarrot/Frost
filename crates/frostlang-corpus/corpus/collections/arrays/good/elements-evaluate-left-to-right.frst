@@ -1,0 +1,19 @@
+# Elements are evaluated in the order written, left to right.
+#= {
+#=     result: [1, 2, 3],
+#=     printed: ['first', 'second', 'third'],
+#= }
+[
+    do {
+        print('first')
+        1
+    },
+    do {
+        print('second')
+        2
+    },
+    do {
+        print('third')
+        3
+    },
+]

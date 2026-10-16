@@ -1,0 +1,4 @@
+# A `print` call as the last statement prints, and the tail is the null it
+# returns, not the printed text.
+#= {result: null, printed: ['done']}
+print('done')

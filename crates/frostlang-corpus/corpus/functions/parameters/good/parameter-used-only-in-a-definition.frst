@@ -1,0 +1,7 @@
+# A parameter read only by a definition in the body is still bound.
+#= {result: 11, inputs: {n: 10}}
+def f = fn p -> {
+    def x = p + 1
+    x
+}
+f(n)

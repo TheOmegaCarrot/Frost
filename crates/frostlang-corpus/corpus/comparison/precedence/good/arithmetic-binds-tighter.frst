@@ -1,0 +1,10 @@
+# Arithmetic binds tighter than comparison on either side: `1 + 2 == 3` is
+# `(1 + 2) == 3`, not `1 + (2 == 3)`, which would raise.
+#= {result: [true, true, true, true, true]}
+[
+    1 + 2 == 3,
+    3 == 1 + 2,
+    2 * 3 > 5,
+    10 - 4 >= 3 * 2,
+    7 % 3 != 7 / 3,
+]

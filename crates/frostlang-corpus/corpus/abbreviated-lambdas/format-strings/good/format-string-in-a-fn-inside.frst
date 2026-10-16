@@ -1,0 +1,5 @@
+# A format string in a `fn` inside an abbreviated lambda interpolates the
+# enclosing placeholder, captured.
+#= {result: 'hi you'}
+def greet = $(fn -> $'hi ${$}')
+greet('you')()

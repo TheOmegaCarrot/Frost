@@ -1,0 +1,4 @@
+# Frost has no raw format String: `$` before a raw String's `R` is a stray `$`,
+# not a prefix that combines with it.
+#= {rejects: ['expected an expression', 'found `$`']}
+def s = $R'(a)'

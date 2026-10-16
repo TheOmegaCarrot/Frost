@@ -1,0 +1,9 @@
+# Bindings nothing reads, including a chain where each reads only the one
+# before and an unread part of a destructure, leave the result unchanged.
+#= {result: 1}
+def unused = 'never read'
+def chain_a = 1
+def chain_b = chain_a
+def chain_c = chain_b
+def [a, b] = [1, 2]
+a

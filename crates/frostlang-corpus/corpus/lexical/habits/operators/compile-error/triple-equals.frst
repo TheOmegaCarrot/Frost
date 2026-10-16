@@ -1,0 +1,3 @@
+# Frost's equality is `==`; JavaScript's `===` is not an operator.
+#= {rejects: 'equality is `==`'}
+1 === 1

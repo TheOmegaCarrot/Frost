@@ -1,0 +1,3 @@
+# `if` is a keyword, so it cannot be bound as a name.
+#= {rejects: ['found `if`', 'is a keyword']}
+def if = 1

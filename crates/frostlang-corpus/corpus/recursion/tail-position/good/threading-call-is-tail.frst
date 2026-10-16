@@ -1,0 +1,5 @@
+# A call written with `@` in tail position is a tail call.
+#= {result: 0}
+defn down(n) -> if n == 0: error('bottom') else: (n - 1) @ down()
+defn frames(n) -> len(try_call(down, [n]).trace)
+frames(500) - frames(5)

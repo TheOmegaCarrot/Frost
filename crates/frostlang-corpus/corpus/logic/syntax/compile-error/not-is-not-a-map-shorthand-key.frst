@@ -1,0 +1,4 @@
+# `not` is a keyword, so it cannot be a Map literal's shorthand key; a key
+# spelled like it is written in brackets instead.
+#= {rejects: ['`not`', 'in brackets']}
+{not: 1}

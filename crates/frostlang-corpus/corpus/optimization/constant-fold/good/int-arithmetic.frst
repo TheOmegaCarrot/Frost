@@ -1,0 +1,14 @@
+# Int arithmetic over literals folds to the same values the VM computes at
+# runtime, including truncating division and a remainder taking the sign of
+# the dividend.
+#= {result: [14, 20, 3, -3, 1, -1, 1, -5]}
+[
+    2 + 3 * 4,
+    (2 + 3) * 4,
+    7 / 2,
+    -7 / 2,
+    7 % 3,
+    -7 % 3,
+    7 % -3,
+    -(2 + 3),
+]

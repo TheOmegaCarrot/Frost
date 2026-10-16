@@ -1,0 +1,8 @@
+# A function that concatenates onto its argument returns a new Array and
+# leaves the caller's value as it was, however many times it is called.
+# Subtle because the argument's storage may be reused for the result.
+#= {result: [[1, 0], [1, 0], [1]], inputs: {base: [1]}}
+defn grow(xs) -> xs + [0]
+def once = grow(base)
+def twice = grow(base)
+[once, twice, base]

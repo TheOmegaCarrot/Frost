@@ -1,0 +1,4 @@
+# Arguments only known at runtime to be a non-Array raise a type error from
+# `try_call`, uncaught.
+#= {raises: ['try_call', 'argument 2', 'got String'], inputs: {args: 'abc'}}
+try_call(fn x -> x, args)

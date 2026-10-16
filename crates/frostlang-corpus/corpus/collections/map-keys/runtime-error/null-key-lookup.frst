@@ -1,0 +1,4 @@
+# Looking up a Null key raises rather than yielding Null: a lookup key must be
+# a valid key type, even when no such key could be present.
+#= {raises: ['not a valid Map key', 'Null']}
+{a: 1}[null]

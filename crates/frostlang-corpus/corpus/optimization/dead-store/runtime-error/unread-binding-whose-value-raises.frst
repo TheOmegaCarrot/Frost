@@ -1,0 +1,5 @@
+# A binding nothing reads still has its value computed, so a constant value
+# that raises still raises.
+#= {raises: 'division by zero'}
+def unused = 1 / 0
+2

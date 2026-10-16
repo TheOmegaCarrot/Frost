@@ -1,0 +1,5 @@
+# `curry` binds leading arguments and calls on in tail position, so recursing
+# through a curried function stays in tail position however deep it goes.
+#= {result: 100000}
+defn count(acc, n) -> if n == 0: acc else: curry(count, acc + 1)(n - 1)
+count(0, 100000)

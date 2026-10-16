@@ -1,0 +1,4 @@
+# A soft index reads a Map entry by key, and yields Null for a missing key of
+# any valid type.
+#= {result: ['ada', 36, null, null, null], inputs: {m: {name: 'ada', age: 36}}}
+[m['name'], m['age'], m['nope'], m[1], m[x'00']]

@@ -1,0 +1,5 @@
+# Int arithmetic in a recursive function wraps in two's complement on
+# overflow rather than raising: 21! does not fit in an Int.
+#= {result: [2432902008176640000, -4249290049419214848], inputs: {n: 20}}
+defn fact(k) -> if k <= 1: 1 else: k * fact(k - 1)
+[fact(n), fact(n + 1)]

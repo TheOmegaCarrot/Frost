@@ -1,0 +1,8 @@
+# An error raised as the last expression of a top-level `do` block ends the
+# program; the block's earlier bindings change nothing.
+#= {raises: 'from the block 3'}
+do {
+    def x = 1
+    def y = x + 2
+    error($'from the block ${y}')
+}

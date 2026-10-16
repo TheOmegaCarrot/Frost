@@ -1,0 +1,4 @@
+# In `$(call($($ * 2), []))` the inner `$` would belong to the inner lambda,
+# not the outer argument; such nesting is rejected.
+#= {rejects: 'cannot be nested'}
+def f = $(call($($ * 2), []))

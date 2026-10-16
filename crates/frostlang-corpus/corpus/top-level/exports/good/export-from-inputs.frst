@@ -1,0 +1,3 @@
+# An export computed from a value only known at runtime.
+#= {result: null, exports: {doubled: 42}, inputs: {n: 21}}
+export def doubled = n * 2

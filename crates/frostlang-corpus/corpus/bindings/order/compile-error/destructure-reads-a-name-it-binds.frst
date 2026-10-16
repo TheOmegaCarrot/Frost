@@ -1,0 +1,5 @@
+# A destructuring `def`'s value is computed before any of its names are bound,
+# so the value cannot read them.
+#= {rejects: ['`a`', 'not defined']}
+def [a, b] = [1, a]
+b

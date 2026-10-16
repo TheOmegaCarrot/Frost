@@ -1,0 +1,6 @@
+# A value bound both whole (via `as`) and in part stays the same everywhere:
+# building on one binding does not alter the other.
+#= {result: [{a: [1]}, [1, 2]], inputs: {v: {a: [1]}}}
+match v {
+    {a} as m => [m, a + [2]],
+}

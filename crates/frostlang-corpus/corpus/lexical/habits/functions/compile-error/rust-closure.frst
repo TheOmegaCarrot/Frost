@@ -1,0 +1,3 @@
+# Rust's `|x|` closure is not Frost's lambda.
+#= {rejects: 'a lambda is written `fn x -> ...`'}
+|x| x + 1

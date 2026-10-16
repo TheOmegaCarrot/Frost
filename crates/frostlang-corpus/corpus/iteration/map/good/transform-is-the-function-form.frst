@@ -1,0 +1,7 @@
+# `transform(structure, f)` is the function form of `map structure with f`,
+# over both Arrays and Maps.
+#= {
+#=     result: [[2, 3], {a: 2}],
+#=     inputs: {xs: [1, 2], m: {a: 1}},
+#= }
+[transform(xs, fn x -> x + 1), transform(m, fn k, v -> {[k]: v + 1})]

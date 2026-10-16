@@ -1,0 +1,3 @@
+# The reversed arguments are checked against the function's arity.
+#= {raises: ['expects 2', 'called with 1']}
+rev_args(fn a, b -> a)(1)

@@ -1,0 +1,4 @@
+# A Null key known only at run time is checked when the Map is read: it is
+# an error, not a miss.
+#= {raises: ['Null', 'not a valid Map key'], inputs: {k: null, m: {a: 1}}}
+index(k)(m)

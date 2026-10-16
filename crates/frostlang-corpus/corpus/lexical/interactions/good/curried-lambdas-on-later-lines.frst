@@ -1,0 +1,8 @@
+# Each lambda of a curried function may put its body on the line after its
+# arrow; the innermost body ends at its own line break.
+#= {result: 6}
+def add3 = fn a ->
+    fn b ->
+        fn c ->
+            a + b + c
+add3(1)(2)(3)

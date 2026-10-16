@@ -1,0 +1,4 @@
+# An abbreviated lambda written as an argument of a threaded call is the
+# function the call receives, not a lambda around the call.
+#= {result: [[4], [2, 3]], inputs: {xs: [1, 2, 3]}}
+[xs @ select($($ % 2 == 0)) @ transform($($ * 2)), xs @ select($($ > 1))]

@@ -1,0 +1,5 @@
+# An exported value may catch an error while it is computed, so the export
+# holds the outcome instead of the program ending.
+#= {result: 'went on', exports: {divided: false}, inputs: {zero: 0}}
+export def divided = try_call(fn -> 1 / zero).ok
+'went on'

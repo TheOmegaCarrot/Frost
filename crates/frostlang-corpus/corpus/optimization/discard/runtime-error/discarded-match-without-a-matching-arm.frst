@@ -1,0 +1,6 @@
+# A discarded match on a constant that no arm matches still raises.
+#= {raises: 'no match arm'}
+match 1 {
+    2 => 'two',
+}
+'unreached'

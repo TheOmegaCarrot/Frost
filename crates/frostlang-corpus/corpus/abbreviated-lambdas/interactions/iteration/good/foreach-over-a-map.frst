@@ -1,0 +1,3 @@
+# `foreach` over a Map passes each key and value, in key order.
+#= {result: {a: 1, b: 2}, printed: ['a=1', 'b=2']}
+foreach {b: 2, a: 1} with $(print($'${$1}=${$2}'))

@@ -1,0 +1,4 @@
+# Braces and quotes inside Strings nested at several levels neither close nor
+# keep open any interpolation.
+#= {result: ['<{}>', '}', '"']}
+[$"<${'{'}${$'${"}"}'}>", $'${$'${'}'}'}', $'${$"${R'(")'}"}']

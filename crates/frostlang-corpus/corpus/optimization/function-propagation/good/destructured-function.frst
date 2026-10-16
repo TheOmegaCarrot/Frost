@@ -1,0 +1,8 @@
+# A function bound out of a known structure by a pattern, at any depth or in
+# an alternative, is called as itself.
+#= {result: [42, 3, 1764, 11]}
+def [inc, n] = [fn x -> x + 1, 41]
+def {add} = {add: fn a, b -> a + b}
+def {g: [sq]} = {g: [fn x -> x * x]}
+def [h] | h = [fn x -> x + 10]
+[inc(n), add(1, 2), sq(42), h(1)]

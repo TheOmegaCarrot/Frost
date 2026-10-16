@@ -1,0 +1,6 @@
+# An escape no String takes is rejected in a multiline String, on any line.
+#= {rejects: ['invalid escape sequence', R'(`\q`)']}
+def text = '''
+    ok \\ fine
+    then \q here
+    '''

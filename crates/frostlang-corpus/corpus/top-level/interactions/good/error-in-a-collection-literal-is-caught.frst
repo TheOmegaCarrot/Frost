@@ -1,0 +1,7 @@
+# An error raised while building an Array or Map literal is caught; the
+# elements before it were evaluated, in order, and those after it never were.
+#= {result: ['in array', 'in map'], printed: ['a1', 'm1']}
+[
+    try_call(fn -> [print('a1'), error('in array'), print('a3')]).error,
+    try_call(fn -> {one: print('m1'), two: error('in map'), three: print('m3')}).error,
+]

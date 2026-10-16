@@ -1,0 +1,10 @@
+# A leading-`@` pipeline through globals written in Frost (`dig`, `tap`,
+# `collect`), each step on its own line with a comment.
+#= {result: ['b', 'end'], printed: ['b'], inputs: {m: {a: {b: 'b'}}}}
+m
+    # reach into the Map
+    @ dig('a', 'b')
+    # observe it on the way through
+    @ tap(fn v -> print(v))
+    # pair it with a marker
+    @ collect('end',)

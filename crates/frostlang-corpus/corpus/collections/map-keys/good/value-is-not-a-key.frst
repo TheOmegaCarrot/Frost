@@ -1,0 +1,4 @@
+# A soft index looks up keys only, never values.
+#= {result: [null, 'a']}
+def m = {a: 'b', [1]: 'a'}
+[m['b'], m[1]]

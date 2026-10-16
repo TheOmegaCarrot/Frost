@@ -1,0 +1,5 @@
+# A leading-`.` continuation reads fields of a value only known at runtime.
+#= {result: 5, inputs: {m: {k: {j: 5}}}}
+m
+    .k
+    .j

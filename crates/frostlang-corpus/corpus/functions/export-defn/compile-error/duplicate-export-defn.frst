@@ -1,0 +1,4 @@
+# Two `export defn`s of one name bind it twice.
+#= {rejects: ['`f`', 'already bound']}
+export defn f(x) -> x
+export defn f(y) -> y

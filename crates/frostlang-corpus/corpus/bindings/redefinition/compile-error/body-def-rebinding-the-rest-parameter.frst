@@ -1,0 +1,8 @@
+# A rest parameter is bound in the lambda's scope like any other parameter, so a
+# body `def` of its name is a duplicate binding.
+#= {rejects: ['`rest`', 'already bound']}
+def f = fn ...rest -> {
+    def rest = 2
+    rest
+}
+f()

@@ -1,0 +1,8 @@
+# Each function runs to completion, in order, before the next starts.
+#= {result: 1, printed: ['first', 'second', 'third']}
+def traced = compose(
+    fn x -> tap(x, fn v -> print('first')),
+    fn x -> tap(x, fn v -> print('second')),
+    fn x -> tap(x, fn v -> print('third')),
+)
+traced(1)

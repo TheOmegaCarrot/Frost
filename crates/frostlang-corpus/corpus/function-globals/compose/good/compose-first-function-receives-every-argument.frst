@@ -1,0 +1,4 @@
+# The composed function passes all its arguments, however many, to the first
+# function; each later function gets one, the previous result.
+#= {result: [30, 0, 3]}
+[compose(plus, fn x -> x * 10)(1, 2), compose(collect, len)(), compose(collect, len)(1, 2, 3)]

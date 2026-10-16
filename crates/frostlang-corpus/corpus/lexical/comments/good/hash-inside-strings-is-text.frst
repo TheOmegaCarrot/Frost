@@ -1,0 +1,10 @@
+# A `#` inside any kind of String is text, not the start of a comment.
+#= {result: ['#', 'a # b', '# c', 'x#', '#{}']}
+def n = 'x'
+[
+    '#',
+    "a # b",
+    R'(# c)',
+    $'${n}#',
+    $'#{}',
+]

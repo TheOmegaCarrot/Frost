@@ -1,0 +1,3 @@
+# A key followed by a colon needs a value; it does not default to Null.
+#= {rejects: 'expected an expression'}
+def m = {foo:}

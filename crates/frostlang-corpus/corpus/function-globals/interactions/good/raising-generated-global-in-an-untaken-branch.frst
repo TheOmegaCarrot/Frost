@@ -1,0 +1,6 @@
+# A generated global's call that would raise is harmless when it never runs:
+# the optimizer does not raise it ahead of time.
+#= {result: 'safe'}
+if false: curry(1)
+elif true: 'safe'
+else: compose(len)

@@ -1,7 +1,7 @@
 use std::collections::BTreeMap;
 
 use frostlang::compile::{CompilerOptions, compile_program};
-use frostlang::{Value, Vm, from_value};
+use frostlang::{Value, Vm, from_value, is_identifier_like_and_not_keyword};
 use serde::{Deserialize, Deserializer};
 
 /// The prefix of each line of a script's expectation block.
@@ -11,6 +11,9 @@ const PREFIX: &str = "#=";
 #[derive(Debug)]
 pub struct Expectation {
     pub expected: Expected,
+    /// Values the script reads by name, supplied when it runs, so that no
+    /// compile-time analysis can know them.
+    pub inputs: BTreeMap<String, Value>,
     /// The active bug that keeps the script from behaving as expected, if any.
     pub known_issue: Option<KnownIssue>,
 }
@@ -148,6 +151,8 @@ struct Fields {
     known_issue: Option<String>,
     #[serde(default)]
     regression: bool,
+    #[serde(default)]
+    inputs: BTreeMap<String, Value>,
 }
 
 /// Deserializes a field that is present, even as Null, to `Some`; an absent
@@ -210,8 +215,18 @@ impl Fields {
             (None, true) => return Err("`regression` requires a `known_issue`".to_string()),
             (None, false) => None,
         };
+        if let Some(name) = self
+            .inputs
+            .keys()
+            .find(|name| !is_identifier_like_and_not_keyword(name))
+        {
+            return Err(format!(
+                "the input {name:?} is not a name a script can bind"
+            ));
+        }
         Ok(Expectation {
             expected,
+            inputs: self.inputs,
             known_issue,
         })
     }

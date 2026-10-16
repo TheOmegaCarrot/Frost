@@ -1,0 +1,6 @@
+# Alternatives may bind the same names at different depths of their patterns.
+#= {result: [[2, 1], [1, 2]], inputs: {a: {p: [1, {q: 2}]}, b: [1, 2]}}
+defn pick(v) -> match v {
+    [x, y] | {p: [y, {q: x}]} => [x, y],
+}
+[pick(a), pick(b)]

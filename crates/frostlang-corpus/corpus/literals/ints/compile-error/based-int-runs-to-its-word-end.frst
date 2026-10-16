@@ -1,0 +1,4 @@
+# A based literal runs to the end of its word, so `0bar` is a malformed binary
+# literal, not the Int 0 followed by the name `bar`.
+#= {rejects: ['invalid character `a`', 'binary']}
+0bar

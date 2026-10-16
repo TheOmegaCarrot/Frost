@@ -1,0 +1,5 @@
+# A call is an expression, usable as an operand and an argument.
+#= {result: [7, 12, true]}
+def inc = fn x -> x + 1
+def double = fn x -> x * 2
+[inc(2) + inc(3), double(inc(5)), inc(1) == 2]

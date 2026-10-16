@@ -1,0 +1,3 @@
+# `bcurry`'s first argument must be a Function.
+#= {raises: ['bcurry', 'Function as argument 1', 'got String']}
+bcurry('minus')

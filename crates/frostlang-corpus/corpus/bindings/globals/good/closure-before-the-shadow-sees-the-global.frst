@@ -1,0 +1,6 @@
+# Shadowing a global is not mutating it: a closure written before the shadow
+# still calls the global, while code after the shadow sees the binding.
+#= {result: [2, 0]}
+def count = fn -> len([1, 2])
+def len = fn x -> 0
+[count(), len([1])]

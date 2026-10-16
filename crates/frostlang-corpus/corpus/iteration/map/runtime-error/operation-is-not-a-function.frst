@@ -1,0 +1,4 @@
+# The operation must be a Function; an Int is a type error naming the second
+# argument.
+#= {raises: ['Function', 'argument 2', 'Int'], inputs: {xs: [1]}}
+map xs with 5

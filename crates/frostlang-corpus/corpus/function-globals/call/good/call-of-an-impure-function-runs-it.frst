@@ -1,0 +1,4 @@
+# `call` applying `print` must really print, even with constant arguments:
+# an impure callee keeps the call from being computed ahead of time.
+#= {result: null, printed: ['hi']}
+call(print, ['hi'])

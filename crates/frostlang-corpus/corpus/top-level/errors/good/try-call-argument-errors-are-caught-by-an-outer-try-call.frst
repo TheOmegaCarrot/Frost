@@ -1,0 +1,6 @@
+# A `try_call` given bad arguments raises rather than catching its own
+# mistake, but an enclosing `try_call` catches that error like any other.
+#= {result: [false, true, false, true]}
+def bad_function = try_call(fn -> try_call(1))
+def bad_arguments = try_call(fn -> try_call(fn -> 1, 'not an Array'))
+[bad_function.ok, is_string(bad_function.error), bad_arguments.ok, is_string(bad_arguments.error)]

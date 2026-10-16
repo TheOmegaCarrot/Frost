@@ -1,0 +1,11 @@
+# In a function body, a binding may shadow a captured known value of the same
+# name: reads before it see the capture, its own value may read the capture,
+# and reads after it see the binding.
+#= {result: [[5, 50], [5, 50]]}
+def n = 5
+def f = fn -> {
+    def before = n
+    def n = n * 10
+    [before, n]
+}
+[f(), f()]

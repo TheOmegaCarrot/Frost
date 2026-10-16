@@ -1,0 +1,4 @@
+# A constant raising interpolation left of a runtime raising one raises first,
+# whatever the optimizer does with the constant.
+#= {raises: 'modulus by zero', inputs: {zero: 0}}
+$'${1 % 0}${1 / zero}'

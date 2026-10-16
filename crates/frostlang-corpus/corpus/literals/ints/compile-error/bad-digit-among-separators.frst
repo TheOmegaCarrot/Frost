@@ -1,0 +1,3 @@
+# Separators are never the fault: the first real bad digit is named.
+#= {rejects: ['invalid character `g`', 'hexadecimal']}
+0xf_g_f

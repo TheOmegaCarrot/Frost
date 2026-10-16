@@ -1,0 +1,4 @@
+# `error` with a message computed from constants raises that message when the
+# program reaches it.
+#= {raises: 'custom failure 42'}
+error('custom ' + $'failure ${6 * 7}')

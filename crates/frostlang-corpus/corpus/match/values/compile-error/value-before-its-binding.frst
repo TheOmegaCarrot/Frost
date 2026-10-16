@@ -1,0 +1,7 @@
+# A parenthesized value can refer only to bindings made earlier in the pattern,
+# not to one made after it.
+#= {rejects: '`x` is not defined'}
+match [1, 1] {
+    [(x), x] => x,
+    _ => 0,
+}

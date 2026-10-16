@@ -1,0 +1,7 @@
+# A pin in a def's pattern may call a known function on a part the pattern
+# bound earlier; the pin compares against that call's result.
+#= {result: [2, 3]}
+def double = fn x -> x * 2
+def [a, (double(a))] = [2, 4]
+def [b, (double(b))] | [b, _] = [3, 0]
+[a, b]

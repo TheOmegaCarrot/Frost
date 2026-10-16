@@ -1,0 +1,5 @@
+# The `$$` rest placeholder works inside an interpolation in an abbreviated
+# lambda.
+#= {result: ['3 args', '0 args']}
+def count = $($'${len($$)} args')
+[count(1, 2, 3), count()]

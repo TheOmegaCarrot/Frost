@@ -1,0 +1,3 @@
+# A `$` placeholder is never a binding name, so it cannot be exported.
+#= {rejects: ['expected a pattern', '`$`']}
+export def $ = 1

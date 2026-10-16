@@ -1,0 +1,5 @@
+# `export` applies to `def`; a match arm's binding cannot be exported.
+#= {rejects: ['expected a pattern', 'found `export`']}
+match [1] {
+    [export x] => x,
+}

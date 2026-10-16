@@ -1,0 +1,4 @@
+# Bytes are not an Array: an Array pattern does not split them into bytes.
+#= {raises: 'expected an Array', inputs: {v: x'0102'}}
+def [a, ...r] = v
+[a, r]

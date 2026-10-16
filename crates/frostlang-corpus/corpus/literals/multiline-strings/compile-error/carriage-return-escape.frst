@@ -1,0 +1,5 @@
+# A multiline String does not take `\r` either.
+#= {rejects: ['invalid escape sequence', R'(`\r`)']}
+def text = '''
+    a\rb
+    '''

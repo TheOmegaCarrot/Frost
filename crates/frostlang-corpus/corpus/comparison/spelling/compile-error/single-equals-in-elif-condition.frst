@@ -1,0 +1,5 @@
+# An `elif` condition written with a single `=` is rejected, pointing to `==`.
+#= {rejects: '`==`', inputs: {x: 2}}
+if x == 1: 'one'
+elif x = 2: 'two'
+else: 'other'

@@ -1,0 +1,6 @@
+# In `m.key`, `key` names a Map key, not a binding: neither a Map literal's
+# shorthand key nor a field access binds a name `key`.
+#= {rejects: ['`key`', 'not defined']}
+def m = {key: 1}
+def v = m.key
+key

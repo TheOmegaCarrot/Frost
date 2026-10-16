@@ -1,0 +1,5 @@
+# A variadic `fn` inside an abbreviated lambda has its own rest parameter;
+# `$$` there is still the enclosing lambda's.
+#= {result: [[2], [1]]}
+def f = $(fn ...inner -> [inner, $$])
+f(1)(2)

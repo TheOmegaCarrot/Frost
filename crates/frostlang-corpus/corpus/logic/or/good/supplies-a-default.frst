@@ -1,0 +1,14 @@
+# `x or default` replaces only Null and false. Values that other languages
+# treat as missing (zero, the empty String, the empty Array) are kept.
+#= {
+#=     result: ['anonymous', 'anonymous', 'ada', '', 0, []],
+#=     inputs: {a: null, b: false, c: 'ada', d: '', e: 0, g: []},
+#= }
+[
+    a or 'anonymous',
+    b or 'anonymous',
+    c or 'anonymous',
+    d or 'anonymous',
+    e or 'anonymous',
+    g or 'anonymous',
+]

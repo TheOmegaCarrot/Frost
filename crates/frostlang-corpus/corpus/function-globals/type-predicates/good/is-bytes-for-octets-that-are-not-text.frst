@@ -1,0 +1,9 @@
+# Bytes are Bytes whatever their octets, including ones that are not valid
+# UTF-8; they are never a String.
+#= {result: [true, true, false, true]}
+[
+    is_bytes(x'ff'),
+    is_bytes(x'00'),
+    is_string(x'ff'),
+    is_flat(x'c0'),
+]

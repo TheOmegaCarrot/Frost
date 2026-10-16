@@ -1,0 +1,4 @@
+# Null plus Null is a type error; `+` is undefined on Null whatever the other
+# operand is.
+#= {raises: 'Null + Null'}
+null + null

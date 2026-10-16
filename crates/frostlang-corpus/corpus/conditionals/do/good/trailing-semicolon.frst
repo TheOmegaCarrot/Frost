@@ -1,0 +1,4 @@
+# A `;` after a block's final expression is a separator with nothing after
+# it; the final expression is still the block's value.
+#= {result: 1}
+do { 1; }

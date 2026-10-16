@@ -1,0 +1,3 @@
+# `rev_args` takes exactly one argument.
+#= {raises: ['rev_args', 'expects 1', 'called with 0']}
+rev_args()

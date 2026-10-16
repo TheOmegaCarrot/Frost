@@ -1,0 +1,8 @@
+# A format String pattern is evaluated when the match reaches it, and compared
+# by value with the target.
+#= {result: ['matched', 'no'], inputs: {name: 'world', a: 'hello, world', b: 'hello, there'}}
+defn greets(s) -> match s {
+    $'hello, ${name}' => 'matched',
+    _ => 'no',
+}
+[greets(a), greets(b)]

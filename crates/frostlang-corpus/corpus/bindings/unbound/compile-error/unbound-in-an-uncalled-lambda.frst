@@ -1,0 +1,5 @@
+# Names are resolved at compile time, so an unbound name inside a lambda that is
+# never called is still an error.
+#= {rejects: ['`missing`', 'not defined']}
+def f = fn -> missing
+1

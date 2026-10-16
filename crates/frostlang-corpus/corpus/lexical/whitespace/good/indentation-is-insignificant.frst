@@ -1,0 +1,7 @@
+# Indentation carries no meaning: statements at odd and inconsistent
+# indentation still run in order, each ending at its line break.
+#= {result: 6}
+        def a = 1
+  def b = 2
+            def c = 3
+a + b + c

@@ -1,0 +1,9 @@
+# A format string folded from constants serves as a Map key and as a
+# condition operand exactly as the text it builds.
+#= {result: ['found', 'matched']}
+def n = 2
+def table = {item2: 'found'}
+[
+    table[$'item${n}'],
+    if $'item${n}' == 'item2': 'matched' else: error('mismatch'),
+]

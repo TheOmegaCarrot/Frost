@@ -1,0 +1,3 @@
+# Frost has no `\x` escape; a character is named with `\u{...}` instead.
+#= {rejects: ['invalid escape sequence', R'(`\x`)']}
+def s = $'\x41'

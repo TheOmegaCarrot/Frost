@@ -1,0 +1,6 @@
+# `not` is an expression operator, so it cannot begin a `match` pattern.
+#= {rejects: ['expected a pattern', '`not`']}
+match 2 {
+    not 1 => 'not one',
+    _ => 'one',
+}

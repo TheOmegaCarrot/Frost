@@ -1,0 +1,6 @@
+# An arm's result cannot assign to a name: values are immutable, and an arm
+# result is an expression.
+#= {rejects: ['expected `,` or `}`', 'immutable']}
+match 1 {
+    x => y = x,
+}

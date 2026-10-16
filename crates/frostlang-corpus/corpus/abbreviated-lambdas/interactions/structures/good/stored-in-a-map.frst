@@ -1,0 +1,4 @@
+# Abbreviated lambdas stored in a Map are called through field access.
+#= {result: [8, 5]}
+def ops = {double: $($ * 2), add: $($1 + $2)}
+[ops.double(4), ops.add(2, 3)]

@@ -1,0 +1,4 @@
+# A format string whose interpolation raises on constants raises when the
+# program reaches it.
+#= {raises: 'division by zero'}
+$'result: ${1 / 0}'

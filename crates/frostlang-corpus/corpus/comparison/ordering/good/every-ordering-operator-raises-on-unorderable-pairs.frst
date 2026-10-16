@@ -1,0 +1,38 @@
+# Each of the four ordering operators raises on every unorderable pair: same
+# types with no ordering, and every mismatch other than Int with Float. The
+# raise is catchable, and no pair answers silently.
+#= {
+#=     result: [
+#=         [false, false, false, false],
+#=         [false, false, false, false],
+#=         [false, false, false, false],
+#=         [false, false, false, false],
+#=         [false, false, false, false],
+#=         [false, false, false, false],
+#=         [false, false, false, false],
+#=         [false, false, false, false],
+#=         [false, false, false, false],
+#=         [false, false, false, false],
+#=     ],
+#= }
+def pairs = [
+    [null, null],
+    [true, false],
+    [{}, {}],
+    [len, len],
+    [1, '1'],
+    [1.0, null],
+    ['a', x'61'],
+    [[], {}],
+    ['', []],
+    [x'', 0],
+]
+transform(pairs, fn pair -> {
+    def [a, b] = pair
+    [
+        try_call(fn -> a < b).ok,
+        try_call(fn -> a <= b).ok,
+        try_call(fn -> a > b).ok,
+        try_call(fn -> a >= b).ok,
+    ]
+})

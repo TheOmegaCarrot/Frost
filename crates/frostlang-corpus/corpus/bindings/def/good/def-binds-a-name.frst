@@ -1,0 +1,4 @@
+# `def` binds a name to a value, and reading the name yields that value.
+#= {result: 5}
+def x = 5
+x

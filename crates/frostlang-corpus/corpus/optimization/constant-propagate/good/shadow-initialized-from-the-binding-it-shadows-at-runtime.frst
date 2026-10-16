@@ -1,0 +1,9 @@
+# The shadowing def of shadow-initialized-from-the-binding-it-shadows, over a
+# value only known at runtime, reads the outer binding the same way.
+#= {result: [2, 1], inputs: {one: 1}}
+def x = one
+def y = do {
+    def x = x + 1
+    x
+}
+[y, x]

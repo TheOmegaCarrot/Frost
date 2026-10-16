@@ -1,0 +1,10 @@
+# Each branch's `do` block is its own scope, so both may bind the same name.
+#= {result: [1, 12], inputs: {t: true, n: null}}
+defn pick(x) -> if x: do {
+    def y = 1
+    y
+} else: do {
+    def y = 2
+    y + 10
+}
+[pick(t), pick(n)]

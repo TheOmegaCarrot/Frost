@@ -1,0 +1,5 @@
+# A statement whose value is discarded still runs, so a division by a zero
+# only known at runtime raises.
+#= {raises: 'division by zero', inputs: {zero: 0}}
+1 / zero
+'unreached'

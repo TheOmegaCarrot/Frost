@@ -1,0 +1,4 @@
+# A placeholder cannot be a `defn` function name.
+#= {rejects: ['`$1`', 'placeholders work only inside']}
+defn $1() -> 1
+1

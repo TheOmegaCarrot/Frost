@@ -1,0 +1,17 @@
+# Comments may sit inside a parenthesized parameter list and inside
+# destructuring patterns spanning lines.
+#= {result: [3, 1, [2], 4]}
+defn add(
+    a, # the first
+    # the second
+    b
+) -> a + b
+def [
+    first, # kept
+    ...rest # the remainder
+] = [1, 2]
+def {
+    # a renamed entry
+    k: value,
+} = {k: 4}
+[add(1, 2), first, rest, value]

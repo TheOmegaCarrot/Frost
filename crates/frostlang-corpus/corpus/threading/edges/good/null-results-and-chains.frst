@@ -1,0 +1,10 @@
+# Null can be a threaded call's result and can travel along a chain like any
+# other value.
+#= {result: [null, 1, true, 'Null'], inputs: {nothing: null}}
+defn drop(x) -> null
+[
+    5 @ drop(),
+    nothing @ collect() @ len(),
+    5 @ drop() @ is_null(),
+    nothing @ type(),
+]

@@ -1,0 +1,6 @@
+# A computed key may be a format String built from an earlier part, over a
+# literal the optimizer may match ahead of time and at runtime.
+#= {result: [7, 8], inputs: {m: {kind: 'team', team_id: 8}}}
+def {kind, [$'${kind}_id']: id} = {kind: 'user', user_id: 7}
+def {kind: k, [$'${k}_id']: other} = m
+[id, other]

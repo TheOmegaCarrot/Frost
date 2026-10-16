@@ -1,0 +1,4 @@
+# An Int and Float product too large to be finite raises like any Float
+# overflow: the Int becomes a Float first, so it does not wrap.
+#= {raises: 'infinity', inputs: {greatest: 9223372036854775807, big: 1e300}}
+greatest * big

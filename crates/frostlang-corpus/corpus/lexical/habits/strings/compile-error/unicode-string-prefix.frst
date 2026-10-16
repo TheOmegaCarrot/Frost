@@ -1,0 +1,3 @@
+# Python 2's `u'...'` prefix is not needed: every String is Unicode text.
+#= {rejects: 'a String needs no `u` prefix'}
+u'abc'

@@ -1,0 +1,5 @@
+# `$$` can forward the remaining arguments to another Function through
+# `call`.
+#= {result: 2, inputs: {a: 5, b: 3}}
+def forward = $(call($1, $$))
+forward(fn x, y -> x - y, a, b)

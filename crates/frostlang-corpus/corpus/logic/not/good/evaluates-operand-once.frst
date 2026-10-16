@@ -1,0 +1,10 @@
+# `not` evaluates its operand exactly once, even nested.
+#= {result: [false, true], printed: ['0', 'null']}
+defn note(v) -> {
+    print(v)
+    v
+}
+[
+    not note(0),
+    not not not note(null),
+]

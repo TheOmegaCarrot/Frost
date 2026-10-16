@@ -1,0 +1,3 @@
+# An `else` that continues no `if` is an error.
+#= {rejects: ['found `else`', 'written `if a: b else: c`']}
+else: 1

@@ -1,0 +1,5 @@
+# A `reduce` inside an abbreviated lambda may take its init and its
+# collection from placeholders, with a `fn` as the operation.
+#= {result: [16, 10], inputs: {xs: [1, 2, 3], none: []}}
+def total = $(reduce $2 init: $1 with fn acc, x -> acc + x)
+[total(10, xs), total(10, none)]

@@ -1,0 +1,6 @@
+# Two functions with different parameter counts tail-call each other, passed
+# in as arguments. Subtle: each reuses a frame laid out for the other's shape.
+#= {result: [[1, 2, 3, 4], 'narrow']}
+defn wide(n, a, b, c, d, back) -> if n == 0: [a, b, c, d] else: back(n - 1, wide)
+defn narrow(n, other) -> if n == 0: 'narrow' else: other(n - 1, 1, 2, 3, 4, narrow)
+[narrow(100001, wide), narrow(100000, wide)]

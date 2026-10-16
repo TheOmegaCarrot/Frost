@@ -1,0 +1,12 @@
+# Comparison results are ordinary Bools: they can be Array elements and Map
+# values, and compare equal to Bool literals.
+#= {
+#=     result: [true, true, {less: true, same: false}],
+#=     inputs: {a: 1, b: 2},
+#= }
+def report = {less: a < b, same: a == b}
+[
+    [a < b, a == b] == [true, false],
+    report == {same: false, less: true},
+    report,
+]

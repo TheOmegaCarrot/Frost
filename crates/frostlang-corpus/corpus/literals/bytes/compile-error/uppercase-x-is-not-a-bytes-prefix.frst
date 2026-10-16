@@ -1,0 +1,4 @@
+# Only a lowercase `x` starts a Bytes literal, though an Int's `0X` prefix takes
+# either case: `X'00'` is the name `X` touching a String.
+#= {rejects: 'Bytes literal is written in hex'}
+X'00'

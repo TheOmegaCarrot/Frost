@@ -1,0 +1,5 @@
+# A global used in an abbreviated lambda's body is looked up like in any
+# lambda.
+#= {result: [3, 0]}
+def size = $(len($))
+[size([1, 2, 3]), size('')]

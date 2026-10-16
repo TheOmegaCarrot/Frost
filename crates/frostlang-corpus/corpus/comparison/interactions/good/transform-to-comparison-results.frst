@@ -1,0 +1,10 @@
+# `transform` and the `map` expression can produce comparison results, which
+# are Bools in an Array.
+#= {
+#=     result: [[false, true, false], [true, false, true]],
+#=     inputs: {xs: [1, 2, 3]},
+#= }
+[
+    xs @ transform(fn x -> x == 2),
+    map xs with fn x -> x != 2,
+]

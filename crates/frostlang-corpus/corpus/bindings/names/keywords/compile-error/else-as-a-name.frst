@@ -1,0 +1,4 @@
+# `else` is a keyword, so it cannot be bound as a name.
+#= {rejects: ['`else`', 'keyword']}
+def else = 1
+1

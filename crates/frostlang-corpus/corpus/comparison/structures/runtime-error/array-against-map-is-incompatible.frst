@@ -1,0 +1,3 @@
+# Ordering an Array against a Map raises a type mismatch.
+#= {raises: ['incompatible types', 'Array', 'Map']}
+[] <= {}

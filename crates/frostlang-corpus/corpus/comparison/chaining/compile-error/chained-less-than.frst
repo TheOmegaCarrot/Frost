@@ -1,0 +1,4 @@
+# Relational operators do not chain: `1 < 2 < 3` is rejected rather than read
+# as a range test or as `(1 < 2) < 3`.
+#= {rejects: 'cannot chain'}
+1 < 2 < 3

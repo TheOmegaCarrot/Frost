@@ -1,0 +1,18 @@
+# The CSV splitter raises its own error when the row ends inside a quoted
+# field: the check runs after the fold, on its final state.
+#= {
+#=     raises: 'unclosed quote',
+#=     inputs: {chars: ['a', ',', '"', 'b', ',', 'c']},
+#= }
+def start = {mode: 'start', field: '', fields: []}
+
+defn push(state) -> start + {fields: state.fields + [state.field]}
+
+defn step(state, c) -> match state.mode {
+    'start' => if c == '"': state + {mode: 'quoted'} elif c == ',': push(state) else: state + {mode: 'plain', field: c},
+    'plain' => if c == ',': push(state) else: state + {field: state.field + c},
+    'quoted' => if c == '"': state + {mode: 'plain'} else: state + {field: state.field + c},
+}
+
+def last = reduce chars init: start with step
+if last.mode == 'quoted': error('unclosed quote') else: push(last).fields

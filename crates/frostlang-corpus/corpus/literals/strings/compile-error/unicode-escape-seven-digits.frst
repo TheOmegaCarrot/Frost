@@ -1,0 +1,4 @@
+# A Unicode escape holds at most 6 hex digits, even when leading zeros keep the value
+# in range.
+#= {rejects: 'more than 6 hex digits'}
+'\u{0000041}'

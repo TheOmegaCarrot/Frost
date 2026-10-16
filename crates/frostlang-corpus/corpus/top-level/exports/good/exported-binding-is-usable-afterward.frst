@@ -1,0 +1,4 @@
+# An exported binding is an ordinary binding for the rest of the program.
+#= {result: 10, exports: {n: 5}}
+export def n = 5
+n * 2

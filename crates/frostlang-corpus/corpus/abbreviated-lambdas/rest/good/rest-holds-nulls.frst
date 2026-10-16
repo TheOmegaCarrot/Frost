@@ -1,0 +1,4 @@
+# Null arguments are kept in `$$`, not dropped.
+#= {result: [null, null, [null]]}
+def f = $([$1, $2, $$])
+f(null, null, null)

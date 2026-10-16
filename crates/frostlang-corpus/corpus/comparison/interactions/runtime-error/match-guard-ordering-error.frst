@@ -1,0 +1,7 @@
+# An ordering error in a `match` guard raises rather than counting as a
+# failed guard and falling through to the next arm.
+#= {raises: ['incompatible types', 'Null', 'Int'], inputs: {v: null}}
+match v {
+    n if: n > 0 => 'positive',
+    _ => 'other',
+}

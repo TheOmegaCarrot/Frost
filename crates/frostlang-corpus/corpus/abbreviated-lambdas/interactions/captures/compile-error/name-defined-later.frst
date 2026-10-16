@@ -1,0 +1,6 @@
+# An abbreviated lambda captures only names already bound where it is
+# written; one defined after it is unbound inside.
+#= {rejects: ['`later`', 'not defined']}
+def f = $($ + later)
+def later = 1
+f(1)

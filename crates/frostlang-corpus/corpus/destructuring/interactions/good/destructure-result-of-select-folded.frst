@@ -1,0 +1,5 @@
+# A pipeline over a literal, which the optimizer may evaluate ahead of time,
+# destructures to the same result as at runtime.
+#= {result: [2, [3]]}
+def [first, ...others] = [1, 2, 3] @ select(fn x -> x > 1)
+[first, others]

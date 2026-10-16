@@ -1,0 +1,7 @@
+# A parenthesized value must refer to defined names, even in an arm never
+# tried.
+#= {rejects: '`nope` is not defined'}
+match 1 {
+    1 => 0,
+    (nope) => 1,
+}

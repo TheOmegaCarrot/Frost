@@ -1,0 +1,4 @@
+# A placeholder like `$1` is valid only inside an abbreviated lambda; a plain
+# lambda outside one does not provide it.
+#= {rejects: ['expected an expression', '`$1`']}
+def f = fn -> $1

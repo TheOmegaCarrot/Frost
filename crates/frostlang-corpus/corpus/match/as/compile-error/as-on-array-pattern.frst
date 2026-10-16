@@ -1,0 +1,5 @@
+# `as` binds a whole Map pattern only; an Array pattern cannot take one.
+#= {rejects: '`as` binds a whole Map pattern'}
+match [1] {
+    [a] as all => all,
+}

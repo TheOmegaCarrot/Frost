@@ -1,0 +1,10 @@
+# An Int bound to two names and used to compute a wrapped value is unchanged
+# under both names.
+#= {
+#=     result: [9223372036854775807, 9223372036854775807, -9223372036854775808],
+#=     inputs: {n: 9223372036854775807},
+#= }
+def a = n
+def b = a
+def c = b + 1
+[a, b, c]

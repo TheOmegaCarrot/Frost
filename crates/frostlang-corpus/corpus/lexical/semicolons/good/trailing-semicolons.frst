@@ -1,0 +1,6 @@
+# A `;` may end a statement that a line break also ends, and may end the last
+# statement; it changes nothing.
+#= {result: 3}
+def a = 1;
+def b = 2;
+a + b;

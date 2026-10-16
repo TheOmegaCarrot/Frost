@@ -1,0 +1,9 @@
+# A pattern that also checks its known value, by type, literal, or pinned
+# value, binds the same parts as at runtime once the check passes.
+#= {result: [5, 'two', 7, 7, 2]}
+def n is Int = 5
+def [_, s is String] = [1, 'two']
+def [a, 1] = [7, 1]
+def [b, (1 + 1)] = [7, 2]
+def {k: 'v', w} = {k: 'v', w: 2}
+[n, s, a, b, w]

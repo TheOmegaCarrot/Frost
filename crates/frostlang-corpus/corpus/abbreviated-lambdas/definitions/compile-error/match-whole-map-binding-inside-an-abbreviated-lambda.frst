@@ -1,0 +1,6 @@
+# A match pattern's `as` name cannot be a placeholder, inside an
+# abbreviated lambda as anywhere.
+#= {rejects: ['a name after `as`', 'found `$`']}
+def f = $(match $1 {
+    {a} as $ => a,
+})

@@ -1,0 +1,9 @@
+# A nested lambda is its own scope, so its parameter or body binding may reuse an
+# enclosing lambda's parameter name.
+#= {result: [2, 11]}
+def by_param = fn x -> fn x -> x
+def by_body = fn x -> fn -> {
+    def x = x + 1
+    x
+}
+[by_param(1)(2), by_body(10)()]

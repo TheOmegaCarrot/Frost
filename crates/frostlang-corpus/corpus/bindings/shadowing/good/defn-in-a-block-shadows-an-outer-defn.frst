@@ -1,0 +1,9 @@
+# A `defn` in a nested block shadows an enclosing function of the same name
+# only within the block.
+#= {result: [2, 1]}
+defn f() -> 1
+def inner = do {
+    defn f() -> 2
+    f()
+}
+[inner, f()]

@@ -1,0 +1,3 @@
+# `$$` cannot be defined with `def`.
+#= {rejects: ['expected a pattern', 'found `$$`']}
+def $$ = [1, 2]

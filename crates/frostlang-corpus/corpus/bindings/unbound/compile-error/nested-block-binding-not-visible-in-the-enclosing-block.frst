@@ -1,0 +1,9 @@
+# A binding in a nested block is not visible in the block enclosing it.
+#= {rejects: ['`z`', 'not defined']}
+do {
+    def y = do {
+        def z = 1
+        z
+    }
+    z
+}

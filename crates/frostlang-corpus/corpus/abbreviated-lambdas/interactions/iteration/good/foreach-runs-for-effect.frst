@@ -1,0 +1,4 @@
+# `foreach ... with` runs an abbreviated lambda on each element for its
+# effect and yields the structure unchanged.
+#= {result: [1, 2], printed: ['1', '2']}
+foreach [1, 2] with $(print(to_string($)))

@@ -1,0 +1,8 @@
+# Indentation means nothing: a second indented line after a branch is not part
+# of it but a statement of its own, which runs whatever the condition.
+# Subtle: this reads like a two-statement branch in an indentation-based
+# language.
+#= {result: null, printed: ['second'], inputs: {c: false}}
+if c:
+    print('first')
+    print('second')

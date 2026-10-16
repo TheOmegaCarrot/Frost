@@ -1,0 +1,8 @@
+# Outside brackets, a line break ends the statement, so a `match`'s `{` must
+# stay on the line of its value. Subtle: inside brackets the same layout is
+# accepted, since line breaks there are insignificant.
+#= {rejects: 'found a line break', inputs: {x: 1}}
+def r = match x
+{
+    _ => 2,
+}

@@ -1,0 +1,4 @@
+# A native Function and a lambda are both Functions, so ordering them reports
+# the one unorderable type rather than a type mismatch.
+#= {raises: ['Function', 'not orderable']}
+len < fn x -> x

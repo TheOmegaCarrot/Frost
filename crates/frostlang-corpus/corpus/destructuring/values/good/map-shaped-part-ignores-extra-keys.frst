@@ -1,0 +1,6 @@
+# A part written like a Map literal is a Map pattern, not a value: it requires
+# only its own keys, so a Map with more keys still matches. Compare the pin
+# `({k: 'v'})`, which requires an equal Map.
+#= {result: 1, inputs: {xs: [1, {k: 'v', z: 2}]}}
+def [a, {k: 'v'}] = xs
+a

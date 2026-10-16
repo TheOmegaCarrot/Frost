@@ -1,0 +1,4 @@
+# A parenthesized attempt at a range test, on values known only at runtime,
+# orders a Bool against an Int and raises.
+#= {raises: ['incompatible types', 'Int', 'Bool'], inputs: {x: 5}}
+0 < (x < 10)

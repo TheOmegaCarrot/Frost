@@ -1,0 +1,3 @@
+# Null is not a valid Map key, so reading by it is an error, not a miss.
+#= {raises: ['Null', 'not a valid Map key']}
+index(null)({a: 1})

@@ -1,0 +1,6 @@
+# A call's arguments may end with a trailing comma, which adds no argument:
+# the arity is unchanged.
+#= {result: [3, 5, 2]}
+def add = fn a, b -> a + b
+def inc = fn x -> x + 1
+[add(1, 2,), inc(4,), len([1, 2],)]

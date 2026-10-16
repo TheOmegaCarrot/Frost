@@ -1,0 +1,3 @@
+# A rest parameter ends a parameter list, so no trailing comma may follow it.
+#= {rejects: 'comes last'}
+defn f(a, ...rest,) -> a

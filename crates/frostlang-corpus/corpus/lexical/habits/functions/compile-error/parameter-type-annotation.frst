@@ -1,0 +1,3 @@
+# Parameters take no type annotations.
+#= {rejects: 'no type annotations'}
+defn f(x: Int) -> x

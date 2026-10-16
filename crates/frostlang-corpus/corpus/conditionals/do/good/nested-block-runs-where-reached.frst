@@ -1,0 +1,12 @@
+# A nested block's statements run where the block is reached among its
+# enclosing block's statements.
+#= {result: null, printed: ['1', '2', '3', '4', '5']}
+do {
+    print('1')
+    do {
+        print('2')
+        print('3')
+    }
+    print('4')
+    do { print('5') }
+}

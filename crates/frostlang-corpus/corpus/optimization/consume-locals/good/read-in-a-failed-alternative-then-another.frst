@@ -1,0 +1,8 @@
+# A binding read by a pin in an alternative that fails, and again by the next
+# alternative, has its value there.
+#= {result: 'second', inputs: {xs: [1, 2], target: [0, [1, 2]]}}
+def v = xs
+match target {
+    [(v), _] | [_, (v)] => if target[0] == 0: 'second' else: 'first',
+    _ => 'none',
+}

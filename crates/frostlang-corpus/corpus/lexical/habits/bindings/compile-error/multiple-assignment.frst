@@ -1,0 +1,4 @@
+# Several names are bound at once by destructuring an Array, not with a
+# comma list.
+#= {rejects: 'destructure with `def`'}
+def a, b = 1, 2

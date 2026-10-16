@@ -1,0 +1,5 @@
+# An unbound name in a lambda's body is a compile error even though the
+# lambda is never called.
+#= {rejects: ['`missing`', 'not defined']}
+def f = fn -> missing
+1

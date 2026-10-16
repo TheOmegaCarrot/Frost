@@ -1,0 +1,4 @@
+# A trailing comma is allowed only where another parameter could follow, so
+# not after a rest parameter.
+#= {rejects: ['expected `)`', 'found `,`']}
+def f = fn(a, ...rest,) -> rest

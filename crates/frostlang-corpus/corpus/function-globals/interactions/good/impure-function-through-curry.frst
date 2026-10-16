@@ -1,0 +1,6 @@
+# `print` reached through `curry` and `bcurry` still prints, though every
+# argument is a constant.
+#= {result: null, printed: ['curry', 'bcurry']}
+curry(print, 'curry')()
+bcurry(print, 'bcurry')()
+null

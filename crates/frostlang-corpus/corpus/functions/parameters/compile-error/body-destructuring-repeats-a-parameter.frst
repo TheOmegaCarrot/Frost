@@ -1,0 +1,7 @@
+# A destructuring `def` in the body binds into the parameters' scope, so it
+# may not bind a parameter's name either.
+#= {rejects: ['`x`', 'already bound']}
+def f = fn x -> {
+    def [x, y] = [1, 2]
+    y
+}

@@ -1,0 +1,12 @@
+# Comments may sit between `match` arms, after an arm's comma, and around a
+# pattern's alternatives.
+#= {result: ['low', 'high', 'other'], inputs: {xs: [2, 9, 'x']}}
+defn classify(v) -> match v {
+    # small numbers
+    1 | 2 # either
+    | 3 => 'low', # an arm's comment
+    # anything numeric beyond
+    n is Int => 'high',
+    _ => 'other', # the catch-all
+}
+xs @ transform(classify)

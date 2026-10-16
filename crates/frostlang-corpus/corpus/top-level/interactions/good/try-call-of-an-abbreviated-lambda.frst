@@ -1,0 +1,7 @@
+# An abbreviated lambda is a Function like any other: `try_call` passes it
+# its arguments and catches what it raises.
+#= {result: [{ok: true, value: 3}, 'abbr']}
+[
+    try_call($($1 + $2), [1, 2]),
+    try_call($(error($)), ['abbr']).error,
+]

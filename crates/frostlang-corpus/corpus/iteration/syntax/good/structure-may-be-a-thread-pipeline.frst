@@ -1,0 +1,4 @@
+# The structure extends up to `with`, so it may be an `@` pipeline without
+# parentheses: here `xs @ select(...)` is the structure being mapped.
+#= {result: [20, 30], inputs: {xs: [1, 2, 3]}}
+map xs @ select(fn x -> x > 1) with fn x -> x * 10

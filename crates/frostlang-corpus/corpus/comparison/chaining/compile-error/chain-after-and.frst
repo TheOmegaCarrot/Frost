@@ -1,0 +1,4 @@
+# `and` separates comparisons, but a chain on either side of it is still a
+# chain: the right operand here is `3 < 4 < 5`.
+#= {rejects: 'cannot chain'}
+1 < 2 and 3 < 4 < 5

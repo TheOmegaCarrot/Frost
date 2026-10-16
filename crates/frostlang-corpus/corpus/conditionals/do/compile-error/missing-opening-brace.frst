@@ -1,0 +1,3 @@
+# `do` must be followed by braces; it does not take a bare expression.
+#= {rejects: 'expected `{`'}
+do 42

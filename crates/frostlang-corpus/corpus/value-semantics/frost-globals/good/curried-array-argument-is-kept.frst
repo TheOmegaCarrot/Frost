@@ -1,0 +1,6 @@
+# An Array stored by `curry` is unchanged by a call that derives a value from
+# it, and the caller's binding of it is unchanged too.
+#= {result: [[1, 2], [1, 3], [1]], inputs: {n: 1}}
+def xs = [n]
+def push = curry(fn base, x -> base + [x], xs)
+[push(2), push(3), xs]

@@ -1,0 +1,6 @@
+# A non-commutative body shows which argument each numbered placeholder
+# binds, with arguments known only at runtime.
+#= {result: [7, -7], inputs: {a: 10, b: 3}}
+def minus = $($1 - $2)
+def flipped = $($2 - $1)
+[minus(a, b), flipped(a, b)]

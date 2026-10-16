@@ -1,0 +1,4 @@
+# A format String's `$` must touch its quote: `$ 'a'` is a stray `$` and then
+# a plain String, not a format String.
+#= {rejects: ['expected an expression', 'found `$`']}
+def s = $ 'a'

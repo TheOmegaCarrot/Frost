@@ -1,0 +1,9 @@
+# A destructured name is usable in a later `match` guard and pin.
+#= {result: ['at limit', 'below'], inputs: {cfg: {limit: 3}}}
+def {limit} = cfg
+defn classify(n) -> match n {
+    (limit) => 'at limit',
+    _ if: n < limit => 'below',
+    _ => 'above',
+}
+[classify(3), classify(1)]

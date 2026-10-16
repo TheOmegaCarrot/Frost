@@ -1,0 +1,4 @@
+# An abbreviated lambda captures a known value as a written lambda does.
+#= {result: [[3, 6, 9], [3, 6, 9]], inputs: {xs: [1, 2, 3]}}
+def k = 3
+[map xs with $($ * k), map [1, 2, 3] with $($ * k)]

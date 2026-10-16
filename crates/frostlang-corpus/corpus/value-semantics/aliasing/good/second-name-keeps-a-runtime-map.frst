@@ -1,0 +1,7 @@
+# A Map built at runtime and bound to two names is unchanged under both when
+# a merge is derived through one of them at its last use.
+#= {result: [{k: 1}, {k: 1}, {k: 1, j: 2}], inputs: {v: 1}}
+def m = {k: v}
+def n = m
+def o = n + {j: 2}
+[m, n, o]

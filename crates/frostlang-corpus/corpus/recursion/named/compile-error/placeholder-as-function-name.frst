@@ -1,0 +1,5 @@
+# A `$` placeholder cannot name a function: placeholders exist only inside an
+# abbreviated lambda.
+#= {rejects: 'function name'}
+defn $1(n) -> n
+$1(1)

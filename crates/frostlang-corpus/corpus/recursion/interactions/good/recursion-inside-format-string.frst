@@ -1,0 +1,5 @@
+# A recursive call inside a format string's interpolation builds the String
+# from the innermost level out.
+#= {result: ['0', '3 > 2 > 1 > 0']}
+defn chain(n) -> if n == 0: '0' else: $'${n} > ${chain(n - 1)}'
+[chain(0), chain(3)]

@@ -1,0 +1,3 @@
+# Parameters carry no type annotations in a parenthesized list.
+#= {rejects: ['found `:`', 'annotation']}
+def f = fn(x: Int) -> x

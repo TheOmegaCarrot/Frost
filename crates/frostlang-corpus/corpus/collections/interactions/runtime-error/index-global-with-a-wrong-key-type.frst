@@ -1,0 +1,3 @@
+# A function from `index` raises as a soft index would for a mistyped key.
+#= {raises: ['Cannot index Array', 'String'], inputs: {xs: [1, 2]}}
+index('a')(xs)

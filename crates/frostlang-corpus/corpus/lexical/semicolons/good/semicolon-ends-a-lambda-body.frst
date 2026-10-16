@@ -1,0 +1,4 @@
+# A `;` ends a single-expression lambda body, and the definition holding
+# it, so the next statement may follow on the same line.
+#= {result: 3}
+def f = fn x -> x + 1; f(2)

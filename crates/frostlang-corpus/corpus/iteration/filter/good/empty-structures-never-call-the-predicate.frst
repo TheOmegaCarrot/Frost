@@ -1,0 +1,5 @@
+# `filter` over an empty Array or Map yields the same empty structure without
+# calling the predicate.
+#= {result: [[], {}, [], {}], inputs: {xs: [], m: {}}}
+def boom = fn ...args -> error('called')
+[filter [] with boom, filter {} with boom, filter xs with boom, filter m with boom]

@@ -1,0 +1,7 @@
+# Maps nest as a linked list, walked recursively by field reads until a Null
+# tail.
+#= {result: [6, 3]}
+def list = {head: 1, tail: {head: 2, tail: {head: 3, tail: null}}}
+defn total(node) -> if node == null: 0 else: node.head + total(node.tail)
+defn count(node) -> if node == null: 0 else: 1 + count(node.tail)
+[total(list), count(list)]

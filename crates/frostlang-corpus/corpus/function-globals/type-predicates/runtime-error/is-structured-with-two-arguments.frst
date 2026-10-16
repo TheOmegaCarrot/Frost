@@ -1,0 +1,3 @@
+# `is_structured` takes exactly one argument.
+#= {raises: ['is_structured', 'expects 1', 'called with 2']}
+is_structured([], {})

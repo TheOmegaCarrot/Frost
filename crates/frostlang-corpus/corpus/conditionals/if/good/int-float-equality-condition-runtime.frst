@@ -1,0 +1,7 @@
+# With runtime operands, too, an Int never equals a Float in a condition,
+# while `<` still compares across them.
+#= {result: ['distinct', 'ordered'], inputs: {i: 3, f: 3.0, g: 3.5}}
+[
+    if i == f: 'equal' else: 'distinct',
+    if i < g: 'ordered' else: 'unordered',
+]

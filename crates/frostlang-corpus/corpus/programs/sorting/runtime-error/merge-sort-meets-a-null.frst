@@ -1,0 +1,21 @@
+# A merge sort over records whose sort key is sometimes missing: the soft
+# index yields Null for that record, and comparing Null with an Int raises
+# from deep inside the merge rather than sorting Null to either end.
+#= {
+#=     raises: ['incompatible types', 'Null'],
+#=     inputs: {
+#=         rows: [{rank: 3}, {rank: 1}, {}, {rank: 2}],
+#=     },
+#= }
+defn merge(xs, ys) -> match [xs, ys] {
+    [[], _] => ys,
+    [_, []] => xs,
+    [[x, ...xrest], [y, ...yrest]] => if y < x: [y] + merge(xs, yrest) else: [x] + merge(xrest, ys),
+}
+
+defn sort(xs) -> match xs {
+    [] | [_] => xs,
+    [a, b, ...rest] => merge(merge([a], [b]), sort(rest)),
+}
+
+sort(transform(rows, fn row -> row['rank']))

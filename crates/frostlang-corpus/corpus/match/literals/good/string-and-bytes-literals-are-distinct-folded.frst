@@ -1,0 +1,7 @@
+# A String and Bytes of the same content stay distinct when the optimizer
+# resolves the match ahead of time.
+#= {result: ['String', 'Bytes']}
+[
+    match 'a' { x'61' => 'Bytes', 'a' => 'String' },
+    match x'61' { 'a' => 'String', x'61' => 'Bytes' },
+]

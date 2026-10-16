@@ -1,0 +1,13 @@
+# String equality on text known only at runtime, including text built by
+# concatenation and non-ASCII text.
+#= {
+#=     result: [true, false, true, true, false],
+#=     inputs: {greeting: 'hello', other: 'Hello', empty: '', omega: 'Ω'},
+#= }
+[
+    greeting == 'hello',
+    greeting == other,
+    empty + greeting + empty == greeting,
+    omega + 'x' == '\u{3a9}x',
+    greeting != 'hel' + 'lo',
+]

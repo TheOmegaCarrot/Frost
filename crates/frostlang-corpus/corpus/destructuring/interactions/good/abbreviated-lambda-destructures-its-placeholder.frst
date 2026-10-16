@@ -1,0 +1,6 @@
+# An abbreviated lambda's placeholder may be the value a def destructures.
+#= {result: [3, 7], inputs: {pairs: [[1, 2], [3, 4]]}}
+transform(pairs, $(do {
+    def [a, b] = $
+    a + b
+}))

@@ -1,0 +1,8 @@
+# Type constraints on a Function target known ahead of time pick the same arm
+# as at runtime.
+#= {result: ['Function', 'Function']}
+def f = fn x -> x
+[
+    match len { _ is Primitive => 'Primitive', _ is Function => 'Function' },
+    match f { _ is Structured => 'Structured', _ is Function => 'Function' },
+]

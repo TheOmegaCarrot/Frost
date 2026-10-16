@@ -1,0 +1,4 @@
+# A program ending in `defn` has a null tail: the function it binds is not the
+# program's value.
+#= {result: null}
+defn double(x) -> x * 2

@@ -1,0 +1,4 @@
+# `tap` always passes its value, so a function taking none fails its arity
+# check.
+#= {raises: ['expects 0', 'called with 1']}
+tap(1, fn -> 0)

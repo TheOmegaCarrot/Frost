@@ -1,0 +1,16 @@
+# `or` over values known only at runtime yields the same deciding operand as
+# over literals, so the VM's test agrees with what the folder computes.
+#= {
+#=     result: [5, 5, 5, false, null, 0, 'default', 2.5],
+#=     inputs: {t: true, f: false, n: null, five: 5, zero: 0, fallback: 'default', half: 2.5, one: 1},
+#= }
+[
+    five or t,
+    n or five,
+    f or five,
+    n or f,
+    f or n,
+    f or zero,
+    n or fallback,
+    half or one,
+]

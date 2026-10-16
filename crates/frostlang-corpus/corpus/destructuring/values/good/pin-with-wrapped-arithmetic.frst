@@ -1,0 +1,9 @@
+# A pin's expression follows ordinary arithmetic, so Int overflow wraps there
+# too, both when folded and at runtime.
+#= {
+#=     result: ['folded', 'runtime'],
+#=     inputs: {max: 9223372036854775807, xs: ['runtime', -9223372036854775807 - 1]},
+#= }
+def [f, (9223372036854775807 + 1)] = ['folded', -9223372036854775807 - 1]
+def [r, (max + 1)] = xs
+[f, r]

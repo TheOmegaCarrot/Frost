@@ -1,0 +1,3 @@
+# `inv` of Null is a type error, not a function that inverts Null.
+#= {raises: ['inv', 'Function as argument 1', 'got Null']}
+inv(null)

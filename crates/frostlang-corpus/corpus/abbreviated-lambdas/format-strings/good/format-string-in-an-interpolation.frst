@@ -1,0 +1,5 @@
+# A format string inside another's interpolation still lies in the
+# abbreviated lambda, so its interpolated `$` is the same argument.
+#= {result: 'outer [inner 7] 7'}
+def f = $($'outer [${$"inner ${$}"}] ${$}')
+f(7)

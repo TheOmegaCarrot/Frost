@@ -1,0 +1,5 @@
+# An Int remainder by a constant zero cannot fold to a value, so it raises
+# when the program reaches it.
+#= {raises: 'modulus by zero'}
+def zero = 0
+7 % zero

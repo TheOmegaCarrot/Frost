@@ -1,0 +1,14 @@
+# Many match statements run in a loop of recursive calls, each dropping its
+# value and leaving nothing behind.
+#= {result: 0, inputs: {n: 500}}
+defn go(k) -> if k == 0: 0 else: do {
+    match [k, k] {
+        [a, b] | {a, b} => a,
+    }
+    match k {
+        1 | 2 => null,
+        _ => null,
+    }
+    go(k - 1)
+}
+go(n)

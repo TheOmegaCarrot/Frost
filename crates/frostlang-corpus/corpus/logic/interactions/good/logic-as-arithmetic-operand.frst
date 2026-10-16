@@ -1,0 +1,11 @@
+# A parenthesized logical expression is an ordinary arithmetic operand.
+#= {
+#=     result: [12, 20, 'ab', 'aq'],
+#=     inputs: {n: null, five: 5, q: 'q'},
+#= }
+[
+    10 + (n or 1) * 2,
+    10 + (five or 1) * 2,
+    'a' + (n or 'b'),
+    'a' + (q or 'b'),
+]

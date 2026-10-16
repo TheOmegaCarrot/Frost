@@ -1,0 +1,4 @@
+# A parenthesized condition may span lines.
+#= {result: 'no', inputs: {a: true, b: false}}
+if (a
+    and b): 'yes' else: 'no'

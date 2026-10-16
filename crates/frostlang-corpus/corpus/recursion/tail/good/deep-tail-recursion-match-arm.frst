@@ -1,0 +1,7 @@
+# A `match` arm's result is in tail position when the `match` is.
+#= {result: 100000}
+defn down(n, acc) -> match n {
+    0 => acc,
+    _ => down(n - 1, acc + 1),
+}
+down(100000, 0)

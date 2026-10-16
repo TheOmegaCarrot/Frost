@@ -1,0 +1,12 @@
+# `and_then` calls its lambda only on a non-Null value, and `or_else` only
+# on Null.
+#= {result: [6, null, 5, 99], printed: ['or_else ran']}
+[
+    and_then(5, fn x -> x + 1),
+    and_then(null, fn x -> print('never')),
+    or_else(5, fn -> print('never')),
+    or_else(null, fn -> do {
+        print('or_else ran')
+        99
+    }),
+]

@@ -1,0 +1,4 @@
+# Frost has no `:=`, as Go and Python write a binding: a name is bound with
+# `def`.
+#= {rejects: 'no `:=`'}
+x := 1

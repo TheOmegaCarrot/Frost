@@ -1,0 +1,6 @@
+# A `do` block's `{` stays on the line of its `do`.
+#= {rejects: 'found a line break'}
+def x = do
+{
+    1
+}

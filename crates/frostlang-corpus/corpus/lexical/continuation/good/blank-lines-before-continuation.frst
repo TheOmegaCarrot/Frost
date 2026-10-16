@@ -1,0 +1,9 @@
+# Blank lines between an expression and a leading `.` or `@` line do not
+# break the continuation.
+#= {result: 2, inputs: {m: {xs: [1, 2]}}}
+m
+
+    .xs
+
+
+    @ len()

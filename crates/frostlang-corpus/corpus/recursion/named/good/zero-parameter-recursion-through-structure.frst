@@ -1,0 +1,5 @@
+# A recursive structure built lazily: each step holds a thunk that, when
+# called, recurses to build the next step.
+#= {result: 3}
+defn make(n) -> {n: n, next: fn -> make(n + 1)}
+make(0).next().next().next().n

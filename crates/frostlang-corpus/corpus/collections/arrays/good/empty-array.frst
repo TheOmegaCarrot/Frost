@@ -1,0 +1,4 @@
+# An empty Array literal is an Array with no elements.
+#= {result: [[], 0, 'Array']}
+def xs = []
+[xs, len(xs), type(xs)]

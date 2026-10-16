@@ -1,0 +1,8 @@
+# A `defn` in a function's body may not reuse the enclosing function's own
+# name.
+#= {rejects: '`f` is already bound'}
+def h = fn f() -> {
+    defn f() -> 1
+    f()
+}
+h()

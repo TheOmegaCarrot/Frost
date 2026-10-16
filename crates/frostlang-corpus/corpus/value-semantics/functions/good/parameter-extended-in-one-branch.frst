@@ -1,0 +1,5 @@
+# A parameter extended in one branch and read after the conditional is the
+# original after either branch.
+#= {result: [[[1, 0], [1]], [[1], [1]]], inputs: {n: 1}}
+defn f(c, xs) -> [if c: xs + [0] else: xs, xs]
+[f(true, [n]), f(false, [n])]

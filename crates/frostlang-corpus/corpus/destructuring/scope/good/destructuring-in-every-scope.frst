@@ -1,0 +1,17 @@
+# Destructuring works the same at top level, in a `do` block, in a lambda, and
+# in a named function.
+#= {result: [3, 3, 3, 3], inputs: {pair: [1, 2]}}
+def [a, b] = pair
+def block = do {
+    def [c, d] = pair
+    c + d
+}
+def lambda = fn -> {
+    def {x, y} = {x: pair[0], y: pair[1]}
+    x + y
+}
+defn named(p) -> {
+    def [e, ...f] = p
+    e + f[0]
+}
+[a + b, block, lambda(), named(pair)]

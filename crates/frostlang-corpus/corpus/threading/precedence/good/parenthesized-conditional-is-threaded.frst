@@ -1,0 +1,5 @@
+# Parentheses around an `if` thread the conditional's value, whichever branch
+# produced it.
+#= {result: [2, 3], inputs: {yes: true, no: false}}
+defn inc(x) -> x + 1
+[(if yes: 1 else: 2) @ inc(), (if no: 1 else: 2) @ inc()]

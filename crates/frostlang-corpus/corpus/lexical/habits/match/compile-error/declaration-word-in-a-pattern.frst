@@ -1,0 +1,4 @@
+# A pattern binds a bare name; a declaration word such as `let` before it,
+# as some languages' patterns take, is not needed.
+#= {rejects: 'a bare name binds in a pattern', inputs: {x: 1}}
+match x { let y => 1 }

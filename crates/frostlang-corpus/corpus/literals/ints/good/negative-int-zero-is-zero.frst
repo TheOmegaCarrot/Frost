@@ -1,0 +1,4 @@
+# Negating the Int literal zero gives plain zero, in every base: unlike the Float
+# `-0.0`, an Int has no negative zero, so nothing marks it, not even its String form.
+#= {result: [0, true, 'Int', 0, true, '0']}
+[-0, -0 == 0, type(-0), -0x0, -0b0 == 0o0, to_string(-0)]

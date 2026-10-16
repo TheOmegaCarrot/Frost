@@ -1,0 +1,4 @@
+# An invalid key raises even after valid entries, and even when a later entry
+# repeats a valid key.
+#= {raises: ['not a valid Map key', 'Null']}
+{a: 1, [null]: 2, a: 3}

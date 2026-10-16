@@ -1,0 +1,4 @@
+# Python's f-string is not a format String.
+#= {rejects: 'a format String is written'}
+def x = 1
+f"hi {x}"

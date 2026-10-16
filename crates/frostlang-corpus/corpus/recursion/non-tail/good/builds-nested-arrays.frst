@@ -1,0 +1,5 @@
+# Each level wraps the result of the level below, building a nested Array from
+# the inside out.
+#= {result: [[], [[]], [[[[]]]]]}
+defn nest(n) -> if n == 0: [] else: [nest(n - 1)]
+[nest(0), nest(1), nest(3)]

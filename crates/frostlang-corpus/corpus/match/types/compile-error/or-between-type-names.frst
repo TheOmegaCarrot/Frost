@@ -1,0 +1,7 @@
+# A union of types is written as alternatives, each with its own test, not by
+# joining type names with `or`.
+#= {rejects: 'each with its own test'}
+match 1 {
+    n is Int or Float => n,
+    _ => 0,
+}

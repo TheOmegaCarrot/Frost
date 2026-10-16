@@ -1,0 +1,3 @@
+# A placeholder is not a key name, so it has no Map pattern shorthand.
+#= {rejects: ['a name or `[`', 'found `$`']}
+def {$} = {a: 1}

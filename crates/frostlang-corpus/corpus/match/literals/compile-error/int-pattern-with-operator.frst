@@ -1,0 +1,7 @@
+# A bare Int pattern is a literal only: arithmetic in a pattern must be
+# parenthesized to be compared by value.
+#= {rejects: ['expected `=>`', 'found `+`']}
+match 3 {
+    1 + 2 => 'three',
+    _ => 'other',
+}

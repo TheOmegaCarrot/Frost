@@ -1,0 +1,10 @@
+# A recursion through `each` over nested Maps visits every leaf in key order
+# at each level, a non-ASCII key after the ASCII ones, and an empty Map has
+# nothing to visit.
+#= {
+#=     result: 'done',
+#=     printed: ['a=2', 'b.c=null', 'b.d=1', 'é.y=x'],
+#= }
+defn walk(m, prefix) -> each(m, fn k, v -> if is_map(v): walk(v, $'${prefix}${k}.') else: print($'${prefix}${k}=${v}'))
+walk({b: {d: 1, c: null}, a: 2, ['é']: {x: {}, y: 'x'}}, '')
+'done'

@@ -1,0 +1,8 @@
+# `+` and `-` share a precedence and group from the left: `10 - 3 - 2` is
+# (10 - 3) - 2, and `10 - 3 + 2` is (10 - 3) + 2.
+#= {result: [5, 9, 1], inputs: {one: 1, two: 2, three: 3, ten: 10}}
+[
+    ten - three - two,
+    ten - three + two,
+    ten - three - two - one - three,
+]

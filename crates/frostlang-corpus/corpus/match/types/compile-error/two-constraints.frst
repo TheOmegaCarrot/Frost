@@ -1,0 +1,6 @@
+# A name takes at most one type constraint; types combine as alternatives.
+#= {rejects: ['expected `=>`', 'found `is`']}
+match 1 {
+    n is Int is Nonnull => n,
+    _ => 0,
+}

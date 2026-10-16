@@ -1,0 +1,9 @@
+# A linked list of Maps ending in Null, built by one recursion and consumed by
+# another that matches Null as the end and a Map pattern for each cell.
+#= {result: [0, 500500]}
+defn build(n, rest) -> if n == 0: rest else: build(n - 1, {head: n, tail: rest})
+defn sum(list, acc) -> match list {
+    null => acc,
+    {head, tail} => sum(tail, acc + head),
+}
+[sum(null, 0), sum(build(1000, null), 0)]

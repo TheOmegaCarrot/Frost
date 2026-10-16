@@ -1,0 +1,4 @@
+# A double-quoted String with no closing quote is unclosed; a single quote does not
+# close it.
+#= {rejects: 'unclosed String'}
+"abc'

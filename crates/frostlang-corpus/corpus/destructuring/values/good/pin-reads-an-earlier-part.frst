@@ -1,0 +1,6 @@
+# A pin may read a name bound earlier in the same pattern, so a pattern can
+# require two parts to be equal.
+#= {result: ['v', 7], inputs: {m: {k: 'v', other: 'v'}, xs: [7, [7]]}}
+def {k, other: (k)} = m
+def [a, [(a)]] = xs
+[k, a]

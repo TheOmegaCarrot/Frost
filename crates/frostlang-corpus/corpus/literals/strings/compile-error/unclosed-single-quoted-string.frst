@@ -1,0 +1,3 @@
+# A single-quoted String with no closing quote is unclosed.
+#= {rejects: 'unclosed String'}
+print('abc)

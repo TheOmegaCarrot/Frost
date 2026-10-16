@@ -1,0 +1,3 @@
+# Python's `lambda` is not Frost's lambda.
+#= {rejects: 'a lambda is written `fn x -> ...`'}
+def f = lambda x: x + 1

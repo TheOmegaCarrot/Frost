@@ -1,0 +1,4 @@
+# A `defn` named `call` shadows the global, with its own arity and meaning.
+#= {result: ['mine', 'x']}
+defn call(v) -> ['mine', v]
+call('x')

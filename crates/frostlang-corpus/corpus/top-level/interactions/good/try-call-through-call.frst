@@ -1,0 +1,4 @@
+# `try_call` of `call` catches an error raised by the function `call` calls.
+#= {result: [false, 'via call']}
+def outcome = try_call(call, [fn x -> [error(x)], ['via call']])
+[outcome.ok, outcome.error]

@@ -1,0 +1,4 @@
+# `is Nonnull` rejects Null.
+#= {raises: 'expected a Nonnull', inputs: {v: null}}
+def x is Nonnull = v
+x

@@ -1,0 +1,5 @@
+# A `...rest` binds the elements after the named ones, as a new Array.
+#= {result: [1, [2, 3, 4]], inputs: {v: [1, 2, 3, 4]}}
+match v {
+    [head, ...others] => [head, others],
+}

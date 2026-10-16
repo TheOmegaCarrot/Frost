@@ -1,0 +1,11 @@
+# The program of exported-configuration-drives-a-branch, with a configuration
+# only known at runtime, exports and returns the same values.
+#= {
+#=     result: 4,
+#=     exports: {config: {debug: false, level: 2}, doubled: 4},
+#=     inputs: {settings: {debug: false, level: 2}},
+#= }
+export def config = settings
+def level = config.level
+export def doubled = level * 2
+if config.debug: print('debugging') else: doubled

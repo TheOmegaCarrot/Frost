@@ -1,0 +1,3 @@
+# Every index into an empty Array is out of range, zero and -1 included.
+#= {result: [null, null, null, null], inputs: {empty: []}}
+[[][0], [][-1], empty[0], empty[-1]]

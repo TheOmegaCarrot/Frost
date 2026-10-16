@@ -1,0 +1,5 @@
+# A lambda whose body is Null returns Null, the same as any other value.
+#= {result: [null, null]}
+def nothing = fn -> null
+def ignore = fn _ -> null
+[nothing(), ignore(5)]

@@ -1,0 +1,4 @@
+# String keys are case-sensitive.
+#= {result: [2, 'lower', 'upper', null]}
+def m = {name: 'lower', Name: 'upper'}
+[len(m), m.name, m.Name, m['NAME']]

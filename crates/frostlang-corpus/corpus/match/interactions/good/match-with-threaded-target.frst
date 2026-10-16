@@ -1,0 +1,6 @@
+# A target may be a threaded call, `a @ f()`.
+#= {result: 'three', inputs: {xs: [1, 2, 3]}}
+match xs @ len() {
+    3 => 'three',
+    _ => 'other',
+}

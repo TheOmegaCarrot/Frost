@@ -1,0 +1,4 @@
+# Frost has no `try`; errors are caught by calling a function with
+# `try_call`.
+#= {rejects: 'no `try`'}
+try { 1 } catch e { 2 }

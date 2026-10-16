@@ -1,0 +1,5 @@
+# `call` in tail position passes the tail call on to the function it spreads
+# its arguments into, so recursing through it stays in tail position.
+#= {result: 100000}
+defn down(n, acc) -> if n == 0: acc else: call(down, [n - 1, acc + 1])
+down(100000, 0)

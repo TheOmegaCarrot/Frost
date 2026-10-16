@@ -1,0 +1,5 @@
+# Each level of a non-tail recursion keeps its own parameter value while
+# deeper levels derive new values from what they were passed.
+#= {result: [[1], [1, 2], [1, 2, 3]], inputs: {n: 1}}
+defn levels(xs, k) -> if k == 0: [] else: [xs] + levels(xs + [len(xs) + 1], k - 1)
+levels([n], 3)

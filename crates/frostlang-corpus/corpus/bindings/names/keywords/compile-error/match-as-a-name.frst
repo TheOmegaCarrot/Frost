@@ -1,0 +1,4 @@
+# `match` is a keyword, so it cannot be bound as a name.
+#= {rejects: ['`match`', 'keyword']}
+def match = 1
+1

@@ -1,0 +1,13 @@
+# A `\u{...}` escape names one Unicode scalar by 1 to 6 hex digits in either case,
+# leading zeros allowed, astral-plane characters included.
+#= {result: [true, true, true, true, true, true, true, 1]}
+[
+    '\u{e9}' == 'é',
+    '\u{E9}' == '\u{e9}',
+    '\u{3a9}' == 'Ω',
+    '\u{1F600}' == '😀',
+    '\u{41}' == 'A',
+    '\u{000041}' == 'A',
+    "\u{4e16}\u{754c}" == '世界',
+    len('\u{1F600}'),
+]

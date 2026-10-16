@@ -1,0 +1,4 @@
+# Only straight quotes delimit a String: typographic quotes, as a word processor
+# might substitute, are not read as one.
+#= {rejects: 'straight quotes'}
+“hello”

@@ -1,0 +1,3 @@
+# `rev_args(f)` calls `f` with its arguments in reverse order.
+#= {result: [[3, 2, 1], 7]}
+[rev_args(collect)(1, 2, 3), rev_args(minus)(3, 10)]

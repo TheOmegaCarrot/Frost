@@ -1,0 +1,14 @@
+# Each element is an arbitrary expression over runtime values: arithmetic,
+# an `if`, a `do` block, and a call.
+#= {result: [7, 8, 10, 14, 49], inputs: {x: 7}}
+defn square(n) -> n * n
+[
+    x,
+    x + 1,
+    if x > 5: 10 else: 0,
+    do {
+        def y = 2
+        x * y
+    },
+    square(x),
+]

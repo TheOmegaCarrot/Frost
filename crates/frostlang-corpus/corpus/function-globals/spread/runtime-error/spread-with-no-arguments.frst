@@ -1,0 +1,3 @@
+# `spread` takes exactly one argument.
+#= {raises: ['spread', 'expects 1', 'called with 0']}
+spread()

@@ -1,0 +1,8 @@
+# A format String pattern may interpolate a binding made earlier in the same
+# pattern.
+#= {result: ['echo', 'no'], inputs: {a: [1, '1!'], b: [1, '2!']}}
+defn echo(v) -> match v {
+    [x, $'${x}!'] => 'echo',
+    _ => 'no',
+}
+[echo(a), echo(b)]

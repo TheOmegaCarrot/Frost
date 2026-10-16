@@ -1,0 +1,3 @@
+# A spread function's one argument must be an Array to spread.
+#= {raises: ['Array', 'got Int']}
+spread(collect)(5)

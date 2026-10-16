@@ -1,0 +1,5 @@
+# Values of different types are never equal, however alike their content:
+# an empty Array and Map, an empty String and Bytes, a String and its bytes.
+# `==` on mismatched types is false, not an error.
+#= {result: [false, false, false, false, false]}
+[[] == {}, '' == x'', 'a' == x'61', [] == null, '' == null]

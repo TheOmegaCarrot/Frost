@@ -1,0 +1,3 @@
+# Bytes plus an Int is a type error; `+` does not append a byte.
+#= {raises: 'Bytes + Int'}
+x'01' + 2

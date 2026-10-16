@@ -1,0 +1,9 @@
+# An empty line inside a multiline String is kept, though it has no indentation to
+# remove.
+#= {result: 'hello\n\nworld'}
+def text = '''
+    hello
+
+    world
+    '''
+text

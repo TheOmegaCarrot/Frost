@@ -1,0 +1,8 @@
+# An earlier binding may be compared at another depth or in a Map entry of the
+# same pattern.
+#= {result: [2, 1, 'none'], inputs: {xs: [[2, [2]], {a: 1, b: 1}, [3, [4]]]}}
+transform(xs, fn v -> match v {
+    [n, [(n)]] => n,
+    {a, b: (a)} => a,
+    _ => 'none',
+})

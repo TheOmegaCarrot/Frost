@@ -1,0 +1,7 @@
+# Inside a `do` block and a lambda's block body, `;` separates statements,
+# may end the last one before `}`, and may come before the first.
+#= {result: [2, 7, 3]}
+def a = do { 1; 2 }
+def f = fn x -> { def y = x * 2; y + 1; }
+def b = do { ; ; 3 }
+[a, f(3), b]

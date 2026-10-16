@@ -1,0 +1,5 @@
+# An entry's part is checked before the next key is evaluated, so its
+# mismatch is reported rather than the later key's error.
+#= {raises: 'exactly 1 element', inputs: {n: 0, m: {a: 5}}}
+def {a: [x], [1 / n]: y} = m
+[x, y]

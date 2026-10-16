@@ -1,0 +1,33 @@
+# Levenshtein edit distance by row-at-a-time folds: the first row counts
+# insertions, each new row starts by counting deletions, and every cell takes
+# the cheapest of delete, insert, and substitute. Subtle: 'é' and 'e' are
+# different characters, so 'café' and 'cafe' differ by one substitution.
+#= {
+#=     result: [3, 3, 2, 3, 1, 0],
+#=     inputs: {
+#=         pairs: [
+#=             [['k', 'i', 't', 't', 'e', 'n'], ['s', 'i', 't', 't', 'i', 'n', 'g']],
+#=             [[], ['a', 'b', 'c']],
+#=             [['f', 'l', 'a', 'w'], ['l', 'a', 'w', 'n']],
+#=             [['a', 'b', 'c'], []],
+#=             [['c', 'a', 'f', 'é'], ['c', 'a', 'f', 'e']],
+#=             [[], []],
+#=         ],
+#=     },
+#= }
+defn smallest(a, b, c) -> {
+    def ab = if a < b: a else: b
+    if ab < c: ab else: c
+}
+
+defn distance(xs, ys) -> {
+    def first_row = fold(ys, [0], fn row, y -> row + [len(row)])
+    def last = fold(xs, first_row, fn prev, x -> fold(ys, [prev[0] + 1], fn row, y -> {
+        def j = len(row) - 1
+        def cost = if x == y: 0 else: 1
+        row + [smallest(prev[j + 1] + 1, row[j] + 1, prev[j] + cost)]
+    }))
+    last[-1]
+}
+
+transform(pairs, fn pair -> distance(pair[0], pair[1]))

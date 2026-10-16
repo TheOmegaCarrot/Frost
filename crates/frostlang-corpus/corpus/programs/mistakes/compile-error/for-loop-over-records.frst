@@ -1,0 +1,9 @@
+# A report program written with an imperative `for` loop is rejected:
+# Frost has no loops, and the compiler points to the iteration forms.
+#= {
+#=     rejects: 'no `for` loop',
+#=     inputs: {records: [{name: 'a', score: 3}, {name: 'b', score: 5}]},
+#= }
+defn describe(record) -> $'${record.name}: ${record.score}'
+for record in records: print(describe(record))
+len(records)

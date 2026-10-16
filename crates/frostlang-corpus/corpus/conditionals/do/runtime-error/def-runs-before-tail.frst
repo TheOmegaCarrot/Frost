@@ -1,0 +1,7 @@
+# A `def` runs before the final expression, even when its binding is never
+# used: its error is the one raised.
+#= {raises: 'modulus by zero', inputs: {zero: 0}}
+do {
+    def y = 1 % zero
+    1 / zero
+}

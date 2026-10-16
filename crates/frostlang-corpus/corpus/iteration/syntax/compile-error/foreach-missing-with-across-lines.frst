@@ -1,0 +1,5 @@
+# A `foreach` missing its `with` is reported where `with` was expected, and,
+# when that is on a later line, the keyword that needs it is labeled too.
+#= {rejects: ['expected `with`', 'this `foreach` needs `with`']}
+foreach [1, 2]
+print(1)

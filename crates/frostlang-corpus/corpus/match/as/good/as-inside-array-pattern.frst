@@ -1,0 +1,5 @@
+# A Map pattern with `as` may be an element of an Array pattern.
+#= {result: [{name: 'ada'}, 'ada', [2]], inputs: {v: [{name: 'ada'}, 2]}}
+match v {
+    [{name} as person, ...others] => [person, name, others],
+}

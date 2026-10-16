@@ -1,0 +1,5 @@
+# A type constraint the value fails raises at runtime even when the value is a
+# compile-time constant: folding must not skip the check.
+#= {raises: 'expected a String'}
+def x is String = 5
+x

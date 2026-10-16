@@ -1,0 +1,13 @@
+# The `and`s and `or`s of and-or-with-a-constant-left-operand-that-defers,
+# with left operands only known at runtime, take the same right operands.
+#= {
+#=     result: [null, null, 2, 'd'],
+#=     printed: ['and', 'or'],
+#=     inputs: {yes: true, no: false, one: 1, nothing: null},
+#= }
+[
+    yes and print('and'),
+    no or print('or'),
+    one and 2,
+    nothing or 'd',
+]

@@ -1,0 +1,6 @@
+# Type checks see a binding as the same type before and after a value of a
+# different shape is derived from its contents.
+#= {result: [true, true, true, 'Array', 'Map'], inputs: {n: 1}}
+def xs = [n]
+def m = {k: xs}
+[is_array(xs), is_map(m + {j: xs + [2]}), is_array(m.k), type(xs), type(m)]

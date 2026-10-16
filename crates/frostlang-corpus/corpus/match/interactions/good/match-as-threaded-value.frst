@@ -1,0 +1,3 @@
+# A parenthesized match may be threaded into a call with `@`.
+#= {result: 3, inputs: {v: {items: [1, 2, 3]}}}
+(match v { {items} => items }) @ len()

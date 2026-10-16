@@ -1,0 +1,5 @@
+# `$(` opens an abbreviated lambda only when the `(` touches the `$`;
+# `$ (...)` is a stray `$` placeholder instead. Subtle: the space changes the
+# meaning of every placeholder after it.
+#= {rejects: ['found `$`', 'only inside `$( ... )`']}
+def f = $ ($ + 1)

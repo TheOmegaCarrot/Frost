@@ -1,0 +1,7 @@
+# A matched value built fresh in the target, then extended in the result,
+# leaves the original input unchanged: values are immutable.
+#= {result: [[1, 2, 3], [1, 2]], inputs: {base: [1, 2]}}
+def grown = match base + [] {
+    xs => xs + [3],
+}
+[grown, base]

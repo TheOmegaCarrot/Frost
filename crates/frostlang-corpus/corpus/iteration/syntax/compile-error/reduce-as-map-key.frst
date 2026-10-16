@@ -1,0 +1,3 @@
+# `reduce` cannot be a shorthand Map key; the help says to bracket it.
+#= {rejects: ['`reduce` is a keyword', 'in brackets']}
+{reduce: 1}

@@ -1,0 +1,9 @@
+# An exported pattern with alternatives over runtime values exports the name
+# from whichever alternative each value matches.
+#= {
+#=     result: null,
+#=     exports: {a: 6, b: 7},
+#=     inputs: {from_map: {a: 6}, from_array: [7]},
+#= }
+export def {a} | [a] = from_map
+export def {b} | [b] = from_array

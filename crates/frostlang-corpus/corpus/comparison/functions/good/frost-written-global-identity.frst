@@ -1,0 +1,8 @@
+# A global written in Frost is a Function like any other: it equals itself and
+# differs from other globals.
+#= {result: [true, false, false]}
+[
+    inv == inv,
+    inv == curry,
+    compose == len,
+]

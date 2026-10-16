@@ -1,0 +1,13 @@
+# Keys of different types never coincide: Int 1, Float 1.0, Bool true, String
+# '1', and Bytes x'31' are five different keys.
+#= {
+#=     result: ['no Float key', 'no Int key', 'no Bool key', 'no String key', 'no Bytes key'],
+#=     inputs: {i: {[1]: 0}, f: {[1.0]: 0}, b: {[x'31']: 0}, s: {['1']: 0}},
+#= }
+[
+    match i { {[1.0]: _} => 'Float key', _ => 'no Float key' },
+    match f { {[1]: _} => 'Int key', _ => 'no Int key' },
+    match i { {[true]: _} => 'Bool key', _ => 'no Bool key' },
+    match b { {['1']: _} => 'String key', _ => 'no String key' },
+    match s { {[x'31']: _} => 'Bytes key', _ => 'no Bytes key' },
+]

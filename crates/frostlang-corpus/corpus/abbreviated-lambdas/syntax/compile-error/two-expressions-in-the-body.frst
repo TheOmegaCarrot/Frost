@@ -1,0 +1,4 @@
+# An abbreviated lambda's body is a single expression, not a block; a second
+# statement needs a `do` block.
+#= {rejects: ['expected `)`', 'found `;`']}
+def f = $($ + 1; $ + 2)

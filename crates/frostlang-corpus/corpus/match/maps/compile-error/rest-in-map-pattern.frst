@@ -1,0 +1,5 @@
+# A Map pattern takes no rest binding: it ignores keys it does not name.
+#= {rejects: 'takes no rest'}
+match {a: 1, b: 2} {
+    {a, ...others} => others,
+}

@@ -1,0 +1,5 @@
+# Frost has no optional chaining `?.`; guarding a lookup on a possibly Null
+# value is written with `and`.
+#= {rejects: ['`?`', 'optional chaining']}
+def a = null
+a?.k

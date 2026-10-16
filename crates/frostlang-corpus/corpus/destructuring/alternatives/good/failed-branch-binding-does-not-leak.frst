@@ -1,0 +1,6 @@
+# A branch that binds a name and then fails leaves no trace: the name takes
+# the value the matching branch gives it. Subtle because the first branch
+# stores `a` before its literal check fails.
+#= {result: 2, inputs: {v: [1, 2]}}
+def [a, 1] | [1, a] = v
+a

@@ -1,0 +1,3 @@
+# Constant Ints interpolate as their decimal digits, as runtime ones do.
+#= {result: ['0', '42', '-5', '1000000']}
+[$'${0}', $'${42}', $'${-5}', $'${1000000}']

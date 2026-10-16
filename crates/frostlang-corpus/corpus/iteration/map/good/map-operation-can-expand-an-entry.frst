@@ -1,0 +1,4 @@
+# An operation returning several entries expands one input entry into many,
+# so the result may be larger than the input.
+#= {result: {x1: 1, x2: 2, y1: 5, y2: 6}, inputs: {m: {x: 1, y: 5}}}
+map m with fn k, v -> {[k + '1']: v, [k + '2']: v + 1}

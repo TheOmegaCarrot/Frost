@@ -1,0 +1,5 @@
+# A function recursing in tail position down to returning itself ends with
+# the very same closure.
+#= {result: true, inputs: {n: 1000}}
+def f = fn me(k) -> if k == 0: me else: me(k - 1)
+f(n) == f

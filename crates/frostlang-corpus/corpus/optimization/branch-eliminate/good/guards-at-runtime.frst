@@ -1,0 +1,14 @@
+# The guards of constant-guards, behind targets only known at runtime, are
+# evaluated the same way.
+#= {result: ['ok', 'guarded'], inputs: {one: 1, no: false, yes: true}}
+[
+    match one {
+        2 if: 1 / 0 => 'raised',
+        _ if: no => 'never',
+        _ => 'ok',
+    },
+    match one {
+        _ if: yes => 'guarded',
+        _ => 'other',
+    },
+]

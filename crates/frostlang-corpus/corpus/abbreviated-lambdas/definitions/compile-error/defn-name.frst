@@ -1,0 +1,3 @@
+# `defn` cannot define a function named with a placeholder.
+#= {rejects: ['a function name', 'found `$1`']}
+defn $1(x) -> x

@@ -1,0 +1,9 @@
+# Int multiplication in a `map` operation wraps in two's complement rather
+# than raising.
+#= {
+#=     result: [[-2, 0], [-2, 0]],
+#=     inputs: {xs: [9223372036854775807, -9223372036854775808]},
+#= }
+def literal = map [9223372036854775807, -9223372036854775808] with fn x -> x * 2
+def runtime = map xs with fn x -> x * 2
+[literal, runtime]

@@ -1,0 +1,12 @@
+# Each statement in a block runs once, in order, before the final expression.
+#= {result: 4, printed: ['1', '2', '3', '4']}
+defn note(n) -> {
+    print(to_string(n))
+    n
+}
+do {
+    note(1)
+    note(2)
+    def a = note(3)
+    note(a + 1)
+}

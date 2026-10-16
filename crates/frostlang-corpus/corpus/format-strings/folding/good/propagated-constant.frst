@@ -1,0 +1,8 @@
+# Interpolating a binding to a constant, which the optimizer can propagate,
+# gives the same String as interpolating the value at runtime.
+#= {result: ['n=3', 'hi ada', 'n=3, hi ada']}
+def n = 3
+def name = 'ada'
+def a = $'n=${n}'
+def b = $'hi ${name}'
+[a, b, $'${a}, ${b}']

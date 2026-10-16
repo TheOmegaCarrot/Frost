@@ -1,0 +1,9 @@
+# `try_call` around a known function whose match on a constant has no arm
+# for some arguments catches the error for those, and returns the value for
+# the others.
+#= {result: [[true, 'one'], [false, 'String']]}
+defn name(n) -> match n {
+    1 => 'one',
+}
+def outcome = fn r -> if r.ok: [true, r.value] else: [false, type(r.error)]
+[outcome(try_call(fn -> name(1))), outcome(try_call(fn -> name(2)))]

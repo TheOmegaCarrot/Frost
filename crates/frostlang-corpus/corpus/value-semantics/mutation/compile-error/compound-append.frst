@@ -1,0 +1,4 @@
+# There is no in-place append: `+=` is not an operator.
+#= {rejects: '`+=`'}
+def xs = [1]
+xs += [2]

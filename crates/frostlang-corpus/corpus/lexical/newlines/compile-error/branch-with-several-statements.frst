@@ -1,0 +1,8 @@
+# An `if` branch is one expression; indenting several statements under it, as
+# Python does, does not make a block.
+#= {rejects: 'an `if` branch is one expression', inputs: {x: true}}
+if x:
+    print(1)
+    print(2)
+else:
+    3

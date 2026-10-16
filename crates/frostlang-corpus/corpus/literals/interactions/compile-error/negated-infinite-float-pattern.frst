@@ -1,0 +1,6 @@
+# A negated Float pattern too large to be finite is rejected too.
+#= {rejects: 'NaN or Infinity', inputs: {x: 1.0}}
+match x {
+    -1e400 => 'huge',
+    _ => 'other',
+}

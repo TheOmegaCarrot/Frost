@@ -1,0 +1,3 @@
+# An Array index must be an Int; a numeric String is not converted.
+#= {raises: ['Cannot index Array', 'String'], inputs: {xs: [10, 20, 30]}}
+xs['0']

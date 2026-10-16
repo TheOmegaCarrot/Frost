@@ -1,0 +1,4 @@
+# A function after the first receives exactly one argument, the previous
+# result, so one needing two fails its arity check.
+#= {raises: ['expects 2', 'called with 1']}
+compose(collect, fn a, b -> a)(1, 2)

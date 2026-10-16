@@ -1,0 +1,4 @@
+# `index` is not a two-argument lookup: it takes the key alone, and returns
+# the function that takes the structure.
+#= {raises: ['index', 'expects 1', 'called with 2']}
+index('a', {a: 1})

@@ -1,0 +1,4 @@
+# A format String whose interpolations are all constant gives the same String
+# whether or not the optimizer folds it ahead of time.
+#= {result: ['a3b', 'true [1, 2] null', 'café3']}
+[$'a${1 + 2}b', $'${true} [${1}, ${2}] ${null}', $'café${3}']

@@ -1,0 +1,16 @@
+# A small interpreter: a recursive `match` over an expression tree of Maps,
+# with alternatives, type constraints, and a nested binding environment.
+#= {result: [7, 20, -1]}
+defn eval(e, env) -> match e {
+    n is Int => n,
+    v is String => env[v],
+    {op: '+' | 'plus', l, r} => eval(l, env) + eval(r, env),
+    {op: '*', l, r} => eval(l, env) * eval(r, env),
+    {op: 'neg', arg} => -eval(arg, env),
+    {op: 'let', name, value, body} => eval(body, env + {[name]: eval(value, env)}),
+}
+[
+    eval({op: '+', l: 3, r: 4}, {}),
+    eval({op: 'let', name: 'x', value: 5, body: {op: '*', l: 'x', r: {op: 'plus', l: 'x', r: -1}}}, {}),
+    eval({op: 'neg', arg: 'y'}, {y: 1}),
+]

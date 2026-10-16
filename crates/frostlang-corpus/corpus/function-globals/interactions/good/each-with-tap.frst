@@ -1,0 +1,3 @@
+# A curried `tap` passed to `each` observes every element in order.
+#= {result: ['a', 'b'], printed: ['a', 'b']}
+each(['a', 'b'], bcurry(tap, print))

@@ -1,0 +1,4 @@
+# A condition's colon must be followed by a branch; the end of input is not
+# one.
+#= {rejects: ['expected an expression', 'end of input']}
+if true:

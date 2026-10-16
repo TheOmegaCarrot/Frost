@@ -1,0 +1,5 @@
+# An exported `def` may take a global's name; the export carries the binding's
+# value, and the script reads the binding.
+#= {result: 3, exports: {len: 3}}
+export def len = 3
+len

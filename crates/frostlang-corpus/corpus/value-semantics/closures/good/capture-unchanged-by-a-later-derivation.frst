@@ -1,0 +1,7 @@
+# A closure's captured Array is unchanged when, after the closure is made, a
+# value is derived from the same binding at its last use.
+#= {result: [[1], [1, 2], [1]], inputs: {n: 1}}
+def xs = [n]
+def f = fn -> xs
+def ys = xs + [2]
+[f(), ys, f()]

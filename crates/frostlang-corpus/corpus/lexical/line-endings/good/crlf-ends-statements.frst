@@ -1,0 +1,6 @@
+# A CRLF line break ends a statement exactly as LF does.
+#= {result: 3}
+def a = 1
+def b = 2
+
+a + b

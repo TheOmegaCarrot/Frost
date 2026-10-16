@@ -1,0 +1,3 @@
+# The remainder of an Int by a zero only known at runtime raises.
+#= {raises: 'modulus by zero', inputs: {n: 7, zero: 0}}
+n % zero

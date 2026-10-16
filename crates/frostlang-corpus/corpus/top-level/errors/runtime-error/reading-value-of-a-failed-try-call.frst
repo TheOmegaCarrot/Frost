@@ -1,0 +1,6 @@
+# A failed `try_call` result has no `value` key, so reading it raises rather
+# than giving null. Subtle because a script reaching for a default with
+# `outcome.value or ...` does not get one.
+#= {raises: ['no value', "'value'"]}
+def outcome = try_call(fn -> error('x'))
+outcome.value or 'default'

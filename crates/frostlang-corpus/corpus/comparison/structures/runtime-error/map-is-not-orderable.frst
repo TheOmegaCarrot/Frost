@@ -1,0 +1,3 @@
+# Maps have no ordering, even empty ones.
+#= {raises: ['Map', 'not orderable']}
+{} < {}

@@ -1,0 +1,14 @@
+# The stack machine's underflow over a literal program, which the optimizer
+# may evaluate ahead of time: the missing match arm must still raise when
+# the program runs, neither vanishing nor becoming a compile error.
+#= {raises: 'no match arm'}
+defn binary(stack, operation) -> match stack {
+    [b, a, ...rest] => [operation(a, b)] + rest,
+}
+
+defn step(stack, instruction) -> match instruction {
+    {push: n} => [n] + stack,
+    'add' => binary(stack, fn a, b -> a + b),
+}
+
+reduce [{push: 1}, {push: 2}, 'add', 'add', {push: 3}] init: [] with step

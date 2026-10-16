@@ -1,0 +1,7 @@
+# A lambda's block body yields its final expression, so it cannot end with a
+# definition.
+#= {rejects: ['must end with an expression']}
+def f = fn x -> {
+    def y = x
+}
+1

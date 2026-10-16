@@ -1,0 +1,3 @@
+# A literal `null` condition is falsy, so it takes the alternate.
+#= {result: 'no'}
+if null: 'yes' else: 'no'

@@ -1,0 +1,4 @@
+# A `defn` needs a real name to be called by, so `_` cannot name it.
+#= {rejects: 'not `_`'}
+defn _(n) -> n
+1

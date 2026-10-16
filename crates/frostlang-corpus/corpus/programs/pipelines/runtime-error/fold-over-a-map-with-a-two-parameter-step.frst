@@ -1,0 +1,12 @@
+# A step written for an Array (accumulator and element) reused over a Map
+# fails: over a Map, `fold` calls its function with the accumulator, the
+# key, and the value, so a two-parameter step is called with one argument
+# too many.
+#= {
+#=     raises: ['expects 2 argument', 'called with 3'],
+#=     inputs: {list: [1, 2], table: {a: 1, b: 2}},
+#= }
+defn add(acc, x) -> acc + x
+def from_list = fold(list, 0, add)
+def from_table = fold(table, 0, add)
+[from_list, from_table]

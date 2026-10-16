@@ -1,0 +1,7 @@
+# A closure made after a match cannot reach an arm's binding.
+#= {rejects: '`x` is not defined'}
+def r = match [1] {
+    [x] => x,
+}
+def f = fn -> x
+f()

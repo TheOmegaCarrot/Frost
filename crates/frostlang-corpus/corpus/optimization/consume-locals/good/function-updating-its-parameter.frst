@@ -1,0 +1,5 @@
+# A function that builds from its parameter leaves its caller's argument
+# unchanged, call after call.
+#= {result: [[1, 2, 9], [1, 2, 9], [1, 2]], inputs: {xs: [1, 2]}}
+def h = fn ys -> ys + [9]
+[h(xs), h(xs), xs]

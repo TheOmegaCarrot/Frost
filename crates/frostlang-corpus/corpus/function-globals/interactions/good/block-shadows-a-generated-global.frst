@@ -1,0 +1,7 @@
+# A binding in a `do` block shadows a global only until the block ends.
+#= {result: ['local', 1]}
+def inner = do {
+    def tap = fn a, b -> 'local'
+    tap(1, 2)
+}
+[inner, tap(1, fn x -> x)]

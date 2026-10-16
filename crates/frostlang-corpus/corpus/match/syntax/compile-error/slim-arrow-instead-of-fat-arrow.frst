@@ -1,0 +1,5 @@
+# An arm's arrow is `=>`; the lambda arrow `->` is not accepted in its place.
+#= {rejects: ['expected `=>`', 'found `->`']}
+match 1 {
+    1 -> 2,
+}

@@ -1,0 +1,7 @@
+# A block body shares its scope with the parameters, so a `def` there may not
+# rebind a parameter's name (a nested `do` block may).
+#= {rejects: ['`x`', 'already bound']}
+def f = fn x -> {
+    def x = 2
+    x
+}

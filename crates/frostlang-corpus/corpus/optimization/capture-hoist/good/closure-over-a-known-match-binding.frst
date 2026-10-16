@@ -1,0 +1,7 @@
+# A function created in a match arm captures what the arm's pattern bound from
+# a known target, and computes with it on every call.
+#= {result: [13, 23]}
+def add_pair = match [1, 2] {
+    [a, b] => fn x -> x + a + b,
+}
+[add_pair(10), add_pair(20)]

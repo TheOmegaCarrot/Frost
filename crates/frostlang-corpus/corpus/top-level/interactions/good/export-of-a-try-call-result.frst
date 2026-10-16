@@ -1,0 +1,12 @@
+# A `try_call` result is an ordinary Map, so it may be exported, success or
+# failure.
+#= {
+#=     result: null,
+#=     exports: {
+#=         succeeded: {ok: true, value: 3},
+#=         failed: {ok: false, error: 'x', trace: ['error', 'fail']},
+#=     },
+#= }
+defn fail() -> [error('x')]
+export def succeeded = try_call(fn -> 1 + 2)
+export def failed = try_call(fail)

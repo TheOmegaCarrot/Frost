@@ -1,0 +1,5 @@
+# A name cannot begin with a digit: `1x` is a number followed by a name, not a
+# pattern a `def` can bind.
+#= {rejects: ['expected `=`']}
+def 1x = 1
+1

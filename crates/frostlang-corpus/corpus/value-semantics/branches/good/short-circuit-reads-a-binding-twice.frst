@@ -1,0 +1,6 @@
+# `xs and xs + [2]` reads `xs` once to test it and again to extend it; `xs or
+# xs` may read it twice. Both see the original.
+#= {result: [[1, 2], [1], [1]], inputs: {n: 1}}
+def xs = [n]
+def r = xs and xs + [2]
+[r, xs or xs, xs]

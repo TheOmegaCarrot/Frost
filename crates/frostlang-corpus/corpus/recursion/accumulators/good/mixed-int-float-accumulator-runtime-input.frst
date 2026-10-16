@@ -1,0 +1,10 @@
+# An Int accumulator becomes a Float once a Float known only at runtime is
+# added to it. Subtle: `==` does not equate Int and Float, so the type matters.
+#= {result: [6, 'Int', 6.5, 'Float'], inputs: {ints: [1, 2, 3], mixed: [1, 2.5, 3]}}
+defn sum(xs, acc) -> match xs {
+    [] => acc,
+    [x, ...rest] => sum(rest, acc + x),
+}
+def int_total = sum(ints, 0)
+def mixed_total = sum(mixed, 0)
+[int_total, type(int_total), mixed_total, type(mixed_total)]

@@ -1,0 +1,6 @@
+# A block in a branch must end with an expression like any other.
+#= {rejects: 'must end with an expression'}
+def c = true
+if c: do {
+    def y = 1
+} else: 2

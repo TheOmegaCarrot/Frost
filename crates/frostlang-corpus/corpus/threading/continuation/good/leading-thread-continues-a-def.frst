@@ -1,0 +1,10 @@
+# A leading `@` continues a `def`'s value, so the binding holds the whole
+# pipeline, and the statement after it is separate.
+#= {result: [12, 'after'], inputs: {n: 5}}
+defn inc(x) -> x + 1
+defn double(x) -> x * 2
+def y = n
+    @ inc()
+    @ double()
+def z = 'after'
+[y, z]

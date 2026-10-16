@@ -1,0 +1,5 @@
+# The result of a threaded chain can be destructured by `def`.
+#= {result: [10, [20, 30], 2], inputs: {xs: [1, 2, 3], m: {a: 1, b: 2}}}
+def [first, ...rest] = xs @ transform(fn x -> x * 10)
+def {b} = m @ select(fn k, v -> v > 1)
+[first, rest, b]

@@ -1,0 +1,15 @@
+# Blocks inside Array and Map literals, including a computed key, each scope
+# their own bindings and leave exactly their value.
+#= {result: [[1, 11, 3], {a: 10}], inputs: {x: 10}}
+def items = [1, do {
+    def a = x
+    a + 1
+}, 3]
+def m = {[do {
+    def k = 'a'
+    k
+}]: do {
+    def v = x
+    v
+}}
+[items, m]

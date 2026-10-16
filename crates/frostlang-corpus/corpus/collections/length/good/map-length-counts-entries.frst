@@ -1,0 +1,9 @@
+# A Map's length counts its entries: Null-valued ones count, and a repeated
+# key counts once.
+#= {result: [2, 1, 1, 5], inputs: {m: {a: 1, b: {c: 2, d: 3}}}}
+[
+    len(m),
+    len({a: null}),
+    len({a: 1, a: 2}),
+    len({[true]: 1, [1]: 2, [1.0]: 3, ['1']: 4, [x'01']: 5}),
+]

@@ -1,0 +1,10 @@
+# Both the `elif` and the `else` branch are in tail position, including a
+# `do` block's final expression inside one of them.
+#= {result: 150000}
+defn down(n, acc) -> if n == 0: acc
+    elif n % 2 == 0: do {
+        def m = n - 1
+        down(m, acc + 2)
+    }
+    else: down(n - 1, acc + 1)
+down(100000, 0)

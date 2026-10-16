@@ -1,0 +1,4 @@
+# A nested `as` and an outer `as` may not bind the same name.
+#= {rejects: '`m` is already bound'}
+def {a: {b} as m} as m = {a: {b: 1}}
+[b, m]

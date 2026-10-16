@@ -1,0 +1,7 @@
+# A line break ends a statement: each line here is its own definition, and the
+# last line is the tail value.
+#= {result: [1, 2, 3]}
+def a = 1
+def b = a + 1
+def c = b + 1
+[a, b, c]

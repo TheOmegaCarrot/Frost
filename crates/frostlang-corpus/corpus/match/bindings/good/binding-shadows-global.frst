@@ -1,0 +1,7 @@
+# A pattern name may shadow a global within its arm; the global is intact
+# elsewhere.
+#= {result: [5, 3]}
+def r = match 5 {
+    len => len,
+}
+[r, len([1, 2, 3])]

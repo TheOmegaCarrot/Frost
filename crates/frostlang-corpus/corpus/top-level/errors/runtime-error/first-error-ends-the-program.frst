@@ -1,0 +1,5 @@
+# An uncaught error ends the program at once: a later `error` never runs, so
+# the raised message is the first one.
+#= {raises: 'first'}
+error('first')
+error('second')

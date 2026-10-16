@@ -1,0 +1,4 @@
+# A placeholder is not a key name in a Map literal: `{$1: v}` does not use
+# the argument as the key. A computed key, `{[$1]: v}`, does.
+#= {rejects: ['a name or `[`', 'found `$1`']}
+def f = $({$1: 2})

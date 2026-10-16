@@ -1,0 +1,4 @@
+# Inside an Array literal, a form's operation ends at the comma, so the next
+# element is not swallowed into the lambda body.
+#= {result: [[2, 4], 3], inputs: {xs: [1, 2]}}
+[map xs with fn x -> x * 2, 3]

@@ -1,0 +1,3 @@
+# A keyword is not a name, so it cannot be a parameter.
+#= {rejects: ['expected parameters or `->`', '`if`']}
+def f = fn if -> 1

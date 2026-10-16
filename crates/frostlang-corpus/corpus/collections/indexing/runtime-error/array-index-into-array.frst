@@ -1,0 +1,3 @@
+# An Array cannot index an Array; there is no multi-index or slice syntax.
+#= {raises: ['Cannot index Array', 'Array']}
+[10, 20][[0]]

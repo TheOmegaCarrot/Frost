@@ -1,0 +1,5 @@
+# A recursive call is arity-checked like any other call, so passing one
+# argument too many raises once the recursion reaches it.
+#= {raises: 'expects 1 argument'}
+defn f(n) -> if n == 0: 0 else: f(n - 1, 0)
+f(2)

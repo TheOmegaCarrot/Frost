@@ -1,0 +1,3 @@
+# `print` inverted still prints, and its Null result inverts to true.
+#= {result: true, printed: ['inv']}
+inv(print)('inv')

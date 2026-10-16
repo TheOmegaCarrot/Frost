@@ -1,0 +1,13 @@
+# Signed Int ordering on values known only at runtime, at both ends of the
+# Int range.
+#= {
+#=     result: [true, true, false, true, true],
+#=     inputs: {min: -9223372036854775808, max: 9223372036854775807, minus_one: -1},
+#= }
+[
+    min < max,
+    minus_one < 0,
+    max < min,
+    min <= min,
+    max >= max,
+]

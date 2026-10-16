@@ -1,0 +1,3 @@
+# A chain of `+` joins left to right, keeping every operand's order.
+#= {result: [[1, 2, 3], 'abc', x'010203'], inputs: {a: [1], s: 'a', y: x'01'}}
+[a + [2] + [3], s + 'b' + 'c', y + x'02' + x'03']

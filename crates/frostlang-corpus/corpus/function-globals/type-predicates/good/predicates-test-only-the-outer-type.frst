@@ -1,0 +1,10 @@
+# A predicate tests the value it is given, not what that value contains: an
+# Array of Nulls is not Null, nor is an Array holding a function a Function.
+#= {result: [false, false, false, false, true]}
+[
+    is_null([null]),
+    is_function([len]),
+    is_flat(['a']),
+    is_int({n: 1}),
+    is_array([null]),
+]

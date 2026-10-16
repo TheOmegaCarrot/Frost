@@ -1,0 +1,4 @@
+# One step without parentheses in a chain rejects the whole chain.
+#= {rejects: ['right side of `@` must be a call', 'try `inc()`'], inputs: {n: 1}}
+defn inc(x) -> x + 1
+n @ inc() @ inc @ inc()

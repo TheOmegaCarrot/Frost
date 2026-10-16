@@ -1,0 +1,6 @@
+# Closures made in a call and passed on through a tail self-call each keep
+# the parameter of the call that made them. Subtle: a tail call reuses the
+# frame, so a capture must hold the value, not the parameter's slot.
+#= {result: [3, 2, 1], inputs: {n: 3}}
+defn build(k, acc) -> if k == 0: acc else: build(k - 1, acc + [fn -> k])
+transform(build(n, []), fn f -> f())

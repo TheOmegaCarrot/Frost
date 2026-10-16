@@ -1,0 +1,10 @@
+# Ordering compares Int and Float results by value, while equality also
+# compares their types: 7 / 2 is less than 7 / 2.0, and 6 / 2 does not equal
+# 6 / 2.0, though neither is greater.
+#= {result: [true, false, false, false], inputs: {six: 6, seven: 7}}
+[
+    seven / 2 < seven / 2.0,
+    six / 2 == six / 2.0,
+    six / 2 < six / 2.0,
+    six / 2 > six / 2.0,
+]

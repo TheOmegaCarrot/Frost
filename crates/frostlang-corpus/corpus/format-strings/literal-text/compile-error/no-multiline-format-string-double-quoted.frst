@@ -1,0 +1,6 @@
+# Frost has no multiline format String in double quotes either: `$"""` is not
+# one.
+#= {rejects: 'no multiline format String'}
+def s = $"""
+    text
+    """

@@ -1,0 +1,4 @@
+# Map patterns nest, each level requiring its own keys.
+#= {result: 7, inputs: {m: {a: {b: {c: 7}}}}}
+def {a: {b: {c}}} = m
+c

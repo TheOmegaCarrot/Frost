@@ -1,0 +1,3 @@
+# An Array and a Map do not combine with `+`, even when both are empty.
+#= {raises: ['Cannot add', 'Array + Map']}
+[] + {}

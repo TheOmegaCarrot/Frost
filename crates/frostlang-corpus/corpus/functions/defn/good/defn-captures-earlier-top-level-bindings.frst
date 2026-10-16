@@ -1,0 +1,5 @@
+# A `defn` body reads the bindings defined before it.
+#= {result: 15}
+def base = 10
+defn add_base(x) -> x + base
+add_base(5)

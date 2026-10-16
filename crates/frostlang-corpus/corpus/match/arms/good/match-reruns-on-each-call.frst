@@ -1,0 +1,9 @@
+# A match inside a function matches afresh on each call, so each call may take
+# a different arm.
+#= {result: [1, 2, 0, 4]}
+defn f(v) -> match v {
+    [x] => x,
+    {x} => x,
+    _ => 0,
+}
+[f([1]), f({x: 2}), f(3), f([4])]

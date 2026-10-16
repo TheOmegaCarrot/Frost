@@ -1,0 +1,4 @@
+# An Int divided by Null is a type error, not a division by zero: Null is not
+# zero.
+#= {raises: 'Int / Null'}
+1 / null

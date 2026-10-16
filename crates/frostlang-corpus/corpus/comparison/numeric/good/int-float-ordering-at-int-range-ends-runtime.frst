@@ -1,0 +1,18 @@
+# Int against Float ordering at the ends of the Int range, with the operands
+# known only at runtime. The greatest Int is below 2^63 though a Float
+# conversion would round it to 2^63.
+#= {
+#=     result: [true, true, true, true],
+#=     inputs: {
+#=         max: 9223372036854775807,
+#=         min: -9223372036854775808,
+#=         two_pow_63: 9223372036854775808.0,
+#=         below_two_pow_63: 9223372036854774784.0,
+#=     },
+#= }
+[
+    max < two_pow_63,
+    max > below_two_pow_63,
+    min <= -two_pow_63,
+    min >= -two_pow_63,
+]

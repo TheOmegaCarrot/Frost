@@ -1,0 +1,5 @@
+# As with a constant `false`, a runtime `false` that short-circuits past
+# `$2` leaves the arity at two.
+#= {raises: 'expects 2 argument', inputs: {never: false}}
+def f = $(never and $2)
+f(1)

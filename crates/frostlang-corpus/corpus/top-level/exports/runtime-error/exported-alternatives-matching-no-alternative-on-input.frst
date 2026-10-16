@@ -1,0 +1,4 @@
+# An exported pattern with alternatives over a runtime value that fits none of
+# them raises.
+#= {raises: 'no alternative', inputs: {value: [1, 2]}}
+export def {a} | [a] = value

@@ -1,0 +1,3 @@
+# A Float is never an Array position, even a whole one like 0.0.
+#= {raises: ['index Array', 'Float']}
+index(0.0)([1])

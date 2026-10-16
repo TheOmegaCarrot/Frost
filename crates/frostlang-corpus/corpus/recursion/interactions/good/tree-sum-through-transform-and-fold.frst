@@ -1,0 +1,5 @@
+# A recursive function passed to `transform` by name, recursing once per
+# nested Array, with `fold` combining each level.
+#= {result: [0, 7, 21]}
+defn total(t) -> if is_array(t): fold(transform(t, total), 0, fn a, b -> a + b) else: t
+[total([]), total(7), total([1, [2, [3, [4, 5]]], [], [[6]]])]

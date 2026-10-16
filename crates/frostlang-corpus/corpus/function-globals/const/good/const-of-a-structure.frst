@@ -1,0 +1,4 @@
+# A constant structure is returned whole, the same each time.
+#= {result: [[1, {a: 2}], true]}
+def make = const([1, {a: 2}])
+[make(), make() == make('again')]

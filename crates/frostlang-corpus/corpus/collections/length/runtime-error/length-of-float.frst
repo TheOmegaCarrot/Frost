@@ -1,0 +1,3 @@
+# A Float has no length.
+#= {raises: ['Function len requires', 'Float'], inputs: {f: 1.5}}
+len(f)

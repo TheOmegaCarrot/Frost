@@ -1,0 +1,7 @@
+# A match that would find no arm raises only when it runs: inside a function
+# that is never called, it never does, even with a constant target.
+#= {result: 'fine'}
+def never = fn -> match 1 {
+    2 => 0,
+}
+'fine'

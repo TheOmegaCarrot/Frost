@@ -1,0 +1,7 @@
+# Every key type reaches the operation as a value of that type, in type order:
+# Bool, Int, Float, String, Bytes.
+#= {
+#=     result: ['Bool', 'Int', 'Float', 'String', 'Bytes'],
+#=     inputs: {m: {[x'ff']: 5, s: 4, [3.5]: 3, [2]: 2, [true]: 1}},
+#= }
+reduce m init: [] with fn acc, k, v -> acc + [type(k)]

@@ -1,0 +1,11 @@
+# The literals at the ends of the Int range equal those Ints known only at runtime.
+#= {
+#=     result: [true, true, true, true],
+#=     inputs: {max: 9223372036854775807, min: -9223372036854775808},
+#= }
+[
+    0x7fff_ffff_ffff_ffff == max,
+    9223372036854775807 == max,
+    -0x8000000000000000 == min,
+    -9_223_372_036_854_775_808 == min,
+]

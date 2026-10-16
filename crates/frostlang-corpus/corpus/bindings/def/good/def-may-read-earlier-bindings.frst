@@ -1,0 +1,7 @@
+# Each binding may read every binding made before it in the same scope.
+#= {result: [1, 2, 3, 6]}
+def a = 1
+def b = a + 1
+def c = a + b
+def d = a + b + c
+[a, b, c, d]

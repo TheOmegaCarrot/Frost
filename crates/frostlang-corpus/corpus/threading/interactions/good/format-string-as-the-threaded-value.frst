@@ -1,0 +1,5 @@
+# A format String can be the threaded value.
+#= {result: ['hi, Ann', 7], printed: ['hi, Ann'], inputs: {name: 'Ann'}}
+def greeting = $'hi, ${name}'
+greeting @ print()
+[greeting, $'hi, ${name}' @ len()]

@@ -1,0 +1,7 @@
+# A `def` cannot read the name it is binding when no enclosing binding of it
+# exists.
+#= {rejects: ['`q`', 'not defined']}
+do {
+    def q = q
+    q
+}

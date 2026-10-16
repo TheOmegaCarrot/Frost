@@ -1,0 +1,4 @@
+# `$(null)` is a thunk returning Null; the lambda itself is not Null.
+#= {result: [null, false]}
+def nothing = $(null)
+[nothing(), nothing == null]

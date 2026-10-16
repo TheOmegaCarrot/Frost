@@ -1,0 +1,4 @@
+# A result produced through `call` destructures like any Array.
+#= {result: [1, [2, 3]], inputs: {args: [1, 2, 3]}}
+def [first, ...rest] = call(collect, args)
+[first, rest]

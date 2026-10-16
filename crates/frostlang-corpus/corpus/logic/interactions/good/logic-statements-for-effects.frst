@@ -1,0 +1,12 @@
+# A logical expression may stand as a statement, run only for its right
+# operand's effect; its value is discarded, and the run continues normally.
+#= {
+#=     result: 'done',
+#=     printed: ['x is set', 'y is missing'],
+#=     inputs: {x: 0, y: null},
+#= }
+x and print('x is set')
+y and print('y is set')
+x or print('x is missing')
+y or print('y is missing')
+'done'

@@ -1,0 +1,8 @@
+# A `do` block is an expression, so it may be a lambda's body as well, though
+# a braced body needs no `do`.
+#= {result: 8}
+def f = fn x -> do {
+    def y = x + 1
+    y * 2
+}
+f(3)

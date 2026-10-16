@@ -1,0 +1,10 @@
+# An exported Map, read by a closure that derives from it on every call, is
+# the original at each call and in the exports.
+#= {
+#=     result: [[1, 2], [1, 2]],
+#=     exports: {config: {list: [1]}},
+#=     inputs: {n: 1},
+#= }
+export def config = {list: [n]}
+def extended = fn -> config.list + [2]
+[extended(), extended()]

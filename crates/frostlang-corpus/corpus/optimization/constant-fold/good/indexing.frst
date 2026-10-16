@@ -1,0 +1,13 @@
+# Indexing a constant structure with a constant key folds: a hard index of a
+# present key, a soft index of a present or absent one, and an Array index
+# from either end or out of range.
+#= {result: [1, 1, null, 20, 30, null, 'deep']}
+[
+    {a: 1}.a,
+    {a: 1}['a'],
+    {a: 1}['z'],
+    [10, 20, 30][1],
+    [10, 20, 30][-1],
+    [10, 20, 30][5],
+    {outer: [{inner: 'deep'}]}.outer[0].inner,
+]

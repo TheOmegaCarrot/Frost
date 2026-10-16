@@ -1,0 +1,10 @@
+# A function that binds a captured known structure to a local and builds upon
+# that local returns a fresh result on every call, and the capture stays
+# unchanged.
+#= {result: [[1, 2, 3], [1, 2, 4], [1, 2]], inputs: {three: 3, four: 4}}
+def base = [1, 2]
+def grow = fn x -> {
+    def b = base
+    b + [x]
+}
+[grow(three), grow(four), base]

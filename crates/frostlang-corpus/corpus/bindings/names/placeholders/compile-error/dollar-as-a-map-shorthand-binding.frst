@@ -1,0 +1,4 @@
+# A placeholder cannot be a Map pattern's shorthand name.
+#= {rejects: ['`$`', 'placeholders work only inside']}
+def {$} = {a: 1}
+1

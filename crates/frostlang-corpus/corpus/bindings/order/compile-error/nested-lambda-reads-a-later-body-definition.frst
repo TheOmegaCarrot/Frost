@@ -1,0 +1,9 @@
+# Inside a lambda body, a nested lambda written before a body `def` cannot read
+# that later name.
+#= {rejects: ['`z`', 'not defined']}
+def outer = fn -> {
+    def g = fn -> z
+    def z = 42
+    g()
+}
+outer()

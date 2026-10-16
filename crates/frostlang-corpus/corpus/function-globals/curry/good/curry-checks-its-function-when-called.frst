@@ -1,0 +1,9 @@
+# `curry` and `bcurry` reject a non-Function when they are called, before any
+# curried function exists to call.
+#= {result: [false, false, true, true]}
+[
+    try_call(curry, [5, 1]).ok,
+    try_call(bcurry, [5]).ok,
+    try_call(curry, [len]).ok,
+    try_call(bcurry, [len, 1]).ok,
+]

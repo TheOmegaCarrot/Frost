@@ -1,0 +1,6 @@
+# When `or`'s left operand is falsy, the right operand derives a value from a
+# binding read again afterward; the binding stays the original.
+#= {result: [[1, 2], [1]], inputs: {n: 1, nothing: null}}
+def xs = [n]
+def r = nothing or xs + [2]
+[r, xs]

@@ -1,0 +1,5 @@
+# Calls in an interpolation: a user function, a nested call, and a lambda called
+# right where it is written.
+#= {result: '14 15 21', inputs: {x: 7}}
+defn double(n) -> n * 2
+$'${double(x)} ${double(x) + 1} ${(fn n -> n * 3)(x)}'

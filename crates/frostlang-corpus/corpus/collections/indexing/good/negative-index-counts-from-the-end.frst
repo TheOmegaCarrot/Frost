@@ -1,0 +1,5 @@
+# A negative index counts back from the end: -1 is the last element, and
+# -len is the first.
+#= {result: [30, 20, 10, 30, 10], inputs: {ys: [10, 20, 30], n: -3}}
+def xs = [10, 20, 30]
+[xs[-1], xs[-2], xs[-3], ys[-1], ys[n]]

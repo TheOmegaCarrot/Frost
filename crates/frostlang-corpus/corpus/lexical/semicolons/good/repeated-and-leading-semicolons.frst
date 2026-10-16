@@ -1,0 +1,7 @@
+# Empty statements between semicolons, and semicolons before the first
+# statement or on lines of their own, are ignored.
+#= {result: 3}
+;;
+def a = 1;;; def b = 2
+;
+a + b

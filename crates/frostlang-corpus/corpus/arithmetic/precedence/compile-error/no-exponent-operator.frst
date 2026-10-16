@@ -1,0 +1,4 @@
+# Frost has no `**` exponent operator: it is a `*` followed by a `*` that
+# cannot begin an operand.
+#= {rejects: ['expected an expression', '`*`']}
+2 ** 3

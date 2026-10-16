@@ -1,0 +1,7 @@
+# A value concatenated with itself repeats its content, for every
+# concatenable type. Subtle because both operands are the same value.
+#= {
+#=     result: [[1, 2, 1, 2], 'abab', x'0101', {a: 1}],
+#=     inputs: {xs: [1, 2], s: 'ab', y: x'01', m: {a: 1}},
+#= }
+[xs + xs, s + s, y + y, m + m]

@@ -1,0 +1,8 @@
+# A recursive evaluator meets a node no arm handles, deep in the tree, and
+# raises rather than producing Null.
+#= {raises: 'no match arm'}
+defn eval(e) -> match e {
+    n is Int => n,
+    {op: '+', l, r} => eval(l) + eval(r),
+}
+eval({op: '+', l: 1, r: {op: '+', l: 2, r: {op: '-', l: 3, r: 4}}})

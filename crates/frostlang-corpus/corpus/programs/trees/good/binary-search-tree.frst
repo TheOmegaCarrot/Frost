@@ -1,0 +1,56 @@
+# A persistent binary search tree of Maps with Null children: inserting
+# returns a new tree (a duplicate key returns an equal one), and walks read
+# it back in order, measure its height, and test membership. The tree built
+# from the first keys is unchanged by inserting into it later.
+#= {
+#=     result: {
+#=         in_order: [20, 30, 40, 50, 60, 70, 80],
+#=         height: 3,
+#=         members: [true, false, false],
+#=         extremes: [20, 80],
+#=         before: [30, 50, 70],
+#=         after: [30, 50, 65, 70],
+#=         empty: [[], 0],
+#=     },
+#=     inputs: {
+#=         keys: [50, 30, 70, 20, 40, 60, 80, 30],
+#=         small: [50, 30, 70],
+#=     },
+#= }
+defn insert(tree, key) ->
+    if tree == null: {key, left: null, right: null}
+    elif key < tree.key: tree + {left: insert(tree.left, key)}
+    elif key > tree.key: tree + {right: insert(tree.right, key)}
+    else: tree
+
+defn in_order(tree) -> if tree == null: [] else: in_order(tree.left) + [tree.key] + in_order(tree.right)
+
+defn height(tree) -> if tree == null: 0 else: do {
+    def l = height(tree.left)
+    def r = height(tree.right)
+    1 + (if l > r: l else: r)
+}
+
+defn contains(tree, key) ->
+    if tree == null: false
+    elif key == tree.key: true
+    elif key < tree.key: contains(tree.left, key)
+    else: contains(tree.right, key)
+
+defn leftmost(tree) -> if tree.left == null: tree.key else: leftmost(tree.left)
+defn rightmost(tree) -> if tree.right == null: tree.key else: rightmost(tree.right)
+
+defn build(xs) -> reduce xs init: null with insert
+
+def tree = build(keys)
+def base = build(small)
+def grown = insert(base, 65)
+{
+    in_order: in_order(tree),
+    height: height(tree),
+    members: [contains(tree, 60), contains(tree, 65), contains(null, 1)],
+    extremes: [leftmost(tree), rightmost(tree)],
+    before: in_order(base),
+    after: in_order(grown),
+    empty: [in_order(build([])), height(null)],
+}

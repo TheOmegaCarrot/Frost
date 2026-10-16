@@ -1,0 +1,4 @@
+# Indexing a missing key inside an interpolation raises, as anywhere; it does
+# not interpolate Null.
+#= {raises: ['no value at key', 'zz'], inputs: {m: {k: 1}}}
+$'${m.zz}'

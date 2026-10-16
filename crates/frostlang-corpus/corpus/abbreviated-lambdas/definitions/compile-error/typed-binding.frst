@@ -1,0 +1,3 @@
+# A placeholder cannot be bound with a type constraint.
+#= {rejects: ['expected a pattern', 'found `$`']}
+def $ is Int = 1

@@ -1,0 +1,3 @@
+# A runtime String is not indexable, even by a valid position.
+#= {raises: ['Cannot index value', 'String'], inputs: {s: 'héllo', i: 1}}
+s[i]

@@ -1,0 +1,3 @@
+# A placeholder cannot be the binding of a Map destructuring entry.
+#= {rejects: ['expected a pattern', 'found `$2`']}
+def {a: $2} = {a: 1}

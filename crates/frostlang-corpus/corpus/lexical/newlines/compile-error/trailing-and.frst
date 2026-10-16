@@ -1,0 +1,4 @@
+# A line ending in `and` does not continue onto the next line.
+#= {rejects: 'a line continues only when', inputs: {a: true, b: true}}
+def x = a and
+    b

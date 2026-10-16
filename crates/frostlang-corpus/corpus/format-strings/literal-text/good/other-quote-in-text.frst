@@ -1,0 +1,4 @@
+# The quote that does not delimit a format String is plain text in it, with no
+# backslash.
+#= {result: ['say "hi"', "it's"]}
+[$'say "hi"', $"it's"]

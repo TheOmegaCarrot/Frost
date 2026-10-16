@@ -1,0 +1,4 @@
+# A spread function can be kept and applied to many Arrays.
+#= {result: [3, 7, 0]}
+def add_pair = spread(plus)
+[add_pair([1, 2]), add_pair([3, 4]), add_pair([0, 0])]

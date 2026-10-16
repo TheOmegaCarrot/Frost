@@ -1,0 +1,4 @@
+# `key: _` binds nothing, but the key must still be present; here it is.
+#= {result: 2, inputs: {m: {a: 1, b: 2}}}
+def {a: _, b} = m
+b

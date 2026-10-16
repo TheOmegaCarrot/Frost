@@ -1,0 +1,4 @@
+# `not` needs an operand: a closing bracket right after it leaves it without
+# one, even inside brackets where line breaks are ignored.
+#= {rejects: ['expected an expression', '`]`']}
+[not]

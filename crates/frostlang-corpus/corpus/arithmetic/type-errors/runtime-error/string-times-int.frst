@@ -1,0 +1,3 @@
+# `*` is numeric only: a String times an Int is a type error, not repetition.
+#= {raises: 'String * Int'}
+'ab' * 3

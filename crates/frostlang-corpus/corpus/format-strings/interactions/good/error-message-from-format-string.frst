@@ -1,0 +1,3 @@
+# A format String built error message reaches `try_call` intact.
+#= {result: 'bad value: 7', inputs: {x: 7}}
+try_call(fn -> error($'bad value: ${x}')).error

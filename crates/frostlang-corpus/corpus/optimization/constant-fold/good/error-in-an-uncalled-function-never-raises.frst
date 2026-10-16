@@ -1,0 +1,10 @@
+# An expression that raises on constants, inside a function that is never
+# called, never raises: folding it may not surface its error early.
+#= {result: 'never called'}
+def divide = fn -> 1 / 0
+def lookup = fn -> {a: 1}.b
+def fail = fn -> error('boom')
+def mismatch = fn -> match 1 {
+    2 => 'two',
+}
+'never called'

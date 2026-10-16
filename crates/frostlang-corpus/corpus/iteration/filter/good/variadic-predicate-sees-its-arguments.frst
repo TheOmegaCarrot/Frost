@@ -1,0 +1,14 @@
+# A variadic predicate shows how many arguments `filter` passes it: one per
+# Array element, and two, key and value, per Map entry.
+#= {
+#=     result: [[1, 2], {a: 1}],
+#=     printed: ['1', '1', '2'],
+#=     inputs: {xs: [1, 2], m: {a: 1}},
+#= }
+def show = fn ...args -> {
+    print(len(args))
+    true
+}
+def ys = filter xs with show
+def n = filter m with show
+[ys, n]

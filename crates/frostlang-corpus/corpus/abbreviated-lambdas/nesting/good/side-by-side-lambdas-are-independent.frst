@@ -1,0 +1,5 @@
+# Abbreviated lambdas next to each other are not nested; each has its own
+# placeholders and arity.
+#= {result: [6, 10, 3]}
+def fs = [$($ + 1), $($ * 2), $($2)]
+[fs[0](5), fs[1](5), fs[2](2, 3)]

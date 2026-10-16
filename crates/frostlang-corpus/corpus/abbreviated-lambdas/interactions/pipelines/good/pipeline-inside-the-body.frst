@@ -1,0 +1,5 @@
+# A pipeline inside an abbreviated lambda threads a placeholder into a call
+# of another placeholder.
+#= {result: 6}
+def apply = $($1 @ $2())
+apply(3, fn v -> v * 2)

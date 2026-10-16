@@ -1,0 +1,5 @@
+# A parenthesized `if` may choose the function to call.
+#= {result: [2, 0], inputs: {t: true, f: false}}
+defn inc(n) -> n + 1
+defn dec(n) -> n - 1
+[(if t: inc else: dec)(1), (if f: inc else: dec)(1)]

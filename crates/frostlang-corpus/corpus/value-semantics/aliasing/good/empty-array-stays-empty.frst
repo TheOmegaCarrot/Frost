@@ -1,0 +1,7 @@
+# An empty Array stays empty after a value is derived from it, whether it is
+# a literal or supplied at runtime.
+#= {result: [[], [1], [], [2]], inputs: {runtime: []}}
+def literal = []
+def from_literal = literal + [1]
+def from_runtime = runtime + [2]
+[literal, from_literal, runtime, from_runtime]

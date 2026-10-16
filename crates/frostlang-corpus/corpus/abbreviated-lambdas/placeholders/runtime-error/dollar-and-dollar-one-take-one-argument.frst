@@ -1,0 +1,5 @@
+# `$` and `$1` name the same parameter, so a body using both still takes a
+# single argument; a second one is too many.
+#= {raises: ['expects 1 argument', 'called with 2']}
+def f = $($ + $1)
+f(1, 2)

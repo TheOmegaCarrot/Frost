@@ -1,0 +1,4 @@
+# A shorthand key binds from a Map known only at runtime.
+#= {result: [2, 1], inputs: {m: {a: 1, b: 2}}}
+def {a, b} = m
+[b, a]

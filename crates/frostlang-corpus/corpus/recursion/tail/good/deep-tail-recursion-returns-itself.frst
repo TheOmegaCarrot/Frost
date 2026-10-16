@@ -1,0 +1,5 @@
+# A deep tail recursion that finally returns its self-name returns the same
+# closure first called, even though every call reused one frame.
+#= {result: true}
+def f = fn me(n) -> if n == 0: me else: me(n - 1)
+f(100000) == f

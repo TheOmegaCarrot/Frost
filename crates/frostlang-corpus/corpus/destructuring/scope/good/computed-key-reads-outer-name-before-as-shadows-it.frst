@@ -1,0 +1,8 @@
+# A computed key reads the outer `m` even when the pattern's `as` binds `m`,
+# because `as` binds only after every entry.
+#= {result: [2, 'a']}
+def m = {k: 'b'}
+do {
+    def {[m.k]: v} as m = {k: 'a', a: 1, b: 2}
+    [v, m.k]
+}

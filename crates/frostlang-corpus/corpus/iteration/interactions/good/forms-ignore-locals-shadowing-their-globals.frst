@@ -1,0 +1,14 @@
+# Each form calls its own global, so a local named like that global does not
+# change what the form does. Subtle: the forms are syntax for calls to
+# `transform`, `select`, `fold`, and `each`, yet these names are rebound here.
+#= {result: [[2, 3], [2], 3, [1, 2]], inputs: {xs: [1, 2]}}
+def transform = fn s, f -> 'shadowed'
+def select = fn s, f -> 'shadowed'
+def fold = fn s, f -> 'shadowed'
+def each = fn s, f -> 'shadowed'
+[
+    map xs with fn x -> x + 1,
+    filter xs with fn x -> x > 1,
+    reduce xs with fn acc, x -> acc + x,
+    foreach xs with fn x -> x,
+]

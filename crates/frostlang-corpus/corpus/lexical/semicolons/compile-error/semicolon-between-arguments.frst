@@ -1,0 +1,4 @@
+# Call arguments are separated by `,`, not `;`.
+#= {rejects: 'separate arguments with `,`, not `;`'}
+def f = fn a, b -> a + b
+f(1; 2)

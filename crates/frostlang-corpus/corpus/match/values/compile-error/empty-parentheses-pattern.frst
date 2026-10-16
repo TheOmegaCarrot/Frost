@@ -1,0 +1,6 @@
+# Empty parentheses are not a pattern: a value comparison needs an expression.
+#= {rejects: ['expected an expression', 'found `)`']}
+match 1 {
+    () => 0,
+    _ => 1,
+}

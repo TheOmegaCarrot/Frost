@@ -1,0 +1,7 @@
+# Functions reach each other through a Map passed along as an argument, each
+# calling the other through a key.
+#= {result: [true, false, true, false]}
+defn is_even(n, table) -> if n == 0: true else: table.odd(n - 1, table)
+defn is_odd(n, table) -> if n == 0: false else: table.even(n - 1, table)
+def table = {even: is_even, odd: is_odd}
+[is_even(10, table), is_even(7, table), is_odd(100001, table), is_odd(100000, table)]

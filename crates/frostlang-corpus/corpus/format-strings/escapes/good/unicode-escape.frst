@@ -1,0 +1,4 @@
+# `\u{...}` names a Unicode scalar by its hex digits, in either case, giving the
+# character, including ones outside the Basic Multilingual Plane.
+#= {result: ['A', 'Ω', 'Ω', 'é', '😀', 'Ωmega']}
+[$'\u{41}', $'\u{3a9}', $'\u{3A9}', $'\u{e9}', $'\u{1F600}', $'\u{3a9}mega']

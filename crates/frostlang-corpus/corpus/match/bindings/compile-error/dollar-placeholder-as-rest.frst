@@ -1,0 +1,5 @@
+# A `$` placeholder cannot name a rest binding.
+#= {rejects: 'expected a name after `...`'}
+match [1] {
+    [...$1] => 1,
+}

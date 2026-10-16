@@ -1,0 +1,6 @@
+# A named lambda's own name shadows an outer known function of that name in
+# its body, so its recursive calls call itself.
+#= {result: ['base', 1]}
+def f = fn k -> 1
+def g = fn f(k) -> if k == 0: 'base' else: f(k - 1)
+[g(2), f(2)]

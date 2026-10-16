@@ -1,0 +1,12 @@
+# Calls, indexing, field access, and `@` threading all bind tighter than
+# comparison.
+#= {
+#=     result: [true, true, true, true],
+#=     inputs: {xs: [1, 2, 3], m: {a: 1, b: 2}},
+#= }
+[
+    xs @ len() == 3,
+    xs[0] < xs[1],
+    m.a != m.b,
+    len(xs) > m.b,
+]

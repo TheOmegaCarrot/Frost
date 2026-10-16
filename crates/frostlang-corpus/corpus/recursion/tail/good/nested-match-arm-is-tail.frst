@@ -1,0 +1,10 @@
+# An arm of a `match` nested in another `match`'s arm is still in tail position.
+#= {result: [[6, 4, 2], 50000]}
+defn evens(n, acc) -> match n {
+    0 => acc,
+    m => match m % 2 {
+        0 => evens(m - 1, acc + [m]),
+        _ => evens(m - 1, acc),
+    },
+}
+[evens(6, []), len(evens(100000, []))]

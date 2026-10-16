@@ -1,0 +1,4 @@
+# The arguments are reversed before the function binds them, so the last
+# argument fills the first parameter.
+#= {result: [3, [2, 1]]}
+rev_args(fn a, ...rest -> [a, rest])(1, 2, 3)

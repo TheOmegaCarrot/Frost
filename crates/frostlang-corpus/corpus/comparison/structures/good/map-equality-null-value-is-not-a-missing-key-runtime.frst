@@ -1,0 +1,11 @@
+# A Null-valued key is not a missing key, with the Maps and the Null known
+# only at runtime.
+#= {
+#=     result: [false, true, false],
+#=     inputs: {holding_null: {a: null}, empty: {}, nothing: null},
+#= }
+[
+    holding_null == empty,
+    holding_null == {a: nothing},
+    empty + {a: nothing} == empty,
+]

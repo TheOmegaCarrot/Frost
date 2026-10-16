@@ -1,0 +1,9 @@
+# Truthiness decided at runtime: only Null and `false` are falsy, whatever the
+# type of the other values.
+#= {
+#=     result: ['F', 'F', 'T', 'T', 'T', 'T', 'T', 'T', 'T', 'T', 'T', 'T', 'T'],
+#=     inputs: {
+#=         values: [null, false, true, 0, 0.0, -0.0, -1, '', x'', [], {}, [false], {[1]: null}],
+#=     },
+#= }
+map values with fn v -> if v: 'T' else: 'F'

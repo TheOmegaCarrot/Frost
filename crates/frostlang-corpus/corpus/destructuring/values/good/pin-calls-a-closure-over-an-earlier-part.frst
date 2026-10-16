@@ -1,0 +1,7 @@
+# A pin may call a lambda that captures a name bound earlier in the same
+# pattern. Subtle when folded: the name is still pending while the pattern
+# compiles.
+#= {result: [1, 1], inputs: {xs: [1, 2]}}
+def [a, ((fn -> a + 1)())] = [1, 2]
+def [b, ((fn -> b + 1)())] = xs
+[a, b]

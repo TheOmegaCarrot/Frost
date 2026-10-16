@@ -1,0 +1,4 @@
+# A length mismatch deep inside a nested pattern raises like one at the top.
+#= {raises: 'exactly 1 element', inputs: {xs: [1, [2, [3, 4]]]}}
+def [a, [b, [c]]] = xs
+[a, b, c]

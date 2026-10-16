@@ -1,0 +1,4 @@
+# `a @ f()` threads `a` in as the first argument, and `f` may be an
+# abbreviated lambda written in place.
+#= {result: [10, 7], inputs: {five: 5}}
+[five @ $($ * 2)(), five @ $($1 + $2)(2)]

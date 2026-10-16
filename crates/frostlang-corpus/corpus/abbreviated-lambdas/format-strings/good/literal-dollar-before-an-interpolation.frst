@@ -1,0 +1,6 @@
+# In `$${$}`, the first `$` is not followed by `{`, so it is literal text,
+# and the second opens an interpolation of the placeholder. Subtle: `$$`
+# here is neither the rest placeholder nor an escape.
+#= {result: 'price: $5', inputs: {five: 5}}
+def price = $($'price: $${$}')
+price(five)

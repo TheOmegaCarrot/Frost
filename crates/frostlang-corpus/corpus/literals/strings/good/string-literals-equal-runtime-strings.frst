@@ -1,0 +1,12 @@
+# A literal's decoded text equals the same text known only at runtime, so escape
+# decoding is not merely something the optimizer agrees with itself on.
+#= {
+#=     result: [true, true, true, true],
+#=     inputs: {
+#=         text: 'caf\u{e9}\u{a}',
+#=         quotes: R'(it's "q")',
+#=         backslash: R'(\)',
+#=         empty: R'()',
+#=     },
+#= }
+['café\n' == text, "it's \"q\"" == quotes, '\\' == backslash, "" == empty]

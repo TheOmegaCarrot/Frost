@@ -1,0 +1,7 @@
+# `each` over a Map visits its entries in sorted key order, passing each key
+# and its value.
+#= {
+#=     result: {c: 3, a: 1, b: 2},
+#=     printed: ['a=1', 'b=2', 'c=3'],
+#= }
+each({c: 3, a: 1, b: 2}, fn k, v -> print($'${k}=${v}'))

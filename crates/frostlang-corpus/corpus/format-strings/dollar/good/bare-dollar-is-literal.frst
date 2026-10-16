@@ -1,0 +1,4 @@
+# A `$` not followed by `{` is literal text, wherever it stands: before text,
+# at the very end, and alone.
+#= {result: ['price: $5', 'cost$', '$', '$x $y']}
+[$'price: $5', $'cost$', $'$', $'$x $y']

@@ -1,0 +1,4 @@
+# Outside a `match` pattern, a single `|` between operands is not an operator:
+# Frost has no bitwise operators, and logical "or" is the keyword `or`.
+#= {rejects: ['`|`', 'bitwise']}
+true | false

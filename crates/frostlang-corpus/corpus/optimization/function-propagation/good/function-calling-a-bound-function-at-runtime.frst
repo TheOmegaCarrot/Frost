@@ -1,0 +1,8 @@
+# The functions of function-calling-a-bound-function, over arguments only
+# known at runtime, compute the same results.
+#= {result: [3, 10], inputs: {one: 1}}
+def inc = fn x -> x + 1
+def twice = fn x -> inc(inc(x))
+def square = fn x -> x * x
+def f = fn y -> square(3) + y
+[twice(one), f(one)]

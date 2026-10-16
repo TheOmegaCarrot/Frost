@@ -1,0 +1,4 @@
+# An Array is not a Map, even for an Int computed key that would index it.
+#= {raises: 'expected a Map', inputs: {v: ['zero']}}
+def {[0]: first} = v
+first

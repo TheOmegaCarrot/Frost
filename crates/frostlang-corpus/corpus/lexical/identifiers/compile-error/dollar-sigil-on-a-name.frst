@@ -1,0 +1,3 @@
+# Names take no `$` sigil, as PHP's and shells' variables do.
+#= {rejects: 'no `$` sigil'}
+$count = 1

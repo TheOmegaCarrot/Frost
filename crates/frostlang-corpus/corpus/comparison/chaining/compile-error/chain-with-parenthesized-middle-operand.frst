@@ -1,0 +1,4 @@
+# Parenthesizing only the middle operand groups nothing across the operators,
+# so `1 < (2) < 3` is still a chain.
+#= {rejects: 'cannot chain'}
+1 < (2) < 3

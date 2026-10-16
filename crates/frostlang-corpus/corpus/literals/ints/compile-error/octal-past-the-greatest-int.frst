@@ -1,0 +1,3 @@
+# An octal literal one past the greatest Int is out of range.
+#= {rejects: 'Int literal out of range'}
+0o1000000000000000000000

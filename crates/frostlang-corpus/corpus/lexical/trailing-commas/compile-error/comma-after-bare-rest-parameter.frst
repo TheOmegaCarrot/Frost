@@ -1,0 +1,3 @@
+# Without parentheses, a rest parameter takes no trailing comma either.
+#= {rejects: 'comes last'}
+def f = fn a, ...rest, -> a

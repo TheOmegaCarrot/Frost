@@ -1,0 +1,7 @@
+# A statement whose value is dropped still runs, so a constant statement that
+# raises does raise: an optimizer must not discard it.
+#= {raises: 'division by zero'}
+do {
+    1 / 0
+    5
+}

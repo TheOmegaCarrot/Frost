@@ -1,0 +1,3 @@
+# An empty raw String is the empty String.
+#= {result: [true, true, 0]}
+[R'()' == '', R"()" == "", len(R'()')]

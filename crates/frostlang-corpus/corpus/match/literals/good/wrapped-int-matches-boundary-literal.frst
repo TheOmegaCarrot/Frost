@@ -1,0 +1,9 @@
+# Int overflow wraps in two's complement, so the largest Int plus one is the
+# smallest Int and matches its literal pattern. Subtle: the target is computed
+# at runtime here, so the wrap happens in the VM, not the optimizer.
+#= {result: ['min', 'max'], inputs: {max: 9223372036854775807, one: 1}}
+defn name(n) -> match n {
+    9223372036854775807 => 'max',
+    -9223372036854775808 => 'min',
+}
+[name(max + one), name(max + one - one)]

@@ -1,0 +1,5 @@
+# A base case that returns Null raises when an enclosing level uses it as an
+# operand: Null is not a number.
+#= {raises: 'Null + Int'}
+defn f(n) -> if n == 0: null else: f(n - 1) + 1
+f(3)

@@ -1,0 +1,7 @@
+# A later alternative cannot read a name an earlier alternative bound: the
+# earlier one failed, so it bound nothing.
+#= {rejects: '`x` is not defined'}
+match [5, 5] {
+    [1, x] | [(x), x] => x,
+    _ => 0,
+}

@@ -1,0 +1,10 @@
+# A format string with no interpolation, an escaped one, or a bare `$` folds
+# to its literal text, beside a propagated interpolation.
+#= {result: ['plain', '${name}', 'cost: $5', 'x$']}
+def name = 'x'
+[
+    $'plain',
+    $'\${name}',
+    $'cost: $5',
+    $'${name}$',
+]

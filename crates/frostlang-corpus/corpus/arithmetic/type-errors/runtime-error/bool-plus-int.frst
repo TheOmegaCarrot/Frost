@@ -1,0 +1,3 @@
+# Bools are not numbers: `true + 1` is a type error, not 2.
+#= {raises: 'Bool + Int'}
+true + 1

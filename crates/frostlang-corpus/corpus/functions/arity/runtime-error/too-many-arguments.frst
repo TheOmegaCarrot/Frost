@@ -1,0 +1,4 @@
+# An extra argument is an error; it is not silently dropped.
+#= {raises: ['expects 1 argument', 'called with 2']}
+def f = fn x -> x
+f(1, 2)

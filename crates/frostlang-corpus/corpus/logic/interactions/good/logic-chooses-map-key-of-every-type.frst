@@ -1,0 +1,22 @@
+# `and` and `or` yield their operands unchanged, so the value they decide on can
+# be a Map key of any key type: Bool, Int, Float, String, or Bytes.
+#= {
+#=     result: ['int', 'float', 'string', 'bytes', 'false', 'true'],
+#=     inputs: {n: null, f: false, zero: 0, empty: x'', t: true},
+#= }
+def m = {
+    [true]: 'true',
+    [false]: 'false',
+    [1]: 'int',
+    [1.5]: 'float',
+    k: 'string',
+    [x'01']: 'bytes',
+}
+[
+    m[n or 1],
+    m[f or 1.5],
+    m[zero and 'k'],
+    m[empty and x'01'],
+    m[t and f],
+    m[t or 1],
+]

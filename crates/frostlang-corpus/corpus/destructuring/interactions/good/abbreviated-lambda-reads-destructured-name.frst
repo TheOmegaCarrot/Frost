@@ -1,0 +1,4 @@
+# An abbreviated lambda may read a name bound by a pattern.
+#= {result: [11, 12], inputs: {cfg: [10], xs: [1, 2]}}
+def [offset] = cfg
+transform(xs, $($ + offset))

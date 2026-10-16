@@ -1,0 +1,6 @@
+# Comma-separated names in braces after the arrow are shorthand Map entries,
+# and may mix with explicit entries.
+#= {result: [{a: 1, b: 2}, {a: 1, c: 3}]}
+def both = fn a, b -> {a, b}
+def mixed = fn a -> {a, c: 3}
+[both(1, 2), mixed(1)]

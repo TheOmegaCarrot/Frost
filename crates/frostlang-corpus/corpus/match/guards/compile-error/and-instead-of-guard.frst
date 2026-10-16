@@ -1,0 +1,6 @@
+# A condition cannot follow a pattern with `and`; it goes in an `if:` guard.
+#= {rejects: 'a guard is written `if:`'}
+match 2 {
+    n is Int and n > 1 => n,
+    _ => 0,
+}

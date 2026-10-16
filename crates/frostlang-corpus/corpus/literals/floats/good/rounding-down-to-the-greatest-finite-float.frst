@@ -1,0 +1,7 @@
+# A literal a little past the greatest finite Float, but nearer it than to the next
+# power of two, rounds down to it rather than up to Infinity, so it is accepted.
+#= {result: [true, 'Float']}
+[
+    1.7976931348623158e308 == 1.7976931348623157e308,
+    type(1.7976931348623158e308),
+]

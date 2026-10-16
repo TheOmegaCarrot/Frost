@@ -1,0 +1,4 @@
+# A nested format String is evaluated in its place in the outer one's order:
+# the outer interpolations before it run first, those after it run last.
+#= {result: 'nullnullnullnull', printed: ['outer 1', 'inner 1', 'inner 2', 'outer 2']}
+$'${print("outer 1")}${$"${print("inner 1")}${print("inner 2")}"}${print("outer 2")}'

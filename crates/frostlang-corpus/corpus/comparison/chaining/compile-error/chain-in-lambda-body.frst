@@ -1,0 +1,5 @@
+# A chained comparison in a lambda body is rejected when the program compiles,
+# whether or not the lambda is ever called.
+#= {rejects: 'cannot chain'}
+def in_range = fn x -> 0 < x < 10
+1

@@ -1,0 +1,3 @@
+# Frost's logical "or" is the word `or`, not `||`.
+#= {rejects: 'is `or`', inputs: {a: true, b: true}}
+a || b

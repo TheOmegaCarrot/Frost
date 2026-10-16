@@ -1,0 +1,5 @@
+# A guard goes between the pattern and `=>`, not after the result.
+#= {rejects: 'between its pattern and `=>`'}
+match 1 {
+    _ => 1 if: true,
+}

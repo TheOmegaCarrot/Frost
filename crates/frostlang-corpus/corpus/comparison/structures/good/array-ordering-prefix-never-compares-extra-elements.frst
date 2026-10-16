@@ -1,0 +1,9 @@
+# Past the end of the shorter Array only length decides, so an extra element
+# that could not be ordered is never compared: `[1] < [1, null]` is true
+# rather than raising.
+#= {result: [true, true, false]}
+[
+    [1] < [1, null],
+    [] < [{}],
+    [1, true] < [1],
+]

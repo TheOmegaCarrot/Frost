@@ -1,0 +1,9 @@
+# A call in tail position stays a tail call through a match whose constant
+# target picks its arm, so a deep recursion through it does not grow the
+# stack.
+#= {result: 'done', inputs: {steps: 200000}}
+defn loop(n) -> match 'go' {
+    'go' => if n == 0: 'done' else: loop(n - 1),
+    _ => error('never'),
+}
+loop(steps)

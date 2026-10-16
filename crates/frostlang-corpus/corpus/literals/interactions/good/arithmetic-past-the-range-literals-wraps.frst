@@ -1,0 +1,14 @@
+# A literal is never out of range by wrapping, but arithmetic on the range-end
+# literals wraps in two's complement, here where the optimizer can fold it.
+#= {
+#=     result: [
+#=         -9223372036854775808,
+#=         9223372036854775807,
+#=         -2,
+#=     ],
+#= }
+[
+    9223372036854775807 + 1,
+    -9223372036854775808 - 1,
+    0x7fffffffffffffff * 2,
+]

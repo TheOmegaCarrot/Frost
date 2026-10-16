@@ -1,0 +1,7 @@
+# `as` may appear in a branch, provided every branch binds the same name.
+#= {result: [[1, {a: 1}], [2, {b: 2}]]}
+defn take(v) -> {
+    def {a} as m | {b: a} as m = v
+    [a, m]
+}
+[take({a: 1}), take({b: 2})]

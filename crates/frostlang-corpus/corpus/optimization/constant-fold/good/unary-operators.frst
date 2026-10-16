@@ -1,0 +1,14 @@
+# Negation and `not` over constants fold. `not` follows truthiness: only Null
+# and false are falsy, so `not 0` and `not ''` are false.
+#= {result: [-5, 5, -2.5, false, true, true, false, false, false]}
+[
+    -5,
+    -(-5),
+    -(1.0 + 1.5),
+    not true,
+    not false,
+    not null,
+    not 0,
+    not '',
+    not [],
+]

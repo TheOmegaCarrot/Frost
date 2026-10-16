@@ -1,0 +1,7 @@
+# A tail call to a function with a rest parameter collects the extra
+# arguments as any other call does.
+#= {result: [[1, [1, 1]], [1, []]], inputs: {n: 1}}
+defn gather(first, ...rest) -> [first, rest]
+defn three(x) -> gather(x, x, x)
+defn one(x) -> gather(x)
+[three(n), one(n)]

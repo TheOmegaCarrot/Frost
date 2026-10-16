@@ -1,0 +1,3 @@
+# A no-break space, as pasted text often brings, is not a plain space.
+#= {rejects: ['U+00A0', 'not a plain space']}
+1 + 2

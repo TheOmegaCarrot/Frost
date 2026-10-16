@@ -1,0 +1,3 @@
+# A raw String with no closer is unclosed.
+#= {rejects: 'unclosed raw String'}
+def a = R'(abc

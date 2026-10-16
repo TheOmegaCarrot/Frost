@@ -1,0 +1,10 @@
+# A `match` guard that calls the function it belongs to: the guard's
+# recursive call completes before the arm is chosen, and a false guard falls
+# through to the next arm.
+#= {result: ['zero', 'odd', 'even', 'odd', 'even']}
+defn parity(n) -> match n {
+    0 => 'zero',
+    m if: parity(m - 1) == 'odd' => 'even',
+    _ => 'odd',
+}
+[parity(0), parity(1), parity(2), parity(7), parity(10)]

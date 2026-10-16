@@ -1,0 +1,5 @@
+# Arithmetic on finite Float literals that overflows raises when run. The optimizer
+# can see both operands, but must leave the failure to the run rather than turn a
+# valid program into a rejected one.
+#= {raises: 'NaN or Infinity'}
+1e308 * 10

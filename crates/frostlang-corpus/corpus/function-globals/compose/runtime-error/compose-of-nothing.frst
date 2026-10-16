@@ -1,0 +1,3 @@
+# `compose` of no functions is an arity error, not an identity function.
+#= {raises: ['compose', 'at least 2', 'called with 0']}
+compose()

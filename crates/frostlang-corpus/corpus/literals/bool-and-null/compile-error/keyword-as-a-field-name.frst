@@ -1,0 +1,4 @@
+# A literal keyword cannot follow `.` as a field name.
+#= {rejects: 'expected a name after `.`'}
+def m = {a: 1}
+m.null

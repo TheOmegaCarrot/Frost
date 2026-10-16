@@ -1,0 +1,5 @@
+# A discarded call of a known non-function still raises.
+#= {raises: 'non-function'}
+def s = 'not callable'
+s()
+'unreached'

@@ -1,0 +1,3 @@
+# Null is a value like any other to return constantly.
+#= {result: [null, null]}
+[const(null)(), const(null)('x')]

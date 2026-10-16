@@ -1,0 +1,6 @@
+# A catch-all arm is `_ => ...`, not `else`.
+#= {rejects: 'a catch-all arm is `_ => ...`', inputs: {x: 1}}
+match x {
+    1 => 'one',
+    else => 'other',
+}

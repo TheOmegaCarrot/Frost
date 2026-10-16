@@ -1,0 +1,8 @@
+# A keyword is rejected as a parameter name wherever the lambda appears,
+# including nested inside another lambda's block body.
+#= {rejects: ['`match`', 'keyword']}
+def f = fn -> {
+    def g = fn match -> match
+    g
+}
+1

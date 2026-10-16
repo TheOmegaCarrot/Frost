@@ -1,0 +1,5 @@
+# `is` tests a type only in a pattern. Elsewhere it is rejected, and the help
+# names the predicate to call instead.
+#= {rejects: ['`is` works only in a pattern', 'is_int(v)'], inputs: {v: 1}}
+def ok = v is Int
+ok

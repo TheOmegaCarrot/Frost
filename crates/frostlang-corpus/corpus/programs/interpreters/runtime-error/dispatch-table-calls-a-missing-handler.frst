@@ -1,0 +1,18 @@
+# A stack machine dispatching through a Map of handler functions reads each
+# handler with a soft index, so an unknown opcode reads as Null; calling
+# that Null raises rather than skipping the instruction.
+#= {
+#=     raises: ['non-function', 'Null'],
+#=     inputs: {
+#=         program: [{op: 'push', arg: 2}, {op: 'dup'}, {op: 'add'}, {op: 'pow', arg: 2}, {op: 'push', arg: 1}],
+#=     },
+#= }
+def handlers = {
+    push: fn stack, arg -> [arg] + stack,
+    dup: fn stack, _ -> [stack[0]] + stack,
+    add: fn stack, _ -> match stack {
+        [b, a, ...rest] => [a + b] + rest,
+    },
+}
+
+reduce program init: [] with fn stack, instruction -> handlers[instruction.op](stack, instruction['arg'])

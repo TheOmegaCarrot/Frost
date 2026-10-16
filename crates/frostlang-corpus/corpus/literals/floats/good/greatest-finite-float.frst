@@ -1,0 +1,7 @@
+# The greatest finite Float, and its negation, are writable as literals.
+#= {result: [true, true, 'Float']}
+[
+    1.7976931348623157e308 > 1e308,
+    -1.7976931348623157e308 < -1e308,
+    type(1.7976931348623157e308),
+]

@@ -1,0 +1,3 @@
+# The spread elements are checked against the function's arity.
+#= {raises: ['expects 2', 'called with 1']}
+spread(fn a, b -> a)([1])

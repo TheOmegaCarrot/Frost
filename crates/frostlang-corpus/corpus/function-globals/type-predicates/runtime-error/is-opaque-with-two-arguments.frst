@@ -1,0 +1,3 @@
+# `is_opaque` takes exactly one argument.
+#= {raises: ['is_opaque', 'expects 1', 'called with 2']}
+is_opaque(1, 2)

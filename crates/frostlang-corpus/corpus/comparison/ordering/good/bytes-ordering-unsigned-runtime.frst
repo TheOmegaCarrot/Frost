@@ -1,0 +1,12 @@
+# Bytes known only at runtime order by unsigned octet, with a proper prefix
+# first.
+#= {
+#=     result: [true, true, true, false],
+#=     inputs: {low: x'7f', high: x'80', empty: x'', hi: x'6869'},
+#= }
+[
+    low < high,
+    empty < low,
+    hi < hi + x'00',
+    high <= low,
+]

@@ -1,0 +1,5 @@
+# Whether the callee can be called is checked only at the call, after the
+# arguments are evaluated, so an error in an argument wins.
+#= {raises: 'division by zero'}
+def n = 5
+n(1 / 0)

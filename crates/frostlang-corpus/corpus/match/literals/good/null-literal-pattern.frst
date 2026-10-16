@@ -1,0 +1,6 @@
+# The `null` pattern matches Null only.
+#= {result: ['null', 'other', 'other', 'other'], inputs: {xs: [null, false, 0, '']}}
+transform(xs, fn v -> match v {
+    null => 'null',
+    _ => 'other',
+})

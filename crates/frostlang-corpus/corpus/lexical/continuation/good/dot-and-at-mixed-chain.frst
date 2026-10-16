@@ -1,0 +1,8 @@
+# Leading `.` and `@` lines mix freely in one chain, each applying to the
+# result so far.
+#= {result: 3, inputs: {m: {items: {xs: [1, 2, 3]}}}}
+m
+    .items
+    .xs
+    @ transform(fn x -> {v: x})
+    @ len()

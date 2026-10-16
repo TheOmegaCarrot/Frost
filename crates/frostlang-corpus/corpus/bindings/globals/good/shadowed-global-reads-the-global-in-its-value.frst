@@ -1,0 +1,9 @@
+# A `def` shadowing a global may use that global in its own value, since the
+# binding does not exist until its value is computed.
+#= {result: [6, 'Int']}
+def len = fn xs -> len(xs) * 2
+def inner = do {
+    def type = type(1)
+    type
+}
+[len([1, 2, 3]), inner]

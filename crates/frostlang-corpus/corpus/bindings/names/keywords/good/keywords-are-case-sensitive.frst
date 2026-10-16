@@ -1,0 +1,9 @@
+# Keywords are lowercase words; the same letters in another case are ordinary
+# names.
+#= {result: [1, 2, 3, 4, 5]}
+def If = 1
+def INIT = 2
+def Null = 3
+def True = 4
+def Map = 5
+[If, INIT, Null, True, Map]

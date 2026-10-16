@@ -1,0 +1,5 @@
+# A pattern is not a definition: `def` cannot start an arm.
+#= {rejects: ['expected a pattern', 'found `def`']}
+match 1 {
+    def y => y,
+}

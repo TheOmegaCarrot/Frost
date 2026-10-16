@@ -1,0 +1,6 @@
+# Runtime Arrays compare deeply, through nested structures.
+#= {
+#=     result: [true, false, false],
+#=     inputs: {a: [1, [2, {k: [3]}]], b: [1, [2, {k: [3]}]], c: [1, [2, {k: [4]}]], d: [1, [2]]},
+#= }
+[a == b, a == c, a == d]

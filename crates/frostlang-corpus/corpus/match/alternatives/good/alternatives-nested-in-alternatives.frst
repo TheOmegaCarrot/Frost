@@ -1,0 +1,7 @@
+# An alternative nested inside a later branch of another binds into the same
+# names, whichever path matched.
+#= {result: [9, 4, 4, 'none'], inputs: {xs: [[9, 0], [0, [4]], [0, {x: 4}], [0, 4]]}}
+transform(xs, fn v -> match v {
+    [x, 0] | [0, [x] | {x}] => x,
+    _ => 'none',
+})

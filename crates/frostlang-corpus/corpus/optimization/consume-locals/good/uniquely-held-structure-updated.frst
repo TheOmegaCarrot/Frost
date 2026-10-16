@@ -1,0 +1,11 @@
+# A structure built at runtime and held only by one binding is updated through
+# that binding's last read with the expected result, for each structured type.
+#= {
+#=     result: [[1, 1, 3], {k: 1, z: 2}, 'aa!', x'0101ff'],
+#=     inputs: {n: 1, s: 'a', bytes: x'01'},
+#= }
+def xs = [n, n]
+def m = {k: n}
+def text = s + s
+def raw = bytes + bytes
+[xs + [3], m + {z: 2}, text + '!', raw + x'ff']

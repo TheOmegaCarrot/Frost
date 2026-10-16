@@ -1,0 +1,11 @@
+# A `do` block inside the body is its own scope, so it may rebind a parameter,
+# even in terms of the parameter itself; the parameter is unchanged after it.
+#= {result: [20, 2]}
+def f = fn x -> {
+    def inner = do {
+        def x = x * 10
+        x
+    }
+    [inner, x]
+}
+f(2)

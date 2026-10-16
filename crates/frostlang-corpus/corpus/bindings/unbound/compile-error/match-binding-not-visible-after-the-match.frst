@@ -1,0 +1,6 @@
+# A match arm's bindings end with the arm.
+#= {rejects: ['`n`', 'not defined']}
+def r = match 1 {
+    n => n,
+}
+n

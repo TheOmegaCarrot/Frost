@@ -1,0 +1,7 @@
+# A pure call that would never finish, in a function never called, never
+# stops the program from compiling or running: the compiler gives up
+# computing it ahead of time.
+#= {result: 'skipped'}
+defn forever(n) -> forever(n + 1)
+def never = fn -> forever(0)
+'skipped'

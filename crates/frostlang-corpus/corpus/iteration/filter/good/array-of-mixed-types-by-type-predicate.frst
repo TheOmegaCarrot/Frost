@@ -1,0 +1,6 @@
+# A type predicate from the `is_*` family filters a mixed Array by type.
+#= {
+#=     result: [[1, 2.5], ['a', x'00']],
+#=     inputs: {xs: [1, 'a', null, 2.5, [1], x'00', true]},
+#= }
+[filter xs with is_numeric, filter xs with is_flat]

@@ -1,0 +1,4 @@
+# A literal on the right of `@` is not a call, and appending `()` would not
+# make a useful one, so there is no suggestion.
+#= {rejects: ['right side of `@` must be a call', 'not a call'], inputs: {n: 1}}
+n @ 5

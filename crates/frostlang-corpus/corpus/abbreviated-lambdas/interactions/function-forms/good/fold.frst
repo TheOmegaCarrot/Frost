@@ -1,0 +1,4 @@
+# `fold`, the function form of `reduce`, takes an init and a two-argument
+# abbreviated lambda.
+#= {result: [16, 10], inputs: {xs: [1, 2, 3], none: []}}
+[fold(xs, 10, $($1 + $2)), fold(none, 10, $($1 + $2))]

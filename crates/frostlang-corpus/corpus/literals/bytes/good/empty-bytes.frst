@@ -1,0 +1,3 @@
+# An empty Bytes literal is Bytes of no octets, in either quote style.
+#= {result: [0, true, 'Bytes', false]}
+[len(x''), x'' == x"", type(x""), x'' == null]

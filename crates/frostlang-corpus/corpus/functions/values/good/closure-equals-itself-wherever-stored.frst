@@ -1,0 +1,6 @@
+# A closure stays the same value when stored in a structure, passed through a
+# function, or returned from one, so structures holding it compare equal.
+#= {result: [true, true, true, true]}
+def f = fn -> 1
+def ident = fn v -> v
+[[f] == [f], {a: f} == {a: f}, ident(f) == f, transform([f], fn g -> g)[0] == f]

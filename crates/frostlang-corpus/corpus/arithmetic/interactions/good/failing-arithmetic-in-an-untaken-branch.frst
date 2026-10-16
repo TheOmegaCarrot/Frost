@@ -1,0 +1,6 @@
+# A constant division by zero in a branch that never runs does not raise: the
+# folder leaves the failing operation for runtime, and it is never reached.
+#= {result: ['safe', 'safe']}
+def first = if false: 1 / 0 else: 'safe'
+def second = if true: 'safe' else: 1e308 * 1e308
+[first, second]

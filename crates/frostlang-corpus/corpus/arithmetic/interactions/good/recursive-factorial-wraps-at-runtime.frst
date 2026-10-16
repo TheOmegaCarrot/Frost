@@ -1,0 +1,8 @@
+# A recursive factorial of arguments only known at runtime multiplies and
+# wraps exactly as a folded one does.
+#= {
+#=     result: [1, 120, 2432902008176640000, -4249290049419214848],
+#=     inputs: {zero: 0, five: 5, twenty: 20},
+#= }
+defn fact(n) -> if n <= 1: 1 else: n * fact(n - 1)
+[fact(zero), fact(five), fact(twenty), fact(twenty + 1)]

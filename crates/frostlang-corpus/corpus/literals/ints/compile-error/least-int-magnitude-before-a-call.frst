@@ -1,0 +1,4 @@
+# A call binds tighter than unary `-`, so in `-9223372036854775808()` the magnitude
+# is the callee, standing alone and out of range.
+#= {rejects: 'Int literal out of range'}
+-9223372036854775808()

@@ -1,0 +1,4 @@
+# A pin of a name bound nowhere is an error.
+#= {rejects: '`b` is not defined'}
+def [a, (b)] = [1, 1]
+a

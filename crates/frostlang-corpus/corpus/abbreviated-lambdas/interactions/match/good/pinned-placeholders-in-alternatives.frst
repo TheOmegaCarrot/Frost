@@ -1,0 +1,8 @@
+# Pinned placeholders work as match alternatives: this lambda tests whether
+# its third argument equals either of the first two.
+#= {result: ['either', 'either', 'neither'], inputs: {a: 1, b: 2, c: 3}}
+def either = $(match $3 {
+    ($1) | ($2) => 'either',
+    _ => 'neither',
+})
+[either(a, b, a), either(a, b, b), either(a, b, c)]

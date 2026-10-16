@@ -1,0 +1,5 @@
+# A bare `$` placeholder is not an operation: placeholders work only inside
+# `$( ... )`.
+#= {rejects: 'placeholders work only inside'}
+def xs = [1]
+map xs with $ * 2

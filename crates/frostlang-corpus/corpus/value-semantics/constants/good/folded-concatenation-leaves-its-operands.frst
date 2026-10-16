@@ -1,0 +1,8 @@
+# A concatenation of constants, which the compiler may compute ahead of time,
+# leaves both operand bindings as they were.
+#= {result: [[1], [2], [1, 2], 'ab', 'a', {a: 1, b: 2}, {a: 1}]}
+def a = [1]
+def b = [2]
+def s = 'a'
+def m = {a: 1}
+[a, b, a + b, s + 'b', s, m + {b: 2}, m]

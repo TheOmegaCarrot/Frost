@@ -1,0 +1,9 @@
+# With a target known only at runtime, the first matching arm in source order
+# gives the result, even when later arms also match.
+#= {result: ['first', 'second', 'third'], inputs: {a: 1, b: 2, c: 3}}
+defn pick(v) -> match v {
+    1 => 'first',
+    n is Int if: n < 3 => 'second',
+    1 | 2 | 3 => 'third',
+}
+[pick(a), pick(b), pick(c)]

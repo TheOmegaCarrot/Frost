@@ -1,0 +1,30 @@
+# The topological sort raises its own error on meeting a module already on
+# the current path: here lib -> util -> lib, reached from app.
+#= {
+#=     raises: 'cycle at lib',
+#=     inputs: {
+#=         modules: {
+#=             app: ['lib'],
+#=             lib: ['util'],
+#=             util: ['lib'],
+#=         },
+#=     },
+#= }
+defn order(deps) -> {
+    defn visit(state, name) ->
+        if has(state.done, name): state
+        elif has(state.path, name): error($'cycle at ${name}')
+        else: do {
+            def entered = state + {path: state.path + {[name]: true}}
+            def after = fold(deps[name], entered, visit)
+            after + {
+                done: after.done + {[name]: true},
+                path: state.path,
+                order: after.order + [name],
+            }
+        }
+    def start = {done: {}, path: {}, order: []}
+    (reduce deps init: start with fn state, name, uses -> visit(state, name)).order
+}
+
+order(modules)

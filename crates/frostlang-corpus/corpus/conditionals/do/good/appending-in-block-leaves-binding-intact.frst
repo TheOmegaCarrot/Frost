@@ -1,0 +1,13 @@
+# A block that appends to an enclosing binding yields a new Array; the binding
+# keeps its own value. Subtle: an optimizer reusing a uniquely-owned Array in
+# place must see the binding's later use.
+#= {result: [[0, 1], [0, 1, 2]], inputs: {xs: [0]}}
+defn grow(start) -> {
+    def a = start + [1]
+    def b = do {
+        def c = a + [2]
+        c
+    }
+    [a, b]
+}
+grow(xs)

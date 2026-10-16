@@ -1,0 +1,4 @@
+# A guard tests a value, not a key's presence: `foo and foo.bar` with `foo` an
+# empty Map still evaluates the hard index, which raises on the missing key.
+#= {raises: ['no value at key', 'bar'], inputs: {foo: {}}}
+foo and foo.bar and foo.bar.baz

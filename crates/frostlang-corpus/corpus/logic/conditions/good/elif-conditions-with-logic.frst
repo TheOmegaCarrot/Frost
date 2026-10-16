@@ -1,0 +1,12 @@
+# Each `elif` condition is tested in turn, with `and`, `or`, and `not` deciding
+# truthiness as anywhere else.
+#= {
+#=     result: ['none', 'negative', 'fizzbuzz', 'fizz or buzz', 'other'],
+#=     inputs: {xs: [null, -4, 15, 9, 7]},
+#= }
+defn classify(x) -> if not x: 'none'
+    elif x < 0: 'negative'
+    elif x % 3 == 0 and x % 5 == 0: 'fizzbuzz'
+    elif x % 3 == 0 or x % 5 == 0: 'fizz or buzz'
+    else: 'other'
+transform(xs, classify)

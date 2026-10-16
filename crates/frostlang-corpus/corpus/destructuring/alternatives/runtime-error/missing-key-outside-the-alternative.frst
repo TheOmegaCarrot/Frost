@@ -1,0 +1,9 @@
+# Outside an alternative, a missing key raises its lookup error even when an
+# alternative sits elsewhere in the same pattern.
+#= {
+#=     raises: 'no value at key "z"',
+#=     inputs: {m: {k: 1}},
+#=     known_issue: 'FROST-155',
+#= }
+def {k: [a] | a, z} = m
+[a, z]

@@ -1,0 +1,8 @@
+# An index may be computed by arithmetic, such as the last position of an
+# Array.
+#= {result: ['c', 'b', 'a'], inputs: {xs: ['a', 'b', 'c']}}
+[
+    xs[len(xs) - 1],
+    xs[3 / 2],
+    xs[4 % 2],
+]

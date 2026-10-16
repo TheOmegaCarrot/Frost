@@ -1,0 +1,3 @@
+# Frost's logical "not" is the word `not`, not `!`.
+#= {rejects: 'is `not`', inputs: {a: true}}
+!a

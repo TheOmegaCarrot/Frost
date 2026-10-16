@@ -1,0 +1,28 @@
+# A Map accumulator built from key-value pairs known only at runtime, with keys
+# of every type a Map allows. A repeated key keeps its last value.
+#= {
+#=     result: {
+#=         [false]: 'bool',
+#=         [-1]: 'int, again',
+#=         [0.25]: 'float',
+#=         text: 'string',
+#=         ['日本']: 'non-ASCII string',
+#=         [x'']: 'empty bytes',
+#=     },
+#=     inputs: {
+#=         pairs: [
+#=             [false, 'bool'],
+#=             [-1, 'int'],
+#=             [0.25, 'float'],
+#=             ['text', 'string'],
+#=             ['日本', 'non-ASCII string'],
+#=             [x'', 'empty bytes'],
+#=             [-1, 'int, again'],
+#=         ],
+#=     },
+#= }
+defn to_map(rest_pairs, acc) -> match rest_pairs {
+    [] => acc,
+    [[k, v], ...rest] => to_map(rest, acc + {[k]: v}),
+}
+to_map(pairs, {})

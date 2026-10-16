@@ -1,0 +1,5 @@
+# The innermost `try_call` around an error catches it; an enclosing one sees
+# only the inner result, as a success.
+#= {result: [true, false, 'inner']}
+def outer = try_call(fn -> try_call(fn -> error('inner')))
+[outer.ok, outer.value.ok, outer.value.error]

@@ -1,0 +1,11 @@
+# Dividing an Int by an Int that divides it evenly gives an Int, not a Float:
+# 6 / 3 is 2, which is not equal to 2.0.
+#= {result: [2, -2, 0, 5, -5, 'Int']}
+[
+    6 / 3,
+    6 / -3,
+    0 / 7,
+    5 / 1,
+    5 / -1,
+    type(6 / 3),
+]

@@ -1,0 +1,5 @@
+# `$` is the first argument even beside `$2`: a non-commutative body shows
+# the order, with arguments known only at runtime.
+#= {result: [7, -7], inputs: {a: 10, b: 3}}
+def minus = $($ - $2)
+[minus(a, b), minus(b, a)]

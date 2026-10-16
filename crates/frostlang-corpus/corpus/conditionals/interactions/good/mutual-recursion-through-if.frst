@@ -1,0 +1,6 @@
+# Two functions recurse into each other from their `else` branches, each
+# passed the other as an argument.
+#= {result: ['pong', 'ping']}
+defn ping(n, other) -> if n == 0: 'ping' else: other(n - 1, ping)
+defn pong(n, other) -> if n == 0: 'pong' else: other(n - 1, pong)
+[ping(1001, pong), ping(1000, pong)]

@@ -1,0 +1,13 @@
+# A misspelled helper name, used only inside a function that is never
+# called, still rejects the whole program: name resolution is static.
+#= {
+#=     rejects: ['`totl`', 'not defined'],
+#=     inputs: {xs: [1, 2, 3]},
+#= }
+defn total(items) -> fold(items, 0, fn acc, x -> acc + x)
+defn mean(items) -> totl(items) / len(items)
+defn report(items) -> {
+    sum: total(items),
+    count: len(items),
+}
+report(xs)

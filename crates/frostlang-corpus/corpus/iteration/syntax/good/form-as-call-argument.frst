@@ -1,0 +1,4 @@
+# A form may be a call argument; the call's comma and closing parenthesis end
+# its operation.
+#= {result: 2, inputs: {xs: [1, 2, 3]}}
+len(filter xs with fn x -> x > 1)

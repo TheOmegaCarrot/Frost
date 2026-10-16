@@ -1,0 +1,4 @@
+# Null has no order, so Arrays whose first differing elements involve Null
+# raise.
+#= {raises: ['Cannot compare incompatible types', 'Null'], inputs: {a: [null], b: [1]}}
+a < b

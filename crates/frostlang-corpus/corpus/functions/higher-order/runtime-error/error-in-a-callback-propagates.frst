@@ -1,0 +1,4 @@
+# An error raised inside a callback propagates out of the library function
+# that called it.
+#= {raises: 'division by zero', inputs: {xs: [1, 0]}}
+transform(xs, fn v -> 1 / v)

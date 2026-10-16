@@ -1,0 +1,4 @@
+# Filtering a Map passes each key and value; an abbreviated lambda reading
+# only `$2` still takes both.
+#= {result: {b: 2}, inputs: {m: {a: 1, b: 2}}}
+filter m with $($2 > 1)

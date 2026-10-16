@@ -1,0 +1,15 @@
+# When every condition is falsy, each is evaluated exactly once, in order,
+# before the `else` branch runs.
+#= {
+#=     result: 'fallback',
+#=     printed: ['a', 'b', 'c', 'else'],
+#=     inputs: {f: false},
+#= }
+defn note(label, value) -> {
+    print(label)
+    value
+}
+if note('a', f): 1
+elif note('b', null): 2
+elif note('c', f): 3
+else: note('else', 'fallback')

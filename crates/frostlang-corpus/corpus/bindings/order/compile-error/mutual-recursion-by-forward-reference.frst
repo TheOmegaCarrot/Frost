@@ -1,0 +1,6 @@
+# Two top-level functions cannot call each other by name: the first one written
+# refers to the second before it is bound.
+#= {rejects: ['`is_odd`', 'not defined']}
+defn is_even(n) -> if n == 0: true else: is_odd(n - 1)
+defn is_odd(n) -> if n == 0: false else: is_even(n - 1)
+is_even(4)

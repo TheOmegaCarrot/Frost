@@ -1,0 +1,5 @@
+# A value found by `dig` exports like any other.
+#= {result: null, exports: {port: 8080}}
+def config = {server: {port: 8080}}
+export def port = dig(config, 'server', 'port')
+null

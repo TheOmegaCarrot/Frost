@@ -1,0 +1,6 @@
+# A match's value may be exported; its arm bindings are not exported.
+#= {result: 4, exports: {e: 4}, inputs: {v: {a: 4}}}
+export def e = match v {
+    {a} => a,
+}
+e

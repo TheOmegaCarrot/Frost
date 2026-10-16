@@ -1,0 +1,5 @@
+# Every element of an Array literal is evaluated before the index selects
+# one, so an invalid Map in an element the index never selects still raises.
+# Subtle because constant folding could pick element 0 directly.
+#= {raises: ['not a valid Map key', 'Null']}
+[1, {[null]: 1}][0]

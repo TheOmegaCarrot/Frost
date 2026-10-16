@@ -1,0 +1,5 @@
+# A match may be the target of another match.
+#= {result: 2, inputs: {v: 1}}
+match match v { x => [x, x] } {
+    [a, b] => a + b,
+}

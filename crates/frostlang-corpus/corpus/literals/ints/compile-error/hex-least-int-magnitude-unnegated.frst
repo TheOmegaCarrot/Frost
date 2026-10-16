@@ -1,0 +1,4 @@
+# The least Int's magnitude in hex is a literal only when negated; alone it is past
+# the greatest Int.
+#= {rejects: 'Int literal out of range'}
+0x8000000000000000

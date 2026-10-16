@@ -1,0 +1,5 @@
+# An operation's parameter is scoped to the operation: it is not bound after
+# the form.
+#= {rejects: ['`x`', 'not defined']}
+def ys = map [1] with fn x -> x
+x

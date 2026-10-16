@@ -1,0 +1,5 @@
+# Creating a function with an effect, without calling it, has no effect.
+#= {result: 'done'}
+def outer = fn -> fn -> print('never')
+def inner = outer()
+'done'

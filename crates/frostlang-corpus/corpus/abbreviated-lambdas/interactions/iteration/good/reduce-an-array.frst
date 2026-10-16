@@ -1,0 +1,6 @@
+# `reduce ... with` takes a two-argument abbreviated lambda: `$1` is the
+# accumulator and `$2` the element.
+#= {result: [6, 'cba']}
+def sum = reduce [1, 2, 3] with $($1 + $2)
+def backwards = reduce ['a', 'b', 'c'] with $($2 + $1)
+[sum, backwards]

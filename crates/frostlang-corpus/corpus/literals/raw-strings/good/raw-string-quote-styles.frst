@@ -1,0 +1,4 @@
+# A raw String takes either quote style, each holding the other quote freely, and
+# both denote ordinary Strings.
+#= {result: [true, true, true, 'String']}
+[R'(say "hi")' == 'say "hi"', R"(it's)" == "it's", R'(x)' == R"(x)", type(R'(x)')]

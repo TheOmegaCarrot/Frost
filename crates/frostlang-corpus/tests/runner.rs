@@ -111,6 +111,59 @@ add(1, 5)
     }
 }
 
+#[test]
+fn inputs_are_in_scope_with_their_values() {
+    let source = r"
+#= {
+#=     result: [3, 'xy', 7],
+#=     inputs: {n: 3, s: 'x', f: fn v -> v + 1},
+#= }
+[n, s + 'y', f(6)]
+";
+    assert_eq!(report("area/good/script", source), Report::Passed);
+}
+
+#[test]
+fn inputs_reach_every_kind_of_script() {
+    let raises = r"
+#= {raises: 'no match', inputs: {n: 2}}
+match n {
+    1 => 1,
+}
+";
+    assert_eq!(report("area/runtime-error/script", raises), Report::Passed);
+    // The input is bound, so only the other name is unbound.
+    let rejects = r"
+#= {rejects: '`other`', inputs: {n: 2}}
+n + other
+";
+    assert_eq!(report("area/compile-error/script", rejects), Report::Passed);
+}
+
+#[test]
+fn inputs_agree_under_every_permutation() {
+    let source = r"
+#= {result: 10, inputs: {n: 4}}
+def double = fn x -> x * 2
+double(n) + 2
+";
+    assert_eq!(
+        check_source("area/good/script", source, Mode::Exhaustive).report,
+        Report::Passed
+    );
+}
+
+#[test]
+fn an_input_must_be_a_bindable_name() {
+    for name in ["'if'", "'1x'", "'$'", "'a b'"] {
+        let reason = malformation(
+            "area/good/script",
+            &format!("#= {{result: 1, inputs: {{[{name}]: 1}}}}\n1\n"),
+        );
+        assert_mentions(&reason, "not a name a script can bind");
+    }
+}
+
 // -- Failing --
 
 #[test]

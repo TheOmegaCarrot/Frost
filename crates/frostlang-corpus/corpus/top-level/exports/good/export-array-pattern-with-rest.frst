@@ -1,0 +1,4 @@
+# An exported Array pattern with a rest exports the rest's name, bound to the
+# remaining elements, beside the others.
+#= {result: null, exports: {first: 1, rest: [2, 3]}}
+export def [first, ...rest] = [1, 2, 3]

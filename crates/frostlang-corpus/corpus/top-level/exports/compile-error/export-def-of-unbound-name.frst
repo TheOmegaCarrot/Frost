@@ -1,0 +1,3 @@
+# An exported value that reads an unbound name is rejected.
+#= {rejects: '`missing` is not defined'}
+export def x = missing

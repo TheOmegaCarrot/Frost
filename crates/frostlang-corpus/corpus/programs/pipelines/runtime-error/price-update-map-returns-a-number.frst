@@ -1,0 +1,9 @@
+# A price update written as `map` over a Map whose operation returns the new
+# price instead of a one-entry Map: `map` over a Map requires a Map from each
+# call, so the pipeline raises instead of guessing the key.
+#= {
+#=     raises: ['must return a Map', 'Int'],
+#=     inputs: {prices: {apple: 2, pear: 5}, rate: 2},
+#= }
+def raised = map prices with fn item, price -> price * rate
+reduce raised init: 0 with fn total, item, price -> total + price

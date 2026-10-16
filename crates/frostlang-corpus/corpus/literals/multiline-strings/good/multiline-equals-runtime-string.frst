@@ -1,0 +1,9 @@
+# A multiline String's text equals the same text known only at runtime.
+#= {result: true, inputs: {expected: 'line one\n  line two\n\nend'}}
+def text = '''
+    line one
+      line two
+
+    end
+    '''
+text == expected

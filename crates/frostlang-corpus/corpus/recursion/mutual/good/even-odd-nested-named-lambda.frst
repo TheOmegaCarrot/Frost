@@ -1,0 +1,5 @@
+# A named lambda written inside another can call back out to the enclosing
+# one by its self-name, giving a mutual recursion between the two.
+#= {result: [true, false, true, false]}
+defn even(n) -> if n == 0: true else: (fn odd(m) -> if m == 0: false else: even(m - 1))(n - 1)
+[even(0), even(7), even(10), even(1)]

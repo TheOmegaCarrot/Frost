@@ -1,0 +1,5 @@
+# A call that is an element of an Array literal is not in tail position.
+#= {result: 495}
+defn down(n) -> if n == 0: error('bottom') else: [down(n - 1)]
+defn frames(n) -> len(try_call(down, [n]).trace)
+frames(500) - frames(5)

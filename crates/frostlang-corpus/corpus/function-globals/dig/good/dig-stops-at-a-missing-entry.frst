@@ -1,0 +1,7 @@
+# A missing key or position reads as Null, and a Null stays Null through
+# every remaining key.
+#= {result: [null, null]}
+[
+    {a: {b: {c: 42}}} @ dig('a', 'x', 'c'),
+    {items: [{name: 'alice'}]} @ dig('items', 5, 'name'),
+]

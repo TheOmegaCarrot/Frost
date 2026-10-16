@@ -1,0 +1,5 @@
+# Shadowing `error` replaces it in that scope: the call returns the binding's
+# value instead of raising.
+#= {result: 'not raised: x'}
+def error = fn m -> 'not raised: ' + m
+error('x')

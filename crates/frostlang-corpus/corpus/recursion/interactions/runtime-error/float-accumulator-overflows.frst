@@ -1,0 +1,6 @@
+# A Float accumulator doubled past the finite range raises: Frost Floats are
+# always finite, so the step that would reach infinity fails. Two thousand
+# doublings are far more than the range allows.
+#= {raises: 'Infinity'}
+defn grow(x, n) -> if n == 0: x else: grow(x * 2.0, n - 1)
+grow(1.0, 2000)

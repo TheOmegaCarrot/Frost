@@ -1,0 +1,4 @@
+# Bytes are not a structure `filter` iterates: it does not filter their
+# individual bytes.
+#= {raises: ['Structured', 'argument 1', 'Bytes'], inputs: {b: x'0102'}}
+filter b with fn x -> true

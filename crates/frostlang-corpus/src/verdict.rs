@@ -104,7 +104,7 @@ fn report(name: &str, source: &str, kind: Option<Kind>, mode: Mode) -> Report {
             kind.directory()
         ));
     }
-    let raw = run(name, source, &expectation.expected, mode);
+    let raw = run(name, source, &expectation, mode);
     match (expectation.known_issue, raw) {
         (None, raw) => raw,
         (Some(issue), Report::Passed) => Report::Resolved(issue),
@@ -116,17 +116,18 @@ fn report(name: &str, source: &str, kind: Option<Kind>, mode: Mode) -> Report {
 }
 
 /// Run the script under each of `mode`'s options, requiring them to agree,
-/// and compare the outcome to `expected`.
-fn run(name: &str, source: &str, expected: &Expected, mode: Mode) -> Report {
+/// and compare the outcome to `expectation`.
+fn run(name: &str, source: &str, expectation: &Expectation, mode: Mode) -> Report {
     let filename = format!("{name}.frst");
+    let inputs = &expectation.inputs;
     let mut options = mode.options().into_iter();
     let baseline_options = options.next().expect("every mode has options");
-    let baseline = match guarded(|| observe(&filename, source, baseline_options)) {
+    let baseline = match guarded(|| observe(&filename, source, inputs, baseline_options)) {
         Ok(observed) => observed,
         Err(message) => return Report::Panicked(message),
     };
     for other_options in options {
-        match guarded(|| observe(&filename, source, other_options)) {
+        match guarded(|| observe(&filename, source, inputs, other_options)) {
             Ok(observed) if observed == baseline => {}
             Ok(observed) => {
                 return Report::Failed(format!(
@@ -140,7 +141,7 @@ fn run(name: &str, source: &str, expected: &Expected, mode: Mode) -> Report {
             }
         }
     }
-    match compare(expected, &baseline) {
+    match compare(&expectation.expected, &baseline) {
         Ok(()) => Report::Passed,
         Err(reason) => Report::Failed(reason),
     }

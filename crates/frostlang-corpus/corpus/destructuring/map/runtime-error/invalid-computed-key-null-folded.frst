@@ -1,0 +1,4 @@
+# A literal Null computed key the optimizer can see still raises at runtime.
+#= {raises: 'not a valid Map key'}
+def {[null]: x} = {a: 1}
+x

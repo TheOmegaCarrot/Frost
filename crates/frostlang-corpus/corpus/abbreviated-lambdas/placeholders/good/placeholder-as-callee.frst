@@ -1,0 +1,5 @@
+# `$1(...)` calls the argument: this is how an abbreviated lambda applies a
+# Function it receives, since a nested `$(` is not allowed.
+#= {result: 20}
+def apply_to_ten = $($1(10))
+apply_to_ten(fn x -> x * 2)

@@ -1,0 +1,5 @@
+# `map` produces a new Array; the Array it maps over is unchanged, even though
+# the runtime may update a uniquely-held Array in place.
+#= {result: [[1, 2, 3], [2, 3, 4]], inputs: {xs: [1, 2, 3]}}
+def ys = map xs with fn x -> x + 1
+[xs, ys]

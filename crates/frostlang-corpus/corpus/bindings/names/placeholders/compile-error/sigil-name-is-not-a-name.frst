@@ -1,0 +1,4 @@
+# Frost names carry no sigil: `$x` is neither a placeholder nor a name.
+#= {rejects: ['no `$` sigil']}
+def $x = 1
+1

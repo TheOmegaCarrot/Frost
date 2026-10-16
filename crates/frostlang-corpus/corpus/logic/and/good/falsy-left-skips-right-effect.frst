@@ -1,0 +1,7 @@
+# A falsy left operand decides `and`, so its right operand never runs: the
+# `print` it holds has no effect.
+#= {result: [false, null]}
+[
+    false and print('right of false'),
+    null and print('right of null'),
+]

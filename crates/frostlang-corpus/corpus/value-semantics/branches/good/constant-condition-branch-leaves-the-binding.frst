@@ -1,0 +1,7 @@
+# A branch selected by a constant condition extends a binding read again
+# afterward; the binding is the original, whether or not the compiler drops
+# the untaken branch.
+#= {result: [[1, 2], [1]]}
+def xs = [1]
+def r = if true: xs + [2] else: xs + [3]
+[r, xs]

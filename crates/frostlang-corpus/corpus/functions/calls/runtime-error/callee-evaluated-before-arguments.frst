@@ -1,0 +1,4 @@
+# The callee expression is evaluated before any argument, so its error wins
+# over an argument's.
+#= {raises: 'callee first'}
+(error('callee first'))(error('argument second'))

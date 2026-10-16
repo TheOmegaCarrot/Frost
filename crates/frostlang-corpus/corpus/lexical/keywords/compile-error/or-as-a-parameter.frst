@@ -1,0 +1,3 @@
+# `or` is a keyword operator, so it cannot name a lambda's parameter.
+#= {rejects: '`or` is a keyword'}
+def f = fn or -> 1

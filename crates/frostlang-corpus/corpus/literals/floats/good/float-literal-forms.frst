@@ -1,0 +1,4 @@
+# A Float literal may have a whole part, a leading point, an exponent in either case
+# with an optional sign, or a point and an exponent together.
+#= {result: [3.5, 0.5, 10000000000.0, 1000.0, 100.0, 0.0314, 0.0, 250.0, 0.025]}
+[3.5, .5, 1e10, 1E3, 1e+2, 3.14e-2, 0.0, 2.5E2, .25e-1]

@@ -1,0 +1,4 @@
+# `fold` over a Map with only a function, no init, is an error, as for the
+# `reduce` form.
+#= {raises: 'requires an initializer', inputs: {m: {a: 1}}}
+fold(m, fn acc, k, v -> acc)

@@ -1,0 +1,4 @@
+# A fixed Array argument is one argument: it is not spread into the others,
+# nor are later Array arguments.
+#= {result: [[[1], [2]], [[2], [1]]]}
+[curry(collect, [1])([2]), bcurry(collect, [1])([2])]

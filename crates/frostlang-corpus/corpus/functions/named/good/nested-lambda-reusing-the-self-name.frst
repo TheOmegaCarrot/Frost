@@ -1,0 +1,8 @@
+# A nested lambda with the same self-name shadows the outer one: inside it,
+# the name is the inner closure.
+# The outer lambda takes a parameter and the inner one does not, so the two
+# behave differently and are never equal.
+#= {result: [true, false]}
+def f = fn g(n) -> fn g() -> g
+def inner = f(1)
+[inner() == inner, inner() == f]

@@ -1,0 +1,10 @@
+# The structure may span lines, and the operation may be a lambda with a
+# block body.
+#= {result: [11, 22]}
+map [
+    1,
+    2,
+] with fn x -> {
+    def tens = x * 10
+    tens + x
+}

@@ -1,0 +1,8 @@
+# LF and CRLF line breaks may be mixed in one script; each ends its line.
+#= {result: 6}
+def a = 1
+def b = 2
+def c = 3
+
+
+a + b + c

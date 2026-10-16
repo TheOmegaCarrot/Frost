@@ -1,0 +1,8 @@
+# An empty Map has none of the pattern's keys; the first one is reported.
+#= {
+#=     raises: 'no value at key "first"',
+#=     inputs: {m: {}},
+#=     known_issue: 'FROST-155',
+#= }
+def {first, second} = m
+[first, second]

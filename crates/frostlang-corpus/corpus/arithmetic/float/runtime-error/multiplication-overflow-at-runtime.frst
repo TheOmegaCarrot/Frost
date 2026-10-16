@@ -1,0 +1,4 @@
+# A Float product of operands only known at runtime that is too large to be
+# finite raises.
+#= {raises: 'infinity', inputs: {big: 1e308, ten: 10.0}}
+big * ten

@@ -1,0 +1,4 @@
+# An Int is not an Array; a rest-only pattern still needs an Array.
+#= {raises: 'expected an Array', inputs: {v: 5}}
+def [...all] = v
+all

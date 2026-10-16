@@ -1,0 +1,3 @@
+# Calling a Bytes value raises, naming its type.
+#= {raises: ['non-function', 'Bytes']}
+x'00ff'()

@@ -1,0 +1,5 @@
+# A condition compares with `==`; a single `=` there is an error, not an
+# assignment.
+#= {rejects: ['found `=`', 'equality is `==`']}
+def x = 1
+if x = 1: 2

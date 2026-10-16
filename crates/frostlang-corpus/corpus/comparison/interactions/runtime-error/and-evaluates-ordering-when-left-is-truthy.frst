@@ -1,0 +1,4 @@
+# `and` evaluates its right operand when the left is truthy, so an
+# unorderable comparison there raises: `0` is truthy in Frost.
+#= {raises: ['Null', 'not orderable'], inputs: {zero: 0, nothing: null}}
+zero and nothing < nothing

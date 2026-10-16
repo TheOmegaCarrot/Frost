@@ -1,0 +1,6 @@
+# A call's `(` must be on the callee's line: `(` can start an expression, so
+# a newline before it ends the call inside an argument list.
+#= {rejects: 'expected `,` or `)`'}
+def f = fn x -> x
+print(f
+(1))

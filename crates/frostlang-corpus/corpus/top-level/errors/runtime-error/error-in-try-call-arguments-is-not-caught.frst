@@ -1,0 +1,4 @@
+# `try_call` catches only errors from the call it makes. Its argument Array is
+# built before `try_call` runs, so an error raised building it is not caught.
+#= {raises: 'in the arguments'}
+try_call(fn x -> x, [error('in the arguments')])

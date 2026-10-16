@@ -1,0 +1,12 @@
+# Map and Array patterns nest in each other, wide and deep, with rests and
+# `as` at inner levels.
+#= {
+#=     result: [1, 2, [3, 4], 5, [6, 7], 8, 9, [5, 6, 7]],
+#=     inputs: {data: {a: [{b: [1, {d: 2}]}, 3, 4], f: {g: [5, 6, 7], j: {k: [8]}}, m: 9}},
+#= }
+def {
+    a: [{b: [c, {d}]}, ...e],
+    f: {g: [h, ...i], j: {k: [l]}} as fm,
+    m,
+} = data
+[c, d, e, h, i, l, m, fm.g]

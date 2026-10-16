@@ -1,0 +1,12 @@
+# Logical expressions among other Array elements each contribute exactly one
+# element, whichever way they decide.
+#= {
+#=     result: [[1, null, 3, 4], [1, 2, 5, 4], [null, null], [5, 5]],
+#=     inputs: {n: null, five: 5},
+#= }
+[
+    [1, n and 2, n or 3, 4],
+    [1, five and 2, five or 3, 4],
+    [n and (n or 1), (n or 2) and n],
+    [five and (five or 1), (five or 2) and five],
+]

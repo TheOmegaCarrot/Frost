@@ -1,0 +1,4 @@
+# String keys beyond ASCII are read like any other.
+#= {result: ['значение', 'value']}
+def m = {['ключ']: 'значение', ['キー']: 'value'}
+[index('ключ')(m), index('キー')(m)]

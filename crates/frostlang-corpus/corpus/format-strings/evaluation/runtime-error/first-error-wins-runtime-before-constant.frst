@@ -1,0 +1,4 @@
+# A runtime raising interpolation left of a constant raising one raises first.
+# Subtle: the optimizer must not let the constant error jump ahead of it.
+#= {raises: 'division by zero', inputs: {zero: 0}}
+$'${1 / zero}${1 % 0}'

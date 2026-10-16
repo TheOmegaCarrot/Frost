@@ -1,0 +1,4 @@
+# A program ending in a destructuring `def` has a null tail, whatever the
+# pattern binds.
+#= {result: null}
+def [first, ...rest] = [1, 2, 3]

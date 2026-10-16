@@ -1,0 +1,6 @@
+# `export` is only allowed at the top level, not in a function's block body.
+#= {rejects: 'only allowed at the top level'}
+defn f() -> {
+    export def y = 1
+    y
+}

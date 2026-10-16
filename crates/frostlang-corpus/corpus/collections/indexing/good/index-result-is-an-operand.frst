@@ -1,0 +1,4 @@
+# An index expression is an ordinary operand: of arithmetic, of `or` for a
+# default, and of comparison.
+#= {result: [30, 5, true], inputs: {xs: [10, 20], m: {}}}
+[xs[0] + xs[1], m['nope'] or 5, xs[-1] > xs[0]]

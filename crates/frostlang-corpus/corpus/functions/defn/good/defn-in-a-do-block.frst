@@ -1,0 +1,9 @@
+# A `defn` in a `do` block is local to the block and may shadow an outer
+# name, which is unchanged after the block.
+#= {result: ['base', 1]}
+def f = 1
+def g = do {
+    defn f(k) -> if k == 0: 'base' else: f(k - 1)
+    f(2)
+}
+[g, f]

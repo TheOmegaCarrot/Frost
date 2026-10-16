@@ -1,0 +1,3 @@
+# A parenthesized lambda may be called where it is written.
+#= {result: [42, 3, [1, 2, 3]]}
+[(fn -> 42)(), (fn x, y -> x + y)(1, 2), (fn(a, b, c) -> [a, b, c])(1, 2, 3)]

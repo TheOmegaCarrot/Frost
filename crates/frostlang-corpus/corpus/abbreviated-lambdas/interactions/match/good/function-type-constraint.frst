@@ -1,0 +1,8 @@
+# An abbreviated lambda matches the `Function` type constraint, and a
+# binding of it can be called in the arm.
+#= {result: [1, 'other']}
+defn run(v) -> match v {
+    f is Function => f(),
+    _ => 'other',
+}
+[run($(1)), run(1)]

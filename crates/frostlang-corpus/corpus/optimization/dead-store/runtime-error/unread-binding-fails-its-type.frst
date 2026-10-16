@@ -1,0 +1,5 @@
+# A binding nothing reads still has its type constraint checked, so a known
+# value of the wrong type raises.
+#= {raises: 'expected a string'}
+def unused is String = 5
+'ok'

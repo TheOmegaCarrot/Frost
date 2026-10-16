@@ -1,0 +1,23 @@
+# Line breaks and blank lines inside an Array, a Map, and a call's arguments
+# are insignificant, including right after the opener and before the closer.
+#= {result: [[1, 2, 3], {a: 1, b: 2}, 3, [], {}]}
+def xs = [
+
+    1,
+    2,
+
+    3
+]
+def m = {
+    a:
+        1,
+    b: 2
+}
+def n = len(
+    xs
+)
+def empty_array = [
+]
+def empty_map = {
+}
+[xs, m, n, empty_array, empty_map]

@@ -1,0 +1,15 @@
+# A reporting pipeline reads each record's price with a field read, which
+# requires the key: the third record lacks it, so the fold raises, naming the
+# key, instead of treating the price as Null.
+#= {
+#=     raises: ['no value at key', 'price'],
+#=     inputs: {
+#=         sales: [
+#=             {item: 'apple', qty: 3, price: 2},
+#=             {item: 'pear', qty: 1, price: 5},
+#=             {item: 'plum', qty: 4},
+#=         ],
+#=     },
+#= }
+def revenue = fold(sales, 0, fn total, sale -> total + sale.qty * sale.price)
+$'revenue: ${revenue}'

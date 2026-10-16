@@ -1,0 +1,6 @@
+# A comment on its own line between a branch and its `else` is like a blank
+# line: the `else` still continues the `if`.
+#= {result: 2, inputs: {c: false}}
+if c: 1
+# otherwise:
+else: 2

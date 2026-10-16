@@ -1,0 +1,3 @@
+# Only the one Array is spread; an Array inside it is a single argument.
+#= {result: [[1], 2, []]}
+spread(collect)([[1], 2, []])

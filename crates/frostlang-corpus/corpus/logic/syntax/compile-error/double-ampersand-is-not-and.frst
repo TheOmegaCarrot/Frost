@@ -1,0 +1,3 @@
+# Frost spells logical "and" as the keyword `and`; `&&` is not an operator.
+#= {rejects: ['`&`', '`and`']}
+true && false

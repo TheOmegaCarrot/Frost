@@ -1,0 +1,19 @@
+# A Map literal evaluates each entry's key, then its value, entry by entry in
+# source order, whatever order the Map then holds its keys in.
+#= {result: {a: 2, b: 1}, printed: ['key b', 'value b', 'key a', 'value a']}
+{
+    [do {
+        print('key b')
+        'b'
+    }]: do {
+        print('value b')
+        1
+    },
+    [do {
+        print('key a')
+        'a'
+    }]: do {
+        print('value a')
+        2
+    },
+}

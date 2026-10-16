@@ -1,0 +1,5 @@
+# Braces after a branch's colon start a Map, not a block, so statements in
+# them are an error; a block of statements is a `do` block.
+#= {rejects: '`{` starts a Map here'}
+def c = true
+if c: { def x = 1; x } else: 2

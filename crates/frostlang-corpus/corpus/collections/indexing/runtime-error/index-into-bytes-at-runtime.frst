@@ -1,0 +1,3 @@
+# Runtime Bytes are not indexable.
+#= {raises: ['Cannot index value', 'Bytes'], inputs: {b: x'0102'}}
+b[0]

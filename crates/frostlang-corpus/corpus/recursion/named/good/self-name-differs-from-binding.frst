@@ -1,0 +1,5 @@
+# A named lambda recurses by its self-name even when it is bound under a
+# different name.
+#= {result: 'done'}
+def count_down = fn go(n) -> if n == 0: 'done' else: go(n - 1)
+count_down(5)

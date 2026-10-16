@@ -1,0 +1,17 @@
+# A Float beyond the Int range, known only at runtime, orders beyond every
+# Int.
+#= {
+#=     result: [true, true, true, false],
+#=     inputs: {
+#=         max: 9223372036854775807,
+#=         min: -9223372036854775808,
+#=         huge: 1.7976931348623157e308,
+#=         big: 1e19,
+#=     },
+#= }
+[
+    max < big,
+    min > -big,
+    max < huge,
+    huge <= min,
+]

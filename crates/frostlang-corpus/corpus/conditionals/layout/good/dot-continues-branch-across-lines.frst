@@ -1,0 +1,10 @@
+# A line starting with `.` continues the expression before it, so a field read
+# on the line after a consequent applies to the consequent alone, and an
+# `else` after it still belongs to the `if`.
+#= {result: [1, 0, 1, null], inputs: {m: {a: 1}, t: true, f: false}}
+defn with_else(c) -> if c: m
+    .a
+else: 0
+defn without_else(c) -> if c: m
+    .a
+[with_else(t), with_else(f), without_else(t), without_else(f)]

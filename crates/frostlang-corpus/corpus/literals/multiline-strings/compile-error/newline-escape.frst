@@ -1,0 +1,5 @@
+# A multiline String holds real line breaks, so it does not take `\n`.
+#= {rejects: ['invalid escape sequence', R'(`\n`)', 'real line breaks']}
+def text = '''
+    a\nb
+    '''

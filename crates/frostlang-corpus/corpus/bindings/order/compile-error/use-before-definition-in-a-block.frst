@@ -1,0 +1,8 @@
+# Within a block, a name used before its `def`, with no enclosing binding to
+# fall back on, is unbound.
+#= {rejects: ['`w`', 'not defined']}
+do {
+    def z = w
+    def w = 1
+    z
+}

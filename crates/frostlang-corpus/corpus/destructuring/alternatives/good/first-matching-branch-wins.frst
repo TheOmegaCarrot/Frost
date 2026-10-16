@@ -1,0 +1,8 @@
+# An alternative `p1 | p2` tries each branch in order and takes the first that
+# matches; a value both match takes the first.
+#= {result: [8, 9, 1]}
+defn pick(v) -> {
+    def [a, 1] | [1, a] = v
+    a
+}
+[pick([8, 1]), pick([1, 9]), pick([1, 1])]

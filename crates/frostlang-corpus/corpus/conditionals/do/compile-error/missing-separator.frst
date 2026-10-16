@@ -1,0 +1,3 @@
+# A block's statements must be separated by a line break or `;`.
+#= {rejects: 'expected a line break or `;`'}
+do { 1 2 }

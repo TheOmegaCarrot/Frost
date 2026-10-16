@@ -1,0 +1,8 @@
+# A program of nothing but comments and blank lines has no statements, so its
+# tail value is null and it exports and prints nothing.
+#= {result: null}
+
+# A comment after a blank line.
+
+# And another, before trailing blank lines.
+

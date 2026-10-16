@@ -1,0 +1,4 @@
+# An import statement naming a bare module also gets help that Frost's own
+# modules are under `std.`.
+#= {rejects: ['load a module by calling `import`', 'under `std.`']}
+import math

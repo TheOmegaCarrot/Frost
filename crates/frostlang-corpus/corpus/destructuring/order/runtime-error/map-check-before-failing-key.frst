@@ -1,0 +1,4 @@
+# The value is checked to be a Map before a computed key that would fail.
+#= {raises: 'expected a Map', inputs: {n: 0}}
+def {[1 / n]: x} = 5
+x

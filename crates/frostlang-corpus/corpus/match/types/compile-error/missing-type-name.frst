@@ -1,0 +1,5 @@
+# `is` must be followed by a type name.
+#= {rejects: 'expected a type name'}
+match 1 {
+    n is => n,
+}

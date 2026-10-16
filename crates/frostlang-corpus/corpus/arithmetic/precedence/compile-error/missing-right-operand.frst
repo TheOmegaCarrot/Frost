@@ -1,0 +1,4 @@
+# A binary operator with nothing after it on the last line has no right
+# operand, which is a syntax error.
+#= {rejects: 'expected an expression'}
+1 *

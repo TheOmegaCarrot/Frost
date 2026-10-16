@@ -1,0 +1,3 @@
+# A field reads its String key from a Map that also holds non-String keys.
+#= {result: 'string', inputs: {m: {[1]: 'int', [true]: 'bool', a: 'string', [x'61']: 'bytes'}}}
+m.a

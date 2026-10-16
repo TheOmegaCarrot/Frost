@@ -1,0 +1,9 @@
+# A call on the right of a `def` is not in tail position, even when the block
+# returns the binding at once: the binding is made after the call returns.
+#= {result: 495}
+defn down(n) -> if n == 0: error('bottom') else: do {
+    def r = down(n - 1)
+    r
+}
+defn frames(n) -> len(try_call(down, [n]).trace)
+frames(500) - frames(5)

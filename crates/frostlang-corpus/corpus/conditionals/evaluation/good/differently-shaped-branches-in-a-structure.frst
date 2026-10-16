@@ -1,0 +1,7 @@
+# Branches of very different shapes, a block in one and a literal Array in the
+# other, each leave exactly one value in the middle of an enclosing Array.
+#= {result: [[0, 2, 9], [0, [1, 2], 9]], inputs: {cases: [true, false]}}
+map cases with fn x -> [0, if x: do {
+    def a = 1
+    a + 1
+} else: [1, 2], 9]

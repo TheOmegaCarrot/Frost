@@ -1,0 +1,4 @@
+# A call with the wrong number of arguments inside an interpolation raises.
+#= {raises: 'expects 1 argument'}
+defn one(a) -> a
+$'${one()}'

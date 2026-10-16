@@ -1,0 +1,5 @@
+# A placeholder cannot be a match arm's binding.
+#= {rejects: ['`$`', 'expected a pattern']}
+match 1 {
+    $ => 1,
+}

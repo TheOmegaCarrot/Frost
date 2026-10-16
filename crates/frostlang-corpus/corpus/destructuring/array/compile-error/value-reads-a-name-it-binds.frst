@@ -1,0 +1,5 @@
+# The value is evaluated before the pattern binds anything, so it cannot read
+# a name the same pattern binds.
+#= {rejects: '`a` is not defined'}
+def [a, b] = [1, a]
+b

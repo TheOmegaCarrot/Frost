@@ -1,0 +1,3 @@
+# `index` takes exactly the key.
+#= {raises: ['index', 'expects 1', 'called with 0']}
+index()

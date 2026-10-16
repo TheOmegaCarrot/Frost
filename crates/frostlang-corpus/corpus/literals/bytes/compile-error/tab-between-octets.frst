@@ -1,0 +1,4 @@
+# A tab between a Bytes literal's digit pairs is rejected, as a space is, and is
+# named by code point since it is invisible.
+#= {rejects: ['U+0009', 'Bytes literal']}
+x'00	ff'

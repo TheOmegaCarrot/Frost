@@ -1,0 +1,13 @@
+# A pipeline wrapped in parentheses may span lines, with each step on its own
+# line; inside the parentheses even an `@` ending a line continues.
+#= {result: [120, 6], inputs: {xs: [10, 20, 30]}}
+def doubled_total = (
+    xs
+    @ transform(fn x -> x * 2)
+    @ fold(0, fn (acc, x) -> acc + x)
+)
+def digits = (xs @
+    transform(to_string) @
+    fold('', fn (acc, s) -> acc + s) @
+    len())
+[doubled_total, digits]

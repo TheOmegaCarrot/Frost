@@ -1,0 +1,4 @@
+# `@` binds tighter than unary `-`, so in `-9223372036854775808 @ type()` the
+# magnitude is threaded alone, and is out of range.
+#= {rejects: 'Int literal out of range'}
+-9223372036854775808 @ type()

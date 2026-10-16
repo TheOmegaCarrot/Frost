@@ -1,0 +1,8 @@
+# A line indented with spaces under a closing delimiter indented with a tab does not
+# carry the closer's indentation: a tab and a space are different characters, so
+# the line is under-indented rather than losing one space per tab.
+#= {rejects: 'indented less than the closing delimiter', known_issue: 'FROST-152'}
+def text = '''
+  x
+	'''
+text

@@ -1,0 +1,4 @@
+# Short-circuiting is a runtime matter: a right operand of `and` that a constant
+# false would skip is still compiled, so an unbound name in it is an error.
+#= {rejects: ['`nope`', 'not defined']}
+false and nope

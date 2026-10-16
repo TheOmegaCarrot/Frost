@@ -1,0 +1,6 @@
+# `tap` returns its first argument as it was, though the function it calls
+# derives a value from that same argument.
+#= {result: [[1], [1]], inputs: {n: 1}}
+def xs = [n]
+def tapped = tap(xs, fn v -> v + [2])
+[tapped, xs]

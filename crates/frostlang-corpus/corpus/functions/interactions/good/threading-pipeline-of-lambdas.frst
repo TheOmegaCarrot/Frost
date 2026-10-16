@@ -1,0 +1,9 @@
+# A multiline `@` pipeline threads a value through lambdas and globals,
+# each receiving the previous result as its first argument.
+#= {result: [20, 40], inputs: {xs: [1, 2, 3, 4]}}
+(
+    xs
+    @ select(fn v -> v % 2 == 0)
+    @ transform(fn v -> v * 10)
+    @ (fn arr, factor -> map arr with fn v -> v * factor)(1)
+)

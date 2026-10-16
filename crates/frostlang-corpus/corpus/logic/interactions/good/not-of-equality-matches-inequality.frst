@@ -1,0 +1,7 @@
+# `not (a == b)` agrees with `a != b` for every pair, including pairs of
+# different types such as 1 and 1.0, which are never equal.
+#= {
+#=     result: [[false, false], [true, true], [true, true], [false, false], [true, true]],
+#=     inputs: {pairs: [[1, 1], [1, 1.0], [null, false], ['é', 'é'], [[], {}]]},
+#= }
+transform(pairs, fn pair -> [not (pair[0] == pair[1]), pair[0] != pair[1]])

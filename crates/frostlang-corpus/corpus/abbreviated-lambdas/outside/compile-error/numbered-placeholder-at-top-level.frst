@@ -1,0 +1,3 @@
+# `$1` outside an abbreviated lambda is a syntax error.
+#= {rejects: ['found `$1`', 'only inside `$( ... )`']}
+def x = $1 + 1

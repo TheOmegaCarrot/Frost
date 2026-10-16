@@ -1,0 +1,4 @@
+# `true`, `false`, and `null` are literals, keywords that evaluate to values
+# wherever an expression stands.
+#= {result: [true, false, null, 'Bool', 'Null']}
+[true, false, null, type(true), type(null)]

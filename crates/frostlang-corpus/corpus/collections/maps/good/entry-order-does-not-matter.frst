@@ -1,0 +1,4 @@
+# Two Maps with the same entries are equal whatever order the entries were
+# written in.
+#= {result: true}
+{a: 1, b: 2, [3]: 'c'} == {[3]: 'c', b: 2, a: 1}

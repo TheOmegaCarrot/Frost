@@ -1,0 +1,4 @@
+# A function cannot be a Map key.
+#= {raises: ['Function', 'Map key']}
+def f = fn -> 1
+{[f]: 'x'}

@@ -1,0 +1,9 @@
+# A name in a pattern binds afresh, shadowing an enclosing name of the same
+# spelling only within its arm; the outer name is unchanged afterwards.
+# Subtle: the bare name binds rather than compares with the outer value.
+#= {result: [2, 1], inputs: {v: 2}}
+def x = 1
+def r = match v {
+    x => x,
+}
+[r, x]

@@ -1,0 +1,6 @@
+# A bare `$` in a match pattern would be a binding, so it is rejected; the
+# help points to `_` for a catch-all.
+#= {rejects: ['expected a pattern', 'catch-all']}
+match 1 {
+    $ => 2,
+}

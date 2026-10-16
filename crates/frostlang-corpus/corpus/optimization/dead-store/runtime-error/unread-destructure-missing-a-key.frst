@@ -1,0 +1,5 @@
+# A Map destructure whose name is never read still requires its key, so a
+# known Map lacking it raises.
+#= {raises: 'no value at key "a"', known_issue: 'FROST-155'}
+def {a} = {b: 1}
+'ok'

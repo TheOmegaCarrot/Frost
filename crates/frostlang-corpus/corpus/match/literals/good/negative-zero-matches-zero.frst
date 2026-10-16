@@ -1,0 +1,7 @@
+# Negative zero equals zero, so each matches the other's literal pattern.
+# Subtle: the two have different bit patterns.
+#= {result: ['zero', 'minus zero'], inputs: {pos: 0.0, neg: -0.0}}
+[
+    match neg { 0.0 => 'zero' },
+    match pos { -0.0 => 'minus zero' },
+]

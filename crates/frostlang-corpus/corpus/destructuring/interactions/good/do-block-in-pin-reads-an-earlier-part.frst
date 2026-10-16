@@ -1,0 +1,9 @@
+# A `def` inside a `do` block inside a pin reads a name the enclosing pattern
+# binds earlier. Subtle: the inner def's value depends on a binding the outer
+# pattern is still making.
+#= {result: 1}
+def [a, (do {
+    def x = a
+    x + 10
+})] = [1, 11]
+a

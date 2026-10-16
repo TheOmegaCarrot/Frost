@@ -1,0 +1,3 @@
+# A module is loaded by calling `import`, not with an import statement.
+#= {rejects: 'load a module by calling `import`'}
+import std.math

@@ -1,0 +1,9 @@
+# A shadowing `def` reads the enclosing binding in its own value, with the
+# enclosing value known only at runtime.
+#= {result: [6, 5], inputs: {n: 5}}
+def x = n
+def inner = do {
+    def x = x + 1
+    x
+}
+[inner, x]

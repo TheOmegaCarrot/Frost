@@ -1,0 +1,6 @@
+# A format string over constant bindings, which the compiler may compute
+# ahead of time, gives the same text and leaves the bindings unchanged.
+#= {result: ['a|a|a!|3', 'a', 3]}
+def t = 'a'
+def k = 3
+[$'${t}|${t}|${t + "!"}|${k}', t, k]

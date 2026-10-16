@@ -1,0 +1,30 @@
+# A `do` block may be an operand of `and` or `or`; a skipped block runs none of
+# its statements, and a block's bindings stay inside it.
+#= {
+#=     result: [6, 1, null, 6, 'outer'],
+#=     printed: ['right of null', 'right of 1'],
+#=     inputs: {n: null, one: 1},
+#= }
+def z = 'outer'
+def a = do {
+    def y = n
+    y
+} or do {
+    print('right of null')
+    def z = 2
+    z * 3
+}
+def b = one or do {
+    print('skipped')
+    2
+}
+def c = n and do {
+    print('skipped')
+    2
+}
+def d = one and do {
+    print('right of 1')
+    def z = 2
+    z * 3
+}
+[a, b, c, d, z]

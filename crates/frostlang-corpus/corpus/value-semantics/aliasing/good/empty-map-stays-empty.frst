@@ -1,0 +1,7 @@
+# An empty Map stays empty after a merge is derived from it, whether it is a
+# literal or supplied at runtime.
+#= {result: [{}, {a: 1}, {}, {b: 2}], inputs: {runtime: {}}}
+def literal = {}
+def from_literal = literal + {a: 1}
+def from_runtime = runtime + {b: 2}
+[literal, from_literal, runtime, from_runtime]

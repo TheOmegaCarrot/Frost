@@ -1,0 +1,5 @@
+# A line starting with `||` neither continues the previous line nor is Frost's
+# "or", which is the keyword `or`.
+#= {rejects: ['`|`', '`or`', 'line continues']}
+def a = false
+|| true

@@ -1,0 +1,4 @@
+# `compose` checks every argument is a Function by iterating them, and names
+# the first that is not.
+#= {raises: ['compose', 'argument 2', 'Int']}
+compose(to_string, 7, to_string)

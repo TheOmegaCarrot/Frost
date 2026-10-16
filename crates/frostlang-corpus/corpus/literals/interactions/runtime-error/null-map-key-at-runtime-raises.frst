@@ -1,0 +1,3 @@
+# A Null known only at runtime cannot key a Map either.
+#= {raises: ['Null', 'not a valid Map key'], inputs: {key: null}}
+{[key]: 1}

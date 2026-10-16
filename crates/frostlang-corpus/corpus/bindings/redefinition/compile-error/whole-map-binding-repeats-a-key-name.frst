@@ -1,0 +1,4 @@
+# The `as` name of a Map pattern may not reuse a name the pattern binds inside.
+#= {rejects: ['`a`', 'already bound']}
+def {a} as a = {a: 1}
+a

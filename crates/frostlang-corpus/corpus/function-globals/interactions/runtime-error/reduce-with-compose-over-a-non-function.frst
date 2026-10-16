@@ -1,0 +1,3 @@
+# Composing by `reduce` checks each element as `compose` receives it.
+#= {raises: ['compose', 'Function as argument 2', 'got Int']}
+reduce [len, 5] with compose

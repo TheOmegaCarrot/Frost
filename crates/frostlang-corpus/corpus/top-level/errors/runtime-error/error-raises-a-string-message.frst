@@ -1,0 +1,4 @@
+# An uncaught `error` of a String ends the program with that String as its
+# message.
+#= {raises: 'boom'}
+error('boom')

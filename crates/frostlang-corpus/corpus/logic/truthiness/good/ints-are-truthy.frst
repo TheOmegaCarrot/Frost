@@ -1,0 +1,25 @@
+# Every Int is truthy: zero, negatives, and both ends of the Int range. Zero is
+# the subtle case; it is falsy in many other languages.
+#= {
+#=     result: [
+#=         [true, true, true, true, true],
+#=         [true, true, true, true, true],
+#=     ],
+#=     inputs: {zero: 0, one: 1, negative: -1, max: 9223372036854775807, min: -9223372036854775808},
+#= }
+[
+    [
+        not not 0,
+        not not 1,
+        not not -1,
+        not not 9223372036854775807,
+        not not -9223372036854775808,
+    ],
+    [
+        not not zero,
+        not not one,
+        not not negative,
+        not not max,
+        not not min,
+    ],
+]

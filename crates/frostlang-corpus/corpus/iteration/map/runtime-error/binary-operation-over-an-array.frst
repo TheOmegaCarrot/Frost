@@ -1,0 +1,4 @@
+# Over an Array the operation is called with one argument, the element, so a
+# two-parameter function is an arity error rather than receiving an index.
+#= {raises: 'called with 1', inputs: {xs: [1, 2]}}
+map xs with fn i, x -> x

@@ -1,0 +1,5 @@
+# Printing a format String prints its text, without quotes or escapes.
+#= {result: null, printed: ["name: ada, list: [1], quote: \"", "tab:\tend"], inputs: {name: 'ada'}}
+print($'name: ${name}, list: [${1}], quote: "')
+print($'tab:\tend')
+null

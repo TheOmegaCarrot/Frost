@@ -1,0 +1,3 @@
+# An Int times a Null only known at runtime is a type error, as with constants.
+#= {raises: 'Int * Null', inputs: {n: 3, nothing: null}}
+n * nothing

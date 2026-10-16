@@ -1,0 +1,5 @@
+# A lambda with fixed parameters and a rest parameter accepts exactly the
+# fixed count, or any number more.
+#= {result: [0, 1, 5]}
+def count_extra = fn a, b, ...rest -> len(rest)
+[count_extra(1, 2), count_extra(1, 2, 3), count_extra(1, 2, 3, 4, 5, 6, 7)]

@@ -1,0 +1,7 @@
+# A lambda reads outer bindings whose values the compiler knows; the
+# optimizer may build them into the lambda, but the answer is the same.
+#= {result: 30}
+def x = 10
+def y = 20
+def f = fn -> x + y
+f()

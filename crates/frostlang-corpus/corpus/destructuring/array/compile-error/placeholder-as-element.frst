@@ -1,0 +1,5 @@
+# A `$` placeholder belongs only inside `$( ... )`; it cannot be bound by a
+# pattern.
+#= {rejects: 'expected a pattern'}
+def [$, b] = [1, 2]
+b

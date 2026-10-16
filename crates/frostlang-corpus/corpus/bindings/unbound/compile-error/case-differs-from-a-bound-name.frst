@@ -1,0 +1,5 @@
+# Names are case-sensitive, so a name differing only in case from a bound one
+# is unbound.
+#= {rejects: ['`Value`', 'not defined']}
+def value = 1
+Value

@@ -1,0 +1,4 @@
+# `is Flat` rejects an Array.
+#= {raises: 'expected a Flat', inputs: {v: [1]}}
+def x is Flat = v
+x

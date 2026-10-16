@@ -1,0 +1,5 @@
+# A recursion that ends by calling a non-function value raises when it gets
+# there.
+#= {raises: 'non-function'}
+defn f(n) -> if n == 0: n() else: f(n - 1)
+f(3)

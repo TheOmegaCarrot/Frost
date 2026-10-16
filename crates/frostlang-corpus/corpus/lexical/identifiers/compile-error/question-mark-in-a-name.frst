@@ -1,0 +1,3 @@
+# Names cannot contain `?`, as Ruby's predicate names do.
+#= {rejects: 'names cannot contain `?` or `!`'}
+def done? = true

@@ -1,0 +1,4 @@
+# `as _` does not loosen the Map requirement.
+#= {raises: 'expected a Map', inputs: {v: 5}}
+def {a} as _ = v
+a

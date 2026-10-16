@@ -1,0 +1,4 @@
+# Array elements order as `<` orders them, so an Int element compares with
+# a Float element by value.
+#= {result: [true, true, false], inputs: {i: [1], f: [1.5]}}
+[i < f, [2.0, 'a'] > [1, 'z'], [1] < [1.0]]

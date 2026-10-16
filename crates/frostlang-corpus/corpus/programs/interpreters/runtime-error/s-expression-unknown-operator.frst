@@ -1,0 +1,20 @@
+# The s-expression evaluator raises its own error for an operator it has no
+# function for, met deep inside an otherwise valid program.
+#= {
+#=     raises: 'unknown operator %',
+#=     inputs: {program: ['+', 1, ['*', 2, ['%', 7, 3]]]},
+#= }
+def builtins = {
+    ['+']: fn a, b -> a + b,
+    ['*']: fn a, b -> a * b,
+}
+
+defn evaluate(expr) -> match expr {
+    n is Int => n,
+    [op, ...args] => do {
+        def operation = builtins[op] or error($'unknown operator ${op}')
+        fold(transform(args, evaluate), operation)
+    },
+}
+
+evaluate(program)

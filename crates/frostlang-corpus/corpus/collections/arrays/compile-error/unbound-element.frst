@@ -1,0 +1,4 @@
+# An element naming an unbound variable is rejected at compile time, not
+# built as Null.
+#= {rejects: 'not defined'}
+def xs = [1, missing, 3]

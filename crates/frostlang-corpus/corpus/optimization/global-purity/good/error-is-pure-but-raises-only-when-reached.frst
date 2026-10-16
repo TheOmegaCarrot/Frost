@@ -1,0 +1,8 @@
+# `error` over a constant raises only when the program reaches the call: in a
+# function never called, or a branch never taken, it raises nothing.
+#= {result: ['caught', 'safe']}
+def fail = fn -> error('boom')
+[
+    if try_call(fail).ok: 'not caught' else: 'caught',
+    if false: error('never') else: 'safe',
+]

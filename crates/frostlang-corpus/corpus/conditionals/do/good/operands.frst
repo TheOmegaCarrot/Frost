@@ -1,0 +1,14 @@
+# Blocks are expressions, usable as operands of binary and unary operators.
+#= {result: [5, -3, false, 10], inputs: {x: 10}}
+[
+    do { 2 } + do { 3 },
+    -do { 3 },
+    not do { true },
+    10 * do {
+        def a = x
+        do {
+            def b = a
+            b
+        } - 9
+    },
+]

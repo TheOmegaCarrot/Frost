@@ -1,0 +1,4 @@
+# A guard belongs to a `match` arm; a def pattern cannot take one.
+#= {rejects: 'expected `=`'}
+def x if: x > 0 = 1
+x

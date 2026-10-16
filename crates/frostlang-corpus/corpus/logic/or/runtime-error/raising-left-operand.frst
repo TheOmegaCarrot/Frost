@@ -1,0 +1,4 @@
+# The left operand of `or` is always evaluated, so its error surfaces even
+# though a truthy right operand would decide the result.
+#= {raises: 'the left operand ran'}
+error('the left operand ran') or true

@@ -1,0 +1,4 @@
+# A rest binding's `...name` stays on one line.
+#= {rejects: 'found a line break', inputs: {xs: [1, 2]}}
+def [a, ...
+    rest] = xs

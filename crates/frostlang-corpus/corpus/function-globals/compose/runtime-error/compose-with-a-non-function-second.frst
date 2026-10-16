@@ -1,0 +1,4 @@
+# The second function is checked when `compose` is called, even though it
+# would run last.
+#= {raises: ['compose', 'Function as argument 2', 'got String']}
+compose(len, 'is_int')

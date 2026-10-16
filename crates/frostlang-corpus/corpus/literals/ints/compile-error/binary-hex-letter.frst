@@ -1,0 +1,3 @@
+# A letter that is a hex digit is still not a binary one.
+#= {rejects: ['invalid character `c`', 'binary']}
+0b1c

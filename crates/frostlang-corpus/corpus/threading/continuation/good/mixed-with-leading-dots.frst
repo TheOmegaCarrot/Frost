@@ -1,0 +1,8 @@
+# Leading `.` and leading `@` lines interleave in one continued expression.
+#= {result: 'count: 3', inputs: {data: {inner: {xs: [1, 2, 3]}}}}
+defn label(n, name) -> $'${name}: ${n}'
+data
+    .inner
+    .xs
+    @ len()
+    @ label('count')

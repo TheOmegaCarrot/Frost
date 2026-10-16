@@ -1,0 +1,5 @@
+# `reduce` passes `compose` two functions at a time, building one pipeline
+# that applies them left to right.
+#= {result: 9}
+def pipeline = reduce [fn x -> x + 1, fn x -> x * 2, fn x -> x - 3] with compose
+pipeline(5)

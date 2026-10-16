@@ -1,0 +1,3 @@
+# An abbreviated lambda is a Function, which is not a valid Map key.
+#= {raises: ['Function', 'not a valid Map key']}
+{[$(1)]: 1}

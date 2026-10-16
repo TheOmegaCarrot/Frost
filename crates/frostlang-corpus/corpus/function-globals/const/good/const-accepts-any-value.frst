@@ -1,0 +1,4 @@
+# Unlike the other function globals, `const` takes a value rather than a
+# function, so it checks no type: any value, empty ones included, is kept.
+#= {result: [0, '', x'', {}]}
+[const(0)(), const('')(), const(x'')(), const({})()]

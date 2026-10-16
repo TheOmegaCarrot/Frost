@@ -1,0 +1,3 @@
+# A structure literal may be indexed directly.
+#= {result: [20, 30, null, 5, null]}
+[[10, 20, 30][1], [10, 20, 30][-1], [10][5], {a: 5}['a'], {a: 5}['b']]

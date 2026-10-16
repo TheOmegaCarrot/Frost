@@ -1,0 +1,5 @@
+# `init` is a keyword, so it cannot follow `.` as a field name; the help says
+# to index with brackets.
+#= {rejects: ['`init` is a keyword', 'index with brackets']}
+def settings = {}
+settings.init

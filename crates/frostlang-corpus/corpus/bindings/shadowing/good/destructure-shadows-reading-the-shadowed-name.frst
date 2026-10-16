@@ -1,0 +1,9 @@
+# A destructuring `def` in a block may shadow a name its own value reads: the
+# value is computed from the enclosing binding before the pattern binds.
+#= {result: [2, 3, 1]}
+def a = 1
+def inner = do {
+    def [a, b] = [a + 1, a + 2]
+    [a, b]
+}
+inner + [a]

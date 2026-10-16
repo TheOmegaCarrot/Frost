@@ -1,0 +1,10 @@
+# `filter` keeps an element when its predicate yields any truthy value, not
+# only true: here the predicate yields the element itself.
+#= {
+#=     result: [[0, '', [], 'a'], [0, '', [], 'a']],
+#=     inputs: {values: [0, null, false, '', [], 'a']},
+#= }
+[
+    filter [0, null, false, '', [], 'a'] with fn x -> x,
+    filter values with fn x -> x,
+]

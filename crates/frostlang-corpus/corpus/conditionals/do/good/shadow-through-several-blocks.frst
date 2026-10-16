@@ -1,0 +1,8 @@
+# The innermost binding of a name wins inside its block only; an enclosing
+# binding of the same name is seen again once the block ends.
+#= {result: 13}
+def a = 1
+do {
+    def b = a + 1
+    do { def a = 10; a + b } + a
+}

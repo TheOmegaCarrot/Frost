@@ -1,0 +1,10 @@
+# In a lambda body, a use before the body's own `def` of a name reads the
+# captured enclosing binding; after the `def`, the name is the local one.
+#= {result: [5, 2, 5]}
+def x = 5
+def f = fn -> {
+    def before = x
+    def x = 2
+    [before, x]
+}
+f() + [x]

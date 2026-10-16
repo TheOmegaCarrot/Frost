@@ -1,0 +1,3 @@
+# Array elements are separated by `,`, not `;`.
+#= {rejects: 'separate Array elements with `,`, not `;`'}
+[1; 2]

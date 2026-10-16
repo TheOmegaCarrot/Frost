@@ -1,0 +1,6 @@
+# An inner lambda's parameter shadows an outer lambda's parameter of the same
+# name, while the inner lambda can still read the outer's other names.
+#= {result: [30, 1]}
+def outer = fn x, y -> [fn x -> x * y, x]
+def pair = outer(1, 3)
+[pair[0](10), pair[1]]

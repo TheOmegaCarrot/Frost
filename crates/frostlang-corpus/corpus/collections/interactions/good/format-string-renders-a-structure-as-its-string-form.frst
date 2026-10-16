@@ -1,0 +1,7 @@
+# A format string interpolates a structure as its String form, the same text
+# `to_string` gives, nested structures and non-String keys included.
+#= {
+#=     result: [true, true],
+#=     inputs: {xs: [1, 'a', x'00', [null]], m: {k: [], [1]: {}}},
+#= }
+[$'${xs}' == to_string(xs), $'m: ${m}' == 'm: ' + to_string(m)]

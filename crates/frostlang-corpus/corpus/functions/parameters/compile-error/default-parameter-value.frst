@@ -1,0 +1,3 @@
+# Parameters have no default values: `=` after a parameter name is rejected.
+#= {rejects: ['found `=`', 'default']}
+def f = fn(x = 1) -> x

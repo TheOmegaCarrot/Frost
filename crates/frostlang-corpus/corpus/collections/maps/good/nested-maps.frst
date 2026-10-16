@@ -1,0 +1,9 @@
+# Maps nest within Maps and Arrays, and each level is read independently.
+#= {result: [42, 3, 'cy', {}]}
+def m = {
+    outer: {inner: 42},
+    items: [1, 2, 3],
+    people: [{name: 'bo'}, {name: 'cy'}],
+    empty: {},
+}
+[m.outer.inner, m.items[-1], m.people[1].name, m.empty]

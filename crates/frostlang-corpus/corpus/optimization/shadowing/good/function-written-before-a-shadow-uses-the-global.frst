@@ -1,0 +1,6 @@
+# A function written before a local shadows a global reads the global: the
+# later shadow is not in scope where the function was written.
+#= {result: [2, 'local']}
+def count = fn -> len([1, 2])
+def len = fn v -> 'local'
+[count(), len(1)]

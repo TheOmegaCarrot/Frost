@@ -1,0 +1,3 @@
+# An interpolation holds one expression, so it takes no trailing comma.
+#= {rejects: 'found `,`'}
+$'${1,}'

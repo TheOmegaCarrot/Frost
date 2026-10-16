@@ -1,0 +1,3 @@
+# Adjacent Strings do not join, as they do in C and Python.
+#= {rejects: 'adjacent Strings do not join'}
+'a' 'b'

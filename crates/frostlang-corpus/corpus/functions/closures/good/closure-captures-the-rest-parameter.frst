@@ -1,0 +1,4 @@
+# A closure captures a rest parameter's whole Array.
+#= {result: [1, 2]}
+def outer = fn ...rest -> fn -> rest
+outer(1, 2)()

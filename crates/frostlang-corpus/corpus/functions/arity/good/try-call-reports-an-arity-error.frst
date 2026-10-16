@@ -1,0 +1,6 @@
+# An arity error is an ordinary error: `try_call` reports it as a failure
+# rather than letting it end the run.
+#= {result: [false, true, 2]}
+def r = try_call(fn x -> x, [1, 2])
+def s = try_call(fn x -> x + 1, [1])
+[r.ok, s.ok, s.value]

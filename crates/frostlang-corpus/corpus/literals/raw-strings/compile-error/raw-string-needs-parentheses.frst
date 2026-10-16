@@ -1,0 +1,4 @@
+# A raw String's text goes in parentheses inside the quotes: `R'abc'` is the name `R`
+# touching a String.
+#= {rejects: 'raw String is written'}
+R'abc'

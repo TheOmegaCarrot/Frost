@@ -1,0 +1,10 @@
+# A Function operand is truthy and yielded unchanged, so the result of `or` or
+# `and` may be called directly.
+#= {result: [3, 3, 2, true], inputs: {n: null}}
+defn count(xs) -> len(xs)
+[
+    (len or count)([1, 2, 3]),
+    (n or len)('abc'),
+    (len and count)([1, 2]),
+    is_function(n or count),
+]

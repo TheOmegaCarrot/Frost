@@ -1,0 +1,3 @@
+# A Bytes literal closes only with the quote it opened with.
+#= {rejects: 'unclosed Bytes literal'}
+x"00ff'

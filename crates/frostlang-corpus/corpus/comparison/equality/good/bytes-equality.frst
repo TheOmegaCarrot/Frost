@@ -1,0 +1,13 @@
+# Bytes are equal when their octets are identical. Hex digit case and quote
+# style do not change the octets; high bytes compare like any other.
+#= {result: [true, true, true, false, false, true, false, true]}
+[
+    x'6869' == x'6869',
+    x'FF00' == x'ff00',
+    x'6869' == x"6869",
+    x'6869' == x'686a',
+    x'00' == x'',
+    x'' == x'',
+    x'80ff' == x'ff80',
+    x'00' != x'0000',
+]

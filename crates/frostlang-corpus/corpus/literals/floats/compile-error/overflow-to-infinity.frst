@@ -1,0 +1,4 @@
+# Frost Floats are always finite, so a literal too large for a Float is rejected
+# rather than becoming Infinity.
+#= {rejects: 'NaN or Infinity'}
+1e400

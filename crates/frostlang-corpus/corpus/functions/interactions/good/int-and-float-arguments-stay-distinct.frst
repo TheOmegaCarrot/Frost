@@ -1,0 +1,9 @@
+# A Float argument stays a Float and an Int an Int: a function comparing its
+# argument with `==` sees no cross-type numeric equality, while `<` compares
+# across them.
+#= {result: [true, false, true, 1.5, 1]}
+def is_three = fn x -> x == 3
+def below_two = fn x -> x < 2
+def half = fn x -> x * 0.5
+def ident = fn x -> x
+[is_three(3), is_three(3.0), below_two(1.5), half(3), ident(1)]

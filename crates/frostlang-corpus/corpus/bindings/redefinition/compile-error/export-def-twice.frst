@@ -1,0 +1,6 @@
+# Exporting does not change binding rules: a name exported twice is bound
+# twice in one scope.
+#= {rejects: ['`a`', 'already bound']}
+export def a = 1
+export def a = 2
+a

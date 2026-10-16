@@ -1,0 +1,3 @@
+# A def pattern needs a value after `=`.
+#= {rejects: 'expected an expression'}
+def [a, b] =

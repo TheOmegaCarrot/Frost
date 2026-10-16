@@ -1,0 +1,5 @@
+# A nested format String may use the same quote as the outer one. Subtle: an
+# interpolation is read as Frost source, so the inner `'` opens a String there
+# rather than closing the outer one.
+#= {result: ['ab7cd', 'ab7cd'], inputs: {x: 7}}
+[$'a${$'b${x}c'}d', $"a${$"b${x}c"}d"]

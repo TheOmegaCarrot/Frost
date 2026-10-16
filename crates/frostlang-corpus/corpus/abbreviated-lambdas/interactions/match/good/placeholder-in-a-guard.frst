@@ -1,0 +1,7 @@
+# A match guard may read a placeholder other than the one matched on.
+#= {result: ['big', 'small']}
+def classify = $(match $1 {
+    n if: n > $2 => 'big',
+    _ => 'small',
+})
+[classify(10, 5), classify(1, 5)]

@@ -1,0 +1,8 @@
+# An expression statement that reads a name before the name's `def` is
+# rejected even though its value is discarded.
+#= {rejects: ['`x`', 'not defined']}
+do {
+    x
+    def x = 5
+    x
+}

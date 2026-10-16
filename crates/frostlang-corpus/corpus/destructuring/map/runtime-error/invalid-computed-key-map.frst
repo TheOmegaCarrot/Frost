@@ -1,0 +1,4 @@
+# A Map is not a valid Map key.
+#= {raises: 'not a valid Map key', inputs: {m: {a: 1}}}
+def {[{}]: x} = m
+x

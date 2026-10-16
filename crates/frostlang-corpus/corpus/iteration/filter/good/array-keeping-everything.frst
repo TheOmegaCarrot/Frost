@@ -1,0 +1,3 @@
+# A predicate that accepts everything leaves an equal Array.
+#= {result: [1, null, 'a'], inputs: {xs: [1, null, 'a']}}
+filter xs with fn x -> true

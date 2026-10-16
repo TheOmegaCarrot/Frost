@@ -1,0 +1,8 @@
+# When evaluating the target raises, no arm is tried: neither guard nor result
+# runs.
+#= {result: false, printed: [], inputs: {d: 0}}
+def outcome = try_call(fn -> match 1 / d {
+    _ if: print('guard') => print('result'),
+    _ => print('fallback'),
+})
+outcome.ok

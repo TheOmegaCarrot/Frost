@@ -1,0 +1,8 @@
+# A caught error raised again with `error` reaches the enclosing `try_call`,
+# with the same payload.
+#= {result: [false, {code: 1}]}
+def outer = try_call(fn -> {
+    def inner = try_call(fn -> error({code: 1}))
+    error(inner.error)
+})
+[outer.ok, outer.error]

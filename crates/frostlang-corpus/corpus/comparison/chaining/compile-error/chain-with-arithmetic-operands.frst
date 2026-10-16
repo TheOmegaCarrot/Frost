@@ -1,0 +1,4 @@
+# Arithmetic binds tighter than comparison, so arithmetic operands do not
+# break a chain: `1 + 1 < 2 * 2 < 5` is still two chained comparisons.
+#= {rejects: 'cannot chain'}
+1 + 1 < 2 * 2 < 5

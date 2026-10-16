@@ -1,0 +1,4 @@
+# A Bytes literal in an interpolation is read whole, even when its quotes are
+# the format String's; it interpolates as `to_string` renders it.
+#= {result: [true, true]}
+[$'${x'7d7b'}' == to_string(x'7d7b'), $"${x"27"}" == to_string(x'27')]

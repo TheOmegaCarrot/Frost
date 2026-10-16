@@ -1,0 +1,9 @@
+# The match of destructured-sum-matched, over parts of a value only known at
+# runtime, picks the same arm.
+#= {result: 'three', inputs: {value: [1, {b: 2}]}}
+def [a, {b}] = value
+match a + b {
+    1 | 2 => error('too small'),
+    3 => 'three',
+    _ => error('too big'),
+}

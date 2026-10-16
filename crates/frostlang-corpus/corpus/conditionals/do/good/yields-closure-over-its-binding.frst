@@ -1,0 +1,8 @@
+# A block may yield a Function that closes over the block's binding, which
+# outlives the block.
+#= {result: 42}
+def get = do {
+    def secret = 42
+    fn -> secret
+}
+get()

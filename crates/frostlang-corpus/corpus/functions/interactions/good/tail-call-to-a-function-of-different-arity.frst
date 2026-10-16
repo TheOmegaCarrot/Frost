@@ -1,0 +1,6 @@
+# A tail call to another function with more parameters than the caller gets
+# all of its arguments.
+#= {result: [1, 2, 3], inputs: {n: 1}}
+defn three(x, y, z) -> [x, y, z]
+defn one(a) -> three(a, a + 1, a + 2)
+one(n)

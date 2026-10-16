@@ -1,0 +1,4 @@
+# A native global is a function like any other, and its arity is checked.
+#= {raises: ['expects 1 argument', 'called with 2']}
+def measure = len
+measure([1], [2])

@@ -1,0 +1,5 @@
+# Null is not an Array, so an Array pattern raises on it rather than binding
+# Null to every name.
+#= {raises: 'expected an Array', inputs: {v: null}}
+def [a, b] = v
+[a, b]

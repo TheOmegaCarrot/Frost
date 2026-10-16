@@ -1,0 +1,5 @@
+# `$$` holds only the arguments past the highest numbered placeholder; it is
+# empty when there are none.
+#= {result: [[1, [2, 3]], [1, []]]}
+def split = $([$1, $$])
+[split(1, 2, 3), split(1)]

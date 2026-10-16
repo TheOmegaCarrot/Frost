@@ -1,0 +1,3 @@
+# A leading `@` with nothing before it to continue is an error.
+#= {rejects: 'expected an expression'}
+@ len()

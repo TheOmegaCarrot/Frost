@@ -1,0 +1,6 @@
+# Compilation checks every name before anything runs: an unbound name after a
+# statement that would raise is reported as a compile error, not masked by the
+# runtime error.
+#= {rejects: ['`missing`', 'not defined']}
+def x = 1 / 0
+missing

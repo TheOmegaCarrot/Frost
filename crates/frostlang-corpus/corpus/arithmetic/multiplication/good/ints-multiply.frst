@@ -1,0 +1,11 @@
+# `*` on two Ints is Int multiplication, across signs, by one, and by zero.
+#= {result: [12, -12, -12, 12, 0, 0, 7]}
+[
+    3 * 4,
+    -3 * 4,
+    3 * -4,
+    -3 * -4,
+    5 * 0,
+    0 * -5,
+    7 * 1,
+]

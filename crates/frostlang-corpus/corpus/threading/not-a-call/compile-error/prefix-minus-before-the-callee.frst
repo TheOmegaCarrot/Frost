@@ -1,0 +1,5 @@
+# The right side of `@` starts with its callee, so a prefix `-` cannot come
+# first: `x @ -f()` is not `-f(x)`.
+#= {rejects: '`-`', inputs: {n: 1}}
+defn inc(x) -> x + 1
+n @ -inc()

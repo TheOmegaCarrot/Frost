@@ -1,0 +1,4 @@
+# An unbound name is a compile error even in a branch a constant condition
+# rules out: eliminating dead code never hides a mistake in it.
+#= {rejects: ['`missing_name`', 'not defined']}
+if false: missing_name else: 1

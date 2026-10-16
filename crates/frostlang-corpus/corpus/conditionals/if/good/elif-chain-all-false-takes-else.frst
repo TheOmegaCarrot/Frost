@@ -1,0 +1,5 @@
+# When every condition in an `elif` chain is falsy, the `else` branch is taken.
+#= {result: 'else'}
+if false: 'if'
+elif null: 'elif'
+else: 'else'

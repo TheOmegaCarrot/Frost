@@ -1,0 +1,5 @@
+# A recursion that returns a function: `compose` chains `n` copies of `f`, and
+# zero copies is the identity.
+#= {result: [5, 1024, 'abbb']}
+defn times(f, n) -> if n == 0: fn x -> x else: compose(f, times(f, n - 1))
+[times($($ * 2), 0)(5), times($($ * 2), 10)(1), times($($ + 'b'), 3)('a')]

@@ -1,0 +1,4 @@
+# A computed key may read a name bound by an earlier part of the same pattern.
+#= {result: 3, inputs: {m: {a: 'c', c: 3}}}
+def {a, [a]: b} = m
+b

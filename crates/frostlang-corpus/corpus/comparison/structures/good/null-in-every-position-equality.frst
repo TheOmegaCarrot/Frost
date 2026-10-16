@@ -1,0 +1,14 @@
+# Null is an ordinary element and Map value for structural equality: Nulls in
+# matching positions are equal, and a Null in a different position, or in
+# place of another value, makes the whole unequal.
+#= {
+#=     result: [true, false, false, true, false],
+#=     inputs: {a: [null, [null], {k: null}], b: [null, [null], {k: null}], nothing: null},
+#= }
+[
+    a == b,
+    a == [null, [null], {k: false}],
+    [nothing, 1] == [1, nothing],
+    [nothing] == [null],
+    [nothing] == [],
+]

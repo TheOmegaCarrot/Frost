@@ -1,0 +1,3 @@
+# `elif` needs a condition; a last branch with none is written `else:`.
+#= {rejects: '`elif` takes a condition'}
+if false: 1 elif: 2

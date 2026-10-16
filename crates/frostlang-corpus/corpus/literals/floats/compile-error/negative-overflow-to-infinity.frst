@@ -1,0 +1,4 @@
+# A negated literal too large for a Float is rejected too: the magnitude itself is
+# not finite.
+#= {rejects: 'NaN or Infinity'}
+-1e400

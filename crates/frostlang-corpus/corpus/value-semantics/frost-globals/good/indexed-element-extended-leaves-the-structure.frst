@@ -1,0 +1,6 @@
+# An element read through a function made by `index`, then extended, leaves
+# the structure it came from unchanged.
+#= {result: [[1, 2], [[1]]], inputs: {n: 1}}
+def first = index(0)
+def xs = [[n]]
+[first(xs) + [2], xs]

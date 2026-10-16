@@ -1,0 +1,5 @@
+# A call of a known variadic function with fewer arguments than its fixed
+# parameters raises when the program reaches it.
+#= {raises: 'expects at least 2'}
+def f = fn a, b, ...rest -> [a, b, rest]
+f(1)

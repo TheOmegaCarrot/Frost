@@ -1,0 +1,11 @@
+# A function whose effect sits in a function it creates still runs that effect
+# each time the created function is called, never at creation.
+#= {result: 'done', printed: ['made', 'inner', 'inner']}
+def outer = fn -> do {
+    print('made')
+    fn -> print('inner')
+}
+def inner = outer()
+inner()
+inner()
+'done'

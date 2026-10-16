@@ -1,0 +1,5 @@
+# A name pattern matches Null too, binding it like any other value.
+#= {result: [null, 'bound'], inputs: {v: null}}
+match v {
+    n => [n, 'bound'],
+}

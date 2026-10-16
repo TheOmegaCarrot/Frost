@@ -1,0 +1,7 @@
+# A name one arm binds is not visible in a later arm, even when the earlier
+# arm's pattern matched and only its guard failed.
+#= {rejects: '`x` is not defined'}
+match 1 {
+    x if: false => 0,
+    _ => x,
+}

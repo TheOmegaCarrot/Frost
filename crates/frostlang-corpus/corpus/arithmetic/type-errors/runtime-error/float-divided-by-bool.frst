@@ -1,0 +1,3 @@
+# Bools are not numbers: a Float divided by a Bool is a type error.
+#= {raises: 'Float / Bool'}
+1.5 / true

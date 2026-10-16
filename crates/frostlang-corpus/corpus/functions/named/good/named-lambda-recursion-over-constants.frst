@@ -1,0 +1,5 @@
+# Recursion over a constant argument gives the same answer whether the
+# optimizer computes it ahead of time or not.
+#= {result: 55}
+def fib = fn f(k) -> if k < 2: k else: f(k - 1) + f(k - 2)
+fib(10)

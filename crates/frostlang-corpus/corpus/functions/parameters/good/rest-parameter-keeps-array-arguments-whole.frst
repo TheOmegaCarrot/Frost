@@ -1,0 +1,5 @@
+# Arguments are collected as they are: an Array argument becomes one element
+# of the rest Array, not spread into it.
+#= {result: [[1, 2], [], [[3]]], inputs: {xs: [1, 2]}}
+def f = fn ...rest -> rest
+f(xs, [], [[3]])

@@ -1,0 +1,6 @@
+# `filter` and `reduce` expressions take a threaded call as their collection.
+#= {result: [[20, 30], 60], inputs: {xs: [1, 2, 3]}}
+[
+    filter xs @ transform(fn x -> x * 10) with fn x -> x > 10,
+    reduce xs @ transform(fn x -> x * 10) with fn (acc, x) -> acc + x,
+]

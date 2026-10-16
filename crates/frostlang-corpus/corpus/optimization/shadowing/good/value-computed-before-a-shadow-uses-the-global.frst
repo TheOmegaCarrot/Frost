@@ -1,0 +1,7 @@
+# A value computed before a local shadows a global used the global, and one
+# computed after uses the shadow.
+#= {result: [3, 99]}
+def before = len([1, 2, 3])
+def len = fn v -> 99
+def after = len([1, 2, 3])
+[before, after]

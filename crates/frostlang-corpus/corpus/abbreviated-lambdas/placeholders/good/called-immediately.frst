@@ -1,0 +1,3 @@
+# An abbreviated lambda can be called right where it is written.
+#= {result: 3}
+$($1 + $2)(1, 2)

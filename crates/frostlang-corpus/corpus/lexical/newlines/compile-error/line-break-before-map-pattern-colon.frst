@@ -1,0 +1,6 @@
+# A Map pattern entry's `key:` stays on one line, as a Map literal's does.
+#= {rejects: 'found `:`', inputs: {m: {a: 1}}}
+def {
+    a
+        : b
+} = m

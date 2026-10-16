@@ -1,0 +1,6 @@
+# When several arms match, the first in source order gives the result.
+#= {result: 'first'}
+match 1 {
+    1 => 'first',
+    1 => 'second',
+}

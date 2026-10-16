@@ -1,0 +1,6 @@
+# A no-match error in a `transform` callback stops the transform and
+# propagates.
+#= {raises: ['no match arm', '3'], inputs: {xs: [1, 2, 3]}}
+transform(xs, fn v -> match v {
+    1 | 2 => 'small',
+})

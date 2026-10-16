@@ -1,0 +1,3 @@
+# With no `else`, a falsy condition makes the `if` yield Null.
+#= {result: null}
+if false: 'yes'

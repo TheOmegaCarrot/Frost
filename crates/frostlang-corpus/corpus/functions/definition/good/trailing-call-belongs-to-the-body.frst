@@ -1,0 +1,6 @@
+# Without parentheses around the lambda, a trailing `(...)` is part of its
+# body: `fn -> 42()` is a lambda whose body would call 42, not a lambda
+# invoked where it is written, so defining it raises nothing.
+#= {result: true}
+def r = fn -> 42()
+is_function(r)

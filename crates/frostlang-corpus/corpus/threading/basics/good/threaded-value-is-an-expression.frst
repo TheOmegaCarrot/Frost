@@ -1,0 +1,15 @@
+# The threaded value may be any operand: a literal, a structure, a call, an
+# index, a block, or a parenthesized expression.
+#= {result: [4, 2, 3, 6, 4, 4], inputs: {xs: [1, 5]}}
+defn inc(x) -> x + 1
+[
+    3 @ inc(),
+    [7, 8] @ len(),
+    {a: 1, b: 2, c: 3} @ len(),
+    xs[1] @ inc(),
+    do {
+        def a = 1
+        a + 2
+    } @ inc(),
+    (1 + 2) @ inc(),
+]

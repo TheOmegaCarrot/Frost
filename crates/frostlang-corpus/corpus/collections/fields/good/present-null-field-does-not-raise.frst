@@ -1,0 +1,4 @@
+# A field whose key is present with a Null value reads as Null; only a missing
+# key raises. Subtle because both read as Null through a soft index.
+#= {result: [null, null], inputs: {m: {a: null}}}
+[m.a, {a: null}.a]

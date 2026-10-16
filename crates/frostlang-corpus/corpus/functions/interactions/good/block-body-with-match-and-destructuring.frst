@@ -1,0 +1,11 @@
+# A block body may destructure its argument and match on the parts.
+#= {result: ['origin', 'axis 3', 'point 1,2'], inputs: {p: [1, 2]}}
+def describe = fn point -> {
+    def [x, y] = point
+    match [x, y] {
+        [0, 0] => 'origin',
+        [0, v] | [v, 0] => $'axis ${v}',
+        _ => $'point ${x},${y}',
+    }
+}
+[describe([0, 0]), describe([3, 0]), describe(p)]

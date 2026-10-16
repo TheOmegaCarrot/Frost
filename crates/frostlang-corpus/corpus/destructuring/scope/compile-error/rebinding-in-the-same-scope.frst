@@ -1,0 +1,5 @@
+# A pattern may not rebind a name already bound in the same scope.
+#= {rejects: '`a` is already bound'}
+def a = 1
+def [a] = [2]
+a

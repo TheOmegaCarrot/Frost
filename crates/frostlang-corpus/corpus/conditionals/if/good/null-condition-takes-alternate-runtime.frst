@@ -1,0 +1,3 @@
+# A Null condition known only at runtime is falsy, so it takes the alternate.
+#= {result: 'no', inputs: {c: null}}
+if c: 'yes' else: 'no'

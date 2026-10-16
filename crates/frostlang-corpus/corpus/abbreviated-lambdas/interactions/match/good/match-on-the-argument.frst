@@ -1,0 +1,10 @@
+# An abbreviated lambda's body may match on its argument, with literal,
+# typed, and destructuring patterns.
+#= {result: ['zero', 'int 5', 'pair 3', 'other']}
+def describe = $(match $ {
+    0 => 'zero',
+    n is Int => $'int ${n}',
+    [a, b] => $'pair ${a + b}',
+    _ => 'other',
+})
+[describe(0), describe(5), describe([1, 2]), describe(null)]

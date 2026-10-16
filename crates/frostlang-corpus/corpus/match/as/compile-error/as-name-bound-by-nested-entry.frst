@@ -1,0 +1,5 @@
+# An `as` name cannot reuse a name bound deeper in its own pattern.
+#= {rejects: '`x` is already bound'}
+match {a: {x: 1}} {
+    {a: {x}} as x => x,
+}

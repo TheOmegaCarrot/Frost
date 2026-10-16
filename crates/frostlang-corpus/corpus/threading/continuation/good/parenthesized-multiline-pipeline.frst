@@ -1,0 +1,6 @@
+# A multiline pipeline in parentheses, the idiomatic layout, threads through
+# each line in order.
+#= {result: [20, 30], inputs: {xs: [1, 2, 3]}}
+(xs
+    @ select(fn x -> x > 1)
+    @ transform(fn x -> x * 10))

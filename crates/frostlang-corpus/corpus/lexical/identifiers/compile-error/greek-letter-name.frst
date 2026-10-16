@@ -1,0 +1,3 @@
+# A name entirely of non-ASCII letters is rejected as well.
+#= {rejects: 'only ASCII'}
+def α = 1

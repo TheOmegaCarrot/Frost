@@ -1,0 +1,8 @@
+# A function with an alternative, called repeatedly with alternating shapes,
+# picks the right branch each time with nothing carried over between calls.
+#= {result: [1, 2, 3, 4, 5, 6]}
+defn get(v) -> {
+    def {n} | [n] | n is Int = v
+    n
+}
+transform([{n: 1}, [2], 3, {n: 4}, [5], 6], get)

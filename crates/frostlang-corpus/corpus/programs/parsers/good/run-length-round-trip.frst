@@ -1,0 +1,39 @@
+# Run-length encoding: a fold builds the runs newest-first, so the current run
+# is the head an Array pattern can rewrite, and reversing restores the order.
+# Decoding expands each run by recursion, and the round trip gives back the
+# original characters, non-ASCII ones included.
+#= {
+#=     result: [
+#=         [[['a', 2], ['b', 1], ['c', 3]], 'a2b1c3', true],
+#=         [[], '', true],
+#=         [[['é', 3], ['日', 1]], 'é3日1', true],
+#=         [[['z', 1]], 'z1', true],
+#=         [[['x', 1], ['y', 1], ['x', 1]], 'x1y1x1', true],
+#=     ],
+#=     inputs: {
+#=         sources: [
+#=             ['a', 'a', 'b', 'c', 'c', 'c'],
+#=             [],
+#=             ['é', 'é', 'é', '日'],
+#=             ['z'],
+#=             ['x', 'y', 'x'],
+#=         ],
+#=     },
+#= }
+defn reversed(xs) -> fold(xs, [], fn acc, x -> [x] + acc)
+
+defn encode(chars) -> reversed(reduce chars init: [] with fn runs, c -> match runs {
+    [[last, n], ...earlier] if: last == c => [[c, n + 1]] + earlier,
+    _ => [[c, 1]] + runs,
+})
+
+defn render(runs) -> fold(runs, '', fn text, run -> text + $'${run[0]}${run[1]}')
+
+defn expand(c, n) -> if n == 0: [] else: [c] + expand(c, n - 1)
+
+defn decode(runs) -> fold(runs, [], fn chars, run -> chars + expand(run[0], run[1]))
+
+transform(sources, fn chars -> {
+    def runs = encode(chars)
+    [runs, render(runs), decode(runs) == chars]
+})

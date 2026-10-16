@@ -1,0 +1,11 @@
+# A native global equals itself wherever it is named, and differs from every
+# other global.
+#= {result: [true, true, false, false, true]}
+def measure = len
+[
+    len == len,
+    measure == len,
+    len == type,
+    print == to_string,
+    [transform, select] == [transform, select],
+]

@@ -1,0 +1,6 @@
+# The name after `.` is the literal key, not a variable: `m.a` reads key
+# `'a'` even when a variable `a` holds another key.
+#= {result: [1, 2]}
+def a = 'b'
+def m = {a: 1, b: 2}
+[m.a, m[a]]

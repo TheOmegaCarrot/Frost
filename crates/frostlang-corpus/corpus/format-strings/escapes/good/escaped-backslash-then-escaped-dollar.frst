@@ -1,0 +1,4 @@
+# `\\\${x}` is an escaped backslash, then an escaped `$`: literal `\${x}` text,
+# with no interpolation.
+#= {result: R'(\${x})', inputs: {x: 7}}
+$'\\\${x}'

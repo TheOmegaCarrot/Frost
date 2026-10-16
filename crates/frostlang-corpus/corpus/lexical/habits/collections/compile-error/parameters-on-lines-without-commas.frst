@@ -1,0 +1,6 @@
+# Parameters on separate lines still need commas between them.
+#= {rejects: 'separate parameters with `,`'}
+defn f(
+    a
+    b
+) -> a

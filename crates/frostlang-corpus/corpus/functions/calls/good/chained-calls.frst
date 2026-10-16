@@ -1,0 +1,4 @@
+# A call's result may be called directly, any number of times in a row.
+#= {result: 'abc'}
+def f = fn a -> fn b -> fn c -> a + b + c
+f('a')('b')('c')

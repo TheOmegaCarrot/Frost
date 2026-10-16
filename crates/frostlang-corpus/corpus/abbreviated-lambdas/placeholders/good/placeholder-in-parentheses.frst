@@ -1,0 +1,5 @@
+# A placeholder in parentheses is still the placeholder; the parentheses
+# group, and do not make another `$(`.
+#= {result: 14}
+def f = $(($) * 2 + ($2))
+f(5, 4)

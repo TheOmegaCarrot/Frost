@@ -1,0 +1,3 @@
+# `call` supplied at run time still type-checks its arguments.
+#= {raises: ['call', 'Array as argument 2', 'got Int'], inputs: {apply: call}}
+apply(collect, 3)

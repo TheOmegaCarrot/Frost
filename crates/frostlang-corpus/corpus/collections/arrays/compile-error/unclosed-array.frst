@@ -1,0 +1,3 @@
+# An Array literal left open at the end of input is a syntax error.
+#= {rejects: ['expected `,` or `]`', 'not closed']}
+def xs = [1, 2

@@ -1,0 +1,9 @@
+# In a pipeline, an abbreviated lambda is a natural argument to the function
+# forms.
+#= {result: 12, inputs: {xs: [1, 2, 3, 4]}}
+(
+    xs
+    @ select($($ % 2 == 0))
+    @ transform($($ * 2))
+    @ fold(0, $($1 + $2))
+)

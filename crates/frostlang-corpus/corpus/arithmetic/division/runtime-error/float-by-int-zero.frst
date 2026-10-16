@@ -1,0 +1,3 @@
+# Dividing a Float by the Int zero raises, as dividing by 0.0 does.
+#= {raises: 'division by zero'}
+2.5 / 0

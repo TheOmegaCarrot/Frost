@@ -1,0 +1,4 @@
+# A quoted String key must be written in brackets, as a computed key.
+#= {rejects: 'expected a name or `[`'}
+def {'a': x} = {a: 1}
+x

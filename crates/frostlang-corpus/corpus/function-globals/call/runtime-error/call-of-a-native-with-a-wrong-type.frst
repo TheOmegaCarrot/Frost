@@ -1,0 +1,4 @@
+# A native applied through `call` type-checks its spread arguments, naming
+# itself.
+#= {raises: ['len', 'got Int']}
+call(len, [5])

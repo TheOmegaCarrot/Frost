@@ -1,0 +1,8 @@
+# A constant captured by a lambda decides a condition inside it, falsy or
+# truthy alike.
+#= {result: [2, 7]}
+def off = false
+def zero = 0
+def f = fn -> if off: 1 else: 2
+def g = fn n -> if zero: n elif n: 1 else: 2
+[f(), g(7)]

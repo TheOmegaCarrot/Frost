@@ -1,0 +1,7 @@
+# A statement that raises stops the block: nothing after it runs.
+#= {raises: 'division by zero', inputs: {zero: 0}}
+do {
+    1 / zero
+    print('unreached')
+    5
+}

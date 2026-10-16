@@ -1,0 +1,6 @@
+# An `if` statement whose constant condition skips a raising branch does not
+# raise, and the script goes on.
+#= {result: 5}
+if false: 1 / 0
+if true: 1 else: 1 / 0
+5

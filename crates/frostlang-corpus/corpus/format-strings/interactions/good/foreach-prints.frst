@@ -1,0 +1,4 @@
+# A `foreach` expression prints a format String per element, in order.
+#= {printed: ['0: a', '1: b'], result: null, inputs: {xs: ['a', 'b']}}
+foreach [0, 1] with fn i -> print($'${i}: ${xs[i]}')
+null

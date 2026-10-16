@@ -1,0 +1,7 @@
+# The greatest Int is writable as a literal, and is an Int, not a Float.
+#= {result: [9223372036854775807, 'Int', true]}
+[
+    9223372036854775807,
+    type(9223372036854775807),
+    9223372036854775807 > 9223372036854775806,
+]

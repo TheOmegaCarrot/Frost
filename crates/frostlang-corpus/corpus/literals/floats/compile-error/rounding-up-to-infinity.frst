@@ -1,0 +1,4 @@
+# The least decimal of 17 significant digits that rounds up to Infinity rather than
+# down to the greatest finite Float is rejected.
+#= {rejects: 'NaN or Infinity'}
+1.7976931348623159e308

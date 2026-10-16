@@ -1,0 +1,4 @@
+# A pure global over runtime values cannot fold, so the call itself runs;
+# the threaded value is still its left operand.
+#= {result: [7, -7], inputs: {ten: 10, three: 3}}
+[ten @ minus(three), three @ minus(ten)]

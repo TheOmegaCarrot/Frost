@@ -1,0 +1,3 @@
+# A form may sit inside an `if` condition; the `:` ends its operation.
+#= {result: 'some', inputs: {xs: [1, 5, 9]}}
+if len(filter xs with fn x -> x > 4) > 0: 'some' else: 'none'

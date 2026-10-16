@@ -1,0 +1,6 @@
+# A constant interpolation that raises stops the format String at its place:
+# the interpolation before it has run, and the one after it never does.
+# Subtle: folding must neither raise early nor skip the side effects.
+#= {result: false, printed: ['before']}
+def outcome = try_call(fn -> $'${print("before")}${1 / 0}${print("after")}')
+outcome.ok

@@ -1,0 +1,4 @@
+# A format string's interpolation lies inside the enclosing abbreviated
+# lambda, so a `$(` there is nested and rejected.
+#= {rejects: 'cannot be nested'}
+def f = $($'${$($1)}')

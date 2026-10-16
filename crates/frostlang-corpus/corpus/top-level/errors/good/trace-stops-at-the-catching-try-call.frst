@@ -1,0 +1,6 @@
+# A trace holds only the frames between the error and the `try_call` that
+# caught it: the function that called `try_call` is not in it.
+#= {result: ['error', 'helper']}
+defn helper() -> [error('x')]
+defn wrapper() -> [try_call(helper)]
+wrapper()[0].trace

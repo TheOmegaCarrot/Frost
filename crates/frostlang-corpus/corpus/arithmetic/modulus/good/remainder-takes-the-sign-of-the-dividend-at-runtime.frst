@@ -1,0 +1,14 @@
+# The remainder of operands only known at runtime takes the sign of the
+# dividend, as a folded remainder does: -7 % 3 is -1, not 2.
+#= {
+#=     result: [1, -1, 1, -1, 0, 0],
+#=     inputs: {three: 3, six: 6, seven: 7},
+#= }
+[
+    seven % three,
+    -seven % three,
+    seven % -three,
+    -seven % -three,
+    -six % three,
+    six % -three,
+]

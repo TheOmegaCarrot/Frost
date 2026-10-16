@@ -1,0 +1,3 @@
+# Fixed and later arguments together must suit the function's arity.
+#= {raises: ['expects 2', 'called with 3']}
+curry(fn a, b -> a, 1)(2, 3)

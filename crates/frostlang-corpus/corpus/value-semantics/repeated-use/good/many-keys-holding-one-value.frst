@@ -1,0 +1,12 @@
+# A Map literal holding one binding under many keys, and a derivation of it
+# under the last, holds the original under every other key.
+#= {
+#=     result: [[1], [1], [1], [1], [1, 2], 20],
+#=     inputs: {n: 1},
+#= }
+def v = [n]
+def m = {
+    a: v, b: v, c: v, d: v, e: v, f: v, g: v, h: v, i: v, j: v,
+    k: v, l: v, m: v, n: v, o: v, p: v, q: v, r: v, s: v, t: v + [2],
+}
+[v, m.a, m.j, m.s, m.t, len(m)]

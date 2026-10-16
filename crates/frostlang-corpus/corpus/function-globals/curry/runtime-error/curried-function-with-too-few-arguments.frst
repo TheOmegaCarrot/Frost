@@ -1,0 +1,4 @@
+# A curried function is not partially applied again when called with too
+# few: the function is called, and its arity check fails.
+#= {raises: ['expects 3', 'called with 2']}
+bcurry(fn a, b, c -> a, 1)(2)

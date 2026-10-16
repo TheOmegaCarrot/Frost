@@ -1,0 +1,8 @@
+# `and` and `or` do not evaluate their right operand when the left decides,
+# so a call there does not run.
+#= {result: [false, 1, 'ran'], printed: ['ran']}
+def loud = fn -> do {
+    print('ran')
+    'ran'
+}
+[false and loud(), 1 or loud(), null or loud()]

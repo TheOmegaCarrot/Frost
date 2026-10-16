@@ -1,0 +1,3 @@
+# A Float plus a String is a type error naming both operand types.
+#= {raises: 'Float + String'}
+1.5 + '1.5'

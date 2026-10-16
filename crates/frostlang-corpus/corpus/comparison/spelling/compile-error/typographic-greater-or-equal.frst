@@ -1,0 +1,4 @@
+# Frost's operators are ASCII: the typographic greater-than-or-equal sign
+# (U+2265) is rejected, pointing to `>=`.
+#= {rejects: ['U+2265', '`>=`'], inputs: {a: 1, b: 2}}
+a ≥ b

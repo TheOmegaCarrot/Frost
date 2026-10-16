@@ -1,0 +1,8 @@
+# A parenthesized name compares the target with that name's value rather than
+# binding it.
+#= {result: ['limit', 'other'], inputs: {limit: 10, a: 10, b: 11}}
+defn classify(v) -> match v {
+    (limit) => 'limit',
+    _ => 'other',
+}
+[classify(a), classify(b)]

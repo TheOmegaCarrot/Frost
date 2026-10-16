@@ -1,0 +1,18 @@
+# The tail may be any value but a Function or Opaque: here a Map holding a value
+# of every data type, keyed by every key type, with non-ASCII text and nesting.
+#= {
+#=     result: {
+#=         [true]: [1, -2.5, 'h\u{e9}llo \u{2603}'],
+#=         [7]: null,
+#=         [1.5]: x'00ff',
+#=         [x'01']: {inner: [[], {}]},
+#=         text: false,
+#=     },
+#= }
+{
+    [true]: [1, -2.5, 'h\u{e9}llo \u{2603}'],
+    [7]: null,
+    [1.5]: x'00ff',
+    [x'01']: {inner: [[], {}]},
+    text: false,
+}

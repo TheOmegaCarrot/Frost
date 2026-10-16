@@ -1,0 +1,7 @@
+# An Int and a Float of the same magnitude stay distinct when the optimizer
+# resolves the match ahead of time.
+#= {result: ['Int', 'Float']}
+[
+    match 1 { 1.0 => 'Float', 1 => 'Int' },
+    match 1.0 { 1 => 'Int', 1.0 => 'Float' },
+]

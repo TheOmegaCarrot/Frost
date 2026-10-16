@@ -1,0 +1,22 @@
+# Concatenating constant Strings, Bytes, and Arrays, and merging constant
+# Maps, folds to the combined value; in a merge the right operand's entry wins.
+#= {
+#=     result: [
+#=         'abcd',
+#=         'héllo, 日本',
+#=         x'0102',
+#=         [1, [2], 3],
+#=         {a: 1, b: 3, c: 4},
+#=         [],
+#=         {},
+#=     ],
+#= }
+[
+    'ab' + 'cd',
+    'héllo' + ', ' + '日本',
+    x'01' + x'02',
+    [1] + [[2], 3],
+    {a: 1, b: 2} + {b: 3, c: 4},
+    [] + [],
+    {} + {},
+]

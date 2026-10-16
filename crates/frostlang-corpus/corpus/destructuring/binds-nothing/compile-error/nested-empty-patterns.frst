@@ -1,0 +1,4 @@
+# Nested patterns that bind nothing still bind nothing as a whole.
+#= {rejects: 'binds no name', inputs: {v: [[], {}]}}
+def [[], {}] = v
+0

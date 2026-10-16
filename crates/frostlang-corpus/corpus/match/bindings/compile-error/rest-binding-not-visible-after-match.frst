@@ -1,0 +1,6 @@
+# A `...rest` binding is scoped to its arm like any other binding.
+#= {rejects: '`others` is not defined'}
+def first = match [1, 2] {
+    [h, ...others] => h,
+}
+others

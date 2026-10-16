@@ -1,0 +1,4 @@
+# An abbreviated lambda resolves its free names like any lambda.
+#= {rejects: ['`missing`', 'not defined']}
+def f = $($ + missing)
+1

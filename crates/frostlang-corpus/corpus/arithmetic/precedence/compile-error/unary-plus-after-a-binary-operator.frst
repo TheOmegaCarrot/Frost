@@ -1,0 +1,4 @@
+# With no unary `+`, `1 + +2` has nothing for the second `+` to apply to,
+# unlike `1 - -2`, where the second `-` is a negation.
+#= {rejects: ['expected an expression', '`+`']}
+1 + +2

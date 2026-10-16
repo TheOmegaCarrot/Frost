@@ -1,0 +1,4 @@
+# A Map entry with a Null value is kept like any other when the predicate
+# accepts it.
+#= {result: {a: null}, inputs: {m: {a: null, b: 1}}}
+filter m with fn k, v -> is_null(v)

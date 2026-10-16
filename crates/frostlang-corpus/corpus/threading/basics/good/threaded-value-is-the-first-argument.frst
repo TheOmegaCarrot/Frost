@@ -1,0 +1,5 @@
+# `a @ f(x, y)` is `f(a, x, y)`: the threaded value goes first, before the
+# written arguments, not after them.
+#= {result: [1, 2, 3]}
+defn three(a, b, c) -> [a, b, c]
+1 @ three(2, 3)

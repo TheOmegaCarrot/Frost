@@ -1,0 +1,5 @@
+# The function runs during the call to `tap`, before anything after it.
+#= {result: 1, printed: ['in tap', 'after']}
+def r = tap(1, fn x -> print('in tap'))
+print('after')
+r

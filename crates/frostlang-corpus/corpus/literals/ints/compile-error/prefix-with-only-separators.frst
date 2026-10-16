@@ -1,0 +1,3 @@
+# Separators are not digits: a prefix followed only by them has no digits.
+#= {rejects: 'binary Int literal with no digits'}
+0b__

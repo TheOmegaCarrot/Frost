@@ -1,0 +1,8 @@
+# Float equality is exact at runtime too: `0.1 + 0.2` rounds to a value just
+# above `0.3`.
+#= {result: [false, true, true], inputs: {a: 0.1, b: 0.2, half: 0.5, quarter: 0.25}}
+[
+    a + b == 0.3,
+    a + b != 0.3,
+    half + quarter == 0.75,
+]

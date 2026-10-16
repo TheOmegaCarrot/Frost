@@ -1,0 +1,5 @@
+# A condition joins tests with `and`; C's `&&` is not an operator.
+#= {rejects: ['character `&`', 'is `and`']}
+def a = true
+def b = true
+if a && b: 1 else: 2

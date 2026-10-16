@@ -1,0 +1,4 @@
+# Two shorthand entries for the same key bind the same name twice.
+#= {rejects: '`a` is already bound'}
+def {a, a} = {a: 1}
+a

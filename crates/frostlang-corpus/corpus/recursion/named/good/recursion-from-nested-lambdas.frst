@@ -1,0 +1,5 @@
+# A nested lambda inside a named lambda reaches the enclosing self-name, so the
+# recursion may pass through lambdas created at each level.
+#= {result: 5}
+defn f(n) -> if n == 0: 0 else: (fn -> (fn -> 1 + f(n - 1))())()
+f(5)

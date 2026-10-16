@@ -1,0 +1,27 @@
+# The 0/1 knapsack by folding items over a row of best values per capacity:
+# each item's row is computed entirely from the previous row, so no item is
+# taken twice. Zero capacity, no items, and an item too heavy to fit all
+# give 0.
+#= {
+#=     result: [9, 0, 0, 0],
+#=     inputs: {
+#=         items: [{w: 1, v: 1}, {w: 3, v: 4}, {w: 4, v: 5}, {w: 5, v: 7}],
+#=         heavy: [{w: 10, v: 100}],
+#=     },
+#= }
+defn upto(n) -> if n == 0: [] else: upto(n - 1) + [n - 1]
+
+defn best(things, capacity) -> {
+    def capacities = upto(capacity + 1)
+    def empty_row = transform(capacities, fn c -> 0)
+    def last = fold(things, empty_row, fn prev, item -> transform(capacities, fn c ->
+        if c < item.w: prev[c]
+        else: do {
+            def taken = prev[c - item.w] + item.v
+            if taken > prev[c]: taken else: prev[c]
+        }
+    ))
+    last[capacity]
+}
+
+[best(items, 7), best(items, 0), best([], 5), best(heavy, 9)]

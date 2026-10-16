@@ -1,0 +1,4 @@
+# `is Map` rejects an Array.
+#= {raises: 'expected a Map', inputs: {v: []}}
+def x is Map = v
+x

@@ -1,0 +1,4 @@
+# A `$` placeholder is not a name, so it cannot be a shorthand entry even
+# inside an abbreviated lambda.
+#= {rejects: 'expected a name or `[`'}
+def f = $({$})

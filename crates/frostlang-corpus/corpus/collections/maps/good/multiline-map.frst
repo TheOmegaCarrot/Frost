@@ -1,0 +1,10 @@
+# Inside a Map literal, newlines, blank lines, and comments separate nothing:
+# the entries are those between the commas.
+#= {result: {a: 1, b: 2, [3]: 'c'}}
+{
+    a: 1, # the first
+
+    # a comment line between entries
+    b: 2,
+    [3]: 'c',
+}

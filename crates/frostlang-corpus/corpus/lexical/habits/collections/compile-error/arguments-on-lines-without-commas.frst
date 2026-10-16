@@ -1,0 +1,8 @@
+# Arguments on separate lines still need commas between them.
+#= {rejects: 'separate arguments with `,`'}
+def f = fn a, b, c -> a
+f(
+    1,
+    2
+    3
+)

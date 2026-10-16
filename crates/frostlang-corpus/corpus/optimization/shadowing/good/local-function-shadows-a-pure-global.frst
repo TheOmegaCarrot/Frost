@@ -1,0 +1,7 @@
+# A local function named like a pure global shadows it: calls over constants
+# compute the local function's result, never the global's.
+#= {result: ['custom', 99, 'not raised']}
+def type = fn v -> 'custom'
+def len = fn v -> 99
+def error = fn message -> 'not raised'
+[type(1), len([1, 2]), error('boom')]

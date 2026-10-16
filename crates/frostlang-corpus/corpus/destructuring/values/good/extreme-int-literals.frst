@@ -1,0 +1,8 @@
+# The extreme Int values are literal parts in their own right, including the
+# most negative Int written directly.
+#= {
+#=     result: 'ok',
+#=     inputs: {xs: [9223372036854775807, -9223372036854775807 - 1, 'ok']},
+#= }
+def [9223372036854775807, -9223372036854775808, a] = xs
+a

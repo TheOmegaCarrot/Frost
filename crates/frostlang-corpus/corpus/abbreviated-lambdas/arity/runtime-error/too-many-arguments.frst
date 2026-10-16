@@ -1,0 +1,4 @@
+# Without `$$`, extra arguments are an error, not silently ignored.
+#= {raises: ['expects 1 argument', 'called with 3']}
+def double = $($ * 2)
+double(1, 2, 3)

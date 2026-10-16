@@ -1,0 +1,13 @@
+# A value nested five levels deep, rebuilt with its innermost Array extended,
+# leaves the original unchanged at every level.
+#= {
+#=     result: [
+#=         {a: [{b: [{c: [1]}]}]},
+#=         {a: [{b: [{c: [1, 2]}]}]},
+#=     ],
+#=     inputs: {n: 1},
+#= }
+def original = {a: [{b: [{c: [n]}]}]}
+defn update(v) -> {a: [{b: [{c: v.a[0].b[0].c + [2]}]}]}
+def updated = update(original)
+[original, updated]

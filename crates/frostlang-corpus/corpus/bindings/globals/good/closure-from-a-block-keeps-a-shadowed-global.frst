@@ -1,0 +1,8 @@
+# A closure made inside a block that shadows a global captures the shadow, and
+# keeps calling it after the block ends, where the name means the global again.
+#= {result: ['shadow', 2]}
+def get = do {
+    def len = fn v -> 'shadow'
+    fn -> len([1, 2])
+}
+[get(), len([1, 2])]

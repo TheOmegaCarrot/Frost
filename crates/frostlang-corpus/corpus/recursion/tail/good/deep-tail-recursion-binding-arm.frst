@@ -1,0 +1,8 @@
+# A tail call from an arm that binds names from the matched value: the arm's
+# bindings feed the call's arguments before its frame is reused.
+#= {result: [100000, 0]}
+defn step(state) -> match state {
+    {left: 0, right} => [right, 0],
+    {left, right} => step({left: left - 1, right: right + 1}),
+}
+step({left: 100000, right: 0})

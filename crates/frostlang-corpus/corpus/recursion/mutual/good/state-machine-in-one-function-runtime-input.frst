@@ -1,0 +1,10 @@
+# Mutually recursive states folded into one function, run for a step count
+# and from a start state known only at runtime.
+#= {result: [33, 34, 33], inputs: {start: 'b', steps: 100}}
+defn run(state, n, counts) -> if n == 0: [counts.a, counts.b, counts.c]
+    else: match state {
+        'a' => run('b', n - 1, counts + {a: counts.a + 1}),
+        'b' => run('c', n - 1, counts + {b: counts.b + 1}),
+        'c' => run('a', n - 1, counts + {c: counts.c + 1}),
+    }
+run(start, steps, {a: 0, b: 0, c: 0})

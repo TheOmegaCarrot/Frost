@@ -1,0 +1,5 @@
+# A named lambda written directly as an argument still recurses by its
+# self-name when the callee invokes it.
+#= {result: 15}
+defn apply_to_five(f) -> f(5)
+apply_to_five(fn sum(n) -> if n == 0: 0 else: n + sum(n - 1))

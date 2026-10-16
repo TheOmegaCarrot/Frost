@@ -1,0 +1,3 @@
+# `spread` requires a Function.
+#= {raises: ['spread', 'Function as argument 1', 'got Null']}
+spread(null)

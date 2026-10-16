@@ -1,0 +1,8 @@
+# A recursive `defn` inside an abbreviated lambda recurses by its own name
+# and reads the enclosing placeholder at every depth.
+#= {result: 'x'}
+def f = $(do {
+    defn walk(n) -> if n == 0: $ else: walk(n - 1)
+    walk(3)
+})
+f('x')

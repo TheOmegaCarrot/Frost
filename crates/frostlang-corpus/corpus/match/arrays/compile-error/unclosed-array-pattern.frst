@@ -1,0 +1,5 @@
+# An Array pattern must be closed before the arm's `=>`.
+#= {rejects: 'expected `,` or `]`'}
+match [1, 2] {
+    [a, b => a,
+}

@@ -1,0 +1,5 @@
+# A backslash just before the closing quote escapes it, so the String does not end
+# there: subtle in a path ending with a separator. A raw String holds such text.
+#= {rejects: 'unclosed String'}
+def dir = 'parent\\child\'
+dir

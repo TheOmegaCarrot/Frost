@@ -1,0 +1,7 @@
+# Comparisons in separate call arguments or elements are separate expressions,
+# not a chain.
+#= {result: [[true, false], ['Bool', 'Bool']]}
+[
+    [1 < 2, 2 < 1],
+    transform([1 == 1, 1 != 1], type),
+]

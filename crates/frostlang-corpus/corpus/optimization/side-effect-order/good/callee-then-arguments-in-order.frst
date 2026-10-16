@@ -1,0 +1,16 @@
+# A call evaluates its callee, then each argument in order, before calling.
+#= {result: [1, 2], printed: ['callee', 'first', 'second', 'body']}
+def result = do {
+    print('callee')
+    fn a, b -> do {
+        print('body')
+        [a, b]
+    }
+}(do {
+    print('first')
+    1
+}, do {
+    print('second')
+    2
+})
+result

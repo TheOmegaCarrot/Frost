@@ -1,0 +1,8 @@
+# Names are case-sensitive: `x`, `X`, `value`, and `Value` are four
+# different names.
+#= {result: [1, 2, 3, 4]}
+def x = 1
+def X = 2
+def value = 3
+def Value = 4
+[x, X, value, Value]

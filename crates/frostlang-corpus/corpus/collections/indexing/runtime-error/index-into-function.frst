@@ -1,0 +1,4 @@
+# A Function is not indexable.
+#= {raises: ['Cannot index value', 'Function']}
+def f = fn x -> x
+f[0]

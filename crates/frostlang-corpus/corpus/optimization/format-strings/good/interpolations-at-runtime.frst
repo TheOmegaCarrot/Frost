@@ -1,0 +1,13 @@
+# The format strings of folded-interpolations, over values only known at
+# runtime, build the same text.
+#= {
+#=     result: ['3 and ab', 'hello, world', '', 'ab2c', 'héllo 日本'],
+#=     inputs: {one: 1, a: 'a', name: 'world', accent: 'é', japan: '日本'},
+#= }
+[
+    $'${one + 2} and ${a + 'b'}',
+    $'hello, ${name}',
+    $'',
+    $'a${$'b${one + 1}'}c',
+    $'h${accent}llo ${japan}',
+]

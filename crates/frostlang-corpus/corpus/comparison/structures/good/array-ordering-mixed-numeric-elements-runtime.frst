@@ -1,0 +1,9 @@
+# Int and Float elements of Arrays known only at runtime order by value, while
+# the Arrays stay unequal.
+#= {result: [false, true, true, false], inputs: {ints: [1, 2], floats: [1.0, 2.0]}}
+[
+    ints < floats,
+    ints <= floats,
+    floats >= ints,
+    ints == floats,
+]

@@ -1,0 +1,4 @@
+# An abbreviated lambda passed as an argument to a call of another is not
+# nested in it: the call's arguments are outside the callee's `$( ... )`.
+#= {result: 1}
+$($1 @ $2(3))(4, $($1 - $2))

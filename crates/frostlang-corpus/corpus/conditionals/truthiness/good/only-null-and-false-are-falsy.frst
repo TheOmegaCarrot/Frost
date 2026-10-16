@@ -1,0 +1,17 @@
+# Only Null and `false` are falsy conditions; every other literal, including
+# zero, the empty String, and empty collections, is truthy.
+#= {result: ['F', 'F', 'T', 'T', 'T', 'T', 'T', 'T', 'T', 'T', 'T', 'T']}
+[
+    if null: 'T' else: 'F',
+    if false: 'T' else: 'F',
+    if true: 'T' else: 'F',
+    if 0: 'T' else: 'F',
+    if 0.0: 'T' else: 'F',
+    if -1: 'T' else: 'F',
+    if '': 'T' else: 'F',
+    if x'': 'T' else: 'F',
+    if []: 'T' else: 'F',
+    if {}: 'T' else: 'F',
+    if [null]: 'T' else: 'F',
+    if {a: false}: 'T' else: 'F',
+]

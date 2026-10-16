@@ -1,0 +1,3 @@
+# An `elif` that continues no `if` is an error.
+#= {rejects: ['found `elif`', 'written `if a: b else: c`']}
+elif true: 1

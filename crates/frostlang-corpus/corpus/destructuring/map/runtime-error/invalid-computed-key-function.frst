@@ -1,0 +1,4 @@
+# A Function is not a valid Map key.
+#= {raises: 'not a valid Map key', inputs: {m: {a: 1}}}
+def {[fn -> 1]: x} = m
+x

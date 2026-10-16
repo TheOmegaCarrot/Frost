@@ -1,0 +1,6 @@
+# A binding built upon in one argument and read again in a later argument of
+# the same call has its own value in the later one.
+#= {result: [[1, 2], [1]], inputs: {xs: [1]}}
+defn pair(a, b) -> [a, b]
+def v = xs
+pair(v + [2], v)

@@ -1,0 +1,9 @@
+# A format String's text may hold `#`, `;`, `,`, and `@`, none of which act
+# as code there; a continuation line may then thread the whole String.
+#= {result: [10, '#1; a, b @'], inputs: {n: 1}}
+def s = $'#${n}; a, b @'
+[
+    s
+        @ len(),
+    s,
+]

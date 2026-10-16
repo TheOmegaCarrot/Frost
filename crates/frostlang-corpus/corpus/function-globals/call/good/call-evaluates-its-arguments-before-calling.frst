@@ -1,0 +1,17 @@
+# `call`'s own arguments are evaluated left to right, the function before
+# its argument Array, and only then is the function called.
+#= {result: ['called', 1], printed: ['function', 'arguments', 'body']}
+defn f(x) -> {
+    print('body')
+    ['called', x]
+}
+call(
+    do {
+        print('function')
+        f
+    },
+    do {
+        print('arguments')
+        [1]
+    },
+)

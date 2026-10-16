@@ -1,0 +1,8 @@
+# A comparison inside a closure uses the captured threshold of the closure that
+# runs it.
+#= {result: [[false, true, true], [false, false, true]], inputs: {xs: [1, 5, 9]}}
+defn above(limit) -> fn x -> x > limit
+[
+    xs @ transform(above(2)),
+    xs @ transform(above(5.5)),
+]

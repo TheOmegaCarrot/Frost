@@ -1,0 +1,14 @@
+# Map keys keep their types: the Int key `1`, the Float key `1.0`, the String
+# key `'1'`, the Bool key `true`, and the Bytes key `x'31'` are five different
+# keys, so Maps keyed by each are pairwise unequal.
+#= {
+#=     result: [
+#=         [true, false, false, false, false],
+#=         [false, true, false, false, false],
+#=         [false, false, true, false, false],
+#=         [false, false, false, true, false],
+#=         [false, false, false, false, true],
+#=     ],
+#= }
+def maps = [{[1]: 'v'}, {[1.0]: 'v'}, {['1']: 'v'}, {[true]: 'v'}, {[x'31']: 'v'}]
+transform(maps, fn a -> transform(maps, fn b -> a == b))

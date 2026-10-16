@@ -1,0 +1,4 @@
+# A first argument only known at runtime to be a non-Function raises a type
+# error from `try_call`, uncaught.
+#= {raises: ['try_call', 'argument 1', 'got String'], inputs: {f: 'not a Function'}}
+try_call(f)

@@ -1,0 +1,4 @@
+# `-` is numeric only: an Array minus an Array is a type error, not a set
+# difference, though `+` joins Arrays.
+#= {raises: 'Array - Array'}
+[1, 2, 3] - [3]

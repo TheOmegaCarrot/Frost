@@ -1,0 +1,6 @@
+# `reduce` called like a function without an initial value is pointed to the
+# form and to its function form, `fold(xs, f)`.
+#= {rejects: '`fold(xs, f)`'}
+def xs = [1]
+def f = fn acc, x -> acc + x
+reduce(xs, f)

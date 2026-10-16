@@ -1,0 +1,4 @@
+# When both operands raise, the left one runs first, so its error is the one
+# reported.
+#= {raises: 'division by zero'}
+(1 / 0) + (1 % 0)

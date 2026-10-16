@@ -1,0 +1,14 @@
+# Null as a value in positions shaped by layout: a trailing-comma element, a
+# branch on its own line, a continued `@` input, a Map value after a line
+# break, and a block's last statement after `;`.
+#= {result: [[null,], null, 'Null', {k: null}, null], inputs: {c: false}}
+def a = [null,]
+def b = if c: 1
+else:
+    null
+def t = null
+    @ type()
+def m = {k:
+    null}
+def d = do { 1; null }
+[a, b, t, m, d]

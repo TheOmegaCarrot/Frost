@@ -1,0 +1,4 @@
+# Null is not a Map, so a Map pattern raises on it rather than binding Null.
+#= {raises: 'expected a Map', inputs: {v: null}}
+def {a} = v
+a

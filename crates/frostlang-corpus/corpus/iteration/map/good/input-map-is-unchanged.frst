@@ -1,0 +1,4 @@
+# `map` over a Map produces a new Map; the one it maps over is unchanged.
+#= {result: [{a: 1}, {a: 2}], inputs: {m: {a: 1}}}
+def n = map m with fn k, v -> {[k]: v + 1}
+[m, n]

@@ -1,0 +1,9 @@
+# With a nested Map part missing a key and a later Array part of the wrong
+# shape, the earlier part's error is the one raised.
+#= {
+#=     raises: 'no value at key "a"',
+#=     inputs: {xs: [{}, 5]},
+#=     known_issue: 'FROST-155',
+#= }
+def [{a}, [b]] = xs
+[a, b]

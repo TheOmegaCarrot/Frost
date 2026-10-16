@@ -1,0 +1,4 @@
+# An interpolation holds exactly one expression: a second one before the `}`
+# is a syntax error.
+#= {rejects: ['expected `}`', 'in this interpolation'], inputs: {x: 7}}
+def s = $'${x x}'

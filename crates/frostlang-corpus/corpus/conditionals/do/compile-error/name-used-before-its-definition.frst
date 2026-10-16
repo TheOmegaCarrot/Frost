@@ -1,0 +1,8 @@
+# A block's bindings take effect in order: reading one before its `def` is a
+# compile error, not Null.
+#= {rejects: ['`w`', 'not defined']}
+do {
+    def z = w
+    def w = 1
+    z
+}

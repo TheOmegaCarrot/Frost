@@ -1,0 +1,4 @@
+# An error raised by a function a Frost-written global calls propagates out
+# through that global to the top level.
+#= {raises: 'composed'}
+compose(fn x -> x + 1, fn x -> error('composed'))(1)

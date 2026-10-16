@@ -1,0 +1,6 @@
+# Currying calls nothing, even with every argument fixed: the function runs
+# only when the curried function is called.
+#= {result: 'built'}
+def never = curry(fn x -> error('called'), 1)
+def never_either = bcurry(fn x -> error('called'), 1)
+'built'

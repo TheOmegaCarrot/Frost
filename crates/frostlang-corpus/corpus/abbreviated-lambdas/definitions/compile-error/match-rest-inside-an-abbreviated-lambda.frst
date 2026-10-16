@@ -1,0 +1,6 @@
+# A match pattern's rest name cannot be `$$`, even inside an abbreviated
+# lambda whose own rest is `$$`.
+#= {rejects: ['a name after `...`', 'found `$$`']}
+def f = $(match $1 {
+    [a, ...$$] => a,
+})

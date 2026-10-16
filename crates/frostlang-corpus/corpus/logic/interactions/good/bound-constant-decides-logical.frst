@@ -1,0 +1,13 @@
+# A logical over a constant bound by name, directly or captured by a lambda,
+# short-circuits just as over the literal: the skipped operand never runs.
+#= {result: [false, 0, false, 0]}
+def f = false
+def zero = 0
+def skip_and = fn -> f and error('the right operand of and ran')
+def skip_or = fn -> zero or error('the right operand of or ran')
+[
+    f and error('the right operand of and ran'),
+    zero or error('the right operand of or ran'),
+    skip_and(),
+    skip_or(),
+]

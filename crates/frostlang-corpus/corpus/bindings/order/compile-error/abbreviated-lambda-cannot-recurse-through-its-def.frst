@@ -1,0 +1,5 @@
+# An abbreviated lambda has no name of its own, and the `def` it is bound to is
+# not yet bound inside it, so it cannot recurse by name.
+#= {rejects: ['`f`', 'not defined']}
+def f = $(if $ <= 1: 1 else: $ * f($ - 1))
+f(5)

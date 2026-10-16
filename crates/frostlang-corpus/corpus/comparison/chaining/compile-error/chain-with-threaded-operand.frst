@@ -1,0 +1,4 @@
+# `@` binds tighter than comparison, so a threaded call as an operand does not
+# break a chain.
+#= {rejects: 'cannot chain'}
+0 < [1, 2] @ len() < 3

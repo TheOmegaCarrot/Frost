@@ -1,0 +1,6 @@
+# A pin reading an earlier part of the same pattern, over a literal the
+# optimizer may match ahead of time. Subtle: the earlier name is not yet
+# settled while the pattern compiles.
+#= {result: 7}
+def [a, (a), (a + 1)] = [7, 7, 8]
+a

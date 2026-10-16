@@ -1,0 +1,3 @@
+# Tapping with a function known only at run time still calls it.
+#= {result: 'v', printed: ['v'], inputs: {observe: print}}
+tap('v', observe)

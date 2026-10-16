@@ -1,0 +1,6 @@
+# A binding read only inside a function that is never called still has its
+# value computed, so the value's effect happens.
+#= {result: 'ok', printed: ['computed']}
+def x = print('computed')
+def never = fn -> x
+'ok'

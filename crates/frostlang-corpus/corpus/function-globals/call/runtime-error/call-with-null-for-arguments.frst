@@ -1,0 +1,3 @@
+# An explicit Null is not the same as leaving the arguments out.
+#= {raises: ['call', 'Array as argument 2', 'got Null']}
+call(collect, null)

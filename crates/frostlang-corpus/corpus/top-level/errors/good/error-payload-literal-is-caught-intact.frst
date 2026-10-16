@@ -1,0 +1,9 @@
+# A literal payload raised directly inside the caught function comes back
+# intact. Unlike a payload passed in as an argument, every value here is a
+# constant the optimizer can see.
+#= {result: [{code: 404, why: ['missing']}, [1, 2.5], x'ff']}
+[
+    try_call(fn -> error({code: 404, why: ['missing']})).error,
+    try_call(fn -> error([1, 2.5])).error,
+    try_call(fn -> error(x'ff')).error,
+]

@@ -1,0 +1,3 @@
+# An exported pattern may not bind one name twice.
+#= {rejects: '`x` is already bound'}
+export def [x, x] = [1, 2]

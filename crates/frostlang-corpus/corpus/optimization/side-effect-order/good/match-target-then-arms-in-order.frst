@@ -1,0 +1,20 @@
+# A match evaluates its target once, then tries arms in order, evaluating each
+# pin as its arm is tried, and stops at the first arm that matches.
+#= {result: 'second', printed: ['target', 'pin 1', 'pin 2']}
+match do {
+    print('target')
+    2
+} {
+    (do {
+        print('pin 1')
+        1
+    }) => 'first',
+    (do {
+        print('pin 2')
+        2
+    }) => 'second',
+    (do {
+        print('pin 3')
+        3
+    }) => 'third',
+}

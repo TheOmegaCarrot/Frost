@@ -1,0 +1,18 @@
+# Line breaks inside parentheses are insignificant for values only known at
+# runtime, too.
+#= {result: [10, true], inputs: {one: 1, two: 2, three: 3}}
+def total = (
+    one +
+    two
+    + three
+    *
+    two
+    + one
+)
+def ok = (
+    total
+    > 5
+    and
+    total < 20
+)
+[total, ok]

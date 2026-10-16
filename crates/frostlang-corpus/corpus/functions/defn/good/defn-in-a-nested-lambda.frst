@@ -1,0 +1,7 @@
+# A `defn` works in a lambda nested inside another.
+#= {result: 6}
+def outer = fn -> fn x -> {
+    defn triple(v) -> v * 3
+    triple(x)
+}
+outer()(2)

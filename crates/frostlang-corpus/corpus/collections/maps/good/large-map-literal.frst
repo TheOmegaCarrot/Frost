@@ -1,0 +1,14 @@
+# A Map literal with many entries, some keys runtime-only and some repeated
+# far apart, holds every distinct key once with its last value.
+#= {
+#=     result: [20, 'k0 again', 'k19', 'k10', null],
+#=     inputs: {r: 10},
+#= }
+def m = {
+    [0]: 'k0', [1]: 'k1', [2]: 'k2', [3]: 'k3', [4]: 'k4',
+    [5]: 'k5', [6]: 'k6', [7]: 'k7', [8]: 'k8', [9]: 'k9',
+    [r]: 'k10', [11]: 'k11', [12]: 'k12', [13]: 'k13', [14]: 'k14',
+    [15]: 'k15', [16]: 'k16', [17]: 'k17', [18]: 'k18', [r + 9]: 'k19',
+    [0]: 'k0 again',
+}
+[len(m), m[0], m[19], m[10], m[20]]

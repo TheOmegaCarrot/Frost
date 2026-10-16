@@ -1,0 +1,14 @@
+# The turnstile's transition match has no arm for an event it does not know,
+# so the fold raises at that event instead of ignoring it or yielding Null.
+#= {
+#=     raises: 'no match arm',
+#=     inputs: {events: ['coin', 'push', 'kick', 'coin']},
+#= }
+defn transition(s, event) -> match [s.state, event] {
+    ['locked', 'coin'] => s + {state: 'unlocked'},
+    ['locked', 'push'] => s,
+    ['unlocked', 'push'] => s + {state: 'locked', passed: s.passed + 1},
+    ['unlocked', 'coin'] => s,
+}
+
+reduce events init: {state: 'locked', passed: 0} with transition

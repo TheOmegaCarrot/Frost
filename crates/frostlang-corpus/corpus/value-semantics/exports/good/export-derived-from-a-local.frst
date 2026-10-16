@@ -1,0 +1,11 @@
+# An export derived from a local leaves the local unchanged, and a second
+# export derived from the first leaves the first unchanged.
+#= {
+#=     result: [1],
+#=     exports: {first: [1, 2], second: [1, 2, 3]},
+#=     inputs: {n: 1},
+#= }
+def base = [n]
+export def first = base + [2]
+export def second = first + [3]
+base

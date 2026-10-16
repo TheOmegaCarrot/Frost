@@ -1,0 +1,4 @@
+# An error the operation raises while iterating a Map propagates out of
+# `map`.
+#= {raises: 'division by zero', inputs: {m: {a: 1, b: 0}}}
+map m with fn k, v -> {[k]: 1 / v}

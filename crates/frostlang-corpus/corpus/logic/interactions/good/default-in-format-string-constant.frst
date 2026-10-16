@@ -1,0 +1,10 @@
+# With constant operands, which the optimizer may fold into the text, an `or`
+# default inside a format string's interpolation still yields the deciding
+# operand, and `not` still renders as its Bool.
+#= {result: ['hello, anonymous', 'hello, ñandú', 'hello, 0', 'missing: true']}
+[
+    $'hello, ${null or "anonymous"}',
+    $'hello, ${"ñandú" or "anonymous"}',
+    $'hello, ${0 or "anonymous"}',
+    $'missing: ${not null}',
+]

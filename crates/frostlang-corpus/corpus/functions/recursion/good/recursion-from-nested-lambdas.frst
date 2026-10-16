@@ -1,0 +1,5 @@
+# A named function recurses from inside lambdas nested in its own body.
+#= {result: [0, 0]}
+defn f(k) -> if k == 0: 0 else: (fn -> (fn -> f(k - 1))())()
+defn g(k) -> if k == 0: 0 else: $(g($))(k - 1)
+[f(5), g(5)]

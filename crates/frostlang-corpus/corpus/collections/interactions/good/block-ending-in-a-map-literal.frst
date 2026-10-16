@@ -1,0 +1,7 @@
+# A Map literal may be the last statement of a block body, and is its value.
+#= {result: {doubled: 8, original: 4}}
+def wrap = fn n -> {
+    def doubled = n * 2
+    {doubled, original: n}
+}
+wrap(4)

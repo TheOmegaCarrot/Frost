@@ -1,0 +1,4 @@
+# A String in the other quote style in an interpolation, holding the format
+# String's own quote.
+#= {result: ["'", "say '}'", '"']}
+[$'${"'"}', $'${"say '}'"}', $"${'"'}"]

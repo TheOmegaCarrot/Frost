@@ -1,0 +1,4 @@
+# An interpolation cannot hold a comment: the `#` would hide the rest of the
+# line, including the interpolation's `}` and the String's quote.
+#= {rejects: ['unclosed interpolation', 'cannot hold a comment']}
+def s = $'${1 # one}'

@@ -1,0 +1,7 @@
+# A `do` block is one scope: binding a name twice within it is an error.
+#= {rejects: ['`y`', 'already bound']}
+do {
+    def y = 1
+    def y = 2
+    y
+}

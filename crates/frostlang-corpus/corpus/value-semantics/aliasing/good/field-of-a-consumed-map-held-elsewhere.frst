@@ -1,0 +1,7 @@
+# A value read out of a Map by field at that Map's last use, then extended,
+# leaves the value's other binding unchanged.
+#= {result: [[1, 2], [1]], inputs: {n: 1}}
+def inner = [n]
+def m = {k: inner}
+def grown = m.k + [2]
+[grown, inner]

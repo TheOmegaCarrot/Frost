@@ -1,0 +1,5 @@
+# The right side of `@` starts with its callee, so a prefix `not` cannot come
+# first: `x @ not f()` is not `not f(x)`.
+#= {rejects: '`not`', inputs: {n: 1}}
+defn odd(x) -> x % 2 == 1
+n @ not odd()

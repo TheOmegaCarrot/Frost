@@ -1,0 +1,3 @@
+# After `do`, braces hold statements: a Map is written without `do`.
+#= {rejects: 'a `do` block holds statements'}
+do { 'k': 1 }

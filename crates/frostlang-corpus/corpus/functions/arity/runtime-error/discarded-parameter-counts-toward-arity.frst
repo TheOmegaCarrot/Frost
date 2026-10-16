@@ -1,0 +1,4 @@
+# A `_` parameter binds nothing but still requires an argument.
+#= {raises: ['expects 2 argument', 'called with 1']}
+def f = fn _, _ -> 1
+f(1)

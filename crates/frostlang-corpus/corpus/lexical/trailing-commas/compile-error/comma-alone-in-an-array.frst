@@ -1,0 +1,3 @@
+# A comma needs an item before it: `[,]` is not an empty Array.
+#= {rejects: 'found `,`'}
+[,]

@@ -1,0 +1,4 @@
+# A rest parameter is bound only inside its lambda's body.
+#= {rejects: ['`rest`', 'not defined']}
+def f = fn ...rest -> rest
+rest

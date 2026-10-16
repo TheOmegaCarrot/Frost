@@ -1,0 +1,6 @@
+# Threading a function into `call` makes it the function to call:
+# `f @ call(args)` is `call(f, args)`.
+#= {result: [7, 'none']}
+def subtract = fn x, y -> x - y
+def nothing = fn -> 'none'
+[subtract @ call([10, 3]), nothing @ call()]

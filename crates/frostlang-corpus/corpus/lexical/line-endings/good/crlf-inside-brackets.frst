@@ -1,0 +1,18 @@
+# CRLF line breaks inside brackets are insignificant, trailing commas
+# included.
+#= {result: [[1, 2], {a: 1, b: 2}, 2]}
+def xs = [
+    1,
+    2,
+]
+def m = {
+    a: 1,
+    b: 2,
+}
+[
+    xs,
+    m,
+    len(
+        xs,
+    ),
+]

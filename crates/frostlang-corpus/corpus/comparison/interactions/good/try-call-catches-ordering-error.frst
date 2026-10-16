@@ -1,0 +1,11 @@
+# An ordering type error is an ordinary runtime error: `try_call` catches it,
+# and a comparison that succeeds returns its Bool.
+#= {result: [false, true, true, 'String'], inputs: {a: 1, b: 'b'}}
+def failed = try_call(fn -> a < b)
+def succeeded = try_call(fn -> a < 2)
+[
+    failed.ok,
+    succeeded.ok,
+    succeeded.value,
+    type(failed.error),
+]

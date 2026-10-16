@@ -1,0 +1,5 @@
+# Each evaluation of an abbreviated lambda makes a closure over that
+# evaluation's values, so closures made in a `map` stay independent.
+#= {result: [10, 20, 30], inputs: {ks: [1, 2, 3]}}
+def scalers = map ks with fn k -> $($ * k)
+map scalers with fn f -> f(10)

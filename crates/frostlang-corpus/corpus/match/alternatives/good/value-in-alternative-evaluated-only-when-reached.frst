@@ -1,0 +1,11 @@
+# A parenthesized value in a later alternative is evaluated only if the
+# earlier alternatives fail.
+#= {result: ['first', 'second'], printed: ['checked'], inputs: {a: 1, b: 2}}
+defn two() -> {
+    print('checked')
+    2
+}
+defn which(v) -> match v {
+    1 | (two()) => if v == 1: 'first' else: 'second',
+}
+[which(a), which(b)]

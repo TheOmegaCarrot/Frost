@@ -1,0 +1,4 @@
+# Name shorthand reads the variable of that name, so an unbound one is a
+# compile error rather than a Null value.
+#= {rejects: 'not defined'}
+def m = {missing}

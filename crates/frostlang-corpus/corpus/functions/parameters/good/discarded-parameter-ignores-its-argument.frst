@@ -1,0 +1,4 @@
+# A `_` parameter takes an argument and binds nothing.
+#= {result: 2}
+def second = fn _, b -> b
+second(1, 2)

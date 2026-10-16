@@ -1,0 +1,9 @@
+# Rest patterns against constant targets, which the optimizer may resolve
+# ahead of time, agree with runtime.
+#= {result: [[1, [2, 3]], [1, []], 'short', [[], []]]}
+[
+    match [1, 2, 3] { [a, ...r] => [a, r] },
+    match [1] { [a, ...r] => [a, r] },
+    match [] { [a, ...r] => [a, r], _ => 'short' },
+    match [] { [...r] => [r, r] },
+]

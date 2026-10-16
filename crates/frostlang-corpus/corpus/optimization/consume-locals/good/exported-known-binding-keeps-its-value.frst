@@ -1,0 +1,6 @@
+# An exported binding of a known structure keeps its own value for the export,
+# though the script builds a new structure from it.
+#= {result: [1, 2, 3], exports: {kept: [1, 2]}}
+export def kept = [1, 2]
+def grown = kept + [3]
+grown

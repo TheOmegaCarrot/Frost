@@ -1,0 +1,4 @@
+# A division by zero inside a `transform` callback raises out of the whole
+# call when it reaches the zero element.
+#= {raises: 'division by zero', inputs: {xs: [5, 2, 0, 1]}}
+transform(xs, fn x -> 10 / x)

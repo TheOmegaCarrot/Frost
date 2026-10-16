@@ -1,0 +1,3 @@
+# `if` needs a condition before its colon.
+#= {rejects: 'expected an expression, but found `:`'}
+if: 1

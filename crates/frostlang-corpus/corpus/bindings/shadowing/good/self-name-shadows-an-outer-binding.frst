@@ -1,0 +1,6 @@
+# A named lambda's own name shadows an enclosing binding of that name throughout
+# its body, without changing the enclosing binding.
+#= {result: [true, 'outer']}
+def f = 'outer'
+def g = fn f() -> f
+[g() == g, f]

@@ -1,0 +1,4 @@
+# Functions stored in an Array are called through an index.
+#= {result: [2, 0, 1]}
+def ops = [fn x -> x + 1, fn x -> x - 1, fn x -> x]
+[ops[0](1), ops[1](1), ops[2](1)]

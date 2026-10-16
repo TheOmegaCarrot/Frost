@@ -1,0 +1,6 @@
+# An inner lambda's parameter shadows the outer lambda's parameter of the
+# same name; a lambda nested further sees the nearest one.
+#= {result: [3, 2]}
+def outer = fn x -> fn x -> x
+def deeper = fn x -> fn x -> fn -> x
+[outer(1)(3), deeper(1)(2)()]

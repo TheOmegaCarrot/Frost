@@ -1,0 +1,5 @@
+# A variadic function that recurses on its rest arguments without a base case
+# for the empty list fails its arity check when no arguments are left.
+#= {raises: 'expects at least 1 argument'}
+defn last(x, ...rest) -> call(last, rest)
+last(1, 2, 3)

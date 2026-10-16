@@ -1,0 +1,5 @@
+# `export defn` binds the function in the script's own scope as well as
+# exporting it; calling it there checks arity like any other function.
+#= {raises: ['area', 'expects 2 argument', 'called with 1']}
+export defn area(w, h) -> w * h
+area(3)

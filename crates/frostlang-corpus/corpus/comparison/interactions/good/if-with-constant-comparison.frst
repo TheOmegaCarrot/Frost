@@ -1,0 +1,7 @@
+# An `if` whose condition is a comparison of constants takes the branch that
+# comparison selects, however the optimizer resolves it ahead of time.
+#= {result: ['int-float equal by ordering', 'not ==']}
+[
+    if 3 <= 3.0 and 3 >= 3.0: 'int-float equal by ordering' else: 'unordered',
+    if 3 == 3.0: '==' else: 'not ==',
+]

@@ -1,0 +1,6 @@
+# A merge whose right operand replaces an existing key leaves the base Map
+# with its original value at that key.
+#= {result: [{k: 1, j: 0}, {k: 2, j: 0}], inputs: {v: 1}}
+def m = {k: v, j: 0}
+def n = m + {k: 2}
+[m, n]

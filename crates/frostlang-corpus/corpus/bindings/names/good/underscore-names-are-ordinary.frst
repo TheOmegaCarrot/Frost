@@ -1,0 +1,8 @@
+# Only a lone `_` is a discard. A name that begins with `_`, or is made only of
+# underscores and digits after one, is an ordinary readable name.
+#= {result: [1, 2, 3, 4]}
+def _private = 1
+def __ = 2
+def _1 = 3
+def a_b_ = 4
+[_private, __, _1, a_b_]

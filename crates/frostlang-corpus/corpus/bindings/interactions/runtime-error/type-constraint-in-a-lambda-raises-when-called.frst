@@ -1,0 +1,8 @@
+# A type-constrained `def` inside a lambda is checked each time the lambda
+# runs; a call whose argument fails it raises.
+#= {raises: 'expected an Int', inputs: {s: 'not an int'}}
+def f = fn v -> {
+    def x is Int = v
+    x + 1
+}
+f(1) + f(s)

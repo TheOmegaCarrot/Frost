@@ -1,0 +1,3 @@
+# Trailing commas at every level of a nested structure.
+#= {result: {xs: [[1,], [2, 3,],], m: {k: [4,],},}}
+{xs: [[1,], [2, 3,],], m: {k: [4,],},}

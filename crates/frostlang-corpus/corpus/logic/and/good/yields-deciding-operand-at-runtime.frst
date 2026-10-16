@@ -1,0 +1,16 @@
+# `and` over values known only at runtime yields the same deciding operand as
+# over literals, so the VM's test agrees with what the folder computes.
+#= {
+#=     result: [5, true, null, false, null, false, 'yes', [1, 2]],
+#=     inputs: {t: true, f: false, n: null, five: 5, one: 1, yes: 'yes', pair: [1, 2]},
+#= }
+[
+    t and five,
+    five and t,
+    n and five,
+    f and five,
+    five and n,
+    five and f,
+    one and yes,
+    t and pair,
+]

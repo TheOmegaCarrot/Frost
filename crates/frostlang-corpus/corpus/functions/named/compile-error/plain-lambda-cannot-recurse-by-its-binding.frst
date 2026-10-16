@@ -1,0 +1,6 @@
+# A `def` is not in scope in its own right-hand side, so an unnamed lambda
+# cannot recurse through the name it is being bound to; that is what a
+# self-name (or `defn`) is for.
+#= {rejects: ['`fact`', 'not defined']}
+def fact = fn k -> if k <= 1: 1 else: k * fact(k - 1)
+fact(5)

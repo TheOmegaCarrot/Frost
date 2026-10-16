@@ -1,0 +1,5 @@
+# An error raised by a stage of an `@` pipeline ends the program, after the
+# stages before it have run.
+#= {raises: 'stage two got 2', inputs: {n: 1}}
+defn fail(x) -> error($'stage two got ${x}')
+n @ (fn x -> x + 1)() @ fail()

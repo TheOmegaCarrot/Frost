@@ -1,0 +1,6 @@
+# The first matching branch wins over a literal the optimizer may match ahead
+# of time, even after an earlier branch bound a name and then failed.
+#= {result: [2, 1]}
+def [a, 1] | [1, a] = [1, 2]
+def [b, 1] | [1, b] = [1, 1]
+[a, b]

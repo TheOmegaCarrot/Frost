@@ -1,0 +1,3 @@
+# `true` and `false` are the two Bools, each equal only to itself.
+#= {result: [true, false, 'Bool', 'Bool', false, true]}
+[true, false, type(true), type(false), true == false, false == false]

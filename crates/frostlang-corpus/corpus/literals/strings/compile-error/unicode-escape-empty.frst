@@ -1,0 +1,3 @@
+# A Unicode escape needs at least one hex digit in its braces.
+#= {rejects: R'(invalid `\u` escape)'}
+'\u{}'

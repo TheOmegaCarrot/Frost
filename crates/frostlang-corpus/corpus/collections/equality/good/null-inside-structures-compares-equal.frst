@@ -1,0 +1,4 @@
+# Null elements and Null values compare equal to Null, and a present Null
+# entry differs from a missing one.
+#= {result: [true, true, false, false], inputs: {n: null}}
+[[n] == [null], {a: n} == {a: null}, {a: n} == {}, [n] == []]

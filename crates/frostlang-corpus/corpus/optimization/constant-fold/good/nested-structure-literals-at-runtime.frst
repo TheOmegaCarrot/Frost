@@ -1,0 +1,12 @@
+# The structures of nested-structure-literals, with one leaf only known at
+# runtime at each depth, so that no structure folds whole: the constant parts
+# beside it fold alone, and the result is the same.
+#= {
+#=     result: [2, [4, {k: 0, n: null}], {inner: [[], {}], s: 'ab'}],
+#=     inputs: {one: 1, three: 3, nothing: null, a: 'a'},
+#= }
+[
+    one + 1,
+    [2 * 2, {k: three - 3, n: nothing}],
+    {inner: [[] + [], {} + {}], s: a + 'b'},
+]

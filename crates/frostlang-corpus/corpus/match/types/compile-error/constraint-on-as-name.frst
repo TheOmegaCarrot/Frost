@@ -1,0 +1,6 @@
+# An `as` name takes no type constraint: it always binds a Map.
+#= {rejects: ['expected `=>`', 'found `is`']}
+match {a: 1} {
+    {a} as m is Map => m,
+    _ => 0,
+}

@@ -1,0 +1,13 @@
+# Blank lines before, between, and after statements are ignored.
+#= {result: 3}
+
+
+
+def a = 1
+
+
+def b = 2
+
+a + b
+
+

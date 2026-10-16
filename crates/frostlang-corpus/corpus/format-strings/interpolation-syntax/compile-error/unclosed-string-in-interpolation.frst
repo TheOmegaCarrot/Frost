@@ -1,0 +1,4 @@
+# A String opened inside an interpolation must close there; a String left open
+# is reported as such.
+#= {rejects: ['unclosed String', 'in this interpolation']}
+def s = $'${"a}'

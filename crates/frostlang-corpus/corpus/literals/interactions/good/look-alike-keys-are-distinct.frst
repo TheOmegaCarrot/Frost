@@ -1,0 +1,5 @@
+# Keys that look alike but differ in type are distinct entries: the Int 1, the Float
+# 1.0, and the Bool true; the String 'hi' and the Bytes of its UTF-8.
+#= {result: [5, 'int', 'float', 'bool', 'string', 'bytes']}
+def m = {[1]: 'int', [1.0]: 'float', [true]: 'bool', ['hi']: 'string', [x'6869']: 'bytes'}
+[len(m), m[1], m[1.0], m[true], m['hi'], m[x'6869']]

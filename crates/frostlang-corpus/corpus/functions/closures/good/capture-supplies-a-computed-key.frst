@@ -1,0 +1,9 @@
+# A captured name may be read as a computed Map key, both building a Map and
+# in a destructuring pattern.
+#= {result: [{a: 1}, 7]}
+def make = fn k -> fn v -> ({[k]: v})
+def find = fn k, m -> fn -> {
+    def {[k]: found} = m
+    found
+}
+[make('a')(1), find('b', {b: 7})()]

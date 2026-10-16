@@ -1,0 +1,3 @@
+# A `false` condition known only at runtime takes the alternate.
+#= {result: 'no', inputs: {c: false}}
+if c: 'yes' else: 'no'

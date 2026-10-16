@@ -1,0 +1,4 @@
+# `call` takes at most two arguments; extra ones are not further arguments
+# for the function.
+#= {raises: ['call', 'between 1 and 2', 'called with 3']}
+call(collect, [1], [2])

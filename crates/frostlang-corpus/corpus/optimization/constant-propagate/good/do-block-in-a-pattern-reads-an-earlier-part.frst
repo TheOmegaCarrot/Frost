@@ -1,0 +1,8 @@
+# A pinned `do` block inside a def's pattern may read a part the pattern bound
+# before it, even with a def of its own; it sees the part, not a stale value.
+#= {result: ['c', 3]}
+def {a, x: (do {
+    def [z] = [a]
+    z
+}), [a]: b} = {a: 'c', x: 'c', c: 3}
+[a, b]

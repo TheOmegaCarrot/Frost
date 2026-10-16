@@ -1,0 +1,13 @@
+# `%` is the remainder of truncating division, so its sign follows the
+# dividend (the left operand), never the divisor: -7 % 3 is -1, not 2.
+# Subtle because a flooring modulus would answer differently whenever the
+# signs differ.
+#= {result: [1, -1, 1, -1, 0, 0]}
+[
+    7 % 3,
+    -7 % 3,
+    7 % -3,
+    -7 % -3,
+    -6 % 3,
+    6 % -3,
+]

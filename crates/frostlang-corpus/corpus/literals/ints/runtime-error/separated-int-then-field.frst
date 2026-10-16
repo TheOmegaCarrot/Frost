@@ -1,0 +1,4 @@
+# Separators do not change how a point after an Int reads: a name after it makes
+# `1_000.len` a field access on the Int 1000, not a malformed Float.
+#= {raises: ['cannot index', 'Int']}
+1_000.len

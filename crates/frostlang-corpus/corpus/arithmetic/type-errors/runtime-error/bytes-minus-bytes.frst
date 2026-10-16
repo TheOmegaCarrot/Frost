@@ -1,0 +1,3 @@
+# `-` is numeric only: Bytes minus Bytes is a type error.
+#= {raises: 'Bytes - Bytes'}
+x'0102' - x'02'

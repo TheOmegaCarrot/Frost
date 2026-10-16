@@ -1,0 +1,4 @@
+# To apply an operator to a form's result, parenthesize the form: the
+# appended `[0]` then joins the mapped Array rather than each element.
+#= {result: [[1], [2], 0], inputs: {xs: [[1], [2]]}}
+(map xs with fn x -> x) + [0]

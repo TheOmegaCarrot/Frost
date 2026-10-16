@@ -1,0 +1,5 @@
+# An operator cannot be used as a Function. Inside an abbreviated lambda,
+# the help suggests a `fn` lambda rather than another abbreviated one, which
+# could not be nested there.
+#= {rejects: ['operator as a function', 'fn x -> x + 1']}
+def f = $(call((+ 1), [$]))

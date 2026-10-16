@@ -1,0 +1,11 @@
+# A later part's shape check fails only after an earlier part's key ran.
+#= {result: false, printed: ['a'], inputs: {xs: [{a: 1}, 5]}}
+defn note(k) -> {
+    print(k)
+    k
+}
+def outcome = try_call(fn -> {
+    def [{[note('a')]: x}, [y]] = xs
+    [x, y]
+})
+outcome.ok

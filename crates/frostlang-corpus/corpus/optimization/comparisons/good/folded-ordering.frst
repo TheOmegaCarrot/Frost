@@ -1,0 +1,14 @@
+# Ordering over constants folds to the same answers as at runtime, across Int
+# and Float too, at the ends of the Int range included.
+#= {result: [true, true, false, true, true, true, true, true, false]}
+[
+    1 < 2,
+    2 <= 2,
+    3 > 4,
+    1 < 1.5,
+    2.5 >= 2,
+    'a' < 'b',
+    x'01' < x'02',
+    9223372036854775807 < 9223372036854775807.0,
+    -9223372036854775808 > -9223372036854775808.0,
+]

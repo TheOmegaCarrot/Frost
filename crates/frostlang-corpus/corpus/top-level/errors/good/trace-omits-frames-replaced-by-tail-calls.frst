@@ -1,0 +1,9 @@
+# A tail call replaces its caller's frame, so a function that tail-called
+# onward is gone by the time the error is raised and is not in the trace.
+# Subtle because `outer` and `inner` were both called, but only the native
+# `error` frame remains: tail calls are guaranteed, and a trace shows only the
+# frames that exist.
+#= {result: {ok: false, error: 'deep', trace: ['error']}}
+defn inner() -> error('deep')
+defn outer() -> inner()
+try_call(outer)

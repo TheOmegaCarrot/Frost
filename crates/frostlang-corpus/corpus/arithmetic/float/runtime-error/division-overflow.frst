@@ -1,0 +1,4 @@
+# A Float quotient too large to be finite raises, though the divisor is not
+# zero: dividing by a tiny Float can overflow too.
+#= {raises: 'infinity'}
+1e308 / 1e-10

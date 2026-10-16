@@ -1,0 +1,5 @@
+# A Map destructuring whose format String key is absent from the Map raises,
+# rather than binding Null.
+#= {raises: ['no value at key', 'k2'], inputs: {n: 2, data: {k1: 1}}}
+def {[$'k${n}']: v} = data
+v

@@ -1,0 +1,3 @@
+# `filter` requires `with` between its structure and its predicate.
+#= {rejects: 'expected `with`'}
+filter [1, 2] fn x -> x > 1

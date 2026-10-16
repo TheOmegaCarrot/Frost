@@ -1,0 +1,11 @@
+# true is truthy and false is falsy, whether written as a literal, received at
+# runtime, or computed by a comparison.
+#= {
+#=     result: [[true, false], [true, false], [true, false]],
+#=     inputs: {t: true, f: false, one: 1},
+#= }
+[
+    [not not true, not not false],
+    [not not t, not not f],
+    [not not (one == 1), not not (one == 2)],
+]

@@ -1,0 +1,4 @@
+# Because `foreach` yields its structure, an effect can be slotted into the
+# middle of a computation.
+#= {result: 3, printed: ['1', '2'], inputs: {xs: [1, 2]}}
+reduce (foreach xs with print) with fn acc, x -> acc + x

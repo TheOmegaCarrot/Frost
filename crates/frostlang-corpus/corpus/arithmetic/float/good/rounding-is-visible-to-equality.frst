@@ -1,0 +1,8 @@
+# Float arithmetic rounds in binary, and `==` compares the rounded values
+# exactly: 0.1 + 0.2 is not 0.3, though 0.5 + 0.25 is exactly 0.75.
+#= {result: [false, true, true], inputs: {tenth: 0.1, fifth: 0.2}}
+[
+    tenth + fifth == 0.3,
+    0.5 + 0.25 == 0.75,
+    tenth + fifth == 0.30000000000000004,
+]

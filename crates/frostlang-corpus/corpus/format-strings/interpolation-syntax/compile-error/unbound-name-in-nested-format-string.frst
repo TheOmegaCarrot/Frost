@@ -1,0 +1,3 @@
+# A name in a format String nested in an interpolation is resolved too.
+#= {rejects: ['`nope`', 'not defined']}
+def s = $'a${$"b${nope}"}'

@@ -1,0 +1,6 @@
+# A whole-Map `as` binding is scoped to its arm like any other binding.
+#= {rejects: '`m` is not defined'}
+match {a: 1} {
+    {a} as m => a,
+}
+m

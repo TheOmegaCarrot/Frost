@@ -1,0 +1,4 @@
+# A numbered placeholder such as `$9` cannot be bound by `def`.
+#= {rejects: ['`$9`', 'placeholders work only inside']}
+def $9 = 1
+1

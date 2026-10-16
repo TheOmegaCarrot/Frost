@@ -1,0 +1,7 @@
+# A String never matches a Bytes pattern of the same content, nor Bytes a
+# String pattern: they are different types.
+#= {result: ['String', 'Bytes'], inputs: {s: 'a', b: x'61'}}
+[
+    match s { x'61' => 'Bytes', 'a' => 'String' },
+    match b { 'a' => 'String', x'61' => 'Bytes' },
+]

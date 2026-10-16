@@ -1,0 +1,15 @@
+# Conditions are evaluated once each, in order, until one is truthy; then only
+# that branch runs, and the conditions after it are never evaluated.
+#= {
+#=     result: 'third',
+#=     printed: ['cond 1', 'cond 2', 'cond 3', 'branch 3'],
+#= }
+defn note(label, value) -> {
+    print(label)
+    value
+}
+if note('cond 1', false): note('branch 1', 'first')
+elif note('cond 2', null): note('branch 2', 'second')
+elif note('cond 3', 0): note('branch 3', 'third')
+elif note('cond 4', true): note('branch 4', 'fourth')
+else: note('else', 'fifth')

@@ -1,0 +1,8 @@
+# The last `match` arm may end with a trailing comma, on one line or several.
+#= {result: ['one', 'other'], inputs: {a: 1, b: 2}}
+def first = match a { 1 => 'one', _ => 'other', }
+def second = match b {
+    1 => 'one',
+    _ => 'other',
+}
+[first, second]

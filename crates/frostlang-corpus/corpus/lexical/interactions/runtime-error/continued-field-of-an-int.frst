@@ -1,0 +1,6 @@
+# A chain of continued `.` lines raises at the step that reads a field of an
+# Int, not earlier.
+#= {raises: ['cannot index', 'Int'],inputs: {m: {k: 1}}}
+m
+    .k
+    .j

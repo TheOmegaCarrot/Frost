@@ -1,0 +1,3 @@
+# A Bytes literal holds hex digit pairs, one octet each, in either quote style.
+#= {result: [true, 2, 'Bytes', 1]}
+[x'6869' == x"6869", len(x'6869'), type(x'00'), len(x'ff')]

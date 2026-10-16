@@ -1,0 +1,3 @@
+# `%` is Int-only: it is not String formatting.
+#= {raises: 'String % Array'}
+'%d' % [1]

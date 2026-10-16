@@ -1,0 +1,6 @@
+# A line whose first character, non-ASCII here, sits where indentation is required is
+# indented less than the closer.
+#= {rejects: 'indented less than the closing delimiter'}
+def text = '''
+€x
+  '''

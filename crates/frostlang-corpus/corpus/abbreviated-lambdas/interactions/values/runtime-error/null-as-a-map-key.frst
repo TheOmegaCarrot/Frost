@@ -1,0 +1,5 @@
+# Null is not a valid Map key, so a computed key from a Null argument
+# raises.
+#= {raises: ['Null', 'not a valid Map key'], inputs: {nothing: null}}
+def entry = $({[$1]: $2})
+entry(nothing, 1)

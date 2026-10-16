@@ -1,0 +1,3 @@
+# An error the operation raises propagates out of `foreach`.
+#= {raises: 'boom', inputs: {xs: [1]}}
+foreach xs with fn x -> error('boom')

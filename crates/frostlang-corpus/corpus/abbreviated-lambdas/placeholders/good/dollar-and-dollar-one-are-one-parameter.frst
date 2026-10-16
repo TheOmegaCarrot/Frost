@@ -1,0 +1,5 @@
+# `$` is an alias for `$1`: using both names one parameter, so the lambda
+# takes a single argument rather than two.
+#= {result: 10, inputs: {x: 5}}
+def f = $($ + $1)
+f(x)

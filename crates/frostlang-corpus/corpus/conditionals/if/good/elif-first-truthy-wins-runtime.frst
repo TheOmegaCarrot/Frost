@@ -1,0 +1,22 @@
+# In an `elif` chain over runtime conditions, every combination takes the
+# branch of the first truthy condition, or the `else` when none is.
+#= {
+#=     result: [1, 1, 1, 1, 2, 2, 3, 4],
+#=     inputs: {
+#=         cases: [
+#=             [true, true, true],
+#=             [true, false, true],
+#=             [true, true, false],
+#=             [true, false, false],
+#=             [false, true, true],
+#=             [false, true, false],
+#=             [false, false, true],
+#=             [false, false, false],
+#=         ],
+#=     },
+#= }
+defn pick(a, b, c) -> if a: 1
+    elif b: 2
+    elif c: 3
+    else: 4
+map cases with fn case -> call(pick, case)

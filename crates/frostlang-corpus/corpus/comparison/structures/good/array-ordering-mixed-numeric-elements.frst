@@ -1,0 +1,12 @@
+# Array ordering compares Int and Float elements by value, as the scalar
+# operators do, while Array equality stays strict: `[1] <= [1.0]` and
+# `[1] >= [1.0]` hold, yet `[1] == [1.0]` is false.
+#= {result: [true, false, true, true, false, true]}
+[
+    [1] < [1.5],
+    [1] < [1.0],
+    [1] <= [1.0],
+    [1] >= [1.0],
+    [1] == [1.0],
+    [1, 2.5] < [1.0, 3],
+]

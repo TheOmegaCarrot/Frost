@@ -1,0 +1,4 @@
+# `*` is numeric only: an Array times an Int is a type error, neither
+# repetition nor scaling of each element.
+#= {raises: 'Array * Int'}
+[0] * 3

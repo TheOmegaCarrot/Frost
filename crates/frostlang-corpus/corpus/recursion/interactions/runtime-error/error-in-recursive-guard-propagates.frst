@@ -1,0 +1,10 @@
+# An error raised by a recursive call in a `match` guard propagates out of the
+# `match`. Subtle: a raising guard is not a false guard, so the catch-all arm
+# after it must not run.
+#= {raises: 'guard bottom'}
+defn f(n) -> match n {
+    0 => error('guard bottom'),
+    m if: f(m - 1) => 'guarded',
+    _ => 'fallback',
+}
+f(3)

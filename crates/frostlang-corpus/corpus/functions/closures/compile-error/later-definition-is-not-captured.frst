@@ -1,0 +1,6 @@
+# A lambda cannot read a name defined after it: a name is bound only from its
+# definition on, even for a body that runs later.
+#= {rejects: ['`later`', 'not defined']}
+def f = fn -> later
+def later = 5
+f()

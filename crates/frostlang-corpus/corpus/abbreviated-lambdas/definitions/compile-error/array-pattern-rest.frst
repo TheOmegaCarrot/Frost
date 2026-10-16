@@ -1,0 +1,7 @@
+# A placeholder cannot name the rest of an Array destructuring pattern, even
+# inside an abbreviated lambda.
+#= {rejects: ['a name after `...`', 'found `$$`']}
+def f = $(do {
+    def [a, ...$$] = $
+    a
+})

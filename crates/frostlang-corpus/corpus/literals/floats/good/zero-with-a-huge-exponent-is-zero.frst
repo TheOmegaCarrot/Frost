@@ -1,0 +1,4 @@
+# An exponent far past the Float range is no error when the value is zero, or so
+# small it rounds to zero: only a value that rounds to Infinity is rejected.
+#= {result: [0.0, 0.0, 0.0, 0.0, 'Float']}
+[0e400, 0.0e99999, 0e-400, 1e-99999999999999999999, type(0e400)]

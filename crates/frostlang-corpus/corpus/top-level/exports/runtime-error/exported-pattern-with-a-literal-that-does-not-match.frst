@@ -1,0 +1,4 @@
+# An exported pattern's literal part must equal the value there; a different
+# value raises.
+#= {raises: 'expected `2`', inputs: {pair: [1, 3]}}
+export def [a, 2] = pair

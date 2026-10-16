@@ -1,0 +1,4 @@
+# A backslash at the end of the input escapes nothing: the format String is
+# left unclosed.
+#= {rejects: 'unclosed format String'}
+def s = $'a\

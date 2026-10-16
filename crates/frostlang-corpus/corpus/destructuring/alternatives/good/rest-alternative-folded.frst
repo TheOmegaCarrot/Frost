@@ -1,0 +1,6 @@
+# An alternative with a rest, over literals the optimizer may match ahead of
+# time, picking a different branch for each.
+#= {result: [[1, [2, 3]], [4, 5]]}
+def [a, ...r] | {a, r} = [1, 2, 3]
+def [b, ...s] | {a: b, r: s} = {a: 4, r: 5}
+[[a, r], [b, s]]

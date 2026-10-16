@@ -1,0 +1,10 @@
+# An `if` whose condition is a logical expression over constants takes the
+# branch that the condition's truthiness selects. The optimizer may decide it
+# ahead of time; the branch not taken, which would raise, never runs.
+#= {result: ['then', 'else', 'then', 'else']}
+[
+    if 0 or false: 'then' else: error('took else'),
+    if null and true: error('took then') else: 'else',
+    if not null: 'then' else: error('took else'),
+    if not (1 and ''): error('took then') else: 'else',
+]

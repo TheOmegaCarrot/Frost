@@ -1,0 +1,4 @@
+# An `as` name counts among a branch's bindings.
+#= {rejects: 'every alternative must bind the same names'}
+def {a} as m | {a} = {a: 1}
+a

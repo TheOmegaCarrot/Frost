@@ -1,0 +1,6 @@
+# Every name an exported destructure of a known value binds is exported, though
+# nothing in the script reads them.
+#= {result: 'ok', exports: {a: 1, b: [2, 3], c: 'c'}}
+export def [a, ...b] = [1, 2, 3]
+export def {c} = {c: 'c'}
+'ok'

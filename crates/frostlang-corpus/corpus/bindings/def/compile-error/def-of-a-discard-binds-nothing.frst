@@ -1,0 +1,4 @@
+# `def _ = value` binds no name, which is an error: a `def` exists to bind.
+#= {rejects: ['binds no name']}
+def _ = 5
+1

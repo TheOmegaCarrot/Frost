@@ -1,0 +1,5 @@
+# The function of a `map` expression may thread inside its body.
+#= {result: [4, 6, 8], inputs: {xs: [1, 2, 3]}}
+defn inc(x) -> x + 1
+defn double(x) -> x * 2
+map xs with fn x -> x @ inc() @ double()

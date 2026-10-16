@@ -1,0 +1,4 @@
+# An abbreviated lambda needs no parentheses to be threaded into: `$` (or
+# `$1`) is the threaded value and `$2` the first written argument.
+#= {result: [10, 2, 2]}
+[5 @ $($ * 2)(), 5 @ $($1 - $2)(3), 5 @ $($2 - $1)(7)]

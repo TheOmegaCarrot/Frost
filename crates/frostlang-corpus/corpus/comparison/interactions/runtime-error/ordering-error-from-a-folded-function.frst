@@ -1,0 +1,5 @@
+# A comparison that would raise inside a function called with constant
+# arguments still raises at runtime: the optimizer cannot evaluate it away.
+#= {raises: ['incompatible types', 'Int', 'String']}
+defn less(a, b) -> a < b
+less(1, 'one')

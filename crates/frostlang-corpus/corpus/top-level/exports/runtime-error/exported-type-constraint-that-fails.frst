@@ -1,0 +1,3 @@
+# An exported `def` whose value fails its type constraint raises.
+#= {raises: 'expected an Int'}
+export def n is Int = 'not an Int'

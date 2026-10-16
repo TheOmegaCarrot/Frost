@@ -1,0 +1,3 @@
+# An unclosed block is an error at the end of input.
+#= {rejects: ['expected `}`', 'end of input']}
+do { 42

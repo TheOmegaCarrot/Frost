@@ -1,0 +1,8 @@
+# Bool and Int keys known only at runtime stay distinct: `true` does not find
+# the key `1`, nor `false` the key `0`.
+#= {
+#=     result: [4, 'true', 'one', 'false', 'zero', null, null],
+#=     inputs: {t: true, f: false, one: 1, zero: 0},
+#= }
+def m = {[t]: 'true', [one]: 'one', [f]: 'false', [zero]: 'zero'}
+[len(m), m[t], m[one], m[f], m[zero], {[one]: 'x'}[t], {[t]: 'x'}[one]]

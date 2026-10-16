@@ -1,0 +1,5 @@
+# A threaded call with no arguments written takes no comma: the value `@`
+# threads in is not written in the list, so no item precedes the comma.
+# Subtle, since the call does receive one argument.
+#= {rejects: 'found `,`', inputs: {xs: [1]}}
+xs @ len(,)

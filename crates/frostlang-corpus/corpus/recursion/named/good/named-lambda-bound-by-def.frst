@@ -1,0 +1,5 @@
+# A named lambda bound with `def` recurses through its self-name, which here
+# matches the binding's name.
+#= {result: 720}
+def fact = fn fact(n) -> if n <= 1: 1 else: n * fact(n - 1)
+fact(6)

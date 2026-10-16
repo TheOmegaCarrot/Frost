@@ -1,0 +1,6 @@
+# `0.0` and `-0.0` in one literal are a repeated key: the Map holds one
+# entry, with the later value.
+#= {result: [1, 'second', 1, 'second'], inputs: {nz: -0.0}}
+def folded = {[0.0]: 'first', [-0.0]: 'second'}
+def runtime = {[0.0]: 'first', [nz]: 'second'}
+[len(folded), folded[0.0], len(runtime), runtime[0.0]]

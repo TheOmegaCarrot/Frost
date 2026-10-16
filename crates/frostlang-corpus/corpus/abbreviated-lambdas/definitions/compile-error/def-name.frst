@@ -1,0 +1,3 @@
+# A placeholder cannot be defined: `def $1 = ...` is rejected.
+#= {rejects: ['expected a pattern', 'found `$1`']}
+def $1 = 2

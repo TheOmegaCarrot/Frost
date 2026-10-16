@@ -1,0 +1,8 @@
+# A lambda captures a name bound by an alternative, reading the value of
+# whichever branch matched.
+#= {result: [10, 20]}
+defn adder(spec) -> {
+    def {by} | [by] = spec
+    fn x -> x + by
+}
+[adder({by: 9})(1), adder([10])(10)]

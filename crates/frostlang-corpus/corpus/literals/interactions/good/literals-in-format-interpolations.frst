@@ -1,0 +1,3 @@
+# Literals of every spelling interpolate as their values, not their source text.
+#= {result: '16 1000 0.5 true null é ${x}'}
+$'${0x10} ${1_000} ${5e-1} ${true} ${null} ${'\u{e9}'} ${R'(${x})'}'

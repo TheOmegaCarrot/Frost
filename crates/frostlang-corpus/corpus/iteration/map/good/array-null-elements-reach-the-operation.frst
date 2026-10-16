@@ -1,0 +1,4 @@
+# Null elements of an Array are passed to the operation like any other
+# element, not skipped.
+#= {result: [[true, false, true], [true, false, true]], inputs: {xs: [null, 1, null]}}
+[map [null, 1, null] with is_null, map xs with is_null]

@@ -1,0 +1,4 @@
+# An unbraced body is a single expression, so a definition cannot be one; a
+# body with statements goes in braces.
+#= {rejects: ['expected an expression', '`def`']}
+def f = fn -> def x = 1

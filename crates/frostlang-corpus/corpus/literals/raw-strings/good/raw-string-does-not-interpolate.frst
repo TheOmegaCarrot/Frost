@@ -1,0 +1,5 @@
+# A raw String never interpolates: `${...}` in it is text, even when the name in it
+# is bound.
+#= {result: ['${x}', 4]}
+def x = 1
+[R'(${x})', len(R'(${x})')]

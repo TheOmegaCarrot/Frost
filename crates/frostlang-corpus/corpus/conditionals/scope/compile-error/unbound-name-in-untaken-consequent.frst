@@ -1,0 +1,4 @@
+# An unbound name is a compile error even in a consequent a constant `false`
+# condition skips.
+#= {rejects: ['`nope`', 'not defined']}
+if false: nope else: 1

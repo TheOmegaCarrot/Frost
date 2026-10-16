@@ -1,0 +1,4 @@
+# `%` is numeric only: a String modulo an Int is a type error, not printf-style
+# formatting. Frost formats with `$'...'` strings.
+#= {raises: 'String % Int'}
+'%d' % 5

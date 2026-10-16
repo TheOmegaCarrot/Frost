@@ -1,0 +1,9 @@
+# A braced body is a block: its definitions are local, and its last
+# expression is the result.
+#= {result: 25, inputs: {n: 4}}
+def f = fn x -> {
+    def y = x + 1
+    def z = y * y
+    z
+}
+f(n)

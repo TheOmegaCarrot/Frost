@@ -1,0 +1,5 @@
+# `=` appears only in a `def`; Frost has no reassignment of an existing name.
+#= {rejects: ['`=`', 'immutable']}
+def x = 1
+x = 2
+x

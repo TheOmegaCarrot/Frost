@@ -1,0 +1,22 @@
+# `not` is true for exactly Null and false, and false for every other value of
+# every type, however "empty" or "zero" it looks.
+#= {
+#=     result: [
+#=         true, true,
+#=         false, false, false, false, false, false, false, false, false, false,
+#=     ],
+#= }
+[
+    not null,
+    not false,
+    not true,
+    not 0,
+    not 0.0,
+    not '',
+    not x'',
+    not [],
+    not {},
+    not len,
+    not (fn -> null),
+    not $(false),
+]

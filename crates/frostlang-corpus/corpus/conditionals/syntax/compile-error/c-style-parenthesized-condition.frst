@@ -1,0 +1,4 @@
+# Parentheses around a condition do not replace its colon.
+#= {rejects: ['expected `:`', '`if` takes a colon']}
+def x = true
+if (x) 1

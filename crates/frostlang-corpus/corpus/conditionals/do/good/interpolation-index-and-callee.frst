@@ -1,0 +1,8 @@
+# A block may be a format String's interpolation, an index, and, in
+# parentheses, a callee.
+#= {result: ['<2>', 'b', 6], inputs: {xs: ['a', 'b']}}
+[
+    $'<${do { def n = 1; n + 1 }}>',
+    xs[do { def i = 1; i }],
+    (do { def k = 3; fn n -> n * k })(2),
+]

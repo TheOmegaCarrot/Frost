@@ -1,0 +1,5 @@
+# A function receives itself as a parameter and tail-calls that parameter,
+# passing it on as an argument too: the same local is both callee and argument.
+#= {result: 'done'}
+defn spin(n, self) -> if n == 0: 'done' else: self(n - 1, self)
+spin(100000, spin)

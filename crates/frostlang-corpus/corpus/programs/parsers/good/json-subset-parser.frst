@@ -1,0 +1,121 @@
+# A parser for a JSON subset over character Arrays, producing Frost values:
+# Arrays, Maps with String keys, Ints (with a leading minus), Strings, true,
+# false, and null. One function parses a value; its local helpers for Array
+# elements and Map members call back into it by its own name. A repeated
+# key keeps its last value, and malformed input raises errors that
+# `try_call` reports.
+#= {
+#=     result: [
+#=         [1, [2, -3], {a: null, b: true}, 'hi', []],
+#=         {x: {y: {}}, z: false},
+#=         42,
+#=         '日本',
+#=         {k: 2},
+#=         'expected , or ]',
+#=         'unknown word nope',
+#=         'expected :',
+#=     ],
+#=     inputs: {
+#=         sources: [
+#=             ['[', '1', ',', ' ', '[', '2', ',', ' ', '-', '3', ']', ',', ' ', '{', '"', 'a', '"', ':', ' ', 'n', 'u', 'l', 'l', ',', ' ', '"', 'b', '"', ':', ' ', 't', 'r', 'u', 'e', '}', ',', ' ', '"', 'h', 'i', '"', ',', ' ', '[', ']', ']'],
+#=             ['{', '"', 'x', '"', ':', ' ', '{', '"', 'y', '"', ':', ' ', '{', '}', '}', ',', ' ', '"', 'z', '"', ':', ' ', 'f', 'a', 'l', 's', 'e', '}'],
+#=             [' ', '4', '2', ' '],
+#=             ['"', '日', '本', '"'],
+#=             ['{', '"', 'k', '"', ':', ' ', '1', ',', ' ', '"', 'k', '"', ':', ' ', '2', '}'],
+#=             ['[', '1', ' ', '2', ']'],
+#=             ['[', 'n', 'o', 'p', 'e', ']'],
+#=             ['{', '"', 'a', '"', ' ', '1', '}'],
+#=         ],
+#=     },
+#= }
+def digits = {
+    ['0']: 0, ['1']: 1, ['2']: 2, ['3']: 3, ['4']: 4,
+    ['5']: 5, ['6']: 6, ['7']: 7, ['8']: 8, ['9']: 9,
+}
+
+defn skip(cs) -> match cs {
+    [' ', ...rest] => skip(rest),
+    _ => cs,
+}
+
+defn read_string(cs, text) -> match cs {
+    ['"', ...rest] => [text, rest],
+    [c, ...rest] => read_string(rest, text + c),
+    [] => error('unterminated string'),
+}
+
+defn read_word(cs, word) -> match cs {
+    [c, ...rest] if: c >= 'a' and c <= 'z' => read_word(rest, word + c),
+    _ => [word, cs],
+}
+
+defn read_int(cs, n) -> match cs {
+    [c, ...rest] if: has(digits, c) => read_int(rest, n * 10 + digits[c]),
+    _ => [n, cs],
+}
+
+defn parse_value(input) -> {
+    defn elements(cs, acc) -> match skip(cs) {
+        [']', ...rest] => [acc, rest],
+        more => do {
+            def [v, after] = parse_value(more)
+            match skip(after) {
+                [',', ...rest] => elements(rest, acc + [v]),
+                [']', ...rest] => [acc + [v], rest],
+                _ => error('expected , or ]'),
+            }
+        },
+    }
+
+    defn members(cs, acc) -> match skip(cs) {
+        ['}', ...rest] => [acc, rest],
+        ['"', ...rest] => do {
+            def [key, after_key] = read_string(rest, '')
+            match skip(after_key) {
+                [':', ...after_colon] => do {
+                    def [v, after] = parse_value(after_colon)
+                    def grown = acc + {[key]: v}
+                    match skip(after) {
+                        [',', ...more] => members(more, grown),
+                        ['}', ...more] => [grown, more],
+                        _ => error('expected , or }'),
+                    }
+                },
+                _ => error('expected :'),
+            }
+        },
+        _ => error('expected a key'),
+    }
+
+    def cs = skip(input)
+    match cs {
+        ['[', ...rest] => elements(rest, []),
+        ['{', ...rest] => members(rest, {}),
+        ['"', ...rest] => read_string(rest, ''),
+        ['-', ...rest] => do {
+            def [n, after] = read_int(rest, 0)
+            [-n, after]
+        },
+        [c, ..._] if: has(digits, c) => read_int(cs, 0),
+        [c, ..._] if: c >= 'a' and c <= 'z' => do {
+            def [word, after] = read_word(cs, '')
+            match word {
+                'true' => [true, after],
+                'false' => [false, after],
+                'null' => [null, after],
+                _ => error($'unknown word ${word}'),
+            }
+        },
+        _ => error('unexpected input'),
+    }
+}
+
+defn parse(chars) -> match parse_value(chars) {
+    [value, rest] if: skip(rest) == [] => value,
+    _ => error('trailing input'),
+}
+
+transform(sources, fn chars -> {
+    def outcome = try_call(parse, [chars])
+    if outcome.ok: outcome.value else: outcome.error
+})

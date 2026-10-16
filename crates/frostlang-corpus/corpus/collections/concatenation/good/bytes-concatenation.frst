@@ -1,0 +1,3 @@
+# `+` joins Bytes, with the empty Bytes as identity on either side.
+#= {result: [x'0102ff', x'01', x'ff', x'']}
+[x'01' + x'02ff', x'01' + x'', x'' + x'ff', x'' + x'']

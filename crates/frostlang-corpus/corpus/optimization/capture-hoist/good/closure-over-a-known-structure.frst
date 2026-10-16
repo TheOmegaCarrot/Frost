@@ -1,0 +1,12 @@
+# A function that builds a new structure from a captured known one returns a
+# fresh result on each call: no call sees another's update, and the captured
+# value stays unchanged.
+#= {
+#=     result: [[1, 2, 3], [1, 2, 4], [1, 2], {a: 1, b: 3}, {a: 1, b: 4}, {a: 1}],
+#=     inputs: {three: 3, four: 4},
+#= }
+def base = [1, 2]
+def grow = fn x -> base + [x]
+def m = {a: 1}
+def extend = fn x -> m + {b: x}
+[grow(three), grow(four), base, extend(three), extend(four), m]

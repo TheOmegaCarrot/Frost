@@ -1,0 +1,4 @@
+# A computed key may read only parts bound before it, not after.
+#= {rejects: '`b` is not defined'}
+def {[b]: a, b} = {}
+a

@@ -1,0 +1,5 @@
+# A range test as a condition cannot chain comparisons: `0 < a < 2` is an
+# error, written `0 < a and a < 2` instead.
+#= {rejects: 'cannot chain'}
+def a = 1
+if 0 < a < 2: 'in range' else: 'out of range'

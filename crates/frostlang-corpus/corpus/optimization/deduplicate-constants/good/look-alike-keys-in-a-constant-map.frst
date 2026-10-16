@@ -1,0 +1,6 @@
+# A constant Map whose keys look alike but differ in type holds each as its own
+# entry, and reading it by each key gives that key's entry.
+#= {result: [5, ['string', 'bytes', 'int', 'float', 'bool']]}
+def m = {a: 'string', [x'61']: 'bytes', [1]: 'int', [1.0]: 'float', [true]: 'bool'}
+def {a, [x'61']: b, [1]: c, [1.0]: d, [true]: e} = m
+[len(m), [a, b, c, d, e]]

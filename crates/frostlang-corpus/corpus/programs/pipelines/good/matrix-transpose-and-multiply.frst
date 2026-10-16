@@ -1,0 +1,33 @@
+# Matrices as Arrays of rows: transpose by indexing each row at a column,
+# and multiply by dotting every row of the first with every column of the
+# second. Indexes come from a recursive range, since a matrix has no loop.
+#= {
+#=     result: {
+#=         product: [[58, 64], [139, 154]],
+#=         transposed: [[1, 4], [2, 5], [3, 6]],
+#=         identity: [[1, 2, 3], [4, 5, 6]],
+#=         floats: [[0.5, 1.0]],
+#=     },
+#=     inputs: {
+#=         a: [[1, 2, 3], [4, 5, 6]],
+#=         b: [[7, 8], [9, 10], [11, 12]],
+#=         eye: [[1, 0, 0], [0, 1, 0], [0, 0, 1]],
+#=     },
+#= }
+defn upto(n) -> if n == 0: [] else: upto(n - 1) + [n - 1]
+
+defn transpose(m) -> transform(upto(len(m[0])), fn j -> transform(m, fn row -> row[j]))
+
+defn dot(xs, ys) -> fold(upto(len(xs)), 0, fn total, i -> total + xs[i] * ys[i])
+
+defn multiply(m, n) -> {
+    def columns = transpose(n)
+    transform(m, fn row -> transform(columns, fn column -> dot(row, column)))
+}
+
+{
+    product: multiply(a, b),
+    transposed: transpose(a),
+    identity: multiply(a, eye),
+    floats: multiply([[0.5]], [[1, 2.0]]),
+}

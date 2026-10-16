@@ -1,0 +1,8 @@
+# An `else` branch may itself be an `if`, written `else: if`; it chooses like
+# an `elif` would.
+#= {
+#=     result: [1, 2, 3],
+#=     inputs: {cases: [[true, false], [false, true], [false, false]]},
+#= }
+defn pick(a, b) -> if a: 1 else: if b: 2 else: 3
+map cases with fn case -> call(pick, case)

@@ -1,0 +1,6 @@
+# A condition cannot continue across a line break after an operator unless
+# it is parenthesized.
+#= {rejects: ['found a line break', 'wrap the expression in parentheses']}
+def a = true
+if a and
+    a: 1

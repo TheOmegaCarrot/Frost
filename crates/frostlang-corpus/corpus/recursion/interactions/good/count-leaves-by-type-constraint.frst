@@ -1,0 +1,12 @@
+# A recursive walk that classifies each leaf with `is` type constraints, Null
+# included, accumulating counts in a Map.
+#= {result: {nulls: 2, numbers: 3, texts: 2, other: 1}}
+defn classify(t, acc) -> match t {
+    [] => acc,
+    [head, ...tail] => classify(tail, classify(head, acc)),
+    _ is Null => acc + {nulls: acc.nulls + 1},
+    _ is Numeric => acc + {numbers: acc.numbers + 1},
+    _ is String => acc + {texts: acc.texts + 1},
+    _ => acc + {other: acc.other + 1},
+}
+classify([1, [null, 'a', [2.5]], [], [[null]], 'é', x'00', -3], {nulls: 0, numbers: 0, texts: 0, other: 0})

@@ -1,0 +1,7 @@
+# Exports and the tail are independent parts of a program's outcome: exports
+# may come between expression statements, and the last statement is the tail.
+#= {result: 'end', exports: {a: 1, b: 2}}
+export def a = 1
+'middle'
+export def b = 2
+'end'

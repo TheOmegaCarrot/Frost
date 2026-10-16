@@ -1,0 +1,10 @@
+# When the operation's results collide on a key, the entry visited later wins,
+# whether the optimizer computes the `map` ahead of time or it runs on a
+# runtime Map. Subtle: entries are visited in key order, not in the order the
+# literal wrote them, so `b` beats `a` although `a` is written last.
+#= {
+#=     result: [{dup: 'from b'}, {dup: 'from b'}],
+#=     inputs: {m: {b: 'from b', a: 'from a'}},
+#= }
+def to_dup = fn k, v -> {dup: v}
+[map {b: 'from b', a: 'from a'} with to_dup, map m with to_dup]

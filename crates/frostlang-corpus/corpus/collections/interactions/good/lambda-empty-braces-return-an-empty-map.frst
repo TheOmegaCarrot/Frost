@@ -1,0 +1,7 @@
+# `fn -> {}` returns an empty Map: an empty block would have no value, so
+# braces with nothing inside are a Map literal.
+#= {result: [{}, {}]}
+def thunk = fn -> {}
+def spaced = fn -> {
+}
+[thunk(), spaced()]

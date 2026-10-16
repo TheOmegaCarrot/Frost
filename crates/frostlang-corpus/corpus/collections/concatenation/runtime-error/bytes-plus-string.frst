@@ -1,0 +1,3 @@
+# `+` never mixes Bytes and String, not even when both are empty.
+#= {raises: ['Cannot add', 'Bytes + String']}
+x'' + ''

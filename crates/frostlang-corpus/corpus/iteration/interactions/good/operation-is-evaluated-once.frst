@@ -1,0 +1,14 @@
+# The operation expression is evaluated once, before iterating, not once per
+# element: its result is the function that is then called per element.
+#= {
+#=     result: [1, 2, 3],
+#=     printed: ['building', 'call', 'call', 'call'],
+#=     inputs: {xs: [1, 2, 3]},
+#= }
+map xs with do {
+    print('building')
+    fn x -> {
+        print('call')
+        x
+    }
+}

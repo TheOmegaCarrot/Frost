@@ -1,0 +1,7 @@
+# A parenthesized value that raises, once matching reaches it, raises out of
+# the match rather than counting as a mismatch.
+#= {raises: 'division by zero', inputs: {v: 1, zero: 0}}
+match v {
+    (1 / zero) => 'never',
+    _ => 'fallback',
+}

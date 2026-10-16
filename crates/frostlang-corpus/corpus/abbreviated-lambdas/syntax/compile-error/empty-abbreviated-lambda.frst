@@ -1,0 +1,4 @@
+# An abbreviated lambda must wrap an expression; `$()` is not a thunk
+# returning Null.
+#= {rejects: ['expected an expression', 'found `)`']}
+def f = $()

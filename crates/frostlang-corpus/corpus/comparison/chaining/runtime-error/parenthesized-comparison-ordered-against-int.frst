@@ -1,0 +1,4 @@
+# Parentheses make `(1 < 2) < 3` legal syntax, but it orders the Bool `true`
+# against an Int, which raises: it is not a range test.
+#= {raises: ['incompatible types', 'Bool', 'Int']}
+(1 < 2) < 3

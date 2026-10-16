@@ -1,0 +1,11 @@
+# A `try_call` made in tail position replaces its caller's frame, but still
+# catches errors from the function it calls. Subtle because the catch must
+# belong to the `try_call`, not to the frame the tail call replaced.
+#= {result: [{ok: true, value: 1}, 'x', 'y'], inputs: {payload: 'y'}}
+defn safely(f) -> try_call(f)
+defn safely_with(f, args) -> try_call(f, args)
+[
+    safely(fn -> 1),
+    safely(fn -> error('x')).error,
+    safely_with(error, [payload]).error,
+]

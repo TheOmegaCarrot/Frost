@@ -1,0 +1,19 @@
+# Popping a stack object returns a pair, or Null once it is empty; a program
+# that destructures every pop as a pair raises at the first empty pop
+# instead of binding Nulls.
+#= {
+#=     raises: 'expected an Array',
+#=     inputs: {items: ['a']},
+#= }
+defn stack(xs) -> {
+    push: fn x -> stack([x] + xs),
+    pop: fn -> match xs {
+        [] => null,
+        [top, ...rest] => [top, stack(rest)],
+    },
+}
+
+def full = fold(items, stack([]), fn s, x -> s.push(x))
+def [first, rest] = full.pop()
+def [second, empty] = rest.pop()
+[first, second]

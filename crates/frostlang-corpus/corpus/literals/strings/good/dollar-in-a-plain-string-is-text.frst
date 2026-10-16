@@ -1,0 +1,4 @@
+# Only a format String interpolates: in a plain String, `$` and `${...}` are text,
+# and need no escape.
+#= {result: [4, 1, true]}
+[len('${x}'), len("$"), '${x}' == "$" + "{x}"]

@@ -1,0 +1,4 @@
+# Frost has no bitwise operators, so a single `&` between operands is not an
+# operator either; logical "and" is the keyword `and`.
+#= {rejects: ['`&`', 'bitwise']}
+true & false

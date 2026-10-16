@@ -1,0 +1,4 @@
+# An `if` with no `else` as the last statement gives a null tail when its
+# condition is false: the missing branch is null.
+#= {result: null, inputs: {no: false}}
+if no: 'taken'

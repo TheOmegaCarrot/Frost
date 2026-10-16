@@ -1,0 +1,13 @@
+# Every key type reaches the operation as a value of that type, and may be
+# returned as a key again.
+#= {
+#=     result: {
+#=         [true]: 'Bool',
+#=         [2]: 'Int',
+#=         [3.5]: 'Float',
+#=         s: 'String',
+#=         [x'ff']: 'Bytes',
+#=     },
+#=     inputs: {m: {[true]: 1, [2]: 2, [3.5]: 3, s: 4, [x'ff']: 5}},
+#= }
+map m with fn k, v -> {[k]: type(k)}

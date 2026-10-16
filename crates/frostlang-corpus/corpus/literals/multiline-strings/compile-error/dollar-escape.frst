@@ -1,0 +1,5 @@
+# A multiline String does not interpolate, so `$` needs no backslash.
+#= {rejects: ['invalid escape sequence', R'(`\$`)', 'needs no backslash outside a format String']}
+def text = """
+    costs \$5
+    """

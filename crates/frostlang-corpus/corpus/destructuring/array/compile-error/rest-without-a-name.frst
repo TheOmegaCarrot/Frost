@@ -1,0 +1,4 @@
+# `...` must be followed by a name or `_`.
+#= {rejects: 'name after `...`'}
+def [a, ...] = [1, 2]
+a

@@ -1,0 +1,4 @@
+# `call` bound to another name behaves as `call` does.
+#= {result: [42, 'none']}
+def apply = call
+[apply(fn x -> x * 2, [21]), apply(fn -> 'none')]

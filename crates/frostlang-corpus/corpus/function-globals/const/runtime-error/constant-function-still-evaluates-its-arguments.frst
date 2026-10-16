@@ -1,0 +1,4 @@
+# The constant function ignores its arguments, but they are evaluated before
+# the call all the same, so an error in one is raised.
+#= {raises: 'evaluated'}
+const(1)(error('evaluated'))

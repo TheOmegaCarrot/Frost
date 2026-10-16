@@ -1,0 +1,6 @@
+# A lambda parameter shadows an enclosing binding of the same name inside the
+# lambda only.
+#= {result: [2, 1]}
+def x = 1
+def f = fn x -> x
+[f(2), x]

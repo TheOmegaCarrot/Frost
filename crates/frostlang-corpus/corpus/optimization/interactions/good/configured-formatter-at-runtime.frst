@@ -1,0 +1,5 @@
+# The formatter of configured-formatter, configured and fed by values only
+# known at runtime, builds the same text.
+#= {result: ['> a', '> b', '> é'], inputs: {prefix: '>', verbose: false, items: ['a', 'b', 'é']}}
+defn render(item) -> if verbose: $'${prefix} ${item} (verbose)' else: $'${prefix} ${item}'
+map items with render

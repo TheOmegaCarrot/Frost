@@ -1,0 +1,70 @@
+# The recursive-descent arithmetic parser raises String errors for malformed
+# input from whichever rule notices, however deep; `try_call` turns each into
+# a report. A valid source in the same batch still evaluates.
+#= {
+#=     result: ['expected )', 'expected a number', 'unexpected )', 'expected a number', 'ok: 4'],
+#=     inputs: {
+#=         sources: [
+#=             ['(', '1', '+', '2'],
+#=             ['1', '+'],
+#=             ['1', ')'],
+#=             [],
+#=             ['(', '(', '4', ')', ')'],
+#=         ],
+#=     },
+#= }
+def digits = {
+    ['0']: 0, ['1']: 1, ['2']: 2, ['3']: 3, ['4']: 4,
+    ['5']: 5, ['6']: 6, ['7']: 7, ['8']: 8, ['9']: 9,
+}
+
+defn contains(xs, x) -> fold(xs, false, fn found, y -> found or y == x)
+
+defn apply(op, a, b) -> match op {
+    '+' => a + b,
+    '-' => a - b,
+    '*' => a * b,
+    '/' => a / b,
+}
+
+defn number(chars) -> {
+    defn more(value, rest, count) -> match rest {
+        [c, ...after] if: has(digits, c) => more(value * 10 + digits[c], after, count + 1),
+        _ => if count == 0: error('expected a number') else: [value, rest],
+    }
+    more(0, chars, 0)
+}
+
+defn chain(parse, operand, ops, chars) -> {
+    defn more(left, rest) -> match rest {
+        [op, ...after] if: contains(ops, op) => do {
+            def [right, remaining] = parse(operand, after)
+            more(apply(op, left, right), remaining)
+        },
+        _ => [left, rest],
+    }
+    def [first, rest] = parse(operand, chars)
+    more(first, rest)
+}
+
+defn parse(rule, chars) -> match rule {
+    'expr' => chain(parse, 'term', ['+', '-'], chars),
+    'term' => chain(parse, 'factor', ['*', '/'], chars),
+    'factor' => match chars {
+        ['(', ...rest] => match parse('expr', rest) {
+            [value, [')', ...after]] => [value, after],
+            _ => error('expected )'),
+        },
+        _ => number(chars),
+    },
+}
+
+defn calculate(chars) -> match parse('expr', chars) {
+    [value, []] => value,
+    [_, [next, ..._]] => error($'unexpected ${next}'),
+}
+
+transform(sources, fn chars -> {
+    def outcome = try_call(calculate, [chars])
+    if outcome.ok: $'ok: ${outcome.value}' else: outcome.error
+})

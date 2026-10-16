@@ -1,0 +1,5 @@
+# An `export def` may not rebind a name a plain top-level `def` already bound:
+# exporting is not a way to redefine a private binding.
+#= {rejects: '`x` is already bound'}
+def x = 1
+export def x = 2

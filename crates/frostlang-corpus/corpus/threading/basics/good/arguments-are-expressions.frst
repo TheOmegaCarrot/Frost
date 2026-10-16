@@ -1,0 +1,6 @@
+# The written arguments of a threaded call are full expressions.
+#= {result: [0, 3, 'yes', 6], inputs: {zero: 0, flag: true}}
+zero @ collect(1 + 2, if flag: 'yes' else: 'no', do {
+    def y = 6
+    y
+})

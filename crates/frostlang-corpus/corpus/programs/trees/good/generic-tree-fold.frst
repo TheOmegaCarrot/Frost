@@ -1,0 +1,46 @@
+# One generic fold over a rose tree (a label and an Array of children)
+# answers several questions, each given as a function combining a label with
+# its children's results: the size, the depth, the leaves, and a rendering.
+# A Null label is a label like any other.
+#= {
+#=     result: {
+#=         size: 8,
+#=         depth: 3,
+#=         leaves: ['b', null, 'c', 'é', '日'],
+#=         rendered: 'root(a(b, null), c, d(é, 日))',
+#=         single: [1, 1, ['only'], 'only'],
+#=     },
+#=     inputs: {
+#=         tree: {label: 'root', children: [
+#=             {label: 'a', children: [
+#=                 {label: 'b', children: []},
+#=                 {label: null, children: []},
+#=             ]},
+#=             {label: 'c', children: []},
+#=             {label: 'd', children: [
+#=                 {label: 'é', children: []},
+#=                 {label: '日', children: []},
+#=             ]},
+#=         ]},
+#=         leaf: {label: 'only', children: []},
+#=     },
+#= }
+defn fold_tree(node, combine) -> combine(node.label, transform(node.children, fn child -> fold_tree(child, combine)))
+
+defn size(label, sizes) -> fold(sizes, 1, fn total, n -> total + n)
+defn depth(label, depths) -> 1 + fold(depths, 0, fn deepest, d -> if d > deepest: d else: deepest)
+defn leaves(label, found) -> if found == []: [label] else: fold(found, [], fn all, xs -> all + xs)
+defn render(label, parts) ->
+    if parts == []: to_string(label)
+    else: $'${label}(${reduce parts with fn joined, part -> joined + ', ' + part})'
+
+defn summarize(t) -> [fold_tree(t, size), fold_tree(t, depth), fold_tree(t, leaves), fold_tree(t, render)]
+
+def [tree_size, tree_depth, tree_leaves, tree_rendered] = summarize(tree)
+{
+    size: tree_size,
+    depth: tree_depth,
+    leaves: tree_leaves,
+    rendered: tree_rendered,
+    single: summarize(leaf),
+}

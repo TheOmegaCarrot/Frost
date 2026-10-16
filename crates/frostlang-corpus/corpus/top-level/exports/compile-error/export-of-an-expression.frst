@@ -1,0 +1,3 @@
+# `export` takes a definition, never a bare expression.
+#= {rejects: '`export` takes a definition'}
+export 1

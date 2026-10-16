@@ -1,0 +1,7 @@
+# With a constant target, a taken arm whose result raises still raises at
+# runtime; the optimizer must not fold the error away.
+#= {raises: 'division by zero'}
+match 1 {
+    1 => 1 / 0,
+    _ => 0,
+}

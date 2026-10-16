@@ -1,0 +1,5 @@
+# Two accumulators carry consecutive Fibonacci numbers, so each is computed
+# once. The largest value that fits in an Int is reached exactly.
+#= {result: [0, 1, 2880067194370816120, 7540113804746346429]}
+defn fib(n, a, b) -> if n == 0: a else: fib(n - 1, b, a + b)
+[fib(0, 0, 1), fib(1, 0, 1), fib(90, 0, 1), fib(92, 0, 1)]

@@ -1,0 +1,7 @@
+# An arm may produce Null; a taken arm's Null is the match's value, not a
+# sign that nothing matched.
+#= {result: [null, 'after']}
+def r = match 1 {
+    1 => null,
+}
+[r, 'after']

@@ -1,0 +1,4 @@
+# A plain String in an interpolation does not interpolate its `${...}` text,
+# even though it sits inside a format String.
+#= {result: '<${x}>', inputs: {x: 7}}
+$'<${"${x}"}>'

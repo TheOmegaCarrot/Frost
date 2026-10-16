@@ -1,0 +1,8 @@
+# The arity check happens at the call, before any of the body runs. Were the
+# body to run, calling the Int parameter would raise a different error.
+#= {raises: 'expects 1 argument'}
+def f = fn p -> {
+    p()
+    p
+}
+f(1, 2)

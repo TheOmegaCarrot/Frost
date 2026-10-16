@@ -1,0 +1,5 @@
+# A rest may appear in a branch, provided every branch binds it.
+#= {result: [[1, [2, 3]], [1, 2]], inputs: {arr: [0, 1, 2, 3], dict: {a: 1, rest: 2}}}
+def [_, a, ...rest] | {a, rest} = arr
+def [_, b, ...more] | {a: b, rest: more} = dict
+[[a, rest], [b, more]]

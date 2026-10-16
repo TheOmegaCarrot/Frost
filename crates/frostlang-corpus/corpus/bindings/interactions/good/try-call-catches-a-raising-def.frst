@@ -1,0 +1,9 @@
+# An error raised computing a binding inside a lambda propagates out of the
+# lambda, where `try_call` catches it; the enclosing binding is untouched.
+#= {result: [false, 'boom', 'outer']}
+def x = 'outer'
+def r = try_call(fn -> {
+    def x = error('boom')
+    x
+})
+[r.ok, r.error, x]

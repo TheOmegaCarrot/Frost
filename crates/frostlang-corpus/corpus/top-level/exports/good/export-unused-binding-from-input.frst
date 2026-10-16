@@ -1,0 +1,5 @@
+# An exported binding of a runtime value, which nothing in the program reads,
+# is still exported.
+#= {result: 'tail', exports: {copy: [1, 2]}, inputs: {xs: [1, 2]}}
+export def copy = xs
+'tail'

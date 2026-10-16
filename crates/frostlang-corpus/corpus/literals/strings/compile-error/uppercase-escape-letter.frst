@@ -1,0 +1,3 @@
+# Escapes are case-sensitive: `\N` is not the line break `\n`.
+#= {rejects: ['invalid escape sequence', R'(`\N`)']}
+'a\Nb'

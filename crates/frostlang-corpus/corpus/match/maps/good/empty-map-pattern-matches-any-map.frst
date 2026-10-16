@@ -1,0 +1,6 @@
+# `{}` names no keys, so it matches every Map, empty or not, but no other type.
+#= {result: ['Map', 'Map', 'other', 'other'], inputs: {xs: [{}, {a: 1}, [], null]}}
+transform(xs, fn v -> match v {
+    {} => 'Map',
+    _ => 'other',
+})

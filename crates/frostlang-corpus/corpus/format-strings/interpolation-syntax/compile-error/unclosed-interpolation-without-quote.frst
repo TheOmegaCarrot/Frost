@@ -1,0 +1,4 @@
+# An interpolation left open with no quote after it on the line leaves its
+# format String unclosed too.
+#= {rejects: 'unclosed format String', inputs: {x: 7}}
+def s = $'a ${x

@@ -1,0 +1,5 @@
+# Float arguments keep their type through an abbreviated lambda; an Int
+# result and a Float result are not equal even when numerically the same.
+#= {result: [1.75, 2.0, false], inputs: {x: 1.25}}
+def add_half = $($ + 0.5)
+[add_half(x), add_half(1.5), add_half(1.5) == 2]

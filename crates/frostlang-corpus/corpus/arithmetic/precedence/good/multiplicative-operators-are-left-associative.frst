@@ -1,0 +1,14 @@
+# `*`, `/`, and `%` share a precedence and group from the left: `12 / 2 * 3`
+# is (12 / 2) * 3, `100 / 10 / 5` is (100 / 10) / 5, and `7 % 4 * 2` is
+# (7 % 4) * 2.
+#= {
+#=     result: [18, 2, 6, 2, 2],
+#=     inputs: {two: 2, three: 3, four: 4, five: 5, seven: 7, ten: 10, twelve: 12, hundred: 100},
+#= }
+[
+    twelve / two * three,
+    hundred / ten / five,
+    seven % four * two,
+    two * seven % four,
+    hundred % seven % three,
+]

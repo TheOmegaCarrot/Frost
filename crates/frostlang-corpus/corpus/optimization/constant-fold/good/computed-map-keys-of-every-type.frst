@@ -1,0 +1,23 @@
+# A Map literal whose keys are computed from constants folds with each key of
+# its own type: Int, Float, Bool, String, and Bytes keys stay distinct, so the
+# Int 2 and the Float 2.0 are two entries.
+#= {
+#=     result: [
+#=         {
+#=             [2]: 'int',
+#=             [2.0]: 'float',
+#=             [true]: 'bool',
+#=             ab: 'string',
+#=             [x'0102']: 'bytes',
+#=         },
+#=         5,
+#=     ],
+#= }
+def m = {
+    [1 + 1]: 'int',
+    [1.0 + 1.0]: 'float',
+    [not false]: 'bool',
+    ['a' + 'b']: 'string',
+    [x'01' + x'02']: 'bytes',
+}
+[m, len(m)]

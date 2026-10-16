@@ -1,0 +1,6 @@
+# Parenthesizing a call that returns a function makes its result the callee:
+# `a @ (f(x))()` is `f(x)(a)`.
+#= {result: [15, 7], inputs: {n: 10}}
+defn adder(k) -> fn x -> x + k
+defn subtract(k) -> fn x -> x - k
+[n @ (adder(5))(), n @ (subtract(3))()]

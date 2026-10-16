@@ -1,0 +1,4 @@
+# The right side of `@` must be a call; a bare function name is not one, and
+# the error suggests adding the parentheses.
+#= {rejects: ['right side of `@` must be a call', 'try `len()`'], inputs: {xs: [1]}}
+xs @ len

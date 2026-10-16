@@ -1,0 +1,4 @@
+# `try_call` takes one or two arguments; with three it raises an arity error,
+# which it does not catch.
+#= {raises: ['try_call', 'called with 3']}
+try_call(fn -> 1, [], 'extra')

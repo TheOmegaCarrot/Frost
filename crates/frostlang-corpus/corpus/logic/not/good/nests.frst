@@ -1,0 +1,11 @@
+# Repeated `not` applies right to left, each inverting the Bool before it.
+#= {
+#=     result: [true, false, true, false],
+#=     inputs: {n: null},
+#= }
+[
+    not not not null,
+    not not not not null,
+    not not not n,
+    not (not (not (not n))),
+]

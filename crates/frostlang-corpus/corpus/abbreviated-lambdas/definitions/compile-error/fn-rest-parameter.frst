@@ -1,0 +1,3 @@
+# A `fn` cannot name its rest parameter `$$`.
+#= {rejects: ['a name after `...`', 'found `$$`']}
+def f = fn ...$$ -> 1

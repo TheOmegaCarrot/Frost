@@ -1,0 +1,6 @@
+# A structure raised with `error` and caught by `try_call` is the value
+# derived when it was raised, and the binding it was derived from is unchanged.
+#= {result: [[1, 2], [1]], inputs: {n: 1}}
+def xs = [n]
+def r = try_call(fn -> error(xs + [2]))
+[r.error, xs]

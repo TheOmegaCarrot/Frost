@@ -1,0 +1,4 @@
+# Each step of a chain takes its own written arguments after the value
+# threaded into it.
+#= {result: 14}
+10 @ minus(3) @ times(2)

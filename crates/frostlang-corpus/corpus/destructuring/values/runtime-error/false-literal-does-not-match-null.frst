@@ -1,0 +1,5 @@
+# Literal parts compare by equality, not truthiness: `false` does not match
+# Null, though both are falsy.
+#= {raises: 'expected `false`', inputs: {xs: [0, null]}}
+def [a, false] = xs
+a

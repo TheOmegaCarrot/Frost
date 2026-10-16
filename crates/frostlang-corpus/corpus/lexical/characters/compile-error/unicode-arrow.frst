@@ -1,0 +1,3 @@
+# Frost's operators are ASCII: `→` is not a lambda's `->`.
+#= {rejects: 'write `->`'}
+def f = fn x → x

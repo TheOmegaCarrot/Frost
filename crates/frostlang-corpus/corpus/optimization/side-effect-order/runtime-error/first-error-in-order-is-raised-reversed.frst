@@ -1,0 +1,4 @@
+# The elements of first-error-in-order-is-raised in the other order: the
+# missing key, now first, raises.
+#= {raises: 'no value at key "missing"', known_issue: 'FROST-155'}
+[{}.missing, 1 / 0]

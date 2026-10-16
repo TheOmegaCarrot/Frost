@@ -1,0 +1,7 @@
+# A fixed-point combinator ties the knot for a function written without any
+# self-reference, here a tail-recursive count deep enough to need frame reuse.
+#= {result: [55, 100000]}
+defn fix(f) -> fn fixed(...args) -> call(f(fixed), args)
+def sum = fix(fn rec -> fn n, acc -> if n == 0: acc else: rec(n - 1, acc + n))
+def count = fix(fn rec -> fn n, acc -> if n == 0: acc else: rec(n - 1, acc + 1))
+[sum(10, 0), count(100000, 0)]

@@ -1,0 +1,7 @@
+# The Bool that `not` yields is a Map key like any other Bool.
+#= {
+#=     result: ['missing', 'present', 'present'],
+#=     inputs: {values: [null, 0, '']},
+#= }
+def label = {[true]: 'missing', [false]: 'present'}
+transform(values, fn v -> label[not v])

@@ -1,0 +1,9 @@
+# Binding alternatives against constant targets, which the optimizer may
+# resolve ahead of time, bind the same values as at runtime, including after a
+# branch that bound a name and then failed.
+#= {result: [5, [1, 2], [2, 1]]}
+[
+    match [3, 5] { [x, 2] | [3, x] => x },
+    match [1, 2] { [x, y] | [y, x] => [x, y] },
+    match {b: 1, c: 2} { {a: x, b: y} | {c: x, b: y} => [x, y] },
+]

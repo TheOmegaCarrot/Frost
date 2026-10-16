@@ -1,0 +1,4 @@
+# A backslash does not continue a line, as it does in Python or a shell.
+#= {rejects: 'a line continues only when'}
+def x = 1 + \
+    2

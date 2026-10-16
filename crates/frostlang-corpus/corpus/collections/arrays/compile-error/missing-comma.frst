@@ -1,0 +1,3 @@
+# Array elements must be separated by commas; juxtaposition is an error.
+#= {rejects: 'expected `,` or `]`'}
+def xs = [1 2]

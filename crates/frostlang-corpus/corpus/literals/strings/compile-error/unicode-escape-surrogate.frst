@@ -1,0 +1,3 @@
+# A surrogate code point is not a Unicode scalar, so no String can hold one.
+#= {rejects: 'not a valid Unicode scalar value'}
+'\u{d800}'

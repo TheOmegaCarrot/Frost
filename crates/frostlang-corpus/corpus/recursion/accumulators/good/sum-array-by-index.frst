@@ -1,0 +1,5 @@
+# An accumulator carries the running total through tail calls, walking an
+# Array by index. An empty Array returns the initial accumulator untouched.
+#= {result: [0, 7, 15]}
+defn sum(xs, i, acc) -> if i == len(xs): acc else: sum(xs, i + 1, acc + xs[i])
+[sum([], 0, 0), sum([7], 0, 0), sum([1, 2, 3, 4, 5], 0, 0)]

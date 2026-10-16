@@ -1,0 +1,4 @@
+# `init` is reserved, so it cannot be the name a Map entry's part binds to.
+#= {rejects: ['`init`', 'keyword']}
+def {a: init} = {a: 1}
+1

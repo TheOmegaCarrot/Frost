@@ -1,0 +1,5 @@
+# A call evaluates its arguments before checking them against the lambda's
+# arity, so an argument's side effect happens even though the call fails.
+#= {result: false, printed: ['evaluated']}
+def answer = $(42)
+try_call(fn -> answer(print('evaluated')), []).ok

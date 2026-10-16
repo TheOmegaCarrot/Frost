@@ -1,0 +1,14 @@
+# `try_call`'s second argument is the Array of arguments for its function, in
+# order; an empty Array calls it with none.
+#= {
+#=     result: [
+#=         {ok: true, value: 7},
+#=         {ok: true, value: 'none'},
+#=         {ok: true, value: [1, [2, 3]]},
+#=     ],
+#= }
+[
+    try_call(fn a, b -> a - b, [10, 3]),
+    try_call(fn -> 'none', []),
+    try_call(fn first, ...rest -> [first, rest], [1, 2, 3]),
+]

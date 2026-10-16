@@ -1,0 +1,12 @@
+# Inside an abbreviated lambda, `$` placeholders may be read in a match's
+# parenthesized values and guards, though never bound by a pattern.
+#= {result: [[true, false], ['big', 'small']], inputs: {a: 1, b: 2, c: 5}}
+def eq = $(match $1 {
+    ($2) => true,
+    _ => false,
+})
+def size = $(match $1 {
+    x if: x > $2 => 'big',
+    _ => 'small',
+})
+[[eq(a, a), eq(a, b)], [size(c, a), size(a, c)]]

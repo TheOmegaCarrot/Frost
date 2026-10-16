@@ -1,0 +1,4 @@
+# With no keys, `dig` returns what it was given, even a value that is not a
+# structure.
+#= {result: [{a: 1}, 5, null]}
+[{a: 1} @ dig(), dig(5), dig(null)]

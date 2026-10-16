@@ -1,0 +1,10 @@
+# A pipeline may continue across lines inside a `do` block, with local
+# bindings used as written arguments.
+#= {result: [30, 40], inputs: {xs: [1, 2, 3, 4]}}
+do {
+    def threshold = 2
+    def factor = 10
+    xs
+        @ select(fn x -> x > threshold)
+        @ transform(fn x -> x * factor)
+}

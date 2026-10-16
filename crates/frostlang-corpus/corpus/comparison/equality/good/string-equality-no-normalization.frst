@@ -1,0 +1,9 @@
+# String equality compares code points, with no Unicode normalization: a
+# precomposed `é` (U+00E9) and `e` followed by a combining acute accent
+# (U+0301) render alike but are different text.
+#= {result: [false, true, true]}
+[
+    '\u{e9}' == 'e\u{301}',
+    '\u{e9}' != 'e\u{301}',
+    'e\u{301}' == 'e' + '\u{301}',
+]

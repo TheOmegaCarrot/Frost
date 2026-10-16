@@ -1,0 +1,6 @@
+# Equal constant structures in one function, each built upon with a different
+# value, give independent results: an update through one never shows in the
+# other.
+#= {result: [[1, 2, 3], [1, 2, 4], {a: 1, x: 3}, {a: 1, y: 4}], inputs: {three: 3, four: 4}}
+defn build(x, y) -> [[1, 2] + [x], [1, 2] + [y], {a: 1} + {x: x}, {a: 1} + {y: y}]
+build(three, four)

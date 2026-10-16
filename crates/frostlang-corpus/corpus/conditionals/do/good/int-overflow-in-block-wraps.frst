@@ -1,0 +1,16 @@
+# Int arithmetic in a block wraps in two's complement, never raising, whether
+# the operands are constants or known only at runtime.
+#= {
+#=     result: [-9223372036854775807 - 1, -9223372036854775807 - 1],
+#=     inputs: {max: 9223372036854775807},
+#= }
+[
+    do {
+        def m = 9223372036854775807
+        m + 1
+    },
+    do {
+        def m = max
+        m + 1
+    },
+]

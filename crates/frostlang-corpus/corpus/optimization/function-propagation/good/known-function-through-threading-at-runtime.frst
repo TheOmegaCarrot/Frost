@@ -1,0 +1,10 @@
+# The threaded calls of known-function-through-threading, on values only known
+# at runtime, compute the same results.
+#= {result: [8, [2, 4, 6], 12], inputs: {five: 5, xs: [1, 2, 3]}}
+def add = fn a, b -> a + b
+def double = fn x -> x * 2
+[
+    five @ add(3),
+    xs @ transform(double),
+    xs @ transform(double) @ fold(0, add),
+]

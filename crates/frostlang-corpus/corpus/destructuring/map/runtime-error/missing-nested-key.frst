@@ -1,0 +1,8 @@
+# A key missing from a nested Map raises like one missing from the outer Map.
+#= {
+#=     raises: 'no value at key "b"',
+#=     inputs: {m: {a: {c: 1}}},
+#=     known_issue: 'FROST-155',
+#= }
+def {a: {b}} = m
+b

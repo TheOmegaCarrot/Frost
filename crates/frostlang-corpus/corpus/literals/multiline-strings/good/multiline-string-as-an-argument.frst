@@ -1,0 +1,6 @@
+# A multiline String is an ordinary operand: it may be an argument, with the call
+# continuing after its closer.
+#= {result: 3}
+len('''
+    abc
+    ''')

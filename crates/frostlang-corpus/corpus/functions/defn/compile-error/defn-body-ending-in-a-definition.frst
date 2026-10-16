@@ -1,0 +1,5 @@
+# A `defn` block body must end in an expression.
+#= {rejects: 'must end with an expression'}
+defn f() -> {
+    def a = 1
+}

@@ -1,0 +1,3 @@
+# `len` takes exactly one argument; it does not sum lengths.
+#= {raises: ['len', 'expects 1'], inputs: {a: [1], b: [2]}}
+len(a, b)

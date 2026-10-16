@@ -1,0 +1,5 @@
+# `$` is another spelling of `$1`: both read the same first argument, so the
+# lambda takes one argument, not two.
+#= {result: [6, false]}
+def f = $($ + $1 * 2)
+[f(2), try_call(f, [2, 3]).ok]

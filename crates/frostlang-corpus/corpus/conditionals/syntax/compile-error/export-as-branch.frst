@@ -1,0 +1,5 @@
+# `export` is a top-level statement, so it cannot be a branch: exporting
+# conditionally is written `export def x = if c: ...`.
+#= {rejects: ['found `export`', 'only allowed at the top level']}
+def c = true
+if c: export def x = 1

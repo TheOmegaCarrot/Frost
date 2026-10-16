@@ -1,0 +1,6 @@
+# A Map pattern's entry key is a bare name or a computed `[key]`; a quoted
+# String key is not accepted.
+#= {rejects: 'expected a name or `[`'}
+match {a: 1} {
+    {'a': x} => x,
+}

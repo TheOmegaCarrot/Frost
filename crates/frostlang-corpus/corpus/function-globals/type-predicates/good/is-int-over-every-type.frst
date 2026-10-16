@@ -1,0 +1,15 @@
+# `is_int` is true for Int alone. A Float, even a whole one like 0.0, is not
+# an Int.
+#= {result: [false, false, true, false, false, false, false, false, false, false]}
+[
+    is_int(null),
+    is_int(false),
+    is_int(0),
+    is_int(0.0),
+    is_int(''),
+    is_int(x''),
+    is_int([]),
+    is_int({}),
+    is_int(fn -> null),
+    is_int(len),
+]

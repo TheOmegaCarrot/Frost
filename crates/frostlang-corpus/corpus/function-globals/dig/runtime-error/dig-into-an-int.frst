@@ -1,0 +1,3 @@
+# A step that finds a value other than a structure or Null cannot go deeper.
+#= {raises: ['Cannot index', 'Int']}
+{a: 5} @ dig('a', 'b')

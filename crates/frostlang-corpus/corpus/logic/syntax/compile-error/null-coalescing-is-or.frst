@@ -1,0 +1,4 @@
+# Frost has no `??` operator; a fallback for a Null value is written with `or`.
+#= {rejects: ['`?`', '`or`']}
+def a = null
+a ?? 1

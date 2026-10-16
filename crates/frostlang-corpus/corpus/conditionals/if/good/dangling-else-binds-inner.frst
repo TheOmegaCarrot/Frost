@@ -1,0 +1,8 @@
+# A lone `else` after a nested `if` belongs to the inner one, the nearest, so
+# a falsy outer condition yields Null rather than the `else` branch.
+#= {result: [null, 1, 2]}
+[
+    if false: if true: 1 else: 2,
+    if true: if true: 1 else: 2,
+    if true: if false: 1 else: 2,
+]

@@ -1,0 +1,4 @@
+# `b: a` binds `a`, which the shorthand `{a}` already bound.
+#= {rejects: '`a` is already bound'}
+def {a, b: a} = {a: 1, b: 2}
+a

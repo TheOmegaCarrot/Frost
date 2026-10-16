@@ -1,0 +1,7 @@
+# A `[` on a new line does not index the value before it: `[` can begin a
+# statement, so the line is a new Array. Here `r` is the whole Array.
+#= {result: [[7, 8], [0]]}
+def xs = [7, 8]
+def r = xs
+[0]
+[r, [0]]

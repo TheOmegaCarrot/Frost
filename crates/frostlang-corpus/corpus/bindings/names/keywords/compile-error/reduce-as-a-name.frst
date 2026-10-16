@@ -1,0 +1,5 @@
+# `reduce` is a keyword (the `reduce ... with` expression), so it cannot be
+# bound as a name.
+#= {rejects: ['`reduce`', 'keyword']}
+def reduce = 1
+1

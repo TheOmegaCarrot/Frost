@@ -1,0 +1,7 @@
+# Destructured Function parts are called like any Function, whether bound from
+# a literal or at runtime, and a named lambda still recurses by its own name.
+#= {result: [120, 8, 12, 4], inputs: {ops: {sub: fn a, b -> a - b}}}
+def [fact] = [fn fact(n) -> if n <= 1: 1 else: n * fact(n - 1)]
+def [add, ...rest] = [fn a, b -> a + b, fn a, b -> a * b]
+def {sub} = ops
+[fact(5), add(6, 2), rest[0](3, 4), sub(6, 2)]

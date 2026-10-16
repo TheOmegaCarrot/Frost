@@ -1,0 +1,3 @@
+# `is_map` takes exactly one argument.
+#= {raises: ['is_map', 'expects 1', 'called with 2']}
+is_map({}, {})

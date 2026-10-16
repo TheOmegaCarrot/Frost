@@ -1,0 +1,3 @@
+# Frost has no `function` keyword; a named function is defined with `defn`.
+#= {rejects: ['line break', '`function`']}
+function f(x) { x }

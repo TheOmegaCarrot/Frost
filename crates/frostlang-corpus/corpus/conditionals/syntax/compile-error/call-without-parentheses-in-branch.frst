@@ -1,0 +1,6 @@
+# A call in a branch needs parentheses like any other: `print x` is two
+# expressions, not a call.
+#= {rejects: ['found `x`', 'call a function with parentheses']}
+def c = true
+def x = 1
+if c: print x

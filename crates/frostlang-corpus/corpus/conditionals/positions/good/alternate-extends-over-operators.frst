@@ -1,0 +1,4 @@
+# A branch extends as far as it can: `if c: 1 else: 2 + 3` adds 3 only in the
+# alternate, never to the whole `if`.
+#= {result: [1, 5], inputs: {t: true, f: false}}
+[if t: 1 else: 2 + 3, if f: 1 else: 2 + 3]

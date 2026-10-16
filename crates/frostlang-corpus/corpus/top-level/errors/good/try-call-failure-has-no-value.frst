@@ -1,0 +1,4 @@
+# A failed `try_call` result holds `ok`, `error`, and `trace`, and no `value`.
+#= {result: [3, false, true, true]}
+def outcome = try_call(fn -> error('x'))
+[len(outcome), has(outcome, 'value'), has(outcome, 'error'), has(outcome, 'trace')]

@@ -1,0 +1,9 @@
+# The smallest and largest Ints sort first and last among Int keys.
+#= {result: [-9223372036854775807 - 1, -1, 0, 9223372036854775807]}
+def m = {
+    [0]: 'zero',
+    [9223372036854775807]: 'max',
+    [-1]: 'minus one',
+    [-9223372036854775807 - 1]: 'min',
+}
+fold(m, [], fn acc, k, v -> acc + [k])

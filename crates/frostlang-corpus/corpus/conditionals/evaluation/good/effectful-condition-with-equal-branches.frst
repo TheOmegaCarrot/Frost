@@ -1,0 +1,9 @@
+# A condition is evaluated even when both branches are the same constant:
+# its side effect must happen. Subtle: an optimizer replacing the `if` with
+# the shared branch value would skip the condition.
+#= {result: [1, 1], printed: ['checked', 'checked'], inputs: {c: true}}
+defn check(v) -> do {
+    print('checked')
+    v
+}
+[if check(c): 1 else: 1, if check(null): 1 else: 1]

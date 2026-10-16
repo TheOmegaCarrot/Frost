@@ -1,0 +1,4 @@
+# There is no `\x` escape: a String is text, so a character is escaped by its
+# Unicode scalar with `\u{...}`, never by a byte.
+#= {rejects: ['invalid escape sequence', R'(`\x`)']}
+"a\x41"

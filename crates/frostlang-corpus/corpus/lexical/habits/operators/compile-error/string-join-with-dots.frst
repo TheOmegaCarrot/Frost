@@ -1,0 +1,3 @@
+# Lua's `..` does not join Strings in Frost; `+` does.
+#= {rejects: 'joins Strings with `+`'}
+def s = 'a' .. 'b'

@@ -1,0 +1,13 @@
+# Frost-written globals in conditions and branches: `inv` negates a
+# predicate, `dig` yields Null for a missing path, and `const` makes a
+# function an `if` may choose.
+#= {
+#=     result: ['not empty', 'missing', 7],
+#=     inputs: {xs: [1], m: {a: {}}, f: false},
+#= }
+def is_empty = fn v -> len(v) == 0
+[
+    if inv(is_empty)(xs): 'not empty' else: 'empty',
+    if dig(m, 'a', 'b'): 'found' else: 'missing',
+    (if f: const(1) else: const(7))(),
+]

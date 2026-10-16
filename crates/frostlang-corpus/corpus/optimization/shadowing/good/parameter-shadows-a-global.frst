@@ -1,0 +1,5 @@
+# A parameter named like a global shadows it in the function's body.
+#= {result: [42, 'Int']}
+def twice = fn len -> len * 2
+def describe = fn type -> type
+[twice(21), describe('Int')]

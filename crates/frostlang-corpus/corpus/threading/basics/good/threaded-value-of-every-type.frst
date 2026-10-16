@@ -1,0 +1,16 @@
+# A value of any type can be threaded.
+#= {
+#=     result: ['Null', 'Int', 'Float', 'Bool', 'String', 'Bytes', 'Array', 'Map', 'Function'],
+#=     inputs: {f: fn x -> x},
+#= }
+[
+    null @ type(),
+    1 @ type(),
+    1.5 @ type(),
+    true @ type(),
+    's' @ type(),
+    x'00' @ type(),
+    [] @ type(),
+    {} @ type(),
+    f @ type(),
+]

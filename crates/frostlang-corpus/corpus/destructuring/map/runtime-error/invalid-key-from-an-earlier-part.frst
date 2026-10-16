@@ -1,0 +1,4 @@
+# A computed key reading an earlier part that bound Null is not a valid key.
+#= {raises: 'not a valid Map key', inputs: {m: {a: null}}}
+def {a, [a]: x} = m
+x

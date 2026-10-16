@@ -1,0 +1,7 @@
+# A binding read on only one branch keeps its value for that branch.
+#= {result: [10, 20], inputs: {yes: true, no: false}}
+defn pick(flag) -> {
+    def x = 10
+    if flag: x else: 20
+}
+[pick(yes), pick(no)]

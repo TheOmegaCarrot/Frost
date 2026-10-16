@@ -1,0 +1,9 @@
+# A name may be long; every character counts, so names sharing a long prefix
+# stay distinct.
+#= {result: [1, 2]}
+def a_rather_long_name_that_keeps_going_well_past_any_reasonable_length_1 = 1
+def a_rather_long_name_that_keeps_going_well_past_any_reasonable_length_2 = 2
+[
+    a_rather_long_name_that_keeps_going_well_past_any_reasonable_length_1,
+    a_rather_long_name_that_keeps_going_well_past_any_reasonable_length_2,
+]

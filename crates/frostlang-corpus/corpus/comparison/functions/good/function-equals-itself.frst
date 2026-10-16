@@ -1,0 +1,12 @@
+# A Function equals itself: through its own binding, through another name
+# bound to it, and as an element of equal structures.
+#= {result: [true, true, true, true, false]}
+def f = fn x -> x + 1
+def g = f
+[
+    f == f,
+    f == g,
+    [f] == [g],
+    {handler: f} == {handler: g},
+    f != g,
+]

@@ -1,0 +1,6 @@
+# A rest matches zero elements too: with exactly the named elements present,
+# it binds the empty Array.
+#= {result: [1, []], inputs: {v: [1]}}
+match v {
+    [head, ...others] => [head, others],
+}

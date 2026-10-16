@@ -1,0 +1,10 @@
+# The `elif` chain of elif-chain-of-constants, with conditions only known at
+# runtime, picks the same branch.
+#= {result: 3, printed: ['picked'], inputs: {no: false, nothing: null, zero: 0}}
+if no: print('one')
+elif nothing: print('two')
+elif zero: do {
+    print('picked')
+    3
+}
+else: print('four')

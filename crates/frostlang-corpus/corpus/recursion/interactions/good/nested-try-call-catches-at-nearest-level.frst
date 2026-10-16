@@ -1,0 +1,10 @@
+# Each level of a recursion wraps the next in `try_call`: an error at the
+# bottom is caught by the nearest one only, and every level above sees a
+# success.
+#= {result: [true, 1]}
+defn guarded(n) -> if n == 0: error('bottom') else: do {
+    def r = try_call(guarded, [n - 1])
+    if r.ok: r.value else: n
+}
+def outer = try_call(guarded, [5])
+[outer.ok, outer.value]

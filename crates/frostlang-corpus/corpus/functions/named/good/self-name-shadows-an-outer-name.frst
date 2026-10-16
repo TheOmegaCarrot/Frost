@@ -1,0 +1,7 @@
+# A self-name shadows an outer binding of the same name throughout the body,
+# even where it is used as a plain value rather than called.
+#= {result: [0, true, 99]}
+def f = 99
+def count = fn f(k) -> if k <= 0: 0 else: f(k - 1)
+def last = fn f(k) -> if k <= 0: f else: f(k - 1)
+[count(3), is_function(last(3)), f]

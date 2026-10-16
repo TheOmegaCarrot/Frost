@@ -1,0 +1,3 @@
+# `_` binds nothing, so the body cannot read it.
+#= {rejects: ['`_`', 'not defined']}
+def f = fn _, b -> _

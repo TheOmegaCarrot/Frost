@@ -1,0 +1,3 @@
+# A whole Float is not an Array position.
+#= {raises: ['index Array', 'Float']}
+dig([1], 0.0)

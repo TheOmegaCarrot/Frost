@@ -1,0 +1,12 @@
+# Blocks nest, and an inner block reads the bindings of every block around it.
+#= {result: 123}
+do {
+    def a = 1
+    do {
+        def b = a * 10 + 2
+        do {
+            def c = b * 10 + 3
+            do { c }
+        }
+    }
+}

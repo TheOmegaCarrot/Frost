@@ -1,0 +1,5 @@
+# The constant function ignores its arguments, but they are evaluated all
+# the same, so a `print` among them prints. Subtle because an argument whose
+# value is unused is still not dead code.
+#= {result: 1, printed: ['evaluated']}
+const(1)(print('evaluated'))

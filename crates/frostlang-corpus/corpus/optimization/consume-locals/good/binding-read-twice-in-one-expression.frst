@@ -1,0 +1,6 @@
+# A binding read twice in one expression has its value at both reads: the
+# first read is not its last, so building on it leaves the second intact.
+#= {result: [[1, 1], [1, 0, 1]], inputs: {n: 1}}
+def a = [n]
+def b = [n]
+[a + a, b + [0] + b]

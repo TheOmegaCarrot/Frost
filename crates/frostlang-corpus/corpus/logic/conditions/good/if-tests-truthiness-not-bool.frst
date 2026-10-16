@@ -1,0 +1,15 @@
+# An `if` condition need not be a Bool: it takes the branch for any truthy
+# value, including zero and empty structures, and skips it for Null and false.
+#= {
+#=     result: ['else', 'else', 'then', 'then', 'then', 'then', 'then'],
+#=     inputs: {n: null, f: false, zero: 0, empty: '', a: [], m: {}, b: x''},
+#= }
+[
+    if n: 'then' else: 'else',
+    if f: 'then' else: 'else',
+    if zero: 'then' else: 'else',
+    if empty: 'then' else: 'else',
+    if a: 'then' else: 'else',
+    if m: 'then' else: 'else',
+    if b: 'then' else: 'else',
+]

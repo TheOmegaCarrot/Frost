@@ -1,0 +1,16 @@
+# Int division of operands only known at runtime truncates toward zero, as a
+# folded quotient does: -7 / 2 is -3, not -4.
+#= {
+#=     result: [3, -3, -3, 3, 0, 0, 0, 0],
+#=     inputs: {one: 1, two: 2, three: 3, seven: 7},
+#= }
+[
+    seven / two,
+    -seven / two,
+    seven / -two,
+    -seven / -two,
+    one / two,
+    -one / two,
+    one / -two,
+    two / three,
+]

@@ -1,0 +1,4 @@
+# A Bytes literal is single-line: a quote on a later line does not close it.
+#= {rejects: 'unclosed Bytes literal'}
+def b = x'00
+ff'

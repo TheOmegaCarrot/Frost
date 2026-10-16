@@ -1,0 +1,8 @@
+# A recursive flatten over nested Arrays known only at runtime: empty Arrays
+# vanish, and Maps and Null are leaves.
+#= {result: [1, 2, 3, {k: [4]}, null, 5.5], inputs: {tree: [[1, [2]], [], [[3, [{k: [4]}]]], null, [[[5.5]]]]}}
+defn flatten(xs) -> match xs {
+    [] => [],
+    [head, ...tail] => (if is_array(head): flatten(head) else: [head]) + flatten(tail),
+}
+flatten(tree)

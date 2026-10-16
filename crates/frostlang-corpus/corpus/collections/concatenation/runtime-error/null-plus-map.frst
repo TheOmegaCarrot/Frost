@@ -1,0 +1,3 @@
+# Null plus a Map raises; Null is not the empty Map.
+#= {raises: ['Cannot add', 'Null + Map'], inputs: {n: null}}
+n + {a: 1}

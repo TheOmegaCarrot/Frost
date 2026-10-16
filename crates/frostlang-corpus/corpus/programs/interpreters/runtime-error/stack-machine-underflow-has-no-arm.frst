@@ -1,0 +1,17 @@
+# The stack machine's binary step matches only a stack with two operands, so
+# an `add` on a one-element stack, midway through the program, has no arm
+# to take and raises rather than producing Null.
+#= {
+#=     raises: 'no match arm',
+#=     inputs: {program: [{push: 1}, {push: 2}, 'add', 'add', {push: 3}]},
+#= }
+defn binary(stack, operation) -> match stack {
+    [b, a, ...rest] => [operation(a, b)] + rest,
+}
+
+defn step(stack, instruction) -> match instruction {
+    {push: n} => [n] + stack,
+    'add' => binary(stack, fn a, b -> a + b),
+}
+
+reduce program init: [] with step

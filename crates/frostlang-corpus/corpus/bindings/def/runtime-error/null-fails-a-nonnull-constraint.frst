@@ -1,0 +1,4 @@
+# A `Nonnull` type constraint rejects a Null value at runtime.
+#= {raises: ['cannot destructure', 'Nonnull'], inputs: {n: null}}
+def x is Nonnull = n
+x

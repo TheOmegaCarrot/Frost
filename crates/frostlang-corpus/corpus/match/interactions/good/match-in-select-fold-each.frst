@@ -1,0 +1,13 @@
+# Matches inside callbacks of the pipeline forms `select`, `fold`, and `each`.
+#= {
+#=     result: [[{ok: 1}, {ok: 3}], 4],
+#=     printed: ['error: bad'],
+#=     inputs: {rs: [{ok: 1}, {err: 'bad'}, {ok: 3}]},
+#= }
+def oks = rs @ select(fn r -> match r { {ok} => true, _ => false })
+def sum = rs @ fold(0, fn acc, r -> match r { {ok} => acc + ok, {err} => acc })
+rs @ each(fn r -> match r {
+    {err} => print($'error: ${err}'),
+    _ => null,
+})
+[oks, sum]

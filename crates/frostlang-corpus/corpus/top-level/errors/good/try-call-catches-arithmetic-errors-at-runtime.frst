@@ -1,0 +1,8 @@
+# Division and modulus by a zero only known at runtime raise errors
+# `try_call` catches as Strings.
+#= {result: [[false, true], [false, true]], inputs: {n: 1, zero: 0}}
+defn summary(outcome) -> [outcome.ok, is_string(outcome.error)]
+[
+    summary(try_call(fn -> n / zero)),
+    summary(try_call(fn -> n % zero)),
+]

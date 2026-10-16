@@ -1,0 +1,5 @@
+# The operation may be any expression naming a function, not only a lambda
+# written in place.
+#= {result: [2, 4, 6], inputs: {xs: [1, 2, 3]}}
+defn double(x) -> x * 2
+map xs with double

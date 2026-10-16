@@ -1,0 +1,4 @@
+# `as` binds a whole Map pattern only; an Array pattern cannot take it.
+#= {rejects: ['expected `=`', '`as`']}
+def [a, b] as pair = [1, 2]
+[a, b, pair]

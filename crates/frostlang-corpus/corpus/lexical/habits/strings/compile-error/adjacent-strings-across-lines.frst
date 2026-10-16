@@ -1,0 +1,4 @@
+# Adjacent Strings on separate lines inside a call do not join either.
+#= {rejects: 'adjacent Strings do not join'}
+print("a"
+    "b")

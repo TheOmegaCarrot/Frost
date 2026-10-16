@@ -1,0 +1,6 @@
+# A division by zero over constants cannot fold to a value, so it raises when
+# the program reaches it, as it would unoptimized.
+#= {raises: 'division by zero'}
+def half = 1
+def zero = 0
+[half, half / zero]

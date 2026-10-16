@@ -1,0 +1,4 @@
+# The `null` literal cannot key a Map. The literal is in plain sight, but the fault
+# is the run's: building the Map raises.
+#= {raises: ['Null', 'not a valid Map key']}
+{[null]: 1}

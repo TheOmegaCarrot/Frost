@@ -1,0 +1,12 @@
+# A helper that tries to export a value it computes is rejected: `export`
+# belongs only to top-level definitions, so a program exports results by
+# binding them at the top level.
+#= {
+#=     rejects: ['`export`', 'top level'],
+#=     inputs: {xs: [1, 2, 3]},
+#= }
+defn summarize(items) -> {
+    export def count = len(items)
+    count
+}
+summarize(xs)

@@ -1,0 +1,4 @@
+# `$` and `$1` are placeholders only inside `$( ... )`; elsewhere they are no
+# names.
+#= {rejects: 'placeholders work only inside'}
+def f = fn x -> $1 * 2

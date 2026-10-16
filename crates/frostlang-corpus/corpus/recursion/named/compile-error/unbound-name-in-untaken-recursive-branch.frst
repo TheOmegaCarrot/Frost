@@ -1,0 +1,5 @@
+# An unbound name in a recursive function is rejected at compile time, even in
+# a branch that a given run would never reach.
+#= {rejects: '`helper` is not defined'}
+defn f(n) -> if n <= 0: 0 else: helper(f(n - 1))
+f(0)

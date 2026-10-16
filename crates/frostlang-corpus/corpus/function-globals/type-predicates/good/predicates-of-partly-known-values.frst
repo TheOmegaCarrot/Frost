@@ -1,0 +1,12 @@
+# A predicate answers by the type of what an expression builds, even when
+# the parts it is built from are known only at run time. Subtle because the
+# type is plain from the expression's shape while its value is not.
+#= {result: [true, true, true, true, true, false], inputs: {n: 1}}
+[
+    is_function(fn -> n),
+    is_array([n]),
+    is_map({k: n}),
+    is_string($'${n}'),
+    is_int(n + 1),
+    is_null(n),
+]

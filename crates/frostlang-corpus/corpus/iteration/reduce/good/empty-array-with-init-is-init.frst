@@ -1,0 +1,4 @@
+# An empty Array with `init:` yields the init without calling the operation.
+#= {result: [5, 5], inputs: {empty: []}}
+def boom = fn acc, x -> error('called')
+[reduce [] init: 5 with boom, reduce empty init: 5 with boom]

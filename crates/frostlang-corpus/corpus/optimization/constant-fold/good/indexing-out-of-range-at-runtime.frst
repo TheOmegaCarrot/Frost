@@ -1,0 +1,13 @@
+# The indexes of indexing-out-of-range, into structures and by indexes only
+# known at runtime, give the same Nulls.
+#= {
+#=     result: [null, null, null, null, null],
+#=     inputs: {xs: [10, 20, 30], three: 3, minus_four: -4, empty: [], zero: 0, empty_map: {}},
+#= }
+[
+    xs[three],
+    xs[minus_four],
+    empty[zero],
+    empty[-1],
+    empty_map['a'],
+]

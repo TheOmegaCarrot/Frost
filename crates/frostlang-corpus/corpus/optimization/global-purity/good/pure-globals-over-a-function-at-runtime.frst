@@ -1,0 +1,16 @@
+# The checks of pure-globals-over-a-known-function, over Functions only known
+# at runtime, give the same answers.
+#= {
+#=     result: ['Function', true, false, false, false, true, true, 'Function'],
+#=     inputs: {f: fn -> 1, native: len, impure: print},
+#= }
+[
+    type(f),
+    is_function(f),
+    is_primitive(f),
+    is_structured(f),
+    is_flat(f),
+    is_nonnull(f),
+    is_function(native),
+    type(impure),
+]

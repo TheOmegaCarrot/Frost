@@ -1,0 +1,5 @@
+# Calling the function with the wrong number of arguments is an error that
+# `try_call` catches. The function is never entered, so the trace is empty.
+#= {result: [false, true, []]}
+def outcome = try_call(fn x -> x, [1, 2])
+[outcome.ok, is_string(outcome.error), outcome.trace]

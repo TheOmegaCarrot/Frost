@@ -1,0 +1,4 @@
+# The last statement needs no line break after it: the end of input ends it.
+#= {result: 3}
+def a = 1
+a + 2

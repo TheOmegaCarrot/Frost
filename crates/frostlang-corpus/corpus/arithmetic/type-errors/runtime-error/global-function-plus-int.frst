@@ -1,0 +1,4 @@
+# A global Function plus an Int is a type error. The global is pure, so the
+# folder sees the operation; its failure must be left for runtime.
+#= {raises: 'Function + Int'}
+len + 1

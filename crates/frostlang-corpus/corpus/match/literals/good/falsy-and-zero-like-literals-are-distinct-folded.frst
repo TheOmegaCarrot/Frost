@@ -1,0 +1,11 @@
+# Falsy and zero-like literals stay distinct when the optimizer resolves each
+# match ahead of time.
+#= {result: ['Null', 'Bool', 'Int', 'Float', 'String', 'Bytes']}
+[
+    match null { false => 'Bool', 0 => 'Int', null => 'Null' },
+    match false { null => 'Null', 0 => 'Int', false => 'Bool' },
+    match 0 { false => 'Bool', 0.0 => 'Float', 0 => 'Int' },
+    match 0.0 { 0 => 'Int', 0.0 => 'Float' },
+    match '' { x'' => 'Bytes', null => 'Null', '' => 'String' },
+    match x'' { '' => 'String', x'' => 'Bytes' },
+]

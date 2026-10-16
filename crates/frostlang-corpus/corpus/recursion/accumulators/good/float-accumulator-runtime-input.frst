@@ -1,0 +1,6 @@
+# Float accumulators on values known only at runtime: halving until below one
+# counts the steps, and summing powers of a half is exact in binary.
+#= {result: [10, 0.9990234375], inputs: {start: 1000.0, terms: 10}}
+defn halvings(x, n) -> if x < 1.0: n else: halvings(x / 2.0, n + 1)
+defn halves(k, term, acc) -> if k == 0: acc else: halves(k - 1, term / 2.0, acc + term)
+[halvings(start, 0), halves(terms, 0.5, 0.0)]

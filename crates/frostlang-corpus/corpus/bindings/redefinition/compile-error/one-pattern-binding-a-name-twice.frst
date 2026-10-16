@@ -1,0 +1,5 @@
+# A single destructuring pattern may not bind the same name twice, even at
+# different depths.
+#= {rejects: ['`b`', 'already bound']}
+def {a: [b, {c: b}]} = {a: [1, {c: 1}]}
+b

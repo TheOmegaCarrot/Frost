@@ -1,0 +1,4 @@
+# Negating a constant String raises when the program reaches it.
+#= {raises: 'cannot negate'}
+def s = 'a'
+-s

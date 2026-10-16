@@ -1,0 +1,4 @@
+# `fn` is a keyword, so it cannot be bound as a name.
+#= {rejects: ['`fn`', 'keyword']}
+def fn = 1
+1

@@ -1,0 +1,4 @@
+# A `def` must give its name a value; there is no declaration without one.
+#= {rejects: ['expected `=`']}
+def x
+1

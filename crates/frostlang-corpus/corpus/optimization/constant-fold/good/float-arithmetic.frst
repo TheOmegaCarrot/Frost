@@ -1,0 +1,11 @@
+# Float arithmetic over literals folds bit for bit as the VM computes it at
+# runtime: the inexact sum stays inexact, and a negative zero keeps its sign.
+#= {result: [0.30000000000000004, 0.3333333333333333, -0.0, '-0.0', 2.5, 3.5]}
+[
+    0.1 + 0.2,
+    1.0 / 3.0,
+    0.0 * -1.0,
+    to_string(0.0 * -1.0),
+    5 / 2.0,
+    1 + 2.5,
+]

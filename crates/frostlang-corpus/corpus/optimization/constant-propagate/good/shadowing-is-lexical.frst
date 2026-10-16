@@ -1,0 +1,13 @@
+# A known binding shadowed in a `do` block is a separate binding: inside, the
+# shadow's value is read; after the block, the outer value again.
+#= {result: [20, 1, 'a']}
+def x = 1
+def inner = do {
+    def x = 2
+    x * 10
+}
+def other = do {
+    def x = 'a'
+    x
+}
+[inner, x, other]

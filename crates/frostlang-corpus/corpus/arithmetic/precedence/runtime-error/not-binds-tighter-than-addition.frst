@@ -1,0 +1,5 @@
+# `not` binds tighter than `+`, so `not one + two` is (not one) + two: a Bool
+# plus an Int, which is a type error. Subtle because it reads like
+# `not (one + two)`.
+#= {raises: 'Bool + Int', inputs: {one: 1, two: 2}}
+not one + two

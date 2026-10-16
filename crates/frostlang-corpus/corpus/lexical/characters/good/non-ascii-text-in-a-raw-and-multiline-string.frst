@@ -1,0 +1,9 @@
+# Raw and multiline Strings hold non-ASCII text as written.
+#= {result: ['~ ☃ ~', 'déjà\nvu']}
+[
+    R'(~ ☃ ~)',
+    '''
+        déjà
+        vu
+        ''',
+]

@@ -1,0 +1,5 @@
+# A Float overflow over a propagated constant binding raises at runtime. The
+# compiler knows both operands, yet the failing fold is not a compile error.
+#= {raises: 'infinity'}
+def big = 1e308
+big * big

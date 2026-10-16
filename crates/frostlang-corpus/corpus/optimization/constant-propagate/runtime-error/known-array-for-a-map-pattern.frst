@@ -1,0 +1,4 @@
+# A Map pattern over a known Array raises when the program reaches it.
+#= {raises: 'expected a map'}
+def {a} = [1]
+a

@@ -1,0 +1,13 @@
+# Names bound by destructuring a lambda's argument are read by a nested block
+# and a nested closure alike.
+#= {result: ['Ada:36', 'Ada!'], inputs: {person: {name: 'Ada', age: 36}}}
+def describe = fn p -> {
+    def {name, age} = p
+    def label = do {
+        def sep = ':'
+        name + sep + to_string(age)
+    }
+    def shout = fn -> name + '!'
+    [label, shout()]
+}
+describe(person)

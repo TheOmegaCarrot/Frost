@@ -1,0 +1,12 @@
+# Int subtraction of operands only known at runtime wraps past either end of
+# the range, exactly as a folded difference does.
+#= {
+#=     result: [9223372036854775807, -9223372036854775808, 1, -1],
+#=     inputs: {greatest: 9223372036854775807, least: -9223372036854775808, one: 1},
+#= }
+[
+    least - one,
+    greatest - -one,
+    least - greatest,
+    greatest - least,
+]

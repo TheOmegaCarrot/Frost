@@ -1,0 +1,6 @@
+# A tail built from values only known at runtime.
+#= {
+#=     result: [3, 'xy', null, {k: [1]}],
+#=     inputs: {n: 3, s: 'x', nothing: null, m: {k: [1]}},
+#= }
+[n, s + 'y', nothing, m]

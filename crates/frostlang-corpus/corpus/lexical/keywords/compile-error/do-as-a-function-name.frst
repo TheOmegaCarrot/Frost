@@ -1,0 +1,3 @@
+# `do` is a keyword, so `defn` cannot name a function with it.
+#= {rejects: 'keyword'}
+defn do(x) -> x

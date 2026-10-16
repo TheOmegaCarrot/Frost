@@ -1,0 +1,5 @@
+# A non-tail recursion that adds an Int key at each level, building a Map of
+# squares; the empty case is the empty Map.
+#= {result: [{}, {[1]: 1, [2]: 4, [3]: 9, [-1]: 1}]}
+defn squares(n) -> if n == 0: {} else: squares(n - 1) + {[n]: n * n}
+[squares(0), squares(3) + {[-1]: 1}]

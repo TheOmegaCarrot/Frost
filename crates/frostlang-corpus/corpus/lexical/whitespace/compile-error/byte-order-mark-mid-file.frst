@@ -1,0 +1,4 @@
+# A byte order mark away from the start of the file is an invisible
+# zero-width character.
+#= {rejects: 'invisible'}
+print(1)﻿

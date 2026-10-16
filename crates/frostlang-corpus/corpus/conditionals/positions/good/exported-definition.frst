@@ -1,0 +1,10 @@
+# An exported definition's value may be an `if`, and the export holds the
+# taken branch's value.
+#= {
+#=     result: null,
+#=     exports: {mode: 'fast', level: null},
+#=     inputs: {fast: true},
+#= }
+export def mode = if fast: 'fast' else: 'safe'
+export def level = if not fast: 3
+null

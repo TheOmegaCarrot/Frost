@@ -1,0 +1,9 @@
+# A lambda that both captures an outer name and shadows it in an arm reads the
+# arm's binding inside that arm and the capture elsewhere.
+#= {result: [9, 3]}
+def k = 3
+def f = fn v -> match v {
+    k if: k > 5 => k,
+    _ => k,
+}
+[f(9), f(1)]

@@ -1,0 +1,3 @@
+# A `reduce` takes its initial value before `with`, not after the function.
+#= {rejects: 'an initial value goes before `with`', inputs: {xs: [1]}}
+reduce xs with fn (acc, x) -> acc + x init: 0

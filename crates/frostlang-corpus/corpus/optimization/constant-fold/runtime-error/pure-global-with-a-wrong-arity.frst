@@ -1,0 +1,4 @@
+# A pure global called with constant arguments of the wrong count raises its
+# arity error when the program reaches the call.
+#= {raises: 'expects 1 argument'}
+type(1, 2)

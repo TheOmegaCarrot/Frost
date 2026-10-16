@@ -1,0 +1,4 @@
+# An invalid escape is rejected even in code that would never run.
+#= {rejects: ['invalid escape sequence', R'(`\q`)']}
+def unused = fn -> '\q'
+1

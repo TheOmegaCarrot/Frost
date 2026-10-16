@@ -1,0 +1,8 @@
+# Comments, whether trailing a line or on lines of their own, do not break a
+# continuation: a pipeline's steps can each be commented.
+#= {result: [20, 40], inputs: {xs: [1, 2, 3, 4]}}
+xs # the input
+    # keep the even ones
+    @ select(fn x -> x % 2 == 0)
+    # then scale them
+    @ transform(fn x -> x * 10) # by ten

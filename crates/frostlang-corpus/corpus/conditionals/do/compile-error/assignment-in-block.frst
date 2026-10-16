@@ -1,0 +1,6 @@
+# A block has no assignment: a name is bound with `def`.
+#= {rejects: 'Frost has no assignment'}
+do {
+    x = 1
+    x
+}

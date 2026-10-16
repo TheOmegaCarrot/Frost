@@ -1,0 +1,3 @@
+# An Array plus a Map is a type error: each joins only its own kind.
+#= {raises: 'Array + Map'}
+[1] + {a: 1}

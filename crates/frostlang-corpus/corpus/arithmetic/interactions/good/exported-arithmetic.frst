@@ -1,0 +1,5 @@
+# An exported binding holds its computed value, Int or Float.
+#= {result: 14, exports: {total: 14, mean: 3.5}}
+export def total = 2 + 3 * 4
+export def mean = total / 4.0
+total

@@ -1,0 +1,4 @@
+# A `map` operation's parameter is bound only inside the operation.
+#= {rejects: ['`item`', 'not defined']}
+def doubled = map [1, 2] with fn item -> item * 2
+item

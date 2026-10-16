@@ -1,0 +1,4 @@
+# An Array does not order against its own element: `[1] < 2` raises rather
+# than comparing the first element.
+#= {raises: ['incompatible types', 'Array', 'Int']}
+[1] < 2

@@ -1,0 +1,5 @@
+# A function stored in a Map is called through field access or an index;
+# the Map is not passed to it, so `m.f(x)` is just `f(x)`.
+#= {result: [11, 9, [5]]}
+def m = {inc: fn x -> x + 1, dec: fn x -> x - 1, args: fn ...a -> a}
+[m.inc(10), m['dec'](10), m.args(5)]

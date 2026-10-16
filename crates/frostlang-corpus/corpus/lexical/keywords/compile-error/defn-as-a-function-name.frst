@@ -1,0 +1,3 @@
+# `defn` is a keyword, so it cannot name the function it defines.
+#= {rejects: '`defn` is a keyword'}
+defn defn(x) -> x

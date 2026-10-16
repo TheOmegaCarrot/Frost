@@ -1,0 +1,17 @@
+# The `let` evaluator raises its own error for a variable read outside the
+# `let` that binds it: here `y` is used after its `let` body has ended.
+# The program is `(let y = 2 in y) + y`.
+#= {
+#=     raises: 'unbound variable y',
+#=     inputs: {
+#=         program: {add: [{let: 'y', value: {num: 2}, body: {var: 'y'}}, {var: 'y'}]},
+#=     },
+#= }
+defn evaluate(node, env) -> match node {
+    {num} => num,
+    {var} => if has(env, var): env[var] else: error($'unbound variable ${var}'),
+    {add: [l, r]} => evaluate(l, env) + evaluate(r, env),
+    {let: name, value, body} => evaluate(body, env + {[name]: evaluate(value, env)}),
+}
+
+evaluate(program, {})

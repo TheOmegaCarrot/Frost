@@ -1,0 +1,13 @@
+# A `do` block inside a call's parentheses still ends its statements at line
+# breaks: the block holds two statements, and its value is the last.
+#= {result: [2, 'b']}
+[
+    len(do {
+        def unused_text = 'abc'
+        [unused_text, 'b']
+    }),
+    do {
+        'a'
+        'b'
+    },
+]

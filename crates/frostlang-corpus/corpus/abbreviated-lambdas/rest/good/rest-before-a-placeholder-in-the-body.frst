@@ -1,0 +1,5 @@
+# Where `$$` appears in the body does not matter: it is always the arguments
+# after the positional ones.
+#= {result: [[2], 1]}
+def f = $([$$, $1])
+f(1, 2)

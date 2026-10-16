@@ -1,0 +1,5 @@
+# A backslash at the end of a line does not continue a format String onto the
+# next line, even when a closing quote follows there.
+#= {rejects: 'at the end of a line'}
+def s = $'a\
+b'

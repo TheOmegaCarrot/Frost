@@ -1,0 +1,5 @@
+# A `...rest` parameter after the fixed ones collects the remaining arguments
+# into an Array, in order.
+#= {result: [1, [2, 3, 4]], inputs: {a: 1, b: 2, c: 3, d: 4}}
+def f = fn first, ...rest -> [first, rest]
+f(a, b, c, d)

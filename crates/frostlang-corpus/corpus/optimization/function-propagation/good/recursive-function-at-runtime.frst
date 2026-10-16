@@ -1,0 +1,5 @@
+# The recursive function of recursive-function, over arguments only known at
+# runtime, computes the same results.
+#= {result: [610, 1], inputs: {fifteen: 15, one: 1}}
+defn fib(x) -> if x < 2: x else: fib(x - 1) + fib(x - 2)
+[fib(fifteen), fib(one)]

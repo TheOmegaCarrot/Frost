@@ -1,0 +1,7 @@
+# A call that is an operand of `+` is not in tail position: the addition runs
+# after it returns. Each level keeps its frame, so the backtrace from the
+# bottom grows by one frame per level.
+#= {result: 495}
+defn down(n) -> if n == 0: error('bottom') else: 1 + down(n - 1)
+defn frames(n) -> len(try_call(down, [n]).trace)
+frames(500) - frames(5)

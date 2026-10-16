@@ -1,0 +1,4 @@
+# Frost has no `//` floor-division operator: `/` on Ints already truncates,
+# and a second `/` cannot begin an operand.
+#= {rejects: ['expected an expression', '`/`']}
+7 // 2

@@ -1,0 +1,7 @@
+# A format String as a computed key in a match Map pattern: a Map holding that
+# key matches, and one without it falls through to the next arm.
+#= {result: ['one', 'none'], inputs: {n: 1, subjects: [{k1: 'one'}, {k2: 'two'}]}}
+transform(subjects, fn s -> match s {
+    {[$'k${n}']: v} => v,
+    _ => 'none',
+})

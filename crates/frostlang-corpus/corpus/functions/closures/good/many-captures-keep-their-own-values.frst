@@ -1,0 +1,4 @@
+# Many captures are each kept in place, read back in any order.
+#= {result: [8, 1, 7, 2, 6, 3, 5, 4]}
+def make = fn a, b, c, d, e, f, g, h -> fn -> [h, a, g, b, f, c, e, d]
+make(1, 2, 3, 4, 5, 6, 7, 8)()

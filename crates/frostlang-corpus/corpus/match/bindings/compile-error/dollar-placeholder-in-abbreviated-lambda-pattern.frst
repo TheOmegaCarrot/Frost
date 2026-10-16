@@ -1,0 +1,8 @@
+# Even inside an abbreviated lambda, where `$` is a parameter, a pattern cannot
+# bind `$`: placeholders are never in definition position.
+#= {rejects: ['expected a pattern', 'found `$2`']}
+def f = $(match $ {
+    [$2] => 1,
+    _ => 0,
+})
+f([1])

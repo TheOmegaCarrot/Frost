@@ -1,0 +1,6 @@
+# An index, field access, or call written before `@` belongs to the threaded
+# operand: `m.k @ f()` is `f(m.k)`.
+#= {result: [3, 6, 11], inputs: {xs: [1, 2], m: {k: 5}}}
+defn inc(x) -> x + 1
+defn ten() -> 10
+[xs[1] @ inc(), m.k @ inc(), ten() @ inc()]

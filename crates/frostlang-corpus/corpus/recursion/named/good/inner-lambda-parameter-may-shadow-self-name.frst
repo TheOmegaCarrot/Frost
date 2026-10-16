@@ -1,0 +1,6 @@
+# A lambda nested in a named lambda may name a parameter like the self-name:
+# the parameter shadows it inside the inner lambda only, and the recursion
+# beside it still reaches the function.
+#= {result: [11, [11, 'base']]}
+defn f(n) -> if n == 0: 'base' else: [(fn f -> f + 1)(10), f(n - 1)]
+f(2)

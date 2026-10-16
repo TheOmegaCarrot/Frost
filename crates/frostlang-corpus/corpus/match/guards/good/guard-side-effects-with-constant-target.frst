@@ -1,0 +1,12 @@
+# With a constant target, guards that print still run, in order, exactly as
+# at runtime: the optimizer cannot skip their effects.
+#= {result: 'second', printed: ['first?', 'second?']}
+defn check(label, ok) -> {
+    print(label)
+    ok
+}
+match 1 {
+    x if: check('first?', false) => 'first',
+    x if: check('second?', true) => 'second',
+    _ => 'neither',
+}

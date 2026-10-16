@@ -1,0 +1,7 @@
+# `reduce` with a format String accumulator; an empty Array with an initial
+# value leaves it unchanged.
+#= {result: ['(((start)1)2)3', 'start'], inputs: {xs: [1, 2, 3], none: []}}
+[
+    reduce xs init: 'start' with fn (acc, x) -> $'(${acc})${x}',
+    reduce none init: 'start' with fn (acc, x) -> $'(${acc})${x}',
+]

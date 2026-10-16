@@ -1,0 +1,5 @@
+# A named lambda's own name is bound only inside it, not in the scope where the
+# lambda is written; only `defn` also binds the name outside.
+#= {rejects: ['`f`', 'not defined']}
+def g = fn f() -> 1
+f()

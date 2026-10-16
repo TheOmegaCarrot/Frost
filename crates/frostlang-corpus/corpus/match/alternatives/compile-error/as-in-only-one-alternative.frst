@@ -1,0 +1,5 @@
+# An `as` name counts as a binding for the same-names rule.
+#= {rejects: 'every alternative must bind the same names'}
+match {a: 1} {
+    {a} as m | {a} => 0,
+}

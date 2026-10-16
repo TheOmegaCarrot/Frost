@@ -1,0 +1,5 @@
+# A curried recursive call that supplies one argument too many raises an
+# arity error for the underlying function.
+#= {raises: 'expects 2 arguments'}
+defn count(acc, n) -> if n == 0: acc else: curry(count, acc + 1)(n - 1, 'extra')
+count(0, 3)

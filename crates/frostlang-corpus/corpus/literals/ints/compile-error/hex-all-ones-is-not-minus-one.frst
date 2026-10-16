@@ -1,0 +1,4 @@
+# A hex literal is a magnitude, not a bit pattern: sixteen `f`s is past the greatest
+# Int, not the two's-complement -1.
+#= {rejects: 'Int literal out of range'}
+0xffffffffffffffff

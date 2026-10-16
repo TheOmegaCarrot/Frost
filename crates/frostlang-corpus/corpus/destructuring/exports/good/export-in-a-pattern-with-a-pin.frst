@@ -1,0 +1,5 @@
+# An exported pattern with literal and pin parts exports only the names it
+# binds.
+#= {result: 0, exports: {a: 7}, inputs: {xs: [7, 1, 7]}}
+export def [a, 1, (a)] = xs
+0

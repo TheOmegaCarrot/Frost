@@ -1,0 +1,11 @@
+# A helper written with another language's `let` is rejected: Frost binds
+# names with `def`, and the compiler says so.
+#= {
+#=     rejects: 'no `let`',
+#=     inputs: {xs: [1, 2, 3]},
+#= }
+defn average(items) -> {
+    let total = fold(items, 0, fn acc, x -> acc + x)
+    total / len(items)
+}
+average(xs)

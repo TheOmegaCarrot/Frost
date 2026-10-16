@@ -1,0 +1,4 @@
+# Frost has no `then`: the condition is followed by a colon.
+#= {rejects: ['found `then`', '`if` takes a colon']}
+def c = true
+if c then 1 else 2

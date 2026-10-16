@@ -1,0 +1,9 @@
+# `defn` accepts discards, a rest parameter, a discarded rest, and a
+# trailing comma, like any lambda.
+#= {result: [1, [2, 3], 'any', [1, []], 2]}
+defn first(a, _) -> a
+defn tail(_, ...rest) -> rest
+defn anything(..._) -> 'any'
+defn shape(a, _, ...rest) -> [a, rest]
+defn trailing(a, b,) -> b
+[first(1, 2), tail(1, 2, 3), anything(), shape(1, 2), trailing(1, 2)]

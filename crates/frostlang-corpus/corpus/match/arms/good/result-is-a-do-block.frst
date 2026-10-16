@@ -1,0 +1,10 @@
+# An arm's result may be a `do` block, whose definitions are local to the arm.
+#= {result: [11, 'outer']}
+def y = 'outer'
+def r = match 10 {
+    n => do {
+        def y = n + 1
+        y
+    },
+}
+[r, y]

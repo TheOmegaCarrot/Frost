@@ -1,0 +1,4 @@
+# A backslash before a literal tab character is no escape (the escape is `\t`); the
+# error names the invisible character by code point.
+#= {rejects: ['invalid escape sequence', 'U+0009']}
+'a\	b'

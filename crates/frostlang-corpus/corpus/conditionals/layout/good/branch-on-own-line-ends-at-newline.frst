@@ -1,0 +1,8 @@
+# A branch written on its own line still ends at its line break, so the
+# statement after the `if` is a separate one.
+#= {result: [1, 1], inputs: {c: true}}
+def v = if c:
+    1
+else:
+    2
+[v, v]

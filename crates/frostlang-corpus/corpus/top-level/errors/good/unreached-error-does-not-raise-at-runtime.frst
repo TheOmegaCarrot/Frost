@@ -1,0 +1,12 @@
+# With conditions only known at runtime, an `error` in a branch not taken or
+# an operand short-circuited away still does nothing.
+#= {
+#=     result: ['safe', false, true, null],
+#=     inputs: {no: false, yes: true, nothing: null},
+#= }
+[
+    if no: error('if') else: 'safe',
+    no and error('and'),
+    yes or error('or'),
+    nothing and error('null and'),
+]

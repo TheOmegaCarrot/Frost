@@ -1,0 +1,6 @@
+# A reduce whose operation builds its accumulator up from the last read of it
+# gives the full result, and leaves the iterated value and the initial
+# accumulator unchanged.
+#= {result: [[2, 4, 6], [1, 2, 3], []], inputs: {xs: [1, 2, 3], start: []}}
+def built = reduce xs init: start with fn acc, x -> acc + [x * 2]
+[built, xs, start]

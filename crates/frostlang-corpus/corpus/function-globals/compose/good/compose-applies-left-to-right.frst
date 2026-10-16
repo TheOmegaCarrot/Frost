@@ -1,0 +1,6 @@
+# `compose(f, g)` applies `f` first, then `g` to its result: the order is
+# left to right, the reverse of mathematical composition.
+#= {result: [12, 11]}
+def inc = fn x -> x + 1
+def double = fn x -> x * 2
+[compose(inc, double)(5), compose(double, inc)(5)]

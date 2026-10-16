@@ -1,0 +1,8 @@
+# Branches may be of different kinds, binding the same names in different
+# positions.
+#= {result: [[1, 2], [3, 4]]}
+defn coords(v) -> {
+    def {x, y} | [x, y] = v
+    [x, y]
+}
+[coords({x: 1, y: 2}), coords([3, 4])]

@@ -1,0 +1,3 @@
+# A double-quoted raw String is not closed by the single-quoted closer `)'`.
+#= {rejects: 'unclosed raw String'}
+R"(abc)'

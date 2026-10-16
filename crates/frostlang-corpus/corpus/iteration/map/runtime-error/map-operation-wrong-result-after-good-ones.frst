@@ -1,0 +1,4 @@
+# The Map-result rule is checked entry by entry: earlier entries returning
+# Maps do not excuse a later one that does not.
+#= {raises: ['must return a Map', 'String'], inputs: {m: {a: 1, b: 2, c: 3}}}
+map m with fn k, v -> if k == 'c': 'oops' else: {[k]: v}

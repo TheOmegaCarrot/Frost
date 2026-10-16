@@ -1,0 +1,3 @@
+# Escapes decode in place among ordinary text, several in a row.
+#= {result: [true, 7]}
+['a\nb\tc\\d' == 'a' + '\u{a}' + 'b' + '\u{9}' + 'c' + '\u{5c}' + 'd', len('a\nb\tc\\d')]

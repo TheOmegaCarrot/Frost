@@ -1,0 +1,8 @@
+# A call in tail position after a known binding in the same body stays a tail
+# call, so a deep recursion through it does not grow the stack.
+#= {result: 'done', inputs: {steps: 200000}}
+defn loop(n) -> {
+    def step = 2 - 1
+    if n == 0: 'done' else: loop(n - step)
+}
+loop(steps)

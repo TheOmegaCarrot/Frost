@@ -1,0 +1,20 @@
+# A call evaluates its callee first, then its arguments left to right, then
+# runs the body.
+#= {
+#=     result: [1, 2],
+#=     printed: ['callee', 'first', 'second', 'body'],
+#= }
+def pair = fn a, b -> {
+    print('body')
+    [a, b]
+}
+(do {
+    print('callee')
+    pair
+})(do {
+    print('first')
+    1
+}, do {
+    print('second')
+    2
+})

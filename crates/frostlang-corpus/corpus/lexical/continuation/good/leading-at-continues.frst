@@ -1,0 +1,8 @@
+# `@` cannot begin a statement, so a line starting with `@` continues the
+# expression on the line before, threading it into the call.
+#= {result: [4, 8]}
+def xs = [1, 2, 3, 4]
+def r = xs
+    @ select(fn x -> x % 2 == 0)
+    @ transform(fn x -> x * 2)
+r

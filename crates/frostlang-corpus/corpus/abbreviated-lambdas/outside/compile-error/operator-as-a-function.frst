@@ -1,0 +1,4 @@
+# An operator cannot be used as a Function. Outside an abbreviated lambda,
+# the help suggests writing one instead.
+#= {rejects: ['operator as a function', '`$($ + 1)`']}
+call((+ 1), [1])

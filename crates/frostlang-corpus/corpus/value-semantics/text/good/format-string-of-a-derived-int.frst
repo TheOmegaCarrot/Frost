@@ -1,0 +1,5 @@
+# A format string interpolating an Int and a value computed from it leaves
+# the Int binding unchanged, even past wrapping at the Int boundary.
+#= {result: ['9223372036854775807 -9223372036854775808', 9223372036854775807], inputs: {n: 9223372036854775807}}
+def m = n
+[$'${m} ${m + 1}', m]

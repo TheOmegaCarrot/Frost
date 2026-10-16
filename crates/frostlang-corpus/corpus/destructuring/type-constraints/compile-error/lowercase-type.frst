@@ -1,0 +1,4 @@
+# Type names are capitalized; `int` is not a type constraint.
+#= {rejects: 'expected a type name'}
+def x is int = 1
+x

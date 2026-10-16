@@ -1,0 +1,6 @@
+# A caught error does not end the program: the statements after it run, and
+# the tail is computed as usual.
+#= {result: 'caught: x', printed: ['after']}
+def outcome = try_call(fn -> error('x'))
+print('after')
+'caught: ' + outcome.error

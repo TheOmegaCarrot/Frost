@@ -1,0 +1,5 @@
+# A name already bound cannot be assigned a new value: values are immutable,
+# and an updated value gets a new name.
+#= {rejects: 'immutable'}
+def x = 1
+x = x + 1

@@ -1,0 +1,4 @@
+# Names are ASCII, so a non-ASCII `name:` key is rejected; such a key is
+# written as a computed String, `{['ключ']: 1}`.
+#= {rejects: 'unexpected character'}
+def m = {ключ: 1}

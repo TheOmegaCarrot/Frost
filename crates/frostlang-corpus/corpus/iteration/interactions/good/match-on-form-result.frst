@@ -1,0 +1,8 @@
+# A form's result can be matched directly, as here, where whether anything
+# survived a `filter` picks the arm.
+#= {result: ['first: 3', 'nothing'], inputs: {xs: [1, 3, 5], ys: [1]}}
+defn first_big(zs) -> match filter zs with fn z -> z > 2 {
+    [] => 'nothing',
+    [first, ...rest] => $'first: ${first}',
+}
+[first_big(xs), first_big(ys)]

@@ -1,0 +1,5 @@
+# `@` binds tighter than `not`: `not v @ type()` is `not type(v)`, which is
+# false because a String is truthy, while `(not v) @ type()` is the type of a
+# Bool.
+#= {result: [false, 'Bool'], inputs: {v: 5}}
+[not v @ type(), (not v) @ type()]

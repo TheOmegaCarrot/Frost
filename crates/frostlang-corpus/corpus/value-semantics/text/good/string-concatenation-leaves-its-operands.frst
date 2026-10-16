@@ -1,0 +1,6 @@
+# Concatenating Strings leaves both operand bindings unchanged, non-ASCII
+# text included.
+#= {result: ['日本', '語 ✓', '日本語 ✓', '語 ✓日本'], inputs: {a: '日本', b: '語 ✓'}}
+def joined = a + b
+def flipped = b + a
+[a, b, joined, flipped]

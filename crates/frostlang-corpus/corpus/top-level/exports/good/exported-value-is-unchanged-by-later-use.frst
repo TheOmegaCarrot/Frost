@@ -1,0 +1,6 @@
+# An export keeps the value it was bound to, even when a later expression
+# builds a new value from it. Subtle because the binding's last read in the
+# program is that expression, but the export is read after the program ends.
+#= {result: [1, 2, 3], exports: {xs: [1, 2]}}
+export def xs = [1, 2]
+xs + [3]

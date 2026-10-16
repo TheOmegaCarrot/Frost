@@ -1,0 +1,7 @@
+# Each evaluation of a lambda makes a new Function, even when the lambda
+# captures nothing: two calls of a maker return unequal Functions.
+# Subtle: a capture-free closure behaves identically every time, yet each
+# evaluation still has its own identity, whatever the optimizer hoists.
+#= {result: false}
+def make = fn -> fn -> 1
+make() == make()

@@ -1,0 +1,5 @@
+# A filter keeps an element by the truthiness of the predicate's value, so a
+# taken branch yielding `false` drops the element even though its condition
+# held.
+#= {result: [1, 3], inputs: {xs: [1, false, 3, null]}}
+filter xs with fn x -> if is_bool(x): x else: x

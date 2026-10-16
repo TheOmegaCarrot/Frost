@@ -1,0 +1,10 @@
+# The value may come from `if`, `match`, `or`, or a call.
+#= {result: [1, 2, 3, 4], inputs: {flag: true, n: 0, missing: null}}
+def [a] = if flag: [1] else: [0]
+def [b] = match n {
+    0 => [2],
+    _ => [0],
+}
+def [c] = missing or [3]
+def [d] = (fn -> [4])()
+[a, b, c, d]

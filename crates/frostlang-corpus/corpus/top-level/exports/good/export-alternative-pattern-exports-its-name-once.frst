@@ -1,0 +1,4 @@
+# An exported pattern with alternatives exports each name once, bound by
+# whichever alternative matched first.
+#= {result: null, exports: {a: 5}}
+export def {a} | [a] = [5]

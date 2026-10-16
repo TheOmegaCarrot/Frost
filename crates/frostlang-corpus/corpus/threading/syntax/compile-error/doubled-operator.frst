@@ -1,0 +1,3 @@
+# Two `@` in a row: the second has no operand before it.
+#= {rejects: ['expected an expression', '`@`'], inputs: {xs: [1]}}
+xs @ @ len()

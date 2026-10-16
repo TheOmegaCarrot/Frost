@@ -1,0 +1,12 @@
+# Bools are equal exactly when they are the same Bool, and never equal to an
+# Int, though some languages treat `true` as `1`.
+#= {result: [true, true, false, true, false, false, false]}
+[
+    true == true,
+    false == false,
+    true == false,
+    true != false,
+    true == 1,
+    false == 0,
+    false == null,
+]

@@ -1,0 +1,3 @@
+# `tap` takes exactly two arguments.
+#= {raises: ['tap', 'expects 2', 'called with 1']}
+tap(1)

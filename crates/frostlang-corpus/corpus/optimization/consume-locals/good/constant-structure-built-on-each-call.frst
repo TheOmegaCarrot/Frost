@@ -1,0 +1,6 @@
+# A function that builds on a constant structure returns a fresh result on
+# every call: an update never reaches the constant the next call starts from.
+#= {result: [[1, 2, 3], [1, 2, 4], {a: 1, b: 3}, {a: 1, b: 4}], inputs: {three: 3, four: 4}}
+defn grow(x) -> [1, 2] + [x]
+defn extend(x) -> {a: 1} + {b: x}
+[grow(three), grow(four), extend(three), extend(four)]

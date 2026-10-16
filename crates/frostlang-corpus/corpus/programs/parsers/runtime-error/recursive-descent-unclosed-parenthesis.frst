@@ -1,0 +1,35 @@
+# Uncaught, a syntax error raised deep in the recursive-descent parser ends
+# the run: the inner parenthesis here is closed, but the outer one never is.
+#= {
+#=     raises: 'expected )',
+#=     inputs: {chars: ['(', '1', '*', '(', '2', '+', '3', ')']},
+#= }
+def digits = {['1']: 1, ['2']: 2, ['3']: 3}
+
+defn number(chars) -> match chars {
+    [c, ...rest] if: has(digits, c) => [digits[c], rest],
+    _ => error('expected a number'),
+}
+
+defn parse(rule, chars) -> match rule {
+    'expr' => match parse('factor', chars) {
+        [left, ['+', ...rest]] => do {
+            def [right, after] = parse('expr', rest)
+            [left + right, after]
+        },
+        [left, ['*', ...rest]] => do {
+            def [right, after] = parse('expr', rest)
+            [left * right, after]
+        },
+        done => done,
+    },
+    'factor' => match chars {
+        ['(', ...rest] => match parse('expr', rest) {
+            [value, [')', ...after]] => [value, after],
+            _ => error('expected )'),
+        },
+        _ => number(chars),
+    },
+}
+
+parse('expr', chars)

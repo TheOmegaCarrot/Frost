@@ -1,0 +1,10 @@
+# An `if` with no `else` as a statement guards a body: it raises for bad input
+# and otherwise yields a dropped Null, letting the body run.
+#= {result: [true, 4, false], inputs: {good: 2, bad: 'x'}}
+defn double(n) -> {
+    if not is_int(n): error('needs an Int')
+    n * 2
+}
+def ok = try_call(double, [good])
+def failed = try_call(double, [bad])
+[ok.ok, ok.value, failed.ok]

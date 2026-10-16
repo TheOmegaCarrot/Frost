@@ -1,0 +1,7 @@
+# `index(key)` makes a function that does exactly what indexing its argument
+# with `key` does, raising included, so making one checks nothing: a key that
+# cannot index anything raises only if the function is called.
+#= {result: 'built'}
+def by_null = index(null)
+def by_array = index([1])
+'built'

@@ -1,0 +1,8 @@
+# An exported pattern nested through Maps and Arrays exports every name at
+# every depth.
+#= {result: null, exports: {name: 'p', x: 3, y: 4, tags: ['a']}}
+export def {name, point: [x, y], meta: {tags}} = {
+    name: 'p',
+    point: [3, 4],
+    meta: {tags: ['a']},
+}

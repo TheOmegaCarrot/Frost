@@ -1,0 +1,26 @@
+# The category constraints accept every type in their category: Primitive
+# (Null, Bool, Int, Float, String, Bytes), Numeric (Int, Float), Structured
+# (Array, Map), Flat (String, Bytes), and Nonnull (anything but Null, even a
+# falsy `false`).
+#= {
+#=     result: [null, false, 2, 2.5, 's', x'02', 3, 3.5, [], {}, 's', x'01', 0, false, ''],
+#=     inputs: {xs: [null, false, 2, 2.5, 's', x'02', 3, 3.5, [], {}, 's', x'01', 0, false, '']},
+#= }
+def [
+    p1 is Primitive,
+    p2 is Primitive,
+    p3 is Primitive,
+    p4 is Primitive,
+    p5 is Primitive,
+    p6 is Primitive,
+    n1 is Numeric,
+    n2 is Numeric,
+    s1 is Structured,
+    s2 is Structured,
+    f1 is Flat,
+    f2 is Flat,
+    nn1 is Nonnull,
+    nn2 is Nonnull,
+    nn3 is Nonnull,
+] = xs
+[p1, p2, p3, p4, p5, p6, n1, n2, s1, s2, f1, f2, nn1, nn2, nn3]

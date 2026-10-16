@@ -1,0 +1,4 @@
+# A single `=` in a condition is a comparison mistyped: Frost's equality is
+# `==`.
+#= {rejects: 'equality is `==`', inputs: {x: 1}}
+if x = 1: 2

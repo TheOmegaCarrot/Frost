@@ -1,0 +1,4 @@
+# The remainder of an Int by zero raises; it is undefined. The folder must
+# leave it for runtime rather than reject the script.
+#= {raises: 'modulus by zero'}
+7 % 0

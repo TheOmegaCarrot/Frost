@@ -1,0 +1,8 @@
+# A duplicate binding is a compile error even inside code that never runs.
+#= {rejects: ['`y`', 'already bound']}
+if false: do {
+    def y = 1
+    def y = 2
+    y
+}
+else: 0

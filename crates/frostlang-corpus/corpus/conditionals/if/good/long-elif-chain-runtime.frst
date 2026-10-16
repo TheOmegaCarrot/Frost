@@ -1,0 +1,13 @@
+# A long `elif` chain picks the branch of the one matching condition for each
+# runtime value, and falls through to `else` for values none matches.
+#= {
+#=     result: ['zero', 'one', 'two', 'three', 'four', 'many', 'many'],
+#=     inputs: {ns: [0, 1, 2, 3, 4, 5, -1]},
+#= }
+defn name(n) -> if n == 0: 'zero'
+    elif n == 1: 'one'
+    elif n == 2: 'two'
+    elif n == 3: 'three'
+    elif n == 4: 'four'
+    else: 'many'
+map ns with name

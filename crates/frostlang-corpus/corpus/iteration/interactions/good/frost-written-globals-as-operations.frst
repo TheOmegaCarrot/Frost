@@ -1,0 +1,20 @@
+# Globals written in Frost, and the functions they return, serve as
+# operations like any other function.
+#= {
+#=     result: [[1, 2], ['x', 'y'], [2, 12], [11, 12], [0, 0], {}],
+#=     inputs: {
+#=         xs: [1, null, 2],
+#=         records: [{name: 'x'}, {name: 'y'}],
+#=         pairs: [[1, 2], [3, 4]],
+#=         ys: [1, 2],
+#=         m: {a: 1},
+#=     },
+#= }
+[
+    filter xs with inv(is_null),
+    map records with index('name'),
+    map pairs with spread(fn a, b -> a * b),
+    map ys with curry(fn a, b -> a + b, 10),
+    map ys with const(0),
+    map m with const({}),
+]

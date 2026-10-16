@@ -1,0 +1,3 @@
+# Frost has no `return`: a function's value is its last expression.
+#= {rejects: 'no `return`'}
+def f = fn x -> return x * 2

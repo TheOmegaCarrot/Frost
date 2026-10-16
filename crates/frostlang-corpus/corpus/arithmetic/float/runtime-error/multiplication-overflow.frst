@@ -1,0 +1,4 @@
+# A Float product too large to be finite raises rather than becoming
+# Infinity.
+#= {raises: 'infinity'}
+1e308 * 10.0

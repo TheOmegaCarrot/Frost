@@ -1,0 +1,5 @@
+# `..._` accepts any number of extra arguments and binds none of them.
+#= {result: [1, 1, 'ok']}
+def f = fn a, ..._ -> a
+def g = fn(..._) -> 'ok'
+[f(1), f(1, 2, 3), g()]

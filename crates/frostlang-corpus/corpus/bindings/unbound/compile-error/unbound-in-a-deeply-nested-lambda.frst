@@ -1,0 +1,4 @@
+# An unbound name is an error however deeply the lambda holding it is nested.
+#= {rejects: ['`missing`', 'not defined']}
+def outer = fn -> fn -> fn -> missing
+1

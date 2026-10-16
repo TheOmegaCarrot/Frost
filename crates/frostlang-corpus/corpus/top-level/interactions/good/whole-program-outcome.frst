@@ -1,0 +1,18 @@
+# A whole program's outcome combines its exports, everything it printed, and
+# its tail, with an error caught along the way leaving all three intact.
+#= {
+#=     result: {total: 6, failures: ['bad: x']},
+#=     exports: {total: 6, count: 3},
+#=     printed: ['start', 'checked 3 items', 'done'],
+#=     inputs: {items: [1, 'x', 2, 3]},
+#= }
+print('start')
+defn check(item) -> if is_int(item): item else: error($'bad: ${item}')
+def outcomes = transform(items, fn item -> try_call(check, [item]))
+def values = transform(select(outcomes, fn o -> o.ok), fn o -> o.value)
+def failures = transform(select(outcomes, fn o -> not o.ok), fn o -> o.error)
+export def total = fold(values, 0, fn acc, v -> acc + v)
+export def count = len(values)
+print($'checked ${count} items')
+print('done')
+{total, failures}

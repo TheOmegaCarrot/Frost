@@ -1,0 +1,11 @@
+# The value is checked to be a Map before any computed key is evaluated.
+#= {result: false, printed: [], inputs: {v: 5}}
+defn note(k) -> {
+    print(k)
+    k
+}
+def outcome = try_call(fn -> {
+    def {[note('a')]: x} = v
+    x
+})
+outcome.ok

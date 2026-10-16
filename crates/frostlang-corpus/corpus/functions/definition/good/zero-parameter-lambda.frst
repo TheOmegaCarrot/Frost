@@ -1,0 +1,4 @@
+# A lambda with no parameters is written `fn -> body` and called with `()`.
+#= {result: 42}
+def answer = fn -> 42
+answer()

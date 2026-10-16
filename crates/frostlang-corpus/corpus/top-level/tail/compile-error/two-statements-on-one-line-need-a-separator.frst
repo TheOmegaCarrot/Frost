@@ -1,0 +1,4 @@
+# Two top-level statements on one line must be separated by `;`; adjacent
+# expressions are not a program.
+#= {rejects: 'line break'}
+1 2

@@ -1,0 +1,9 @@
+# `is Function` admits Functions only: native globals and Frost lambdas alike.
+#= {
+#=     result: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1],
+#=     inputs: {xs: [null, false, true, 0, -1, 0.0, 1.5, '', 'é', x'', x'00', [], [null], {}, {a: null}]},
+#= }
+transform(xs + [len, fn x -> x], fn v -> match v {
+    _ is Function => 1,
+    _ => 0,
+})

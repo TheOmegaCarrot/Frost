@@ -1,0 +1,9 @@
+# `or` in an abbreviated lambda does not call its right operand when the
+# left is truthy.
+#= {result: ['first', 'second'], printed: ['called']}
+def fallback = $($1 or $2())
+def loud = fn -> {
+    print('called')
+    'second'
+}
+[fallback('first', loud), fallback(null, loud)]

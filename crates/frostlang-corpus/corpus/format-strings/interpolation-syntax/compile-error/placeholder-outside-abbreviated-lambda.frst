@@ -1,0 +1,4 @@
+# A `$` placeholder in an interpolation is valid only inside an abbreviated
+# lambda; a format String alone does not supply one.
+#= {rejects: 'placeholders work only inside'}
+def s = $'${$}'

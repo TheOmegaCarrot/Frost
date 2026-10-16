@@ -1,0 +1,5 @@
+# A known function whose body raises on its constant argument raises when the
+# program calls it.
+#= {raises: 'division by zero'}
+def divide_by_zero = fn x -> x / 0
+divide_by_zero(1)

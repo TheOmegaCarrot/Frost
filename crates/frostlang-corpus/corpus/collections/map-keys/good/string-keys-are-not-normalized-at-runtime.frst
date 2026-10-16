@@ -1,0 +1,8 @@
+# String keys known only at runtime compare by their exact text: precomposed
+# U+00E9 and `e` followed by combining U+0301 are different keys.
+#= {
+#=     result: [2, 'precomposed', 'decomposed', null],
+#=     inputs: {pre: '\u{e9}', dec: 'e\u{301}'},
+#= }
+def m = {[pre]: 'precomposed', [dec]: 'decomposed'}
+[len(m), m[pre], m[dec], {[pre]: 'x'}[dec]]

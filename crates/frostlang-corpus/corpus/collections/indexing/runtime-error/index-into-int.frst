@@ -1,0 +1,3 @@
+# An Int is not indexable.
+#= {raises: ['Cannot index value', 'Int']}
+5[0]

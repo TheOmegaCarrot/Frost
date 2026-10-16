@@ -1,0 +1,14 @@
+# A recursive-descent parser written the obvious way, one top-level function
+# per grammar rule, is rejected: `factor` refers to `expr`, which is defined
+# only after it. Mutually recursive rules need one dispatching function or
+# functions passed as arguments.
+#= {
+#=     rejects: ['`expr`', 'not defined'],
+#=     inputs: {chars: ['(', '1', ')']},
+#= }
+defn factor(cs) -> match cs {
+    ['(', ...rest] => expr(rest),
+    [c, ...rest] => [c, rest],
+}
+defn expr(cs) -> factor(cs)
+expr(chars)

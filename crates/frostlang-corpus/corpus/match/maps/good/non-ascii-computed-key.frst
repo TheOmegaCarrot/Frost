@@ -1,0 +1,6 @@
+# A non-ASCII String key, written as a computed key, is looked up exactly.
+#= {result: ['ключ', 'other'], inputs: {xs: [{['ключ']: 'ключ'}, {['ключи']: 'x'}]}}
+transform(xs, fn v -> match v {
+    {['ключ']: found} => found,
+    _ => 'other',
+})

@@ -1,0 +1,5 @@
+# Frost has no compound assignment such as `+=`: values are immutable, and a
+# new result is bound to a new name with `def`.
+#= {rejects: ['expected an expression', '`=`']}
+def x = 1
+x += 1

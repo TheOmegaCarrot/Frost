@@ -1,0 +1,4 @@
+# `_ is Type` binds nothing, yet still checks its part.
+#= {raises: 'expected an Int', inputs: {xs: ['s', 2]}}
+def [_ is Int, a] = xs
+a

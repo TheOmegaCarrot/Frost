@@ -1,0 +1,4 @@
+# A non-ASCII String is a String like any other to the arithmetic operators:
+# subtracting an Int from it is a type error naming the operand types.
+#= {raises: 'String - Int'}
+'日本' - 1

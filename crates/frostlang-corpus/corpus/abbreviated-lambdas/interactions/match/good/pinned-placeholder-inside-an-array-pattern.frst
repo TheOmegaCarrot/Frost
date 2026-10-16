@@ -1,0 +1,8 @@
+# A pinned placeholder can sit inside an Array pattern beside a binding:
+# the pair matches only when its head equals the first argument.
+#= {result: [5, null], inputs: {pair: [1, 5]}}
+def tail_if = $(match $2 {
+    [($1), rest] => rest,
+    _ => null,
+})
+[tail_if(1, pair), tail_if(2, pair)]

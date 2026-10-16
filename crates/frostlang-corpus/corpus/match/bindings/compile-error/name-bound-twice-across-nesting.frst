@@ -1,0 +1,5 @@
+# A name bound at one depth of a pattern cannot be bound again at another.
+#= {rejects: '`x` is already bound'}
+match [1, {x: 2}] {
+    [x, {x}] => x,
+}

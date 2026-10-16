@@ -1,0 +1,9 @@
+# Exported Array and Map patterns over values only known at runtime export
+# each name they bind.
+#= {
+#=     result: null,
+#=     exports: {first: 1, rest: [2, 3], host: 'h', whole: {host: 'h'}},
+#=     inputs: {xs: [1, 2, 3], config: {host: 'h'}},
+#= }
+export def [first, ...rest] = xs
+export def {host} as whole = config

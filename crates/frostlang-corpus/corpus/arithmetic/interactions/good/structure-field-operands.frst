@@ -1,0 +1,7 @@
+# Fields and elements reached by `.` and `[]` are operands like any other, and
+# results gather into structures that compare by value.
+#= {result: [true, 12], inputs: {m: {a: 3}, xs: [4, 5]}}
+[
+    [1 + 1, 2.0] == [2, 2.0],
+    m.a * xs[0],
+]

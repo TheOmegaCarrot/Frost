@@ -1,0 +1,6 @@
+# A closure equals itself, and not a Function that behaves differently or a
+# value of another type.
+#= {result: [true, false, false, true, false, false]}
+def f = fn -> 1
+def g = fn -> 2
+[f == f, f == g, f != f, f != g, f == 1, f == null]

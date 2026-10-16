@@ -1,0 +1,11 @@
+# `@` threading binds tighter than `and` and `or`: `a or b @ f()` threads only
+# `b` into the call.
+#= {
+#=     result: [2, 0, null],
+#=     inputs: {n: null, xs: [3, 1], empty: []},
+#= }
+[
+    n or xs @ len(),
+    empty @ len() or 'never',
+    n and xs @ len(),
+]

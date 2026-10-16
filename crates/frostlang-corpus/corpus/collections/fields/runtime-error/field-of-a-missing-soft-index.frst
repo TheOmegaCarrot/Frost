@@ -1,0 +1,3 @@
+# A soft index yields Null for a missing key, and a field of that Null raises.
+#= {raises: ['Cannot index value', 'Null'], inputs: {m: {}}}
+m['nope'].x

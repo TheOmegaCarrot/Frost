@@ -1,0 +1,6 @@
+# Constant Strings concatenated, which the compiler may compute ahead of time,
+# leave their bindings unchanged.
+#= {result: ['ab', 'a', 'b', 'aa']}
+def a = 'a'
+def b = 'b'
+[a + b, a, b, a + a]

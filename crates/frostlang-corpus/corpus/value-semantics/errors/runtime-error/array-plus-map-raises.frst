@@ -1,0 +1,6 @@
+# Adding a Map to an Array that nothing else holds raises a type error, as
+# with any other Array: reusing the operand's storage never turns a
+# mismatched `+` into a result.
+#= {raises: ['cannot add', 'Array + Map'], inputs: {n: 1}}
+def xs = [n]
+xs + {k: 1}

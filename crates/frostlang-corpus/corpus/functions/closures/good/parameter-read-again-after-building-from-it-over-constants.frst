@@ -1,0 +1,7 @@
+# The same repeated parameter reads over constant arguments, which the
+# optimizer may compute ahead of time: each read still sees the argument.
+#= {result: [[1, 2, 3], [1, 2, 4], [1, 2], {a: 1, b: 2}, {a: 1}, '1y', '1']}
+def arrays = fn a -> [a + [3], a + [4], a]
+def maps = fn t -> [t + {b: 2}, t]
+def strings = fn t -> [t + 'y', t]
+arrays([1, 2]) + maps({a: 1}) + strings('1')

@@ -1,0 +1,4 @@
+# A brace inside a String in an interpolation is text: it neither closes nor
+# opens the interpolation.
+#= {result: ['<}{>', '}', '{', '}', '{']}
+[$'<${"}{"}>', $'${"}"}', $'${"{"}', $"${'}'}", $"${'{'}"]

@@ -1,0 +1,6 @@
+# Arguments are evaluated left to right, and each sees the original binding,
+# even when a middle argument derives from it and the last is its last use.
+#= {result: [[1], [1, 2], [1]], inputs: {n: 1}}
+defn three(a, b, c) -> [a, b, c]
+def xs = [n]
+three(xs, xs + [2], xs)

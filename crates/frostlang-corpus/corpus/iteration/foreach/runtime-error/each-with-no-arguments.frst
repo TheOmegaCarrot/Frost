@@ -1,0 +1,3 @@
+# `each` called with no arguments is an arity error.
+#= {raises: ['each', 'called with 0']}
+each()

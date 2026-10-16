@@ -1,0 +1,4 @@
+# A rest's name counts among a branch's bindings.
+#= {rejects: 'every alternative must bind the same names'}
+def [x, ...r] | [x] = [1]
+x

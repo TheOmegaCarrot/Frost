@@ -1,0 +1,3 @@
+# A `true` condition known only at runtime takes the consequent.
+#= {result: 'yes', inputs: {c: true}}
+if c: 'yes' else: 'no'

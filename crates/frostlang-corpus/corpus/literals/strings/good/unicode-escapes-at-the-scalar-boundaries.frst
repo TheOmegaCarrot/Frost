@@ -1,0 +1,9 @@
+# The least and greatest Unicode scalars are escapable, as are the scalars on either
+# side of the surrogate range, which is not.
+#= {result: [true, [1, 1, 1, 1], true, false]}
+[
+    '\u{0}' == '\0',
+    [len('\u{10FFFF}'), len('\u{d7ff}'), len('\u{e000}'), len('\u{0}')],
+    '\u{10ffff}' == '\u{10FFFF}',
+    '\u{d7ff}' == '\u{e000}',
+]

@@ -1,0 +1,7 @@
+# Each closure keeps the value its captured name had when the closure was made,
+# so closures made by separate calls are independent.
+#= {result: [1, 2, 1]}
+def make = fn n -> fn -> n
+def a = make(1)
+def b = make(2)
+[a(), b(), a()]

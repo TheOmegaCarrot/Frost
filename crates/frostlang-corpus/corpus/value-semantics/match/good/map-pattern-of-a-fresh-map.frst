@@ -1,0 +1,7 @@
+# Matching a Map that nothing else holds, binding both an entry and the whole
+# Map with `as`: extending the entry leaves the whole-Map binding's entry as
+# it was.
+#= {result: [[1, 2], {items: [1]}], inputs: {n: 1}}
+match {items: [n]} {
+    {items} as whole => [items + [2], whole],
+}

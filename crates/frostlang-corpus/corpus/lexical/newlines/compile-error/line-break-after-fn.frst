@@ -1,0 +1,4 @@
+# A lambda's parameters start on the line of its `fn`.
+#= {rejects: 'found a line break'}
+def f = fn
+    x -> x

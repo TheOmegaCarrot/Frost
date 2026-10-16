@@ -281,6 +281,9 @@ The pipeline-friendly function forms are `transform`, `select`, and `fold`.
 
 - Never edit this `CLAUDE.md` without explicit instruction to do so.
 - Everything saved to Claude's memory must be durable and evergreen: unlikely to need revision.
+- Never read the whole corpus (`crates/frostlang-corpus/corpus/`) into the main session: it would
+  flood the context window. Read only the specific scripts of interest, and delegate corpus work
+  (writing, auditing, sweeping changes) to subagents.
 
 ### Pre-publish status (temporary)
 

@@ -1,0 +1,8 @@
+# A binding in a block may use an earlier one, and the final expression sees
+# them all.
+#= {result: 6}
+do {
+    def a = 2
+    def b = a + 1
+    a * b
+}

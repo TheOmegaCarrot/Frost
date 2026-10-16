@@ -1,0 +1,4 @@
+# The value cannot read the rest the same pattern binds.
+#= {rejects: '`r` is not defined'}
+def [a, ...r] = r
+a

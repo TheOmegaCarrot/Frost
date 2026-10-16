@@ -1,0 +1,15 @@
+# A generic tree fold reads each node's children with a field read, so a
+# malformed node deep in the tree, lacking that field, raises, naming the
+# key.
+#= {
+#=     raises: ['no value at key', 'children'],
+#=     inputs: {
+#=         tree: {label: 'root', children: [
+#=             {label: 'a', children: []},
+#=             {label: 'b', children: [{label: 'broken'}]},
+#=         ]},
+#=     },
+#= }
+defn fold_tree(node, combine) -> combine(node.label, transform(node.children, fn child -> fold_tree(child, combine)))
+
+fold_tree(tree, fn label, sizes -> fold(sizes, 1, fn total, n -> total + n))

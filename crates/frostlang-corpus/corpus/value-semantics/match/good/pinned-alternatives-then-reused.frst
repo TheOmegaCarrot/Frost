@@ -1,0 +1,9 @@
+# Pinned bindings tried as alternatives, the first failing and the second
+# matching, are both unchanged afterward and can be extended.
+#= {result: ['matched', [1, 0], [2, 0]], inputs: {n: 1}}
+def xs = [n]
+def ys = [n + 1]
+def r = match [2] {
+    (xs) | (ys) => 'matched',
+}
+[r, xs + [0], ys + [0]]

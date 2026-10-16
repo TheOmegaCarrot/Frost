@@ -1,0 +1,4 @@
+# A program of only an `export def` exports the binding, and its tail is still
+# null: exporting a value does not make it the program's value.
+#= {result: null, exports: {answer: 42}}
+export def answer = 42

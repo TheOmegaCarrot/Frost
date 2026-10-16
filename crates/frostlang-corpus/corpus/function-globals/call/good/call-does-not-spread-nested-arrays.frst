@@ -1,0 +1,4 @@
+# Only the outer Array is spread: each element, even an Array, is a single
+# argument.
+#= {result: [[1, 2], [], [[3]]]}
+call(collect, [[1, 2], [], [[3]]])

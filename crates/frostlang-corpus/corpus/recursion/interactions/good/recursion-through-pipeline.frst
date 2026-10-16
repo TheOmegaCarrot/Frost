@@ -1,0 +1,13 @@
+# A recursive call at the end of an `@` pipeline: each level records its
+# length, keeps the even elements halved, and recurses on what remains.
+#= {result: [[], [3, 2, 2, 1]]}
+defn halve_evens(xs) -> match xs {
+    [] => [],
+    _ => [len(xs)] + (
+        xs
+        @ select($($ % 2 == 0))
+        @ transform($($ / 2))
+        @ halve_evens()
+    ),
+}
+[halve_evens([]), halve_evens([8, 3, 4])]

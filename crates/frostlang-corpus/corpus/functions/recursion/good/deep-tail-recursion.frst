@@ -1,0 +1,4 @@
+# A self-call in tail position, through `if` branches, runs to a large depth.
+#= {result: 200000, inputs: {n: 200000}}
+defn count(k, acc) -> if k == 0: acc else: count(k - 1, acc + 1)
+count(n, 0)

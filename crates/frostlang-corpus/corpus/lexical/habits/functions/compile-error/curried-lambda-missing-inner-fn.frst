@@ -1,0 +1,3 @@
+# Each lambda of a curried function takes its own `fn`.
+#= {rejects: 'each lambda takes its own `fn`'}
+defn add(x) -> y -> x + y

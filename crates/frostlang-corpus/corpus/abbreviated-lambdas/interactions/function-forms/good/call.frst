@@ -1,0 +1,4 @@
+# `call` applies an abbreviated lambda to an Array of arguments, and the
+# arity rules hold as for a direct call.
+#= {result: [3, [1, 2], []]}
+[call($($1 + $2), [1, 2]), call($($$), [1, 2]), call($($$), [])]

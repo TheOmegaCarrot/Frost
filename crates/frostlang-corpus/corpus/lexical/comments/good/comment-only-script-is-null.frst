@@ -1,0 +1,7 @@
+# A script holding nothing but comments and blank lines has no statements,
+# so its result is Null.
+#= {result: null}
+
+# def x = 1
+# x
+

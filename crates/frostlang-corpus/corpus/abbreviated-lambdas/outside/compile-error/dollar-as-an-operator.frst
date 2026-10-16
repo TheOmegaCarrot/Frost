@@ -1,0 +1,3 @@
+# Frost has no `$` application operator, as in `f $ x`.
+#= {rejects: 'no `$` operator'}
+print $ 1

@@ -1,0 +1,6 @@
+# A `...rest` binding takes no type constraint: it is always an Array.
+#= {rejects: ['expected `]`', 'found `is`']}
+match [1] {
+    [...r is Array] => r,
+    _ => 0,
+}

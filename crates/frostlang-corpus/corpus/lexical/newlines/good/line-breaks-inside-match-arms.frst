@@ -1,0 +1,18 @@
+# Inside a `match`'s braces, a line break may fall around an arm's `=>`, its
+# guard's `if:`, a pattern's `|` alternatives, and its `is` type test.
+#= {result: ['low', 'high', 'text'], inputs: {xs: [2, 9, 'x']}}
+defn classify(v) -> match v {
+    1
+    | 2
+    | 3
+    =>
+        'low',
+    n
+    is
+    Int
+    if:
+        n > 3
+    => 'high',
+    _ => 'text',
+}
+xs @ transform(classify)

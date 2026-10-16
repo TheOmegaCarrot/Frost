@@ -1,0 +1,6 @@
+# `map` over an empty Map yields an empty Map, not an Array, without calling
+# the operation.
+#= {result: [{}, {}], inputs: {empty: {}}}
+def literal = map {} with fn k, v -> error('called')
+def runtime = map empty with fn k, v -> error('called')
+[literal, runtime]

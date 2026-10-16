@@ -1,0 +1,12 @@
+# Values taken apart by destructuring compare as the values they are.
+#= {
+#=     result: [true, true, true],
+#=     inputs: {pair: [2, 2.0], record: {name: 'ann', tags: ['x']}},
+#= }
+def [i, f] = pair
+def {name, tags} = record
+[
+    i <= f and i != f,
+    name < 'bob',
+    tags == ['x'],
+]

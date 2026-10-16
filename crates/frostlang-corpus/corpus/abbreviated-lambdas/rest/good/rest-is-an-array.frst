@@ -1,0 +1,6 @@
+# `$$` is an ordinary Array: it can be measured, indexed, and typed.
+#= {result: [3, 'a', 'Array', 0], inputs: {x: 'a'}}
+def size = $(len($$))
+def first = $($$[0])
+def kind = $(type($$))
+[size(1, 2, 3), first(x, 'b'), kind(), size()]

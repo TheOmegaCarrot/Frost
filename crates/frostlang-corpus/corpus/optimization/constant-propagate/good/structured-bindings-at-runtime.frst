@@ -1,0 +1,34 @@
+# The bindings of structured-bindings, bound to values only known at runtime,
+# read back the same values, unchanged by the updates built from them.
+#= {
+#=     result: [
+#=         ['héllo', 'héllo!'],
+#=         [x'00ff', x'00ff01'],
+#=         [[1, [2]], [1, [2], 3]],
+#=         [{a: 1}, {a: 1, b: 2}],
+#=         [[], [1]],
+#=         [{}, {k: 1}],
+#=     ],
+#=     inputs: {
+#=         s_in: 'héllo',
+#=         bytes_in: x'00ff',
+#=         xs_in: [1, [2]],
+#=         m_in: {a: 1},
+#=         empty_array_in: [],
+#=         empty_map_in: {},
+#=     },
+#= }
+def s = s_in
+def bytes = bytes_in
+def xs = xs_in
+def m = m_in
+def empty_array = empty_array_in
+def empty_map = empty_map_in
+[
+    [s, s + '!'],
+    [bytes, bytes + x'01'],
+    [xs, xs + [3]],
+    [m, m + {b: 2}],
+    [empty_array, empty_array + [1]],
+    [empty_map, empty_map + {k: 1}],
+]

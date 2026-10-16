@@ -1,0 +1,6 @@
+# A continued `@` may call a function reached through a field, as on one
+# line: `@ m.f()` threads into `m.f`.
+#= {result: 11}
+def m = {f: fn x, y -> x + y}
+1
+    @ m.f(10)

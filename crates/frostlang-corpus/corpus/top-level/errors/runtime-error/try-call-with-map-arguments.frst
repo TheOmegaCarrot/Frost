@@ -1,0 +1,3 @@
+# `try_call`'s arguments are positional, so a Map raises a type error.
+#= {raises: ['try_call', 'argument 2', 'got Map']}
+try_call(fn a -> a, {a: 1})

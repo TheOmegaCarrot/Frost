@@ -1,0 +1,9 @@
+# A `do` block in a taken branch that derives from an outer binding, at what
+# is its last use on that path only, leaves it for the read after the `if`.
+#= {result: [[1, 2, 3], [1]], inputs: {n: 1, c: true}}
+def xs = [n]
+def r = if c: do {
+    def ys = xs + [2]
+    ys + [3]
+} else: []
+[r, xs]

@@ -1,0 +1,5 @@
+# A `name:` key is shorthand for the String key `'name'`: the two spellings
+# build equal Maps and are read by the same String.
+#= {result: [true, 1, 1]}
+def m = {foo: 1}
+[m == {['foo']: 1}, m['foo'], m.foo]

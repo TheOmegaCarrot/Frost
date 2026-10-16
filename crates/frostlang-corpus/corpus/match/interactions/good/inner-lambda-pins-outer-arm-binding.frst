@@ -1,0 +1,9 @@
+# A lambda inside an arm may run its own match comparing against the outer
+# arm's binding, which it captures.
+#= {result: ['k', 'no', 'k'], inputs: {v: [2], xs: [2, 3, 2]}}
+match v {
+    [k] => transform(xs, fn y -> match y {
+        (k) => 'k',
+        _ => 'no',
+    }),
+}

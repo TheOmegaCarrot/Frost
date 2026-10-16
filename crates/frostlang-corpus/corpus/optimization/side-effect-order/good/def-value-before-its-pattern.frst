@@ -1,0 +1,9 @@
+# A def computes its value before checking its pattern, so the value's effects
+# come first; a later def's effects follow.
+#= {result: [null, 2], printed: ['value', 'pin', 'second']}
+def [a, (print('pin'))] = [print('value'), null]
+def b = do {
+    print('second')
+    2
+}
+[a, b]

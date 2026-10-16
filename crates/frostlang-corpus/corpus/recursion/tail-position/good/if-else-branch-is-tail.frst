@@ -1,0 +1,7 @@
+# An `else` branch in tail position is a tail call, which replaces its
+# caller's frame. So the backtrace of an error at the bottom of the recursion
+# is equally long however deep the recursion went.
+#= {result: 0}
+defn down(n) -> if n == 0: error('bottom') else: down(n - 1)
+defn frames(n) -> len(try_call(down, [n]).trace)
+frames(500) - frames(5)

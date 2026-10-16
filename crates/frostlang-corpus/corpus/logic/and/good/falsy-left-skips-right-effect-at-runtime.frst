@@ -1,0 +1,7 @@
+# A falsy left operand known only at runtime short-circuits `and` in the VM:
+# the right operand's `print` never runs.
+#= {result: [false, null], inputs: {f: false, n: null}}
+[
+    f and print('right of false'),
+    n and print('right of null'),
+]

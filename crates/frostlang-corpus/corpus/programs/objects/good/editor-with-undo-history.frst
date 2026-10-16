@@ -1,0 +1,64 @@
+# A text editor with undo: each command builds a new document from the
+# current one, and the history keeps every earlier version. Subtle: every
+# version is derived from one still held in the history (and captured by a
+# snapshot closure), so building the next must never alter it; undo
+# restores exactly the earlier value, and each snapshot shows the lines as
+# they were when it was taken.
+#= {
+#=     result: {
+#=         final: {lines: ['hello!', 'world'], title: 'draft'},
+#=         versions: 4,
+#=         snapshots: [
+#=             [],
+#=             ['hello'],
+#=             ['hello', 'world'],
+#=             ['hello', 'world'],
+#=             ['hello', 'world', 'oops'],
+#=             ['hello!', 'world'],
+#=         ],
+#=         latest_saved: {lines: ['hello', 'world'], title: 'draft'},
+#=         first: {lines: [], title: 'untitled'},
+#=     },
+#=     inputs: {
+#=         commands: [
+#=             {append: 'hello'},
+#=             {append: 'world'},
+#=             {rename: 'draft'},
+#=             {append: 'oops'},
+#=             'undo',
+#=             'exclaim',
+#=         ],
+#=     },
+#= }
+defn edit(doc, command) -> match command {
+    {append: text} => doc + {lines: doc.lines + [text]},
+    {rename: title} => doc + {title},
+    'exclaim' => match doc.lines {
+        [] => doc,
+        [first, ...rest] => doc + {lines: [first + '!'] + rest},
+    },
+}
+
+defn apply(state, command) -> match command {
+    'undo' => match state.history {
+        [previous, ...older] => state + {doc: previous, history: older},
+    },
+    _ => do {
+        def next = edit(state.doc, command)
+        {
+            doc: next,
+            history: [state.doc] + state.history,
+            snapshots: state.snapshots + [fn -> next.lines],
+        }
+    },
+}
+
+def start = {lines: [], title: 'untitled'}
+def result = fold(commands, {doc: start, history: [], snapshots: [fn -> start.lines]}, apply)
+{
+    final: result.doc,
+    versions: len(result.history),
+    snapshots: transform(result.snapshots, fn view -> view()),
+    latest_saved: result.history[0],
+    first: result.history[-1],
+}

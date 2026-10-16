@@ -1,0 +1,3 @@
+# `+` joins Arrays in order, with the empty Array as identity on either side.
+#= {result: [[1, 2, 3], [1], [2], []]}
+[[1] + [2, 3], [1] + [], [] + [2], [] + []]

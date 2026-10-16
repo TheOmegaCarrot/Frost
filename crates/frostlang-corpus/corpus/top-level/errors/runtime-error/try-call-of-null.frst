@@ -1,0 +1,3 @@
+# `try_call` of null raises a type error, even with a valid argument Array.
+#= {raises: ['try_call', 'argument 1', 'got Null']}
+try_call(null, [])

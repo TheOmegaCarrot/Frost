@@ -1,0 +1,5 @@
+# `print` reached through `rev_args` still prints, though its argument is a
+# constant.
+#= {result: null, printed: ['rev_args']}
+rev_args(print)('rev_args')
+null

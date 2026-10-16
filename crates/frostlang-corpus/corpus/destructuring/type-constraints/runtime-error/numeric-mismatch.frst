@@ -1,0 +1,4 @@
+# `is Numeric` rejects a Bool.
+#= {raises: 'expected a Numeric', inputs: {v: true}}
+def x is Numeric = v
+x

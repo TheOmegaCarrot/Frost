@@ -1,0 +1,11 @@
+# The calls of call-global, with argument Arrays only known at runtime, give
+# exactly the values the folder computes.
+#= {
+#=     result: [2, 0, [1, [2, 3]]],
+#=     inputs: {pair: [5, 3], none: [], three: [1, 2, 3]},
+#= }
+[
+    call(fn a, b -> a - b, pair),
+    call(fn -> 0, none),
+    call(fn first, ...rest -> [first, rest], three),
+]

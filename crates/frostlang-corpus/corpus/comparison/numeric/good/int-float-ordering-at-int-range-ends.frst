@@ -1,0 +1,13 @@
+# Int against Float ordering at the ends of the Int range. 2^63 is one past the
+# greatest Int, though converting that Int to a Float would round it up to
+# 2^63; 2^63 - 1024 is the greatest Float below it. -2^63 is exactly the least
+# Int.
+#= {result: [true, true, true, true, true, false]}
+[
+    9223372036854775807 < 9223372036854775808.0,
+    9223372036854775807 > 9223372036854774784.0,
+    -9223372036854775808 <= -9223372036854775808.0,
+    -9223372036854775808 >= -9223372036854775808.0,
+    -9223372036854775807 > -9223372036854775808.0,
+    -9223372036854775808 == -9223372036854775808.0,
+]

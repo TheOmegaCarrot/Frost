@@ -1,0 +1,7 @@
+# A continuation line after a definition extends the definition's value; the
+# next ordinary line is a new statement.
+#= {result: [3, 'x']}
+def n = [1, 2, 3]
+    @ len()
+def s = 'x'
+[n, s]

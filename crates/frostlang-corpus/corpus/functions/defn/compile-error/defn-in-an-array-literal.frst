@@ -1,0 +1,4 @@
+# A `defn` cannot appear where an expression is expected, such as an Array
+# element; a lambda can.
+#= {rejects: ['expected an expression', '`defn`']}
+[defn f() -> 1]

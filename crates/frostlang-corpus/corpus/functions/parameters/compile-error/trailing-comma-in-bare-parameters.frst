@@ -1,0 +1,4 @@
+# Only a parenthesized parameter list takes a trailing comma; without
+# parentheses, a comma must be followed by another parameter.
+#= {rejects: ['expected a parameter name', 'found `->`']}
+def f = fn x, y, -> x

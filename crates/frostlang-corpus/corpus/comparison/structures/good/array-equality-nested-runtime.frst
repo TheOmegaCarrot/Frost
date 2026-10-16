@@ -1,0 +1,14 @@
+# Nested structural equality on structures known only at runtime.
+#= {
+#=     result: [true, false, true],
+#=     inputs: {
+#=         a: [[1, [2, [3]]], {k: [4, null]}],
+#=         b: [[1, [2, [3]]], {k: [4, null]}],
+#=         c: [[1, [2, [3]]], {k: [4, false]}],
+#=     },
+#= }
+[
+    a == b,
+    a == c,
+    a[1] == {k: [4, null]},
+]

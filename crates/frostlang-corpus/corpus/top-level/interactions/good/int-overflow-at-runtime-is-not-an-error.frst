@@ -1,0 +1,13 @@
+# Int overflow on values only known at runtime wraps and never raises, so
+# `try_call` reports success with the wrapped value.
+#= {
+#=     result: [
+#=         {ok: true, value: -9223372036854775808},
+#=         {ok: true, value: 9223372036854775807},
+#=     ],
+#=     inputs: {max: 9223372036854775807, min: -9223372036854775808, one: 1},
+#= }
+[
+    try_call(fn -> max + one),
+    try_call(fn -> min - one),
+]

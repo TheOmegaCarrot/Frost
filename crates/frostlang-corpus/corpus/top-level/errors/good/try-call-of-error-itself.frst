@@ -1,0 +1,4 @@
+# `error` is a function like any other, so `try_call` can call it directly; it
+# raises its argument, which is caught.
+#= {result: {ok: false, error: 'direct', trace: ['error']}}
+try_call(error, ['direct'])

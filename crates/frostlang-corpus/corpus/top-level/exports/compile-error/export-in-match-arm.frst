@@ -1,0 +1,5 @@
+# `export` is only allowed at the top level, not as a `match` arm's body.
+#= {rejects: 'only allowed at the top level'}
+match 1 {
+    _ => export def x = 1,
+}

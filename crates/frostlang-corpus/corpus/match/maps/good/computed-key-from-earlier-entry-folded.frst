@@ -1,0 +1,7 @@
+# A computed key built from an earlier entry's binding looks up the same entry
+# when the optimizer can see the whole Map ahead of time.
+#= {result: [3, 'missing']}
+[
+    match {a: 'c', c: 3} { {a, [a]: b} => b, _ => 'missing' },
+    match {a: 'z', c: 3} { {a, [a]: b} => b, _ => 'missing' },
+]

@@ -1,0 +1,3 @@
+# A bare Int is not a key: a non-String key must be computed, `{[42]: 'x'}`.
+#= {rejects: 'expected a name or `[`'}
+def m = {42: 'x'}

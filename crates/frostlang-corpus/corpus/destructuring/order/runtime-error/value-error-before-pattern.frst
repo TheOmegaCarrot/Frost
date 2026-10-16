@@ -1,0 +1,4 @@
+# An error in the value raises before the pattern's own checks.
+#= {raises: 'division by zero', inputs: {n: 0}}
+def {a} = 1 / n
+a

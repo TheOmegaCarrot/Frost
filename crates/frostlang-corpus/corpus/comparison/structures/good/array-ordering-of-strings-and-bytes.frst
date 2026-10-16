@@ -1,0 +1,9 @@
+# Arrays of Strings or of Bytes order element by element, each element
+# ordered as its own type orders.
+#= {result: [true, true, true, false]}
+[
+    ['apple', 'pie'] < ['apple', 'tart'],
+    ['ab'] < ['abc'],
+    [x'7f'] < [x'80'],
+    ['Z', 'z'] > ['a'],
+]

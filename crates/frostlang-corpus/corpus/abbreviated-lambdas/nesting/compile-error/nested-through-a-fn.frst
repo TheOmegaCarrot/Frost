@@ -1,0 +1,4 @@
+# A `fn` inside an abbreviated lambda does not reset what `$` means, so an
+# abbreviated lambda inside that `fn` is still nested and rejected.
+#= {rejects: 'cannot be nested'}
+def f = $(fn x -> $(x))

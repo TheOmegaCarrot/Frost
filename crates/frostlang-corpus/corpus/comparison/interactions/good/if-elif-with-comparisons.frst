@@ -1,0 +1,13 @@
+# An `if`/`elif` chain picks its branch from comparisons of a value known only
+# at runtime; each comparison yields the Bool the condition tests.
+#= {
+#=     result: ['low', 'mid', 'mid', 'high', 'exact'],
+#=     inputs: {values: [1, 5, 5.5, 11, 42]},
+#= }
+defn bucket(x) -> {
+    if x == 42: 'exact'
+    elif x < 5: 'low'
+    elif x <= 10: 'mid'
+    else: 'high'
+}
+transform(values, bucket)

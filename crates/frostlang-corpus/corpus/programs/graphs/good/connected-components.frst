@@ -1,0 +1,31 @@
+# Connected components of an undirected graph with Int nodes: edges fold into
+# an Int-keyed adjacency Map (a self-loop lists its node as its own
+# neighbor), and each unlabeled node starts a flood that labels everything it
+# reaches. A node with no edges is a component of its own.
+#= {
+#=     result: {
+#=         count: 4,
+#=         labels: {[1]: 0, [2]: 0, [3]: 0, [4]: 1, [5]: 1, [6]: 2, [7]: 3},
+#=         adjacency: {[1]: [2], [2]: [1, 3], [3]: [2], [4]: [5], [5]: [4], [6]: [6, 6]},
+#=     },
+#=     inputs: {
+#=         nodes: [1, 2, 3, 4, 5, 6, 7],
+#=         edges: [[1, 2], [2, 3], [4, 5], [6, 6]],
+#=     },
+#= }
+defn link(adjacency, from, to) -> adjacency + {[from]: (adjacency[from] or []) + [to]}
+
+def adjacency = fold(edges, {}, fn acc, edge -> {
+    def [a, b] = edge
+    link(link(acc, a, b), b, a)
+})
+
+defn flood(labels, node, label) ->
+    if has(labels, node): labels
+    else: fold(adjacency[node] or [], labels + {[node]: label}, fn acc, next -> flood(acc, next, label))
+
+def result = fold(nodes, {labels: {}, count: 0}, fn state, node ->
+    if has(state.labels, node): state
+    else: {labels: flood(state.labels, node, state.count), count: state.count + 1}
+)
+{count: result.count, labels: result.labels, adjacency}

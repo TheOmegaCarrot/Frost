@@ -1,0 +1,3 @@
+# An abbreviated lambda as a Map value inside another is nested.
+#= {rejects: 'cannot be nested'}
+def f = $({a: $($)})

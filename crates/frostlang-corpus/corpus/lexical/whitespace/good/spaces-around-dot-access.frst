@@ -1,0 +1,3 @@
+# Spaces around a `.` field access are allowed: `m . k` is `m.k`.
+#= {result: 3, inputs: {m: {k: {j: 3}}}}
+m . k .j

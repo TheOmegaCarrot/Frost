@@ -1,0 +1,3 @@
+# Reading a missing field raises, naming the key, unlike a soft index.
+#= {raises: ['no value at key', 'nope'], inputs: {m: {name: 'ada'}}}
+m.nope

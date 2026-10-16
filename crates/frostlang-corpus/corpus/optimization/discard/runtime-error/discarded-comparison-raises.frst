@@ -1,0 +1,4 @@
+# A discarded comparison of incompatible constants still raises.
+#= {raises: 'cannot compare incompatible types'}
+1 < 'a'
+'unreached'

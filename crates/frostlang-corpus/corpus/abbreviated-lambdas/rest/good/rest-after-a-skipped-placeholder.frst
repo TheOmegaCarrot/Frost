@@ -1,0 +1,5 @@
+# With `$2` but no `$1`, the first argument is still a positional parameter
+# (unused), so `$$` starts after the second.
+#= {result: [[2, [3, 4]], [2, []]]}
+def f = $([$2, $$])
+[f(1, 2, 3, 4), f(1, 2)]

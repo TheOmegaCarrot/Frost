@@ -1,0 +1,12 @@
+# The `c and a or b` idiom's pitfall: a falsy `a` is indistinguishable from a
+# falsy condition, so `b` is the result even when `c` is truthy.
+#= {
+#=     result: ['fallback', 'fallback', 'fallback', 'fallback'],
+#=     inputs: {t: true, f: false, n: null},
+#= }
+[
+    true and false or 'fallback',
+    true and null or 'fallback',
+    t and f or 'fallback',
+    t and n or 'fallback',
+]

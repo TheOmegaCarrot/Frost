@@ -1,0 +1,4 @@
+# Abbreviated lambdas destructured out of an Array keep their behavior.
+#= {result: [6, 10]}
+def [inc, double] = [$($ + 1), $($ * 2)]
+[inc(5), double(5)]

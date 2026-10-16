@@ -1,0 +1,6 @@
+# A name captured by a deeply nested lambda passes through every lambda
+# between, even those that never use it themselves.
+#= {result: [1, [1, 2, 3]]}
+def deep = (fn a -> fn -> fn -> fn -> a)(1)()()()
+def mixed = (fn a -> fn b -> fn -> fn c -> [a, b, c])(1)(2)()(3)
+[deep, mixed]

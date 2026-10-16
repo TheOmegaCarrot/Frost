@@ -1,0 +1,3 @@
+# An invalid escape in a format String nested in an interpolation is reported.
+#= {rejects: ['invalid escape sequence', R'(`\q`)']}
+def s = $'${$"\q"}'

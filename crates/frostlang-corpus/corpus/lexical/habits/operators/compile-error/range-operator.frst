@@ -1,0 +1,3 @@
+# Frost has no range operator `..`.
+#= {rejects: 'no range operator'}
+def r = 1..5

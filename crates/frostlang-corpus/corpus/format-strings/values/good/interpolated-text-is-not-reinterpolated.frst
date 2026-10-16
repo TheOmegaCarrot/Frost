@@ -1,0 +1,4 @@
+# An interpolated String that itself holds `${...}` text is inserted as text:
+# interpolation happens once, on the source, never on a value.
+#= {result: '<${x}>', inputs: {s: '${x}', x: 7}}
+$'<${s}>'

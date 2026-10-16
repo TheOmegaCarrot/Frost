@@ -1,0 +1,6 @@
+# The largest and smallest Ints interpolate in full.
+#= {
+#=     result: ['9223372036854775807', '-9223372036854775808'],
+#=     inputs: {max: 9223372036854775807, min: -9223372036854775808},
+#= }
+[$'${max}', $'${min}']

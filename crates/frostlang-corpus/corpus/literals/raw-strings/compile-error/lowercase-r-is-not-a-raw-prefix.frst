@@ -1,0 +1,4 @@
+# Only an uppercase `R` starts a raw String: `r'(abc)'` is the name `r` touching a
+# String.
+#= {rejects: 'raw String is written'}
+r'(abc)'

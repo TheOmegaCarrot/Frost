@@ -1,0 +1,4 @@
+# Bytes hold any octets, including NUL and those that are not valid UTF-8 and so could
+# never be in a String.
+#= {result: [4, false, false]}
+[len(x'00ff80c0'), x'00' == x'', x'ff' == x'fe']

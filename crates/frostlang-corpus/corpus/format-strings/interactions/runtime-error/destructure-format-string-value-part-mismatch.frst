@@ -1,0 +1,4 @@
+# A destructuring whose format String value part differs from the value raises.
+#= {raises: 'cannot destructure', inputs: {xs: ['1', 'v2']}}
+def [a, $'v${a}'] = xs
+a

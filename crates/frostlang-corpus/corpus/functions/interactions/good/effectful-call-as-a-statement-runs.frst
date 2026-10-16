@@ -1,0 +1,10 @@
+# A call whose result is discarded still runs for its effect, including one
+# nested inside a pure-looking wrapper.
+#= {result: 'end', printed: ['inner']}
+def inner = fn -> print('inner')
+def wrapper = fn -> {
+    inner()
+    1
+}
+wrapper()
+'end'

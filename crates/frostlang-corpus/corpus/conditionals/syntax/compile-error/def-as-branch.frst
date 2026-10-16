@@ -1,0 +1,5 @@
+# A branch is an expression, and a `def` is a statement, so a branch cannot be
+# a `def`; a definition in a branch goes in a `do` block.
+#= {rejects: ['found `def`', 'use a block']}
+def c = true
+if c: def x = 1

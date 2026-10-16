@@ -1,0 +1,18 @@
+# Operator type errors, calling a non-Function, and a global's argument type
+# and count errors all raise errors `try_call` catches as Strings.
+#= {
+#=     result: [
+#=         [false, true],
+#=         [false, true],
+#=         [false, true],
+#=         [false, true],
+#=     ],
+#=     inputs: {one: 1, a: 'a'},
+#= }
+defn summary(outcome) -> [outcome.ok, is_string(outcome.error)]
+[
+    summary(try_call(fn -> one + a)),
+    summary(try_call(fn -> one())),
+    summary(try_call(fn -> len(one))),
+    summary(try_call(fn -> len())),
+]

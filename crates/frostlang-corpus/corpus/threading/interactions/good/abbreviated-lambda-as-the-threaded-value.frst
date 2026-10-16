@@ -1,0 +1,6 @@
+# An abbreviated lambda can be the threaded value, as the function argument
+# of a call that takes the function first.
+#= {result: [6, [3, 4]], inputs: {xs: [2, 3]}}
+defn apply_to(f, v) -> f(v)
+defn map_over(f, ys) -> transform(ys, f)
+[$($ * 2) @ apply_to(3), $($ + 1) @ map_over(xs)]

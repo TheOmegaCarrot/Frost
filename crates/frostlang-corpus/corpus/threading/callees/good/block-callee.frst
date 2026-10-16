@@ -1,0 +1,7 @@
+# A `do` block is an operand, so a block producing a function can be the
+# callee of a threaded call.
+#= {result: 6, inputs: {n: 3}}
+n @ do {
+    def factor = 2
+    fn x -> x * factor
+}()

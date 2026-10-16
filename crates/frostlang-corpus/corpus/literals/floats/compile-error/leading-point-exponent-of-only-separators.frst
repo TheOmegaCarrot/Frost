@@ -1,0 +1,3 @@
+# A leading-point Float's exponent needs digits too: separators alone are not any.
+#= {rejects: ['invalid number', 'exponent needs digits']}
+.5e_

@@ -1,0 +1,15 @@
+# Equality over constants folds to the same answers as at runtime: values of
+# different types are never equal, structures compare by content, and the two
+# zeros are equal.
+#= {result: [false, false, false, false, true, true, true, false, true]}
+[
+    3 == 3.0,
+    1 == '1',
+    null == false,
+    'a' == x'61',
+    [1, [2]] == [1, [2]],
+    {a: 1, b: 2} == {b: 2, a: 1},
+    0.0 == -0.0,
+    [1] != [1],
+    null == null,
+]

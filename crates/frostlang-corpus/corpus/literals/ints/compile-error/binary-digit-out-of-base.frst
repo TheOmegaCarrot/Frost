@@ -1,0 +1,3 @@
+# A binary literal's digits are 0 and 1; the first other one is named.
+#= {rejects: ['invalid character `2`', 'binary']}
+0b102

@@ -1,0 +1,9 @@
+# A value derived inside a `do` block from an enclosing binding leaves that
+# binding unchanged once the block ends.
+#= {result: [[1], [1, 2]], inputs: {n: 1}}
+def xs = [n]
+def inside = do {
+    def ys = xs + [2]
+    ys
+}
+[xs, inside]

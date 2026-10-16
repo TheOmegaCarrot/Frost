@@ -1,0 +1,6 @@
+# A threaded call's lambda argument may have a block body spanning lines.
+#= {result: [3, 5, 7], inputs: {xs: [1, 2, 3]}}
+xs @ transform(fn x -> {
+    def doubled = x * 2
+    doubled + 1
+})

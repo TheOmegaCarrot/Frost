@@ -1,0 +1,5 @@
+# Literal parts of every kind over a literal value the optimizer may match
+# ahead of time.
+#= {result: 7}
+def [a, 1, -1, 1.5, -2.5, 'ok', x'0102', null, true, false] = [7, 1, -1, 1.5, -2.5, 'ok', x'0102', null, true, false]
+a

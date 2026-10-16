@@ -1,0 +1,4 @@
+# A trailing comma does not make the pattern accept another element.
+#= {raises: 'exactly 2 elements', inputs: {xs: [1, 2, 3]}}
+def [a, b,] = xs
+[a, b]

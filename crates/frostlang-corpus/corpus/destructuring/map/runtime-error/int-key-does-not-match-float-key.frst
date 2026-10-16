@@ -1,0 +1,4 @@
+# Map keys do not cross numeric types: Int 1 does not find Float 1.0.
+#= {raises: 'no value at key', inputs: {m: {[1.0]: 'f'}}}
+def {[1]: x} = m
+x

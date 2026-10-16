@@ -1,0 +1,6 @@
+# A block that binds a lambda it never calls yields only its final value.
+#= {result: 5}
+do {
+    def g = fn a -> a + 1
+    5
+}

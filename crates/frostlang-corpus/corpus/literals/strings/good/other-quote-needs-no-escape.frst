@@ -1,0 +1,4 @@
+# A String holds the other quote character unescaped, and it equals the same text
+# written with the escape in the other style.
+#= {result: [true, true, 9]}
+['say "hi"' == "say \"hi\"", "it's" == 'it\'s', len("it's 'ok'")]

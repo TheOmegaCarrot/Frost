@@ -1,0 +1,8 @@
+# A computed key may be any valid Map key type: Int, Float, Bool, String, and
+# Bytes.
+#= {
+#=     result: ['i', 'f', 't', 's', 'b'],
+#=     inputs: {m: {[1]: 'i', [1.5]: 'f', [true]: 't', ['two words']: 's', [x'00']: 'b'}},
+#= }
+def {[1]: i, [1.5]: f, [true]: t, ['two words']: s, [x'00']: b} = m
+[i, f, t, s, b]

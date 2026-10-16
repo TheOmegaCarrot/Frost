@@ -1,0 +1,10 @@
+# `-` on two Floats is Float subtraction; a whole-valued difference stays a
+# Float, and binary rounding shows through.
+#= {result: [3.0, -3.0, 0.0, 1.0, 0.09999999999999998]}
+[
+    5.5 - 2.5,
+    2.5 - 5.5,
+    1.25 - 1.25,
+    -1.5 - -2.5,
+    0.3 - 0.2,
+]

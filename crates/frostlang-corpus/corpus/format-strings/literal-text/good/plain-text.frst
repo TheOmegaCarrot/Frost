@@ -1,0 +1,3 @@
+# A format String with no interpolation is its literal text, in either quote style.
+#= {result: ['hello', 'hello']}
+[$'hello', $"hello"]

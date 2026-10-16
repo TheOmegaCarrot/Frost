@@ -1,0 +1,5 @@
+# A Function plus an Int is a type error; `+` does not compose or apply the
+# Function.
+#= {raises: 'Function + Int'}
+defn identity(x) -> x
+identity + 1

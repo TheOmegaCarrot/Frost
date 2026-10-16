@@ -1,0 +1,4 @@
+# `is Bytes` rejects a String.
+#= {raises: 'expected Bytes', inputs: {v: 'a'}}
+def x is Bytes = v
+x

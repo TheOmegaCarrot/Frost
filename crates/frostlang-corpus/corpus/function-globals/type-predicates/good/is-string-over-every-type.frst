@@ -1,0 +1,14 @@
+# `is_string` is true for String alone. Bytes are not a String, even empty.
+#= {result: [false, false, false, false, true, false, false, false, false, false]}
+[
+    is_string(null),
+    is_string(false),
+    is_string(0),
+    is_string(0.0),
+    is_string(''),
+    is_string(x''),
+    is_string([]),
+    is_string({}),
+    is_string(fn -> null),
+    is_string(len),
+]

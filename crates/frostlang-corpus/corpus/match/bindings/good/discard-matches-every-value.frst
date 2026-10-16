@@ -1,0 +1,6 @@
+# The discard `_` matches every value, Null and Functions included, binding
+# nothing.
+#= {result: [1, 1, 1, 1, 1, 1, 1, 1, 1]}
+transform([null, true, 1, 1.5, 's', x'00', [], {}, len], fn v -> match v {
+    _ => 1,
+})

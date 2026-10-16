@@ -1,0 +1,11 @@
+# Entries are tried in source order, and a missing key stops the pattern:
+# later computed keys are not evaluated.
+#= {result: 'no match', printed: ['a', 'b'], inputs: {v: {a: 1}}}
+defn key(k) -> {
+    print(k)
+    k
+}
+match v {
+    {[key('a')]: x, [key('b')]: y, [key('c')]: z} => 'match',
+    _ => 'no match',
+}

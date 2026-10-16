@@ -1,0 +1,5 @@
+# An error raised in an abbreviated lambda's body propagates out of the
+# call.
+#= {raises: 'bad input: 7'}
+def check = $(if $ > 5: error($'bad input: ${$}') else: $)
+check(7)

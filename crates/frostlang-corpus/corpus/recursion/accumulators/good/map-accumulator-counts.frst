@@ -1,0 +1,8 @@
+# A Map accumulator counts occurrences, reading its own previous count for a
+# key when it has one.
+#= {result: [{}, {a: 3, b: 1, ['ñ']: 2}]}
+defn count(words, acc) -> match words {
+    [] => acc,
+    [w, ...rest] => count(rest, acc + {[w]: (if has(acc, w): acc[w] else: 0) + 1}),
+}
+[count([], {}), count(['a', 'ñ', 'b', 'a', 'ñ', 'a'], {})]

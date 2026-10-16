@@ -1,0 +1,6 @@
+# An ordering error deep in nested calls propagates out of every caller.
+#= {raises: ['incompatible types', 'Bool', 'Float'], inputs: {flag: true}}
+defn compare(a, b) -> a < b
+defn middle(a) -> compare(a, 1.5)
+defn outer(a) -> [middle(a)]
+outer(flag)

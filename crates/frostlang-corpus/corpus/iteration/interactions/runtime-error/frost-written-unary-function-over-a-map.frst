@@ -1,0 +1,4 @@
+# A one-parameter function returned by a global written in Frost cannot be
+# the operation over a Map either: it is called with key and value.
+#= {raises: 'called with 2', inputs: {m: {a: {a: 1}}}}
+map m with index('a')

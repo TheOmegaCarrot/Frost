@@ -1,0 +1,3 @@
+# Keywords are case-sensitive: `True` is an ordinary name, unbound here, not a Bool.
+#= {rejects: '`True` is not defined'}
+True

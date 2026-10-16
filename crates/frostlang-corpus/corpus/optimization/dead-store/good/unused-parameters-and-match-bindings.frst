@@ -1,0 +1,17 @@
+# Parameters and match bindings a function never reads leave its result
+# unchanged: the arguments are still taken positionally, and the patterns
+# still decide which arm matches.
+#= {
+#=     result: [1, 3, 7, ['pair or triple', 'pair or triple', 'named', 'int', 'other']],
+#=     inputs: {values: [[1, 2], [1, 2, 3], {name: 'x'}, 4, null]},
+#= }
+def first = fn x, y -> x
+def head = fn x, ...rest -> x
+def constant = fn x -> 7
+def classify = fn value -> match value {
+    [a, b] | [b, a, _] => 'pair or triple',
+    {name} => 'named',
+    n is Int => 'int',
+    _ => 'other',
+}
+[first(1, 2), head(3, 4, 5), constant(6), map values with classify]

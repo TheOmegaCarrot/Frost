@@ -1,0 +1,17 @@
+# A lambda's single-expression body may be any expression form.
+#= {
+#=     result: ['big', 'two', [2, 4], 'n=3', 7, 'or', false, 20],
+#=     inputs: {n: 3},
+#= }
+def by_if = fn x -> if x > 10: 'big' else: 'small'
+def by_match = fn x -> match x {
+    2 => 'two',
+    _ => 'other',
+}
+def by_map = fn xs -> map xs with fn v -> v * 2
+def by_format = fn x -> $'n=${x}'
+def by_index = fn xs -> xs[1]
+def by_or = fn x -> x or 'or'
+def by_not = fn x -> not x
+def by_thread = fn x -> x @ (fn a, b -> a * b)(10)
+[by_if(n * 5), by_match(2), by_map([1, 2]), by_format(n), by_index([1, 7]), by_or(null), by_not(n), by_thread(2)]

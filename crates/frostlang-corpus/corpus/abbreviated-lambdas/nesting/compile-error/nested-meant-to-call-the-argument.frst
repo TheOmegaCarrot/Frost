@@ -1,0 +1,4 @@
+# `$($(10))` looks like it calls the argument with 10, but `$(` always
+# opens a lambda, so it is rejected with help pointing to `$1(...)`.
+#= {rejects: ['cannot be nested', '$1(...)']}
+def apply_to_ten = $($(10))

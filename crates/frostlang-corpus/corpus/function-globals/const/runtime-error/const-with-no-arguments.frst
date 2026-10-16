@@ -1,0 +1,3 @@
+# `const` needs the value to return; it is not itself a constant Null.
+#= {raises: ['const', 'expects 1', 'called with 0']}
+const()

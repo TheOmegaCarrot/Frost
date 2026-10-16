@@ -1,0 +1,12 @@
+# An `or` condition takes the branch when either side is truthy, and its right
+# side is evaluated only when the left is falsy.
+#= {
+#=     result: ['edge', 'edge', 'inside'],
+#=     printed: ['checked 10', 'checked 5'],
+#=     inputs: {xs: [0, 10, 5]},
+#= }
+defn is_ten(x) -> {
+    print($'checked ${x}')
+    x == 10
+}
+transform(xs, fn x -> if x == 0 or is_ten(x): 'edge' else: 'inside')

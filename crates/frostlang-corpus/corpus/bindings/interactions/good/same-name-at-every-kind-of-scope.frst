@@ -1,0 +1,17 @@
+# One name bound at the top level, as a parameter, in a block, in a match arm,
+# and as a nested parameter: each use reads the innermost binding around it.
+#= {result: ['top', 'param', 'block', 'arm', 'nested', 'param', 'top']}
+def x = 'top'
+def f = fn x -> {
+    def at_param = x
+    def at_block = do {
+        def x = 'block'
+        x
+    }
+    def at_arm = match 'arm' {
+        x => x,
+    }
+    def at_nested = (fn x -> x)('nested')
+    [at_param, at_block, at_arm, at_nested, x]
+}
+[x] + f('param') + [x]

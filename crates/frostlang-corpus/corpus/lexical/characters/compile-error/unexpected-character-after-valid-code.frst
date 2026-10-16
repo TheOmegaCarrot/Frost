@@ -1,0 +1,5 @@
+# An unexpected character on a later line fails the whole script at compile
+# time: nothing before it runs.
+#= {rejects: 'unexpected character'}
+print('never printed')
+def x = 1 ~ 2

@@ -1,0 +1,17 @@
+# Folds the compiler abandons, because they raise or run too long, leave no
+# trace on the folds after them: each later value is computed correctly.
+#= {
+#=     result: [[false, 3], 0, [1, 2, 3], 'b', 0, {k: 6}],
+#=     inputs: {flag: false},
+#= }
+defn count_down(n) -> if n == 0: 0 else: count_down(n - 1)
+def caught = try_call(fn -> 1 / 0)
+def first = [caught.ok, 1 + 2]
+def maybe = if flag: 1 / 0 else: 0
+def second = [1, 2] + [3]
+def unmatched = if flag: match 1 {
+    2 => 'two',
+} else: 'b'
+def long = count_down(150000)
+def third = {k: 2 * 3}
+[first, maybe, second, unmatched, long, third]

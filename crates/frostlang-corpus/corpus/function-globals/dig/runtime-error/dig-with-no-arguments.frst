@@ -1,0 +1,3 @@
+# `dig` needs at least the structure to dig into.
+#= {raises: ['dig', 'at least 1', 'called with 0']}
+dig()

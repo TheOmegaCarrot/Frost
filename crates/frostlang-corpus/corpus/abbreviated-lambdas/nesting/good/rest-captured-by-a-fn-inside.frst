@@ -1,0 +1,5 @@
+# `$$` used only inside a `fn` still belongs to the enclosing abbreviated
+# lambda, making it variadic.
+#= {result: [[1, 2], []]}
+def f = $(fn -> $$)
+[f(1, 2)(), f()()]

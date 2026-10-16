@@ -1,0 +1,3 @@
+# Parameters in a parenthesized list are separated by commas.
+#= {rejects: ['expected `,` or `)`', 'found `b`']}
+def f = fn(a b) -> a

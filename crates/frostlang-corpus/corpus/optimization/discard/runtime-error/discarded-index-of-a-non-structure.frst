@@ -1,0 +1,5 @@
+# A discarded hard index into a known Int still raises.
+#= {raises: 'cannot index value of type int'}
+def n = 5
+n.a
+'unreached'

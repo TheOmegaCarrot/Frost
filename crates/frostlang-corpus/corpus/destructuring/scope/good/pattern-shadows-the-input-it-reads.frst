@@ -1,0 +1,5 @@
+# A top-level pattern may bind the name of an enclosing input it destructures:
+# the value reads the input, then the pattern's own `xs` shadows it.
+#= {result: [[2, 3], 1], inputs: {xs: [1, 2, 3]}}
+def [head, ...xs] = xs
+[xs, head]

@@ -1,0 +1,4 @@
+# Braces in a branch start a Map, not a block of statements; a block is
+# written `do { ... }`.
+#= {rejects: 'use `do { ... }`', inputs: {a: true}}
+if a: { def x = 1; x } else: 2

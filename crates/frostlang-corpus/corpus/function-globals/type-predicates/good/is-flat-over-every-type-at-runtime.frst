@@ -1,0 +1,17 @@
+# `is_flat` is true for String and Bytes, on values known only at run time.
+#= {
+#=     result: [false, false, false, false, true, true, false, false, false, false],
+#=     inputs: {n: null, b: false, i: 0, f: 0.0, s: '', y: x'', a: [], m: {}, g: fn -> null, h: len},
+#= }
+[
+    is_flat(n),
+    is_flat(b),
+    is_flat(i),
+    is_flat(f),
+    is_flat(s),
+    is_flat(y),
+    is_flat(a),
+    is_flat(m),
+    is_flat(g),
+    is_flat(h),
+]

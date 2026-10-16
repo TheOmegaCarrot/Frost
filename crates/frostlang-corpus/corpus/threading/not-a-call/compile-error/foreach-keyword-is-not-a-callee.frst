@@ -1,0 +1,4 @@
+# `foreach` is a keyword expression, not a function, so it cannot be threaded
+# into; the help names its function form.
+#= {rejects: ['expected `with`', 'each('], inputs: {xs: [1]}}
+xs @ foreach(fn x -> x)

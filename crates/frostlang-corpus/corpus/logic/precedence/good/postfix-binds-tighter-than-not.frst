@@ -1,0 +1,14 @@
+# Calls, indexing, field access, and `@` threading bind tighter than `not`, so
+# `not` applies to their result, never to the value before them.
+#= {
+#=     result: [true, true, true, false, true],
+#=     inputs: {m: {k: null}, xs: [null, 1]},
+#= }
+defn identity(v) -> v
+[
+    not identity(null),
+    not m.k,
+    not xs[0],
+    not xs[1] @ identity(),
+    not [] @ len() @ identity() @ is_string(),
+]

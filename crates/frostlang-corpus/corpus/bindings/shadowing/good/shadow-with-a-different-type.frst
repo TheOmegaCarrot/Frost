@@ -1,0 +1,9 @@
+# A shadow need not keep the type of what it shadows; the outer binding keeps
+# its own value and type.
+#= {result: ['one', 'String', 1, 'Int']}
+def x = 1
+def inner = do {
+    def x = 'one'
+    [x, type(x)]
+}
+inner + [x, type(x)]

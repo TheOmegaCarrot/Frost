@@ -1,0 +1,3 @@
+# `+` concatenates like with like: Bytes plus a String is a type error.
+#= {raises: 'Bytes + String'}
+x'61' + 'b'

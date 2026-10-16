@@ -1,0 +1,4 @@
+# Parentheses group one expression; a trailing comma in them, as Python
+# writes a one-element tuple, is an error with help.
+#= {rejects: 'no tuples'}
+(1,)

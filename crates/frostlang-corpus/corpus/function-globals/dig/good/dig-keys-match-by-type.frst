@@ -1,0 +1,4 @@
+# A key matches only a key of its own type, so Float 1.0 misses Int 1.
+#= {result: [null, 'int']}
+def m = {[1]: {v: 'int'}}
+[dig(m, 1.0, 'v'), dig(m, 1, 'v')]

@@ -1,0 +1,3 @@
+# `collect` gathers values known only at run time.
+#= {result: [1, [2], 1], inputs: {a: 1, b: [2]}}
+collect(a, b, a)

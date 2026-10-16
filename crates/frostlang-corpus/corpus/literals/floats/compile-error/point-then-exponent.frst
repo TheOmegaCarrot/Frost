@@ -1,0 +1,4 @@
+# A point needs digits after it before an exponent: `1.e3` is a malformed number,
+# not the field `e3` of the Int 1.
+#= {rejects: ['invalid number', 'digits after its point']}
+1.e3

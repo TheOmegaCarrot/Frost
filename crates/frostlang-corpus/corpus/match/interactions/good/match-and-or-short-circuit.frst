@@ -1,0 +1,10 @@
+# A match may be an operand of `and`/`or`, which short-circuit around it: the
+# right-hand match runs only when needed.
+#= {result: ['default', 5], printed: ['ran'], inputs: {a: null, b: 5}}
+defn noisy(v) -> match v {
+    x => do {
+        print('ran')
+        x
+    },
+}
+[a or noisy('default'), b or noisy('unused')]

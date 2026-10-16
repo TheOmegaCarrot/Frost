@@ -1,0 +1,8 @@
+# One function can recurse in tail position on some paths and not on others;
+# both kinds of call return the right values. Counts the odd numbers up to n,
+# skipping the even ones by a tail call.
+#= {result: [0, 1, 5000]}
+defn odds(n) -> if n <= 0: 0
+    elif n % 2 == 0: odds(n - 1)
+    else: 1 + odds(n - 1)
+[odds(0), odds(1), odds(10000)]

@@ -1,0 +1,3 @@
+# Frost has no `while` loop.
+#= {rejects: 'no `while` loop', inputs: {running: false}}
+while running { 1 }

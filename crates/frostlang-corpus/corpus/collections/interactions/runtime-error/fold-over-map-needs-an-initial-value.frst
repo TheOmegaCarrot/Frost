@@ -1,0 +1,4 @@
+# `fold` over a Map has no first element to start from, so it requires an
+# initial value.
+#= {raises: 'requires an initializer', inputs: {m: {a: 1}}}
+fold(m, fn acc, k, v -> acc)

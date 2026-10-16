@@ -1,0 +1,3 @@
+# Frost's operators are ASCII: the minus sign `−` is not `-`.
+#= {rejects: 'write `-`'}
+1 − 2

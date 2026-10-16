@@ -1,0 +1,3 @@
+# `defn` requires a parenthesized parameter list, even an empty one.
+#= {rejects: ['expected `(`', '`->`']}
+defn f -> 1

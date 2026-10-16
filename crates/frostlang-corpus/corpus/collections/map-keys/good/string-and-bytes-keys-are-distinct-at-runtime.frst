@@ -1,0 +1,8 @@
+# A String key and a Bytes key known only at runtime, holding the same
+# underlying bytes, are different keys: neither finds the other.
+#= {
+#=     result: [2, 'string', 'bytes', null, null],
+#=     inputs: {s: 'a', y: x'61'},
+#= }
+def m = {[s]: 'string', [y]: 'bytes'}
+[len(m), m[s], m[y], {[s]: 'x'}[y], {[y]: 'x'}[s]]

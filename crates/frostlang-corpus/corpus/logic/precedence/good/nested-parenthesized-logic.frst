@@ -1,0 +1,9 @@
+# Logical expressions nest through several levels of parentheses, each level
+# deciding by its own operands and yielding the deciding one to the level above.
+#= {result: [3, null, 3, null], inputs: {t: 1, n: null}}
+[
+    t and (n or (false or (t and (n or (null or 3))))),
+    (((t and n) or (n and t)) and t) or ((false or n) and 3),
+    1 and (null or (false or (1 and (null or (null or 3))))),
+    (((1 and null) or (null and 1)) and 1) or ((false or null) and 3),
+]

@@ -1,0 +1,4 @@
+# The self-name and the parameters share one scope, so a parameter may not
+# take the self-name.
+#= {rejects: ['`f`', 'already bound']}
+def g = fn f(x, f) -> x

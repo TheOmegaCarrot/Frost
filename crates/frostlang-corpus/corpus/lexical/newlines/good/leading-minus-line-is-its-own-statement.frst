@@ -1,0 +1,8 @@
+# `-` can start an expression, so a line starting with `- 1` does not
+# continue the line before: it is a separate statement negating 1. The
+# definition before it keeps its value.
+#= {result: 10}
+def a = 10
+def b = a
+    - 1
+b

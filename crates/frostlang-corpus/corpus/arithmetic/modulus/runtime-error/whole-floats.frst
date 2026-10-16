@@ -1,0 +1,4 @@
+# A whole-valued Float is still a Float: `6.0 % 4.0` is a type error, not 2.
+# Subtle because both operands have exact Int equivalents.
+#= {raises: 'Float % Float'}
+6.0 % 4.0

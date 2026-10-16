@@ -1,0 +1,3 @@
+# An uppercase octal prefix with nothing after it has no digits.
+#= {rejects: 'octal Int literal with no digits'}
+0O + 1

@@ -1,0 +1,3 @@
+# A spread function applied to an Array known only at run time.
+#= {result: 6, inputs: {pair: [10, 4]}}
+spread(minus)(pair)

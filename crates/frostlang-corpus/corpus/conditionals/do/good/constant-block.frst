@@ -1,0 +1,8 @@
+# A block built only from constants yields the same value an optimizer may
+# compute ahead of time.
+#= {result: 9}
+do {
+    def a = 1 + 2
+    def b = a * a
+    b
+}

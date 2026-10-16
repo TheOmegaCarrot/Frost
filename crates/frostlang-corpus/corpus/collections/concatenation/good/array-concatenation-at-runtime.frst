@@ -1,0 +1,3 @@
+# `+` joins runtime Arrays in order, Null elements included.
+#= {result: [[1, null, null, 2], [], [1, null]], inputs: {a: [1, null], b: [null, 2], empty: []}}
+[a + b, empty + empty, empty + a]

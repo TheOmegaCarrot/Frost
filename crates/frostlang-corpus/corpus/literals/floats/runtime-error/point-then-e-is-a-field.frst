@@ -1,0 +1,4 @@
+# `1.e3` is a malformed number, but `1.e` is not a number at all: with no exponent
+# digits, `e` is the field `e` of the Int 1, which fails when it indexes the Int.
+#= {raises: ['cannot index', 'Int']}
+1.e

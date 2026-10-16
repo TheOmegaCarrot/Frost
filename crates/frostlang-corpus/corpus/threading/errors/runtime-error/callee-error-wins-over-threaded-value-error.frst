@@ -1,0 +1,4 @@
+# `a @ f()` is exactly `f(a)`, so the callee is evaluated before the threaded
+# value, and an error in the callee wins over one in the threaded value.
+#= {raises: 'callee'}
+error('threaded value') @ (error('callee'))()

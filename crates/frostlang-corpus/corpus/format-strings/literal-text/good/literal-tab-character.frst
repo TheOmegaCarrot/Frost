@@ -1,0 +1,3 @@
+# A real tab character written in the source is kept as literal text.
+#= {result: true}
+$'a	b' == "a\tb"

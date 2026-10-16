@@ -1,0 +1,4 @@
+# In a double-quoted format String, escapes decode on both sides of an
+# interpolation, with `\"` as the quote escape.
+#= {result: "a\t\"7\\$\nA", inputs: {x: 7}}
+$"a\t\"${x}\\\$\n\u{41}"

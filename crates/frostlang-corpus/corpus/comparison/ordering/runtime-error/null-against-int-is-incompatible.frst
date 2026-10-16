@@ -1,0 +1,3 @@
+# Ordering Null against an Int raises: Null does not sort below everything.
+#= {raises: ['incompatible types', 'Null', 'Int']}
+null < 1

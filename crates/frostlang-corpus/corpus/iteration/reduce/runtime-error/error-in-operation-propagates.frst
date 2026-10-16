@@ -1,0 +1,3 @@
+# An error the operation raises propagates out of `reduce`.
+#= {raises: 'too big', inputs: {xs: [1, 2, 3]}}
+reduce xs init: 0 with fn acc, x -> if acc > 2: error('too big') else: acc + x

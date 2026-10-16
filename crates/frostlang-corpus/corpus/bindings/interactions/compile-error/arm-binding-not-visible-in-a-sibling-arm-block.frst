@@ -1,0 +1,9 @@
+# A name bound inside one arm's result block is not visible in another arm.
+#= {rejects: ['`inner`', 'not defined']}
+match 2 {
+    1 => do {
+        def inner = 1
+        inner
+    },
+    _ => inner,
+}

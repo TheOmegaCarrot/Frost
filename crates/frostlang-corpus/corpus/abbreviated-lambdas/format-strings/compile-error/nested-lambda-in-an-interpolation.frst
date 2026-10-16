@@ -1,0 +1,4 @@
+# An interpolation inside an abbreviated lambda is part of it, so an
+# abbreviated lambda there is nested and rejected.
+#= {rejects: 'cannot be nested'}
+def f = $($'value: ${call($($1), [$1])}')

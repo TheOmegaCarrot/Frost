@@ -1,0 +1,4 @@
+# A `;` ends an `if` statement like a line break does, so the expression after
+# it is the script's value.
+#= {result: 3, printed: ['ran']}
+if true: print('ran') else: 2; 3

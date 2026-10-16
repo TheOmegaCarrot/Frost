@@ -1,0 +1,4 @@
+# Reducing a Map passes the accumulator, key, and value: `$3` is the value,
+# and `$2`, the key, goes unused but still counts.
+#= {result: 3, inputs: {m: {a: 1, b: 2}}}
+reduce m init: 0 with $($1 + $3)

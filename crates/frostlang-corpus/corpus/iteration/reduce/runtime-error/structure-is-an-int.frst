@@ -1,0 +1,3 @@
+# An Int is not a range to fold over, even with an `init:`.
+#= {raises: ['Structured', 'argument 1', 'Int'], inputs: {n: 3}}
+reduce n init: 0 with fn acc, x -> acc + x

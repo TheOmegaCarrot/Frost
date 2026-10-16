@@ -1,0 +1,6 @@
+# A type constraint may apply to an element of an Array pattern.
+#= {result: ['int pair', 'mixed', 'mixed'], inputs: {xs: [[1, 2], [1, 2.0], [1, null]]}}
+transform(xs, fn v -> match v {
+    [a is Int, b is Int] => 'int pair',
+    [_, _] => 'mixed',
+})

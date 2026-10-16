@@ -1,0 +1,5 @@
+# Mutual recursion by passing functions fails when the partner passed in is
+# not a function, at the first call through it.
+#= {raises: 'non-function'}
+defn ping(n, other) -> if n == 0: 'ping' else: other(n - 1, ping)
+ping(5, 'pong')

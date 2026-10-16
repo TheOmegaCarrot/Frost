@@ -1,0 +1,9 @@
+# As `0.0 == -0.0`, the two are the same Map key: a lookup by either finds
+# an entry made with the other, at compile time and at runtime.
+#= {
+#=     result: ['positive', 'positive', 'negative', 'negative'],
+#=     inputs: {z: 0.0, nz: -0.0},
+#= }
+def pos = {[0.0]: 'positive'}
+def neg = {[nz]: 'negative'}
+[pos[-0.0], pos[nz], neg[0.0], neg[z]]

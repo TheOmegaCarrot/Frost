@@ -1,0 +1,12 @@
+# A comparison's result is a Bool, so it can key a Map, and a comparison can
+# select the entry to look up.
+#= {
+#=     result: [{[true]: 'less', [false]: 'greater'}, 'less', 'greater'],
+#=     inputs: {a: 1, b: 2.5},
+#= }
+def by_outcome = {[a < b]: 'less', [a > b]: 'greater'}
+[
+    by_outcome,
+    by_outcome[a <= b],
+    by_outcome[b <= a],
+]

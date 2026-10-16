@@ -1,0 +1,8 @@
+# Constant Ints beyond 2^53 promote to the nearest Float exactly as runtime
+# ones do: the folder rounds the same way.
+#= {result: [9007199254740992.0, 9223372036854775808.0, -9223372036854775808.0]}
+[
+    9007199254740993 + 0.0,
+    9223372036854775807 * 1.0,
+    -9223372036854775808 - 0.0,
+]

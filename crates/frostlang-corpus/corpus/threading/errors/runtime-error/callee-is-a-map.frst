@@ -1,0 +1,4 @@
+# A Map is not callable, even one holding functions.
+#= {raises: ['non-function', 'Map'], inputs: {n: 1}}
+def m = {f: fn x -> x}
+n @ m()

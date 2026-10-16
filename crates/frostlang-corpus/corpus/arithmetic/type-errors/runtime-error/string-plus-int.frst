@@ -1,0 +1,4 @@
+# A String plus an Int is a type error, not concatenation of the Int's text;
+# the error names the operand types in order.
+#= {raises: 'String + Int'}
+'count: ' + 1

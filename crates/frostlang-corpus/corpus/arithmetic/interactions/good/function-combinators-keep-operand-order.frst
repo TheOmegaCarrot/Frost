@@ -1,0 +1,12 @@
+# The function combinators place arguments predictably, which a
+# non-commutative subtraction makes visible: `curry` fixes the left operand,
+# `bcurry` the right, and `rev_args` swaps them. `compose` applies its first
+# function first.
+#= {result: [7, -7, -7, 12], inputs: {three: 3, five: 5, ten: 10}}
+defn minus(a, b) -> a - b
+[
+    curry(minus, ten)(three),
+    bcurry(minus, ten)(three),
+    rev_args(minus)(ten, three),
+    compose($($ + 1), $($ * 2))(five),
+]

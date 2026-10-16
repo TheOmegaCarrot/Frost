@@ -1,0 +1,4 @@
+# The threaded value is the first argument, so its error wins over a written
+# argument's.
+#= {raises: 'threaded first'}
+error('threaded first') @ collect(error('written second'))

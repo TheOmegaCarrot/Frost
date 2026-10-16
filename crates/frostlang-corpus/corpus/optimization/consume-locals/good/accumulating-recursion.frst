@@ -1,0 +1,5 @@
+# A recursive function passing a structure built from its parameter onward
+# builds the full result, and leaves the caller's starting value unchanged.
+#= {result: [[0, 3, 2, 1], [0]], inputs: {start: [0], three: 3}}
+defn build(acc, n) -> if n == 0: acc else: build(acc + [n], n - 1)
+[build(start, three), start]

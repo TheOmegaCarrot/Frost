@@ -1,0 +1,8 @@
+# Float equality is exact, with no tolerance: rounding in `0.1 + 0.2` leaves a
+# value just above `0.3`, so the two are unequal.
+#= {result: [false, true, true]}
+[
+    0.1 + 0.2 == 0.3,
+    0.1 + 0.2 != 0.3,
+    0.5 + 0.25 == 0.75,
+]

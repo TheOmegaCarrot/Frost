@@ -1,0 +1,11 @@
+# Inside a match, alternatives may be split across lines with the `|` leading
+# or trailing.
+#= {result: ['low', 'mid'], inputs: {a: 2, b: 5}}
+defn size(n) -> match n {
+    1
+    | 2
+    | 3 => 'low',
+    4 |
+    5 => 'mid',
+}
+[size(a), size(b)]

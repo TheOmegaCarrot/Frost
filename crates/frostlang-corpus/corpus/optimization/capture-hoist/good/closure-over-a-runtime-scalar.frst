@@ -1,0 +1,6 @@
+# The function of closure-over-a-known-scalar, capturing a value only known at
+# runtime, computes the same results.
+#= {result: [6, 7], inputs: {five: 5, one: 1, two: 2}}
+def n = five
+def add = fn x -> x + n
+[add(one), add(two)]

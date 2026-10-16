@@ -1,0 +1,6 @@
+# Keys sort by type before value, so every Int key precedes every Float key:
+# Int 100 comes before Float 0.5. Subtle because `<` would order these the
+# other way, comparing across Int and Float by value.
+#= {result: [-5, 100, -7.5, 0.5]}
+def m = {[0.5]: 'a', [100]: 'b', [-7.5]: 'c', [-5]: 'd'}
+fold(m, [], fn acc, k, v -> acc + [k])

@@ -1,0 +1,18 @@
+# Inside parentheses, line breaks are insignificant: an operator may end or
+# start a line, which is how a long expression spans lines.
+#= {result: [10, true]}
+def total = (
+    1 +
+    2
+    + 3
+    *
+    2
+    + 1
+)
+def ok = (
+    total
+    > 5
+    and
+    total < 20
+)
+[total, ok]

@@ -1,0 +1,5 @@
+# Even a value with effects cannot be discarded through a def: `def _ = ...`
+# still binds no name.
+#= {rejects: 'binds no name'}
+def _ = print('effect')
+0

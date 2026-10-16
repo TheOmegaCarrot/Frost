@@ -1,0 +1,6 @@
+# An alternative recovers only from mismatches: an error raised while
+# evaluating a branch's computed key propagates instead of falling through to
+# the next branch.
+#= {raises: 'division by zero', inputs: {n: 0, v: {x: 1}}}
+def {[1 / n]: a} | {x: a} = v
+a

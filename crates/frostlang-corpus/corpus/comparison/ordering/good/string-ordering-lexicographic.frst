@@ -1,0 +1,13 @@
+# Strings order lexicographically: the first differing character decides, a
+# proper prefix sorts first, and the empty String sorts before every other.
+#= {result: [true, true, false, true, true, false, true, true]}
+[
+    'abc' < 'abd',
+    'ab' < 'abc',
+    'abc' < 'ab',
+    '' < 'a',
+    'b' > 'abc',
+    'abc' < 'abc',
+    'abc' <= 'abc',
+    'abc' >= 'abc',
+]

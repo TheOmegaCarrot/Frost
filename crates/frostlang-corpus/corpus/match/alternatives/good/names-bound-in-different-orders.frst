@@ -1,0 +1,6 @@
+# Alternatives may bind the same names in different orders and positions.
+#= {result: [[1, 2], [2, 1]], inputs: {a: [1, 2], b: {b: 1, c: 2}}}
+[
+    match a { [x, y] | [y, x] => [x, y] },
+    match b { {a: x, b: y} | {c: x, b: y} => [x, y] },
+]

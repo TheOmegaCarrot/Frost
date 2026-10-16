@@ -1,0 +1,10 @@
+# A pure global given `print` as its callback prints when the program runs,
+# once for each call it makes, in order: the global's purity does not make an
+# impure callback pure.
+#= {result: 'done', printed: ['1', '2', '3', '4', 'x', '5']}
+each([1, 2], print)
+transform([3], print)
+select([4], print)
+call(print, ['x'])
+tap(5, print)
+'done'

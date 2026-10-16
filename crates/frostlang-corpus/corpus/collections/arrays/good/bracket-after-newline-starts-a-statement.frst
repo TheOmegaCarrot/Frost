@@ -1,0 +1,7 @@
+# A `[` at the start of a line begins a new statement (an Array literal);
+# it does not index the previous line's value. Subtle because `xs[0]` on one
+# line would index.
+#= {result: [0]}
+def xs = [10, 20]
+xs
+[0]

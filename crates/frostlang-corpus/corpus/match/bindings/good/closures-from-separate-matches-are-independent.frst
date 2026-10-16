@@ -1,0 +1,8 @@
+# Each run of a match binds afresh: closures made on different runs capture
+# their own values, not a shared slot.
+#= {result: [1, 2, 3], inputs: {pairs: [[1, 0], [0, 2], [3, 3]]}}
+def getters = transform(pairs, fn p -> match p {
+    [x, 0] | [0, x] => fn -> x,
+    [x, _] => fn -> x,
+})
+transform(getters, fn g -> g())

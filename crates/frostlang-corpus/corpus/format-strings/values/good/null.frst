@@ -1,0 +1,3 @@
+# Null interpolates as `null`, at the start, middle, and end, and alone.
+#= {result: ['null', 'a null b', 'nullnull'], inputs: {v: null}}
+[$'${v}', $'a ${v} b', $'${v}${v}']

@@ -1,0 +1,5 @@
+# A parameter may share a global's name; inside the body it is the argument,
+# and outside the global is unaffected.
+#= {result: [6, 'Int', 2]}
+def f = fn len, type -> len + type
+[f(5, 1), type(1), len([1, 2])]

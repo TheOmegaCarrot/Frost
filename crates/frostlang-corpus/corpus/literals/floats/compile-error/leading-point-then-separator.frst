@@ -1,0 +1,3 @@
+# A leading-point Float needs a digit straight after the point: `._5` is not a Float.
+#= {rejects: ['expected an expression', 'found `.`']}
+._5

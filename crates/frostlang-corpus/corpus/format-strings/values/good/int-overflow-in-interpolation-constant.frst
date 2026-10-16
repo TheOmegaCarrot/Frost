@@ -1,0 +1,4 @@
+# Constant Int arithmetic in an interpolation wraps in two's complement too:
+# folding it ahead of time must give the runtime's answer.
+#= {result: ['-9223372036854775808', '9223372036854775807']}
+[$'${9223372036854775807 + 1}', $'${-9223372036854775808 - 1}']

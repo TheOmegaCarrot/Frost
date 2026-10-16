@@ -1,0 +1,4 @@
+# In an abbreviated lambda, a `$` placeholder inside a format String's
+# interpolation is the lambda's parameter.
+#= {result: ['n1', 'n2', 'n3']}
+map [1, 2, 3] with $($'n${$}')

@@ -1,0 +1,5 @@
+# With only `$$`, the lambda takes any number of arguments and `$$` is an
+# Array of all of them.
+#= {result: [[1, 2, 3], [4], []]}
+def all = $($$)
+[all(1, 2, 3), all(4), all()]

@@ -1,0 +1,10 @@
+# The operation may read the very structure being iterated, and sees it
+# unchanged throughout. Subtle: the runtime may update a uniquely-held
+# structure in place while iterating it, which must never be observable.
+#= {
+#=     result: [[13, 23, 33], {a: [1, 2], b: [1, 2]}, [1, 2, 3]],
+#=     inputs: {xs: [1, 2, 3], m: {a: 1, b: 2}},
+#= }
+def ys = map xs with fn x -> x * 10 + len(xs)
+def n = map m with fn k, v -> {[k]: [m.a, m.b]}
+[ys, n, xs]

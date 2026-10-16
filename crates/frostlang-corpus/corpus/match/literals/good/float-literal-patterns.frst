@@ -1,0 +1,10 @@
+# A Float literal pattern matches an equal Float, in any notation.
+#= {result: ['half', 'minus two and a half', 'big', 'small', 'other'], inputs: {xs: [0.5, -2.5, 1e10, 1.5e-3, 0.25]}}
+defn name(x) -> match x {
+    0.5 => 'half',
+    -2.5 => 'minus two and a half',
+    1e1_0 => 'big',
+    0.001_5 => 'small',
+    _ => 'other',
+}
+transform(xs, name)

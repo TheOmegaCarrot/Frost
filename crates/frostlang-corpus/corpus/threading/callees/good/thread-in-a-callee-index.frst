@@ -1,0 +1,6 @@
+# A threaded call can compute the index that selects another threaded call's
+# callee; the two threads are independent.
+#= {result: 4, inputs: {n: 3, zero: 0}}
+defn inc(x) -> x + 1
+def fns = [fn x -> x * 2, fn x -> x + 1]
+n @ fns[zero @ inc()]()

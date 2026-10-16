@@ -1,0 +1,9 @@
+# An `if` may be a call argument; a comma ends its branch, so each argument is
+# its own `if`.
+#= {result: [2, 3, [1, 4]], inputs: {t: true, f: false}}
+defn pair(a, b) -> [a, b]
+[
+    len(if t: 'ab' else: 'abc'),
+    len(if f: 'ab' else: 'abc'),
+    pair(if t: 1 else: 2, if f: 3 else: 4),
+]

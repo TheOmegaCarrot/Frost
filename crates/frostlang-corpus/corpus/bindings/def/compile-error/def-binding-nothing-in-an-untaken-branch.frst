@@ -1,0 +1,8 @@
+# A `def` that binds nothing is rejected at compile time, even inside a branch
+# that would never run.
+#= {rejects: ['binds no name']}
+if false: do {
+    def _ = 1
+    1
+}
+else: 2

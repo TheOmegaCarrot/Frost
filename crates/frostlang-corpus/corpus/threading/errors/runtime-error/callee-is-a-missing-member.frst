@@ -1,0 +1,3 @@
+# A `.` access to a missing member raises before any call is attempted.
+#= {raises: ['no value', "'g'"], inputs: {n: 1, m: {f: fn x -> x}}}
+n @ m.g()

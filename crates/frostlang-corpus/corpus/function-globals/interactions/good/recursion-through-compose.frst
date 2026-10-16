@@ -1,0 +1,4 @@
+# A function may recur as the last step of a composition.
+#= {result: 'done', inputs: {n: 50}}
+defn countdown(k) -> if k == 0: 'done' else: compose(fn m -> m - 1, countdown)(k)
+countdown(n)

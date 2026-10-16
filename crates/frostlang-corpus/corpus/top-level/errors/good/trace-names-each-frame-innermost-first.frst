@@ -1,0 +1,8 @@
+# An error passing through several calls lists each function's frame in the
+# trace, innermost first. Each call here wraps its callee in an Array, so no
+# call is a tail call and every frame is still there when the error is raised.
+#= {result: ['error', 'inner', 'middle', 'outer']}
+defn inner() -> [error('deep')]
+defn middle() -> [inner()]
+defn outer() -> [middle()]
+try_call(outer).trace

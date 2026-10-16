@@ -1,0 +1,5 @@
+# A lambda whose body ends in a call is still not a call: the `()` belongs to
+# the body. Subtle because the line ends in `()` like a threaded call.
+#= {rejects: ['right side of `@` must be a call', 'not a call'], inputs: {n: 1}}
+defn make() -> 1
+n @ fn x -> make()

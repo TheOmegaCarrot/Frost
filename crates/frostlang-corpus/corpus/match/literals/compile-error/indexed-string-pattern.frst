@@ -1,0 +1,6 @@
+# A String pattern cannot be indexed; it is a complete literal.
+#= {rejects: ['expected `=>`', 'found `[`']}
+match 'a' {
+    'ab'[0] => 1,
+    _ => 0,
+}

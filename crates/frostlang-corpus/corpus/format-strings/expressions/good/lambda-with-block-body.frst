@@ -1,0 +1,4 @@
+# A lambda with a braced block body, called inside an interpolation: its braces
+# nest inside the interpolation's.
+#= {result: '<9>', inputs: {x: 7}}
+$'<${(fn -> { def y = x + 1; y + 1 })()}>'

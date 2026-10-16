@@ -1,0 +1,7 @@
+# Elements of every non-Function type bind unchanged.
+#= {
+#=     result: [null, true, -3, 2.5, 'snow', x'00ff', [1], {k: 'v'}],
+#=     inputs: {xs: [null, true, -3, 2.5, 'snow', x'00ff', [1], {k: 'v'}]},
+#= }
+def [n, b, i, f, s, y, a, m] = xs
+[n, b, i, f, s, y, a, m]

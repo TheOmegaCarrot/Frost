@@ -1,0 +1,30 @@
+# Lazy sequences built only from literals, which the optimizer may see
+# through: the mapped function's prints still happen only for the elements
+# pulled, once each and in order, never ahead of the pull.
+#= {
+#=     result: [1, 9],
+#=     printed: ['square 1', 'square 3'],
+#= }
+defn naturals_from(n) -> {next: fn -> [n, naturals_from(n + 1)]}
+
+defn mapped(seq, f) -> {next: fn -> match seq.next() {
+    null => null,
+    [x, rest] => [f(x), mapped(rest, f)],
+}}
+
+defn filtered(seq, keep) -> {next: fn -> match seq.next() {
+    null => null,
+    [x, rest] => if keep(x): [x, filtered(rest, keep)] else: filtered(rest, keep).next(),
+}}
+
+defn take(seq, n) -> if n == 0: [] else: match seq.next() {
+    null => [],
+    [x, rest] => [x] + take(rest, n - 1),
+}
+
+def odds = filtered(naturals_from(0), fn x -> x % 2 == 1)
+def squares = mapped(odds, fn x -> {
+    print($'square ${x}')
+    x * x
+})
+take(squares, 2)

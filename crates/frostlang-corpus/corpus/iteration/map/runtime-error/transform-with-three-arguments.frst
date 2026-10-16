@@ -1,0 +1,4 @@
+# `transform` takes exactly two arguments; a third is an arity error, not an
+# ignored extra.
+#= {raises: ['transform', 'called with 3']}
+transform([1], fn x -> x, 0)

@@ -1,0 +1,5 @@
+# Calling with fewer arguments than the highest placeholder raises; the
+# missing parameter is not Null.
+#= {raises: 'expects 2 argument'}
+def second = $($2)
+second(1)

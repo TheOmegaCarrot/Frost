@@ -1,0 +1,5 @@
+# A nested lambda returning the enclosing self-name returns the enclosing
+# closure, however many times the two are called in turn.
+#= {result: [true, true]}
+def a = fn a() -> fn b() -> a
+[a()() == a, a()()()() == a]

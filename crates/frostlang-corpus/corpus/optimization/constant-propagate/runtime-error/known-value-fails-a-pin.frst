@@ -1,0 +1,5 @@
+# A def whose pinned value its known value fails raises when the program
+# reaches it.
+#= {raises: 'expected the value of `(1 + 1)`'}
+def [a, (1 + 1)] = [7, 3]
+a

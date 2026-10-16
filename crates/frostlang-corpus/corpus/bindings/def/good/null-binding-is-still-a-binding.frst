@@ -1,0 +1,6 @@
+# A name bound to Null is bound: reading it yields Null rather than being an
+# unbound name, and it behaves as Null wherever it is used.
+#= {result: [null, true, 'fallback', 'Null'], inputs: {missing: null}}
+def x = null
+def y = missing
+[x, x == y, y or 'fallback', type(x)]

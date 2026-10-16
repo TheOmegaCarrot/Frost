@@ -1,0 +1,9 @@
+# Code inside a comment is not code: a commented-out definition, print, and
+# export have no effect, and neither do unbalanced brackets in a comment.
+#= {result: 1}
+def x = 1
+# def x = 2
+# print('never')
+# export def y = 3
+# ( [ { unbalanced
+x

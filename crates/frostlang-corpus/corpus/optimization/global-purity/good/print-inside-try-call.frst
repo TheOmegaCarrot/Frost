@@ -1,0 +1,7 @@
+# `try_call` of a function that prints prints when the program runs, once per
+# call: wrapping an impure call in a pure global leaves it impure.
+#= {result: [true, null, true], printed: ['inside', 'inside']}
+def say = fn -> print('inside')
+def first = try_call(say)
+def second = try_call(say)
+[first.ok, first.value, second.ok]

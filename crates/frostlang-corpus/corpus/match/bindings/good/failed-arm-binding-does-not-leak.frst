@@ -1,0 +1,11 @@
+# An arm that binds a name and then fails leaves nothing behind: a later arm's
+# same-named binding holds its own value, and a later arm without that binding
+# reads the enclosing name.
+#= {result: ['outer', 9], inputs: {v: [9, 0]}}
+def x = 'outer'
+match v {
+    [x, 1] => ['first', x],
+    [_, 2] => ['second', x],
+    [_, 0] if: false => ['third', x],
+    [y, 0] => [x, y],
+}

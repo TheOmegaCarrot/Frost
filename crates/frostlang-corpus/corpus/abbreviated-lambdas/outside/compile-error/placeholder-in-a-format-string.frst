@@ -1,0 +1,4 @@
+# A format string is not an abbreviated lambda: `$1` interpolated outside one
+# is a syntax error.
+#= {rejects: ['found `$1`', 'only inside `$( ... )`']}
+$'value: ${$1}'

@@ -1,0 +1,5 @@
+# A curried function keeps its fixed arguments across calls.
+#= {result: [6, 7, 5, 2]}
+def add5 = curry(plus, 5)
+def halve = bcurry(divide, 2)
+[add5(1), add5(2), halve(10), halve(4)]

@@ -1,0 +1,5 @@
+# A pin compares against a value but binds no name.
+#= {rejects: 'binds no name'}
+def n = 1
+def (n) = 1
+n

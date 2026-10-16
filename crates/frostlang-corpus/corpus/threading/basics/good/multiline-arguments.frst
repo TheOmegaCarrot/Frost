@@ -1,0 +1,7 @@
+# The written arguments of a threaded call may span lines inside their
+# parentheses.
+#= {result: [1, 2, 3]}
+1 @ collect(
+    2,
+    3,
+)

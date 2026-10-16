@@ -1,0 +1,8 @@
+# A guarded arm's result is in tail position even though its guard is not.
+#= {result: 0}
+defn down(n) -> match n {
+    m if: m > 0 => down(m - 1),
+    _ => error('bottom'),
+}
+defn frames(n) -> len(try_call(down, [n]).trace)
+frames(500) - frames(5)

@@ -1,0 +1,6 @@
+# A threaded chain is the whole value of a `def`.
+#= {result: 12, inputs: {n: 5}}
+defn inc(x) -> x + 1
+defn double(x) -> x * 2
+def y = n @ inc() @ double()
+y

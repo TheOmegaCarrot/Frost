@@ -1,0 +1,12 @@
+# Polymorphism by convention fails loudly: one shape lacks the `area`
+# method the others have, and reading it as a field raises, naming the
+# missing key, rather than calling Null.
+#= {
+#=     raises: ['no value at key', 'area'],
+#=     inputs: {sides: [2, 3]},
+#= }
+defn square(side) -> {area: fn -> side * side, name: fn -> 'square'}
+defn point() -> {name: fn -> 'point'}
+
+def shapes = transform(sides, square) + [point()]
+fold(shapes, 0, fn total, shape -> total + shape.area())

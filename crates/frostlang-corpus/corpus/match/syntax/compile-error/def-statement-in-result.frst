@@ -1,0 +1,5 @@
+# An arm's result is an expression; a definition there needs a `do` block.
+#= {rejects: ['expected an expression', 'found `def`']}
+match 1 {
+    x => def y = x,
+}

@@ -1,0 +1,5 @@
+# `$$` makes the lambda variadic, but the positional parameters up to the
+# highest placeholder remain required.
+#= {raises: 'expects at least 2 argument'}
+def f = $([$2, $$])
+f(1)

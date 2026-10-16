@@ -1,0 +1,8 @@
+# An Array interpolates as `to_string` renders it: empty, single, nested, and
+# holding every scalar type, including Strings, which render differently inside
+# a structure than at the top level.
+#= {
+#=     result: [true, true, true, true],
+#=     inputs: {cases: [[], [1], [[1, [2]], []], [null, true, 1, 2.5, 'two', x'0a']]},
+#= }
+transform(cases, fn a -> $'${a}' == to_string(a))

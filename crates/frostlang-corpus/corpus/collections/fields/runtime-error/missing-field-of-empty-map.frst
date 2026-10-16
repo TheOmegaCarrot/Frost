@@ -1,0 +1,3 @@
+# Every field of an empty Map is missing.
+#= {raises: 'no value at key', inputs: {m: {}}}
+m.a

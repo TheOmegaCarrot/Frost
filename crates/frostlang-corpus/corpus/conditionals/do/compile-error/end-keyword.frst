@@ -1,0 +1,3 @@
+# A block closes with its brace; Frost has no `end`.
+#= {rejects: 'has no `end`'}
+do { 1 } end

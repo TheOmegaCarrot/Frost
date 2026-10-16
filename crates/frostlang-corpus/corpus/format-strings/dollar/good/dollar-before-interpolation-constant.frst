@@ -1,0 +1,4 @@
+# `$${...}` is a literal `$` then an interpolation, also when the interpolated
+# value is a constant the optimizer can fold.
+#= {result: ['$7', '7$', '$$7$$']}
+[$'$${7}', $'${7}$', $'$$${3 + 4}$$']

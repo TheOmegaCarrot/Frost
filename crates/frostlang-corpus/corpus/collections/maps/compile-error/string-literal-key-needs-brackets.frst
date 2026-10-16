@@ -1,0 +1,4 @@
+# A quoted String is not a key by itself: an entry key is a name or a
+# bracketed computed key, so `{'a': 1}` is written `{a: 1}` or `{['a']: 1}`.
+#= {rejects: 'expected a name or `[`'}
+def m = {'a': 1}

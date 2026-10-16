@@ -1,0 +1,3 @@
+# `elif` is a keyword, so it cannot be a parameter name.
+#= {rejects: ['found `elif`', 'is a keyword']}
+fn elif -> elif

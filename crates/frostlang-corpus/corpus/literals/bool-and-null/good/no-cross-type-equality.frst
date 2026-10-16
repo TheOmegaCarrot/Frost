@@ -1,0 +1,4 @@
+# Bools and Null equal no Int, String, or each other, though some share their
+# truthiness or would compare equal in other languages.
+#= {result: [false, false, false, false, false, false, false]}
+[true == 1, false == 0, null == false, null == 0, null == '', true == 'true', null == 'null']

@@ -1,0 +1,14 @@
+# Inside parentheses, brackets, or call arguments, line breaks around `and`,
+# `or`, and `not` are ignored, so a long condition may span lines there.
+#= {result: [false, true, [1], 'b']}
+defn identity(v) -> v
+def grouped = (true and
+    false)
+def leading = (false
+    or true)
+def listed = [true
+    and 1]
+def argument = identity(null or
+    not
+    false and 'b')
+[grouped, leading, listed, argument]

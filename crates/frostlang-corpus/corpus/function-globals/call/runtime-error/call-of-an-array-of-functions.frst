@@ -1,0 +1,3 @@
+# An Array holding a function is still not a Function.
+#= {raises: ['call', 'Function as argument 1', 'got Array']}
+call([collect], [])

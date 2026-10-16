@@ -1,0 +1,13 @@
+# A match nested in another's arm, both reading and extending one outer
+# binding, sees the original at every read.
+#= {result: [[1, 'outer'], [1, 'inner'], [1]], inputs: {n: 1}}
+def xs = [n]
+match len(xs) {
+    1 => [
+        xs + ['outer'],
+        match xs {
+            [_] => xs + ['inner'],
+        },
+        xs,
+    ],
+}

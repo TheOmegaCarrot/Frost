@@ -1,0 +1,5 @@
+# An alternative's names may not rebind a name already in the same scope.
+#= {rejects: '`x` is already bound'}
+def x = 1
+def [x, 1] | [1, x] = [1, 1]
+x

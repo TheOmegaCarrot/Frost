@@ -1,0 +1,3 @@
+# Unary `-` on a Map is a type error naming the operand's type.
+#= {raises: ['negate', 'Map']}
+-{a: 1}

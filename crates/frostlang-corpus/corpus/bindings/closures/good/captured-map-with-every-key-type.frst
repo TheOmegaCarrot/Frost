@@ -1,0 +1,10 @@
+# A captured Map keeps every kind of key: Bool, Int, Float, String, and Bytes.
+#= {
+#=     result: ['bool', 'int', 'float', 'string', 'bytes'],
+#=     inputs: {runtime: {[true]: 'bool', [1]: 'int', [1.5]: 'float', s: 'string', [x'00']: 'bytes'}},
+#= }
+def constant = {[true]: 'bool', [1]: 'int', [1.5]: 'float', s: 'string', [x'00']: 'bytes'}
+def read = fn m -> [m[true], m[1], m[1.5], m['s'], m[x'00']]
+def from_constant = fn -> read(constant)
+def from_runtime = fn -> read(runtime)
+if from_constant() == from_runtime(): from_constant() else: 'differ'

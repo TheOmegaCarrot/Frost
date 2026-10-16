@@ -1,0 +1,9 @@
+# Semicolons and line breaks mix freely as statement separators, in a block
+# as at the top level.
+#= {result: 10}
+do {
+    def a = 1; def b = 2
+    def c = 3;
+    ;
+    def d = 4; a + b + c + d
+}

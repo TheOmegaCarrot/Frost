@@ -1,0 +1,5 @@
+# A constant Array added to itself repeats its elements and is unchanged
+# itself, however much of this the compiler computes ahead of time.
+#= {result: [[1, 2, 1, 2], [1, 2]]}
+def xs = [1, 2]
+[xs + xs, xs]

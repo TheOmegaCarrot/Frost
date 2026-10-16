@@ -1,0 +1,4 @@
+# A shorthand key `{a}` takes the String key "a" and binds it to the name `a`.
+#= {result: [2, 1]}
+def {a, b} = {a: 1, b: 2}
+[b, a]

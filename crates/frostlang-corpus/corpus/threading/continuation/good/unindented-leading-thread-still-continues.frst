@@ -1,0 +1,8 @@
+# Indentation does not matter: an `@` at the start of a line continues the
+# previous statement even at the left margin. Subtle because it looks like a
+# statement of its own.
+#= {result: 2, inputs: {one: 1}}
+defn inc(x) -> x + 1
+def x = one
+@ inc()
+x

@@ -1,0 +1,5 @@
+# A named lambda that recurses down and then returns its self-name returns the
+# very closure that was first called.
+#= {result: [true, true]}
+def f = fn me(n) -> if n > 0: me(n - 1) else: me
+[f(3) == f, f(0) == f]

@@ -1,0 +1,5 @@
+# A captured non-ASCII String is unchanged when the closure reads it.
+#= {result: ['日本語 ✓', 'ñandú'], inputs: {s: 'ñandú'}}
+def t = '日本語 ✓'
+def f = fn -> [t, s]
+f()

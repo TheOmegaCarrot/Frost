@@ -1,0 +1,5 @@
+# A statement whose value is discarded still runs, so a constant division by
+# zero in it raises.
+#= {raises: 'division by zero'}
+1 / 0
+'unreached'

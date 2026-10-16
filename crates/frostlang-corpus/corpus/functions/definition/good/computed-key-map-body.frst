@@ -1,0 +1,5 @@
+# A Map body may use computed keys from the parameters; parenthesized, it is
+# unambiguously a Map expression.
+#= {result: {[1]: 'one', two: 2}}
+def pair = fn k, v -> ({[k]: v, two: 2})
+pair(1, 'one')

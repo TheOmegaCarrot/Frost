@@ -1,0 +1,4 @@
+# A name bound at one level of nesting may not be bound again at another.
+#= {rejects: '`a` is already bound'}
+def [a, [b, [a]]] = [1, [2, [3]]]
+[a, b]

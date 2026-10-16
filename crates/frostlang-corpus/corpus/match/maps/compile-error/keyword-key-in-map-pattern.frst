@@ -1,0 +1,6 @@
+# A keyword cannot be a bare key in a Map pattern; a computed String key
+# reaches it.
+#= {rejects: ['expected a name or `[`', 'is a keyword']}
+match {['if']: 1} {
+    {if: x} => x,
+}

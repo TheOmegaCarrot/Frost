@@ -1,0 +1,5 @@
+# `$($ ... $$)` needs at least the first argument; called with none it
+# raises rather than binding `$` to Null.
+#= {raises: 'expects at least 1 argument'}
+def f = $([$, $$])
+f()

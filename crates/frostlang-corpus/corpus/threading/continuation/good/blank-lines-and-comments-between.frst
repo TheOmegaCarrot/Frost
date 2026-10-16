@@ -1,0 +1,12 @@
+# Blank lines and comment lines between an expression and a leading `@` do
+# not break the continuation.
+#= {result: 12, inputs: {n: 5}}
+defn inc(x) -> x + 1
+defn double(x) -> x * 2
+n # the start
+
+    # first add one
+    @ inc()
+
+    # then double
+    @ double()

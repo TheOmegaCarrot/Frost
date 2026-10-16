@@ -1,0 +1,7 @@
+# A `do` block is not the top level either, so it may not hold an
+# `export defn`.
+#= {rejects: ['expected an expression', '`export`']}
+def f = do {
+    export defn g() -> 1
+    g
+}

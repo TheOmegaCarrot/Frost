@@ -1,0 +1,15 @@
+# A literal pattern matches as `==` does: the Int pattern `1` never matches
+# the Float `1.0`, nor the Bytes pattern a String, while `-0.0` matches `0.0`.
+#= {
+#=     result: ['int one', 'float one', 'zero', 'zero', 'other', 'text', 'octets', 'other'],
+#=     inputs: {values: [1, 1.0, 0.0, -0.0, 0, 'a', x'61', true]},
+#= }
+defn kind(v) -> match v {
+    1 => 'int one',
+    1.0 => 'float one',
+    -0.0 => 'zero',
+    'a' => 'text',
+    x'61' => 'octets',
+    _ => 'other',
+}
+transform(values, kind)

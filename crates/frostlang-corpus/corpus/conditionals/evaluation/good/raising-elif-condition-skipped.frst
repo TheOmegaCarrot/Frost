@@ -1,0 +1,6 @@
+# An `elif` condition that would raise is never evaluated once an earlier
+# condition is truthy.
+#= {result: 1, inputs: {t: true, zero: 0}}
+if t: 1
+elif 1 / zero: 2
+else: 3

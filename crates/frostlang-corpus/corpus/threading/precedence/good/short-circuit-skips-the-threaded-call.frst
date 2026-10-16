@@ -1,0 +1,4 @@
+# A threaded call on the skipped side of `and` or `or` never runs, so its
+# error is never raised.
+#= {result: [null, false, 1], inputs: {nothing: null, no: false, one: 1}}
+[nothing and 'boom' @ error(), no and 'boom' @ error(), one or 'boom' @ error()]

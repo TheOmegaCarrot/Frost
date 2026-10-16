@@ -1,0 +1,9 @@
+# A predicate bound in an outer function and called from an inner lambda is
+# the predicate, captured like any value.
+#= {result: [true, false], inputs: {v: 1}}
+defn make() -> {
+    def check = is_string
+    fn x -> check(x)
+}
+def tester = make()
+[tester('a'), tester(v)]

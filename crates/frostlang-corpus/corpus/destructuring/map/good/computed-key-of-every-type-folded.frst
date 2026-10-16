@@ -1,0 +1,5 @@
+# Computed keys of every valid type, over a literal Map the optimizer may
+# match ahead of time.
+#= {result: ['i', 'f', 't', 's', 'b']}
+def {[1]: i, [1.5]: f, [true]: t, ['two words']: s, [x'00']: b} = {[1]: 'i', [1.5]: 'f', [true]: 't', ['two words']: 's', [x'00']: 'b'}
+[i, f, t, s, b]

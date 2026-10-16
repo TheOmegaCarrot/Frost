@@ -1,0 +1,4 @@
+# A discarded call of `error` still raises.
+#= {raises: 'discarded but raised'}
+error('discarded but raised')
+'unreached'

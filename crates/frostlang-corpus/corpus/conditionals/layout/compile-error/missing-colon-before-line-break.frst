@@ -1,0 +1,6 @@
+# A condition alone on its line still needs its colon: the line break does
+# not stand in for it, even with the branch indented below.
+#= {rejects: ['found a line break', '`if` takes a colon']}
+def x = true
+if x
+    1

@@ -1,0 +1,3 @@
+# `foreach` is a keyword, so it cannot name a lambda parameter.
+#= {rejects: ['`foreach` is a keyword', 'cannot be a name']}
+fn foreach -> 1

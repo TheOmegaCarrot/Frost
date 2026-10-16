@@ -1,0 +1,4 @@
+# `transform` over a Map calls its function with each key and value and
+# merges the Maps it returns, so it can swap keys and values.
+#= {result: {[1]: 'a', [2]: 'b'}, inputs: {m: {a: 1, b: 2}}}
+transform(m, fn k, v -> {[v]: k})

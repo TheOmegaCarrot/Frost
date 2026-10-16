@@ -1,0 +1,8 @@
+# `filter` over a Map calls the predicate with each key and value and keeps
+# the entries it accepts, as a Map.
+#= {
+#=     result: [{b: 2, c: 3}, {b: 2, c: 3}],
+#=     inputs: {m: {a: 1, b: 2, c: 3}},
+#= }
+def big = fn k, v -> v > 1
+[filter {a: 1, b: 2, c: 3} with big, filter m with big]

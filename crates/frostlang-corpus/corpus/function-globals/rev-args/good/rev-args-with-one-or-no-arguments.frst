@@ -1,0 +1,3 @@
+# Reversing one argument, or none, changes nothing.
+#= {result: [[1], []]}
+[rev_args(collect)(1), rev_args(collect)()]

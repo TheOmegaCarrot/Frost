@@ -1,0 +1,5 @@
+# Ordering constant Arrays whose first undecided element pair cannot be
+# ordered raises when the program reaches the comparison.
+#= {raises: 'cannot compare incompatible types'}
+def mixed = [1, 'x']
+mixed < [1, 2]

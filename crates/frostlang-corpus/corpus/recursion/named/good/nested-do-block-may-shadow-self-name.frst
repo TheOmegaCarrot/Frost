@@ -1,0 +1,12 @@
+# A `do` block inside a function's body may shadow the function's self-name,
+# though the body itself may not rebind it. Past the block, the name is the
+# function again and the recursion goes on.
+#= {result: ['inner', 'inner']}
+defn f(n) -> {
+    def label = do {
+        def f = 'inner'
+        f
+    }
+    if n == 0: [label] else: [label] + f(n - 1)
+}
+f(1)

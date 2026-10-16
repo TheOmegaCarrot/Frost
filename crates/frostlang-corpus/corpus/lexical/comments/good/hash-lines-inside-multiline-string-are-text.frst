@@ -1,0 +1,8 @@
+# Inside a multiline String, a line starting with `#` is part of the String,
+# not a comment.
+#= {result: 'first\n# not a comment\nlast'}
+'''
+    first
+    # not a comment
+    last
+    '''

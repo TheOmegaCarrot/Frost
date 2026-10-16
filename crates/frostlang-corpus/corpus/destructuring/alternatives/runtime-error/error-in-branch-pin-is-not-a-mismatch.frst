@@ -1,0 +1,5 @@
+# An error raised by a pin inside a branch propagates; the next branch, which
+# would match, is never tried.
+#= {raises: 'division by zero', inputs: {n: 0, v: [1, 2]}}
+def [a, (1 / n)] | [a, 2] = v
+a

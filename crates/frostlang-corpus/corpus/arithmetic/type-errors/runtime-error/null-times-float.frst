@@ -1,0 +1,4 @@
+# Null is not zero: Null times a Float is a type error, even though any
+# number times zero would be zero.
+#= {raises: 'Null * Float'}
+null * 0.0

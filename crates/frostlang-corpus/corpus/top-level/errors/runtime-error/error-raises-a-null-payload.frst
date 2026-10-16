@@ -1,0 +1,4 @@
+# Raising null is still raising: uncaught, its message is `null`.
+#= {raises: 'null'}
+error(null)
+'unreached'

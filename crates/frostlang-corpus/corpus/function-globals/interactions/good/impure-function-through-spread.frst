@@ -1,0 +1,5 @@
+# `print` reached through `spread` still prints, though its argument is a
+# constant.
+#= {result: null, printed: ['spread']}
+spread(print)(['spread'])
+null

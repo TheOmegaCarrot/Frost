@@ -1,0 +1,4 @@
+# An unbound name in a branch of a runtime `if` is a compile error, whichever
+# branch would run.
+#= {rejects: ['`nope`', 'not defined'], inputs: {c: true}}
+if c: 1 else: nope

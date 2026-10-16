@@ -1,0 +1,3 @@
+# A rest binding is written `...name`; Rust's bare `..` is not one.
+#= {rejects: 'a rest binding is written `...name`', inputs: {x: [1]}}
+match x { [a, ..] => a }

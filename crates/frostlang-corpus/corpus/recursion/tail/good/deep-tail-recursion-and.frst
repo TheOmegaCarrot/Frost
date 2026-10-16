@@ -1,0 +1,5 @@
+# The right operand of `and` is in tail position. The recursion ends when the
+# left operand is false, which `and` returns as is.
+#= {result: false}
+defn down(n) -> n > 0 and down(n - 1)
+down(100000)

@@ -1,0 +1,13 @@
+# A block nested several deep reads a binding from each scope around it.
+#= {result: 1111}
+def a = 1000
+do {
+    def b = 100
+    do {
+        def c = 10
+        do {
+            def d = 1
+            a + b + c + d
+        }
+    }
+}

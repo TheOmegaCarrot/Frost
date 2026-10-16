@@ -1,0 +1,7 @@
+# A recursive call whose argument is itself a recursive call: the inner call
+# completes first, then the outer one (in tail position) runs with its result.
+#= {result: [9, 61]}
+defn ack(m, n) -> if m == 0: n + 1
+    elif n == 0: ack(m - 1, 1)
+    else: ack(m - 1, ack(m, n - 1))
+[ack(2, 3), ack(3, 3)]

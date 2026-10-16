@@ -1,0 +1,3 @@
+# A predicate's Bool interpolates as `true` or `false`.
+#= {result: 'true false', inputs: {v: 'x'}}
+$'${is_int(1)} ${is_int(v)}'

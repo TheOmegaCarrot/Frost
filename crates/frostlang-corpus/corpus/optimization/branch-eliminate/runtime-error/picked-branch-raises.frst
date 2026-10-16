@@ -1,0 +1,3 @@
+# The branch a constant condition picks raises its error when it runs.
+#= {raises: 'picked and raised'}
+if true: error('picked and raised') else: 'unpicked'

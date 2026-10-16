@@ -1,0 +1,11 @@
+# A lambda made in a branch's block closes over that block's binding, which
+# it keeps after the block and the `if` end.
+#= {result: [101, 9], inputs: {t: true, f: false}}
+defn make(c) -> if c: do {
+    def offset = 100
+    fn n -> n + offset
+} else: do {
+    def factor = 9
+    fn n -> n * factor
+}
+[make(t)(1), make(f)(1)]

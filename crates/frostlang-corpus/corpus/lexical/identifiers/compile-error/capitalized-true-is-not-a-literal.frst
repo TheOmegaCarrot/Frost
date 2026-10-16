@@ -1,0 +1,3 @@
+# `True` is not the literal `true`; unbound, it is an unknown name.
+#= {rejects: ['`True`', 'not defined']}
+True

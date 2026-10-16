@@ -1,0 +1,9 @@
+# A name may be shadowed by Null; inside the block it reads as Null, not as the
+# outer value, and the outer value returns after the block.
+#= {result: [null, 'default', 1], inputs: {nothing: null}}
+def x = 1
+def inner = do {
+    def x = nothing
+    [x, x or 'default']
+}
+inner + [x]

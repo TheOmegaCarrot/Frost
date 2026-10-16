@@ -1,0 +1,5 @@
+# Functions created on each call of an enclosing function each capture that
+# call's own value, though the code creating them is the same.
+#= {result: [11, 12, 13]}
+def adders = map [1, 2, 3] with fn n -> fn x -> x + n
+map adders with fn f -> f(10)

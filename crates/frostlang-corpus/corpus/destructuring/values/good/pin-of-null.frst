@@ -1,0 +1,4 @@
+# A pin evaluating to Null matches a Null part.
+#= {result: 1, inputs: {nothing: null, xs: [1, null]}}
+def [a, (nothing)] = xs
+a

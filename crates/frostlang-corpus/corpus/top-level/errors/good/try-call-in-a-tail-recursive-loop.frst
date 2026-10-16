@@ -1,0 +1,8 @@
+# A tail-recursive function catching an error on each step, deep enough that
+# the recursion relies on tail calls, keeps every catch separate.
+#= {result: 1000, inputs: {steps: 1000}}
+defn count_failures(n, failures) -> if n == 0: failures else: do {
+    def outcome = try_call(fn -> error(n))
+    count_failures(n - 1, if outcome.ok: failures else: failures + 1)
+}
+count_failures(steps, 0)

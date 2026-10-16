@@ -1,0 +1,11 @@
+# Blank lines and comments in a block are ignored.
+#= {result: 3}
+do {
+    # the first part
+    def x = 1
+
+    # the second part
+
+    def y = 2 # trailing note
+    x + y
+}

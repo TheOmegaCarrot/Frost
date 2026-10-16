@@ -1,0 +1,6 @@
+# A block body must end in an expression to be the result; a trailing `def`
+# leaves it with none.
+#= {rejects: 'must end with an expression'}
+def f = fn -> {
+    def x = 1
+}

@@ -1,0 +1,5 @@
+# A pipeline's function is looked up like any name, so `@` threads into the
+# shadowing binding rather than the global.
+#= {result: 'len of 3'}
+def len = fn x -> $'len of ${x}'
+3 @ len()

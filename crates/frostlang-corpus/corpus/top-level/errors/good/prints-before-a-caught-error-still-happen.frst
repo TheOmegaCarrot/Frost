@@ -1,0 +1,10 @@
+# Effects before an error in caught code still happen, and those after it do
+# not: catching does not undo or replay anything.
+#= {result: 'x', printed: ['before', 'outside']}
+def outcome = try_call(fn -> {
+    print('before')
+    error('x')
+    print('after')
+})
+print('outside')
+outcome.error

@@ -1,0 +1,14 @@
+# A Map of functions works as a dispatch table under every key type a Map
+# allows: Bool, Int, Float, String, and Bytes.
+#= {
+#=     result: ['bool', 'int', 'float', 'string', 'bytes'],
+#=     inputs: {kb: true, ki: 1, kf: 1.5, ks: 'k', kx: x'00ff'},
+#= }
+def table = {
+    [true]: fn -> 'bool',
+    [1]: fn -> 'int',
+    [1.5]: fn -> 'float',
+    k: fn -> 'string',
+    [x'00ff']: fn -> 'bytes',
+}
+[table[kb](), table[ki](), table[kf](), table[ks](), table[kx]()]

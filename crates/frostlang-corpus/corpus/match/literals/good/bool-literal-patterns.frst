@@ -1,0 +1,7 @@
+# `true` and `false` patterns each match only that Bool.
+#= {result: ['yes', 'no'], inputs: {t: true, f: false}}
+defn name(b) -> match b {
+    true => 'yes',
+    false => 'no',
+}
+[name(t), name(f)]

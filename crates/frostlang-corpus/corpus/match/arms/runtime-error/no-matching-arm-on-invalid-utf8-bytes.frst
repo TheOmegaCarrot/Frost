@@ -1,0 +1,7 @@
+# A Bytes target that is not valid UTF-8 and matches no arm raises the usual
+# no-match error. Subtle: the error names the value, which cannot be shown as
+# text directly.
+#= {raises: 'no match arm', inputs: {v: x'ff'}}
+match v {
+    x'00' => 'zero',
+}

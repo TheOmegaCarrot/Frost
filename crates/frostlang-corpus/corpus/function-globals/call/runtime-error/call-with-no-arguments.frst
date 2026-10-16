@@ -1,0 +1,4 @@
+# `call` takes a function and optionally an Array: with neither, it is an
+# arity error.
+#= {raises: ['call', 'between 1 and 2', 'called with 0']}
+call()

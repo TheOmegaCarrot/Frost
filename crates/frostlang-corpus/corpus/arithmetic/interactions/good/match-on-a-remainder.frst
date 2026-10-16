@@ -1,0 +1,12 @@
+# A remainder drives a `match`, and a guard may test arithmetic of its own.
+#= {
+#=     result: ['FizzBuzz', 'Fizz', 'Buzz', 'other', 'Fizz'],
+#=     inputs: {ns: [15, 9, 10, 7, -3]},
+#= }
+defn fizz(n) -> match n % 3 {
+    0 if: n % 5 == 0 => 'FizzBuzz',
+    0 => 'Fizz',
+    _ if: n % 5 == 0 => 'Buzz',
+    _ => 'other',
+}
+transform(ns, fizz)

@@ -1,0 +1,8 @@
+# Matching a constant Array and splitting it leaves the binding unchanged,
+# however much of the match the compiler resolves ahead of time.
+#= {result: [[2, 3, 0], [1, 2, 3]]}
+def xs = [1, 2, 3]
+def r = match xs {
+    [_, ...rest] => rest + [0],
+}
+[r, xs]

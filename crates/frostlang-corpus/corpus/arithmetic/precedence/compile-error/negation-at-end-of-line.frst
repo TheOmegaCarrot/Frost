@@ -1,0 +1,5 @@
+# Outside brackets, unary `-` cannot reach its operand across a line break.
+#= {rejects: ['expected an expression', 'line break']}
+def x = -
+    5
+x

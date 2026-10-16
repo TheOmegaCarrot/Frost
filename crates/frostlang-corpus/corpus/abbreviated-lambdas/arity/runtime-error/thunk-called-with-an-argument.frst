@@ -1,0 +1,5 @@
+# A placeholder-free abbreviated lambda takes no arguments, so passing one
+# raises.
+#= {raises: 'expects 0 argument'}
+def answer = $(42)
+answer(1)

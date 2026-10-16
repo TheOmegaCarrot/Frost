@@ -1,0 +1,4 @@
+# An Array pattern has at most one rest.
+#= {rejects: 'expected `]`'}
+def [a, ...b, ...c] = [1, 2, 3]
+[a, b, c]

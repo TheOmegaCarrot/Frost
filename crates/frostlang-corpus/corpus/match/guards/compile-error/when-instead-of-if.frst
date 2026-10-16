@@ -1,0 +1,6 @@
+# A guard is introduced by `if:`; `when` is not a guard keyword.
+#= {rejects: 'a guard is written `if:`'}
+match 1 {
+    n when n > 0 => n,
+    _ => 0,
+}

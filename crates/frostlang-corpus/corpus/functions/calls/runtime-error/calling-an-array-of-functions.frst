@@ -1,0 +1,4 @@
+# An Array is not callable, even when it holds only functions.
+#= {raises: ['non-function', 'Array']}
+def fs = [fn -> 1]
+fs()

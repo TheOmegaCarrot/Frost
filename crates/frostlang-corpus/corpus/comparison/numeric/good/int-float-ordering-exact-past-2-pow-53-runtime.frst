@@ -1,0 +1,16 @@
+# Exact Int against Float ordering past 2^53, with the operands known only at
+# runtime: 2^53 + 1 is strictly between the Floats 2^53 and 2^53 + 2.
+#= {
+#=     result: [true, true, false, true],
+#=     inputs: {
+#=         odd: 9007199254740993,
+#=         below: 9007199254740992.0,
+#=         above: 9007199254740994.0,
+#=     },
+#= }
+[
+    odd > below,
+    odd < above,
+    odd <= below,
+    below < odd,
+]

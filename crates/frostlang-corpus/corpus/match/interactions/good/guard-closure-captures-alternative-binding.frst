@@ -1,0 +1,6 @@
+# A lambda in a guard captures the binding of whichever alternative matched.
+#= {result: [5, 6, 'small'], inputs: {xs: [[5], {x: 6}, [1]]}}
+transform(xs, fn v -> match v {
+    [x] | {x} if: (fn -> x > 2)() => x,
+    _ => 'small',
+})

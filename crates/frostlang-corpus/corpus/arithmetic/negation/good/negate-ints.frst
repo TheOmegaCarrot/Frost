@@ -1,0 +1,10 @@
+# Unary `-` negates an Int; negating zero is zero, and negating twice is the
+# original value.
+#= {result: [-5, 5, 0, 7, -7]}
+[
+    -5,
+    -(-5),
+    -0,
+    - -7,
+    -(- -7),
+]

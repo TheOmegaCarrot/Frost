@@ -1,0 +1,13 @@
+# Arithmetic on bound Ints wraps in two's complement, both when the bindings
+# are constants the optimizer may propagate and fold, and when they are not.
+#= {
+#=     result: [-9223372036854775808, 9223372036854775807, -9223372036854775808, 9223372036854775807],
+#=     inputs: {max: 9223372036854775807, min: -9223372036854775808},
+#= }
+def big = 9223372036854775807
+def small = -9223372036854775808
+def folded_up = big + 1
+def folded_down = small - 1
+def runtime_up = max + 1
+def runtime_down = min - 1
+[folded_up, folded_down, runtime_up, runtime_down]

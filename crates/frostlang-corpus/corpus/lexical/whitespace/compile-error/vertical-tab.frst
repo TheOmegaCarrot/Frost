@@ -1,0 +1,3 @@
+# A vertical tab is not whitespace in Frost: it is an unexpected character.
+#= {rejects: ['unexpected character', 'U+000B']}
+1+ 2

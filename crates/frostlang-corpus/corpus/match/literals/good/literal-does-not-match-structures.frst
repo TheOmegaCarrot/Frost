@@ -1,0 +1,7 @@
+# A literal pattern never matches a structure that merely contains it.
+#= {result: ['other', 'other', 'other'], inputs: {xs: [[1], {a: 1}, ['a']]}}
+transform(xs, fn v -> match v {
+    1 => 'one',
+    'a' => 'a',
+    _ => 'other',
+})

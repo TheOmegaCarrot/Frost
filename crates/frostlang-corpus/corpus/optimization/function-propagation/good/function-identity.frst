@@ -1,0 +1,7 @@
+# Every read of one binding is the same Function, and so is a copy of the
+# binding, while a known Function that behaves differently is unequal to it.
+#= {result: [true, true, false, true, false]}
+def f = fn x -> x
+def g = f
+def h = fn x -> x + 1
+[f == f, f == g, f == h, [f] == [g], [f] == [h]]

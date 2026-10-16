@@ -1,0 +1,4 @@
+# A kept element is the element itself; the predicate's answer decides only
+# whether it is kept.
+#= {result: [7, 8], inputs: {xs: [7, 8]}}
+filter xs with fn x -> 'kept'

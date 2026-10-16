@@ -1,0 +1,5 @@
+# `$2` read only inside a `fn` still sets the enclosing abbreviated lambda's
+# arity to two; the check happens when the outer lambda is called.
+#= {raises: 'expects 2 argument'}
+def f = $(fn -> $2)
+f(1)

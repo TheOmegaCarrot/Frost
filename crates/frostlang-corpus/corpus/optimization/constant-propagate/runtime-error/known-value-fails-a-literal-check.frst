@@ -1,0 +1,5 @@
+# A def whose literal check its known value fails raises when the program
+# reaches it.
+#= {raises: 'expected `1`'}
+def [a, 1] = [7, 2]
+a

@@ -1,0 +1,6 @@
+# An invalid escape is rejected in a String pattern exactly as in an expression.
+#= {rejects: 'invalid escape'}
+match 'q' {
+    '\q' => 1,
+    _ => 0,
+}

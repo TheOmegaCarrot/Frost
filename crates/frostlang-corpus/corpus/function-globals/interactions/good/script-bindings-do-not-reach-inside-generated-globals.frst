@@ -1,0 +1,24 @@
+# The generated globals use other globals by name: `call`, `reverse`,
+# `is_function`, `is_null`, `error`, `len`, and `range`. A script's own
+# bindings of those names shadow them in the script only, never inside the
+# generated globals. Subtle once those globals can be inlined.
+#= {result: [[2, 1], 3, [3, 1], true, 9, 'k', [1, 2], 5, null, 'b']}
+def call = fn f, args -> 'shadowed call'
+def reverse = fn xs -> xs
+def is_function = fn v -> false
+def is_null = fn v -> false
+def error = fn message -> 'shadowed error'
+def len = fn xs -> 0
+def range = fn n -> []
+[
+    rev_args(collect)(1, 2),
+    curry(plus, 1)(2),
+    bcurry(collect, 1)(3),
+    inv(fn x -> x)(false),
+    compose(fn x -> x + 1, fn x -> x * 3)(2),
+    const('k')(),
+    spread(collect)([1, 2]),
+    tap(5, fn x -> x),
+    dig({a: null}, 'a', 'b'),
+    index('a')({a: 'b'}),
+]

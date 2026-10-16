@@ -1,0 +1,5 @@
+# A recursive call on constants that would raise sits in a branch never taken:
+# no error surfaces, whether or not the optimizer tried evaluating it early.
+#= {result: 'safe'}
+defn f(k) -> if k == 0: 1 / k else: f(k - 1)
+if false: f(30) else: 'safe'

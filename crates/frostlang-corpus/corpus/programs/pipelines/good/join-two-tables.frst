@@ -1,0 +1,27 @@
+# A join: index users by their Int id, attach each order to its user's name
+# (an order for an unknown id falls back to 'unknown' via `or`), total the
+# amounts per name, and list the users with no orders at all.
+#= {
+#=     result: {
+#=         totals: {ada: 5, bo: 37, unknown: 1},
+#=         idle: ['cy'],
+#=     },
+#=     inputs: {
+#=         users: [{id: 1, name: 'ada'}, {id: 2, name: 'bo'}, {id: 3, name: 'cy'}],
+#=         orders: [
+#=             {user: 2, amount: 30},
+#=             {user: 1, amount: 5},
+#=             {user: 2, amount: 7},
+#=             {user: 9, amount: 1},
+#=         ],
+#=     },
+#= }
+def names = fold(users, {}, fn acc, user -> acc + {[user.id]: user.name})
+def joined = transform(orders, fn order -> {name: names[order.user] or 'unknown', amount: order.amount})
+def totals = fold(joined, {}, fn acc, row -> acc + {[row.name]: (acc[row.name] or 0) + row.amount})
+def idle = (
+    users
+    @ select(fn user -> not has(totals, user.name))
+    @ transform(fn user -> user.name)
+)
+{totals, idle}

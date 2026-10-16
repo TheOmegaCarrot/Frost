@@ -1,0 +1,6 @@
+# A call whose result is then called is not in tail position, even though the
+# outer call is: the outer call needs the inner one's result as its callee.
+#= {result: 495}
+defn down(n) -> if n == 0: error('bottom') else: down(n - 1)()
+defn frames(n) -> len(try_call(down, [n]).trace)
+frames(500) - frames(5)

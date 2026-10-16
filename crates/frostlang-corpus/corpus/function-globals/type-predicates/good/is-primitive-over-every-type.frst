@@ -1,0 +1,15 @@
+# `is_primitive` is true for Null, Bool, Int, Float, String, and Bytes. Null
+# counts as primitive; String and Bytes do too, though they have a length.
+#= {result: [true, true, true, true, true, true, false, false, false, false]}
+[
+    is_primitive(null),
+    is_primitive(false),
+    is_primitive(0),
+    is_primitive(0.0),
+    is_primitive(''),
+    is_primitive(x''),
+    is_primitive([]),
+    is_primitive({}),
+    is_primitive(fn -> null),
+    is_primitive(len),
+]

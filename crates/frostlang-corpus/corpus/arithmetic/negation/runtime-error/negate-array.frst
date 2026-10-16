@@ -1,0 +1,3 @@
+# Unary `-` on an Array is a type error; it does not negate each element.
+#= {raises: ['negate', 'Array']}
+-[1, 2]

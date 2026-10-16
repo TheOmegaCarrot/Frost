@@ -1,0 +1,5 @@
+# An out-of-range Int literal is rejected even where it would never be evaluated: it
+# is a fault in the program text, not in a run.
+#= {rejects: 'Int literal out of range'}
+if false: 9223372036854775808
+else: 0

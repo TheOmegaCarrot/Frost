@@ -1,0 +1,4 @@
+# Frost has no `for` loop; the help points to the iteration forms.
+#= {rejects: 'Frost has no `for` loop'}
+def xs = [1, 2]
+for x in xs: print(x)

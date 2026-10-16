@@ -1,0 +1,5 @@
+# A bound function that reads a value only known at runtime computes its
+# result at runtime, from that value, even over constant arguments.
+#= {result: [6, 9], inputs: {factor: 3}}
+def scale = fn x -> x * factor
+[scale(2), scale(3)]

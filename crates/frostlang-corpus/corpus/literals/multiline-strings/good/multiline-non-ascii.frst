@@ -1,0 +1,7 @@
+# A multiline String carries non-ASCII text through unchanged.
+#= {result: ['café\n世界', 7]}
+def text = '''
+    café
+    世界
+    '''
+[text, len(text)]

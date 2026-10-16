@@ -1,0 +1,20 @@
+# Every Array is truthy: the empty Array, and an Array holding only falsy
+# values. Truthiness looks at the Array, never its elements.
+#= {
+#=     result: [[true, true, true, true], [true, true, true, true]],
+#=     inputs: {empty: [], one_null: [null], one_false: [false], nested: [[]]},
+#= }
+[
+    [
+        not not [],
+        not not [null],
+        not not [false],
+        not not [[]],
+    ],
+    [
+        not not empty,
+        not not one_null,
+        not not one_false,
+        not not nested,
+    ],
+]

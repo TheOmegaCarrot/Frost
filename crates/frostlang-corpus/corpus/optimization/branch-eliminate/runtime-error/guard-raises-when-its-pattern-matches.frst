@@ -1,0 +1,6 @@
+# A guard that raises on constants raises once its arm's pattern matches.
+#= {raises: 'division by zero'}
+match 1 {
+    1 if: 1 / 0 => 'raised',
+    _ => 'other',
+}

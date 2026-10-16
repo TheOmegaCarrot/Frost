@@ -1,0 +1,5 @@
+# Inside parentheses, line breaks are insignificant, so a `match`'s `{` may
+# sit on the line after its value.
+#= {result: 2, inputs: {x: 1}}
+(match x
+    { _ => 2 })

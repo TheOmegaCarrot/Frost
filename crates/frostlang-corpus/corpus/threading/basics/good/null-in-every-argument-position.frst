@@ -1,0 +1,9 @@
+# Null is an ordinary argument when threaded and when written after it; it
+# is neither dropped nor turned into a missing argument.
+#= {result: [[null], [null, 1], [1, null], [null, null, null]], inputs: {nothing: null}}
+[
+    nothing @ collect(),
+    nothing @ collect(1),
+    1 @ collect(nothing),
+    null @ collect(null, nothing),
+]

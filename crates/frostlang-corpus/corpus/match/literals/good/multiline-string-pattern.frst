@@ -1,0 +1,7 @@
+# A multiline String literal is a valid pattern, matching the text it denotes.
+#= {result: 'matched', inputs: {s: 'hello'}}
+match s {
+    '''
+    hello
+    ''' => 'matched',
+}

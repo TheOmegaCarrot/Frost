@@ -1,0 +1,3 @@
+# A `def` after an expression on the same line needs a separator before it.
+#= {rejects: 'separate statements with a line break or `;`'}
+do { 1 def x = 2; x }

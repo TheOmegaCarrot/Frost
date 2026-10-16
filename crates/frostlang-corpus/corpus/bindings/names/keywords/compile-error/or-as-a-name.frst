@@ -1,0 +1,5 @@
+# `or` is an operator word, reserved like a keyword, so it cannot be bound as a
+# name.
+#= {rejects: ['`or`', 'keyword']}
+def or = 1
+1

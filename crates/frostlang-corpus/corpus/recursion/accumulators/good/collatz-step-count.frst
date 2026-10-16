@@ -1,0 +1,7 @@
+# A step counter accumulates through a recursion whose argument rises and falls
+# unpredictably.
+#= {result: [0, 111], inputs: {start: 27}}
+defn steps(n, acc) -> if n == 1: acc
+    elif n % 2 == 0: steps(n / 2, acc + 1)
+    else: steps(3 * n + 1, acc + 1)
+[steps(1, 0), steps(start, 0)]

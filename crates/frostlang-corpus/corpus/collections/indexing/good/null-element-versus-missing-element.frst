@@ -1,0 +1,5 @@
+# A Null element and an out-of-range index both read as Null; `has` tells
+# them apart.
+#= {result: [null, null, true, false]}
+def xs = [null]
+[xs[0], xs[1], has(xs, 0), has(xs, 1)]

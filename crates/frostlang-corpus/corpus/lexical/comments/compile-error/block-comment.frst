@@ -1,0 +1,4 @@
+# Frost has no block comments: `/* ... */` is not a comment, and the error
+# points to `#`.
+#= {rejects: 'a comment starts with `#`'}
+1 /* a note */ + 2

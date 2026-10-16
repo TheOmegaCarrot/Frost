@@ -1,0 +1,4 @@
+# `call` supplied at run time, unknown to the compiler, is still `call`, with
+# both of its arities.
+#= {result: [[1, 2], []], inputs: {apply: call}}
+[apply(collect, [1, 2]), apply(collect)]

@@ -1,0 +1,11 @@
+# An `if` may compute an index, and a parenthesized `if` may be indexed or
+# have a field read from it.
+#= {
+#=     result: ['b', 3, 2],
+#=     inputs: {f: false, xs: ['a', 'b']},
+#= }
+[
+    xs[if f: 0 else: 1],
+    (if f: [1, 2] else: [3])[0],
+    (if f: {a: 1} else: {a: 2}).a,
+]

@@ -1,0 +1,5 @@
+# A function chosen from an Array by a runtime index is called with its
+# arguments.
+#= {result: [6, 3], inputs: {i: 1, j: 2}}
+def ops = [fn a, b -> a + b, fn a, b -> a * b, fn a, b -> a - b]
+[ops[i](2, 3), ops[j](5, 2)]

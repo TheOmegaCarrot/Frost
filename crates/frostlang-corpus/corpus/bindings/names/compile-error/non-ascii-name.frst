@@ -1,0 +1,5 @@
+# Names are ASCII-only: a letter outside ASCII cannot appear in a name, however
+# letter-like it is.
+#= {rejects: ['`é`', 'ASCII']}
+def café = 1
+1

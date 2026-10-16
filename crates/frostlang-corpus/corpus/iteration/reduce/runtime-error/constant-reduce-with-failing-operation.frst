@@ -1,0 +1,4 @@
+# A constant `reduce` whose operation fails still raises when the script
+# runs; the optimizer does not hide the error.
+#= {raises: 'division by zero'}
+reduce [1, 0] init: 1 with fn acc, x -> acc / x

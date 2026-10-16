@@ -1,0 +1,10 @@
+# A shadow inside one branch's block does not reach the other branch, whichever
+# runs.
+#= {result: ['inner', 'outer'], inputs: {yes: true, no: false}}
+def x = 'outer'
+defn pick(c) -> if c: do {
+    def x = 'inner'
+    x
+}
+else: x
+[pick(yes), pick(no)]

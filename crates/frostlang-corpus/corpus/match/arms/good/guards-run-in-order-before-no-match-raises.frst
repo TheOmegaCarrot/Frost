@@ -1,0 +1,13 @@
+# The guards tried before a match fails run in order, each only when its
+# pattern matched, and then the match raises; no arm's result runs.
+#= {result: false, printed: ['a', 'b'], inputs: {v: 7}}
+defn check(label) -> {
+    print(label)
+    false
+}
+def outcome = try_call(fn -> match v {
+    _ if: check('a') => print('result a'),
+    n is Int if: check('b') => print('result b'),
+    _ is String if: check('c') => print('result c'),
+})
+outcome.ok

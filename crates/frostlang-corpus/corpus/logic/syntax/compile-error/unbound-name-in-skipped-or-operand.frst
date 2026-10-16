@@ -1,0 +1,4 @@
+# A right operand of `or` that a constant true would skip is still compiled, so
+# an unbound name in it is an error even though it could never run.
+#= {rejects: ['`nope`', 'not defined']}
+true or nope

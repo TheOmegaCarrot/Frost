@@ -1,0 +1,6 @@
+# Parameters passed back in swapped order through a tail call, with values the
+# compiler cannot see. Subtle: the frame is reused, so the swap must read both
+# old values first.
+#= {result: [[2, 1], [1, 2]], inputs: {a: 1, b: 2}}
+defn swap(n, x, y) -> if n == 0: [x, y] else: swap(n - 1, y, x)
+[swap(99999, a, b), swap(100000, a, b)]

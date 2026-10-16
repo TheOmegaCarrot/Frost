@@ -1,0 +1,4 @@
+# Arrays order by their elements, so the first pair that must be compared
+# raises when its elements cannot be ordered against each other.
+#= {raises: ['Cannot compare incompatible types', 'Int', 'String'], inputs: {a: [1], b: ['a']}}
+a < b

@@ -1,0 +1,3 @@
+# A quoted String escapes only its own quote: `\'` is invalid in a double-quoted one.
+#= {rejects: ['invalid escape sequence', R"(`\'`)", 'needs no backslash']}
+"it\'s"

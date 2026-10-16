@@ -1,0 +1,7 @@
+# A closure made in an arm captures that arm's bindings, which outlive the
+# match.
+#= {result: 3, inputs: {v: [1, 2]}}
+def add = match v {
+    [a, b] => fn -> a + b,
+}
+add()

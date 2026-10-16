@@ -1,0 +1,6 @@
+# The least Int divided by -1, or multiplied by it, has no Int result and
+# wraps back to the least Int; its remainder by -1 is 0. Computed ahead of
+# time, as here, it wraps exactly as at runtime, never raising.
+#= {result: [-9223372036854775808, 0, -9223372036854775808]}
+def least = -9223372036854775808
+[least / -1, least % -1, least * -1]

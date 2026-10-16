@@ -1,0 +1,3 @@
+# Dividing a Float by an Int zero only known at runtime raises.
+#= {raises: 'division by zero', inputs: {x: 2.5, zero: 0}}
+x / zero

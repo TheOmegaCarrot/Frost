@@ -1,0 +1,15 @@
+# The indexing of indexing, into structures only known at runtime, gives
+# exactly the values the folder computes.
+#= {
+#=     result: [1, 1, null, 20, 30, null, 'deep'],
+#=     inputs: {m: {a: 1}, xs: [10, 20, 30], nested: {outer: [{inner: 'deep'}]}},
+#= }
+[
+    m.a,
+    m['a'],
+    m['z'],
+    xs[1],
+    xs[-1],
+    xs[5],
+    nested.outer[0].inner,
+]

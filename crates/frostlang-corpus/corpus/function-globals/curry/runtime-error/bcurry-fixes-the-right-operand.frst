@@ -1,0 +1,3 @@
+# `bcurry` puts its argument last, so a later String is the left operand.
+#= {raises: 'String - Int'}
+bcurry(minus, 1)('a')

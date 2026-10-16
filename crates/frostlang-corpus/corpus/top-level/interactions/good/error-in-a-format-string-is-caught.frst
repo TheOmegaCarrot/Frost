@@ -1,0 +1,4 @@
+# An error raised inside a format string's interpolation propagates out of
+# the string and is caught intact.
+#= {result: {inner: true}}
+try_call(fn -> $'before ${error({inner: true})} after').error

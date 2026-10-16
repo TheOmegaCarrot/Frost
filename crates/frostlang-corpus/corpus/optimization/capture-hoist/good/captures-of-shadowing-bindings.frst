@@ -1,0 +1,11 @@
+# Functions capturing an outer binding and a shadowing one of the same name
+# each capture the binding in scope where they were written.
+#= {result: [1, 2, 1]}
+def n = 1
+def f = fn -> n
+def g = do {
+    def n = 2
+    fn -> n
+}
+def h = fn -> n
+[f(), g(), h()]

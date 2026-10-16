@@ -1,0 +1,3 @@
+# A callee may be reached from an Array or Map literal written in place.
+#= {result: [4, 6], inputs: {n: 3}}
+[n @ [fn x -> x * 2, fn x -> x + 1][1](), n @ {double: fn x -> x * 2}.double()]

@@ -1,0 +1,8 @@
+# Constant Bytes interpolate as `to_string` renders them, as runtime ones do,
+# and the result is a String.
+#= {result: [true, true, 'String']}
+[
+    $'${x''}' == to_string(x''),
+    $'<${x'00ff'}>' == '<' + to_string(x'00ff') + '>',
+    type($'${x'00'}'),
+]

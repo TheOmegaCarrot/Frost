@@ -1,0 +1,8 @@
+# A guard `if` statement raises for bad input before the body after it runs.
+#= {raises: 'needs an Int', inputs: {bad: 'x'}}
+defn double(n) -> {
+    if not is_int(n): error('needs an Int')
+    print('unreached')
+    n * 2
+}
+double(bad)

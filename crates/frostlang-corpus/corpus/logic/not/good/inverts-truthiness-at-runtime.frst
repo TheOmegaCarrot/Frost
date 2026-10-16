@@ -1,0 +1,17 @@
+# `not` of a value known only at runtime inverts its truthiness in the VM just
+# as the folder does for a constant.
+#= {
+#=     result: [true, true, false, false, false, false, false, false, false],
+#=     inputs: {n: null, f: false, t: true, zero: 0, fzero: 0.0, s: '', b: x'', a: [], m: {}},
+#= }
+[
+    not n,
+    not f,
+    not t,
+    not zero,
+    not fzero,
+    not s,
+    not b,
+    not a,
+    not m,
+]

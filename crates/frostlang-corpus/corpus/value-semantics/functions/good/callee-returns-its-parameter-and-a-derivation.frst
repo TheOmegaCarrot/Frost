@@ -1,0 +1,6 @@
+# A function returning both its parameter and a value derived from it, in
+# either order, returns the original alongside the derivation.
+#= {result: [[[1], [1, 2]], [[1, 2], [1]]], inputs: {n: 1}}
+defn before(xs) -> [xs, xs + [2]]
+defn after(xs) -> [xs + [2], xs]
+[before([n]), after([n])]

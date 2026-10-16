@@ -1,0 +1,4 @@
+# A modifier between the declaration word and the name, as in Rust's
+# `let mut`, still gets the help for `let`.
+#= {rejects: 'no `let`'}
+let mut x = 1

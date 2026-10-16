@@ -1,0 +1,5 @@
+# `_` binds nothing, so reading it is an unbound name, even as a parameter's
+# name.
+#= {rejects: ['`_`', 'not defined']}
+def f = fn _, b -> _
+f(1, 2)

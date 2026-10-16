@@ -1,0 +1,4 @@
+# `else` takes a colon, not braces; a block in its branch is a `do` block.
+#= {rejects: ['expected `:`', 'else: do {']}
+def a = false
+if a: 1 else { 2 }

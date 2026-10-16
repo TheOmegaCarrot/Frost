@@ -1,0 +1,8 @@
+# A function returns a recursive named lambda over its own parameter. Each
+# returned closure recurses with the value it captured, independently of the
+# others.
+#= {result: [[5, 3, 1], [7, 4, 1], []]}
+defn counting_down_by(step) -> fn go(n) -> if n <= 0: [] else: [n] + go(n - step)
+def by_two = counting_down_by(2)
+def by_three = counting_down_by(3)
+[by_two(5), by_three(7), by_two(0)]

@@ -1,0 +1,5 @@
+# A recursive function whose base case holds on the first call never recurses,
+# including for arguments past the base, such as a negative count.
+#= {result: [1, 1, 1]}
+defn fact(n) -> if n <= 1: 1 else: n * fact(n - 1)
+[fact(1), fact(0), fact(-5)]

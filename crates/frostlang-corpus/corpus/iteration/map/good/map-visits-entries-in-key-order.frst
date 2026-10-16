@@ -1,0 +1,11 @@
+# `map` over a Map visits its entries in ascending key order, whatever order
+# the literal wrote them in.
+#= {
+#=     result: {},
+#=     printed: ['a', 'b', 'c'],
+#=     inputs: {m: {c: 3, a: 1, b: 2}},
+#= }
+map m with fn k, v -> {
+    print(k)
+    {}
+}

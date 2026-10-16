@@ -1,0 +1,4 @@
+# An accumulator walk over an Array known only at runtime.
+#= {result: 15, inputs: {xs: [1, 2, 3, 4, 5]}}
+defn sum(ys, i, acc) -> if i == len(ys): acc else: sum(ys, i + 1, acc + ys[i])
+sum(xs, 0, 0)

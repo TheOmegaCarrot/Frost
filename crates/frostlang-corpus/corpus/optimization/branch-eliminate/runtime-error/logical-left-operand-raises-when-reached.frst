@@ -1,0 +1,4 @@
+# A left operand of `or` computed from constants that raises cannot decide the
+# result ahead of time; it raises when the program reaches it.
+#= {raises: 'cannot compare incompatible types'}
+(1 < 'a') or 'fallback'

@@ -1,0 +1,4 @@
+# An exported Map pattern exports a shorthand key under the key's name and an
+# explicit key under the name it binds, not the key.
+#= {result: null, exports: {host: 'h', p: 80}}
+export def {host, port: p} = {host: 'h', port: 80, unused: true}

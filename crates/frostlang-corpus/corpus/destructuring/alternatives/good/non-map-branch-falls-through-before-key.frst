@@ -1,0 +1,5 @@
+# A branch whose Map check fails never evaluates its computed keys, so a key
+# that would raise is harmless there and the next branch matches.
+#= {result: 5, inputs: {n: 0, v: [5]}}
+def {[1 / n]: a} | [a] = v
+a

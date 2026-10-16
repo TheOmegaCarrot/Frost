@@ -1,0 +1,5 @@
+# A Float division by a constant zero raises when the program reaches it:
+# Floats are always finite, so folding cannot produce an infinity instead.
+#= {raises: 'division by zero'}
+def zero = 0.0
+1.5 / zero

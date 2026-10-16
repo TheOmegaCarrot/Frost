@@ -1,0 +1,6 @@
+# A guard needs a condition after `if:`.
+#= {rejects: ['expected an expression', 'found `=>`']}
+match 1 {
+    x if: => x,
+    _ => 0,
+}

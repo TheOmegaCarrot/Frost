@@ -1,0 +1,9 @@
+# An arm whose pattern destructures an Array still has its result in tail
+# position: the elements the pattern laid out are gone before the call.
+#= {result: 0}
+defn down(pair) -> match pair {
+    [0, _] => error('bottom'),
+    [n, tag] => down([n - 1, tag]),
+}
+defn frames(n) -> len(try_call(down, [[n, 'tag']]).trace)
+frames(500) - frames(5)

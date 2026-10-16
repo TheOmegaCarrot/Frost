@@ -1,0 +1,3 @@
+# The lambda calculus's `λ` is no lambda in Frost; the help shows `fn`.
+#= {rejects: 'a lambda is written `fn x -> ...`'}
+λx. x

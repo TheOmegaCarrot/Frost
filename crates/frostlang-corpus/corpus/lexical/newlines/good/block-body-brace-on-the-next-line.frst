@@ -1,0 +1,8 @@
+# A block body's `{` may sit on the line after `->`.
+#= {result: 5}
+defn f(x) ->
+{
+    def y = x + 1
+    y * 1
+}
+f(4)

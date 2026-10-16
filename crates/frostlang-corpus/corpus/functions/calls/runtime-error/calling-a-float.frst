@@ -1,0 +1,3 @@
+# Calling a Float raises, naming its type.
+#= {raises: ['non-function', 'Float']}
+1.5()

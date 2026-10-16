@@ -1,0 +1,26 @@
+# Each `is_*` check folds over a constant of every type to what it answers at
+# runtime. Rows are Null, Int, Float, Bool, String, Bytes, Array, Map; columns
+# are is_null, is_numeric, is_primitive, is_structured, is_flat, is_nonnull.
+#= {
+#=     result: [
+#=         [true, false, true, false, false, false],
+#=         [false, true, true, false, false, true],
+#=         [false, true, true, false, false, true],
+#=         [false, false, true, false, false, true],
+#=         [false, false, true, false, true, true],
+#=         [false, false, true, false, true, true],
+#=         [false, false, false, true, false, true],
+#=         [false, false, false, true, false, true],
+#=     ],
+#= }
+def check = fn v -> [is_null(v), is_numeric(v), is_primitive(v), is_structured(v), is_flat(v), is_nonnull(v)]
+[
+    check(null),
+    check(1),
+    check(1.5),
+    check(true),
+    check('s'),
+    check(x'00'),
+    check([]),
+    check({}),
+]

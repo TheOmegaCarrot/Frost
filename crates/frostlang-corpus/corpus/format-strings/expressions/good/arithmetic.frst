@@ -1,0 +1,4 @@
+# An interpolation holds any expression; arithmetic is evaluated and its result
+# interpolated.
+#= {result: '8 14 -7 1', inputs: {x: 7}}
+$'${x + 1} ${x * 2} ${-x} ${x % 3}'

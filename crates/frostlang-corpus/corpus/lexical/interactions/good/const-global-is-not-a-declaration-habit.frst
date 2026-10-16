@@ -1,0 +1,5 @@
+# `const` is a global function in Frost, so a call to it is ordinary code,
+# not the `const` declaration habit that gets help.
+#= {result: [5, 5]}
+def five = const(5)
+[five(), five(1, 2)]

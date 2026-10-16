@@ -1,0 +1,4 @@
+# A literal entry part raises when the present key holds another value.
+#= {raises: "expected `'point'`", inputs: {m: {kind: 'line', y: 2}}}
+def {kind: 'point', y} = m
+y

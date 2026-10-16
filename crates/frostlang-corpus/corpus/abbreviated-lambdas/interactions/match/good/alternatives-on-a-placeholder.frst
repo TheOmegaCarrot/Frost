@@ -1,0 +1,8 @@
+# Match alternatives with type constraints work on a placeholder, keeping
+# Int and Float distinct.
+#= {result: [2, 2.5, 0]}
+def numeric = $(match $ {
+    x is Int | x is Float => x,
+    _ => 0,
+})
+[numeric(2), numeric(2.5), numeric('2')]

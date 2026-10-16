@@ -1,0 +1,3 @@
+# A definition is a statement, so it cannot stand directly in an interpolation.
+#= {rejects: ['expected an expression', 'a definition is a statement']}
+def s = $'${def y = 1}'

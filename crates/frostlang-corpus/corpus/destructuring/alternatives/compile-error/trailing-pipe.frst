@@ -1,0 +1,4 @@
+# Every `|` must be followed by another branch.
+#= {rejects: 'expected a pattern', inputs: {v: 1}}
+def a | = v
+a

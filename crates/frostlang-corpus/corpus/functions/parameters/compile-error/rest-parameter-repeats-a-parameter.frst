@@ -1,0 +1,4 @@
+# The rest parameter is in the same scope as the fixed ones, so it may not
+# reuse one of their names.
+#= {rejects: ['`x`', 'already bound']}
+def f = fn x, ...x -> x

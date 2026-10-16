@@ -1,0 +1,9 @@
+# Int literal patterns against a constant target, which the optimizer may
+# resolve ahead of time, choose the same arm as at runtime.
+#= {result: ['zero', 'one', 'minus one', 'other']}
+[
+    match 0 { 1 => 'one', 0 => 'zero', _ => 'other' },
+    match 1 { 0 => 'zero', 1 => 'one', _ => 'other' },
+    match -1 { 1 => 'one', -1 => 'minus one', _ => 'other' },
+    match 2 { 0 => 'zero', 1 => 'one', _ => 'other' },
+]

@@ -1,0 +1,6 @@
+# A fixed-length Array destructure takes the elements out without changing
+# the source, which can then be extended.
+#= {result: [[2, 1], [1, 2, 3]], inputs: {n: 1}}
+def xs = [n, 2]
+def [a, b] = xs
+[[b, a], xs + [3]]

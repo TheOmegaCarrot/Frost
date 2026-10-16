@@ -1,0 +1,9 @@
+# A function whose body is a logical expression yields the deciding operand
+# when applied through `call`.
+#= {result: [2, null, 'x'], inputs: {args: [1, 2], with_null: [null, 2]}}
+def both = fn a, b -> a and b
+[
+    call(both, args),
+    call(both, with_null),
+    call(fn a, b -> a or b, [false, 'x']),
+]

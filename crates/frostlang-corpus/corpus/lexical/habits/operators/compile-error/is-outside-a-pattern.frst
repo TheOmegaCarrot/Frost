@@ -1,0 +1,3 @@
+# `is` tests a type only in a pattern; elsewhere an `is_*` function does.
+#= {rejects: '`is` works only in a pattern', inputs: {x: 1}}
+if x is Int: 1

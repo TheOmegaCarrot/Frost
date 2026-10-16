@@ -1,0 +1,5 @@
+# A caught payload raised again outside any `try_call` ends the program, with
+# the payload's message.
+#= {raises: ['code', '3']}
+def outcome = try_call(fn -> error({code: 3}))
+error(outcome.error)

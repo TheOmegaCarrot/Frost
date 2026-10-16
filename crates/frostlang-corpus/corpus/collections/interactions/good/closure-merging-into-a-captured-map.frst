@@ -1,0 +1,8 @@
+# A closure that merges into a captured Map builds a fresh Map on each call:
+# one call's key never appears in another call's result, and the captured
+# Map is unchanged. Subtle because the merge may reuse an operand's storage.
+#= {result: [{a: 1, [1]: 1}, {a: 1, [2]: 2}, {a: 1}], inputs: {m: {a: 1}}}
+def extend = fn x -> m + {[x]: x}
+def first = extend(1)
+def second = extend(2)
+[first, second, m]

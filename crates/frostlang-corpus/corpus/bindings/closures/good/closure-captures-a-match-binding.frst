@@ -1,0 +1,7 @@
+# A closure made in a match arm captures the arm's bindings and keeps them after
+# the match ends.
+#= {result: 12, inputs: {pair: [1, 2]}}
+def f = match pair {
+    [a, b] => fn -> a * 10 + b,
+}
+f()

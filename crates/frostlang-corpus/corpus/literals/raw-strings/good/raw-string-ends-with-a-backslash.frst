@@ -1,0 +1,4 @@
+# A raw String may end with a backslash: unlike in a quoted String, a backslash
+# before the closer escapes nothing.
+#= {result: [true, 2]}
+[R'(parent\child\)' == 'parent\\child\\', len(R"(a\)")]

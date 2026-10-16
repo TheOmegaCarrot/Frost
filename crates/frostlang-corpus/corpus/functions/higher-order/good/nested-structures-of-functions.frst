@@ -1,0 +1,5 @@
+# Functions nested inside structures inside structures are reached and
+# called through chained access.
+#= {result: [4, 'deep']}
+def tree = {math: {ops: [fn x -> x * 2, fn x -> x * x]}, nest: [[fn -> 'deep']]}
+[tree.math.ops[1](2), tree.nest[0][0]()]

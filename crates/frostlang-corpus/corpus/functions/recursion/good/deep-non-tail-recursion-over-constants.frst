@@ -1,0 +1,5 @@
+# Deep non-tail recursion over a constant argument, which the optimizer may
+# try to compute ahead of time, gives the same answer as at runtime.
+#= {result: 20000}
+defn depth(k) -> if k == 0: 0 else: 1 + depth(k - 1)
+depth(20000)

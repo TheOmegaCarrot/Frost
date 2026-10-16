@@ -1,0 +1,13 @@
+# `or` is left associative, but grouping its operands either way yields the
+# same value and evaluates the same operands in the same order.
+#= {
+#=     result: [2, 2],
+#=     printed: ['null', '2', 'null', '2'],
+#= }
+defn note(v) -> {
+    print(v)
+    v
+}
+def left = (note(null) or note(2)) or note(3)
+def right = note(null) or (note(2) or note(3))
+[left, right]

@@ -1,0 +1,6 @@
+# A name bound by a match pattern cannot be assigned in its arm.
+#= {rejects: ['`=`', 'immutable']}
+def xs = [1]
+match xs {
+    [a] => a = 2,
+}

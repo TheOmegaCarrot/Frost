@@ -1,0 +1,14 @@
+# `-` on two Ints only known at runtime takes the right operand from the left.
+# Swapped operands would give the negated answers.
+#= {
+#=     result: [2, -2, 0, 7, -1, 0],
+#=     inputs: {three: 3, four: 4, five: 5, minus_two: -2, minus_three: -3, zero: 0},
+#= }
+[
+    five - three,
+    three - five,
+    four - four,
+    three - -four,
+    minus_three - minus_two,
+    zero - zero,
+]

@@ -1,0 +1,5 @@
+# A `defn` is a definition too, so a block cannot end with one.
+#= {rejects: 'must end with an expression'}
+do {
+    defn f(x) -> x
+}

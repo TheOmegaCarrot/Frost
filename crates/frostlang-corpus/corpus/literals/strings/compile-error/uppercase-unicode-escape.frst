@@ -1,0 +1,3 @@
+# Escapes are case-sensitive: the Unicode escape is `\u{...}`, and `\U` is no escape.
+#= {rejects: ['invalid escape sequence', R'(`\U`)']}
+'\U{41}'

@@ -1,0 +1,11 @@
+# A state Map threaded through tail recursion, with each step's state kept in
+# a list of snapshots, keeps every snapshot as it was when taken.
+#= {
+#=     result: [{v: [1]}, {v: [1, 2]}, {v: [1, 2, 1]}],
+#=     inputs: {n: 1},
+#= }
+defn run(k, state, snapshots) -> if k == 0: snapshots + [state] else: do {
+    def next = state + {v: state.v + [k]}
+    run(k - 1, next, snapshots + [state])
+}
+run(2, {v: [n]}, [])

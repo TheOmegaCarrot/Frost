@@ -1,0 +1,4 @@
+# `\${` is literal text, not an interpolation. Subtle: `name` is bound nowhere,
+# and that is no error, because nothing evaluates it.
+#= {result: 'literal: ${name}'}
+$'literal: \${name}'

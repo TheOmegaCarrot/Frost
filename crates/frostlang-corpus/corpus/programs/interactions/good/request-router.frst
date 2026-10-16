@@ -1,0 +1,45 @@
+# A request router written as one `match`: Map patterns with nested Array
+# patterns for the path, literal alternatives for methods, a guard that
+# consults a table, `as` binding a whole nested body, a discard, and a rest
+# pattern. Arms are tried in order, so the guarded lookup precedes its 404
+# fallback and a body without a name, or a Null body, falls to the 400 arm.
+#= {
+#=     result: [
+#=         {status: 200, body: 'home'},
+#=         {status: 200, body: ['ada', 'bo']},
+#=         {status: 200, body: 'bo'},
+#=         {status: 404, body: 'no such user'},
+#=         {status: 201, body: 'created cy (2 fields)'},
+#=         {status: 400, body: 'name required'},
+#=         {status: 405, body: 'not allowed'},
+#=         {status: 404, body: 'unknown /files (+2)'},
+#=         {status: 400, body: 'name required'},
+#=     ],
+#=     inputs: {
+#=         requests: [
+#=             {method: 'GET', path: []},
+#=             {method: 'GET', path: ['users']},
+#=             {method: 'GET', path: ['users', '2']},
+#=             {method: 'GET', path: ['users', '9']},
+#=             {method: 'PUT', path: ['users'], body: {name: 'cy', age: 3}},
+#=             {method: 'POST', path: ['users'], body: {age: 3}},
+#=             {method: 'DELETE', path: ['users', '1']},
+#=             {method: 'GET', path: ['files', 'a', 'b']},
+#=             {method: 'POST', path: ['users'], body: null},
+#=         ],
+#=     },
+#= }
+def users = {['1']: 'ada', ['2']: 'bo'}
+
+defn route(request) -> match request {
+    {method: 'GET', path: []} => {status: 200, body: 'home'},
+    {method: 'GET', path: ['users']} => {status: 200, body: reduce users init: [] with fn acc, id, name -> acc + [name]},
+    {method: 'GET', path: ['users', id]} if: has(users, id) => {status: 200, body: users[id]},
+    {method: 'GET', path: ['users', _]} => {status: 404, body: 'no such user'},
+    {method: 'POST' | 'PUT', path: ['users'], body: {name} as data} => {status: 201, body: $'created ${name} (${len(data)} fields)'},
+    {method: 'POST' | 'PUT', path: ['users']} => {status: 400, body: 'name required'},
+    {method: 'DELETE'} => {status: 405, body: 'not allowed'},
+    {path: [first, ...rest]} => {status: 404, body: $'unknown /${first} (+${len(rest)})'},
+}
+
+transform(requests, route)

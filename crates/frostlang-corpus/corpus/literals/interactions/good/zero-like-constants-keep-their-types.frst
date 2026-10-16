@@ -1,0 +1,13 @@
+# Literals that are all "empty" or "zero" in some sense stay distinct values when they
+# share a program, so merging constants must key them by type as well as content:
+# `0` and `false`, `''` and `x''`, and the String and Bytes of the same octets.
+#= {
+#=     result: [
+#=         ['Int', 'Float', 'Bool', 'Null', 'String', 'Bytes', 'Int', 'Bool', 'String', 'Bytes'],
+#=         [false, false, false, false],
+#=     ],
+#= }
+[
+    map [0, 0.0, false, null, '', x'', 0, false, 'hi', x'6869'] with fn x -> type(x),
+    [0 == false, '' == x'', 0 == null, 'hi' == x'6869'],
+]

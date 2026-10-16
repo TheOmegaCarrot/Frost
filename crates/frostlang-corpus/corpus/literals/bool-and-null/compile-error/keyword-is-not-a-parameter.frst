@@ -1,0 +1,4 @@
+# A literal keyword cannot name a parameter.
+#= {rejects: ['found `false`', 'is a keyword']}
+def f = fn false -> 1
+f(2)

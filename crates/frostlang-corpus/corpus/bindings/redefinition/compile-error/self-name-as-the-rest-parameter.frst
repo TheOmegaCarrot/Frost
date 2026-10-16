@@ -1,0 +1,5 @@
+# A named lambda's own name and its rest parameter are in the same scope, so
+# they may not share a name.
+#= {rejects: ['`f`', 'already bound']}
+def g = fn f(...f) -> 1
+1

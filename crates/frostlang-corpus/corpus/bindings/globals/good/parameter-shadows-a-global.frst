@@ -1,0 +1,5 @@
+# A lambda parameter may take a global's name, shadowing the global inside the
+# lambda only.
+#= {result: [5, 'Int']}
+def f = fn type -> type
+[f(5), type(1)]

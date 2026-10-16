@@ -1,0 +1,4 @@
+# Array patterns nest, each level checking and binding its own Array.
+#= {result: [1, 2, 3, 4], inputs: {xs: [[1, 2], [3, [4]]]}}
+def [[a, b], [c, [d]]] = xs
+[a, b, c, d]

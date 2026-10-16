@@ -1,0 +1,4 @@
+# A variadic operation shows exactly what `map` passes it over a Map: two
+# arguments, the key then the value.
+#= {result: {a: ['a', 1], b: ['b', null]}, inputs: {m: {a: 1, b: null}}}
+map m with fn ...args -> {[args[0]]: args}

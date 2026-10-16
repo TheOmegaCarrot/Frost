@@ -1,0 +1,6 @@
+# Closures created at each level of a recursion capture that level's
+# argument, not a value shared across levels.
+#= {result: [3, 2, 1]}
+defn build(n) -> if n <= 0: [] else: [fn -> n] + build(n - 1)
+def thunks = build(3)
+[thunks[0](), thunks[1](), thunks[2]()]

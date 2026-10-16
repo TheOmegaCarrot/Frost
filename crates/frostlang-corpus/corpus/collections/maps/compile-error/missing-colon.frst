@@ -1,0 +1,3 @@
+# A key and its value are separated by a colon.
+#= {rejects: 'expected `,` or `}`'}
+def m = {foo 1}

@@ -1,0 +1,5 @@
+# A Map pattern's `as` name binds last, so a computed key in the same pattern
+# cannot read it when nothing outside binds that name.
+#= {rejects: ['`m`', 'not defined']}
+def {[m]: v} as m = {a: 1}
+v

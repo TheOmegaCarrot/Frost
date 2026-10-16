@@ -1,0 +1,6 @@
+# A global native function is a value: bound to another name, it is called
+# the same way.
+#= {result: [3, 'Int']}
+def measure = len
+def kind = type
+[measure([1, 2, 3]), kind(1)]

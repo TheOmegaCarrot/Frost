@@ -1,0 +1,7 @@
+# Each evaluation of a lambda expression makes a new closure, whatever it
+# captures, even if it captures nothing.
+#= {result: [false, false, false, false]}
+def make = fn -> fn -> 1
+def make_with = fn p -> fn -> p
+def fs = transform([1, 2], fn _ -> fn -> 1)
+[make() == make(), make_with(1) == make_with(1), fs[0] == fs[1], (fn -> 1) == (fn -> 1)]

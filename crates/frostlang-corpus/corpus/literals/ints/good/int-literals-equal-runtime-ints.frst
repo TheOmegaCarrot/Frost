@@ -1,0 +1,4 @@
+# Every spelling of an Int literal equals the same Int known only at runtime, so the
+# comparison cannot be folded away.
+#= {result: [true, true, true, true, true, true], inputs: {n: 255}}
+[0xff == n, 0XFF == n, 0o377 == n, 0b1111_1111 == n, 2_5_5 == n, 000255 == n]

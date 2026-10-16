@@ -1,0 +1,5 @@
+# Constraints apply at every depth of nesting.
+#= {result: [1, 2.5, [3], false], inputs: {xs: [1, [2.5, 3]], m: {a: {b: false}}}}
+def [a, [b is Float, ...c]] = xs
+def {a: {b: flag is Bool}} = m
+[a, b, c, flag]

@@ -1,0 +1,4 @@
+# A constant falsy `if` with no `else` yields Null, which cannot be a Map key:
+# the error is raised at runtime even though the key is known ahead of time.
+#= {raises: 'Null is not a valid Map key'}
+{[if false: 'a']: 1}

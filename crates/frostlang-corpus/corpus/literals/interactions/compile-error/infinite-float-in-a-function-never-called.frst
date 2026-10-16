@@ -1,0 +1,5 @@
+# An infinite Float literal is rejected in a function body even if the function is
+# never called.
+#= {rejects: 'NaN or Infinity'}
+defn huge() -> 1e400
+1

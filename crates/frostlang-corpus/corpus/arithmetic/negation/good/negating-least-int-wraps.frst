@@ -1,0 +1,8 @@
+# Negating the least Int wraps back to the least Int: its positive
+# counterpart is past the greatest Int, and Int overflow wraps in two's
+# complement rather than raising.
+#= {result: [-9223372036854775808, -9223372036854775808]}
+[
+    - -9223372036854775808,
+    -(-9223372036854775808),
+]

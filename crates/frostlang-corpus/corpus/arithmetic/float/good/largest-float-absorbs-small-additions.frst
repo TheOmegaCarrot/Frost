@@ -1,0 +1,12 @@
+# Adding a small Float to the largest finite Float rounds back to it: the
+# exact sum is not representable, but it rounds to a finite value, so there is
+# no overflow error. Subtle because the result is past the largest Float only
+# before rounding.
+#= {
+#=     result: [1.7976931348623157e308, -1.7976931348623157e308],
+#=     inputs: {largest: 1.7976931348623157e308},
+#= }
+[
+    largest + 1.0,
+    -largest - 1.0,
+]

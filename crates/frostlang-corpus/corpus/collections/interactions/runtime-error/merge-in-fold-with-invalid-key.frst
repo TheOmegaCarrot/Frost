@@ -1,0 +1,4 @@
+# A fold that builds Map keys from its elements raises at the first element
+# that is not a valid key.
+#= {raises: ['not a valid Map key', 'Array'], inputs: {xs: [1, [2]]}}
+fold(xs, {}, fn m, x -> m + {[x]: true})

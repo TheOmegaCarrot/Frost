@@ -1,0 +1,6 @@
+# Every alternative is checked, not just the first and last: here the middle
+# one binds nothing.
+#= {rejects: 'every alternative must bind the same names'}
+match 1 {
+    [x] | 1 | {x} => 0,
+}

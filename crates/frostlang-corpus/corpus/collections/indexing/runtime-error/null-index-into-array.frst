@@ -1,0 +1,3 @@
+# A Null index into an Array raises rather than yielding Null.
+#= {raises: ['Cannot index Array', 'Null'], inputs: {xs: [10], i: null}}
+xs[i]

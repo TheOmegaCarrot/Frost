@@ -1,0 +1,6 @@
+# Functions compare by identity: a closure equals itself, and two lambdas
+# written the same way are still different functions.
+#= {result: [true, false, false, true, false, false]}
+def f = fn -> 1
+def g = fn -> 1
+[f == f, f == g, f != f, f != g, f == 1, f == null]

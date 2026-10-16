@@ -1,0 +1,11 @@
+# The bindings of scalar-bindings, bound to values only known at runtime, read
+# back the same values.
+#= {
+#=     result: [5, 10, 2.5, true, null, 'null'],
+#=     inputs: {five: 5, half: 2.5, yes: true, nothing: null},
+#= }
+def n = five
+def f = half
+def b = yes
+def z = nothing
+[n, n * 2, f, b, z, to_string(z)]

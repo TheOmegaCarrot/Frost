@@ -1,0 +1,7 @@
+# A lambda's block body cannot export a definition.
+#= {rejects: ['`export`']}
+def f = fn -> {
+    export def y = 1
+    y
+}
+1

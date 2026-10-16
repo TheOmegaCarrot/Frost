@@ -1,0 +1,3 @@
+# A match with no arms at all has nothing to match, so it raises.
+#= {raises: 'no match arm'}
+match 1 {}

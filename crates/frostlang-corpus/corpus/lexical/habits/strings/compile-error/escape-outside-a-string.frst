@@ -1,0 +1,3 @@
+# A backslash escape works only inside a String.
+#= {rejects: 'a backslash escape works only inside a String'}
+print(\n)

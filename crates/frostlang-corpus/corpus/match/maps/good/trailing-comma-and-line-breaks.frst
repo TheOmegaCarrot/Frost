@@ -1,0 +1,8 @@
+# A Map pattern may span lines and end with a trailing comma.
+#= {result: ['ada', 36], inputs: {v: {name: 'ada', age: 36}}}
+match v {
+    {
+        name: n,
+        age: a,
+    } => [n, a],
+}

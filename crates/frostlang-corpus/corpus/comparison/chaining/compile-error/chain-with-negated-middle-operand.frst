@@ -1,0 +1,3 @@
+# A prefix operator on the middle operand does not break a chain.
+#= {rejects: 'cannot chain'}
+1 > -2 > -3

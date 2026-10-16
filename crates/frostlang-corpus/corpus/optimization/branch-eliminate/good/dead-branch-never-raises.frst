@@ -1,0 +1,9 @@
+# A branch that a constant condition rules out never runs, so an error it would
+# raise on constants is never raised.
+#= {result: ['safe', 'safe', 'safe', 'safe']}
+[
+    if false: 1 / 0 else: 'safe',
+    if true: 'safe' else: error('never'),
+    if null: {a: 1}.b else: 'safe',
+    if 0: 'safe' else: len(5),
+]

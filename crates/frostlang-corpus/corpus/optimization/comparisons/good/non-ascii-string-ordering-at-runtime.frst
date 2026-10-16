@@ -1,0 +1,13 @@
+# The orderings of folded-non-ascii-string-ordering, over Strings only known
+# at runtime, give the same answers.
+#= {
+#=     result: [true, true, true, true, true],
+#=     inputs: {accented: 'é', a: 'a', japanese: '日', ab: 'ab', hello: 'héllo'},
+#= }
+[
+    accented > 'z',
+    a < 'é',
+    japanese > 'é',
+    ab < 'b',
+    hello < 'héllo!',
+]

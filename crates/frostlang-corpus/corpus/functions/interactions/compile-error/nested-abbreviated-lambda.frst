@@ -1,0 +1,4 @@
+# An abbreviated lambda cannot be nested in another; its placeholders would
+# be ambiguous.
+#= {rejects: 'cannot be nested'}
+def f = $($($ + 1))

@@ -1,0 +1,4 @@
+# A separator cannot follow a point: `1._5` is the field `_5` of the Int 1, not a
+# Float, so it compiles and fails when it indexes the Int.
+#= {raises: ['cannot index', 'Int']}
+1._5

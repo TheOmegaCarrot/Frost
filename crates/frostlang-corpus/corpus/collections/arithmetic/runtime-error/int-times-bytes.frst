@@ -1,0 +1,4 @@
+# `*` is numeric only: it does not repeat Bytes, even with the count on the
+# left.
+#= {raises: ['Cannot multiply', 'Int * Bytes']}
+2 * x'00'

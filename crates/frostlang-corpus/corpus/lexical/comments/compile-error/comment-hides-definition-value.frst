@@ -1,0 +1,3 @@
+# The value after `=` is inside the comment, so the definition has none.
+#= {rejects: 'expected an expression'}
+def x = # 1

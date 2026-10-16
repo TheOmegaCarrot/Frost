@@ -1,0 +1,6 @@
+# Every line with text must carry at least the closing delimiter's indentation.
+#= {rejects: 'indented less than the closing delimiter'}
+def text = '''
+    fine
+  short
+    '''

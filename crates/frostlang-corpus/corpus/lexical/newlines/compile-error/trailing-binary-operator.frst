@@ -1,0 +1,6 @@
+# Outside brackets, a line ending in a binary operator does not continue onto
+# the next line: the line break ends the statement, leaving `+` without its
+# right operand.
+#= {rejects: 'a line continues only when'}
+def x = 1 +
+    2

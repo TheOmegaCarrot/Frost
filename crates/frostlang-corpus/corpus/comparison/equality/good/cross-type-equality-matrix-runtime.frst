@@ -1,0 +1,18 @@
+# Values of different types are never equal, and equality never raises, here
+# with every value supplied at runtime. Each equals itself and nothing else,
+# including a Function.
+#= {
+#=     result: [
+#=         [true, false, false, false, false, false, false, false, false],
+#=         [false, true, false, false, false, false, false, false, false],
+#=         [false, false, true, false, false, false, false, false, false],
+#=         [false, false, false, true, false, false, false, false, false],
+#=         [false, false, false, false, true, false, false, false, false],
+#=         [false, false, false, false, false, true, false, false, false],
+#=         [false, false, false, false, false, false, true, false, false],
+#=         [false, false, false, false, false, false, false, true, false],
+#=         [false, false, false, false, false, false, false, false, true],
+#=     ],
+#=     inputs: {values: [null, true, 1, 1.0, '1', x'31', [1], {['1']: 1}, fn -> 1]},
+#= }
+transform(values, fn a -> transform(values, fn b -> a == b))

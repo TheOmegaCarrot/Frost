@@ -1,0 +1,4 @@
+# A raw String ends at its first closer, so text meant to hold `)'` in a
+# single-quoted raw String leaves a stray quote behind.
+#= {rejects: 'unclosed String'}
+R'(a)'b)'

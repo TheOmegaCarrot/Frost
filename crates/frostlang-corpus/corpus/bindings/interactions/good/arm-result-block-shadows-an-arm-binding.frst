@@ -1,0 +1,12 @@
+# A `do` block in a match arm's result is a scope nested in the arm, so it may
+# shadow the arm's binding, reading it in the shadow's value.
+#= {result: [10, 5], inputs: {n: 5}}
+match n {
+    x => do {
+        def doubled = do {
+            def x = x * 2
+            x
+        }
+        [doubled, x]
+    },
+}

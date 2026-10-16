@@ -1,0 +1,15 @@
+# A Map interpolates as `to_string` renders it: empty, single-entry, nested,
+# and keyed by every key type (Bool, Int, Float, String, Bytes), with Null and
+# structured values.
+#= {
+#=     result: [true, true, true, true],
+#=     inputs: {
+#=         cases: [
+#=             {},
+#=             {a: 1},
+#=             {outer: {inner: [1, {}]}},
+#=             {[true]: null, [2]: 'b', [1.5]: [3], ['s']: {}, [x'01']: false},
+#=         ],
+#=     },
+#= }
+transform(cases, fn m -> $'${m}' == to_string(m))

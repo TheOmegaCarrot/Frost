@@ -1,0 +1,22 @@
+# A parenthesized logical as the left operand of another decides it by the
+# value it yields, exactly as a single operand would, whether its own operands
+# are constants or known only at runtime.
+#= {
+#=     result: [[null, 0, false, null], [null, 0, false, null]],
+#=     printed: ['right of a truthy constant group', 'right of a truthy runtime group'],
+#=     inputs: {one: 1, two: 2, zero: 0, n: null, f: false},
+#= }
+[
+    [
+        (1 and null) and print('right of a Null group'),
+        (null or 0) or print('right of a 0 group'),
+        (false or null or false) and print('right of a false group'),
+        (1 and 2) and print('right of a truthy constant group'),
+    ],
+    [
+        (one and n) and print('right of a Null group'),
+        (n or zero) or print('right of a 0 group'),
+        (f or n or f) and print('right of a false group'),
+        (one and two) and print('right of a truthy runtime group'),
+    ],
+]

@@ -1,0 +1,16 @@
+# A `do` block whose statements and value are all constant folds to its value;
+# its bindings stay local to it.
+#= {result: [6, 'ab', 1]}
+def x = 1
+[
+    do {
+        def a = 2
+        def b = 3
+        a * b
+    },
+    do {
+        def x = 'a'
+        x + 'b'
+    },
+    x,
+]

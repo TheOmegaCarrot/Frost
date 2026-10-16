@@ -1,0 +1,10 @@
+# Array equality recurses through nested Arrays and Maps to any depth, and a
+# difference at the deepest level makes the whole unequal.
+#= {result: [true, true, false, false, true]}
+[
+    [[]] == [[]],
+    [[1, [2, [3]]], {a: [4]}] == [[1, [2, [3]]], {a: [4]}],
+    [[1, [2, [3]]]] == [[1, [2, [4]]]],
+    [[]] == [],
+    [[], []] != [[]],
+]

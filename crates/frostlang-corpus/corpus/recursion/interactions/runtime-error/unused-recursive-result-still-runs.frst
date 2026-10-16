@@ -1,0 +1,7 @@
+# A recursive call on constants whose result is never read still runs, so its
+# error is raised: the optimizer may drop an unread binding, never the
+# computation that might raise.
+#= {raises: 'Division by zero'}
+defn f(k) -> if k == 0: 1 / k else: f(k - 1)
+def unused = f(30)
+'unreached'

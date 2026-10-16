@@ -1,0 +1,3 @@
+# An Array is not a valid Map key, even an empty one.
+#= {raises: ['not a valid Map key', 'Array']}
+{[[]]: 1}

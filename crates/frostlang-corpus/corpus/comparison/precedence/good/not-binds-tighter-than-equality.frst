@@ -1,0 +1,9 @@
+# `not` binds tighter than `==`: `not 1 == 2` is `(not 1) == 2`, which
+# compares `false` with `2`, so it is false, while `not (1 == 2)` is true.
+#= {result: [false, true, true, false]}
+[
+    not 1 == 2,
+    not (1 == 2),
+    not true == false,
+    not (true == false) == false,
+]

@@ -1,0 +1,8 @@
+# A recursion over a linked list of Maps meets a cell without a `tail` key.
+# A Map pattern requires its keys to be present, so the cell matches no arm.
+#= {raises: 'no match arm'}
+defn sum(list, acc) -> match list {
+    null => acc,
+    {head, tail} => sum(tail, acc + head),
+}
+sum({head: 1, tail: {head: 2}}, 0)

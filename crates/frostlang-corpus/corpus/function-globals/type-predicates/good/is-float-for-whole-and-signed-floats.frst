@@ -1,0 +1,10 @@
+# A Float with no fractional part, and negative zero, are still Floats and
+# not Ints.
+#= {result: [true, true, true, false, false]}
+[
+    is_float(1.0),
+    is_float(-0.0),
+    is_float(-2.5),
+    is_int(1.0),
+    is_int(-0.0),
+]

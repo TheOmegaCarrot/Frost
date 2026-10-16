@@ -1,0 +1,8 @@
+# `inv` wraps a comparison predicate so it answers the opposite.
+#= {result: [[5, 10], [false, true]], inputs: {xs: [1, 5, 10], limit: 5}}
+def below_limit = fn x -> x < limit
+def at_least_limit = inv(below_limit)
+[
+    xs @ select(at_least_limit),
+    [at_least_limit(4), at_least_limit(5.0)],
+]

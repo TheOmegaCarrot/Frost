@@ -1,0 +1,9 @@
+# An abbreviated lambda is a Function like any other: it equals itself, while
+# two identically written ones are unequal.
+#= {result: [true, false, false]}
+def double = $($ * 2)
+[
+    double == double,
+    $($ * 2) == $($ * 2),
+    double == fn x -> x * 2,
+]

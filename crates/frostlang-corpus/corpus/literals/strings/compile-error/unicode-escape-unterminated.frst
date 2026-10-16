@@ -1,0 +1,3 @@
+# A Unicode escape whose brace never closes in the String is unterminated.
+#= {rejects: R'(unterminated `\u` escape)'}
+'\u{41'

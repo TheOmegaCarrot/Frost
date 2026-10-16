@@ -1,0 +1,3 @@
+# A Function has no length (it is not its arity).
+#= {raises: ['Function len requires', 'Function']}
+len(fn x -> x)

@@ -1,0 +1,5 @@
+# Strings order by code point, element by element: uppercase before
+# lowercase, a prefix before its extensions, the empty String first, and
+# non-ASCII after ASCII.
+#= {result: [true, true, true, true, true, false], inputs: {e: 'é'}}
+['Z' < 'a', 'ab' > 'a', '' < 'a', e > 'z', 'abc' <= 'abd', 'b' < 'abc']

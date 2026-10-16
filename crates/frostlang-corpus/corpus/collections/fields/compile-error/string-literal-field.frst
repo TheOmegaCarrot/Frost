@@ -1,0 +1,4 @@
+# A quoted String cannot follow `.`; a computed field is a soft index.
+#= {rejects: 'expected a name after `.`'}
+def m = {a: 1}
+m.'a'

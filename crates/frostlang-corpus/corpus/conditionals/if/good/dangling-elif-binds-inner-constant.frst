@@ -1,0 +1,8 @@
+# An `elif` after a nested `if` continues the inner one, also with constant
+# conditions: a falsy outer condition yields Null, never the `elif` branch.
+#= {result: [null, 2, 1]}
+[
+    if false: if true: 1 elif true: 2,
+    if true: if false: 1 elif true: 2,
+    if true: if true: 1 elif true: 2,
+]

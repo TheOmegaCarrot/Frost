@@ -1,0 +1,4 @@
+# A `$` placeholder cannot be the `as` name.
+#= {rejects: 'name after `as`'}
+def {a} as $ = {a: 1}
+a

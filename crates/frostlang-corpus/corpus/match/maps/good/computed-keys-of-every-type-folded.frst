@@ -1,0 +1,6 @@
+# Computed keys of every valid key type look up their entries when the
+# optimizer can see the whole Map ahead of time, too.
+#= {result: ['bool', 'int', 'float', 'string', 'bytes']}
+match {[true]: 'bool', [1]: 'int', [1.5]: 'float', s: 'string', [x'00']: 'bytes'} {
+    {[true]: b, [1]: i, [1.5]: f, ['s']: s, [x'00']: by} => [b, i, f, s, by],
+}

@@ -1,0 +1,5 @@
+# A match needs a target before its arms.
+#= {rejects: 'takes the value to match before its `{`'}
+match {
+    _ => 1,
+}

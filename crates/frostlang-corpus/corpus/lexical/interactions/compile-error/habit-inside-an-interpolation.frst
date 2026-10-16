@@ -1,0 +1,4 @@
+# Habit help reaches inside an interpolation: `&&` there gets the same help
+# as elsewhere.
+#= {rejects: 'is `and`', inputs: {a: true, b: true}}
+$'${a && b}'

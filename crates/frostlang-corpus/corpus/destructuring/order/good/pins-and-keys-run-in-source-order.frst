@@ -1,0 +1,8 @@
+# Pins and computed keys are evaluated interleaved, in source order, each once.
+#= {result: 1, printed: ['pin 1', 'key', 'pin 2']}
+defn note(label, v) -> {
+    print(label)
+    v
+}
+def [(note('pin 1', 0)), {[note('key', 'k')]: x}, (note('pin 2', 2))] = [0, {k: 1}, 2]
+x

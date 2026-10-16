@@ -1,0 +1,4 @@
+# Adjacent String literals do not join into one, as they would in C or Python: they
+# are two operands with no operator between them.
+#= {rejects: 'adjacent Strings do not join'}
+'a' 'b'

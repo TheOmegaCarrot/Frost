@@ -1,0 +1,4 @@
+# A malformed Bytes literal inside an interpolation is reported for what is
+# wrong in it.
+#= {rejects: 'odd number of hex digits'}
+def s = $'${x'0'}'

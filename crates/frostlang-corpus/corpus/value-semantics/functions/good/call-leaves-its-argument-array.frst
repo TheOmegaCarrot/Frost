@@ -1,0 +1,6 @@
+# `call` spreads an Array as arguments without changing it, even when the
+# callee gathers those arguments into a rest parameter and extends it.
+#= {result: [[1, 2, 9], [1, 2], [1, 2, 9]], inputs: {n: 1}}
+defn grow(...items) -> items + [9]
+def args = [n, 2]
+[call(grow, args), args, call(grow, args)]

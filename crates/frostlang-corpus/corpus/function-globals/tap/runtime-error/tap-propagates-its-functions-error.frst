@@ -1,0 +1,3 @@
+# An error in the tapping function is not swallowed: it ends the call.
+#= {raises: 'tapped'}
+tap(1, fn x -> error('tapped'))

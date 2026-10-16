@@ -1,0 +1,3 @@
+# Abbreviated lambdas build and read structures from their placeholders.
+#= {result: [[[1, 1], [2, 4]], [10, 30]], inputs: {xs: [1, 2], ms: [{v: 10}, {v: 30}]}}
+[map xs with $([$, $ * $]), map ms with $($.v)]

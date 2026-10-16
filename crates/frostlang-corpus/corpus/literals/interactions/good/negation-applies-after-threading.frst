@@ -1,0 +1,5 @@
+# `@` binds tighter than unary `-`, so in `-5 @ inc()` the literal is 5, threaded
+# first and negated after; parentheses thread the negative literal instead.
+#= {result: [-6, -4]}
+defn inc(x) -> x + 1
+[-5 @ inc(), (-5) @ inc()]

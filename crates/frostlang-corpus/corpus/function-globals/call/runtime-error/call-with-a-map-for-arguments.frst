@@ -1,0 +1,3 @@
+# Arguments are positional: a Map is not spread as named arguments.
+#= {raises: ['call', 'Array as argument 2', 'got Map']}
+call(collect, {a: 1})

@@ -1,0 +1,3 @@
+# `bcurry` needs at least the function to curry.
+#= {raises: ['bcurry', 'at least 1', 'called with 0']}
+bcurry()

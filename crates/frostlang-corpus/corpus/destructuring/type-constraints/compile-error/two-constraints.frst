@@ -1,0 +1,4 @@
+# A name takes at most one type constraint; an alternative expresses a union.
+#= {rejects: 'expected `=`'}
+def x is Int is Numeric = 1
+x

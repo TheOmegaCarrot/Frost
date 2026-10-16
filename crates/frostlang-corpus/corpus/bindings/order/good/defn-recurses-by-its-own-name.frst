@@ -1,0 +1,4 @@
+# `defn` names its lambda, so the function can call itself by that name.
+#= {result: [1, 1, 120, 3628800]}
+defn fact(n) -> if n <= 1: 1 else: n * fact(n - 1)
+[fact(0), fact(1), fact(5), fact(10)]

@@ -1,0 +1,7 @@
+# A structure pattern takes no type constraint; its shape already implies the
+# type.
+#= {rejects: ['expected `=>`', 'found `is`']}
+match [1] {
+    [x] is Array => x,
+    _ => 0,
+}

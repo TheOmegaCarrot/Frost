@@ -1,0 +1,5 @@
+# Only bindings written `export` are exported; a plain top-level `def` is
+# private, even when an export is computed from it.
+#= {result: null, exports: {shown: 2}}
+def hidden = 1
+export def shown = hidden + 1

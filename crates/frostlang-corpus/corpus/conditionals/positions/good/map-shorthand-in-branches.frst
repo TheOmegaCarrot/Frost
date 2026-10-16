@@ -1,0 +1,6 @@
+# Braces after a branch's colon are a Map literal, and `{x}` is shorthand for
+# `{x: x}`. Subtle: they look like a block yielding `x`, but are not one.
+#= {result: [{x: 1}, {y: 2}], inputs: {t: true, f: false}}
+def x = 1
+def y = 2
+[if t: {x} else: {y}, if f: {x} else: {y}]

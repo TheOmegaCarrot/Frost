@@ -1,0 +1,4 @@
+# The left operand of `and` is always evaluated, so its error surfaces even
+# though a falsy right operand could never make the result truthy.
+#= {raises: 'the left operand ran'}
+error('the left operand ran') and false

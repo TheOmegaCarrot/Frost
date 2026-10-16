@@ -1,0 +1,5 @@
+# Digits collected by repeated Int division, each put on the front of the
+# accumulator so they come out most significant first.
+#= {result: [[0], [7], [1, 0, 0, 7], [9, 2, 2, 3, 3, 7, 2, 0, 3, 6, 8, 5, 4, 7, 7, 5, 8, 0, 7]]}
+defn digits(n, acc) -> if n < 10: [n] + acc else: digits(n / 10, [n % 10] + acc)
+[digits(0, []), digits(7, []), digits(1007, []), digits(9223372036854775807, [])]

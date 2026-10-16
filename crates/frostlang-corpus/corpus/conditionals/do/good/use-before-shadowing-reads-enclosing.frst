@@ -1,0 +1,9 @@
+# In a block, a name read before the block shadows it still reads the
+# enclosing binding.
+#= {result: 3}
+def y = 1
+do {
+    def z = y
+    def y = 2
+    z + y
+}

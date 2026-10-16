@@ -1,0 +1,7 @@
+# An `if` with a constant condition runs only the branch the condition picks:
+# the other branch's effect never happens.
+#= {result: [null, null], printed: ['kept', 'also kept']}
+[
+    if true: print('kept') else: print('dropped'),
+    if false: print('dropped') else: print('also kept'),
+]

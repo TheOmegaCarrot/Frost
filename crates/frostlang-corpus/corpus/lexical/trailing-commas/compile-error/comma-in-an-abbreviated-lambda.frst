@@ -1,0 +1,4 @@
+# An abbreviated lambda's parentheses hold one expression, not a list, so
+# they take no trailing comma.
+#= {rejects: 'found `,`'}
+$($ + 1,)

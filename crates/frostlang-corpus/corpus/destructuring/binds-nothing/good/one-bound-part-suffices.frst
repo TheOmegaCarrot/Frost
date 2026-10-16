@@ -1,0 +1,7 @@
+# A def binds something if any part of its pattern binds a name; the other
+# parts may bind nothing.
+#= {result: [5, 6, {}], inputs: {xs: [5, 1], ys: [0, 6], m: {}}}
+def [a, 1] = xs
+def [_, b] = ys
+def {} as whole = m
+[a, b, whole]

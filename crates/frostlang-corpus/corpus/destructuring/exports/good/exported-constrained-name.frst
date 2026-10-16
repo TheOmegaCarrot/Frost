@@ -1,0 +1,4 @@
+# `export def name is Type` exports the checked name.
+#= {result: 0, exports: {port: 80}, inputs: {v: 80}}
+export def port is Int = v
+0

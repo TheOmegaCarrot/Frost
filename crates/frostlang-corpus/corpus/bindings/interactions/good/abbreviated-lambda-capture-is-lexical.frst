@@ -1,0 +1,9 @@
+# An abbreviated lambda captures enclosing bindings lexically, like any lambda:
+# a later shadow where it is called does not change them.
+#= {result: 6}
+def k = 2
+def f = $($ * k)
+do {
+    def k = 100
+    f(3)
+}

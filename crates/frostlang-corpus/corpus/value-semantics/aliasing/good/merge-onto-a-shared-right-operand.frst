@@ -1,0 +1,6 @@
+# A bound Map used as the right operand of a merge is unchanged, though its
+# entries win in the result.
+#= {result: [{k: 1}, {k: 1, j: 0}], inputs: {v: 1}}
+def m = {k: v}
+def n = {k: 0, j: 0} + m
+[m, n]

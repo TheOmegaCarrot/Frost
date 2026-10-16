@@ -1,0 +1,4 @@
+# A name an exported pattern bound may not be exported again by a later `def`.
+#= {rejects: '`a` is already bound'}
+export def [a, b] = [1, 2]
+export def a = 3

@@ -1,0 +1,15 @@
+# `==` and `!=` on Ints compare their values, including zero, negatives, and
+# both ends of the Int range.
+#= {result: [true, false, true, false, true, true, false, true, false, true]}
+[
+    5 == 5,
+    5 == 6,
+    0 == 0,
+    -1 == 1,
+    -7 == -7,
+    9223372036854775807 == 9223372036854775807,
+    9223372036854775807 == -9223372036854775808,
+    -9223372036854775808 == -9223372036854775808,
+    5 != 5,
+    5 != 6,
+]

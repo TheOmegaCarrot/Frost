@@ -1,0 +1,4 @@
+# An error raised in a nested format String's interpolation propagates through
+# the outer format String.
+#= {raises: 'inner failure'}
+$'a${$"b${error("inner failure")}"}c'

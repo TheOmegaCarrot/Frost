@@ -1,0 +1,3 @@
+# A Bytes literal's digit pairs are not separated by spaces.
+#= {rejects: 'space in Bytes literal'}
+x'00 ff'

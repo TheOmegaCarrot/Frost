@@ -1,0 +1,5 @@
+# A recursive function builds its result with a format String whose
+# interpolation holds the recursive call; the call is not in tail position.
+#= {result: '3,2,1,', inputs: {n: 3}}
+defn countdown(k) -> if k == 0: '' else: $'${k},${countdown(k - 1)}'
+countdown(n)

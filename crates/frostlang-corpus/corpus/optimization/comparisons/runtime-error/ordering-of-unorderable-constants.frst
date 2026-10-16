@@ -1,0 +1,5 @@
+# Ordering constant Bools, which have no order, raises when the program
+# reaches the comparison.
+#= {raises: 'not orderable'}
+def yes = true
+yes < false

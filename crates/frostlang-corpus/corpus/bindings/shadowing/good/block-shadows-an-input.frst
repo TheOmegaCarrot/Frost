@@ -1,0 +1,7 @@
+# A block binding shadows an input inside the block only.
+#= {result: ['inner', 'outer'], inputs: {s: 'outer'}}
+def inner = do {
+    def s = 'inner'
+    s
+}
+[inner, s]

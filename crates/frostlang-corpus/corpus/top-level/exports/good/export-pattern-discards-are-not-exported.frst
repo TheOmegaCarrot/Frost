@@ -1,0 +1,4 @@
+# In an exported pattern, `_`, a discarded rest, and literal parts bind no
+# name, so only the named parts are exported.
+#= {result: null, exports: {second: 2}}
+export def [_, second, 3, ..._] = [1, 2, 3, 4, 5]

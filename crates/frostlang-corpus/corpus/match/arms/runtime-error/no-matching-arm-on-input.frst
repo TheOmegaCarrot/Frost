@@ -1,0 +1,9 @@
+# With a target known only at runtime, no matching arm raises rather than
+# producing Null.
+#= {raises: 'no match arm', inputs: {v: 5}}
+match v {
+    1 => 'one',
+    [x] => x,
+    {x} => x,
+    _ is String => 'text',
+}

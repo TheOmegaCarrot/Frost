@@ -1,0 +1,6 @@
+# The last call of a chain in tail position is a tail call, so recursion
+# through it runs in constant stack: `n @ minus(1) @ down(acc + 1)` is
+# `down(minus(n, 1), acc + 1)`.
+#= {result: 100000}
+defn down(n, acc) -> if n == 0: acc else: n @ minus(1) @ down(acc + 1)
+100000 @ down(0)

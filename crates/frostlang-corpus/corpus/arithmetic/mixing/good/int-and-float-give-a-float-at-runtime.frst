@@ -1,0 +1,16 @@
+# Arithmetic on an Int and a Float only known at runtime promotes the Int and
+# gives a Float, in either order.
+#= {
+#=     result: [1.5, 1.5, 1.5, -1.5, 1.0, 1.0, 0.25, 0.25],
+#=     inputs: {one: 1, two: 2, half: 0.5, four_float: 4.0, one_float: 1.0, four: 4},
+#= }
+[
+    one + half,
+    half + one,
+    two - half,
+    half - two,
+    two * half,
+    half * two,
+    one / four_float,
+    one_float / four,
+]

@@ -1,0 +1,15 @@
+# A division by zero inside the interpreted program surfaces from the host
+# interpreter as Frost's own error, raised from deep in the evaluation.
+#= {
+#=     raises: 'division by zero',
+#=     inputs: {
+#=         program: {div: [{num: 10}, {sub: [{num: 3}, {num: 3}]}]},
+#=     },
+#= }
+defn evaluate(node) -> match node {
+    {num} => num,
+    {sub: [l, r]} => evaluate(l) - evaluate(r),
+    {div: [l, r]} => evaluate(l) / evaluate(r),
+}
+
+evaluate(program)

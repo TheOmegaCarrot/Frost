@@ -1,0 +1,3 @@
+# The Function check happens at run time on a value the compiler cannot see.
+#= {raises: ['inv', 'Function as argument 1', 'got String'], inputs: {f: 'is_null'}}
+inv(f)

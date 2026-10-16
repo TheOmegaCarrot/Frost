@@ -1,0 +1,6 @@
+# A named lambda's own name may be a global's name: inside the lambda it means
+# the lambda, so the recursion calls itself, while outside the global is
+# unchanged.
+#= {result: ['done', 2], inputs: {n: 3}}
+def countdown = fn len(k) -> if k == 0: 'done' else: len(k - 1)
+[countdown(n), len([1, 2])]

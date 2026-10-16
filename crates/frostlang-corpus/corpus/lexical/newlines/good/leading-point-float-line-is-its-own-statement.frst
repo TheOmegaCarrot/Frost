@@ -1,0 +1,6 @@
+# A line starting `.5` begins a Float literal, not a `.` continuation, so it
+# is a statement of its own: `a` keeps its value, and the tail value is 0.5.
+#= {result: [1, 0.5]}
+def a = 1
+.5
+[a, .5]

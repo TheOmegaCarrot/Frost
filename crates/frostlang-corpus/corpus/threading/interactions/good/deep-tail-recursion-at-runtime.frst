@@ -1,0 +1,4 @@
+# A threaded tail call recurses in constant stack for a runtime depth.
+#= {result: 100000, inputs: {depth: 100000}}
+defn down(n, acc) -> if n == 0: acc else: (n - 1) @ down(acc + 1)
+depth @ down(0)

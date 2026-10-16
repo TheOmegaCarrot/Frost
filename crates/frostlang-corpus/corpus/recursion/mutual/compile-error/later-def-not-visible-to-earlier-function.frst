@@ -1,0 +1,6 @@
+# A function body cannot read a binding made after the function, even if the
+# function is only called once that binding exists.
+#= {rejects: '`limit` is not defined'}
+defn down(n) -> if n <= limit: n else: down(n - 1)
+def limit = 3
+down(10)

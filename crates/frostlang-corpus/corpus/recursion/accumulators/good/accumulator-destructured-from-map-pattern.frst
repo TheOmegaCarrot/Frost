@@ -1,0 +1,7 @@
+# State threaded as one Map and taken apart by a pattern on each call.
+#= {result: {count: 4, total: 10, last: 4}}
+defn tally(xs, state) -> match [xs, state] {
+    [[], _] => state,
+    [[x, ...rest], {count, total}] => tally(rest, {count: count + 1, total: total + x, last: x}),
+}
+tally([1, 2, 3, 4], {count: 0, total: 0, last: null})

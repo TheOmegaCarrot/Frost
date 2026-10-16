@@ -1,0 +1,12 @@
+# A constant Float, which the optimizer can fold, interpolates exactly as the
+# same Float at runtime: whole-valued, negative zero, tiny, and huge.
+#= {
+#=     result: [true, true, true, true],
+#=     inputs: {floats: [1.0, -0.0, 1.5e-7, 1e20]},
+#= }
+[
+    $'${1.0}' == $'${floats[0]}',
+    $'${-0.0}' == $'${floats[1]}',
+    $'${1.5e-7}' == $'${floats[2]}',
+    $'${1e20}' == $'${floats[3]}',
+]

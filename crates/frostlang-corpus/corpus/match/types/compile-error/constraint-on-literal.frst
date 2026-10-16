@@ -1,0 +1,6 @@
+# Only a name or `_` takes a type constraint; a literal pattern does not.
+#= {rejects: ['expected `=>`', 'found `is`']}
+match 1 {
+    1 is Int => 1,
+    _ => 0,
+}

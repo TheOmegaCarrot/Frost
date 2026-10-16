@@ -1,0 +1,6 @@
+# An `elif` condition takes a colon, not braces; a block in its branch is a
+# `do` block.
+#= {rejects: ['expected `:`', 'elif x: do {']}
+def a = false
+def b = true
+if a: 1 elif b { 2 }

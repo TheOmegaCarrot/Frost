@@ -1,0 +1,6 @@
+# Newlines end a statement, so the `=` must be on the line the pattern ends on,
+# though newlines inside the pattern's brackets are free.
+#= {rejects: 'expected `=`'}
+def [a, b]
+= [1, 2]
+a

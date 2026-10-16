@@ -1,0 +1,12 @@
+# An Array literal holding one binding many times, followed by a derivation
+# from it, holds the original at every position.
+#= {
+#=     result: [
+#=         [[1], [1], [1], [1], [1], [1], [1], [1], [1], [1], [1], [1], [1], [1], [1], [1], [1], [1, 2]],
+#=         [1],
+#=     ],
+#=     inputs: {n: 1},
+#= }
+def xs = [n]
+def all = [xs, xs, xs, xs, xs, xs, xs, xs, xs, xs, xs, xs, xs, xs, xs, xs, xs, xs + [2]]
+[all, xs]

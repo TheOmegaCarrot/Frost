@@ -1,0 +1,5 @@
+# A global is a value: binding it to another name gives a second name for the
+# same function, called with constant and runtime arguments alike.
+#= {result: [2, 3, true], inputs: {xs: [1, 2, 3]}}
+def size = len
+[size([1, 2]), size(xs), size == len]

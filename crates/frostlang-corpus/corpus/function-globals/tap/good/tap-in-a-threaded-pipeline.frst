@@ -1,0 +1,4 @@
+# Threaded, `tap` passes its value along the pipeline unchanged while each
+# function observes it in turn.
+#= {result: 5, printed: ['5', '6']}
+5 @ tap(print) @ tap(fn x -> print(x + 1))

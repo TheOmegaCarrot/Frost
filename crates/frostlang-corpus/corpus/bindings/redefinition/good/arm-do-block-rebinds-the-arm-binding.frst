@@ -1,0 +1,10 @@
+# A `do` block that is a match arm's result is a scope nested in the arm, so it
+# may shadow the arm's own binding once, reading it in the shadow's value.
+#= {result: [8, 4], inputs: {n: 7}}
+defn bump(v) -> match v {
+    x => do {
+        def x = x + 1
+        x
+    },
+}
+[bump(n), bump(3)]

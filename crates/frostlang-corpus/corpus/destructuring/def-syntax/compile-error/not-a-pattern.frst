@@ -1,0 +1,4 @@
+# A token that cannot start a pattern after `def` is a syntax error.
+#= {rejects: 'expected a pattern'}
+def + = 1
+0

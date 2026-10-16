@@ -1,0 +1,8 @@
+# A closure taken out of a Map and called twice builds from its original
+# capture both times.
+#= {result: [[1, 2], [1, 3]], inputs: {n: 1}}
+def tools = do {
+    def base = [n]
+    {push: fn x -> base + [x]}
+}
+[tools.push(2), tools.push(3)]

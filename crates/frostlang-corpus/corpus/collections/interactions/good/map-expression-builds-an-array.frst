@@ -1,0 +1,5 @@
+# A `map ... with` expression over an Array builds a new Array of results,
+# here of structures, leaving the source unchanged.
+#= {result: [[{n: 1}, {n: 2}], [1, 2]], inputs: {xs: [1, 2]}}
+def wrapped = map xs with fn x -> {n: x}
+[wrapped, xs]

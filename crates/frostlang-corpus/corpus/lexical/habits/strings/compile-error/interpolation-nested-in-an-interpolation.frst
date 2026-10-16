@@ -1,0 +1,4 @@
+# `${` interpolates only in a format String's text, not inside another
+# interpolation.
+#= {rejects: 'not inside another', inputs: {a: 1, b: 2}}
+$'${a ${b}}'

@@ -1,0 +1,10 @@
+# Every comparison operator yields a Bool on operands known only at runtime.
+#= {result: [true, true, true, true, true, true], inputs: {a: 1, b: 2.5}}
+[
+    is_bool(a == b),
+    is_bool(a != b),
+    is_bool(a < b),
+    is_bool(a <= b),
+    is_bool(a > b),
+    is_bool(a >= b),
+]

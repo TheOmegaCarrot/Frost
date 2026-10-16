@@ -1,0 +1,7 @@
+# A `defn` body may be a block, which needs no `do`.
+#= {result: 'Hi, Ada!'}
+defn greet(name) -> {
+    def greeting = 'Hi'
+    $'${greeting}, ${name}!'
+}
+greet('Ada')

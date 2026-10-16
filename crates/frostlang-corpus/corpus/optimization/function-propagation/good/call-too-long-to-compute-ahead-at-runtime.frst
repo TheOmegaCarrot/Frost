@@ -1,0 +1,6 @@
+# The calls of call-too-long-to-compute-ahead, over arguments only known at
+# runtime, compute the same results.
+#= {result: [0, 20000100000], inputs: {steps: 150000, size: 200000}}
+defn count_down(n) -> if n == 0: 0 else: count_down(n - 1)
+defn sum_to(n, acc) -> if n == 0: acc else: sum_to(n - 1, acc + n)
+[count_down(steps), sum_to(size, 0)]

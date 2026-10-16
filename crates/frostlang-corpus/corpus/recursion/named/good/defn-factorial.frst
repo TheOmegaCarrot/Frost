@@ -1,0 +1,4 @@
+# A `defn` function calls itself by its own name.
+#= {result: 3628800}
+defn fact(n) -> if n <= 1: 1 else: n * fact(n - 1)
+fact(10)

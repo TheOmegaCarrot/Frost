@@ -1,0 +1,23 @@
+# An export may hold a value of any data type, including non-ASCII text, empty
+# collections, and a Map keyed by every key type.
+#= {
+#=     result: null,
+#=     exports: {
+#=         int: -3,
+#=         float: 2.5,
+#=         bool: false,
+#=         text: 'h\u{e9}llo \u{2603}',
+#=         bytes: x'00ff',
+#=         empty_array: [],
+#=         empty_map: {},
+#=         keyed: {[true]: 1, [2]: 'two', [3.5]: null, [x'01']: [], s: {}},
+#=     },
+#= }
+export def int = -3
+export def float = 2.5
+export def bool = false
+export def text = 'h\u{e9}llo \u{2603}'
+export def bytes = x'00ff'
+export def empty_array = []
+export def empty_map = {}
+export def keyed = {[true]: 1, [2]: 'two', [3.5]: null, [x'01']: [], s: {}}

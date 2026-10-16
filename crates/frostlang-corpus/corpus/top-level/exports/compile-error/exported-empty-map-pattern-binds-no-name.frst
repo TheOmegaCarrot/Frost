@@ -1,0 +1,3 @@
+# An exported empty Map pattern binds no name.
+#= {rejects: 'binds no name'}
+export def {} = {}

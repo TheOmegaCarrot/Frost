@@ -1,0 +1,7 @@
+# Patterns that match but whose guards all fail leave no arm taken, so the
+# match raises.
+#= {raises: 'no match arm', inputs: {v: 1}}
+match v {
+    x if: false => 0,
+    _ if: null => 0,
+}

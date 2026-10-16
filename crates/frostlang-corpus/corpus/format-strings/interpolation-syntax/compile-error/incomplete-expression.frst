@@ -1,0 +1,4 @@
+# An expression cut short inside an interpolation is a syntax error that points
+# into the interpolation.
+#= {rejects: ['expected an expression', 'in this interpolation'], inputs: {x: 7}}
+def s = $'${x +}'

@@ -1,0 +1,9 @@
+# A missing key or an out-of-range position reads as Null, as indexing does.
+#= {result: [null, null, null, null, null]}
+[
+    index('b')({a: 1}),
+    index('a')({}),
+    index(2)([5, 6]),
+    index(-3)([5, 6]),
+    index(0)([]),
+]

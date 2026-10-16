@@ -1,0 +1,3 @@
+# A C-style loop header reads as a call, but still gets the loop help.
+#= {rejects: 'no `for` loop'}
+for (i = 0; i < 3; i++) {}

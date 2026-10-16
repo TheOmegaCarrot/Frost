@@ -1,0 +1,15 @@
+# Inside a call's parentheses or an Array's brackets, line breaks are
+# insignificant, but a block there still separates its statements by them.
+#= {result: [3, [1]]}
+defn id(v) -> v
+[
+    id(do {
+        def x = 1
+        def y = 2
+        x + y
+    }),
+    [do {
+        def x = 1
+        x
+    }],
+]

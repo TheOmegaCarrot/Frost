@@ -1,0 +1,3 @@
+# `\\` is one literal backslash.
+#= {result: [R'(\)', R'(back\slash)', R'(\\)']}
+[$'\\', $'back\\slash', $'\\\\']

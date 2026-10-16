@@ -1,0 +1,4 @@
+# An `if` in a function body chooses afresh on every call.
+#= {result: [-1, 0, 1, -1]}
+defn sign(n) -> if n < 0: -1 elif n == 0: 0 else: 1
+[sign(-5), sign(0), sign(5), sign(-5)]

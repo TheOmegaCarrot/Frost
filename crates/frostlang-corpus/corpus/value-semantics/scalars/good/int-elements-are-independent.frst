@@ -1,0 +1,6 @@
+# An Array holding the least Int, and one built from that element minus one,
+# are independent: the wrapped element does not reach the original.
+#= {result: [[-9223372036854775808], [9223372036854775807]], inputs: {n: -9223372036854775808}}
+def xs = [n]
+def ys = [xs[0] - 1]
+[xs, ys]

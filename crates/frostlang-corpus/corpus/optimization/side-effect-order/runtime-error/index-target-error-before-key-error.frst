@@ -1,0 +1,4 @@
+# An index evaluates the indexed value before the key, so the value's error
+# raises first.
+#= {raises: 'target raised'}
+error('target raised')[error('key raised')]

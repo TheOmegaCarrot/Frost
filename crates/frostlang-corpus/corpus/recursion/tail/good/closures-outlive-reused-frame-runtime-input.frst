@@ -1,0 +1,7 @@
+# Closures created before each tail call keep the values they captured, even
+# though the frame they were created in is reused by the next call, on a count
+# known only at runtime.
+#= {result: [3, 2, 1], inputs: {n: 3}}
+defn collect(k, thunks) -> if k == 0: thunks else: collect(k - 1, thunks + [fn -> k])
+def thunks = collect(n, [])
+[thunks[0](), thunks[1](), thunks[2]()]

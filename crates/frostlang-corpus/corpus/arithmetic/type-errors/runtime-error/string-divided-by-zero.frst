@@ -1,0 +1,5 @@
+# A non-number divided by zero is a type error, not a division by zero: only
+# numbers can be divided at all. Subtle because the divisor alone looks like
+# the problem.
+#= {raises: 'String / Int'}
+'a' / 0

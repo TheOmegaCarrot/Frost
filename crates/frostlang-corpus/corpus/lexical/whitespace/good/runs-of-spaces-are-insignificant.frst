@@ -1,0 +1,7 @@
+# Any run of spaces between tokens means the same as one space, and spaces
+# inside brackets are free.
+#= {result: [3, [1, 2], 'a']}
+def    x    =    1    +    2
+def xs = [   1   ,   2   ]
+def m = {   k   :   'a'   }
+[  x  ,  xs  ,  m.k  ]

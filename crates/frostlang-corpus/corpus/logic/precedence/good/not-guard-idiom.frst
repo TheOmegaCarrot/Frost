@@ -1,0 +1,12 @@
+# `not x and a or x` groups as `((not x) and a) or x`: `a` when `x` is missing,
+# else `x` itself.
+#= {
+#=     result: ['missing', 'missing', 3, 0],
+#=     inputs: {n: null, f: false, three: 3, zero: 0},
+#= }
+[
+    not n and 'missing' or n,
+    not f and 'missing' or f,
+    not three and 'missing' or three,
+    not zero and 'missing' or zero,
+]

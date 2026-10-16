@@ -1,0 +1,6 @@
+# An `if` inside a call's parentheses still needs its colon: the bracket
+# around it does not change what the `if` owes.
+#= {rejects: ['expected `:`', '`if` takes a colon']}
+defn id(v) -> v
+def x = true
+id(if x 1)

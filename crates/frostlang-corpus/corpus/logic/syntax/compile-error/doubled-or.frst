@@ -1,0 +1,4 @@
+# `or or` is not an operator: the second `or` is where the right operand of the
+# first belongs.
+#= {rejects: ['expected an expression', '`or`']}
+true or or false

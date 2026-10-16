@@ -1,0 +1,3 @@
+# A `;` ends the `if` statement, so an `else` after it continues nothing.
+#= {rejects: 'found `else`'}
+if true: 1; else: 2

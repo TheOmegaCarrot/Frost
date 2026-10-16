@@ -1,0 +1,7 @@
+# Null is not a valid Map key: looking it up in a Map target raises rather than
+# counting as a missing key.
+#= {raises: 'not a valid Map key', inputs: {v: {a: 1}}}
+match v {
+    {[null]: x} => x,
+    _ => 'fallback',
+}

@@ -1,0 +1,6 @@
+# An expression statement that is not the tail has its value dropped, but it
+# still runs, in order, along with every effect inside it.
+#= {result: 'end', printed: ['one', 'two', 'three']}
+print('one')
+[print('two'), print('three')]
+'end'

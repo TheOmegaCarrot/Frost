@@ -1,0 +1,5 @@
+# A call of a known function with the wrong number of constant arguments
+# raises when the program reaches it.
+#= {raises: 'expects 1 argument'}
+def f = fn x -> x
+f(1, 2)

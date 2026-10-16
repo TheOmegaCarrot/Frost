@@ -1,0 +1,6 @@
+# The value may be an index or member access into a larger structure.
+#= {result: [2, 3, 'deep'], inputs: {data: {rows: [[1, 2], [3, 4]], meta: {info: {tag: 'deep'}}}}}
+def [_, b] = data.rows[0]
+def [c, ..._] = data.rows[1]
+def {tag} = data.meta.info
+[b, c, tag]

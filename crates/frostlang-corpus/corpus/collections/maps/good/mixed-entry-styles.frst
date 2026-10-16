@@ -1,0 +1,5 @@
+# Name shorthand, `name:` keys, and computed keys mix freely in one literal.
+#= {result: {sku: 'A-1', qty: 2, [3]: 'three', price: 9.5}}
+def sku = 'A-1'
+def price = 9.5
+{sku, qty: 2, [3]: 'three', price}

@@ -1,0 +1,6 @@
+# A parameter cannot be assigned inside its function: it is a binding like
+# any other.
+#= {rejects: ['`=`', 'immutable']}
+defn f(x) -> {
+    x = x + 1
+}

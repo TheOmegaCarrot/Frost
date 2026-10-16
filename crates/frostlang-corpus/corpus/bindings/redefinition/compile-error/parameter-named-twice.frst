@@ -1,0 +1,4 @@
+# Two parameters of one lambda may not share a name, however far apart.
+#= {rejects: ['`a`', 'already bound']}
+def f = fn a, b, a -> a
+f(1, 2, 3)

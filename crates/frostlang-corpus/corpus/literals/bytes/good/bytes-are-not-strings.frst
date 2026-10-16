@@ -1,0 +1,4 @@
+# Bytes never equal a String, even one whose UTF-8 encoding is the same octets, and
+# empty Bytes are not the empty String.
+#= {result: [false, false, 'Bytes', 'String']}
+[x'6869' == 'hi', x'' == '', type(x'6869'), type('hi')]

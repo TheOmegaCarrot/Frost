@@ -1,0 +1,4 @@
+# Two commas in a row leave an empty element, which is not allowed: there is
+# no implicit Null hole.
+#= {rejects: 'expected an expression'}
+def xs = [1,, 2]

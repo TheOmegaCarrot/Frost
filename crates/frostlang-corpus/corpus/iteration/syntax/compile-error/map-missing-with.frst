@@ -1,0 +1,4 @@
+# `map` requires `with` between its structure and its operation.
+#= {rejects: 'expected `with`'}
+def f = fn x -> x
+map [1, 2] f

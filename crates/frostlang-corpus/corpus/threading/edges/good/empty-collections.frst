@@ -1,0 +1,12 @@
+# Empty collections thread like any value: the functions see them empty.
+#= {result: [0, 0, 0, [], [], null, 0, {}], inputs: {none: [], nothing: {}, blank: ''}}
+[
+    none @ len(),
+    nothing @ len(),
+    blank @ len(),
+    none @ transform(fn x -> x * 2),
+    none @ select(fn x -> true),
+    none @ fold(fn a, b -> a + b),
+    nothing @ fold(0, fn acc, k, v -> acc + v),
+    nothing @ select(fn k, v -> true),
+]

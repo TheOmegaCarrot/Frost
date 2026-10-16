@@ -1,0 +1,8 @@
+# Globals written in Frost pass an error from the function they were given
+# out to the caller, where it is caught intact.
+#= {result: ['tapped', 'composed', 'curried']}
+[
+    try_call(fn -> tap(1, fn x -> error('tapped'))).error,
+    try_call(compose(fn x -> x + 1, fn x -> error('composed')), [1]).error,
+    try_call(curry(fn a, b -> error(b), 'ignored'), ['curried']).error,
+]

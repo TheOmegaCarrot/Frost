@@ -1,0 +1,27 @@
+# A register machine with a program counter: a backward conditional jump
+# makes a loop, and the interpreter itself is a tail-recursive function, so a
+# long-running program does not grow the stack. Running past the last
+# instruction reads Null, which halts like `halt` does.
+#= {
+#=     result: [
+#=         {regs: {acc: 55, n: 0}, steps: 31},
+#=         {regs: {acc: 500500, n: 0}, steps: 3001},
+#=     ],
+#=     inputs: {small: 10, large: 1000},
+#= }
+def sum_down = [
+    ['set', 'acc', 0],
+    ['add', 'acc', 'n'],
+    ['dec', 'n'],
+    ['jnz', 'n', 1],
+]
+
+defn execute(program, pc, regs, steps) -> match program[pc] {
+    ['halt'] | null => {regs, steps},
+    ['set', r, value] => execute(program, pc + 1, regs + {[r]: value}, steps + 1),
+    ['add', r, s] => execute(program, pc + 1, regs + {[r]: regs[r] + regs[s]}, steps + 1),
+    ['dec', r] => execute(program, pc + 1, regs + {[r]: regs[r] - 1}, steps + 1),
+    ['jnz', r, target] => execute(program, if regs[r] != 0: target else: pc + 1, regs, steps + 1),
+}
+
+[execute(sum_down, 0, {n: small}, 0), execute(sum_down + [['halt']], 0, {n: large}, 0)]

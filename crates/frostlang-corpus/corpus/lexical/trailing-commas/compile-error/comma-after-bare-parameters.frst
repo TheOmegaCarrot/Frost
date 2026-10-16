@@ -1,0 +1,3 @@
+# Parameters written without parentheses take no trailing comma.
+#= {rejects: 'take no trailing comma'}
+def f = fn x, -> x

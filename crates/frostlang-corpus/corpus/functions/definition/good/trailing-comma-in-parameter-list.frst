@@ -1,0 +1,6 @@
+# A parenthesized parameter list may end in a trailing comma, which adds no
+# parameter: the lambda still takes exactly two arguments.
+#= {result: [3, 2]}
+def add = fn(x, y,) -> x + y
+defn sub(a, b,) -> a - b
+[add(1, 2), sub(3, 1)]

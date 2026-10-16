@@ -1,0 +1,8 @@
+# Only top-level bindings can be exported; a block's own bindings stay inside
+# it, so exporting the block's value exports only the top-level name.
+#= {result: 3, exports: {total: 3}}
+export def total = do {
+    def part = 1
+    part + 2
+}
+total

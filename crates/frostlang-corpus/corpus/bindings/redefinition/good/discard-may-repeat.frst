@@ -1,0 +1,6 @@
+# `_` binds nothing, so it may appear any number of times in one pattern or
+# parameter list without being a duplicate binding.
+#= {result: [1, 'b']}
+def [a, _, _] = [1, 2, 3]
+def second = fn _, y, _ -> y
+[a, second('a', 'b', 'c')]

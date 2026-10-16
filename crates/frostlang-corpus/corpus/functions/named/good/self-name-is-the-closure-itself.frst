@@ -1,0 +1,6 @@
+# Within the body, the self-name is the very closure being called: returned,
+# it equals the binding it was called through.
+#= {result: [true, true, true]}
+def f = fn me() -> me
+def g = fn me(x) -> me
+[f() == f, f()()() == f, g(1)(2)(3) == g]

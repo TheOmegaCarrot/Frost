@@ -1,0 +1,6 @@
+# Currying a function known only at run time, with runtime arguments.
+#= {
+#=     result: [['x', 'y', 'z'], ['y', 'z', 'x']],
+#=     inputs: {f: fn a, b, c -> [a, b, c], x: 'x'},
+#= }
+[curry(f, x)('y', 'z'), bcurry(f, x)('y', 'z')]

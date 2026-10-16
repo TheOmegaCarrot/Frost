@@ -1,0 +1,23 @@
+# Int multiplication of operands only known at runtime wraps, exactly as a
+# folded product does.
+#= {
+#=     result: [
+#=         -2,
+#=         1,
+#=         0,
+#=         -9223372036854775808,
+#=         -9223372036854775808,
+#=         9223372036854775805,
+#=         0,
+#=     ],
+#=     inputs: {greatest: 9223372036854775807, least: -9223372036854775808, two: 2, three: 3},
+#= }
+[
+    greatest * two,
+    greatest * greatest,
+    least * least,
+    least * -1,
+    greatest * least,
+    greatest * three,
+    least * two,
+]

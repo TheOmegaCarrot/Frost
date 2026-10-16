@@ -1,0 +1,5 @@
+# An `if` may yield the value a `def` destructures.
+#= {result: [3, 4, 'b'], inputs: {f: false}}
+def [a, b] = if f: [1, 2] else: [3, 4]
+def {name} = if f: {name: 'a'} else: {name: 'b'}
+[a, b, name]

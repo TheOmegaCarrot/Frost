@@ -1,0 +1,11 @@
+# `select` and the `filter` expression keep the elements a comparison holds
+# for, with Int and Float elements compared by value.
+#= {
+#=     result: [[3, 4.5, 10], [3, 4.5, 10], {b: 5}],
+#=     inputs: {xs: [1, 3, 2.5, 4.5, 10], m: {a: 1, b: 5}},
+#= }
+[
+    xs @ select(fn x -> x >= 3),
+    filter xs with $($ > 2.5),
+    m @ select(fn k, v -> v > 1),
+]

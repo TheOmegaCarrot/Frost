@@ -1,0 +1,5 @@
+# A named lambda stored in a Map recurses by its self-name when called through
+# the Map.
+#= {result: 'liftoff'}
+def ops = {countdown: fn countdown(n) -> if n == 0: 'liftoff' else: countdown(n - 1)}
+ops.countdown(4)

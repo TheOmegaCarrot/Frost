@@ -1,0 +1,6 @@
+# A chain applies its calls left to right: `5 @ inc() @ double()` is
+# `double(inc(5))`, which differs from `inc(double(5))`.
+#= {result: [12, 11]}
+defn inc(x) -> x + 1
+defn double(x) -> x * 2
+[5 @ inc() @ double(), 5 @ double() @ inc()]

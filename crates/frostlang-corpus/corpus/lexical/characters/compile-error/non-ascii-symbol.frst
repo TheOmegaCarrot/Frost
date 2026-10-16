@@ -1,0 +1,4 @@
+# A non-ASCII symbol outside a String or comment is an unexpected character,
+# named by its code point.
+#= {rejects: ['unexpected character', 'U+2603']}
+1 ☃ 2

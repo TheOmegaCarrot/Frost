@@ -1,0 +1,5 @@
+# A `defn` is a definition, so a branch cannot be one; a lambda is the
+# expression form of a function.
+#= {rejects: ['found `defn`', 'use a block']}
+def c = true
+if c: defn f(x) -> x

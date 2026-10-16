@@ -1,0 +1,11 @@
+# Expanding each entry into several grows the result well past the input's
+# size, with every expanded entry present and ordered by key.
+#= {
+#=     result: [
+#=         'a0', 'a1', 'b0', 'b1', 'c0', 'c1', 'd0', 'd1', 'e0', 'e1',
+#=         'f0', 'f1', 'g0', 'g1', 'h0', 'h1', 'i0', 'i1',
+#=     ],
+#=     inputs: {m: {i: 0, h: 0, g: 0, f: 0, e: 0, d: 0, c: 0, b: 0, a: 0}},
+#= }
+def grown = map m with fn k, v -> {[k + '1']: v, [k + '0']: v}
+reduce grown init: [] with fn acc, k, v -> acc + [k]

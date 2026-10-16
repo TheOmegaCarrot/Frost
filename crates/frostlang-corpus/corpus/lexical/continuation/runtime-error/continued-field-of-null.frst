@@ -1,0 +1,4 @@
+# A continued `.` on Null raises, as a one-line field access on Null does.
+#= {raises: ['cannot index', 'Null'],inputs: {m: null}}
+m
+    .k

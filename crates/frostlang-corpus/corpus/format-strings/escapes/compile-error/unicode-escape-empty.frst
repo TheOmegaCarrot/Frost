@@ -1,0 +1,3 @@
+# A Unicode escape needs at least one hex digit.
+#= {rejects: R'(invalid `\u` escape `\u{}`)'}
+def s = $'\u{}'

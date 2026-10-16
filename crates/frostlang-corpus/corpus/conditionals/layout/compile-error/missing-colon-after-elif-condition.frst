@@ -1,0 +1,3 @@
+# An `elif` condition must be followed by a colon.
+#= {rejects: ['expected `:`', '`elif` takes a colon after its condition']}
+if true: 1 elif false 2

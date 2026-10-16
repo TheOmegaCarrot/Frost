@@ -1,0 +1,14 @@
+# `is_array` is true for Array alone. A Map and a String are not Arrays.
+#= {result: [false, false, false, false, false, false, true, false, false, false]}
+[
+    is_array(null),
+    is_array(false),
+    is_array(0),
+    is_array(0.0),
+    is_array(''),
+    is_array(x''),
+    is_array([]),
+    is_array({}),
+    is_array(fn -> null),
+    is_array(len),
+]

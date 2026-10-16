@@ -1,0 +1,9 @@
+# A lambda's body may start on the line after its `->`, and it still ends at
+# its own line break, so the next line is a new statement.
+#= {result: [2, 6]}
+def f = fn x ->
+    x + 1
+defn g(x) ->
+
+    x * 2
+[f(1), g(3)]

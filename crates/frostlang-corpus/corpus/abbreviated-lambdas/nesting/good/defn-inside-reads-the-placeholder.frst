@@ -1,0 +1,8 @@
+# A `defn` in a `do` block inside an abbreviated lambda captures the
+# placeholder like any `fn` there.
+#= {result: 10}
+def f = $(do {
+    defn scale(v) -> v * $
+    scale(2)
+})
+f(5)

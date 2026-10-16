@@ -1,0 +1,4 @@
+# A call with no arguments takes no comma.
+#= {rejects: 'found `,`'}
+def f = fn -> 1
+f(,)

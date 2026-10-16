@@ -1,0 +1,3 @@
+# An error in any of the composed functions ends the call.
+#= {raises: 'second failed'}
+compose(fn x -> x, fn x -> error('second failed'), fn x -> error('third'))(1)

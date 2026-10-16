@@ -1,0 +1,9 @@
+# A call used as a statement runs for its effect, and its result is dropped;
+# the tail value is the last statement's.
+#= {result: 'tail', printed: ['effect']}
+def f = fn -> {
+    print('effect')
+    'ignored'
+}
+f()
+'tail'

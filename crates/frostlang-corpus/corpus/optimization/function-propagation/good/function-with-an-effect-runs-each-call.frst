@@ -1,0 +1,8 @@
+# A known function with an effect runs it on every call, in call order, even
+# over constant arguments: its calls are never computed ahead of time.
+#= {result: null, printed: ['1', '2', '1']}
+def show = fn x -> print(x)
+show(1)
+show(2)
+show(1)
+null

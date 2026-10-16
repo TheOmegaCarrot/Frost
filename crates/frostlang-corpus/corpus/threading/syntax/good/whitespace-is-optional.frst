@@ -1,0 +1,4 @@
+# `@` is a token of its own, so the spaces around it are optional.
+#= {result: [2, 2, 2, 3], inputs: {xs: [1, 2]}}
+defn inc(x) -> x + 1
+[xs@len(), xs @len(), xs@ len(), xs@len()@inc()]

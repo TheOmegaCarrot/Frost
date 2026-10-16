@@ -1,0 +1,6 @@
+# A program is compiled whole before any of it runs: an unbound name in its
+# last statement rejects it, even though earlier statements are valid.
+#= {rejects: '`missing` is not defined'}
+print('never printed')
+def x = 1
+x + missing

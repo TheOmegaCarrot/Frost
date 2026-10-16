@@ -1,0 +1,7 @@
+# A comparison that would raise, in a branch never taken, never runs, whether
+# the condition is a constant the optimizer can see or a runtime value.
+#= {result: ['safe', 'safe'], inputs: {no: false}}
+[
+    if false: null < 1 else: 'safe',
+    if no: null < 1 else: 'safe',
+]

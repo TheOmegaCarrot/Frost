@@ -1,0 +1,3 @@
+# A condition that raises raises from the `if`; neither branch runs.
+#= {raises: 'division by zero', inputs: {zero: 0}}
+if 1 / zero: print('then') else: print('else')

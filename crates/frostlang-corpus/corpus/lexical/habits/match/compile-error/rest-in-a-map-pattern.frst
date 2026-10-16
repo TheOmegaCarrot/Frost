@@ -1,0 +1,4 @@
+# A Map pattern takes no rest binding: it already ignores keys it does not
+# name.
+#= {rejects: 'a Map pattern takes no rest binding', inputs: {m: {a: 1}}}
+def {a, ...r} = m

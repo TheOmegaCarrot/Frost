@@ -1,0 +1,19 @@
+# Null as a constant in every position folds to what it is at runtime: an
+# element, a value, an operand, a condition, a match target, and interpolated.
+#= {result: [null, [null], {k: null}, null, true, null, 'null arm', true, 'null', null, null, false]}
+[
+    null,
+    [null],
+    {k: null},
+    null or null,
+    null == null,
+    if null: 1,
+    match null {
+        null => 'null arm',
+    },
+    has({k: null}, 'k'),
+    $'${null}',
+    {k: null}.k,
+    {k: null}['z'],
+    null != null,
+]

@@ -1,0 +1,9 @@
+# Functions that match on their input compose with the Frost-written `compose`
+# global, over two functions and over more.
+#= {result: [['wrapped', 2], ['wrapped', ['wrapped', 3]]], inputs: {a: [1], b: 3}}
+defn inc(v) -> match v {
+    [x] => x + 1,
+    x => x,
+}
+defn wrap(v) -> ['wrapped', v]
+[compose(inc, wrap)(a), compose(inc, wrap, wrap)(b)]

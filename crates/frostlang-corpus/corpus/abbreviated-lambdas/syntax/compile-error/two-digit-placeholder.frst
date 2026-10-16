@@ -1,0 +1,4 @@
+# Placeholder numbers are a single digit: `$10` is not a tenth placeholder,
+# and it is rejected rather than read as `$1` beside a stray `0`.
+#= {rejects: 'the placeholders are'}
+def f = $($10)

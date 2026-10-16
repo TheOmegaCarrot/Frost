@@ -1,0 +1,23 @@
+# A match whose target and arms are all constant folds to the result of the
+# first arm that matches; the arms it never reaches, even ones that would
+# raise, do not run.
+#= {result: ['three', 'low', 'string', 'pair']}
+[
+    match 3 {
+        1 => error('one'),
+        3 => 'three',
+        _ => error('other'),
+    },
+    match 2 {
+        1 | 2 | 3 => 'low',
+        _ => 'high',
+    },
+    match 'x' {
+        _ is Int => 'int',
+        _ is String => 'string',
+    },
+    match [1, 2] {
+        [] => 'empty',
+        [_, _] => 'pair',
+    },
+]

@@ -1,0 +1,5 @@
+# A key spelled like a keyword cannot be a shorthand, but a computed String
+# key reaches it.
+#= {result: [1, 2], inputs: {m: {['if']: 1, ['match']: 2}}}
+def {['if']: cond, ['match']: m2} = m
+[cond, m2]

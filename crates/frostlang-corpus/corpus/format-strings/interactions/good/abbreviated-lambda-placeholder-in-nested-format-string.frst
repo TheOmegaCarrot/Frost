@@ -1,0 +1,4 @@
+# A placeholder in a format String nested two levels inside an abbreviated
+# lambda still refers to that lambda's parameter.
+#= {result: '<[x]>'}
+$($'<${$"[${$}]"}>')('x')

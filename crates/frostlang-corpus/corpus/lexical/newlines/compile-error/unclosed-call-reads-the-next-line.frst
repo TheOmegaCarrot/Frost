@@ -1,0 +1,6 @@
+# Inside an unclosed call, line breaks are insignificant, so the next line's
+# statement reads as the call's next argument; the error labels the open
+# call.
+#= {rejects: ['found `print`', 'in this call']}
+print(len([1])
+print(2)

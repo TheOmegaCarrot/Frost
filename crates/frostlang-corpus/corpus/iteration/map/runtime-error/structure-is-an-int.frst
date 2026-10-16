@@ -1,0 +1,3 @@
+# An Int is not a range to iterate: `map` over one is a type error.
+#= {raises: ['Structured', 'argument 1', 'Int']}
+map 3 with fn x -> x

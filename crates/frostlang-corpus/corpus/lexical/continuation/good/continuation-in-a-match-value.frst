@@ -1,0 +1,9 @@
+# A continuation line may extend the value a `match` matches, with the
+# arms' `{` on that continued line.
+#= {result: 'two', inputs: {m: {k: 2}}}
+match m
+    .k {
+    1 => 'one',
+    2 => 'two',
+    _ => 'other',
+}

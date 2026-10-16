@@ -1,0 +1,5 @@
+# A predicate before `and` keeps the right side from running on a value it
+# would fail on: `len(5)` is never called.
+#= {result: ['other', 'text', 'other'], inputs: {xs: ['', 'a', 5]}}
+defn describe(v) -> if is_string(v) and len(v) > 0: 'text' else: 'other'
+map xs with describe

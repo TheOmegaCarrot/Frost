@@ -1,0 +1,4 @@
+# The composed function passes its arguments to the first function, whose
+# arity check applies.
+#= {raises: ['expects 1', 'called with 0']}
+compose(fn x -> x, len)()

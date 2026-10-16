@@ -1,0 +1,4 @@
+# A comment may hold any text, non-ASCII included.
+#= {result: 1}
+# café, ☃, 日本語
+1 # déjà vu

@@ -1,0 +1,4 @@
+# The iteration forms call their global even where a value only known at
+# runtime is supplied under its name.
+#= {result: [[10, 20], 'shadow'], inputs: {transform: fn s, op -> 'shadow'}}
+[map [1, 2] with $($ * 10), transform([1], 0)]

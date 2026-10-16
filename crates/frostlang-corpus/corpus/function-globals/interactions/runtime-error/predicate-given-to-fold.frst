@@ -1,0 +1,4 @@
+# A predicate passed as a value keeps its arity: `fold` calls its function
+# with two arguments, which a predicate rejects.
+#= {raises: ['is_int', 'expects 1', 'called with 2']}
+fold([1, 2], 0, is_int)

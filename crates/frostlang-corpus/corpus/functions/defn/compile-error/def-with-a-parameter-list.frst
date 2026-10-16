@@ -1,0 +1,4 @@
+# `def` binds a value and takes no parameters; a function is defined with
+# `defn` or by binding a lambda.
+#= {rejects: '`def` takes no parameters'}
+def f(x) = x

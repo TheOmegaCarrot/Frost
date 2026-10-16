@@ -1,0 +1,19 @@
+# A form over bindings whose values the optimizer knows gives the same result
+# as over the same values supplied at runtime.
+#= {
+#=     result: [[3, 6], [3, 6], {b: 20}, {b: 20}, 6, 6],
+#=     inputs: {runtime_xs: [1, 2], runtime_m: {a: 1, b: 2}},
+#= }
+def known_xs = [1, 2]
+def known_m = {a: 1, b: 2}
+def triple = fn x -> x * 3
+def big = fn k, v -> if v > 1: {[k]: v * 10} else: {}
+def add = fn acc, x -> acc + x
+[
+    map known_xs with triple,
+    map runtime_xs with triple,
+    map known_m with big,
+    map runtime_m with big,
+    reduce known_xs init: 3 with add,
+    reduce runtime_xs init: 3 with add,
+]

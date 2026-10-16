@@ -1,0 +1,5 @@
+# An error value need not be a String: a Map raised at the bottom of a
+# recursion arrives intact at the `try_call` that catches it.
+#= {result: {depth: 0, path: [3, 2, 1]}}
+defn down(n, path) -> if n == 0: error({depth: n, path: path}) else: down(n - 1, path + [n])
+try_call(down, [3, []]).error

@@ -1,0 +1,5 @@
+# Into a lambda with one fixed parameter and a rest parameter, the threaded
+# value fills the fixed parameter and the written arguments fill the rest.
+#= {result: [[1, []], [1, [2]], [1, [2, 3]]]}
+defn split(first, ...rest) -> [first, rest]
+[1 @ split(), 1 @ split(2), 1 @ split(2, 3)]

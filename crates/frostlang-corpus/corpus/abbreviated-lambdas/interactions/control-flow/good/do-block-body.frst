@@ -1,0 +1,8 @@
+# A `do` block gives an abbreviated lambda several statements; its own
+# bindings sit beside the placeholders.
+#= {result: 8}
+def f = $(do {
+    def y = $ + 1
+    y * 2
+})
+f(3)

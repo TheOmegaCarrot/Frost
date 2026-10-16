@@ -1,0 +1,7 @@
+# Two `defn`s of one name in a lambda's body bind it twice.
+#= {rejects: ['`g`', 'already bound']}
+def f = fn -> {
+    defn g() -> 1
+    defn g() -> 2
+    g()
+}

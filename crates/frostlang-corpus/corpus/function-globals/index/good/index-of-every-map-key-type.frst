@@ -1,0 +1,4 @@
+# `index` reads a Map by a key of any valid key type.
+#= {result: ['bool', 'int', 'float', 'string', 'bytes']}
+def m = {[true]: 'bool', [1]: 'int', [1.5]: 'float', s: 'string', [x'00']: 'bytes'}
+[index(true)(m), index(1)(m), index(1.5)(m), index('s')(m), index(x'00')(m)]

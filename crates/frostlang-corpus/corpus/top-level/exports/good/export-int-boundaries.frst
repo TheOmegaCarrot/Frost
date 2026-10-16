@@ -1,0 +1,13 @@
+# Exports carry Int extremes exactly, including a value that wrapped around in
+# two's complement on overflow.
+#= {
+#=     result: null,
+#=     exports: {
+#=         max: 9223372036854775807,
+#=         min: -9223372036854775808,
+#=         wrapped: -9223372036854775808,
+#=     },
+#= }
+export def max = 9223372036854775807
+export def min = -9223372036854775808
+export def wrapped = max + 1

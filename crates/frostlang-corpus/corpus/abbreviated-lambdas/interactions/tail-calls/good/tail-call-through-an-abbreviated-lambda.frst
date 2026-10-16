@@ -1,0 +1,6 @@
+# Recursion may pass through an abbreviated lambda at every step: here the
+# recursive call is in its tail position, and the lambda is called in the
+# tail position of the `defn`.
+#= {result: 'done'}
+defn count_down(n) -> if n == 0: 'done' else: $(count_down($ - 1))(n)
+count_down(100000)

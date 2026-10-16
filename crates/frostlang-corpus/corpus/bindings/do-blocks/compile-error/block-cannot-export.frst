@@ -1,0 +1,6 @@
+# `export` is only for top-level definitions; a `do` block cannot export.
+#= {rejects: ['`export`']}
+do {
+    export def y = 1
+    y
+}

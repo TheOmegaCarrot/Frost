@@ -1,0 +1,5 @@
+# Unary `-` on a Function is a type error; it does not negate the Function's
+# result.
+#= {raises: ['negate', 'Function']}
+defn five() -> 5
+-five

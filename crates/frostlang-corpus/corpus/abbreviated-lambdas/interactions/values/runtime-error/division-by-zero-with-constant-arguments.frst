@@ -1,0 +1,6 @@
+# An abbreviated lambda called with constants that make its body fail
+# raises at runtime. Subtle: the optimizer may evaluate the call ahead of
+# time, but must not turn the error into a compile error or a value.
+#= {raises: 'division by zero'}
+def divide = $($1 / $2)
+divide(1, 0)

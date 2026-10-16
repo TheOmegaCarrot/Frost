@@ -1,0 +1,5 @@
+# A format String is single-line: one whose closing quote is on a later line is
+# unclosed.
+#= {rejects: 'unclosed format String'}
+def s = $'abc
+def'

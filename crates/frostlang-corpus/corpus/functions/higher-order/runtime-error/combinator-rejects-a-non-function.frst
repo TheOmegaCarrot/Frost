@@ -1,0 +1,4 @@
+# A Frost-written combinator checks its function argument up front, raising
+# as a native's type check does.
+#= {raises: ['curry', 'Function', 'argument 1', 'Int']}
+curry(5, 1)

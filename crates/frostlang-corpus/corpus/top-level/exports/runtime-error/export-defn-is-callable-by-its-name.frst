@@ -1,0 +1,6 @@
+# `export defn` binds a function the rest of the program calls by name, and
+# that may call itself. A completed run cannot pin a Function export, so the
+# result is observed through the error it raises.
+#= {raises: '120'}
+export defn fact(n) -> if n <= 1: 1 else: n * fact(n - 1)
+error(fact(5))

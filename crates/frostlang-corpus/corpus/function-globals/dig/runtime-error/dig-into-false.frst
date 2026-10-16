@@ -1,0 +1,4 @@
+# Only Null stops a dig. False is falsy, but it is not Null, so indexing it
+# is an error.
+#= {raises: ['Cannot index', 'Bool']}
+{a: false} @ dig('a', 'b')

@@ -1,0 +1,14 @@
+# After an `if` with no `else`, a leading `@` line continues the branch's
+# expression, not the whole `if`: a false condition still yields Null
+# without calling anything. Subtle because the `if` otherwise ends at its
+# line break.
+#= {result: [2, null], printed: ['called'], inputs: {yes: true, no: false}}
+defn inc(x) -> {
+    print('called')
+    x + 1
+}
+def taken = if yes: 1
+    @ inc()
+def skipped = if no: 1
+    @ inc()
+[taken, skipped]

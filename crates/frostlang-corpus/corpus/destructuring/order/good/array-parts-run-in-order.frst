@@ -1,0 +1,9 @@
+# The parts of an Array pattern run left to right, each nested part fully
+# before the next.
+#= {result: [1, 2], printed: ['a', 'b']}
+defn note(k) -> {
+    print(k)
+    k
+}
+def [{[note('a')]: x}, [{[note('b')]: y}]] = [{a: 1}, [{b: 2}]]
+[x, y]

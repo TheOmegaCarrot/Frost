@@ -1,0 +1,5 @@
+# Names are ASCII, so a non-ASCII shorthand key is rejected; a computed String
+# key reaches such a key instead.
+#= {rejects: 'unexpected character'}
+def {café} = {['café']: 1}
+0

@@ -1,0 +1,5 @@
+# An entry is renamed with `key: name`, not `key as name`.
+#= {rejects: 'rename a Map entry'}
+match {a: 1} {
+    {a as b} => b,
+}

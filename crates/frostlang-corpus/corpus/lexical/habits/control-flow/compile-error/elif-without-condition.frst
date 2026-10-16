@@ -1,0 +1,3 @@
+# `elif` takes a condition; the final branch is `else:`.
+#= {rejects: '`elif` takes a condition', inputs: {x: true}}
+if x: 1 elif: 2

@@ -1,0 +1,29 @@
+# Operations at the ends of the Int range that stay within it are exact: no
+# wrapping where none is due.
+#= {
+#=     result: [
+#=         9223372036854775807,
+#=         -9223372036854775808,
+#=         -1,
+#=         -9223372036854775807,
+#=         4611686018427387903,
+#=         -4611686018427387904,
+#=         1,
+#=         -1,
+#=         -1,
+#=         7,
+#=     ],
+#=     inputs: {greatest: 9223372036854775807, least: -9223372036854775808},
+#= }
+[
+    greatest - 0,
+    least + 0,
+    greatest + least,
+    -greatest,
+    greatest / 2,
+    least / 2,
+    least / least,
+    least / greatest,
+    least % greatest,
+    greatest % 10,
+]

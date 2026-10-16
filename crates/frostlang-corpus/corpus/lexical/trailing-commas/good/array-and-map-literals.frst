@@ -1,0 +1,11 @@
+# An Array or Map literal may end with a trailing comma, where another item
+# could follow; it adds no item. A one-element Array with one is still one
+# element.
+#= {result: [[1, 2], [1], {a: 1}, {[1]: 2, b: 3}, 1]}
+[
+    [1, 2,],
+    [1,],
+    {a: 1,},
+    {[1]: 2, b: 3,},
+    len([[],]),
+]

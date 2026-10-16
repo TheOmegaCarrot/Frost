@@ -1,0 +1,6 @@
+# A multiline String with no closing delimiter is unclosed; the other style's triple
+# quote does not close it.
+#= {rejects: 'unclosed multiline String'}
+def text = """
+    abc
+    '''

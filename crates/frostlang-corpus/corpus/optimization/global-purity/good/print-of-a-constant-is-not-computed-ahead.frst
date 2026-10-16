@@ -1,0 +1,7 @@
+# `print` is impure: a call of it over a constant prints when the program runs,
+# once per call, even when its value is bound and used.
+#= {result: [null, null], printed: ['once', 'a', 'a']}
+def x = print('once')
+print('a')
+print('a')
+[x, x]

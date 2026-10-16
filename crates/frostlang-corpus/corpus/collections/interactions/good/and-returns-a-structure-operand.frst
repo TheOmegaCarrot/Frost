@@ -1,0 +1,4 @@
+# `and` and `or` return an operand itself, so a structure passes through
+# unchanged rather than becoming a Bool.
+#= {result: [[1, 2], {a: 1}, []], inputs: {xs: [1, 2], m: {a: 1}}}
+[true and xs, null or m, [] or xs]

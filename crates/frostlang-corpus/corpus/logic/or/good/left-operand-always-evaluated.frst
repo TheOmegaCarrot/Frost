@@ -1,0 +1,4 @@
+# `or` always evaluates its left operand, exactly once. `print` returns Null,
+# which leaves the `or` undecided, so the right operand runs too.
+#= {result: 'fallback', printed: ['left']}
+print('left') or 'fallback'

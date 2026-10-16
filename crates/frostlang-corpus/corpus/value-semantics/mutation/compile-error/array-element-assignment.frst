@@ -1,0 +1,5 @@
+# An Array element cannot be assigned: values are immutable, so an updated
+# Array must be built and bound to a new name.
+#= {rejects: ['`=`', 'immutable']}
+def xs = [1]
+xs[0] = 2

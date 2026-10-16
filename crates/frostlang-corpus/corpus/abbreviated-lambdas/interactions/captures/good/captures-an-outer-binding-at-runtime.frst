@@ -1,0 +1,5 @@
+# An abbreviated lambda captures a binding whose value is known only at
+# runtime.
+#= {result: [6, 15], inputs: {k: 3}}
+def scale = $($ * k)
+[scale(2), scale(5)]

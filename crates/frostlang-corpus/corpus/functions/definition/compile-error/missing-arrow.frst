@@ -1,0 +1,3 @@
+# A lambda's parameters must be followed by `->`.
+#= {rejects: ['expected `->`', '`x`']}
+def f = fn x x

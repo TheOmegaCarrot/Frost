@@ -1,0 +1,3 @@
+# The Function check happens at run time on a value the compiler cannot see.
+#= {raises: ['compose', 'Function as argument 2', 'got Float'], inputs: {g: 2.5}}
+compose(len, g)

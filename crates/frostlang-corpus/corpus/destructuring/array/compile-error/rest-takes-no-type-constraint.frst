@@ -1,0 +1,4 @@
+# A rest takes no type constraint: it is always an Array.
+#= {rejects: 'expected `]`'}
+def [a, ...rest is Array] = [1, 2]
+[a, rest]

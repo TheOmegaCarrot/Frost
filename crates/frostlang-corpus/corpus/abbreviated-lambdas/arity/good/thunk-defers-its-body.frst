@@ -1,0 +1,8 @@
+# A thunk's body runs only when it is called, and again on every call.
+#= {result: [1, 1], printed: ['made', 'ran', 'ran']}
+def thunk = $(do {
+    print('ran')
+    1
+})
+print('made')
+[thunk(), thunk()]

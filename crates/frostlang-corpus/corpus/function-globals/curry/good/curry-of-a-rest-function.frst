@@ -1,0 +1,5 @@
+# Fixed and later arguments join into one list before the function binds
+# them, so a rest parameter gathers across the two.
+#= {result: [[1, [2, 3]], [2, [3, 1]]]}
+def split = fn a, ...rest -> [a, rest]
+[curry(split, 1)(2, 3), bcurry(split, 1)(2, 3)]

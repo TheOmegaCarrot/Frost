@@ -1,0 +1,5 @@
+# Bool keys are not Ints: `true` and `1`, `false` and `0` are four different
+# keys.
+#= {result: [4, 'true', 'one', 'false', 'zero']}
+def m = {[true]: 'true', [1]: 'one', [false]: 'false', [0]: 'zero'}
+[len(m), m[true], m[1], m[false], m[0]]

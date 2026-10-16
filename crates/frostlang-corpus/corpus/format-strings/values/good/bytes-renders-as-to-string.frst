@@ -1,0 +1,7 @@
+# Bytes interpolate as `to_string` renders them, and the result is still a
+# String, not Bytes. Covers empty Bytes, and bytes that are not valid UTF-8.
+#= {
+#=     result: [[true, 'String'], [true, 'String'], [true, 'String']],
+#=     inputs: {cases: [x'', x'00ff', x'68690a']},
+#= }
+transform(cases, fn b -> [$'${b}' == to_string(b), type($'${b}')])

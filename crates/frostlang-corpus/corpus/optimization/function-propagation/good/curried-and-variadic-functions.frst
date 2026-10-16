@@ -1,0 +1,8 @@
+# Known curried and variadic functions compute their results from constant
+# arguments: each curried call returns a function taking the next argument,
+# and a rest parameter gathers what remains, possibly nothing.
+#= {result: [3, [1, [2, 3]], [1, []], 6]}
+def add = fn x -> fn y -> x + y
+def split = fn first, ...rest -> [first, rest]
+def sum3 = fn a -> fn b -> fn c -> a + b + c
+[add(1)(2), split(1, 2, 3), split(1), sum3(1)(2)(3)]

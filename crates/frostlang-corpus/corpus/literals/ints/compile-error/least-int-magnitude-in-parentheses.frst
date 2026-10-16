@@ -1,0 +1,4 @@
+# Parentheses make the least Int's magnitude an operand of its own, out of range
+# before the `-` outside them can negate it.
+#= {rejects: 'Int literal out of range'}
+-(9223372036854775808)

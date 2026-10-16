@@ -1,0 +1,4 @@
+# A key that is not a name must be written in brackets, as a computed key.
+#= {rejects: 'expected a name or `[`'}
+def {42: x} = {[42]: 1}
+x

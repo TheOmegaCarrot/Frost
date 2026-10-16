@@ -1,0 +1,5 @@
+# Two Array parameters swap places through a tail call while one of them is
+# extended, so each argument reads a different old parameter.
+#= {result: [[3, 1], [4, 2]]}
+defn deal(n, a, b) -> if n == 0: [a, b] else: deal(n - 1, b + [n], a)
+deal(4, [], [])

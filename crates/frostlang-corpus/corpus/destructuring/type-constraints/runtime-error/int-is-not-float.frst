@@ -1,0 +1,4 @@
+# `is Float` rejects an Int: the numeric types are distinct.
+#= {raises: 'expected a Float', inputs: {v: 1}}
+def x is Float = v
+x

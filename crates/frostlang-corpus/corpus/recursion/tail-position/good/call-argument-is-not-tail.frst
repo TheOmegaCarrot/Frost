@@ -1,0 +1,7 @@
+# A call that is another call's argument is not in tail position, even when
+# that other call is: the outer call runs after the argument returns.
+#= {result: 495}
+defn wrap(v) -> v
+defn down(n) -> if n == 0: error('bottom') else: wrap(down(n - 1))
+defn frames(n) -> len(try_call(down, [n]).trace)
+frames(500) - frames(5)

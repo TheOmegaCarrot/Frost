@@ -1,0 +1,11 @@
+# Comparison operators need no surrounding spaces, and a `-` right after one
+# is a negation of the operand that follows.
+#= {result: [true, true, false, true, true, true]}
+[
+    1<2,
+    2>=2,
+    1==2,
+    1!=2,
+    -1<=-1,
+    0>-1,
+]

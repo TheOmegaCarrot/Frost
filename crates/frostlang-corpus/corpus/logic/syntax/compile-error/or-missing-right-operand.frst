@@ -1,0 +1,3 @@
+# `or` at the end of the input has no right operand.
+#= {rejects: 'expected an expression'}
+false or

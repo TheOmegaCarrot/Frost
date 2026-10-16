@@ -1,0 +1,6 @@
+# A function made by `rev_args`, called with `call` and an Array of
+# arguments, reverses the arguments it passes on but not the Array itself.
+#= {result: [[2, 1], [1, 2]], inputs: {n: 1}}
+def backward = rev_args(collect)
+def args = [n, 2]
+[call(backward, args), args]

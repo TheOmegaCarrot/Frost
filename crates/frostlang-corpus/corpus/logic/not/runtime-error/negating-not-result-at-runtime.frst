@@ -1,0 +1,4 @@
+# `-not x` negates the Bool that `not` yields for a value known only at
+# runtime, and a Bool cannot be negated.
+#= {raises: ['negate', 'Bool'], inputs: {x: 1}}
+-not x

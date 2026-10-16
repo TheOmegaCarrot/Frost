@@ -1,0 +1,7 @@
+# Closures made by one factory each keep their own captured Array, and calls
+# interleaved between them never mix their values.
+#= {result: [[1, 2], [1, 1, 3], [1, 4], [1, 1, 5]], inputs: {n: 1}}
+defn pusher(xs) -> fn y -> xs + [y]
+def a = pusher([n])
+def b = pusher([n, n])
+[a(2), b(3), a(4), b(5)]

@@ -1,0 +1,3 @@
+# The value threaded through a chain may change type at each step.
+#= {result: 'Int', inputs: {xs: [1, 2, 3]}}
+xs @ len() @ to_string() @ len() @ type()

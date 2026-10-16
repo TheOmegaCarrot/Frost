@@ -1,0 +1,9 @@
+# An `if` nests in each branch of another, with every condition a literal the
+# optimizer can decide ahead of time.
+#= {result: [1, 2, 3, 4]}
+[
+    if true: (if true: 1 else: 2) else: (if true: 3 else: 4),
+    if true: (if false: 1 else: 2) else: (if false: 3 else: 4),
+    if false: (if true: 1 else: 2) else: (if true: 3 else: 4),
+    if null: (if null: 1 else: 2) else: (if null: 3 else: 4),
+]

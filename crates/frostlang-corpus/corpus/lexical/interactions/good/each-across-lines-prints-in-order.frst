@@ -1,0 +1,6 @@
+# `each` threaded on a continuation line runs its function on each element in
+# order and returns the Array; a comment between the lines changes nothing.
+#= {result: [1, 2], printed: ['1', '2'], inputs: {xs: [1, 2]}}
+xs
+    # print each
+    @ each(fn x -> print(to_string(x)))

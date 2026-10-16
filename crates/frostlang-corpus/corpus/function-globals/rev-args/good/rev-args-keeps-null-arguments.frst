@@ -1,0 +1,3 @@
+# Null arguments are reversed into place like any other.
+#= {result: [null, 1, null]}
+rev_args(collect)(null, 1, null)

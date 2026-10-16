@@ -1,0 +1,3 @@
+# Frost binds names with `def`, not `const`.
+#= {rejects: 'no `const`'}
+const name = 'frost'

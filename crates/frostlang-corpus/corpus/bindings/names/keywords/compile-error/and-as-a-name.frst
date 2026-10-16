@@ -1,0 +1,5 @@
+# `and` is an operator word, reserved like a keyword, so it cannot be bound as
+# a name.
+#= {rejects: ['`and`', 'keyword']}
+def and = 1
+1

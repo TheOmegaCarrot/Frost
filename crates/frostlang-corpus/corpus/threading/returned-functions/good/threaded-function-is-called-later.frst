@@ -1,0 +1,6 @@
+# A function threaded into a call that returns a new function can be called
+# afterward: `f @ twice()(x)` is `twice(f)(x)`.
+#= {result: [7, 20], inputs: {n: 5}}
+defn twice(f) -> fn x -> f(f(x))
+defn inc(x) -> x + 1
+[inc @ twice()(n), $($ * 2) @ twice()(n)]

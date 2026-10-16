@@ -1,0 +1,7 @@
+# A branch's block may destructure, binding names local to that branch.
+#= {result: [3, 0], inputs: {pair: [1, 2], none: null}}
+defn total(p) -> if p: do {
+    def [a, b] = p
+    a + b
+} else: 0
+[total(pair), total(none)]

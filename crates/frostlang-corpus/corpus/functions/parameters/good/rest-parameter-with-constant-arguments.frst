@@ -1,0 +1,5 @@
+# A `...rest` parameter collects the remaining arguments when they are
+# constants the optimizer could compute the call over.
+#= {result: [1, [2, 3, 4]]}
+def f = fn first, ...rest -> [first, rest]
+f(1, 2, 3, 4)

@@ -1,0 +1,5 @@
+# Non-tail recursion ten thousand calls deep completes: with no call-depth
+# limit configured, depth is bounded only by what the host allows.
+#= {result: 50005000}
+defn sum(n) -> if n == 0: 0 else: n + sum(n - 1)
+sum(10000)

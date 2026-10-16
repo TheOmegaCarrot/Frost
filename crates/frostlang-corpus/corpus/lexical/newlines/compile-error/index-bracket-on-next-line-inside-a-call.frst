@@ -1,0 +1,5 @@
+# A `[` on a new line never indexes the value before it, even inside a call's
+# parentheses: it reads as the next argument, missing its comma.
+#= {rejects: 'found `[`', inputs: {xs: [1]}}
+len(xs
+    [0])

@@ -1,0 +1,3 @@
+# A String is not a structure `filter` iterates.
+#= {raises: ['Structured', 'argument 1', 'String'], inputs: {s: 'abc'}}
+filter s with fn c -> true

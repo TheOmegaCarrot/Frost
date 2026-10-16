@@ -1,0 +1,5 @@
+# A String in the format String's own quote style may stand in an
+# interpolation, escapes and all. Subtle: its quotes do not end the outer
+# format String.
+#= {result: ['ab', "it's", '"']}
+[$'${'a'}${'b'}', $'${'it\'s'}', $"${"\""}"]

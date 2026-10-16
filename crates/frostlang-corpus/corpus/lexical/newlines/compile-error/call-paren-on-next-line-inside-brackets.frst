@@ -1,0 +1,7 @@
+# A `(` on a new line never calls the value before it, even inside brackets
+# where line breaks are otherwise insignificant: in an Array, it reads as the
+# next element, missing its comma.
+#= {rejects: 'found `(`'}
+def f = fn x -> x
+[f
+    (5)]

@@ -1,0 +1,13 @@
+# Each lambda is its own scope, so sibling lambdas may name their parameters and
+# body bindings alike.
+#= {result: [1, 4, 9]}
+def f = fn x -> x
+def g = fn x -> {
+    def y = x * 2
+    y
+}
+def h = fn x -> {
+    def y = x * x
+    y
+}
+[f(1), g(2), h(3)]

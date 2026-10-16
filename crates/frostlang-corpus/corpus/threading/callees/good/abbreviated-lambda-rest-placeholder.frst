@@ -1,0 +1,8 @@
+# With only `$$`, an abbreviated lambda receives the threaded value as the
+# first element of its rest Array; with `$1` too, the rest holds only the
+# written arguments.
+#= {result: [[1, 2, 3], [2, 3]], inputs: {one: 1}}
+[one @ $($$)(2, 3), one @ $(do {
+    $1
+    $$
+})(2, 3)]

@@ -1,0 +1,3 @@
+# The `@` threading operator works inside an interpolation.
+#= {result: 'sum 6, len 3', inputs: {xs: [1, 2, 3]}}
+$'sum ${xs @ fold(0, fn a, b -> a + b)}, len ${xs @ len()}'

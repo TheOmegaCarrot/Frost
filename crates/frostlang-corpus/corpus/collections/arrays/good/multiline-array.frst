@@ -1,0 +1,10 @@
+# Inside an Array literal, newlines, blank lines, and comments separate
+# nothing: the elements are those between the commas.
+#= {result: [1, 2, 3]}
+[
+    1, # the first
+
+    2,
+    # a comment line between elements
+    3,
+]

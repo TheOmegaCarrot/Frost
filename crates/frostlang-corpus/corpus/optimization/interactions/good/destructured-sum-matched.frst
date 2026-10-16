@@ -1,0 +1,9 @@
+# Parts destructured from a known value, combined and matched, pick the arm
+# their sum selects, and the other arms never run.
+#= {result: 'three'}
+def [a, {b}] = [1, {b: 2}]
+match a + b {
+    1 | 2 => error('too small'),
+    3 => 'three',
+    _ => error('too big'),
+}

@@ -1,0 +1,12 @@
+# Map keys of different types stay distinct when the keys are known only at
+# runtime: an Int key never matches a Float key of the same value.
+#= {
+#=     result: [false, false, false, true],
+#=     inputs: {i: 1, f: 1.0, s: '1', b: x'31'},
+#= }
+[
+    {[i]: 'v'} == {[f]: 'v'},
+    {[s]: 'v'} == {[b]: 'v'},
+    {[true]: 'v'} == {[i]: 'v'},
+    {[i]: 'v', [f]: 'v'} == {[1.0]: 'v', [1]: 'v'},
+]

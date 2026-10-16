@@ -1,0 +1,5 @@
+# The lambda takes as many arguments as its highest placeholder, even when
+# lower ones go unused: `$($3)` takes three and returns the third.
+#= {result: 3}
+def third = $($3)
+third(1, 2, 3)

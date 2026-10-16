@@ -1,0 +1,12 @@
+# `try_call` over a lambda whose body raises on constants catches the error,
+# with the same message as the same error raised on a value only known at
+# runtime: computing the call ahead of time does not change the error.
+#= {result: [[false, true], [false, 'boom'], [true, 5]], inputs: {zero: 0}}
+def folded = try_call(fn -> 1 / 0)
+def at_runtime = try_call(fn -> 1 / zero)
+def outcome = fn result -> if result.ok: [true, result.value] else: [false, result.error]
+[
+    [folded.ok, folded.error == at_runtime.error],
+    outcome(try_call(fn -> error('boom'))),
+    outcome(try_call(fn -> 2 + 3)),
+]

@@ -1,0 +1,9 @@
+# The unread bindings of unread-bindings-do-not-change-the-result, over values
+# only known at runtime, leave the result unchanged.
+#= {result: 1, inputs: {text: 'never read', one: 1, pair: [1, 2]}}
+def unused = text
+def chain_a = one
+def chain_b = chain_a
+def chain_c = chain_b
+def [a, b] = pair
+a

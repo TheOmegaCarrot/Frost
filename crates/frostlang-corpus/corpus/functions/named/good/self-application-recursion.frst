@@ -1,0 +1,5 @@
+# An anonymous lambda can recurse by being passed itself, with no self-name.
+#= {result: 120}
+def maker = fn f -> fn k -> if k <= 1: 1 else: k * f(f)(k - 1)
+def fact = maker(maker)
+fact(5)

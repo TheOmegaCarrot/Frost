@@ -1,0 +1,12 @@
+# Empty values are ordinary arguments, captures, and results: an empty
+# String, Array, Map, and Bytes pass through unchanged.
+#= {
+#=     result: [['', [], {}, x''], ['', [], {}, x'']],
+#=     inputs: {es: '', ea: [], em: {}, eb: x''},
+#= }
+def ident = fn v -> v
+def hold = fn v -> fn -> v
+[
+    [ident(es), ident(ea), ident(em), ident(eb)],
+    [hold(es)(), hold(ea)(), hold(em)(), hold(eb)()],
+]

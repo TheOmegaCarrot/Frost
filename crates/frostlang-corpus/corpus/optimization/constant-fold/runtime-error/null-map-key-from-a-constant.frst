@@ -1,0 +1,5 @@
+# A Map literal whose computed key is Null raises when the program reaches it,
+# as Null is not a valid Map key.
+#= {raises: 'not a valid map key'}
+def key = null
+{[key]: 2}

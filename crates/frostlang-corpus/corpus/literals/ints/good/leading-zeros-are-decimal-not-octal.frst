@@ -1,0 +1,4 @@
+# Leading zeros do not make a decimal Int octal, as they would in C: `010` is ten.
+# Digits an octal literal could not hold, like `8`, are fine after a leading zero.
+#= {result: [10, 8, 7, 0, 9]}
+[010, 08, 007, 00, 0_9]

@@ -1,0 +1,4 @@
+# An interpolated String's quotes, backslashes, braces, and line breaks are
+# inserted verbatim, not escaped.
+#= {result: "<a\"b'c\\d{}\ne\tf>", inputs: {s: "a\"b'c\\d{}\ne\tf"}}
+$'<${s}>'

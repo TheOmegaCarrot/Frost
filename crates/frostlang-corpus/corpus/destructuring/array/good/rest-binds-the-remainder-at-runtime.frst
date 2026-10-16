@@ -1,0 +1,5 @@
+# A rest binds an Array of the elements after the named ones, for a value
+# known only at runtime.
+#= {result: [1, 2, [3, 4]], inputs: {xs: [1, 2, 3, 4]}}
+def [a, b, ...rest] = xs
+[a, b, rest]

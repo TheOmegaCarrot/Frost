@@ -1,0 +1,5 @@
+# A function's arithmetic on its parameter raises a type error when called
+# with a non-number, naming the operand types as they meet.
+#= {raises: 'String + Int'}
+defn inc(x) -> x + 1
+inc('41')

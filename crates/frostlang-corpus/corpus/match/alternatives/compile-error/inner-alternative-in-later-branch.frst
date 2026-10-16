@@ -1,0 +1,6 @@
+# An alternative nested in a later branch must also bind what the outer first
+# branch binds, in each of its own branches.
+#= {rejects: 'every alternative must bind the same names'}
+match [0, [1]] {
+    [x, 0] | [0, [x] | {y}] => 0,
+}

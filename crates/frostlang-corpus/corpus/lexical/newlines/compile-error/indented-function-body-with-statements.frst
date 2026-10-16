@@ -1,0 +1,6 @@
+# A function body holding statements goes in braces; indentation alone does
+# not make one.
+#= {rejects: 'goes in braces'}
+defn f(a) ->
+    def y = a
+    y

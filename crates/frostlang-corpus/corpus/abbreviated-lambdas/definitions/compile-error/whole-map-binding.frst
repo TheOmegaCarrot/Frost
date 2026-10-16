@@ -1,0 +1,3 @@
+# A placeholder cannot be the `as` name binding a whole Map.
+#= {rejects: ['a name after `as`', 'found `$`']}
+def {a} as $ = {a: 1}

@@ -1,0 +1,4 @@
+# A Map literal holds each written key with its value.
+#= {result: ['ada', 36, 2]}
+def person = {name: 'ada', age: 36}
+[person.name, person.age, len(person)]

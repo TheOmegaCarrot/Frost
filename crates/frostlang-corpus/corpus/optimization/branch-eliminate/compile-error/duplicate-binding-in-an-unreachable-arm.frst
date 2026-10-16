@@ -1,0 +1,7 @@
+# A pattern binding one name twice is a compile error even in a match arm after
+# one that matches every value, which no value can reach.
+#= {rejects: ['`a`', 'already bound']}
+match 1 {
+    _ => 0,
+    [a, a] => a,
+}

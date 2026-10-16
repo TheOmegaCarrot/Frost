@@ -1,0 +1,10 @@
+# A value computed by recursion can be exported, while the recursive function
+# itself stays private.
+#= {
+#=     result: 120,
+#=     exports: {fact_five: 120, fact_zero: 1},
+#= }
+defn fact(n) -> if n <= 1: 1 else: n * fact(n - 1)
+export def fact_five = fact(5)
+export def fact_zero = fact(0)
+fact_five

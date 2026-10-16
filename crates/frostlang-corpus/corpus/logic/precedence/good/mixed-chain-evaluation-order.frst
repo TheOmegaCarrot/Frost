@@ -1,0 +1,17 @@
+# In chains mixing `and` and `or`, operands run left to right, once each, and
+# only as far as the grouping requires: `a and b or c` skips `c` when `a and b`
+# is truthy, and skips `b` when `a` is falsy.
+#= {
+#=     result: [2, 3, 0, 2],
+#=     printed: ['1', '2', 'null', '3', 'false', 'null', '0', 'null', '1', '2'],
+#= }
+defn note(v) -> {
+    print(v)
+    v
+}
+[
+    note(1) and note(2) or note(3),
+    note(null) and note(2) or note(3),
+    note(false) or note(null) or note(0) or note(4),
+    note(null) or (note(1) and note(2)),
+]

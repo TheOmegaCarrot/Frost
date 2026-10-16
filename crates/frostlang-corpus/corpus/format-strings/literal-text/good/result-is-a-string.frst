@@ -1,0 +1,4 @@
+# A format String evaluates to a String, whatever it interpolates: even a lone
+# interpolation of a non-String value, and even the empty format String.
+#= {result: ['String', 'String', 'String', 'String'], inputs: {n: 7, b: x'00ff'}}
+[type($''), type($'${n}'), type($'${b}'), type($'${[n]}')]

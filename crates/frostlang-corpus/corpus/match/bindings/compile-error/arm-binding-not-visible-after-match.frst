@@ -1,0 +1,6 @@
+# A name an arm binds is scoped to that arm; it is not defined after the match.
+#= {rejects: '`x` is not defined'}
+match 1 {
+    x => x,
+}
+x

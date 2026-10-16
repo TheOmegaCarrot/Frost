@@ -1,0 +1,6 @@
+# A multiline String's closing delimiter must be on its own line, after only
+# indentation.
+#= {rejects: 'closing delimiter of multiline String must be on its own line'}
+def text = """
+    hello
+    world"""

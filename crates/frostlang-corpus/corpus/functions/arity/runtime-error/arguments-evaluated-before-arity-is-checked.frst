@@ -1,0 +1,5 @@
+# Arguments are evaluated before the arity check, so an error in an argument
+# wins over a wrong argument count.
+#= {raises: 'division by zero'}
+def f = fn x -> x
+f(1 / 0, 2)

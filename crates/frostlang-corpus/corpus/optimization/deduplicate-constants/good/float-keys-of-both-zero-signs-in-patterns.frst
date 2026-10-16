@@ -1,0 +1,9 @@
+# Map patterns keyed by 0.0 and -0.0 look up the same entry, as the two keys
+# are equal; the first such arm matches whichever zero the Map holds.
+#= {result: ['positive zero arm', 'positive zero arm'], inputs: {pos: {[0.0]: 1}, neg: {[-0.0]: 1}}}
+defn which(m) -> match m {
+    {[0.0]: _} => 'positive zero arm',
+    {[-0.0]: _} => 'negative zero arm',
+    _ => 'neither',
+}
+[which(pos), which(neg)]

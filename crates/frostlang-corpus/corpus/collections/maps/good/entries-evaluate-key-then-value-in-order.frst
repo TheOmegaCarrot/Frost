@@ -1,0 +1,13 @@
+# Entries are evaluated in the order written, each key before its value.
+#= {
+#=     result: {[1]: 'one', [2]: 'two'},
+#=     printed: ['key 1', 'value 1', 'key 2', 'value 2'],
+#= }
+defn noisy(label, v) -> {
+    print(label)
+    v
+}
+{
+    [noisy('key 1', 1)]: noisy('value 1', 'one'),
+    [noisy('key 2', 2)]: noisy('value 2', 'two'),
+}

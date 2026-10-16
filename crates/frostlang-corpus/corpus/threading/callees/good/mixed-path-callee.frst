@@ -1,0 +1,4 @@
+# A callee path may mix `.` access and indexing in any order.
+#= {result: [6, 8], inputs: {n: 3}}
+def lib = {ops: [fn x -> x * 2, {inc: fn x -> x + 5}]}
+[n @ lib.ops[0](), n @ lib['ops'][1].inc()]

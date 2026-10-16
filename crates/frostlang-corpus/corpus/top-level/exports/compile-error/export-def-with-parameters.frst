@@ -1,0 +1,4 @@
+# `export def` takes no parameters; a function is exported with `export defn`,
+# which the diagnostic suggests.
+#= {rejects: ['takes no parameters', 'export defn']}
+export def f(x) -> x

@@ -1,0 +1,5 @@
+# `map` with an abbreviated lambda over an Array known only at runtime,
+# including the empty and single-element cases.
+#= {result: [[2, 4, 6], [], [-2]], inputs: {xs: [1, 2, 3], none: [], one: [-1]}}
+def double = $($ * 2)
+[map xs with double, map none with double, map one with double]

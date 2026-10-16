@@ -1,0 +1,8 @@
+# A match arm binding a name that is also a constant binding outside reads the
+# matched runtime value, not the constant.
+#= {result: [9, 1], inputs: {n: 9}}
+def x = 1
+def r = match n {
+    x => x,
+}
+[r, x]

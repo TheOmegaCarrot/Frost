@@ -1,0 +1,7 @@
+# An iteration whose operation prints for some elements runs in order, while
+# the pure computation beside it gives the same values as ever.
+#= {result: [2, 40, 6], printed: ['big 20']}
+map [1, 20, 3] with fn x -> if x > 10: do {
+    print($'big ${x}')
+    x * 2
+} else: x * 2

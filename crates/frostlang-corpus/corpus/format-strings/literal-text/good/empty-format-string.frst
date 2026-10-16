@@ -1,0 +1,3 @@
+# An empty format String, in either quote style, is the empty String.
+#= {result: ['', '', true]}
+[$'', $"", $'' == '']

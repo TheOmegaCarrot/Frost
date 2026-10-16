@@ -1,0 +1,4 @@
+# `<=` is one token: written with a space inside, as `< =`, it is a `<` whose
+# right operand is missing.
+#= {rejects: 'expected an expression', inputs: {a: 1, b: 2}}
+a < = b

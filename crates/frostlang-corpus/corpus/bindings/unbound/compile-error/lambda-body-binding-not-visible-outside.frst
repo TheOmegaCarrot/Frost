@@ -1,0 +1,7 @@
+# A binding in a lambda's block body is local to the lambda.
+#= {rejects: ['`local`', 'not defined']}
+def f = fn -> {
+    def local = 1
+    local
+}
+local

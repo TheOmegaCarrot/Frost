@@ -1,0 +1,4 @@
+# A parenthesized `if` with a constant condition is an operand like any other
+# value.
+#= {result: [11, 12]}
+[(if true: 1 else: 2) + 10, (if false: 1 else: 2) + 10]

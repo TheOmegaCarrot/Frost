@@ -1,0 +1,4 @@
+# Arguments are evaluated left to right, so the first failing one wins.
+#= {raises: 'left'}
+def f = fn a, b -> a
+f(error('left'), error('right'))

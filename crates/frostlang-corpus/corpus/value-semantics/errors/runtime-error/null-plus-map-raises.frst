@@ -1,0 +1,4 @@
+# Null is not an empty Map: adding a Map to it raises a type error.
+#= {raises: ['cannot add', 'Null + Map'], inputs: {v: 1, nothing: null}}
+def m = {k: v}
+nothing + m

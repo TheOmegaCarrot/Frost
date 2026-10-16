@@ -1,0 +1,5 @@
+# An exported Map keeps its value though a merge replacing one of its keys is
+# derived from it.
+#= {result: {k: 2, j: 3}, exports: {m: {k: 1}}, inputs: {v: 1}}
+export def m = {k: v}
+m + {k: 2, j: 3}

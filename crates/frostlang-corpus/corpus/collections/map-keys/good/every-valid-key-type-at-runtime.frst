@@ -1,0 +1,14 @@
+# Keys of every valid type, known only at runtime, build a Map and read it
+# back, the same as constant keys do.
+#= {
+#=     result: ['bool', 'int', 'float', 'string', 'bytes', 5],
+#=     inputs: {b: true, i: 1, f: 1.5, s: 's', y: x'00'},
+#= }
+def m = {
+    [b]: 'bool',
+    [i]: 'int',
+    [f]: 'float',
+    [s]: 'string',
+    [y]: 'bytes',
+}
+[m[b], m[i], m[f], m[s], m[y], len(m)]

@@ -1,0 +1,4 @@
+# An `export defn` may not rebind a name already defined at the top level.
+#= {rejects: ['`f`', 'already bound']}
+def f = 1
+export defn f() -> 2

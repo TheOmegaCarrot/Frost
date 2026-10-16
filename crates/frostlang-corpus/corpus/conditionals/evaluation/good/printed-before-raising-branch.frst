@@ -1,0 +1,9 @@
+# The condition's side effects happen before the branch is chosen, so they
+# are visible even when the taken branch then raises and is caught.
+#= {result: [false, 'boom'], printed: ['cond']}
+defn attempt() -> if do {
+    print('cond')
+    false
+}: 1 else: error('boom')
+def outcome = try_call(attempt)
+[outcome.ok, outcome.error]

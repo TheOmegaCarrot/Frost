@@ -1,0 +1,6 @@
+# A `(` on the next line starts a new statement rather than calling, so the least Int
+# literal ending the line before it is whole: subtle, since `(` on the same line
+# would make the magnitude a callee, out of range.
+#= {result: [-9223372036854775808, 'Int']}
+def x = -9223372036854775808
+([x, type(x)])

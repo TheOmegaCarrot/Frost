@@ -1,0 +1,3 @@
+# Null has no fields.
+#= {raises: ['Cannot index value', 'Null']}
+null.a

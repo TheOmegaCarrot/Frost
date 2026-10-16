@@ -1,0 +1,7 @@
+# A division by zero inside a match guard raises when the guard is tested;
+# it does not count as the guard failing and fall through to the next arm.
+#= {raises: 'division by zero', inputs: {n: 5, zero: 0}}
+match n {
+    _ if: n / zero > 0 => 'positive',
+    _ => 'other',
+}

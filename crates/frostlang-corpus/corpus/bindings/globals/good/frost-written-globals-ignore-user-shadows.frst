@@ -1,0 +1,9 @@
+# Globals written in Frost refer to other globals, not to the script's
+# bindings: shadowing `call` and `reverse` does not change what `curry` and
+# `rev_args` do, though the script's own calls see its bindings.
+#= {result: [3, [2, 1], 'mine', 'mine']}
+def call = fn ...args -> 'mine'
+def reverse = fn xs -> 'mine'
+def add1 = curry(fn a, b -> a + b, 1)
+def pair = rev_args(fn a, b -> [a, b])
+[add1(2), pair(1, 2), call(1), reverse([1])]

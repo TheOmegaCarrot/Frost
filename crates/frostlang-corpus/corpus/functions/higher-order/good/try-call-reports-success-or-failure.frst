@@ -1,0 +1,6 @@
+# `try_call` turns a lambda's outcome into a Map: its value on success, or
+# its error on failure.
+#= {result: [{ok: true, value: 6}, false, 'boom']}
+def good = try_call(fn x -> x + 1, [5])
+def bad = try_call(fn -> error('boom'))
+[good, bad.ok, bad.error]

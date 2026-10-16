@@ -1,0 +1,16 @@
+# An entry whose value a later duplicate key replaces is still evaluated,
+# side effects and all. Subtle because the value never reaches the Map.
+#= {
+#=     result: {a: 2},
+#=     printed: ['first', 'second'],
+#= }
+{
+    a: do {
+        print('first')
+        1
+    },
+    a: do {
+        print('second')
+        2
+    },
+}

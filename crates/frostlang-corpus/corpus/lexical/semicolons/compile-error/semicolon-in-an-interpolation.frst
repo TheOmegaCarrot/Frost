@@ -1,0 +1,4 @@
+# An interpolation holds one expression, not statements, so `;` cannot
+# separate statements inside it.
+#= {rejects: 'found `;`'}
+$'${1; 2}'

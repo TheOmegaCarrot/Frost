@@ -1,0 +1,3 @@
+# The arity of a function known only at runtime is still checked at the call.
+#= {raises: ['expects 2 argument', 'called with 3'], inputs: {f: fn a, b -> a}}
+f(1, 2, 3)

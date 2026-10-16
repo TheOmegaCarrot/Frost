@@ -1,0 +1,6 @@
+# Outside brackets, a line cannot continue the previous one with a binary
+# operator: `* 2` begins a new statement, and `*` cannot begin an expression.
+#= {rejects: ['expected an expression', '`*`']}
+def total = 3
+    * 2
+total

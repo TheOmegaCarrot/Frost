@@ -1,0 +1,16 @@
+# A multiline String takes the escapes `\t`, `\\`, `\0`, `\'`, `\"`, and `\u{...}`,
+# both quote escapes whichever its delimiter.
+#= {result: ['\t\n\\\n\0\n\'\n"\n\u{e9}', 11, '"\n\'']}
+def text = '''
+    \t
+    \\
+    \0
+    \'
+    \"
+    \u{e9}
+    '''
+def double = """
+    \"
+    \'
+    """
+[text, len(text), double]

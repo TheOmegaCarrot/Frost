@@ -1,0 +1,10 @@
+# Functions are truthy conditions: a lambda, an abbreviated lambda, a named
+# function, and a global alike.
+#= {result: ['T', 'T', 'T', 'T']}
+defn named(x) -> x
+[
+    if fn -> null: 'T' else: 'F',
+    if $(null): 'T' else: 'F',
+    if named: 'T' else: 'F',
+    if len: 'T' else: 'F',
+]

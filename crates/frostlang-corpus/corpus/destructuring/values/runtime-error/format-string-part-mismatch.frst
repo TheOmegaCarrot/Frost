@@ -1,0 +1,5 @@
+# A format String part that does not equal its value raises, quoting the
+# part's source.
+#= {raises: "expected `$'v${n}'`", inputs: {xs: [2, 'v3']}}
+def [n, $'v${n}'] = xs
+n

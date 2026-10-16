@@ -1,0 +1,14 @@
+# `is_float` is true for Float alone. Int 0 is not a Float.
+#= {result: [false, false, false, true, false, false, false, false, false, false]}
+[
+    is_float(null),
+    is_float(false),
+    is_float(0),
+    is_float(0.0),
+    is_float(''),
+    is_float(x''),
+    is_float([]),
+    is_float({}),
+    is_float(fn -> null),
+    is_float(len),
+]

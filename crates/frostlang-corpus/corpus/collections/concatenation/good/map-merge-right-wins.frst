@@ -1,0 +1,3 @@
+# When both Maps hold a key, the right operand's value wins, even a Null one.
+#= {result: [{a: 2, b: 1, c: 3}, {a: null}], inputs: {left: {a: 1, b: 1}, right: {a: 2, c: 3}}}
+[left + right, {a: 1} + {a: null}]

@@ -1,0 +1,4 @@
+# A String's length counts code points, not bytes: each of `é`, `日`, and an
+# emoji outside the Basic Multilingual Plane is one.
+#= {result: [5, 5, 2, 1, 3]}
+[len('hello'), len('héllo'), len('日本'), len('😀'), len('a😀b')]

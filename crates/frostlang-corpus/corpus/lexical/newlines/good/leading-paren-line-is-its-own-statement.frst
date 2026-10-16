@@ -1,0 +1,8 @@
+# A `(` on a new line does not call the value before it: `(` can begin a
+# statement, so the line is a new statement. Here `r` is bound to the
+# function itself.
+#= {result: [true, 5]}
+def f = fn x -> x * 100
+def r = f
+(5)
+[is_function(r), (5)]

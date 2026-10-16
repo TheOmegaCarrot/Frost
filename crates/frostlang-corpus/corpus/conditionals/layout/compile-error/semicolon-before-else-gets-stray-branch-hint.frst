@@ -1,0 +1,8 @@
+# An `else` after a `;` starts a statement and so continues no `if`, exactly
+# like an `else` at the start of a line, and gets the same hint on the
+# conditional's form.
+#= {
+#=     rejects: ['found `else`', 'written `if a: b else: c`'],
+#=     known_issue: 'FROST-159',
+#= }
+if true: 1; else: 2

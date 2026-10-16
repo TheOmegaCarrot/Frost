@@ -1,0 +1,5 @@
+# An Int key reads an Array position, a negative one counting from the end,
+# as indexing does.
+#= {result: [5, 6, 6, 5]}
+def pair = [5, 6]
+[index(0)(pair), index(1)(pair), index(-1)(pair), index(-2)(pair)]

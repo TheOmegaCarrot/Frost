@@ -1,0 +1,9 @@
+# `error` raises only when it runs: in a branch not taken or an operand
+# short-circuited away, it does nothing.
+#= {result: ['safe', false, true, null]}
+[
+    if false: error('if') else: 'safe',
+    false and error('and'),
+    true or error('or'),
+    null and error('null and'),
+]

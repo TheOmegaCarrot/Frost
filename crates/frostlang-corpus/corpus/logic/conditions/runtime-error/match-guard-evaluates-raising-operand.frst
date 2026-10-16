@@ -1,0 +1,7 @@
+# A guard's `or` with a falsy left operand evaluates its right operand, so an
+# error there surfaces rather than counting as a failed guard.
+#= {raises: 'reached', inputs: {x: 0}}
+match x {
+    n if: n > 1 or error('reached') => 'big',
+    _ => 'other',
+}

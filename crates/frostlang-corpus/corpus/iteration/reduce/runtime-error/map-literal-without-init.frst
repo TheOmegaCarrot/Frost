@@ -1,0 +1,4 @@
+# A constant `reduce` over a Map literal without `init:` raises when the
+# script runs, like one over a runtime Map.
+#= {raises: 'requires an initializer'}
+reduce {a: 1} with fn acc, k, v -> acc + v

@@ -1,0 +1,3 @@
+# Separators are not digits, so an exponent of separators alone has no digits.
+#= {rejects: ['invalid number', 'exponent needs digits']}
+1.5e+__

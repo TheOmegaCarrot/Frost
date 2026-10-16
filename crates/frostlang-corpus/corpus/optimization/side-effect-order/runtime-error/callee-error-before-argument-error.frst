@@ -1,0 +1,4 @@
+# A callee that raises raises before any argument is evaluated, though each
+# argument would raise too.
+#= {raises: 'callee raised'}
+error('callee raised')(error('argument raised'))

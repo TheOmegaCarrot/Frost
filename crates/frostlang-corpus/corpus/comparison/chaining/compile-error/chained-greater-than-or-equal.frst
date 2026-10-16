@@ -1,0 +1,3 @@
+# `>=` does not chain with itself.
+#= {rejects: 'cannot chain', inputs: {a: 3, b: 2, c: 1}}
+a >= b >= c

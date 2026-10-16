@@ -1,0 +1,9 @@
+# After `->`, braces starting with `[` are a Map literal when they parse as
+# one, multiline included.
+#= {result: [{[3]: 1}, {[3]: 1, b: 2}]}
+def one = fn x -> {[x]: 1}
+def two = fn x -> {
+    [x]: 1,
+    b: 2,
+}
+[one(3), two(3)]

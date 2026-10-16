@@ -1,0 +1,4 @@
+# A destructured Function and argument Array feed `call`.
+#= {result: 7, inputs: {job: {f: fn a, b -> a + b, args: [3, 4]}}}
+def {f, args} = job
+call(f, args)

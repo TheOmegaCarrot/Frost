@@ -1,0 +1,4 @@
+# `and` always evaluates its left operand, exactly once. `print` returns Null,
+# which decides the `and`, so the right operand is skipped.
+#= {result: null, printed: ['left']}
+print('left') and print('right')

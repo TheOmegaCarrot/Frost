@@ -1,0 +1,4 @@
+# An exported def that binds no name is an error too.
+#= {rejects: 'binds no name', inputs: {xs: [1, 1]}}
+export def [_, 1] = xs
+0

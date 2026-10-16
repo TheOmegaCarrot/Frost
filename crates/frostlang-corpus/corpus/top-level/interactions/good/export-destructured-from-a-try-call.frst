@@ -1,0 +1,3 @@
+# An exported Map pattern over a `try_call` result exports its parts.
+#= {result: null, exports: {ok: true, value: 5}, inputs: {n: 5}}
+export def {ok, value} = try_call(fn -> n)

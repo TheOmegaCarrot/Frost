@@ -1,0 +1,4 @@
+# `+` does not convert between Int and String: an Int plus a String is a type
+# error naming both operand types, left first.
+#= {raises: 'Int + String'}
+1 + '1'

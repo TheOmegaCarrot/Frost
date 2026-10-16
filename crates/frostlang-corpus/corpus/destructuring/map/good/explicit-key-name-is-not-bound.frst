@@ -1,0 +1,5 @@
+# In `a: [a]` the key is named `a`, but only the nested part's `a` is bound,
+# so there is no conflict between them.
+#= {result: 1, inputs: {m: {a: [1]}}}
+def {a: [a]} = m
+a

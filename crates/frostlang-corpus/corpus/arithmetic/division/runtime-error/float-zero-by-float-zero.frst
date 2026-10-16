@@ -1,0 +1,4 @@
+# 0.0 / 0.0 raises a division by zero. Frost Floats are never NaN, so there is
+# no value for the quotient to be.
+#= {raises: 'division by zero'}
+0.0 / 0.0

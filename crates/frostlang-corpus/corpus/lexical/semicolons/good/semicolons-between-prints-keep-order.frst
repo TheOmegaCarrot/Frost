@@ -1,0 +1,3 @@
+# Statements separated by `;` run in order, left to right.
+#= {result: null, printed: ['a', 'b', 'c']}
+print('a'); print('b'); print('c')

@@ -1,0 +1,12 @@
+# With constant conditions, which the optimizer may decide ahead of time, `if`
+# still takes the branch for every truthy value and skips it for Null and false.
+#= {result: ['else', 'else', 'then', 'then', 'then', 'then', 'then']}
+[
+    if null: 'then' else: 'else',
+    if false: 'then' else: 'else',
+    if 0: 'then' else: 'else',
+    if '': 'then' else: 'else',
+    if []: 'then' else: 'else',
+    if {}: 'then' else: 'else',
+    if x'': 'then' else: 'else',
+]

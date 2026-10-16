@@ -1,0 +1,12 @@
+# Arithmetic binds tighter than `and` and `or`. `0 or 1 + 2` is `0 or 3`, which
+# is 0; were `or` tighter it would be `(0 or 1) + 2`, which is 2.
+#= {
+#=     result: [0, 6, 0, 6],
+#=     inputs: {zero: 0, one: 1, two: 2, three: 3},
+#= }
+[
+    0 or 1 + 2,
+    1 + 1 and 2 * 3,
+    zero or one + two,
+    one + one and two * three,
+]

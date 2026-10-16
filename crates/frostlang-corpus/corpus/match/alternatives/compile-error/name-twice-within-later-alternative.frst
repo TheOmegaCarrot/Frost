@@ -1,0 +1,6 @@
+# Within a later alternative, binding a name twice is rejected, as in any
+# single pattern.
+#= {rejects: '`x` is already bound'}
+match [1, 1] {
+    [x, 0] | [x, x] => 0,
+}

@@ -1,0 +1,6 @@
+# A nested rest is bound once its Array pattern ends, so a later pin may read
+# it, over a literal the optimizer may match and at runtime.
+#= {result: [[2, 3], []], inputs: {xs: [[4], []]}}
+def [[a, ...r], (r)] = [[1, 2, 3], [2, 3]]
+def [[b, ...s], (s)] = xs
+[r, s]

@@ -1,0 +1,5 @@
+# A key whose value is Null is present, also when the optimizer may match the
+# literal Map ahead of time.
+#= {result: null}
+def {a} = {a: null}
+a

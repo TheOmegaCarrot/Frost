@@ -1,0 +1,5 @@
+# A placeholder's scope ends at the `)` of its abbreviated lambda; one used
+# after it is outside any lambda.
+#= {rejects: ['found `$1`', 'only inside `$( ... )`']}
+def f = $($1 + 2)
+def y = $1

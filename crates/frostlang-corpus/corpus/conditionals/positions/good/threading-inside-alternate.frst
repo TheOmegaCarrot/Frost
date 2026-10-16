@@ -1,0 +1,12 @@
+# `@` after an unparenthesized `if` threads into the alternate alone, as any
+# operator does; parenthesized, it threads the whole `if`'s value.
+#= {
+#=     result: ['ab', 3, 2, 3],
+#=     inputs: {t: true, f: false},
+#= }
+[
+    if t: 'ab' else: 'abc' @ len(),
+    if f: 'ab' else: 'abc' @ len(),
+    (if t: 'ab' else: 'abc') @ len(),
+    (if f: 'ab' else: 'abc') @ len(),
+]

@@ -1,0 +1,5 @@
+# An abbreviated lambda may sit inside a `fn` lambda, and captures that
+# lambda's parameters like any other name.
+#= {result: 11}
+def adder = fn k -> $($ + k)
+adder(10)(1)

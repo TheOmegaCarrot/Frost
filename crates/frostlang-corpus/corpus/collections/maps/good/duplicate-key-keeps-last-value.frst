@@ -1,0 +1,5 @@
+# When a literal repeats a key, the later entry's value replaces the earlier
+# one, and the Map holds the key once.
+#= {result: [{a: 10, b: 0}, 2]}
+def m = {a: 42, b: 0, a: 10}
+[m, len(m)]

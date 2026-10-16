@@ -1,0 +1,3 @@
+# A threaded call's argument list must be closed.
+#= {rejects: 'not closed', inputs: {xs: [1]}}
+xs @ collect(1

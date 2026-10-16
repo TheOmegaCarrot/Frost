@@ -1,0 +1,10 @@
+# Negating a least Int only known at runtime wraps back to the least Int, as a
+# folded negation does; negating the greatest Int does not overflow.
+#= {
+#=     result: [-9223372036854775808, -9223372036854775807],
+#=     inputs: {least: -9223372036854775808, greatest: 9223372036854775807},
+#= }
+[
+    -least,
+    -greatest,
+]

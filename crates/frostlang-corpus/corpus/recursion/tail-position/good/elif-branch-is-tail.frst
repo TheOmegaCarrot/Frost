@@ -1,0 +1,8 @@
+# An `elif` branch in tail position is a tail call, though its condition is
+# not: the backtrace from the bottom does not grow with the depth.
+#= {result: 0}
+defn down(n) -> if n == 0: error('bottom')
+    elif n > 0: down(n - 1)
+    else: null
+defn frames(n) -> len(try_call(down, [n]).trace)
+frames(500) - frames(5)

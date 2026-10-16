@@ -1,0 +1,7 @@
+# An error raised deep in a chain of calls, with nothing catching it,
+# propagates out of every caller and ends the program.
+#= {raises: 'deep'}
+defn inner() -> [error('deep')]
+defn middle() -> [inner()]
+defn outer() -> [middle()]
+outer()

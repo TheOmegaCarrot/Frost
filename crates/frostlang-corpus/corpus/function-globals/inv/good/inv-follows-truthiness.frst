@@ -1,0 +1,11 @@
+# `inv` negates truthiness: only Null and False are falsy, so 0, the empty
+# String, and the empty Array all invert to false.
+#= {result: [true, true, false, false, false, false]}
+[
+    inv(fn -> null)(),
+    inv(fn -> false)(),
+    inv(fn -> 0)(),
+    inv(fn -> '')(),
+    inv(fn -> [])(),
+    inv(fn -> true)(),
+]

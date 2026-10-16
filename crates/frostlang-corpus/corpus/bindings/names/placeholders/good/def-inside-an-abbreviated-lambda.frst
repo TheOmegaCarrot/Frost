@@ -1,0 +1,8 @@
+# A `do` block inside an abbreviated lambda may bind ordinary names, reading
+# the placeholders in their values.
+#= {result: [3, 12]}
+def f = $(do {
+    def doubled = $ * 2
+    doubled + 1
+})
+[f(1), f(5) + 1]

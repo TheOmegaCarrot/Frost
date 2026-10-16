@@ -1,0 +1,3 @@
+# `a @ f(x, y)` is `f(a, x, y)` when every operand is known only at runtime.
+#= {result: [1, 2, 3], inputs: {a: 1, b: 2, c: 3, three: fn x, y, z -> [x, y, z]}}
+a @ three(b, c)

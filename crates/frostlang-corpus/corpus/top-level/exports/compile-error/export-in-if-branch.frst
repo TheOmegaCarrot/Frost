@@ -1,0 +1,3 @@
+# `export` is only allowed at the top level, not as an `if` branch.
+#= {rejects: 'only allowed at the top level'}
+if true: export def x = 1

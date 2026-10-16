@@ -1,0 +1,5 @@
+# Outside brackets, `not` must have its operand on the same line.
+#= {rejects: ['expected an expression', 'line break']}
+def x = not
+    true
+x

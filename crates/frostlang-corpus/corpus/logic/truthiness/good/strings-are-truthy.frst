@@ -1,0 +1,27 @@
+# Every String is truthy, including the empty String and text that reads as a
+# falsy value, such as 'false', 'null', or '0'. Non-ASCII text is no different.
+#= {
+#=     result: [
+#=         [true, true, true, true, true, true],
+#=         [true, true, true, true, true, true],
+#=     ],
+#=     inputs: {empty: '', f: 'false', n: 'null', zero: '0', space: ' ', accented: 'ñé'},
+#= }
+[
+    [
+        not not '',
+        not not 'false',
+        not not 'null',
+        not not '0',
+        not not ' ',
+        not not 'ñé',
+    ],
+    [
+        not not empty,
+        not not f,
+        not not n,
+        not not zero,
+        not not space,
+        not not accented,
+    ],
+]

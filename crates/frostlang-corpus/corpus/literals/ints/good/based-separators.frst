@@ -1,0 +1,21 @@
+# In a based Int, `_` separators may also come straight after the prefix, and never
+# change the value.
+#= {result: [65535, 3735928559, 255, 255, 15, 15, 16, 240, 1, 1, 2, 0, 63, 63, 15, 420]}
+[
+    0xff_ff,
+    0xDEAD_BEEF,
+    0x_ff,
+    0x__ff,
+    0xf_,
+    0x_f_,
+    0X_1_0,
+    0b1111_0000,
+    0b_1,
+    0b1_,
+    0B1__0,
+    0b_0_,
+    0o_7_7,
+    0o7_7,
+    0o17_,
+    0O_6_4_4,
+]

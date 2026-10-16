@@ -1,0 +1,10 @@
+# Structures may be exported, and an export holding a structure built from
+# another export is independent of it.
+#= {
+#=     result: 3,
+#=     exports: {base: [1, 2], extended: [1, 2, 3], config: {name: 'x', tags: []}},
+#= }
+export def base = [1, 2]
+export def extended = base + [3]
+export def config = {name: 'x', tags: []}
+len(extended)

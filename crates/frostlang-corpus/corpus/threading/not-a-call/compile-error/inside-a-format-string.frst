@@ -1,0 +1,4 @@
+# A threaded call without parentheses is rejected inside a format String's
+# interpolation.
+#= {rejects: ['right side of `@` must be a call', 'try `len()`'], inputs: {xs: [1]}}
+$'${xs @ len}'

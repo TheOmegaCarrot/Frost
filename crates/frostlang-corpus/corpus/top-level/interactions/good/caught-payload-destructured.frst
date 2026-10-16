@@ -1,0 +1,5 @@
+# A caught Map payload is destructured straight out of the `try_call` result
+# with a nested Map pattern.
+#= {result: [404, 'missing']}
+def {error: {code, why}} = try_call(fn -> error({code: 404, why: 'missing'}))
+[code, why]

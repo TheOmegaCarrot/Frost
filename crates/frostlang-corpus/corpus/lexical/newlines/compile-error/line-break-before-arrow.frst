@@ -1,0 +1,4 @@
+# A lambda's `->` stays on the line of its parameters.
+#= {rejects: 'found a line break'}
+def f = fn x
+    -> x

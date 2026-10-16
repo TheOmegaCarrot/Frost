@@ -1,0 +1,4 @@
+# `compose` checks every argument is a function, naming the bad one's
+# position.
+#= {raises: ['compose', 'argument 3', 'String']}
+compose(fn x -> x, fn x -> x, 'nope')

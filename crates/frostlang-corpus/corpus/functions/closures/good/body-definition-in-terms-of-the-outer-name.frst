@@ -1,0 +1,9 @@
+# A body definition's right-hand side reads the outer binding of the name it
+# is defining, since the new binding starts only after it.
+#= {result: [11, 10]}
+def x = 10
+def f = fn -> {
+    def x = x + 1
+    x
+}
+[f(), x]

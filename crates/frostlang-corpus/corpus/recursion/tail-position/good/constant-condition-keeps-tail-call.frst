@@ -1,0 +1,7 @@
+# A branch chosen by a constant condition is still in tail position. Subtle:
+# the optimizer may drop the `if` and keep only the branch, which must stay a
+# tail call.
+#= {result: 0}
+defn down(n) -> if n == 0: error('bottom') else: if true: down(n - 1) else: 'never'
+defn frames(n) -> len(try_call(down, [n]).trace)
+frames(500) - frames(5)

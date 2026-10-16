@@ -1,0 +1,5 @@
+# A filter predicate that is an `if` with no `else` keeps an element exactly
+# when the taken branch is truthy: the implicit Null drops the rest. Subtle:
+# the consequent's own value decides, so a kept `false` would be dropped too.
+#= {result: [2, 3], inputs: {xs: [1, 2, 3]}}
+filter xs with fn x -> if x > 1: x

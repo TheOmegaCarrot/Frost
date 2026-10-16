@@ -1,0 +1,3 @@
+# A parenthesized `if` is an operand like any other value.
+#= {result: [11, 12], inputs: {t: true, f: false}}
+[(if t: 1 else: 2) + 10, (if f: 1 else: 2) + 10]

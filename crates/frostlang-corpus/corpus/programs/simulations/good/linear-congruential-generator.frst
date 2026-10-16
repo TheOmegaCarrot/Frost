@@ -1,0 +1,32 @@
+# A 64-bit linear congruential generator run for five thousand steps by
+# tail recursion: every multiply and add wraps in two's complement, which is
+# exactly the modulus the generator needs. The last digit of each value is
+# tallied into an Int-keyed Map; since the remainder takes the dividend's
+# sign, negative values land under negative keys and 0 collects both signs.
+#= {
+#=     result: {
+#=         first: [-7964744663189004623, 4159066171780167020, 7615522811268512075],
+#=         last: 1122341017991637906,
+#=         tally: {
+#=             [-9]: 254, [-8]: 250, [-7]: 240, [-6]: 259, [-5]: 255,
+#=             [-4]: 239, [-3]: 248, [-2]: 262, [-1]: 238, [0]: 501,
+#=             [1]: 247, [2]: 230, [3]: 266, [4]: 257, [5]: 238,
+#=             [6]: 252, [7]: 239, [8]: 250, [9]: 275,
+#=         },
+#=     },
+#=     inputs: {seed: 42, steps: 5000},
+#= }
+defn next(x) -> x * 6364136223846793005 + 1442695040888963407
+
+defn first_values(x, n) -> if n == 0: [] else: do {
+    def value = next(x)
+    [value] + first_values(value, n - 1)
+}
+
+defn run(x, n, tally) -> if n == 0: {last: x, tally} else: do {
+    def value = next(x)
+    def digit = value % 10
+    run(value, n - 1, tally + {[digit]: (tally[digit] or 0) + 1})
+}
+
+run(seed, steps, {}) + {first: first_values(seed, 3)}

@@ -1,0 +1,5 @@
+# `as` binds the whole Map only after every entry, so no computed key can read
+# it.
+#= {rejects: '`m` is not defined'}
+def {[m.k]: x} as m = {}
+x

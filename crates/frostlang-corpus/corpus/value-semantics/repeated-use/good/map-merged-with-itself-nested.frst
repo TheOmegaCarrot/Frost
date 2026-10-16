@@ -1,0 +1,14 @@
+# A Map merged with a Map holding itself keeps the original under the new
+# key, whether the merge is the binding's last use or not.
+#= {
+#=     result: [
+#=         {k: [1], old: {k: [1]}},
+#=         {k: [1]},
+#=         {k: [1], old: {k: [1]}},
+#=     ],
+#=     inputs: {n: 1},
+#= }
+def m = {k: [n]}
+def first = m + {old: m}
+def kept = m
+[first, kept, m + {old: m}]

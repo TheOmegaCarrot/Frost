@@ -1,0 +1,4 @@
+# A falsy left operand leaves `or` undecided, so a right operand that raises is
+# evaluated and its error surfaces.
+#= {raises: 'division by zero'}
+null or 1 / 0

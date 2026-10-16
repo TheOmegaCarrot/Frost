@@ -1,0 +1,4 @@
+# A String literal inside a format String's interpolation is checked like any other:
+# an invalid escape there is rejected.
+#= {rejects: ['invalid escape sequence', R'(`\q`)']}
+$'value: ${'\q'}'

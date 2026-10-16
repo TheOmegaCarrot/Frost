@@ -1,0 +1,4 @@
+# A JavaScript-style declaration of a keyword-named variable gets help on
+# both habits: Frost binds with `def`, and the name is a keyword.
+#= {rejects: ['no `var`', '`if` is a keyword']}
+var if = 1

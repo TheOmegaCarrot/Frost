@@ -1,0 +1,3 @@
+# `else` is a keyword, so it cannot name a parameter.
+#= {rejects: 'keyword'}
+def f = fn else -> 1

@@ -1,0 +1,3 @@
+# Calling a String raises, even when the String names a global.
+#= {raises: ['non-function', 'String']}
+'len'([1, 2])

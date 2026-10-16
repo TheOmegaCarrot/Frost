@@ -1,0 +1,4 @@
+# A raw String ends at its closer, `)` then the quote, not at the quote alone, so it
+# holds its own quote character unescaped.
+#= {result: ["it's", 'say "hi"']}
+[R'(it's)', R"(say "hi")"]

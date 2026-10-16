@@ -1,0 +1,6 @@
+# An operation's parameters are names, not patterns: destructuring each
+# element in the parameter list is rejected, with help to destructure in the
+# body instead.
+#= {rejects: 'to destructure an argument'}
+def pairs = [[1, 2]]
+map pairs with fn [a, b] -> a + b

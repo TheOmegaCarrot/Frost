@@ -1,0 +1,8 @@
+# A block in a lambda's body runs afresh on each call, with that call's
+# arguments.
+#= {result: [3, 5, 3]}
+def f = fn n -> do {
+    def m = n * 2
+    m + 1
+}
+[f(1), f(2), f(1)]

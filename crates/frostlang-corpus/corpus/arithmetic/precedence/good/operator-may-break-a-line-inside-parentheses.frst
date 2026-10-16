@@ -1,0 +1,14 @@
+# Inside parentheses, an arithmetic expression may break across lines on
+# either side of an operator; the whole is still one expression.
+#= {result: [10, 10]}
+def after_operator = (
+    1 +
+    2 * 3 +
+    3
+)
+def before_operator = (
+    1
+    + 2 * 3
+    + 3
+)
+[after_operator, before_operator]

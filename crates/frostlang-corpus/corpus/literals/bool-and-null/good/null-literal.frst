@@ -1,0 +1,3 @@
+# `null` is the one value of type Null, equal to itself.
+#= {result: [null, 'Null', true]}
+[null, type(null), null == null]

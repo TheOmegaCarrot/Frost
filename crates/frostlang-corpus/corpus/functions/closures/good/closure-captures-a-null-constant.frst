@@ -1,0 +1,7 @@
+# A captured Null the compiler knows, which the optimizer may build into the
+# closure, is kept and returned the same way.
+#= {result: [null, true, 'fallback']}
+def nothing = null
+def make = fn p -> fn -> p
+def f = make(null)
+[f(), f() == null, (fn -> nothing or 'fallback')()]

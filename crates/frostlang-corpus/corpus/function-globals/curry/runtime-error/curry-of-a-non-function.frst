@@ -1,0 +1,3 @@
+# `curry`'s first argument must be a Function; the rest may be anything.
+#= {raises: ['curry', 'Function as argument 1', 'got Int']}
+curry(1, 2)

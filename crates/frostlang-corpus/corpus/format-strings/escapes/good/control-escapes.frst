@@ -1,0 +1,4 @@
+# A format String decodes the control escapes `\n`, `\r`, `\t`, and `\0`, each
+# to the one character it names.
+#= {result: ["\n", "\r", "\t", "\u{0}", "a\nb\tc\rd\u{0}e"]}
+[$'\n', $'\r', $'\t', $'\0', $'a\nb\tc\rd\0e']

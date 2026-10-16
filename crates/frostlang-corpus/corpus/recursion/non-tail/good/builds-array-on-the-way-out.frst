@@ -1,0 +1,5 @@
+# A non-tail recursion that concatenates after its call returns builds the
+# Array in call order.
+#= {result: [[], [1], [1, 2, 3, 4, 5]]}
+defn upto(n) -> if n == 0: [] else: upto(n - 1) + [n]
+[upto(0), upto(1), upto(5)]

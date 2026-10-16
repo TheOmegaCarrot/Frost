@@ -1,0 +1,3 @@
+# Python's `b'...'` is not a Bytes literal; Frost's is hex.
+#= {rejects: 'a Bytes literal is written in hex'}
+b'abc'

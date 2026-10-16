@@ -1,0 +1,4 @@
+# An interpolation must hold an expression: `${}` is a syntax error, not Null
+# or the empty String.
+#= {rejects: ['expected an expression', 'in this interpolation']}
+def s = $'a${}b'

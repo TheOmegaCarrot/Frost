@@ -1,0 +1,3 @@
+# An interpolation holding only spaces holds no expression.
+#= {rejects: ['expected an expression', 'in this interpolation']}
+def s = $'a${   }b'

@@ -1,0 +1,4 @@
+# `tap` rejects a non-Function as an error of its own, which `try_call`
+# catches.
+#= {result: [false, true]}
+[try_call(tap, [1, 2]).ok, try_call(tap, [1, is_int]).ok]

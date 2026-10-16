@@ -1,0 +1,4 @@
+# Dividing a Float by 0.0 raises. Frost Floats are always finite, so there is
+# no Infinity for the quotient to be.
+#= {raises: 'division by zero'}
+1.5 / 0.0

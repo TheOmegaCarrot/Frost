@@ -1,0 +1,25 @@
+# Every Float is truthy, including zero, negative zero, and the tiniest and
+# largest magnitudes.
+#= {
+#=     result: [
+#=         [true, true, true, true, true],
+#=         [true, true, true, true, true],
+#=     ],
+#=     inputs: {zero: 0.0, negative_zero: -0.0, half: 0.5, tiny: 5e-324, huge: 1.7976931348623157e308},
+#= }
+[
+    [
+        not not 0.0,
+        not not -0.0,
+        not not 0.5,
+        not not 5e-324,
+        not not 1.7976931348623157e308,
+    ],
+    [
+        not not zero,
+        not not negative_zero,
+        not not half,
+        not not tiny,
+        not not huge,
+    ],
+]

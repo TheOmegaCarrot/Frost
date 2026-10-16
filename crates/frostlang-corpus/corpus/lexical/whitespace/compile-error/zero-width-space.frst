@@ -1,0 +1,3 @@
+# A zero-width space is an invisible character Frost does not accept.
+#= {rejects: 'invisible'}
+1​+ 2

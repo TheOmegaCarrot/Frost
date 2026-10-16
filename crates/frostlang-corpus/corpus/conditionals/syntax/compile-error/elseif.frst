@@ -1,0 +1,5 @@
+# Frost spells another condition `elif`, not `elseif`.
+#= {rejects: ['found `elseif`', 'use `elif`']}
+def a = false
+def b = true
+if a: 1 elseif b: 2

@@ -1,0 +1,3 @@
+# NUL is an ordinary character in a String: it does not end it.
+#= {result: [3, false, true]}
+[len('a\0b'), 'a\0b' == 'ab', 'a\0b' == 'a\u{0}b']

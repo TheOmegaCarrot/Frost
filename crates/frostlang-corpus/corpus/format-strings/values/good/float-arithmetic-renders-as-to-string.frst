@@ -1,0 +1,10 @@
+# A Float computed inside an interpolation renders as `to_string` renders the
+# same computation, both from runtime values and from constants the optimizer
+# can fold.
+#= {result: [true, true, true, true], inputs: {a: 0.1, b: 0.2}}
+[
+    $'${a + b}' == to_string(a + b),
+    $'${0.1 + 0.2}' == to_string(0.1 + 0.2),
+    $'${a * 3}' == to_string(a * 3),
+    $'<${1.0 / 3.0}>' == '<' + to_string(1.0 / 3.0) + '>',
+]

@@ -1,0 +1,4 @@
+# A Map pattern has no rest; `as` binds the whole Map instead.
+#= {rejects: 'expected a name or `[`'}
+def {a, ...others} = {a: 1, b: 2}
+[a, others]

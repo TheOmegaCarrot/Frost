@@ -1,0 +1,11 @@
+# A Function interpolates as `to_string` renders it, whether a closure, a
+# named lambda, or a global, and the result is a String, not a Function.
+#= {result: [true, true, true, 'String']}
+defn named(x) -> x
+def closure = fn x -> x + 1
+[
+    $'${closure}' == to_string(closure),
+    $'${named}' == to_string(named),
+    $'${print}' == to_string(print),
+    type($'${closure}'),
+]

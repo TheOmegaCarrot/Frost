@@ -1,0 +1,4 @@
+# Frost has no named arguments; arguments are passed in order.
+#= {rejects: 'no named arguments'}
+def f = fn a -> a
+f(a = 1)

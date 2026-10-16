@@ -1,0 +1,9 @@
+# A String never equals a Bytes, even when the Bytes holds exactly the
+# String's UTF-8 encoding: they are different types.
+#= {result: [false, false, false, true]}
+[
+    'hi' == x'6869',
+    x'6869' == 'hi',
+    '' == x'',
+    'hi' != x'6869',
+]

@@ -1,0 +1,6 @@
+# A continuation line after a single-expression lambda extends its body, not
+# the lambda: `.k` is read from the argument on each call.
+#= {result: [1, 2]}
+def get = fn m -> m
+    .k
+[get({k: 1}), get({k: 2})]

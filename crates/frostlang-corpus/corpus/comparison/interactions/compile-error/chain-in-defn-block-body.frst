@@ -1,0 +1,8 @@
+# A chained comparison in a statement deep in a block body is rejected.
+#= {rejects: 'cannot chain'}
+defn check(x) -> {
+    def low = 0
+    def high = 10
+    low <= x <= high
+}
+check(5)

@@ -1,0 +1,4 @@
+# An error while evaluating a computed key raises from the def.
+#= {raises: 'division by zero', inputs: {n: 0, m: {a: 1}}}
+def {[1 / n]: x} = m
+x

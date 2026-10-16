@@ -1,0 +1,40 @@
+# The merge sort over literal Arrays, which the optimizer may sort ahead of
+# time: its answers must equal the runtime sort's, Int extremes, code point
+# order, and empty and one-element inputs included.
+#= {
+#=     result: [
+#=         [-9223372036854775808, -1, 0, 2, 3, 3, 5, 9223372036854775807],
+#=         ['Apple', 'apple', 'pear', 'zebra', 'éclair'],
+#=         [],
+#=         [42],
+#=     ],
+#= }
+defn split(xs) -> match xs {
+    [] => [[], []],
+    [x] => [[x], []],
+    [a, b, ...rest] => do {
+        def [left, right] = split(rest)
+        [[a] + left, [b] + right]
+    },
+}
+
+defn merge(xs, ys) -> match [xs, ys] {
+    [[], _] => ys,
+    [_, []] => xs,
+    [[x, ...xrest], [y, ...yrest]] => if y < x: [y] + merge(xs, yrest) else: [x] + merge(xrest, ys),
+}
+
+defn sort(xs) -> match xs {
+    [] | [_] => xs,
+    _ => do {
+        def [left, right] = split(xs)
+        merge(sort(left), sort(right))
+    },
+}
+
+[
+    sort([5, -1, 3, 3, 0, 9223372036854775807, -9223372036854775808, 2]),
+    sort(['pear', 'éclair', 'Apple', 'zebra', 'apple']),
+    sort([]),
+    sort([42]),
+]

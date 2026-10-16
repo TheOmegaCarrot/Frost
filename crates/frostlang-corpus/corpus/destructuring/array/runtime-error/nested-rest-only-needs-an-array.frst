@@ -1,0 +1,4 @@
+# A nested rest-only pattern accepts any Array, but not a non-Array.
+#= {raises: 'expected an Array', inputs: {xs: ['ab', 0]}}
+def [[...chars], a] = xs
+[chars, a]

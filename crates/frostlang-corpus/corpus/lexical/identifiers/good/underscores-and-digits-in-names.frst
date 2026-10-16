@@ -1,0 +1,11 @@
+# A name starts with a letter or `_` and continues with letters, digits, and
+# `_`; a leading `_` followed by digits makes a name, not a number.
+#= {result: [1, 2, 3, 4, 5, 6, 7]}
+def _x = 1
+def __ = 2
+def x1 = 3
+def x_1 = 4
+def _1 = 5
+def a__b__ = 6
+def snake_case_name_9 = 7
+[_x, __, x1, x_1, _1, a__b__, snake_case_name_9]

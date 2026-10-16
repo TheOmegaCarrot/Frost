@@ -1,0 +1,5 @@
+# The least Int can be threaded once parenthesized, since the parentheses
+# make `-` apply to the literal before `@` takes it.
+#= {result: -9223372036854775808}
+defn same(x) -> x
+(-9223372036854775808) @ same()

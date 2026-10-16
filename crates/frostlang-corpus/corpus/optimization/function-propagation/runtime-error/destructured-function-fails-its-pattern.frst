@@ -1,0 +1,5 @@
+# A function bound by a pattern its known value fails is never called: the
+# pattern raises first, when the program reaches the def.
+#= {raises: 'expected `1`'}
+def [f, 1] = [fn x -> x * x, 2]
+f(42)

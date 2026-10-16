@@ -1,0 +1,10 @@
+# `;` separates a block's statements like a line break, alone or mixed with
+# line breaks.
+#= {result: [3, 6]}
+def one_line = do { def x = 1; def y = 2; x + y }
+def mixed = do {
+    def x = 1; def y = 2
+    def z = 3
+    x + y + z
+}
+[one_line, mixed]

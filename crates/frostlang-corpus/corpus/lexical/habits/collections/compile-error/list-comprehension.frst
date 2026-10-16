@@ -1,0 +1,3 @@
+# Frost has no comprehensions.
+#= {rejects: 'no comprehensions', inputs: {xs: [1]}}
+[x * 2 for x in xs]

@@ -1,0 +1,3 @@
+# A raw String carries non-ASCII text through unchanged.
+#= {result: [true, 4]}
+[R'(café)' == 'caf\u{e9}', len(R'(café)')]

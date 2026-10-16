@@ -1,0 +1,5 @@
+# The Function given to `try_call` is computed before `try_call` runs, so an
+# error raised while computing it is not caught.
+#= {raises: 'no function'}
+defn make() -> error('no function')
+try_call(make())

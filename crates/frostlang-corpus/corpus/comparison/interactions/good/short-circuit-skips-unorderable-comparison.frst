@@ -1,0 +1,8 @@
+# `and` and `or` short-circuit, so a comparison that would raise is never
+# evaluated when the left operand decides the result.
+#= {result: [false, true, null], inputs: {nothing: null}}
+[
+    false and 1 < 'a',
+    true or nothing < nothing,
+    nothing and nothing > 0,
+]

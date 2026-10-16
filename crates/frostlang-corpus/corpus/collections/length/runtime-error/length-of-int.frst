@@ -1,0 +1,3 @@
+# An Int has no length.
+#= {raises: ['Function len requires', 'Int']}
+len(12345)

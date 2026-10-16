@@ -1,0 +1,4 @@
+# Two different relational operators do not chain either: `1 < 5 > 2` is
+# rejected.
+#= {rejects: 'cannot chain'}
+1 < 5 > 2

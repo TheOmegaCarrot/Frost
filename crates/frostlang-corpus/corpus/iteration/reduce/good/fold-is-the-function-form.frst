@@ -1,0 +1,8 @@
+# `fold(structure, f)` and `fold(structure, init, f)` are the function forms
+# of `reduce structure with f` and `reduce structure init: init with f`.
+#= {
+#=     result: [-4, 4, 3],
+#=     inputs: {xs: [1, 2, 3], m: {a: 1, b: 2}},
+#= }
+def minus = fn acc, x -> acc - x
+[fold(xs, minus), fold(xs, 10, minus), fold(m, 0, fn acc, k, v -> acc + v)]

@@ -1,0 +1,3 @@
+# A `;` right after `=` ends the definition before its value.
+#= {rejects: 'found `;`'}
+def x = ; 1

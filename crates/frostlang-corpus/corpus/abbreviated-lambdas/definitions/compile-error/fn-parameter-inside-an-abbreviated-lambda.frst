@@ -1,0 +1,4 @@
+# A `fn` inside an abbreviated lambda cannot shadow a placeholder by naming
+# its own parameter `$`.
+#= {rejects: ['expected parameters', 'found `$`']}
+def f = $(fn $ -> $)

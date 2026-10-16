@@ -1,0 +1,5 @@
+# An abbreviated lambda inside an abbreviated-lambda operation is rejected,
+# even though a form sits between them.
+#= {rejects: 'cannot be nested'}
+def rows = [[1]]
+map rows with $(map $ with $($ * 2))

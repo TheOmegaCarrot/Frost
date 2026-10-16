@@ -1,0 +1,9 @@
+# A parenthesized Function matches that same Function, and not a Function
+# that behaves differently.
+#= {result: ['same', 'different']}
+def f = fn -> 1
+def g = fn -> 2
+[
+    match f { (f) => 'same', _ => 'different' },
+    match g { (f) => 'same', _ => 'different' },
+]

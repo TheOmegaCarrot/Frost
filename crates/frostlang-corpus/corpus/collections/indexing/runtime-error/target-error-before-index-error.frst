@@ -1,0 +1,4 @@
+# The target is evaluated first, so its error surfaces rather than the
+# index's.
+#= {raises: 'Division by zero', inputs: {zero: 0}}
+(1 / zero)[1 % zero]

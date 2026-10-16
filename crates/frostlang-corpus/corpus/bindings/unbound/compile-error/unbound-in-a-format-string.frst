@@ -1,0 +1,3 @@
+# A name interpolated into a format String is resolved at compile time.
+#= {rejects: ['`missing`', 'not defined']}
+$'value: ${missing}'

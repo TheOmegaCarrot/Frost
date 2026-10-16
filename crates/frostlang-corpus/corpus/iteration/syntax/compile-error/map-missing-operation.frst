@@ -1,0 +1,3 @@
+# `with` must be followed by an operation.
+#= {rejects: 'expected an expression'}
+map [1, 2] with

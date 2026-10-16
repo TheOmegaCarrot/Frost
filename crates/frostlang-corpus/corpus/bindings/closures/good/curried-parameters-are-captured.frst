@@ -1,0 +1,5 @@
+# Each level of a curried lambda captures the parameters of the levels outside
+# it.
+#= {result: [6, 'abc']}
+def add3 = fn a -> fn b -> fn c -> a + b + c
+[add3(1)(2)(3), add3('a')('b')('c')]

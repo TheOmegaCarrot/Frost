@@ -1,0 +1,4 @@
+# `bcurry(f, a, b)` fixes `a` and `b` after whatever arguments come later,
+# keeping their order.
+#= {result: [[3, 4, 1, 2], -7]}
+[bcurry(collect, 1, 2)(3, 4), bcurry(minus, 10)(3)]

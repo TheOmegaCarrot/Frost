@@ -1,0 +1,6 @@
+# Names differing only in case are distinct, so neither shadows the other.
+#= {result: [1, 2, 3]}
+def value = 1
+def Value = 2
+def VALUE = 3
+[value, Value, VALUE]

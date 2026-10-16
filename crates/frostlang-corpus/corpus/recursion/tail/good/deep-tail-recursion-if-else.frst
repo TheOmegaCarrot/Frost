@@ -1,0 +1,5 @@
+# A hundred thousand self-calls, each in tail position as an `else` branch,
+# complete normally: tail calls reuse their frame.
+#= {result: 100000}
+defn down(n, acc) -> if n == 0: acc else: down(n - 1, acc + 1)
+down(100000, 0)

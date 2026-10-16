@@ -1,0 +1,6 @@
+# A Map literal that raises on an invalid key, caught by `try_call`, leaves
+# the values it was being built from as they were.
+#= {result: [false, [1]], inputs: {n: 1}}
+def xs = [n]
+def r = try_call(fn -> {a: xs, [xs]: 1})
+[r.ok, xs]

@@ -1,0 +1,5 @@
+# Frost has no multiline format String: `$'''` is not one.
+#= {rejects: 'no multiline format String'}
+def s = $'''
+    text
+    '''

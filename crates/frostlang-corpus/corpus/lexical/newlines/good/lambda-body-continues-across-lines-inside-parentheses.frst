@@ -1,0 +1,7 @@
+# Inside a call's parentheses, line breaks are insignificant, so a
+# single-expression lambda body keeps reading past one: the `+ one` on the
+# next line joins the body. Subtle, since outside brackets the body would
+# end at the line break.
+#= {result: [2, 3], inputs: {xs: [1, 2], one: 1}}
+xs @ transform(fn x -> x
+    + one)

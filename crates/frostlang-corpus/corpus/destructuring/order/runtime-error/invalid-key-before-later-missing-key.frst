@@ -1,0 +1,4 @@
+# An invalid key raises before a later entry's missing key is looked up.
+#= {raises: 'not a valid Map key', inputs: {m: {}}}
+def {[null]: x, missing} = m
+[x, missing]

@@ -1,0 +1,7 @@
+# A runtime `if` nested in the taken branch of a constant one still decides
+# at runtime.
+#= {result: ['inner yes', 'inner no'], inputs: {t: true, f: false}}
+[
+    if true: (if t: 'inner yes' else: 'inner no') else: 'outer',
+    if false: 'outer' else: (if f: 'inner yes' else: 'inner no'),
+]

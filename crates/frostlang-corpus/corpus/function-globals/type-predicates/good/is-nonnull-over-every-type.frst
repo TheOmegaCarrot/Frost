@@ -1,0 +1,15 @@
+# `is_nonnull` is true for every type but Null. It tests type, not
+# truthiness, so False is nonnull.
+#= {result: [false, true, true, true, true, true, true, true, true, true]}
+[
+    is_nonnull(null),
+    is_nonnull(false),
+    is_nonnull(0),
+    is_nonnull(0.0),
+    is_nonnull(''),
+    is_nonnull(x''),
+    is_nonnull([]),
+    is_nonnull({}),
+    is_nonnull(fn -> null),
+    is_nonnull(len),
+]

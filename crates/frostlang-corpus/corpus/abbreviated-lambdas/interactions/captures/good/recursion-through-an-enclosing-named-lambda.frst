@@ -1,0 +1,5 @@
+# An abbreviated lambda has no name of its own, but can recurse through
+# the name of a `defn` around it.
+#= {result: 120}
+defn fact(n) -> if n <= 1: 1 else: n * $(fact($ - 1))(n)
+fact(5)

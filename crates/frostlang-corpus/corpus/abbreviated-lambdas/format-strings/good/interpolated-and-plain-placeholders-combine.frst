@@ -1,0 +1,5 @@
+# Placeholders inside an interpolation and outside it combine: here `$1` is
+# only interpolated and `$2` only outside, and the lambda takes both.
+#= {result: '1!', inputs: {one: 1, bang: '!'}}
+def f = $($'${$1}' + $2)
+f(one, bang)

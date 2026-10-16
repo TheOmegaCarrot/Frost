@@ -1,0 +1,10 @@
+# A repeated key is the same key however it is spelled: `name:`, a computed
+# String, or name shorthand. The last entry wins in each case.
+#= {result: [{a: 'computed'}, {a: 'named'}, {a: 'named'}, {a: 'shorthand'}]}
+def a = 'shorthand'
+[
+    {a: 'named', ['a']: 'computed'},
+    {['a']: 'computed', a: 'named'},
+    {a, a: 'named'},
+    {a: 'named', a},
+]

@@ -1,0 +1,7 @@
+# Values known only at runtime are falsy only when Null or false: zero, `-0.0`, and the
+# empty String and Bytes are truthy, though the compiler cannot see them.
+#= {
+#=     result: ['truthy', 'truthy', 'truthy', 'truthy', 'truthy', 'falsy', 'falsy'],
+#=     inputs: {values: [0, 0.0, -0.0, '', x'', false, null]},
+#= }
+map values with fn x -> if x: 'truthy' else: 'falsy'

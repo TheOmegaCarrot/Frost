@@ -1,0 +1,5 @@
+# A successful `try_call` result holds only `ok` and `value`: no `error` or
+# `trace` key, not even a null one.
+#= {result: [2, false, false]}
+def outcome = try_call(fn -> 'fine')
+[len(outcome), has(outcome, 'error'), has(outcome, 'trace')]

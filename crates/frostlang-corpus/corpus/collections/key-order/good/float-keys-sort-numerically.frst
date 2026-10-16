@@ -1,0 +1,4 @@
+# Float keys sort by numeric value.
+#= {result: [-2.5, -0.5, 0.25, 2.5, 10.0]}
+def m = {[2.5]: 1, [-0.5]: 2, [10.0]: 3, [0.25]: 4, [-2.5]: 5}
+fold(m, [], fn acc, k, v -> acc + [k])

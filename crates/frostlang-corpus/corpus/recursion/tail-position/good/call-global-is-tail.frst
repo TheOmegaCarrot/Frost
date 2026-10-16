@@ -1,0 +1,6 @@
+# `call` in tail position hands the tail call on to the function it calls, so
+# recursing through it does not keep frames either.
+#= {result: 0}
+defn down(n) -> if n == 0: error('bottom') else: call(down, [n - 1])
+defn frames(n) -> len(try_call(down, [n]).trace)
+frames(500) - frames(5)

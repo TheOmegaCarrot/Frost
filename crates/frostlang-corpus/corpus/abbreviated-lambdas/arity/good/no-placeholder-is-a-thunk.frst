@@ -1,0 +1,5 @@
+# With no placeholder, an abbreviated lambda is a zero-argument thunk, not
+# an identity or constant function of one argument.
+#= {result: 42}
+def answer = $(42)
+answer()

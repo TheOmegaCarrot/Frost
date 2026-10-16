@@ -1,0 +1,5 @@
+# An interpolation is lexed as Frost on its line: it may hold a Map literal
+# with a trailing comma, an Array with one, a threaded call, and a field
+# access, all without spaces.
+#= {result: '1|2|3', inputs: {xs: [1, 2]}}
+$'${ {a: 1,}.a }|${[xs,][0]@len()}|${$($+1)(2)}'

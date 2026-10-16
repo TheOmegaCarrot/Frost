@@ -1,0 +1,12 @@
+# Raw and multiline Strings are value patterns like any String literal, matching by
+# their decoded text.
+#= {result: ['raw', 'multiline'], inputs: {path: 'a\\nb', lines: 'one\ntwo'}}
+defn classify(s) -> match s {
+    R'(a\nb)' => 'raw',
+    '''
+    one
+    two
+    ''' => 'multiline',
+    _ => 'neither',
+}
+[classify(path), classify(lines)]

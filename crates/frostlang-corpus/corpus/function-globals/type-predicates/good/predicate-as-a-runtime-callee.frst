@@ -1,0 +1,4 @@
+# A predicate supplied at run time, unknown to the compiler, tests as it does
+# when called by name.
+#= {result: [true, true, false], inputs: {check: is_numeric}}
+[check(1), check(1.5), check('1')]

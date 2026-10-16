@@ -1,0 +1,4 @@
+# A trailing comma after the last element is allowed and adds no element.
+#= {result: [1, 2]}
+def [a, b,] = [1, 2]
+[a, b]

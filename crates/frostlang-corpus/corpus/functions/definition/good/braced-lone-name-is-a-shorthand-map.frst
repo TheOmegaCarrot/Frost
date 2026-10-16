@@ -1,0 +1,6 @@
+# `{a}` after the arrow is the shorthand Map `{a: a}`, not a block returning
+# `a`. Subtle: a block holding only `a` would mean the same as `fn a -> a`, so
+# the braces are read as a Map literal.
+#= {result: {a: 4}}
+def wrap = fn a -> {a}
+wrap(4)

@@ -1,0 +1,7 @@
+# A parenthesized value compares with Frost's `==`, so an Int never equals a
+# Float of the same magnitude.
+#= {result: ['other', 'equal'], inputs: {one: 1, xs: [1.0, 1]}}
+transform(xs, fn v -> match v {
+    (one) => 'equal',
+    _ => 'other',
+})

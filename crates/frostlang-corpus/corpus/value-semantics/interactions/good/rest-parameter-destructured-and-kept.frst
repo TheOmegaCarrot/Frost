@@ -1,0 +1,8 @@
+# A rest parameter destructured into a head and a rest, and the rest
+# extended with the head, leaves the rest parameter itself unchanged.
+#= {result: [[2, 3, 1], [1, 2, 3]], inputs: {n: 1}}
+defn rotate(...xs) -> {
+    def [head, ...tail] = xs
+    [tail + [head], xs]
+}
+rotate(n, 2, 3)

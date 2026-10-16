@@ -1,0 +1,3 @@
+# `${...}` interpolates only inside a format String.
+#= {rejects: 'a format String is written', inputs: {x: 1}}
+print(${x})

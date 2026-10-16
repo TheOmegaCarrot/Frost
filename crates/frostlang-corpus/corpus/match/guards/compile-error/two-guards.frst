@@ -1,0 +1,6 @@
+# An arm takes one guard; conditions combine with `and` instead.
+#= {rejects: ['expected `=>`', 'found `if`']}
+match 1 {
+    x if: x > 0 if: x < 9 => x,
+    _ => 0,
+}

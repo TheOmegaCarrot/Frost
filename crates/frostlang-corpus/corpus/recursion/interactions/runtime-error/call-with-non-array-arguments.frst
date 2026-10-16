@@ -1,0 +1,5 @@
+# Recursing through `call` requires the arguments as an Array; a bare value
+# raises a type error naming `call`.
+#= {raises: ['call', 'Array']}
+defn down(n) -> if n == 0: 'done' else: call(down, n - 1)
+down(3)

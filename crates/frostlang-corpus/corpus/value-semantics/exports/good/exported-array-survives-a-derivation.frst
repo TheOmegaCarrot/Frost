@@ -1,0 +1,6 @@
+# An exported Array keeps its value though a value is derived from it at the
+# binding's last read in the script.
+#= {result: [1, 2], exports: {xs: [1]}, inputs: {n: 1}}
+export def xs = [n]
+def ys = xs + [2]
+ys

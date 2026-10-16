@@ -1,0 +1,10 @@
+# A block used as a statement runs, but its value is dropped.
+#= {result: 5, printed: ['ran'], inputs: {x: 1}}
+do { 1 }
+do {
+    def y = x
+    print('ran')
+    y
+}
+do { x; x }
+5

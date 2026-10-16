@@ -1,0 +1,5 @@
+# A rest parameter shadows an outer binding of the same name.
+#= {result: [[1, 2], 99]}
+def rest = 99
+def f = fn ...rest -> rest
+[f(1, 2), rest]

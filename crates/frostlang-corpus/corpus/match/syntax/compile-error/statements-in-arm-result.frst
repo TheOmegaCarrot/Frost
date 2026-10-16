@@ -1,0 +1,7 @@
+# An arm's result is one expression: statements separated by `;` need a `do`
+# block.
+#= {rejects: 'result is one expression'}
+match 1 {
+    1 => print('a'); print('b'),
+    _ => null,
+}

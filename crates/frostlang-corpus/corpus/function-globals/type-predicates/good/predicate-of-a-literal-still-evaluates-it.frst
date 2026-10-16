@@ -1,0 +1,4 @@
+# A predicate's answer may be plain from the shape of its argument, but the
+# argument is still evaluated, so a `print` inside it prints.
+#= {result: [true, false], printed: ['in array', 'in map']}
+[is_array([print('in array')]), is_null({k: print('in map')})]

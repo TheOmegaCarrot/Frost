@@ -1,0 +1,7 @@
+# Any number of parameters may be `_`: a discard binds no name, so several
+# never collide.
+#= {result: [1, 2, 'x']}
+def a = fn _, _ -> 1
+def b = fn _, b, _ -> b
+def c = fn(_, _, _) -> 'x'
+[a(8, 9), b(1, 2, 3), c(null, null, null)]

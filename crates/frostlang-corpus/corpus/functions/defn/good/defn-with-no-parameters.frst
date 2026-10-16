@@ -1,0 +1,4 @@
+# A `defn` may take no parameters, written with empty parentheses.
+#= {result: 'hello'}
+defn greet() -> 'hello'
+greet()

@@ -1,0 +1,4 @@
+# A nested `[]` matches only an empty Array, and binds nothing itself.
+#= {result: 'after', inputs: {xs: [[], 'after']}}
+def [[], a] = xs
+a

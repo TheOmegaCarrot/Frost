@@ -1,0 +1,4 @@
+# Placeholders are single-digit: `$10` is not one, and the help lists those
+# that are.
+#= {rejects: 'the placeholders are'}
+$($10)

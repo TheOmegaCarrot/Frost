@@ -1,0 +1,5 @@
+# A pure lambda over constants that raises still raises when called, even
+# though the optimizer may try to compute the call ahead of time.
+#= {raises: 'division by zero'}
+def f = fn x -> x / 0
+f(1)

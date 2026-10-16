@@ -1,0 +1,7 @@
+# Outside brackets, a newline ends a statement even right after a binary
+# operator, leaving the operator without a right operand. Parentheses allow
+# the break.
+#= {rejects: ['expected an expression', 'line break']}
+def total = 1 +
+    2
+total

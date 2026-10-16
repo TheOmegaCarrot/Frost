@@ -1,0 +1,8 @@
+# The largest and smallest Ints are ordinary, distinct keys, and a key
+# computed by wrapping past one boundary finds the other. The smallest Int
+# is computed, since its magnitude has no literal.
+#= {result: ['max', 'min', 'max', 'min', 2]}
+def max = 9223372036854775807
+def min = -9223372036854775807 - 1
+def m = {[max]: 'max', [min]: 'min'}
+[m[9223372036854775807], m[-9223372036854775807 - 1], m[min - 1], m[max + 1], len(m)]

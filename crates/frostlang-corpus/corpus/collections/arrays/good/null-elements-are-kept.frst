@@ -1,0 +1,5 @@
+# Null elements are real elements: they count toward the length and keep
+# their positions.
+#= {result: [[null, 1, null], 3, null, 1]}
+def xs = [null, 1, null]
+[xs, len(xs), xs[0], xs[1]]

@@ -1,0 +1,5 @@
+# `export defn` binds its name as `export def` does, so exporting the same name
+# again is a duplicate binding.
+#= {rejects: '`f` is already bound'}
+export defn f() -> 1
+export def f = 2

@@ -1,0 +1,7 @@
+# Strings that spell a falsy value elsewhere are still just non-Null Strings,
+# so they are truthy.
+#= {
+#=     result: ['T', 'T', 'T', 'T', 'T'],
+#=     inputs: {values: ['false', 'null', '0', ' ', 'nil']},
+#= }
+map values with fn v -> if v: 'T' else: 'F'

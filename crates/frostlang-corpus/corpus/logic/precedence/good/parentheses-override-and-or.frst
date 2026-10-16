@@ -1,0 +1,11 @@
+# Parentheses regroup `and` and `or` against their precedence.
+#= {
+#=     result: [false, false, 2, null],
+#=     inputs: {one: 1, two: 2, n: null},
+#= }
+[
+    (true or false) and false,
+    false and (true or true),
+    (one or n) and two,
+    n and (one or two),
+]

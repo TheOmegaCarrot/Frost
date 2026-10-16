@@ -1,0 +1,3 @@
+# A Function is not a valid Map key.
+#= {raises: ['not a valid Map key', 'Function']}
+{[fn x -> x]: 1}

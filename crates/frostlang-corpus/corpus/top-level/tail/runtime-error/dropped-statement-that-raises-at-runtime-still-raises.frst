@@ -1,0 +1,5 @@
+# A dropped expression statement over runtime values still runs, so the error
+# it raises ends the program before the tail.
+#= {raises: 'division by zero', inputs: {n: 1, zero: 0}}
+n / zero
+5

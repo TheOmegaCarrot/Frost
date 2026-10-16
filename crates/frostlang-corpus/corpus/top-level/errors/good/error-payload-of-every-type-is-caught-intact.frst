@@ -1,0 +1,33 @@
+# `error` raises any value, and `try_call` gives it back intact as `error`:
+# not converted to a String, whatever its type, nesting, or Map key types.
+#= {
+#=     result: [
+#=         '',
+#=         'h\u{e9}llo \u{2603}',
+#=         42,
+#=         -9223372036854775808,
+#=         1.5,
+#=         true,
+#=         false,
+#=         x'00ff',
+#=         [],
+#=         [1, 'a', [null]],
+#=         {},
+#=         {[true]: 1, [2]: 'two', [3.5]: null, [x'01']: [], code: {nested: [4]}},
+#=     ],
+#= }
+defn caught(payload) -> try_call(fn -> error(payload)).error
+[
+    caught(''),
+    caught('h\u{e9}llo \u{2603}'),
+    caught(42),
+    caught(-9223372036854775808),
+    caught(1.5),
+    caught(true),
+    caught(false),
+    caught(x'00ff'),
+    caught([]),
+    caught([1, 'a', [null]]),
+    caught({}),
+    caught({[true]: 1, [2]: 'two', [3.5]: null, [x'01']: [], code: {nested: [4]}}),
+]

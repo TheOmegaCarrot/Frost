@@ -1,0 +1,7 @@
+# Two identical Map literals are independent: merging into one, even
+# replacing its key, leaves the other unchanged.
+#= {result: [{k: 1}, {k: 1}, {k: 2}]}
+def a = {k: 1}
+def b = {k: 1}
+def c = a + {k: 2}
+[a, b, c]

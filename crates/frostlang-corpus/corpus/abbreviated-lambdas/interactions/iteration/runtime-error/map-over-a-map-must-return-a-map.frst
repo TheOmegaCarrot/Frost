@@ -1,0 +1,4 @@
+# Mapping over a Map requires the operation to return a Map; an abbreviated
+# lambda returning the value alone raises.
+#= {raises: 'must return a Map'}
+map {a: 1} with $($2)

@@ -1,0 +1,14 @@
+# A global that builds a function is threaded into through parentheses: the
+# value goes to the built function, not to the builder.
+#= {result: [-7, 7, 3, [3, 2, 1], false, 12, 'v'], inputs: {n: 10, m: {k: 'v'}}}
+defn inc(x) -> x + 1
+defn double(x) -> x * 2
+[
+    n @ (curry(minus, 3))(),
+    n @ (bcurry(minus, 3))(),
+    [1, 2] @ (spread(plus))(),
+    1 @ (rev_args(collect))(2, 3),
+    5 @ (inv(is_int))(),
+    5 @ (compose(inc, double))(),
+    m @ (index('k'))(),
+]

@@ -1,0 +1,4 @@
+# A reserved word cannot follow `.`; such a key is read with `m['if']`.
+#= {rejects: 'expected a name after `.`'}
+def m = {['if']: 1}
+m.if

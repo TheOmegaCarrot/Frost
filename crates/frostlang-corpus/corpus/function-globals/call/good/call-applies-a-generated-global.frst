@@ -1,0 +1,5 @@
+# `call` applies a global written in Frost, here `curry`, whose result is then
+# called directly.
+#= {result: 7}
+def subtract_from_ten = call(curry, [minus, 10])
+subtract_from_ten(3)

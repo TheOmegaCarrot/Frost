@@ -1,0 +1,3 @@
+# With both arguments wrong, the function is the one reported.
+#= {raises: ['call', 'Function as argument 1', 'got Bool']}
+call(true, 5)

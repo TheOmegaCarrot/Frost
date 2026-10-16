@@ -1,0 +1,12 @@
+# A Null accumulator stands for "nothing found yet", over values known only at
+# runtime: `or` keeps the first truthy value, so Null and `false` are passed
+# over while `0` is kept.
+#= {
+#=     result: [null, 0, 'x'],
+#=     inputs: {nothing: [null, null], zero_first: [null, 0, 3], false_first: [false, null, 'x']},
+#= }
+defn first_present(xs, acc) -> match xs {
+    [] => acc,
+    [x, ...rest] => first_present(rest, acc or x),
+}
+[first_present(nothing, null), first_present(zero_first, null), first_present(false_first, null)]

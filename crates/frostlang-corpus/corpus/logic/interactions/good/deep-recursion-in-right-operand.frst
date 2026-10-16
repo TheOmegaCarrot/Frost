@@ -1,0 +1,5 @@
+# A self-call as the right operand of `or` in a function body's tail completes
+# even many levels deep.
+#= {result: true, inputs: {depth: 100000}}
+defn count_down(n) -> n == 0 or count_down(n - 1)
+count_down(depth)

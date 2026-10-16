@@ -1,0 +1,3 @@
+# A parameter list cannot begin with a comma; `(,)` is not an empty list.
+#= {rejects: ['expected a parameter name', 'found `,`']}
+def f = fn(,) -> 1

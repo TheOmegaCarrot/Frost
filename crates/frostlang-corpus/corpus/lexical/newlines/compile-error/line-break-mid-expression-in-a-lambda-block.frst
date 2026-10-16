@@ -1,0 +1,7 @@
+# In a lambda's block body, as at the top level, a line ending in an operator
+# does not continue onto the next.
+#= {rejects: 'a line continues only when'}
+defn f(x) -> {
+    x *
+        2
+}

@@ -1,0 +1,13 @@
+# An accumulator reverses an Array: each element taken from the front is put
+# on the front of the accumulator.
+#= {result: [[], ['only'], [4, 3, 2, 1], [null, [1], {k: 2}, null]]}
+defn reverse_onto(xs, acc) -> match xs {
+    [] => acc,
+    [head, ...tail] => reverse_onto(tail, [head] + acc),
+}
+[
+    reverse_onto([], []),
+    reverse_onto(['only'], []),
+    reverse_onto([1, 2, 3, 4], []),
+    reverse_onto([null, {k: 2}, [1], null], []),
+]

@@ -1,0 +1,9 @@
+# A binding made in a branch's block is gone once the block ends, so naming it
+# after the `if` is a compile error.
+#= {rejects: ['`y`', 'not defined']}
+def x = true
+if x: do {
+    def y = 1
+    y
+} else: 2
+y

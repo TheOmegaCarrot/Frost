@@ -1,0 +1,6 @@
+# An exported binding nothing in the script reads is still exported, with its
+# value, beside an unread binding that is not exported.
+#= {result: 3, exports: {shown: 2}}
+export def shown = 1 + 1
+def hidden = 2
+3

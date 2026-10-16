@@ -1,0 +1,5 @@
+# A shorthand `{_}` is the String key "_", discarded: the key must be present
+# but no name is bound. Subtle because `_` elsewhere matches anything.
+#= {result: 0, inputs: {m: {['_']: 1, x: 0}}}
+def {_, x} = m
+x

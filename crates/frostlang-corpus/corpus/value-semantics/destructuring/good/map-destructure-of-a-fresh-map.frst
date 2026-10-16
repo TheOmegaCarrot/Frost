@@ -1,0 +1,5 @@
+# A Map destructure of a Map nothing else holds binds each entry, and
+# extending one leaves the other alone.
+#= {result: [[1, 0], [2]], inputs: {n: 1}}
+def {a, b} = {a: [n], b: [2]}
+[a + [0], b]

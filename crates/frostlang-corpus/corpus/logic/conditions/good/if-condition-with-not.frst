@@ -1,0 +1,6 @@
+# A `not` condition takes the branch exactly when its operand is falsy.
+#= {
+#=     result: ['missing', 'missing', 'present', 'present'],
+#=     inputs: {values: [null, false, 0, '']},
+#= }
+transform(values, fn v -> if not v: 'missing' else: 'present')

@@ -1,0 +1,4 @@
+# `call` spreads its Array as the arguments, and the lambda's arity is
+# checked against them.
+#= {raises: ['expects 1 argument', 'called with 0']}
+call(fn x -> x, [])

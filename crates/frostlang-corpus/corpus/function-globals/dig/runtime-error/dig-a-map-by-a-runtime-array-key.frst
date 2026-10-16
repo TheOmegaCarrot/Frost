@@ -1,0 +1,4 @@
+# An Array key known only at run time is rejected when a step reads a Map
+# with it.
+#= {raises: ['Array', 'not a valid Map key'], inputs: {data: {a: {b: 1}}, key: ['b']}}
+dig(data, 'a', key)

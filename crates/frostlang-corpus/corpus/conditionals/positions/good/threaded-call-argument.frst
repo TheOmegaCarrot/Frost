@@ -1,0 +1,4 @@
+# An `if` may be an argument of a threaded call, after the threaded value.
+#= {result: [[1, 'x'], [1, 'y']], inputs: {t: true, f: false}}
+defn pair(a, b) -> [a, b]
+[1 @ pair(if t: 'x' else: 'y'), 1 @ pair(if f: 'x' else: 'y')]

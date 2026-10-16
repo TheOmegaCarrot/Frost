@@ -1,0 +1,4 @@
+# The right operand of `and` that a constant truthy left operand defers to
+# raises its error when it runs.
+#= {raises: 'division by zero'}
+true and 1 / 0

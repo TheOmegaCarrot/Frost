@@ -1,0 +1,27 @@
+# A `match` with no matching arm, a destructuring `def` that does not fit, a
+# failed type constraint, and a missing Map key all raise errors `try_call`
+# catches as Strings.
+#= {
+#=     result: [
+#=         [false, true],
+#=         [false, true],
+#=         [false, true],
+#=         [false, true],
+#=     ],
+#=     inputs: {n: 3, pair: [1, 2], m: {}},
+#= }
+defn summary(outcome) -> [outcome.ok, is_string(outcome.error)]
+[
+    summary(try_call(fn -> match n {
+        1 => 'one',
+    })),
+    summary(try_call(fn -> {
+        def [only] = pair
+        only
+    })),
+    summary(try_call(fn -> {
+        def s is String = n
+        s
+    })),
+    summary(try_call(fn -> m.missing)),
+]

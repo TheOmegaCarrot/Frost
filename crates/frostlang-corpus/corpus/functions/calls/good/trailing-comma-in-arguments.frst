@@ -1,0 +1,5 @@
+# An argument list may end in a trailing comma, which adds no argument.
+#= {result: [1, 3]}
+def ident = fn x -> x
+def add = fn x, y -> x + y
+[ident(1,), add(1, 2,)]

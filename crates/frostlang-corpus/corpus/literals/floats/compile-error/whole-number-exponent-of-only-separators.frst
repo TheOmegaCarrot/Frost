@@ -1,0 +1,4 @@
+# With no point, an exponent of separators alone is still a malformed number, not the
+# Int 1 touching the name `e_`.
+#= {rejects: ['invalid number', 'exponent needs digits']}
+1e_

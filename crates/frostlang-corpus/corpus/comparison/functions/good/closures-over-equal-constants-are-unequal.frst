@@ -1,0 +1,12 @@
+# Two calls of one maker with the same constant argument give two distinct
+# closures, so they are unequal.
+# Subtle: the optimizer knows the maker and its argument at compile time, but
+# no evaluation ahead of time may merge the two closures into one.
+#= {result: [false, true]}
+defn adder(n) -> fn x -> x + n
+def first = adder(1)
+def second = adder(1)
+[
+    first == second,
+    first(2) == second(2),
+]

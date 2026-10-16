@@ -1,0 +1,3 @@
+# Statements in a block body need a newline or `;` between them.
+#= {rejects: ['expected a line break or `;`', '`2`']}
+def f = fn -> { 1 2 }

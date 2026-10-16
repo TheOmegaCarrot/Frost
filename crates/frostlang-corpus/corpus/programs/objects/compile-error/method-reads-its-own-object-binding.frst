@@ -1,0 +1,15 @@
+# An object whose method reaches its sibling through the binding the object
+# is being defined into is rejected: a `def` binds its name only after its
+# value, so the method body cannot see `self`.
+#= {
+#=     rejects: ['`self`', 'not defined'],
+#=     inputs: {a: 1, b: 2},
+#= }
+defn point(x, y) -> {
+    def self = {
+        x: fn -> x,
+        sum: fn -> self.x() + y,
+    }
+    self
+}
+point(a, b).sum()

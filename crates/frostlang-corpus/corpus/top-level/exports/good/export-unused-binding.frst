@@ -1,0 +1,6 @@
+# An exported binding nothing in the program reads is still computed and
+# exported. Subtle because an unread binding is otherwise dead, but an export
+# is read by whoever runs the program.
+#= {result: 'tail', exports: {computed: 3}}
+export def computed = 1 + 2
+'tail'

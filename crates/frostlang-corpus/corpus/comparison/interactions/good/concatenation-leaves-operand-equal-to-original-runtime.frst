@@ -1,0 +1,14 @@
+# Building a longer Array or merged Map from values known only at runtime
+# leaves the originals unchanged, even when an original is no longer used
+# after the build.
+#= {
+#=     result: [true, true, true],
+#=     inputs: {xs: [1, 2], m: {a: 1}},
+#= }
+def longer = xs + [3]
+def merged = m + {a: 2}
+[
+    xs == [1, 2],
+    m == {a: 1},
+    longer == [1, 2, 3] and merged == {a: 2},
+]

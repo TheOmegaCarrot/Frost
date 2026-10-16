@@ -1,0 +1,5 @@
+# A rest binds a name; it cannot destructure its elements with a pattern.
+#= {rejects: 'expected a name after `...`'}
+match [1, 2] {
+    [a, ...[b]] => b,
+}

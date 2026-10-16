@@ -1,0 +1,5 @@
+# Function globals stored in a Map or an Array are called from there.
+#= {result: [true, [1], true, 2]}
+def tools = {check: is_string, wrap: collect}
+def checks = [is_int, is_float]
+[tools.check('a'), tools.wrap(1), checks[1](1.5), [index(1)][0](['a', 2])]

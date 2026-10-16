@@ -1,0 +1,7 @@
+# Tab indentation matching the closing delimiter's is removed like spaces.
+#= {result: 'hello\n\tworld'}
+def text = '''
+	hello
+		world
+	'''
+text

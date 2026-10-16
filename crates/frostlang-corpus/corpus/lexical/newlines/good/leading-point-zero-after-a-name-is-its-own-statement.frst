@@ -1,0 +1,6 @@
+# A line starting `.0` begins a Float, not a field or index continuation, so
+# `m` on the line before is a statement of its own and the tail value is
+# the Float 0.0.
+#= {result: 0.0, inputs: {m: [1]}}
+m
+.0

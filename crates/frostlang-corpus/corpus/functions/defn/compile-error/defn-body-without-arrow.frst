@@ -1,0 +1,3 @@
+# A `defn` body, braced or not, follows `->`.
+#= {rejects: ['expected `->`', 'found `{`']}
+defn f(x) { x }

@@ -1,0 +1,3 @@
+# A placeholder cannot be an element of an Array destructuring pattern.
+#= {rejects: ['expected a pattern', 'found `$`']}
+def [$] = [1]

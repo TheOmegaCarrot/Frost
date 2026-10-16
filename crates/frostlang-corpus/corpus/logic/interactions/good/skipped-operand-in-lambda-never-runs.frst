@@ -1,0 +1,5 @@
+# A raising right operand in a lambda body runs only on calls that reach it, so
+# calls that short-circuit complete.
+#= {result: [1, 0, 'a']}
+def f = fn a -> a or error('the right operand ran')
+[f(1), f(0), f('a')]

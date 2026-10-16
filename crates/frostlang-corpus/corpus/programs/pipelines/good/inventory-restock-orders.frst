@@ -1,0 +1,31 @@
+# A restocking pass over a Map of items: `filter` keeps the entries below
+# their minimum, `map` turns each into an order quantity (its operation
+# returns a one-entry Map, merged into the result), and a `reduce` without an
+# initial value joins the report lines, seeding with the first.
+#= {
+#=     result: {
+#=         orders: {bolts: 15, gears: 3},
+#=         report: 'bolts x15, gears x3',
+#=         empty: {},
+#=     },
+#=     inputs: {
+#=         inventory: {
+#=             nuts: {stock: 50, min: 10},
+#=             bolts: {stock: 5, min: 20},
+#=             gears: {stock: 0, min: 3},
+#=             washers: {stock: 7, min: 7},
+#=         },
+#=     },
+#= }
+defn restock(items) -> {
+    def low = filter items with fn name, item -> item.stock < item.min
+    map low with fn name, item -> {[name]: item.min - item.stock}
+}
+
+def orders = restock(inventory)
+def lines = reduce orders init: [] with fn acc, name, quantity -> acc + [$'${name} x${quantity}']
+{
+    orders,
+    report: reduce lines with fn joined, line -> joined + ', ' + line,
+    empty: restock({}),
+}

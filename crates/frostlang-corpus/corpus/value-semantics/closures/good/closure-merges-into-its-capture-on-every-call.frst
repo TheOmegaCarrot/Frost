@@ -1,0 +1,8 @@
+# A closure merging into a captured Map builds from the original on every
+# call, including when the merge replaces a captured key.
+#= {result: [{k: 1, a: 2}, {k: 3}, {k: 1, b: 4}], inputs: {v: 1}}
+def merged = do {
+    def base = {k: v}
+    fn extra -> base + extra
+}
+[merged({a: 2}), merged({k: 3}), merged({b: 4})]

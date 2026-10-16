@@ -1,0 +1,3 @@
+# A literal just past the greatest finite Float rounds to Infinity, so it is rejected.
+#= {rejects: 'NaN or Infinity'}
+1.8e308

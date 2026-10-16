@@ -1,0 +1,10 @@
+# Merging matches keys by type and value, for every key type: equal keys
+# collide, while Int 1 and Float 1.0 stay apart.
+#= {
+#=     result: {[true]: 'r', [1]: 'r', [1.0]: 'l', ['s']: 'r', [x'00']: 'r', [2]: 'l'},
+#=     inputs: {
+#=         left: {[true]: 'l', [1]: 'l', [1.0]: 'l', ['s']: 'l', [x'00']: 'l', [2]: 'l'},
+#=         right: {[true]: 'r', [1]: 'r', ['s']: 'r', [x'00']: 'r'},
+#=     },
+#= }
+left + right

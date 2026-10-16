@@ -1,0 +1,8 @@
+# A branch is one expression: indenting several statements under it, then
+# writing `else`, leaves the `else` continuing nothing.
+#= {rejects: ['found `else`', 'an `if` branch is one expression']}
+if true:
+    print(1)
+    print(2)
+else:
+    3

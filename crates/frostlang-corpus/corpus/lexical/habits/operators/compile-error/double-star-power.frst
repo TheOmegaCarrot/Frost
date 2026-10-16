@@ -1,0 +1,3 @@
+# Frost has no `**` power operator.
+#= {rejects: 'no `**`'}
+2 ** 3

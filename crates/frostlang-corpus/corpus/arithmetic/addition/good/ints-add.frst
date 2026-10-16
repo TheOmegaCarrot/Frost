@@ -1,0 +1,10 @@
+# `+` on two Ints is Int addition, across signs and with zero.
+#= {result: [5, -3, 0, -7, 0, 42]}
+[
+    2 + 3,
+    -4 + 1,
+    0 + 0,
+    -3 + -4,
+    100 + -100,
+    42 + 0,
+]

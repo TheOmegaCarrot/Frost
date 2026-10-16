@@ -1,0 +1,5 @@
+# `filter` over an Array keeps the elements its predicate accepts, in their
+# original order.
+#= {result: [[2, 4], [2, 4]], inputs: {xs: [1, 2, 3, 4]}}
+def even = fn x -> x % 2 == 0
+[filter [1, 2, 3, 4] with even, filter xs with even]

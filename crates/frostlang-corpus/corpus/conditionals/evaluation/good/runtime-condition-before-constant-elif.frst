@@ -1,0 +1,8 @@
+# A constant truthy `elif` after a runtime condition is reached only when the
+# runtime one fails; the branches after it are never reached.
+#= {result: [1, 2], inputs: {t: true, f: false, zero: 0}}
+defn pick(c) -> if c: 1
+    elif true: 2
+    elif 1 / zero: 3
+    else: 4
+[pick(t), pick(f)]

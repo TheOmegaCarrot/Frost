@@ -1,0 +1,5 @@
+# One Array passed as two arguments is one value seen twice: building from
+# one parameter does not change the other.
+#= {result: [[0, 1], [0]], inputs: {xs: [0]}}
+def both = fn a, b -> [a + [1], b]
+both(xs, xs)

@@ -1,0 +1,4 @@
+# Calling a destructured part that is not a Function raises the call's error.
+#= {raises: 'call non-function', inputs: {ops: {f: 5}}}
+def {f} = ops
+f(1)

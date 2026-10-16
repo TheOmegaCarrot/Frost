@@ -1,0 +1,20 @@
+# Every Map is truthy: the empty Map, and a Map whose keys and values are
+# falsy-looking. Truthiness looks at the Map, never its entries.
+#= {
+#=     result: [[true, true, true, true], [true, true, true, true]],
+#=     inputs: {empty: {}, false_value: {a: false}, false_key: {[false]: null}, zero_key: {[0]: 0}},
+#= }
+[
+    [
+        not not {},
+        not not {a: false},
+        not not {[false]: null},
+        not not {[0]: 0},
+    ],
+    [
+        not not empty,
+        not not false_value,
+        not not false_key,
+        not not zero_key,
+    ],
+]

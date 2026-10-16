@@ -1,0 +1,4 @@
+# `~` is a character Frost does not use; as a bitwise operator elsewhere, it
+# gets help saying Frost has none.
+#= {rejects: ['unexpected character', 'no bitwise operators']}
+1 ~ 2

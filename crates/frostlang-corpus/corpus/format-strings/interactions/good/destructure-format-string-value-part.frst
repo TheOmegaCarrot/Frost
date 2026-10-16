@@ -1,0 +1,5 @@
+# A format String as a value part of a destructuring compares by the String it
+# evaluates to, and may read a name bound earlier in the same pattern.
+#= {result: '1', inputs: {xs: ['1', 'v1']}}
+def [a, $'v${a}'] = xs
+a

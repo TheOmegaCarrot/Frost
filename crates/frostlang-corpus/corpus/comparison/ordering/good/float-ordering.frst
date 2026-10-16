@@ -1,0 +1,14 @@
+# The four ordering operators on Floats, from the smallest positive Float to
+# the largest finite one.
+#= {result: [true, false, true, true, true, true, true, true, false]}
+[
+    1.5 < 2.5,
+    2.5 < 1.5,
+    2.5 > 1.5,
+    2.5 <= 2.5,
+    2.5 >= 2.5,
+    0.0 < 5e-324,
+    -1.7976931348623157e308 < 1.7976931348623157e308,
+    -2.5 < -1.5,
+    2.5 < 2.5,
+]

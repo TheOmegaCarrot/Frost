@@ -1,0 +1,3 @@
+# Frost has no `unless`; `if not` reads the same.
+#= {rejects: 'no `unless`', inputs: {x: true}}
+unless x: 1

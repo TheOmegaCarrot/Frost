@@ -1,0 +1,7 @@
+# A computed key after an alternative reads the name whichever branch bound.
+#= {result: [1, 2], inputs: {wrapped: {k: ['z'], z: 1}, bare: {k: 'y', y: 2}}}
+defn lookup(m) -> {
+    def {k: [a] | a, [a]: v} = m
+    v
+}
+[lookup(wrapped), lookup(bare)]

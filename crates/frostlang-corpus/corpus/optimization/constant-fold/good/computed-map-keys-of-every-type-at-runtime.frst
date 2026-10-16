@@ -1,0 +1,23 @@
+# The Map of computed-map-keys-of-every-type, with each key computed from a
+# value only known at runtime, has the same five distinct keys.
+#= {
+#=     result: [
+#=         {
+#=             [2]: 'int',
+#=             [2.0]: 'float',
+#=             [true]: 'bool',
+#=             ab: 'string',
+#=             [x'0102']: 'bytes',
+#=         },
+#=         5,
+#=     ],
+#=     inputs: {int: 1, float: 1.0, no: false, a: 'a', bytes: x'01'},
+#= }
+def m = {
+    [int + 1]: 'int',
+    [float + 1.0]: 'float',
+    [not no]: 'bool',
+    [a + 'b']: 'string',
+    [bytes + x'02']: 'bytes',
+}
+[m, len(m)]

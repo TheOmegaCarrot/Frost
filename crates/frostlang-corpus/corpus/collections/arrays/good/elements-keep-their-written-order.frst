@@ -1,0 +1,3 @@
+# An Array holds its elements in the order they are written, unsorted.
+#= {result: [3, 1, 2]}
+[3, 1, 2]

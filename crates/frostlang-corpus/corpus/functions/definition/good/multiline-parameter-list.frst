@@ -1,0 +1,8 @@
+# A parenthesized parameter list may span lines, with a trailing comma.
+#= {result: [1, 2, 3]}
+def triple = fn(
+    first,
+    second,
+    third,
+) -> [first, second, third]
+triple(1, 2, 3)

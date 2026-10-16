@@ -1,0 +1,6 @@
+# An exported `def` may not rebind a name a plain `def` already bound in the
+# same scope; exporting is not a way to redefine.
+#= {rejects: ['`a`', 'already bound']}
+def a = 1
+export def a = a + 1
+a

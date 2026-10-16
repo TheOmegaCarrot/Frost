@@ -1,0 +1,5 @@
+# A format string that interpolates one binding twice, and a value derived
+# from it, leaves the binding unchanged.
+#= {result: ['ñ|ñ|ñ!', 'ñ'], inputs: {s: 'ñ'}}
+def t = s + ''
+[$'${t}|${t}|${t + "!"}', t]

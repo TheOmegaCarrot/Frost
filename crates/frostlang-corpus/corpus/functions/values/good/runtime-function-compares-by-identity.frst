@@ -1,0 +1,4 @@
+# A function known only at runtime equals itself and nothing else.
+#= {result: [true, false, true], inputs: {f: fn v -> v}}
+def g = f
+[g == f, f == fn v -> v, [f] == [g]]

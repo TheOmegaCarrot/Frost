@@ -1,0 +1,10 @@
+# A parenthesized function in a pattern matches that same function, not one
+# that behaves differently.
+#= {result: ['same', 'other']}
+def f = fn -> 1
+def g = fn -> 2
+def which = fn v -> match v {
+    (f) => 'same',
+    _ => 'other',
+}
+[which(f), which(g)]

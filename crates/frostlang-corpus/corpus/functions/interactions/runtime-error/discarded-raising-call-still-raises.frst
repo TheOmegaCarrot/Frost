@@ -1,0 +1,6 @@
+# A call whose result is never used still runs, so its error is raised even
+# when the call is pure and over constants. Subtle: removing unused code must
+# not remove an error.
+#= {raises: 'division by zero'}
+(fn -> 1 / 0)()
+'after'

@@ -1,0 +1,7 @@
+# Guards over constant targets, which the optimizer may resolve ahead of time,
+# pick the same arms as at runtime.
+#= {result: ['small', 'big']}
+[
+    match 5 { x if: x > 9 => 'big', x => 'small' },
+    match 50 { x if: x > 9 => 'big', x => 'small' },
+]

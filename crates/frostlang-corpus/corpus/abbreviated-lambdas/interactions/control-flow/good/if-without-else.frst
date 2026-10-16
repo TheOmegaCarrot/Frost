@@ -1,0 +1,5 @@
+# An abbreviated lambda whose body is an `if` without `else` returns Null
+# when the condition fails.
+#= {result: [1, null]}
+def maybe = $(if $: 1)
+[maybe(true), maybe(false)]

@@ -1,0 +1,8 @@
+# A binding read by a pin in an arm that fails to match, and again in a later
+# arm, has its value in the later arm.
+#= {result: ['other', [1, 2]], inputs: {xs: [1, 2], target: [[9]]}}
+def v = xs
+match target {
+    [(v)] => ['pinned', v],
+    _ => ['other', v],
+}

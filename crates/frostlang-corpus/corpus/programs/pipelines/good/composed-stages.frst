@@ -1,0 +1,27 @@
+# A pipeline assembled from an Array of stages: `bcurry` fixes each stage's
+# trailing argument, and folding the stages with `compose` chains them first
+# to last. A second pipeline reads a nested price with `dig`, whose Null for
+# a missing link is then selected out.
+#= {
+#=     result: [[70, 0, 0], 7],
+#=     inputs: {
+#=         runs: [[3, -1, 4], [-5], []],
+#=         records: [{item: {price: 3}}, {item: {price: 4}}, {item: null}, {}],
+#=     },
+#= }
+defn sum(xs) -> fold(xs, 0, fn total, x -> total + x)
+
+def stages = [
+    bcurry(select, fn x -> x > 0),
+    bcurry(transform, fn x -> x * 10),
+    sum,
+]
+def positive_tens = fold(stages, compose)
+
+def prices = compose(
+    bcurry(transform, fn record -> dig(record, 'item', 'price')),
+    bcurry(select, is_nonnull),
+    sum,
+)
+
+[transform(runs, positive_tens), prices(records)]

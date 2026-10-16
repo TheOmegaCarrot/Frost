@@ -1,0 +1,14 @@
+# `is_bool` is true for Bool alone. Null is falsy but not a Bool.
+#= {result: [false, true, false, false, false, false, false, false, false, false]}
+[
+    is_bool(null),
+    is_bool(false),
+    is_bool(0),
+    is_bool(0.0),
+    is_bool(''),
+    is_bool(x''),
+    is_bool([]),
+    is_bool({}),
+    is_bool(fn -> null),
+    is_bool(len),
+]

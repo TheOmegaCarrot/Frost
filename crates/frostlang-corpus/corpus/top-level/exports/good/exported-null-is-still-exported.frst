@@ -1,0 +1,4 @@
+# An exported binding whose value is null is still an export. Subtle because a
+# present null export is distinct from no export at all.
+#= {result: null, exports: {nothing: null}}
+export def nothing = null

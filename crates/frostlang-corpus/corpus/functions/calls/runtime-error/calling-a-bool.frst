@@ -1,0 +1,3 @@
+# Calling a Bool raises, naming its type.
+#= {raises: ['non-function', 'Bool'], inputs: {flag: true}}
+flag()

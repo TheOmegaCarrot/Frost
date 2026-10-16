@@ -1,0 +1,10 @@
+# Exported definitions may take their values from continuation lines, with
+# comments and semicolons between statements.
+#= {
+#=     result: null,
+#=     exports: {count: 3, first: 1},
+#= }
+def xs = [1, 2, 3] # the data
+export def count = xs
+    @ len()
+export def first = xs[0]; null

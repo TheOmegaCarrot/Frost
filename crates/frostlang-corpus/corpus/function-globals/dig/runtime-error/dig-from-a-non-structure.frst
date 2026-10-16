@@ -1,0 +1,3 @@
+# With a key, the first argument must be indexable.
+#= {raises: ['Cannot index', 'Int']}
+dig(5, 0)

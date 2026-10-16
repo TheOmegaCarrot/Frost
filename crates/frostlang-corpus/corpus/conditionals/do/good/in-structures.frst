@@ -1,0 +1,7 @@
+# Blocks may be Array elements, Map values, and computed Map keys, each
+# leaving exactly its own value.
+#= {result: [[1, 11, 3], {a: 10}], inputs: {x: 10}}
+[
+    [1, do { def a = x; def b = a + 1; b }, 3],
+    {[do { def k = 'a'; k }]: do { def v = x; v }},
+]

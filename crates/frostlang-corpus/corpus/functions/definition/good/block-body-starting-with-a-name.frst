@@ -1,0 +1,8 @@
+# A braced body that starts with a bare name but holds another statement is a
+# block, not a shorthand Map: its last expression is the result.
+#= {result: 'second'}
+def f = fn a -> {
+    a
+    'second'
+}
+f('first')

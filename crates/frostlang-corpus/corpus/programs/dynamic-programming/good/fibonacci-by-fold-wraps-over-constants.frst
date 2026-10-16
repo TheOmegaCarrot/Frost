@@ -1,0 +1,9 @@
+# The Fibonacci fold over constant arguments, which the optimizer may compute
+# ahead of time: its wrapping must agree with the runtime's, so F(93) is the
+# same negative Int.
+#= {result: [0, 1, 55, 7540113804746346429, -6246583658587674878]}
+defn upto(n) -> if n == 0: [] else: upto(n - 1) + [n - 1]
+
+defn fib(n) -> fold(upto(n), [0, 1], fn pair, i -> [pair[1], pair[0] + pair[1]])[0]
+
+[fib(0), fib(1), fib(10), fib(92), fib(93)]

@@ -1,0 +1,3 @@
+# Of two constant operands that would each raise, the left one raises.
+#= {raises: 'left first'}
+error('left first') + error('right second')

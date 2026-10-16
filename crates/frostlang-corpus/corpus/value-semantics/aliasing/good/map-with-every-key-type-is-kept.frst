@@ -1,0 +1,12 @@
+# A Map holding every kind of key keeps all its entries when a merge that
+# replaces one key of each kind is derived from it.
+#= {
+#=     result: [
+#=         {[true]: 1, [2]: 2, [2.5]: 3, s: 4, [x'ff']: 5},
+#=         {[true]: 10, [2]: 20, [2.5]: 30, s: 40, [x'ff']: 50},
+#=     ],
+#=     inputs: {v: 1},
+#= }
+def m = {[true]: v, [2]: 2, [2.5]: 3, s: 4, [x'ff']: 5}
+def replaced = m + {[true]: 10, [2]: 20, [2.5]: 30, s: 40, [x'ff']: 50}
+[m, replaced]

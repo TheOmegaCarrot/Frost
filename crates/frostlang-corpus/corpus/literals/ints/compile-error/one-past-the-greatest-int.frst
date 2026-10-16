@@ -1,0 +1,4 @@
+# One past the greatest Int is out of range: a literal never wraps, though
+# arithmetic does.
+#= {rejects: 'Int literal out of range'}
+9223372036854775808

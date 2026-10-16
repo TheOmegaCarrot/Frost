@@ -1,0 +1,12 @@
+# Definitions and expression statements run in the order they are written.
+#= {result: 3, printed: ['one', 'two', 'three']}
+def a = do {
+    print('one')
+    1
+}
+print('two')
+def b = do {
+    print('three')
+    2
+}
+a + b

@@ -1,0 +1,8 @@
+# A sum that wraps partway through a reduce over constants and back gives the
+# exact two's-complement total, and a running product that wraps keeps
+# wrapping consistently step after step.
+#= {result: [1, -1203259126813176502]}
+[
+    reduce [9223372036854775807, 9223372036854775807, 3] with fn acc, x -> acc + x,
+    reduce [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20] init: 0 with fn acc, i -> acc * 31 + i,
+]

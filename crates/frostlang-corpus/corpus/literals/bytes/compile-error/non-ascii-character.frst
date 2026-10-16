@@ -1,0 +1,3 @@
+# A non-ASCII character in a Bytes literal is named with its code point.
+#= {rejects: ['U+00E9', 'Bytes literal']}
+x'0é'

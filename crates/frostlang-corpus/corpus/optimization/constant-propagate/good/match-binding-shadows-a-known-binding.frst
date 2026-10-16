@@ -1,0 +1,14 @@
+# A match arm's binding shadows a known binding of the same name in that arm
+# only; a pin of the name in a later arm reads the outer, known value.
+#= {result: [2, 'pinned', 1]}
+def x = 1
+[
+    match 2 {
+        x => x,
+    },
+    match 1 {
+        (x) => 'pinned',
+        _ => 'other',
+    },
+    x,
+]

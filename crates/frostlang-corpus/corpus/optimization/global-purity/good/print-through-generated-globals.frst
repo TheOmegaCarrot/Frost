@@ -1,0 +1,7 @@
+# The globals written in Frost, given `print`, print when the program runs:
+# composed, curried, or with arguments reversed.
+#= {result: 'done', printed: ['2', 'curried', 'b']}
+compose(len, print)([1, 2])
+curry(print, 'curried')()
+rev_args(fn a, b -> print(a))('a', 'b')
+'done'

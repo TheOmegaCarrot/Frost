@@ -1,0 +1,8 @@
+# Currying nests: each layer adds its arguments on its own side, so the
+# innermost `bcurry` argument ends up last.
+#= {result: [[1, 2, 3], [3, 2, 1], [1, 2, 3]]}
+[
+    curry(curry(collect, 1), 2)(3),
+    bcurry(bcurry(collect, 1), 2)(3),
+    bcurry(curry(collect, 1), 3)(2),
+]

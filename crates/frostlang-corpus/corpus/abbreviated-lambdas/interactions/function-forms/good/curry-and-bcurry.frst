@@ -1,0 +1,5 @@
+# `curry` fixes leading arguments and `bcurry` trailing ones of an
+# abbreviated lambda, which binds them by position.
+#= {result: [7, -7]}
+def minus = $($1 - $2)
+[curry(minus, 10)(3), bcurry(minus, 10)(3)]

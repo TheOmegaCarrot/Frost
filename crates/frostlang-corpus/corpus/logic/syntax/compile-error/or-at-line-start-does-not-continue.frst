@@ -1,0 +1,6 @@
+# Outside brackets, a line starting with `or` does not continue the previous
+# line: only `.` and `@` continue one. `or` cannot begin a statement.
+#= {rejects: ['expected an expression', '`or`']}
+def x = false
+    or true
+x

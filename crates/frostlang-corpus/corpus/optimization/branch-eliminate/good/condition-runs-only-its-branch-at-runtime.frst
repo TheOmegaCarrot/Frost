@@ -1,0 +1,7 @@
+# The `if`s of constant-condition-runs-only-its-branch, with conditions only
+# known at runtime, run the same branches.
+#= {result: [null, null], printed: ['kept', 'also kept'], inputs: {yes: true, no: false}}
+[
+    if yes: print('kept') else: print('dropped'),
+    if no: print('dropped') else: print('also kept'),
+]

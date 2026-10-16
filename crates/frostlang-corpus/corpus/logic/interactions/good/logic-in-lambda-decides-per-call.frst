@@ -1,0 +1,11 @@
+# A logical expression in a lambda body decides afresh on each call's
+# arguments, including in an abbreviated lambda.
+#= {result: [[1, 2, null], [null, false, 2], [0, 0, 3], [null, 2]]}
+def pick = fn a, b -> a or b
+def guard = fn a -> a and a + 1
+[
+    [pick(null, 1), pick(2, 1), pick(false, null)],
+    [guard(null), guard(false), guard(1)],
+    transform([null, false, 3], $($ or 0)),
+    [$($1 and $2)(null, 2), $($1 and $2)(1, 2)],
+]

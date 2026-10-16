@@ -1,0 +1,6 @@
+# `..._` accepts any further elements without binding them.
+#= {result: [1, 1, 'empty'], inputs: {xs: [[1], [1, 2, 3], []]}}
+transform(xs, fn v -> match v {
+    [first, ..._] => first,
+    _ => 'empty',
+})

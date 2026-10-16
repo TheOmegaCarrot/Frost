@@ -1,0 +1,3 @@
+# `curry` puts its argument first, so a later String is the right operand.
+#= {raises: 'Int - String'}
+curry(minus, 1)('a')

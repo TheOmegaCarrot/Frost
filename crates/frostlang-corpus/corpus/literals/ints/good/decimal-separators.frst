@@ -1,0 +1,4 @@
+# `_` separators anywhere after a decimal Int's first digit, repeated or trailing,
+# never change its value.
+#= {result: [1000, 1000000, 10, 12345, 12, 1000, 1, 1, 0, 0, 100]}
+[1_000, 1_000_000, 1_0, 12_34_5, 1__2, 1___000, 1_, 1__, 0_, 0_0, 100_]

@@ -1,0 +1,4 @@
+# An abbreviated lambda cannot hold another: which lambda a `$` belongs to
+# would be easy to misread.
+#= {rejects: 'cannot be nested'}
+def f = $($($1) + $1)

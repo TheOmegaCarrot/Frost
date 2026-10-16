@@ -1,0 +1,3 @@
+# An Array and a String do not order against each other.
+#= {raises: ['Cannot compare incompatible types', 'Array', 'String']}
+[] > ''

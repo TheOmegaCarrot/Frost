@@ -1,0 +1,3 @@
+# A pattern tests a type with `is`, not a `:` annotation.
+#= {rejects: 'test a type with `is`', inputs: {x: 1}}
+match x { n: Int => 1 }

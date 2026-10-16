@@ -1,0 +1,3 @@
+# Frost binds names with `def`, not JavaScript's or Rust's `let`.
+#= {rejects: 'no `let`'}
+let x = 5

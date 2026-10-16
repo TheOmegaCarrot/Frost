@@ -1,0 +1,7 @@
+# A failed guard fails the whole arm; later alternatives are not tried, even
+# though one of them would pass the guard. Subtle: `[_, x]` would bind 2 here.
+#= {result: 'no', inputs: {v: [1, 2]}}
+match v {
+    [x, _] | [_, x] if: x == 2 => 'yes',
+    _ => 'no',
+}

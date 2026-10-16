@@ -1,0 +1,6 @@
+# `_` is the discard, not a name: it may appear in several positions of one
+# pattern or parameter list without clashing.
+#= {result: [3, 4]}
+def f = fn _, _, z -> z
+def [_, _, w] = [1, 2, 4]
+[f(1, 2, 3), w]

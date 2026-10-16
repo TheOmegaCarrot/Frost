@@ -1,0 +1,4 @@
+# Placeholders are not values: an Array literal outside a lambda cannot
+# hold one.
+#= {rejects: ['found `$2`', 'only inside `$( ... )`']}
+[1, $2]

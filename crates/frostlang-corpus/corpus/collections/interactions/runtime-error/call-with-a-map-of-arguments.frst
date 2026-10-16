@@ -1,0 +1,3 @@
+# `call` spreads an Array of arguments; a Map is not accepted in its place.
+#= {raises: ['requires Array', 'got Map'], inputs: {args: {a: 1}}}
+call(fn a -> a, args)

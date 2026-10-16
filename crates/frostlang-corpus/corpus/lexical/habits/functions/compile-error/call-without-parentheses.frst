@@ -1,0 +1,3 @@
+# A call needs parentheses, unlike Ruby's or Haskell's.
+#= {rejects: 'call a function with parentheses'}
+print 'hi'

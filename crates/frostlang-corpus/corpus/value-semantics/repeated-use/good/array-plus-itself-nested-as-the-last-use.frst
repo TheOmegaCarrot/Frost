@@ -1,0 +1,5 @@
+# `xs + [xs]` at the binding's last use: the nested element is the original,
+# never the result the outer `+` builds.
+#= {result: [1, 2, [1, 2]], inputs: {n: 1}}
+def xs = [n, 2]
+xs + [xs]

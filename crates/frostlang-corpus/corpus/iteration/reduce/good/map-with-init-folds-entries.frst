@@ -1,0 +1,5 @@
+# Over a Map, `reduce` calls the operation with the accumulator, the key, and
+# the value of each entry.
+#= {result: [3, 3], inputs: {m: {a: 1, b: 2}}}
+def sum_values = fn acc, k, v -> acc + v
+[reduce {a: 1, b: 2} init: 0 with sum_values, reduce m init: 0 with sum_values]

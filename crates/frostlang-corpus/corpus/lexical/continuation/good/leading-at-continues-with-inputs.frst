@@ -1,0 +1,6 @@
+# A leading-`@` pipeline threads a value only known at runtime.
+#= {result: 12, inputs: {xs: [1, 2, 3, 4]}}
+xs
+    @ select(fn x -> x % 2 == 0)
+    @ transform(fn x -> x * 2)
+    @ fold(0, fn (acc, x) -> acc + x)

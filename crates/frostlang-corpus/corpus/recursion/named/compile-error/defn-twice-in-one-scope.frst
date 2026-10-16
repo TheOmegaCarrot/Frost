@@ -1,0 +1,6 @@
+# Two `defn`s of one name in a scope are a duplicate binding, not a redefinition
+# the later one wins.
+#= {rejects: '`f` is already bound'}
+defn f(n) -> if n == 0: 0 else: f(n - 1)
+defn f(n) -> 1
+f(3)

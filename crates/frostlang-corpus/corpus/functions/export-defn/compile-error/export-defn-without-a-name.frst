@@ -1,0 +1,3 @@
+# `export defn` needs a function name like `defn` does.
+#= {rejects: 'expected a function name'}
+export defn (x) -> x

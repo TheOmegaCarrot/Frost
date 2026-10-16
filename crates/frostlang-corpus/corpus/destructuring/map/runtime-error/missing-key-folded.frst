@@ -1,0 +1,4 @@
+# A missing key the optimizer can see ahead of time still raises at runtime.
+#= {raises: 'no value at key "a"', known_issue: 'FROST-155'}
+def {a} = {b: 1}
+a

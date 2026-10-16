@@ -1,0 +1,7 @@
+# A guard over a constant target that raises still raises at runtime; the
+# optimizer must not resolve the match past it.
+#= {raises: 'division by zero'}
+match 1 {
+    x if: x / 0 => 0,
+    _ => 1,
+}

@@ -1,0 +1,5 @@
+# A predicate call whose result is discarded still runs, so its arity error
+# is raised: a pure call is not dropped when it would raise.
+#= {raises: ['is_int', 'expects 1', 'called with 2']}
+is_int(1, 2)
+'after'

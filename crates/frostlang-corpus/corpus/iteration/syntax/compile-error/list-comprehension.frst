@@ -1,0 +1,4 @@
+# Frost has no comprehensions; the help points to `map` and `filter`.
+#= {rejects: 'Frost has no comprehensions'}
+def xs = [1, 2]
+[x * 2 for x in xs]

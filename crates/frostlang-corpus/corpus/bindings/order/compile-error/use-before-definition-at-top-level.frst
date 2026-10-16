@@ -1,0 +1,6 @@
+# A name is bound only from its `def` onward; a use earlier in the script is an
+# unbound name, not Null and not a forward reference.
+#= {rejects: ['`x`', 'not defined']}
+def y = x
+def x = 1
+y

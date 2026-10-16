@@ -1,0 +1,4 @@
+# A literal written as the callee of a threaded call parses, since `5()` is a
+# call, but raises when called; the compiler does not fold it away.
+#= {raises: ['non-function', 'Int']}
+1 @ 5()

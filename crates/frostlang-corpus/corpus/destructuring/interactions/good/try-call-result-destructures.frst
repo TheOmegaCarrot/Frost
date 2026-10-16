@@ -1,0 +1,12 @@
+# The Map `try_call` returns destructures like any Map, here after a failed
+# destructuring inside the call.
+#= {result: [false, true], inputs: {xs: [1, 2]}}
+def {ok} = try_call(fn -> {
+    def [a] = xs
+    a
+})
+def {ok: fine, value} = try_call(fn -> {
+    def [a, b] = xs
+    a + b
+})
+[ok, fine and value == 3]

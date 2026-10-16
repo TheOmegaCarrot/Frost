@@ -1,0 +1,4 @@
+# `a @ f()` calls `f` with `a` as its only argument.
+#= {result: 6}
+defn double(x) -> x * 2
+3 @ double()

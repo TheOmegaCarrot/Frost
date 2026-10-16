@@ -1,0 +1,4 @@
+# In `missing.key`, only `missing` is a name to resolve; when it is unbound,
+# that is the compile error, whatever the key.
+#= {rejects: ['`missing`', 'not defined']}
+missing.key

@@ -1,0 +1,5 @@
+# A multiline String's text starts on the line after its opener; text on the opening
+# line is rejected.
+#= {rejects: 'must begin with a newline after the opening delimiter'}
+def text = '''abc
+    '''

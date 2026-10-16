@@ -1,0 +1,3 @@
+# A Bytes literal with no closing quote on its line is unclosed.
+#= {rejects: 'unclosed Bytes literal'}
+def b = x'00ff

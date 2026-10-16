@@ -1,0 +1,4 @@
+# Each octet takes two hex digits, so an odd count leaves a digit with no pair: there
+# is no implied leading zero.
+#= {rejects: 'odd number of hex digits'}
+x'abc'

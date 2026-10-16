@@ -1,0 +1,4 @@
+# A pin may read only names bound before it in the pattern.
+#= {rejects: '`b` is not defined'}
+def [(b), b] = [1, 1]
+b

@@ -1,0 +1,7 @@
+# `dig` folds over its keys, indexing step by step, and a Null partway stays
+# Null instead of failing.
+#= {
+#=     result: [1, null, {b: [1]}],
+#=     inputs: {data: {a: {b: [1]}, n: null}},
+#= }
+[dig(data, 'a', 'b', 0), dig(data, 'n', 'b'), dig(data, 'a')]

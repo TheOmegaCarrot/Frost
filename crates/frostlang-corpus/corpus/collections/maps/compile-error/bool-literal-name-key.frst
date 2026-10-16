@@ -1,0 +1,4 @@
+# `true` is a literal, not a name, so `{true: 1}` is not the String key
+# `'true'` nor the Bool key `true`; a Bool key is written `{[true]: 1}`.
+#= {rejects: 'expected a name or `[`'}
+def m = {true: 1}

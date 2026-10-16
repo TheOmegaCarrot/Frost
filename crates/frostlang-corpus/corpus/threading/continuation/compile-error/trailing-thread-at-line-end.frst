@@ -1,0 +1,5 @@
+# Outside brackets a line ending in `@` does not continue: only a line
+# starting with `@` does.
+#= {rejects: ['line break', 'next line starts with'], inputs: {xs: [1]}}
+xs @
+    len()

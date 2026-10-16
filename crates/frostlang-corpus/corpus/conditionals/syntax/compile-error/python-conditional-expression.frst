@@ -1,0 +1,4 @@
+# Frost's conditional puts the condition first: `b if a else c` is an error.
+#= {rejects: ['found `if`', 'written `if a: b else: c`']}
+def c = true
+1 if c else 2

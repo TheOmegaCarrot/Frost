@@ -1,0 +1,4 @@
+# Ordering an Int against a String raises: there is no implicit conversion,
+# even when the String's text is a number.
+#= {raises: ['incompatible types', 'Int', 'String']}
+1 < '2'

@@ -1,0 +1,5 @@
+# Names bound by a plain def are not exported; only those of `export def` are.
+#= {result: 9, exports: {a: 1}, inputs: {xs: [1], ys: [9]}}
+export def [a] = xs
+def [hidden] = ys
+hidden

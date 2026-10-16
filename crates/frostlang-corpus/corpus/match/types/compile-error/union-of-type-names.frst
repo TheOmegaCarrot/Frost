@@ -1,0 +1,9 @@
+# A constraint names one type or category; a union of types is written as
+# alternatives, like `n is Int | n is Float`. Subtle: in `n is Int | Float`,
+# `Float` is a second alternative binding a name `Float`, so the alternatives
+# bind different names.
+#= {rejects: 'every alternative must bind the same names'}
+match 1 {
+    n is Int | Float => n,
+    _ => 0,
+}

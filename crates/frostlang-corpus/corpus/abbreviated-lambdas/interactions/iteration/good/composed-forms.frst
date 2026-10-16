@@ -1,0 +1,6 @@
+# Iteration forms with abbreviated lambdas compose: filter, then map, then
+# reduce.
+#= {result: 35, inputs: {xs: [1, 2, 3, 4, 5]}}
+def odd = filter xs with $($ % 2 == 1)
+def squares = map odd with $($ * $)
+reduce squares with $($1 + $2)

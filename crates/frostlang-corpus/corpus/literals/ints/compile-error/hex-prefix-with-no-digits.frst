@@ -1,0 +1,3 @@
+# A base prefix needs at least one digit after it.
+#= {rejects: 'hexadecimal Int literal with no digits'}
+0x

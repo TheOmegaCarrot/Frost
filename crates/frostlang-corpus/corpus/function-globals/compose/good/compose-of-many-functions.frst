@@ -1,0 +1,4 @@
+# A longer chain mixes lambdas and globals, each taking the last's result.
+#= {result: [[9], 1]}
+def steps = compose(fn x -> x + 1, fn x -> x * 2, fn x -> x - 3, collect)
+[steps(5), compose(fn x -> x + 1, fn x -> x * 2, fn x -> x - 3, collect, len)(5)]

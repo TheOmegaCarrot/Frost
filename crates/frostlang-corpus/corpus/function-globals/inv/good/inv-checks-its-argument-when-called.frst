@@ -1,0 +1,4 @@
+# `inv` rejects a non-Function when `inv` itself is called, not later when
+# the function it would return is called: `try_call` sees `inv` fail.
+#= {result: [false, true]}
+[try_call(inv, [5]).ok, try_call(inv, [len]).ok]

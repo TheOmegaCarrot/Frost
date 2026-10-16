@@ -1,0 +1,4 @@
+# A lambda in parentheses can be threaded into directly; the threaded value
+# is its first parameter.
+#= {result: [10, 2]}
+[5 @ (fn x -> x * 2)(), 5 @ (fn x, y -> x - y)(3)]

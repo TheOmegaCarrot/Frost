@@ -1,0 +1,4 @@
+# A function can be the threaded value: `f @ call(args)` is `call(f, args)`.
+#= {result: [5, [1, 2]]}
+defn inc(x) -> x + 1
+[inc @ call([4]), collect @ call([1, 2])]

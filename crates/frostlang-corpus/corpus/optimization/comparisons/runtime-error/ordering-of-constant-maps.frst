@@ -1,0 +1,5 @@
+# Ordering constant Maps, which have no order, raises when the program
+# reaches the comparison.
+#= {raises: 'not orderable'}
+def m = {a: 1}
+m < {b: 2}

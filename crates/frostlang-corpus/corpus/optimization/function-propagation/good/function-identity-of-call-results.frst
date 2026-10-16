@@ -1,0 +1,10 @@
+# Each call of a function that makes a function makes a new one: one result
+# equals itself, while the results of two calls differ, even when the calls
+# could be computed ahead of time. Optimization never shares closures.
+#= {result: [true, false, true, false]}
+defn make() -> fn x -> x
+def a = make()
+def b = make()
+def c = const(1)
+def d = const(1)
+[a == a, a == b, c == c, c == d]

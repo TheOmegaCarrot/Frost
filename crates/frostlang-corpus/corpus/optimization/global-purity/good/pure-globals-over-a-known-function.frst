@@ -1,0 +1,14 @@
+# Pure globals over a known Function, a written one or a global, answer as at
+# runtime: a Function is neither primitive, structured, nor flat.
+#= {result: ['Function', true, false, false, false, true, true, 'Function']}
+def f = fn -> 1
+[
+    type(f),
+    is_function(f),
+    is_primitive(f),
+    is_structured(f),
+    is_flat(f),
+    is_nonnull(f),
+    is_function(len),
+    type(print),
+]

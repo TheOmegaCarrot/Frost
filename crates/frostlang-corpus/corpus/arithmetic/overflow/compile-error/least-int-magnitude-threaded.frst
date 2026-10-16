@@ -1,0 +1,6 @@
+# The least Int's magnitude is a literal only as the whole operand of a `-`.
+# Before a postfix operator such as `@`, the magnitude is that operator's
+# operand, past the greatest Int, and is rejected. Subtle because
+# `-9223372036854775808` alone is fine.
+#= {rejects: 'out of range'}
+-9223372036854775808 @ to_string()

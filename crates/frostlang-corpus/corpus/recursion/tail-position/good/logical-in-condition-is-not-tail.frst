@@ -1,0 +1,7 @@
+# The right operand of `and` is not in tail position when the `and` is a
+# condition: a branch still runs after it. Subtle: the same operand is a tail
+# call when the `and` is the function's result.
+#= {result: 495}
+defn down(n) -> if n == 0: error('bottom') elif n > 0 and down(n - 1): 1 else: 2
+defn frames(n) -> len(try_call(down, [n]).trace)
+frames(500) - frames(5)

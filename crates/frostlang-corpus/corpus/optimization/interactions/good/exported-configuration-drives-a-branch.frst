@@ -1,0 +1,8 @@
+# A known exported configuration drives a later branch and binding: the
+# exports hold their values, the ruled-out branch's effect never happens, and
+# the result is computed from the configuration.
+#= {result: 4, exports: {config: {debug: false, level: 2}, doubled: 4}}
+export def config = {debug: false, level: 2}
+def level = config.level
+export def doubled = level * 2
+if config.debug: print('debugging') else: doubled

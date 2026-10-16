@@ -1,0 +1,4 @@
+# An Array known only at runtime does not order against an Int, even when its
+# only element is an Int.
+#= {raises: ['incompatible types', 'Int', 'Array'], inputs: {one: 1, xs: [1]}}
+one < xs

@@ -1,0 +1,7 @@
+# An undefined name is rejected at compile time even in a guard whose pattern
+# would never match.
+#= {rejects: '`nope` is not defined'}
+match 1 {
+    2 if: nope => 0,
+    _ => 1,
+}

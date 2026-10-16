@@ -1,0 +1,4 @@
+# The rest placeholder `$$` cannot name a pattern's rest.
+#= {rejects: 'name after `...`'}
+def [a, ...$$] = [1, 2]
+a

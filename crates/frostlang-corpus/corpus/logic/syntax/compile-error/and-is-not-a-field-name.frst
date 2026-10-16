@@ -1,0 +1,5 @@
+# `and` is a keyword, so it cannot follow `.` as a field name; a key spelled
+# like it is indexed with brackets instead.
+#= {rejects: ['name after `.`', '`and`']}
+def m = {['and']: 1}
+m.and

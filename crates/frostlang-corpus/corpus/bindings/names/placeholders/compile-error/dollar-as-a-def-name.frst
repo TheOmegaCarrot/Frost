@@ -1,0 +1,5 @@
+# `$` is a placeholder, valid only as a read inside an abbreviated lambda; it
+# cannot be bound by `def`.
+#= {rejects: ['`$`', 'placeholders work only inside']}
+def $ = 1
+1

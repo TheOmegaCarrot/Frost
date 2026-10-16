@@ -1,0 +1,4 @@
+# `^` is neither exponentiation nor a bitwise operator in Frost; it is not an
+# operator at all.
+#= {rejects: '`^`'}
+2 ^ 3

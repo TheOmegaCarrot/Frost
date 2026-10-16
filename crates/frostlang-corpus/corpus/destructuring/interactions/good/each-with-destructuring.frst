@@ -1,0 +1,7 @@
+# `each` runs a lambda that destructures each element, for its effect.
+#= {result: 'done', printed: ['a=1', 'b=2'], inputs: {entries: [['a', 1], ['b', 2]]}}
+each(entries, fn entry -> {
+    def [k, v] = entry
+    print($'${k}=${v}')
+})
+'done'

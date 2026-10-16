@@ -1,0 +1,9 @@
+# The final expression of a block body is in tail position, after the block's
+# own definitions.
+#= {result: 100000}
+defn down(n, acc) -> {
+    def next = n - 1
+    def total = acc + 1
+    if n == 0: acc else: down(next, total)
+}
+down(100000, 0)

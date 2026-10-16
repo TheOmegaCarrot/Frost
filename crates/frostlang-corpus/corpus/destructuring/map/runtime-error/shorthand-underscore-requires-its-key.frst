@@ -1,0 +1,9 @@
+# A shorthand `{_}` is the String key "_", which must be present, unlike a
+# bare `_` pattern that matches anything.
+#= {
+#=     raises: 'no value at key "_"',
+#=     inputs: {m: {a: 1}},
+#=     known_issue: 'FROST-155',
+#= }
+def {_, a} = m
+a

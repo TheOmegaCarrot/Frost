@@ -1,7 +1,7 @@
 use std::collections::BTreeMap;
 use std::sync::{Arc, Mutex};
 
-use frostlang::compile::{CompilerOptions, compile_program};
+use frostlang::compile::{CompilerOptions, compile_in_scope};
 use frostlang::{Value, Vm, VmRuntimeConfiguration};
 
 /// What compiling and running a script does under one set of options.
@@ -25,16 +25,23 @@ pub(crate) struct Finished {
     pub(crate) exports: BTreeMap<String, Value>,
 }
 
-/// Compile `source` under `options`, and run it if it compiles.
-pub(crate) fn observe(filename: &str, source: &str, options: CompilerOptions) -> Observed {
-    let output = match compile_program(filename, source, options) {
+/// Compile `source` under `options`, with each of `inputs` in its enclosing
+/// scope, and run it if it compiles, supplying their values.
+pub(crate) fn observe(
+    filename: &str,
+    source: &str,
+    inputs: &BTreeMap<String, Value>,
+    options: CompilerOptions,
+) -> Observed {
+    let scope: Vec<&str> = inputs.keys().map(String::as_str).collect();
+    let output = match compile_in_scope(filename, source, options, &scope) {
         Ok(output) => output,
         Err(diagnostics) => return Observed::Rejected(diagnostics.render_narrated()),
     };
     let closure = output
         .code
-        .into_closure()
-        .expect("a standalone program captures nothing");
+        .close(inputs.clone())
+        .expect("every name in scope is supplied");
     let printed = Arc::new(Mutex::new(Vec::new()));
     let sink = {
         let printed = Arc::clone(&printed);

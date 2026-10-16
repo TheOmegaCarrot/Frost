@@ -1,0 +1,4 @@
+# A `reduce` operation reads an enclosing binding on every step.
+#= {result: 36, inputs: {xs: [1, 2, 3]}}
+def bonus = 10
+reduce xs init: 0 with fn (acc, x) -> acc + x + bonus

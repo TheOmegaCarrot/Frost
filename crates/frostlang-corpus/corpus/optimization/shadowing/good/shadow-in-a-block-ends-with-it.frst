@@ -1,0 +1,7 @@
+# A global shadowed in a `do` block is the global again after the block.
+#= {result: [0, 1]}
+def shadowed = do {
+    def len = fn v -> 0
+    len([1])
+}
+[shadowed, len([1])]

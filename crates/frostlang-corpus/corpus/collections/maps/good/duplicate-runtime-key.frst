@@ -1,0 +1,11 @@
+# A key known only at runtime that equals another entry's key collides with
+# it, and the later entry wins whichever side is the runtime one.
+#= {
+#=     result: [{[7]: 'literal'}, {[7]: 'runtime'}, {[7]: 'second'}],
+#=     inputs: {k: 7, j: 7},
+#= }
+[
+    {[k]: 'runtime', [7]: 'literal'},
+    {[7]: 'literal', [k]: 'runtime'},
+    {[k]: 'first', [j]: 'second'},
+]

@@ -1,0 +1,5 @@
+# The `as` name counts as a binding of the pattern, so it may not repeat an
+# entry's name.
+#= {rejects: '`a` is already bound'}
+def {a} as a = {a: 1}
+a

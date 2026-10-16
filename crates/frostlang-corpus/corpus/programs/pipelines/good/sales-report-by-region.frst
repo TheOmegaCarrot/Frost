@@ -1,0 +1,30 @@
+# A reporting pipeline: fold sale records into revenue per region, render
+# one line per region (in the Map's ascending key order, not the order the
+# regions first appeared), and find the best region and the grand total.
+#= {
+#=     result: {
+#=         lines: ['east: 20', 'north: 16', 'south: 9'],
+#=         best: 'east',
+#=         total: 45,
+#=     },
+#=     inputs: {
+#=         sales: [
+#=             {region: 'north', item: 'apple', qty: 3, price: 2},
+#=             {region: 'south', item: 'pear', qty: 1, price: 5},
+#=             {region: 'north', item: 'pear', qty: 2, price: 5},
+#=             {region: 'east', item: 'apple', qty: 10, price: 2},
+#=             {region: 'south', item: 'plum', qty: 4, price: 1},
+#=         ],
+#=     },
+#= }
+defn add_sale(totals, sale) -> {
+    def {region, qty, price} = sale
+    totals + {[region]: (totals[region] or 0) + qty * price}
+}
+
+def totals = reduce sales init: {} with add_sale
+def lines = reduce totals init: [] with fn acc, region, total -> acc + [$'${region}: ${total}']
+def best = reduce totals init: null with fn leader, region, total ->
+    if leader == null or total > totals[leader]: region else: leader
+def total = fold(totals, 0, fn sum, region, amount -> sum + amount)
+{lines, best, total}

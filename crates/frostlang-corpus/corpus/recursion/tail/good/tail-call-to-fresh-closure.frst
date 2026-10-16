@@ -1,0 +1,6 @@
+# Each level creates a closure over its own parameter and tail-calls it; the
+# closure then tail-calls back. Subtle: the closure replaces the frame whose
+# parameter it captured, so it must hold its own copy.
+#= {result: 0}
+defn down(n) -> if n == 0: n else: (fn -> down(n - 1))()
+down(100000)

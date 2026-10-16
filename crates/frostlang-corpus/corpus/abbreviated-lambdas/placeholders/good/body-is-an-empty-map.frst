@@ -1,0 +1,5 @@
+# Braces in an abbreviated lambda's body are a Map literal, not a block:
+# `$({})` is a thunk returning the empty Map.
+#= {result: [{}, 'Map']}
+def empty = $({})
+[empty(), type(empty())]

@@ -1,0 +1,8 @@
+# A parenthesized structure is compared by deep equality with the target, not
+# destructured.
+#= {result: ['equal', 'different'], inputs: {a: [1, {b: [2, null]}], c: [1, {b: [2, false]}]}}
+defn same(v) -> match v {
+    ([1, {b: [2, null]}]) => 'equal',
+    _ => 'different',
+}
+[same(a), same(c)]

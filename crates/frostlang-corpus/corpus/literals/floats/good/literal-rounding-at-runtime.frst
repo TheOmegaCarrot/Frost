@@ -1,0 +1,5 @@
+# A Float literal names the nearest Float, and so does a sum computed only at
+# runtime, from Floats the compiler cannot see: `0.1 + 0.2` is the literal
+# `0.30000000000000004`, not `0.3`.
+#= {result: [true, false], inputs: {a: 0.1, b: 0.2}}
+[0.30000000000000004 == a + b, 0.3 == a + b]

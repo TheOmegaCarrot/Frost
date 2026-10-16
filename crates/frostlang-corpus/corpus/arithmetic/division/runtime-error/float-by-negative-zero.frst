@@ -1,0 +1,5 @@
+# Negative zero is a zero: dividing by -0.0 raises a division by zero rather
+# than producing a negative Infinity. Subtle because -0.0 is a distinct Float
+# bit pattern from 0.0.
+#= {raises: 'division by zero'}
+1.0 / -0.0

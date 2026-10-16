@@ -1,0 +1,3 @@
+# A raw String's text equals the same text known only at runtime.
+#= {result: true, inputs: {path: 'C:\\dir\\file\u{2e}txt'}}
+R'(C:\dir\file.txt)' == path

@@ -1,0 +1,17 @@
+# Every kind of function is a Function: lambdas of every shape, native and
+# generated globals, `call`, the predicates themselves, and a function a
+# global returns.
+#= {result: [true, true, true, true, true, true, true, true, true, true]}
+defn named(x) -> x
+[
+    is_function(fn -> 1),
+    is_function(fn ...xs -> xs),
+    is_function(named),
+    is_function($($ + 1)),
+    is_function(len),
+    is_function(call),
+    is_function(is_function),
+    is_function(curry),
+    is_function(curry(plus, 1)),
+    is_function(const(null)),
+]

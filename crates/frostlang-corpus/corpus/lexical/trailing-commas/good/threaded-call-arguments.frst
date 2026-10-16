@@ -1,0 +1,4 @@
+# A threaded call's argument list may end with a trailing comma, after the
+# arguments written in it.
+#= {result: [2, 4]}
+[1, 2] @ transform(fn x -> x * 2,)

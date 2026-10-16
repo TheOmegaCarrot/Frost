@@ -1,0 +1,5 @@
+# The right operand of `and` in tail position is in tail position.
+#= {result: 0}
+defn down(n) -> (n > 0 or error('bottom')) and down(n - 1)
+defn frames(n) -> len(try_call(down, [n]).trace)
+frames(500) - frames(5)

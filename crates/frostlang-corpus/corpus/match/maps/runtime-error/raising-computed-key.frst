@@ -1,0 +1,6 @@
+# A computed key whose expression raises propagates the error out of the match.
+#= {raises: 'division by zero', inputs: {v: {a: 1}, zero: 0}}
+match v {
+    {[1 / zero]: x} => x,
+    _ => 'fallback',
+}

@@ -1,0 +1,4 @@
+# A discarded `call` of a non-Function still raises.
+#= {raises: ['call', 'Function as argument 1', 'got Int']}
+call(1)
+'after'

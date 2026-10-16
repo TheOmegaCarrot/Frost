@@ -1,0 +1,4 @@
+# Unlike `map`, `foreach` over a Map places no constraint on what the
+# operation returns: its result is discarded.
+#= {result: {a: 1, b: 2}, inputs: {m: {a: 1, b: 2}}}
+foreach m with fn k, v -> 5

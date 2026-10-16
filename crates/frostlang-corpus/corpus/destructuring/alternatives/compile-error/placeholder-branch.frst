@@ -1,0 +1,4 @@
+# A `$` placeholder cannot be an alternative's branch.
+#= {rejects: 'expected a pattern'}
+def x is Int | $ = 1
+x

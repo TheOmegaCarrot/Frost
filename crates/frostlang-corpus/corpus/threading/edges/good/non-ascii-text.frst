@@ -1,0 +1,7 @@
+# Non-ASCII Strings thread and concatenate unchanged.
+#= {result: ['日本語', ['naïve', 'café'], 'ünïcödé!'], inputs: {jp: '日本', word: 'ünïcödé'}}
+[
+    jp @ (fn a, b -> a + b)('語'),
+    'naïve' @ collect('café'),
+    word @ $($ + '!')(),
+]

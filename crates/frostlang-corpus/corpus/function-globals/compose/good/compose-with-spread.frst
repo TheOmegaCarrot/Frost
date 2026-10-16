@@ -1,0 +1,4 @@
+# A later function receives one value; `spread` lets it take that value's
+# elements as its arguments.
+#= {result: 3}
+compose(collect, spread(plus))(1, 2)

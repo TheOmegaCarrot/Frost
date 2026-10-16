@@ -1,0 +1,5 @@
+# A line starting with `+` does not continue the line before: `+` cannot
+# start an expression, so it is an error, with help on continuing lines.
+#= {rejects: 'a line continues only when'}
+def x = 1
+    + 2

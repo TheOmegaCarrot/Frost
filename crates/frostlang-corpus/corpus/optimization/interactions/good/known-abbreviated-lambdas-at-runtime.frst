@@ -1,0 +1,7 @@
+# The abbreviated lambdas of known-abbreviated-lambdas, called with values only
+# known at runtime, give the same results.
+#= {result: [42, 3, [2, 4], [[2, 3]]], inputs: {n: 21, one: 1, xs: [1, 2]}}
+def double = $($ * 2)
+def add = $($1 + $2)
+def rest = $($$)
+[double(n), add(one, 2), map xs with double, [rest(one + 1, 3)]]

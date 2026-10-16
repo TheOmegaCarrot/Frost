@@ -1,0 +1,4 @@
+# A Map in an interpolation keyed by Strings holding braces: the braces in the
+# keys neither close the Map nor the interpolation.
+#= {result: '1 2'}
+$'${ {["}"]: 1, ["{"]: 2}["}"] } ${ {["}"]: 1, ["{"]: 2}["{"] }'

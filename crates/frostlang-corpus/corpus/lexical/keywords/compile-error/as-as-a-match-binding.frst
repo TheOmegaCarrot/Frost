@@ -1,0 +1,3 @@
+# `as` is a keyword, so it cannot be a `match` arm's binding.
+#= {rejects: 'keyword', inputs: {x: 1}}
+match x { as => 1, }

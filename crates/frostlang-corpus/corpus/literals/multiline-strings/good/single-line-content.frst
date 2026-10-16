@@ -1,0 +1,6 @@
+# A multiline String of one line is that line, with no line break at either end.
+#= {result: ['hello', 5]}
+def text = """
+    hello
+    """
+[text, len(text)]

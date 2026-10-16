@@ -1,0 +1,3 @@
+# `each` called directly checks its first argument, naming itself.
+#= {raises: ['each', 'Structured', 'argument 1', 'Float']}
+each(1.5, fn x -> x)

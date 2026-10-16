@@ -1,0 +1,11 @@
+# `filter` over a Map calls the predicate once per entry, in ascending key
+# order.
+#= {
+#=     result: {a: 1, b: 2, c: 3},
+#=     printed: ['a', 'b', 'c'],
+#=     inputs: {m: {c: 3, b: 2, a: 1}},
+#= }
+filter m with fn k, v -> {
+    print(k)
+    true
+}

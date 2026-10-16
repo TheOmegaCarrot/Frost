@@ -1,0 +1,6 @@
+# A CRLF line break inside a multiline String becomes LF in its value.
+#= {result: 'a\nb'}
+"""
+    a
+    b
+    """

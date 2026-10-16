@@ -1,0 +1,4 @@
+# A form feed is not a line break: two statements separated only by one sit
+# on the same line, which is an error.
+#= {rejects: 'a line break or `;`'}
+def a = 1def b = 2

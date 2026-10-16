@@ -1,0 +1,6 @@
+# A `.` on the next line continues the expression, so the field access still takes
+# the least Int's magnitude alone, out of range, before the `-` can negate it.
+#= {rejects: 'Int literal out of range'}
+def x = -9223372036854775808
+    .field
+x

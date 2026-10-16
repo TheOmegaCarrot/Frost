@@ -1,0 +1,6 @@
+# Each parameter binds the argument in the same position. With constant
+# arguments and a pure body, the optimizer may compute the call ahead of time;
+# the answer must be the same.
+#= {result: ['c', 'a', 'b']}
+def rotate = fn x, y, z -> [z, x, y]
+rotate('a', 'b', 'c')

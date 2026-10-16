@@ -1,0 +1,5 @@
+# Frost has no spread in calls; passing an Array's elements as arguments is
+# done with `call`.
+#= {rejects: ['expected an expression', '`...`']}
+def f = fn x -> x
+f(...[1])

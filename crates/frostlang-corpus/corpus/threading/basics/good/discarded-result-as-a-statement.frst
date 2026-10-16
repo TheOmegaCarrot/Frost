@@ -1,0 +1,4 @@
+# A threaded call as a statement runs for its effect; its value is dropped.
+#= {result: 'done', printed: ['hello']}
+'hello' @ print()
+'done'

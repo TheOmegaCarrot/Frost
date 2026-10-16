@@ -1,0 +1,6 @@
+# A call whose argument leaves the lambda's `or` undecided reaches the raising
+# right operand.
+#= {raises: 'the right operand ran'}
+def f = fn a -> a or error('the right operand ran')
+f(1)
+f(null)

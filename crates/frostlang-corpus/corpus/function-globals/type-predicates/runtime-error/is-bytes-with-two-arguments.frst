@@ -1,0 +1,3 @@
+# `is_bytes` takes exactly one argument.
+#= {raises: ['is_bytes', 'expects 1', 'called with 2']}
+is_bytes(x'00', x'01')

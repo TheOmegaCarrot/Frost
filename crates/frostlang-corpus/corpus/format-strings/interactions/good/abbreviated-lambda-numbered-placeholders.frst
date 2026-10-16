@@ -1,0 +1,4 @@
+# Numbered placeholders used only inside interpolations still set an
+# abbreviated lambda's parameters: here `$2` alone makes it take two.
+#= {result: ['b', 'a+b']}
+[$($'${$2}')('a', 'b'), $($'${$1}+${$2}')('a', 'b')]

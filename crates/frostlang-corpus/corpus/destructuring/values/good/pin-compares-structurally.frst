@@ -1,0 +1,4 @@
+# A pin compares with `==`, so Arrays and Maps match by structure.
+#= {result: 'ok', inputs: {xs: [[1, [2]], {a: [3]}, 'ok']}}
+def [([1, [2]]), ({a: [3]}), a] = xs
+a

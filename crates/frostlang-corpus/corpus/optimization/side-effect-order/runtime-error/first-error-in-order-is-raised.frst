@@ -1,0 +1,4 @@
+# Of two constant elements that would each raise, the first in evaluation
+# order raises: computing the elements ahead of time may not reorder errors.
+#= {raises: 'division by zero'}
+[1 / 0, {}.missing]

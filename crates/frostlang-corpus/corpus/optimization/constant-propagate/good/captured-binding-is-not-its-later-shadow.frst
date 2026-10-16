@@ -1,0 +1,9 @@
+# A function reads the binding in scope where it was written, not a shadow of
+# the same name in scope where it is called.
+#= {result: [1, 2]}
+def x = 1
+def f = fn -> x
+do {
+    def x = 2
+    [f(), x]
+}

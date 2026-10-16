@@ -1,0 +1,4 @@
+# A format String in an untaken branch is never evaluated, so its raising
+# interpolation does no harm.
+#= {result: 'ok', inputs: {flag: false}}
+if flag: $'${error("never")}' else: 'ok'

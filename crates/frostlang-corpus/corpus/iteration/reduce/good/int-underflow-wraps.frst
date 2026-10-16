@@ -1,0 +1,8 @@
+# Subtracting below the smallest Int in a `reduce` wraps around to the
+# largest, whether computed ahead of time or at runtime.
+#= {
+#=     result: [9223372036854775807, 9223372036854775807],
+#=     inputs: {xs: [-9223372036854775808, 1]},
+#= }
+def minus = fn acc, x -> acc - x
+[reduce [-9223372036854775808, 1] with minus, reduce xs with minus]

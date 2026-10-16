@@ -1,0 +1,12 @@
+# A binding holds a value of any type unchanged: Null, Bool, Int, Float,
+# String (non-ASCII included), Bytes, Array, and Map.
+#= {result: [null, true, -1, 2.5, 'naïve 日本', x'00ff', [1, [2]], {a: {b: null}}]}
+def n = null
+def b = true
+def i = -1
+def f = 2.5
+def s = 'naïve 日本'
+def y = x'00ff'
+def a = [1, [2]]
+def m = {a: {b: null}}
+[n, b, i, f, s, y, a, m]

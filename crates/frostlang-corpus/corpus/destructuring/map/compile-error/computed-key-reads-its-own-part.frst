@@ -1,0 +1,5 @@
+# A computed key is evaluated before its own part binds, so it cannot read
+# the name that part binds.
+#= {rejects: '`v` is not defined'}
+def {[v]: v} = {}
+v

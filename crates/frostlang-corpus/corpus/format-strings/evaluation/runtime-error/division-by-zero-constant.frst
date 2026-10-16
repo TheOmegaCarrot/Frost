@@ -1,0 +1,4 @@
+# A constant interpolation that raises still raises when the format String
+# runs: the optimizer must not fold it into a String.
+#= {raises: 'division by zero'}
+$'a${1 / 0}b'

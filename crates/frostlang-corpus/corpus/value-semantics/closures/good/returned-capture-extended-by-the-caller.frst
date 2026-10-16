@@ -1,0 +1,9 @@
+# A closure returning its capture hands the caller a value the caller can
+# extend without affecting the capture: the next call returns the original.
+#= {result: [[1, 2], [1], [1, 3]], inputs: {n: 1}}
+def peek = do {
+    def base = [n]
+    fn -> base
+}
+def first = peek() + [2]
+[first, peek(), peek() + [3]]

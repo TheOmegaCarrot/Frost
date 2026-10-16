@@ -1,0 +1,4 @@
+# An invalid lookup key raises even on an empty Map. Subtle because there is
+# nothing to find, yet the key is still checked.
+#= {raises: ['not a valid Map key', 'Map'], inputs: {m: {}}}
+m[{}]

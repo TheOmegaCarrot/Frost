@@ -1,0 +1,4 @@
+# Wrapping a whole chain in parentheses does not make it legal: the chain is
+# inside the parentheses.
+#= {rejects: 'cannot chain'}
+(1 < 2 < 3)

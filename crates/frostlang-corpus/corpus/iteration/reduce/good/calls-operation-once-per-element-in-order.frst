@@ -1,0 +1,11 @@
+# `reduce` calls the operation once per folded element, first to last; with
+# no `init:` the first element is the seed and is not folded.
+#= {
+#=     result: 6,
+#=     printed: ['1+2', '3+3'],
+#=     inputs: {xs: [1, 2, 3]},
+#= }
+reduce xs with fn acc, x -> {
+    print($'${acc}+${x}')
+    acc + x
+}

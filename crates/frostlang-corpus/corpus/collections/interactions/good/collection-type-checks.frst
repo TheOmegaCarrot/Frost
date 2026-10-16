@@ -1,0 +1,14 @@
+# The type predicates and `type` tell the collection types apart, empty or
+# not, and do not confuse String with Bytes.
+#= {
+#=     result: [
+#=         [true, false, false, false],
+#=         [false, true, false, false],
+#=         [false, false, true, false],
+#=         [false, false, false, true],
+#=         ['Array', 'Map', 'String', 'Bytes'],
+#=     ],
+#=     inputs: {xs: [], m: {}, s: '', y: x''},
+#= }
+defn check(v) -> [is_array(v), is_map(v), is_string(v), is_bytes(v)]
+[check(xs), check(m), check(s), check(y), [type(xs), type(m), type(s), type(y)]]

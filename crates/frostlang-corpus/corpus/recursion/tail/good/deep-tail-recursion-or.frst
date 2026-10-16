@@ -1,0 +1,4 @@
+# The right operand of `or` is in tail position.
+#= {result: true}
+defn down(n) -> n == 0 or down(n - 1)
+down(100000)

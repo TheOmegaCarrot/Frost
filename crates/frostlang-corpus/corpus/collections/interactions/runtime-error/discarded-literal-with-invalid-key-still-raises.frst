@@ -1,0 +1,6 @@
+# A Map literal used as a statement is still built, so an invalid key raises
+# even though the value is discarded. Subtle because an optimizer could drop
+# an unused literal.
+#= {raises: ['not a valid Map key', 'Null']}
+{[null]: 1}
+42

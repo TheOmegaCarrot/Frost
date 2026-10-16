@@ -1,0 +1,4 @@
+# Parentheses hold one expression, not statements, so a `;` cannot appear in
+# them.
+#= {rejects: 'found `;`'}
+(1; 2)

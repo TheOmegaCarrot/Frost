@@ -1,0 +1,3 @@
+# A keyword is not a function name.
+#= {rejects: ['expected a function name', '`if`']}
+defn if() -> 1

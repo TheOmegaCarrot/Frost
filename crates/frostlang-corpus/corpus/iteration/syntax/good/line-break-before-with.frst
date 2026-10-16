@@ -1,0 +1,5 @@
+# A form may break its line before `with`: the keyword still joins the
+# structure to its operation.
+#= {result: [2, 3], inputs: {xs: [1, 2]}}
+map xs
+with fn x -> x + 1

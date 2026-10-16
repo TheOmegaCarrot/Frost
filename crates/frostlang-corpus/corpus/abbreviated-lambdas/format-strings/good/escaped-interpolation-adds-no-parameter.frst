@@ -1,0 +1,6 @@
+# `\${$}` is escaped text, not an interpolation, so its `$` is no
+# placeholder: the lambda is a thunk returning the text verbatim. Subtle: the
+# same characters unescaped would make a one-argument lambda.
+#= {result: '${$}'}
+def thunk = $($'\${$}')
+thunk()

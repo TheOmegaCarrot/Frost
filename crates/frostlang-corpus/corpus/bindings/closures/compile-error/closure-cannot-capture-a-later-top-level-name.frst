@@ -1,0 +1,9 @@
+# A closure made inside a block cannot capture a top-level name bound only
+# after the block, even when it is called after that binding exists.
+#= {rejects: ['`later`', 'not defined']}
+def f = do {
+    def offset = 1
+    fn -> later + offset
+}
+def later = 1
+f()

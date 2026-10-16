@@ -1,0 +1,5 @@
+# A pin that prints, in a def's pattern, runs after the def's value is
+# computed, and the parts the pattern binds are still correct.
+#= {result: null, printed: ['value', 'pin']}
+def [a, (print('pin'))] = [print('value'), null]
+a

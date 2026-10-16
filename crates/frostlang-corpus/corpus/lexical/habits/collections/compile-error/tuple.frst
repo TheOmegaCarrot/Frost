@@ -1,0 +1,3 @@
+# Frost has no tuples; an Array holds several values.
+#= {rejects: 'no tuples'}
+def q = (1, 2)

@@ -1,0 +1,5 @@
+# Outside any abbreviated lambda, `$` text in a format string is literal,
+# and an abbreviated lambda beside it does not change that.
+#= {result: ['$1 and $$', '7']}
+def f = $($'${$}')
+[$'$1 and $$', f(7)]

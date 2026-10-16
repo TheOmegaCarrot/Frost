@@ -1,0 +1,4 @@
+# The value comes first and the function second; swapped, the second is not a
+# Function, even though the first is.
+#= {raises: ['tap', 'Function as argument 2', 'got String']}
+tap(print, 'value')

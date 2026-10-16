@@ -1,0 +1,4 @@
+# A later branch that binds fewer names than the first is rejected.
+#= {rejects: 'every alternative must bind the same names'}
+def [x, y] | [x] = [1]
+x

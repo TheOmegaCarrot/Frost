@@ -1,0 +1,13 @@
+# Values are immutable: building a longer Array or a merged Map from a bound
+# one leaves the original equal to what it was, and unequal to the result.
+#= {result: [true, true, false, true]}
+def xs = [1, 2]
+def longer = xs + [3]
+def m = {a: 1}
+def merged = m + {a: 2, b: 3}
+[
+    xs == [1, 2],
+    m == {a: 1},
+    longer == xs,
+    merged == {a: 2, b: 3},
+]

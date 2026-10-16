@@ -1,0 +1,9 @@
+# A bare type name in a pattern is an ordinary binding, not a type test:
+# `String => ...` matches every value and binds it to the name `String`.
+# Subtle: type names are contextual keywords, valid as identifiers though
+# inadvisable, so this means `_ is String` only to the reader.
+#= {result: 'text', inputs: {v: 5}}
+match v {
+    1 => 'one',
+    String => 'text',
+}

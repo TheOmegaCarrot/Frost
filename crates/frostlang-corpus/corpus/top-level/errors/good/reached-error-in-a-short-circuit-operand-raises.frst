@@ -1,0 +1,7 @@
+# `error` in an operand that `and` or `or` does evaluate raises.
+#= {result: ['and', 'or', 'null or']}
+[
+    try_call(fn -> true and error('and')).error,
+    try_call(fn -> false or error('or')).error,
+    try_call(fn -> null or error('null or')).error,
+]

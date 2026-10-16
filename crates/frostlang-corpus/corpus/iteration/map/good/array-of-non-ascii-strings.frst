@@ -1,0 +1,8 @@
+# `map` passes non-ASCII Strings through intact.
+#= {
+#=     result: [['héllo!', '日本!', '🧊!'], ['héllo!', '日本!', '🧊!']],
+#=     inputs: {xs: ['héllo', '日本', '🧊']},
+#= }
+def literal = map ['héllo', '日本', '🧊'] with fn s -> s + '!'
+def runtime = map xs with fn s -> s + '!'
+[literal, runtime]

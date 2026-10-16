@@ -1,0 +1,4 @@
+# A Float literal too large to be finite is a compile error, whereas Float
+# arithmetic that overflows raises only at runtime.
+#= {rejects: 'invalid float'}
+1e309 * 0.0

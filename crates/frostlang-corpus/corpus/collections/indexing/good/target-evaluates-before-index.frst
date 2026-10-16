@@ -1,0 +1,7 @@
+# The target is evaluated before the index.
+#= {result: 2, printed: ['target', 'index']}
+defn noisy(label, v) -> {
+    print(label)
+    v
+}
+noisy('target', [1, 2])[noisy('index', 1)]

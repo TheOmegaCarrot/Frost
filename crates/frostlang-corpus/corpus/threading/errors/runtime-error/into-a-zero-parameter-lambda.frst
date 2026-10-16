@@ -1,0 +1,4 @@
+# A function of no parameters cannot be threaded into, since threading always
+# passes at least one argument.
+#= {raises: ['expects 0', 'called with 1'], inputs: {n: 5}}
+n @ (fn -> 1)()

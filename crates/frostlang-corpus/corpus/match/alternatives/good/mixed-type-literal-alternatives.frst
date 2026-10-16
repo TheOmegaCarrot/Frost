@@ -1,0 +1,7 @@
+# Alternatives may mix literals of different types; each compares with `==`,
+# so `null | false` admits exactly the two falsy values.
+#= {result: ['falsy', 'falsy', 'truthy', 'truthy', 'truthy'], inputs: {xs: [null, false, 0, '', []]}}
+transform(xs, fn v -> match v {
+    null | false => 'falsy',
+    _ => 'truthy',
+})

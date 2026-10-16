@@ -1,0 +1,3 @@
+# Frost's logical "and" is the word `and`, not `&&`.
+#= {rejects: 'is `and`', inputs: {a: true, b: true}}
+a && b

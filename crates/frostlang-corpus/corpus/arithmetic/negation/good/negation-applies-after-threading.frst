@@ -1,0 +1,9 @@
+# `@` is a postfix operator, so it binds tighter than unary `-`: `-n @ square()`
+# is -(square(n)), not square(-n). Subtle because the minus sign reads as part
+# of the threaded value.
+#= {result: [-9, 9], inputs: {three: 3}}
+defn square(n) -> n * n
+[
+    -three @ square(),
+    (-three) @ square(),
+]

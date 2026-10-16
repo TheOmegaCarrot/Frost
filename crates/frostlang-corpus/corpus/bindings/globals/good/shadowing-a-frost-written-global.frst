@@ -1,0 +1,5 @@
+# A global written in Frost is shadowed like any other global.
+#= {result: ['mine', 7]}
+def curry = fn ...args -> 'mine'
+def compose = fn f, g -> 7
+[curry(1), compose(1, 2)]

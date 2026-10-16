@@ -1,0 +1,5 @@
+# A function defined after an exported binding captures it like any other.
+#= {result: 15, exports: {base: 10}}
+export def base = 10
+defn add_base(n) -> n + base
+add_base(5)

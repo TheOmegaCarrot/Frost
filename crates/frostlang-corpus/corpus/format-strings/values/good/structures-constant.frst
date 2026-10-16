@@ -1,0 +1,10 @@
+# Constant Arrays and Maps interpolate as `to_string` renders them, as runtime
+# ones do: folding ahead of time must not change the rendering.
+#= {result: [true, true, true, true]}
+def every_key_type = {[true]: 1, [2]: 2.5, a: x'00', [x'01']: [3], [1.5]: null}
+[
+    $'${[]}' == to_string([]),
+    $'${[1, 'two', [null]]}' == to_string([1, 'two', [null]]),
+    $'${{}}' == to_string({}),
+    $'${every_key_type}' == to_string(every_key_type),
+]

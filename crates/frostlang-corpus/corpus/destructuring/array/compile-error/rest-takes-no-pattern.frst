@@ -1,0 +1,5 @@
+# A rest is a plain name: it takes no nested pattern, since it is always an
+# Array of the remaining elements.
+#= {rejects: 'name after `...`'}
+def [a, ...[b, c]] = [1, 2, 3]
+[a, b, c]

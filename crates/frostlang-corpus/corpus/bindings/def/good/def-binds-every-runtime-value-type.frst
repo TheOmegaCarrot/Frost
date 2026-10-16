@@ -1,0 +1,24 @@
+# A binding holds a runtime value of any type unchanged. Each value comes from
+# an input, so the bindings cannot be propagated as constants.
+#= {
+#=     result: [null, false, 0, -0.5, 'ünï', x'', [], {}],
+#=     inputs: {
+#=         n: null,
+#=         b: false,
+#=         i: 0,
+#=         f: -0.5,
+#=         s: 'ünï',
+#=         y: x'',
+#=         a: [],
+#=         m: {},
+#=     },
+#= }
+def n2 = n
+def b2 = b
+def i2 = i
+def f2 = f
+def s2 = s
+def y2 = y
+def a2 = a
+def m2 = m
+[n2, b2, i2, f2, s2, y2, a2, m2]

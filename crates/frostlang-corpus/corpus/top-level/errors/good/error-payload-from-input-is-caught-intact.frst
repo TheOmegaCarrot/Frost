@@ -1,0 +1,10 @@
+# A payload only known at runtime is raised and caught intact.
+#= {
+#=     result: [{code: 7, items: [1, 'x']}, 'text', 3],
+#=     inputs: {record: {code: 7, items: [1, 'x']}, text: 'text', n: 3},
+#= }
+[
+    try_call(fn -> error(record)).error,
+    try_call(fn -> error(text)).error,
+    try_call(fn -> error(n)).error,
+]

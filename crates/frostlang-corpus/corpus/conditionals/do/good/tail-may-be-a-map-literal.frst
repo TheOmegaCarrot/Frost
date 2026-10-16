@@ -1,0 +1,12 @@
+# Braces starting a statement inside a block are a Map literal, not a nested
+# block, so a block may yield a Map, empty or not. Subtle: `do { {} }` reads
+# like an empty block nested in another.
+#= {result: [{a: 1}, {}, {b: 2}]}
+[
+    do { {a: 1} },
+    do { {} },
+    do {
+        def b = 2
+        {b}
+    },
+]

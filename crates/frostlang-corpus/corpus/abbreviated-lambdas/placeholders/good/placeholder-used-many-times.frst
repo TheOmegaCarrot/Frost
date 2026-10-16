@@ -1,0 +1,6 @@
+# A placeholder may appear any number of times; each use reads the same
+# argument.
+#= {result: [9, [7, 7, 7]], inputs: {three: 3, seven: 7}}
+def square = $($ * $)
+def triple = $([$1, $, $1])
+[square(three), triple(seven)]

@@ -1,0 +1,5 @@
+# Inside an abbreviated lambda, `$x` is the placeholder `$` followed by the
+# name `x`, not a name with a sigil, so the two cannot stand side by side.
+#= {rejects: ['expected `)`', 'found `x`']}
+def x = 1
+def f = $($x)

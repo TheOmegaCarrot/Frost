@@ -1,0 +1,3 @@
+# Some corpus scripts depend on trailing whitespace in their own source.
+[corpus/**.frst]
+trim_trailing_whitespace = false

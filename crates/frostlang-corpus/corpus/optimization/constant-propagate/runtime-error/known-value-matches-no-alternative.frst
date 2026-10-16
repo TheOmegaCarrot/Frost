@@ -1,0 +1,5 @@
+# A def none of whose alternatives its known value matches raises when the
+# program reaches it.
+#= {raises: 'matches no alternative'}
+def [a, 1] | [1, a] = [3, 4]
+a

@@ -1,0 +1,8 @@
+# A `defn` in a nested `do` block may reuse a parameter's name, shadowing the
+# parameter inside the block.
+#= {result: 5}
+def f = fn x -> do {
+    defn x() -> 5
+    x()
+}
+f(1)

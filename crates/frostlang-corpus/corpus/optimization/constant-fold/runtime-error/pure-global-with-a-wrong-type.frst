@@ -1,0 +1,4 @@
+# A pure global called with a constant argument of the wrong type raises its
+# type error when the program reaches the call.
+#= {raises: 'function len requires'}
+len(5)

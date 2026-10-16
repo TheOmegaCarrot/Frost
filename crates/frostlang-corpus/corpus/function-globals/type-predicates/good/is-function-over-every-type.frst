@@ -1,0 +1,15 @@
+# `is_function` is true for Function alone: a lambda and a native global
+# alike.
+#= {result: [false, false, false, false, false, false, false, false, true, true]}
+[
+    is_function(null),
+    is_function(false),
+    is_function(0),
+    is_function(0.0),
+    is_function(''),
+    is_function(x''),
+    is_function([]),
+    is_function({}),
+    is_function(fn -> null),
+    is_function(len),
+]

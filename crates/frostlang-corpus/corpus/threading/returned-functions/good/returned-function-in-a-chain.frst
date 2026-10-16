@@ -1,0 +1,6 @@
+# A step whose call returns a function continues a chain once that function
+# is called: `5 @ adder()(1) @ double()` is `double(adder(5)(1))`.
+#= {result: 12, inputs: {n: 5}}
+defn adder(k) -> fn x -> x + k
+defn double(x) -> x * 2
+n @ adder()(1) @ double()

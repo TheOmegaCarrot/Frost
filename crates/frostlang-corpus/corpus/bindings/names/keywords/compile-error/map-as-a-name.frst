@@ -1,0 +1,5 @@
+# `map` is a keyword (the `map ... with` expression), not a function, so it
+# cannot be bound as a name.
+#= {rejects: ['`map`', 'keyword']}
+def map = 1
+1

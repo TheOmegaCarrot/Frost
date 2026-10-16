@@ -1,0 +1,12 @@
+# A left operand the optimizer can compute ahead of time (an empty structure, a
+# comparison, a pure call, a `not`) decides `or` exactly as at runtime: the
+# skipped right operand never runs.
+#= {result: [[], {}, '', true, 0, true]}
+[
+    [] or print('right of []'),
+    {} or print('right of {}'),
+    '' or print('right of the empty String'),
+    (1 + 1 == 2) or print('right of a comparison'),
+    len('') or print('right of a call'),
+    not false or print('right of not'),
+]

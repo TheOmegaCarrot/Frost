@@ -1,0 +1,12 @@
+# Bytes equality on octets known only at runtime, including Bytes built by
+# concatenation.
+#= {
+#=     result: [true, false, true, true],
+#=     inputs: {hi: x'6869', high: x'80ff', empty: x''},
+#= }
+[
+    hi == x'6869',
+    hi == high,
+    empty + hi == hi,
+    x'68' + x'69' == hi,
+]

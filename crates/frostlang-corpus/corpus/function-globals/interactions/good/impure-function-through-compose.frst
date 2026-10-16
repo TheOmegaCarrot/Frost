@@ -1,0 +1,4 @@
+# `print` composed in either position still prints, and its Null result is
+# passed along.
+#= {result: [true, null], printed: ['first', 'second']}
+[compose(print, is_null)('first'), compose(fn x -> x, print)('second')]

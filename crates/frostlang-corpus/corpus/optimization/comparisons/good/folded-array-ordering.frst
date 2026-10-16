@@ -1,0 +1,12 @@
+# Ordering constant Arrays folds to the same answers as at runtime: they
+# compare element by element, a prefix is less, and an element pair that
+# cannot be ordered is never reached once an earlier pair decides.
+#= {result: [true, true, true, true, true, true]}
+[
+    [1, 2] < [1, 3],
+    [1] < [1, 0],
+    [] < [0],
+    [1, 'x'] < [2, 3],
+    [2] > [1, 5],
+    ['b'] >= ['a', 'z'],
+]

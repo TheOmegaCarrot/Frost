@@ -1,0 +1,8 @@
+# `defn` in a lambda body binds a name like `def` does, so it may not reuse a
+# parameter's name.
+#= {rejects: ['`g`', 'already bound']}
+def f = fn g -> {
+    defn g() -> 1
+    g()
+}
+f(0)

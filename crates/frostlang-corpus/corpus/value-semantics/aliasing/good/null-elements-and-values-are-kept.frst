@@ -1,0 +1,11 @@
+# Null elements and Null Map values are kept like any other when values are
+# derived from the structures holding them.
+#= {
+#=     result: [[null], [null, null], {k: null}, {k: null, j: null}],
+#=     inputs: {nothing: null},
+#= }
+def xs = [nothing]
+def more = xs + [nothing]
+def m = {k: nothing}
+def merged = m + {j: nothing}
+[xs, more, m, merged]

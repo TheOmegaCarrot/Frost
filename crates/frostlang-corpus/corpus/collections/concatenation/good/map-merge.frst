@@ -1,0 +1,3 @@
+# `+` merges Maps, with the empty Map as identity on either side.
+#= {result: [{a: 1, b: 2}, {a: 1}, {b: 2}, {}]}
+[{a: 1} + {b: 2}, {a: 1} + {}, {} + {b: 2}, {} + {}]

@@ -1,0 +1,4 @@
+# `call` is itself a function, so it can be applied by `call`, with either of
+# its own arities.
+#= {result: [[1, 2], []]}
+[call(call, [collect, [1, 2]]), call(call, [collect])]

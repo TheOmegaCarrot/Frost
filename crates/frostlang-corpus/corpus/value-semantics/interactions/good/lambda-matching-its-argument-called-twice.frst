@@ -1,0 +1,8 @@
+# A lambda destructuring its argument in a match, then extending the parts,
+# is called twice with one value and gives the same result both times.
+#= {result: [[[2, 1], [3]], [[2, 1], [3]], [[1, 2], [3]]], inputs: {n: 1}}
+def flip = fn pair -> match pair {
+    [[a, b], rest] => [[b, a], rest + []],
+}
+def value = [[n, 2], [3]]
+[flip(value), flip(value), value]

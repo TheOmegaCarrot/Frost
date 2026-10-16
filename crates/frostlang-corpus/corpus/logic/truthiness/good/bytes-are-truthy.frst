@@ -1,0 +1,17 @@
+# Every Bytes value is truthy, including the empty one and a single zero byte.
+#= {
+#=     result: [[true, true, true], [true, true, true]],
+#=     inputs: {empty: x'', zero: x'00', some: x'ff10'},
+#= }
+[
+    [
+        not not x'',
+        not not x'00',
+        not not x'ff10',
+    ],
+    [
+        not not empty,
+        not not zero,
+        not not some,
+    ],
+]

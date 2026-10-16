@@ -1,0 +1,38 @@
+# Each predicate answers exactly as the `is` constraint of the same name
+# matches, for a value of every type.
+#= {result: [true, true, true, true, true, true, true, true, true]}
+defn by_constraint(v) -> [
+    match v { _ is Null => true, _ => false },
+    match v { _ is Bool => true, _ => false },
+    match v { _ is Int => true, _ => false },
+    match v { _ is Float => true, _ => false },
+    match v { _ is String => true, _ => false },
+    match v { _ is Bytes => true, _ => false },
+    match v { _ is Array => true, _ => false },
+    match v { _ is Map => true, _ => false },
+    match v { _ is Function => true, _ => false },
+    match v { _ is Opaque => true, _ => false },
+    match v { _ is Nonnull => true, _ => false },
+    match v { _ is Numeric => true, _ => false },
+    match v { _ is Primitive => true, _ => false },
+    match v { _ is Structured => true, _ => false },
+    match v { _ is Flat => true, _ => false },
+]
+defn by_predicate(v) -> [
+    is_null(v),
+    is_bool(v),
+    is_int(v),
+    is_float(v),
+    is_string(v),
+    is_bytes(v),
+    is_array(v),
+    is_map(v),
+    is_function(v),
+    is_opaque(v),
+    is_nonnull(v),
+    is_numeric(v),
+    is_primitive(v),
+    is_structured(v),
+    is_flat(v),
+]
+map [null, false, 0, 0.0, '', x'', [], {}, len] with fn v -> by_constraint(v) == by_predicate(v)

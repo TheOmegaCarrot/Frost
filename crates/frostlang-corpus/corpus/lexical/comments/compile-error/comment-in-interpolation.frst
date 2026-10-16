@@ -1,0 +1,5 @@
+# An interpolation is lexed as Frost on one line, so a `#` in it starts a
+# comment that hides the rest of the line, closing brace and quote included.
+#= {rejects: 'cannot hold a comment'}
+def a = 1
+$'value: ${a # the value}'

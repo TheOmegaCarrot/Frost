@@ -1,0 +1,12 @@
+# Functions known only at runtime that behave differently are unequal, alone
+# and inside structures.
+#= {
+#=     result: [false, true, false, false],
+#=     inputs: {f: fn x -> x, g: fn x -> [x]},
+#= }
+[
+    f == g,
+    f != g,
+    [f] == [g],
+    {k: f} == {k: g},
+]

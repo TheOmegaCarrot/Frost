@@ -1,0 +1,4 @@
+# A rest's name counts as a binding of the pattern like any element's.
+#= {rejects: '`a` is already bound'}
+def [a, ...a] = [1, 2]
+a

@@ -1,0 +1,4 @@
+# An unbound name in an abbreviated lambda's body is a compile error, even
+# if the lambda is never called.
+#= {rejects: ['`missing`', 'not defined']}
+def f = $($ + missing)

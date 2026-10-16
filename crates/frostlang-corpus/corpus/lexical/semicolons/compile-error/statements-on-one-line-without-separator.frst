@@ -1,0 +1,3 @@
+# Two statements on one line need a `;` between them.
+#= {rejects: 'separate statements with a line break or `;`'}
+def a = 1 def b = 2

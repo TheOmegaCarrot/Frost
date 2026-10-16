@@ -1,0 +1,5 @@
+# A double-quoted format string interpolates placeholders like a
+# single-quoted one.
+#= {result: "it's 4"}
+def f = $($"it's ${$ * 2}")
+f(2)

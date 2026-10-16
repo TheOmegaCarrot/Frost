@@ -1,0 +1,3 @@
+# Constant Bools interpolate as `true` or `false`, as runtime ones do.
+#= {result: ['true', 'false', 'true/false']}
+[$'${true}', $'${false}', $'${1 < 2}/${2 < 1}']

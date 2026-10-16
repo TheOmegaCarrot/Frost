@@ -1,0 +1,17 @@
+# `is_string` is true for String alone, on values known only at run time.
+#= {
+#=     result: [false, false, false, false, true, false, false, false, false, false],
+#=     inputs: {n: null, b: false, i: 0, f: 0.0, s: '', y: x'', a: [], m: {}, g: fn -> null, h: len},
+#= }
+[
+    is_string(n),
+    is_string(b),
+    is_string(i),
+    is_string(f),
+    is_string(s),
+    is_string(y),
+    is_string(a),
+    is_string(m),
+    is_string(g),
+    is_string(h),
+]

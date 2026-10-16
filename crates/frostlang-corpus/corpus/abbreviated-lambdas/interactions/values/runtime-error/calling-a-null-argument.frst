@@ -1,0 +1,5 @@
+# `$1(...)` calls whatever the argument is; a Null argument is not callable
+# and raises, rather than the call yielding Null.
+#= {raises: ['call', 'Null'], inputs: {nothing: null}}
+def apply_to_two = $($1(2))
+apply_to_two(nothing)

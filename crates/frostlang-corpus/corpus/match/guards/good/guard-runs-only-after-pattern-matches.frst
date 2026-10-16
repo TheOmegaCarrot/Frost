@@ -1,0 +1,12 @@
+# A guard runs only when its arm's pattern has matched: guards of arms whose
+# patterns fail never run.
+#= {result: 'one', printed: ['one'], inputs: {v: [1]}}
+defn check(label) -> {
+    print(label)
+    true
+}
+match v {
+    [a, b] if: check('two') => 'two',
+    [a] if: check('one') => 'one',
+    _ if: check('any') => 'any',
+}

@@ -1,0 +1,4 @@
+# A String is not a Map.
+#= {raises: 'expected a Map', inputs: {v: 'a'}}
+def {a} = v
+a

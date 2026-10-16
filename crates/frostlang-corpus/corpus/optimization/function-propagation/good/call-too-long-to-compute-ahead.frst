@@ -1,0 +1,6 @@
+# A pure call over constants that takes more steps than the compiler will spend
+# computing ahead of time still computes its result, at runtime.
+#= {result: [0, 20000100000]}
+defn count_down(n) -> if n == 0: 0 else: count_down(n - 1)
+defn sum_to(n, acc) -> if n == 0: acc else: sum_to(n - 1, acc + n)
+[count_down(150000), sum_to(200000, 0)]

@@ -1,0 +1,6 @@
+# A block holding only a comment holds no expression: comments are not
+# values.
+#= {rejects: 'at least one expression'}
+do {
+    # nothing yet
+}

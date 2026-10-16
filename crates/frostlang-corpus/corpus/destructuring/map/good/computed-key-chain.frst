@@ -1,0 +1,4 @@
+# Each computed key may read the part bound just before it, forming a chain.
+#= {result: 6, inputs: {m: {start: 'a', a: 'b', b: 6}}}
+def {start, [start]: next, [next]: last} = m
+last

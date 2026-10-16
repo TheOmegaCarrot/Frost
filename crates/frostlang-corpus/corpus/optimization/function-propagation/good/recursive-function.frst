@@ -1,0 +1,5 @@
+# A call to a recursive named function over a constant argument computes its
+# result.
+#= {result: [610, 1]}
+defn fib(x) -> if x < 2: x else: fib(x - 1) + fib(x - 2)
+[fib(15), fib(1)]

@@ -1,0 +1,4 @@
+# A condition computed from constants that raises cannot pick a branch ahead
+# of time; it raises when the program reaches it.
+#= {raises: 'division by zero'}
+if 1 / 0: 'a' else: 'b'

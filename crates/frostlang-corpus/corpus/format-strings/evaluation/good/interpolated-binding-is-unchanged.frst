@@ -1,0 +1,9 @@
+# Interpolating a String binding never changes it: the binding keeps its text
+# after format Strings extend it, alone and joined with itself. Subtle: the
+# binding holds a freshly built String, which no other value shares.
+#= {result: ['7', '7!', '<7>', '77'], inputs: {x: 7}}
+def s = $'${x}'
+def bang = $'${s}!'
+def angled = $'<${s}>'
+def twice = $'${s}${s}'
+[s, bang, angled, twice]

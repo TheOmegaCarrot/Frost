@@ -1,0 +1,8 @@
+# A binding's value is computed once, where the `def` runs; reading the name
+# again does not run the expression again.
+#= {result: [5, 5, 5], printed: ['computing']}
+def x = do {
+    print('computing')
+    5
+}
+[x, x, x]

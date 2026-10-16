@@ -1,0 +1,9 @@
+# A block inside a call's parentheses is still a scope of its own, where a
+# line break ends a statement even though it is insignificant around it.
+#= {rejects: 'found a line break'}
+defn id(v) -> v
+def x = 1
+id(do {
+    x +
+    x
+})

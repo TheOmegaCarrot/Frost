@@ -1,0 +1,3 @@
+# An error raised inside the called function passes out through `call`.
+#= {raises: 'inner failure'}
+call(fn -> error('inner failure'))

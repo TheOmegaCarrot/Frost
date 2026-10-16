@@ -1,0 +1,9 @@
+# Scope is lexical: a function cannot read a name bound only in a scope that
+# calls it.
+#= {rejects: ['`local`', 'not defined']}
+def read = fn -> local
+def caller = fn -> {
+    def local = 1
+    read()
+}
+caller()

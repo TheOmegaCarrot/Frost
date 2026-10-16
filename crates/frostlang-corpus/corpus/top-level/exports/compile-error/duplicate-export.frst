@@ -1,0 +1,5 @@
+# Exporting the same name twice is a duplicate binding at the top level, not a
+# later export replacing an earlier one.
+#= {rejects: ['`x` is already bound', 'duplicate binding']}
+export def x = 1
+export def x = 2

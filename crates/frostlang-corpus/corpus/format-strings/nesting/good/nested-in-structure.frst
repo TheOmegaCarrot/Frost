@@ -1,0 +1,7 @@
+# A format String inside an Array or Map literal inside an interpolation: the
+# inner result is a String element, rendered as `to_string` renders it.
+#= {result: [true, true], inputs: {x: 7}}
+[
+    $'${[$'${x}', x]}' == to_string(['7', 7]),
+    $'${{k: $"v${x}"}}' == to_string({k: 'v7'}),
+]

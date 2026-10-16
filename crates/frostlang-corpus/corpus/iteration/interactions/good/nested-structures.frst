@@ -1,0 +1,9 @@
+# Forms reach into nested structures: Arrays of Maps of Arrays.
+#= {
+#=     result: [{name: 'a', total: 3}, {name: 'b', total: 0}],
+#=     inputs: {rows: [{name: 'a', items: [1, 2]}, {name: 'b', items: []}]},
+#= }
+map rows with fn row -> {
+    name: row.name,
+    total: reduce row.items init: 0 with fn acc, x -> acc + x,
+}

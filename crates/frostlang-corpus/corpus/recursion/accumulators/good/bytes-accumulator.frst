@@ -1,0 +1,7 @@
+# A Bytes accumulator, starting from empty Bytes, concatenates in order.
+#= {result: [x'', x'00ff10']}
+defn concat_all(chunks, acc) -> match chunks {
+    [] => acc,
+    [chunk, ...rest] => concat_all(rest, acc + chunk),
+}
+[concat_all([], x''), concat_all([x'00', x'', x'ff10'], x'')]

@@ -1,0 +1,8 @@
+# A block binding shadowing a global applies only inside the block; the global
+# is back in view after it.
+#= {result: [6, 'Int']}
+def inner = do {
+    def type = 5
+    type + 1
+}
+[inner, type(1)]

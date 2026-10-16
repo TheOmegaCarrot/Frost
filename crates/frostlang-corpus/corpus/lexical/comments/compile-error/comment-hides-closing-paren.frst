@@ -1,0 +1,4 @@
+# A comment runs to the end of its line even past a closing bracket, so the
+# `)` after `#` is hidden and the call is left open.
+#= {rejects: 'end of input'}
+print(1 # )

@@ -1,0 +1,4 @@
+# A field access binds tighter than unary `-`, so in `-9223372036854775808.x` the
+# magnitude is the field's target, standing alone and out of range.
+#= {rejects: 'Int literal out of range'}
+-9223372036854775808.x

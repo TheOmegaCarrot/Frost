@@ -1,0 +1,4 @@
+# `as` is a keyword (the whole-Map binding), so it cannot be bound as a name.
+#= {rejects: ['`as`', 'keyword']}
+def as = 1
+1

@@ -1,0 +1,12 @@
+# Constant chains group from the left exactly as runtime ones do; the folder
+# must not regroup non-associative operators.
+#= {result: [5, 9, 18, 2, 6, 2, 2]}
+[
+    10 - 3 - 2,
+    10 - 3 + 2,
+    12 / 2 * 3,
+    100 / 10 / 5,
+    7 % 4 * 2,
+    2 * 7 % 4,
+    100 % 7 % 3,
+]

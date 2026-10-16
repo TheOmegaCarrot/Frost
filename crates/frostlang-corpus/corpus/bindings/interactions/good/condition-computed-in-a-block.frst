@@ -1,0 +1,10 @@
+# An `if` condition may be a `do` block with its own binding, which is not
+# visible in the branches.
+#= {result: ['positive', 'not positive', 'outer'], inputs: {pos: 5, neg: -5}}
+def t = 'outer'
+defn sign(n) -> if do {
+    def t = n > 0
+    t
+}: 'positive'
+else: 'not positive'
+[sign(pos), sign(neg), t]

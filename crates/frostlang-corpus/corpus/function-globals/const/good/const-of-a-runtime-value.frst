@@ -1,0 +1,4 @@
+# A constant known only at run time.
+#= {result: ['v', 'v'], inputs: {v: 'v', arg: 1}}
+def always_v = const(v)
+[always_v(arg), always_v()]

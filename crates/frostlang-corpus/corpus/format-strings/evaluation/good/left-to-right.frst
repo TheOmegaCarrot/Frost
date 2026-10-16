@@ -1,0 +1,4 @@
+# Interpolations are evaluated left to right, each exactly once. `print`
+# returns Null, which is what each interpolation contributes.
+#= {result: '1:null 2:null 3:null', printed: ['a', 'b', 'c']}
+$'1:${print("a")} 2:${print("b")} 3:${print("c")}'

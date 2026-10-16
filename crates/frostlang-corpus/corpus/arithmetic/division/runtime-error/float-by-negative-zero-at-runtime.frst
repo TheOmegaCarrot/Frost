@@ -1,0 +1,4 @@
+# Dividing by a -0.0 only known at runtime raises a division by zero, as
+# dividing by 0.0 does.
+#= {raises: 'division by zero', inputs: {x: 1.0, zero: 0.0}}
+x / -zero

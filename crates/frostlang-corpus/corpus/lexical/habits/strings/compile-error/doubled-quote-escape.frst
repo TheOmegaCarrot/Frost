@@ -1,0 +1,4 @@
+# A doubled quote, as SQL and Pascal escape one, ends the String and starts
+# another; a quote is escaped with a backslash.
+#= {rejects: 'with a backslash'}
+def a = 'it''s'

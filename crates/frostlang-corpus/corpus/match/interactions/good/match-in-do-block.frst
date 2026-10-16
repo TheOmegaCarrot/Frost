@@ -1,0 +1,9 @@
+# A match may be the last expression of a `do` block, over the block's own
+# definitions.
+#= {result: 1, inputs: {n: 1}}
+do {
+    def v = [n]
+    match v {
+        [x] => x,
+    }
+}

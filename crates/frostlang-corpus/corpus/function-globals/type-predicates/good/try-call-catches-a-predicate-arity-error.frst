@@ -1,0 +1,29 @@
+# A predicate's arity error is ordinary: `try_call` catches it for every one
+# of them, with too few arguments and with too many.
+#= {
+#=     result: [
+#=         [false, false, false, false, false, false, false, false, false, false, false, false, false, false, false],
+#=         [false, false, false, false, false, false, false, false, false, false, false, false, false, false, false],
+#=     ],
+#= }
+def predicates = [
+    is_null,
+    is_bool,
+    is_int,
+    is_float,
+    is_string,
+    is_bytes,
+    is_array,
+    is_map,
+    is_function,
+    is_opaque,
+    is_nonnull,
+    is_numeric,
+    is_primitive,
+    is_structured,
+    is_flat,
+]
+[
+    map predicates with fn p -> try_call(p, []).ok,
+    map predicates with fn p -> try_call(p, [1, 2]).ok,
+]

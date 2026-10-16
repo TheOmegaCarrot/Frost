@@ -1,0 +1,11 @@
+# When `or` short-circuits, the block on its right never runs, so its binding's
+# value is never computed; when it does not, the block runs as usual.
+#= {result: ['given', 'default'], printed: ['computing default'], inputs: {given: 'given', nothing: null}}
+defn pick(v) -> v or do {
+    def d = do {
+        print('computing default')
+        'default'
+    }
+    d
+}
+[pick(given), pick(nothing)]

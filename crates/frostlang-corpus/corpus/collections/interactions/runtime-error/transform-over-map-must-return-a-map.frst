@@ -1,0 +1,4 @@
+# `transform` over a Map requires its function to return a Map of entries to
+# merge; returning a bare value raises.
+#= {raises: 'must return a Map', inputs: {m: {a: 1}}}
+transform(m, fn k, v -> v * 2)

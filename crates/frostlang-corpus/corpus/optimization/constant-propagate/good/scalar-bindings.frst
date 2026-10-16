@@ -1,0 +1,8 @@
+# A binding of a known scalar reads back its value wherever it is used, and
+# expressions over it compute as written.
+#= {result: [5, 10, 2.5, true, null, 'null']}
+def n = 5
+def f = 2.5
+def b = true
+def z = null
+[n, n * 2, f, b, z, to_string(z)]

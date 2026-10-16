@@ -1,0 +1,3 @@
+# Raising false is still raising: uncaught, its message is `false`.
+#= {raises: 'false'}
+error(false)

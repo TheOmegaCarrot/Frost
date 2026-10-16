@@ -1,0 +1,5 @@
+# A step after one that raises never runs: nothing is printed, and
+# `try_call` reports the error.
+#= {result: [false, 'stop here'], inputs: {msg: 'stop here'}}
+def r = try_call(fn -> msg @ error() @ print(), [])
+[r.ok, r.error]

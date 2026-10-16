@@ -1,0 +1,5 @@
+# Leading, doubled, and trailing `;` separators are empty statements; the last
+# real statement is still the tail. Subtle because a trailing `;` must not
+# leave an empty statement behind as a null tail.
+#= {result: 2}
+;1;;2;

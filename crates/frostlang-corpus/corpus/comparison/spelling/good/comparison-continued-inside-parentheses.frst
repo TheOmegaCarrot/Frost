@@ -1,0 +1,8 @@
+# Inside parentheses a comparison may break across lines on either side of its
+# operator.
+#= {result: [true, false], inputs: {a: 1, b: 2}}
+def before = (a
+    < b)
+def after = (a >=
+    b)
+[before, after]

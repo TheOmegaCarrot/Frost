@@ -1,0 +1,3 @@
+# Null is not an empty argument list: `try_call(f, null)` raises a type error.
+#= {raises: ['try_call', 'argument 2', 'got Null']}
+try_call(fn -> 1, null)

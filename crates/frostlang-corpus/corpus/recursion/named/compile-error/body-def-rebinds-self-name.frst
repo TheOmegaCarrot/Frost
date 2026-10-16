@@ -1,0 +1,9 @@
+# A `def` directly in a function's body may not rebind its self-name: the body
+# shares the scope the self-name lives in. A nested `do` block, by contrast,
+# may shadow it.
+#= {rejects: '`f` is already bound'}
+defn f(n) -> {
+    def f = n
+    f
+}
+f(1)

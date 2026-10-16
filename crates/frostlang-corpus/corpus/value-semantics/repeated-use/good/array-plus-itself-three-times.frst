@@ -1,0 +1,5 @@
+# `xs + xs + xs` builds the first sum, then adds `xs` once more: the
+# intermediate sum must not have changed the `xs` read after it.
+#= {result: [1, 2, 1, 2, 1, 2], inputs: {n: 1}}
+def xs = [n, 2]
+xs + xs + xs

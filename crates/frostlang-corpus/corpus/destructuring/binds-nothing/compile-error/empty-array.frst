@@ -1,0 +1,4 @@
+# An empty Array pattern binds no name.
+#= {rejects: 'binds no name', inputs: {xs: []}}
+def [] = xs
+0

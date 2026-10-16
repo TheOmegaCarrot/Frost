@@ -1,0 +1,3 @@
+# `not` is a keyword operator, so it cannot be bound as a name.
+#= {rejects: 'keyword'}
+def not = 1

@@ -1,0 +1,8 @@
+# A `do` block with its own destructuring def serves as a computed key: a
+# computed key accepts any expression, however poor the style.
+#= {result: 6}
+def {[do {
+    def [k] = ['a']
+    k
+}]: v} = {a: 6}
+v

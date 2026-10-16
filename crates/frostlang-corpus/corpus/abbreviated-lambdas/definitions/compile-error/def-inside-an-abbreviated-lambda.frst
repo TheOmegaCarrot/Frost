@@ -1,0 +1,7 @@
+# Even inside an abbreviated lambda, where `$` is a name, a `do` block
+# cannot redefine it: placeholders are never bound by `def`.
+#= {rejects: ['expected a pattern', 'found `$`']}
+def f = $(do {
+    def $ = 1
+    $
+})

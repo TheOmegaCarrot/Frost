@@ -1,0 +1,3 @@
+# A format String, like a quoted one, escapes only its own quote.
+#= {rejects: ['invalid escape sequence', R'(`\"`)', 'needs no backslash']}
+$'say \"hi\"'

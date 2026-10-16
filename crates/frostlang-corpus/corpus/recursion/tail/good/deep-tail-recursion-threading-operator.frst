@@ -1,0 +1,5 @@
+# A call written with `@` is a call like any other, so in tail position it is
+# a tail call: `(n - 1) @ down(acc + 1)` is `down(n - 1, acc + 1)`.
+#= {result: 100000}
+defn down(n, acc) -> if n == 0: acc else: (n - 1) @ down(acc + 1)
+down(100000, 0)

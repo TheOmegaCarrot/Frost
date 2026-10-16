@@ -1,0 +1,6 @@
+# Parameters may be written in parentheses, including an empty list.
+#= {result: [3, 42, 5]}
+def add = fn(x, y) -> x + y
+def thunk = fn() -> 42
+def ident = fn(v) -> v
+[add(1, 2), thunk(), ident(5)]

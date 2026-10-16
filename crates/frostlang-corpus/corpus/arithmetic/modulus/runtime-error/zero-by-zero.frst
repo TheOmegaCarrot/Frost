@@ -1,0 +1,3 @@
+# Zero modulo zero raises as any modulus by zero does.
+#= {raises: 'modulus by zero'}
+0 % 0

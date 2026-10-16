@@ -1,0 +1,3 @@
+# An error inside a curried function passes out unchanged.
+#= {raises: 'from inside'}
+curry(fn x -> error('from inside'), 1)()

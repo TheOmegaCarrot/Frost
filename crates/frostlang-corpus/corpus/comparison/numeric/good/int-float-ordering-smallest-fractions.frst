@@ -1,0 +1,10 @@
+# The smallest fractions a Float holds still break a tie with an Int: the
+# least positive Float is above `0`, and its negation below. Near 2^51, a half
+# still separates neighboring Ints.
+#= {result: [true, true, true, true]}
+[
+    0 < 5e-324,
+    0 > -5e-324,
+    2251799813685248 < 2251799813685248.5,
+    2251799813685249 > 2251799813685248.5,
+]

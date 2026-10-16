@@ -1,0 +1,6 @@
+# A concatenation of constant Bytes, which the compiler may compute ahead of
+# time, leaves both operand bindings as they were.
+#= {result: [x'00ff', x'00', x'ff', x'0000']}
+def a = x'00'
+def b = x'ff'
+[a + b, a, b, a + a]

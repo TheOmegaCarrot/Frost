@@ -1,0 +1,6 @@
+# A `defn` body in braces follows the lambda rule: `{x: ...}` is a Map and a
+# lone `{x}` is a shorthand Map.
+#= {result: [{x: 1, y: 2}, {x: 3}]}
+defn point(x, y) -> {x: x, y: y}
+defn wrap(x) -> {x}
+[point(1, 2), wrap(3)]

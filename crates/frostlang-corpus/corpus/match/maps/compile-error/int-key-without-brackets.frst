@@ -1,0 +1,5 @@
+# A key that is not a name, such as an Int, must be computed: `{[1]: x}`.
+#= {rejects: ['expected a name or `[`', 'goes in brackets']}
+match {[1]: 2} {
+    {1: x} => x,
+}

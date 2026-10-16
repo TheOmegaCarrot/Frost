@@ -1,0 +1,6 @@
+# A computed key reading a name an alternative bound, over literals the
+# optimizer may match ahead of time.
+#= {result: [1, 2]}
+def {k: [a] | a, [a]: v} = {k: ['z'], z: 1}
+def {k: [b] | b, [b]: w} = {k: 'y', y: 2}
+[v, w]

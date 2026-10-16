@@ -1,0 +1,6 @@
+# A known value captured through two levels of nested functions reaches the
+# innermost one.
+#= {result: [13, 13]}
+def n = 10
+def outer = fn x -> fn y -> x + y + n
+[outer(1)(2), outer(2)(1)]

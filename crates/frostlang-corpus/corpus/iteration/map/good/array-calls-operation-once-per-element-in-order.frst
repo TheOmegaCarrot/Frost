@@ -1,0 +1,11 @@
+# `map` calls the operation exactly once per element, first to last, as the
+# printed trace shows.
+#= {
+#=     result: [1, 2, 3],
+#=     printed: ['1', '2', '3'],
+#=     inputs: {xs: [1, 2, 3]},
+#= }
+map xs with fn x -> {
+    print(x)
+    x
+}

@@ -1,0 +1,6 @@
+# A function deriving from a constant binding it captures builds from the
+# original on every call, and the binding itself is unchanged.
+#= {result: [[1, 2, 3], [1, 2, 4], [1, 2]], inputs: {n: 3}}
+def base = [1, 2]
+defn push(x) -> base + [x]
+[push(n), push(4), base]

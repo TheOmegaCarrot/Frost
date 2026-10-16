@@ -1,0 +1,4 @@
+# A key present with a Null value reads as Null, just as a missing key does.
+#= {result: [null, true]}
+def m = {a: null}
+[index('a')(m), has(m, 'a')]

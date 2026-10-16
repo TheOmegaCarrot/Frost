@@ -1,0 +1,8 @@
+# A threaded call can appear in a match guard and in an arm's body.
+#= {result: ['long: 3', 'short: 1', 'none'], inputs: {a: [1, 2, 3], b: [4], c: []}}
+defn describe(xs) -> match xs {
+    [] => 'none',
+    ys if: ys @ len() > 2 => $'long: ${ys @ len()}',
+    ys => $'short: ${ys @ len()}',
+}
+[a @ describe(), b @ describe(), c @ describe()]

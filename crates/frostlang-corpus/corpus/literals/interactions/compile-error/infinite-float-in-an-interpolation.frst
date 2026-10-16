@@ -1,0 +1,4 @@
+# A Float literal inside a format String's interpolation is checked like any other:
+# one too large to be finite is rejected.
+#= {rejects: 'NaN or Infinity'}
+$'${1e400}'

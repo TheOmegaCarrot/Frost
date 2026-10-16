@@ -1,0 +1,5 @@
+# Ordering constants of incompatible types raises when the program reaches the
+# comparison.
+#= {raises: 'cannot compare incompatible types'}
+def n = null
+n < 1

@@ -1,0 +1,15 @@
+# String keys sort by code point, not alphabetically ignoring case: the empty
+# String first, a prefix before its extensions, uppercase before lowercase,
+# and non-ASCII after ASCII.
+#= {result: ['', 'B', 'a', 'ab', 'b', 'z', 'é', '日']}
+def m = {
+    ['b']: 1,
+    ['日']: 2,
+    ['B']: 3,
+    ['ab']: 4,
+    ['é']: 5,
+    ['']: 6,
+    ['z']: 7,
+    ['a']: 8,
+}
+fold(m, [], fn acc, k, v -> acc + [k])

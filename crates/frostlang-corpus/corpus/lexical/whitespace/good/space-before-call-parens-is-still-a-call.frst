@@ -1,0 +1,6 @@
+# On the same line, a space before `(` or `[` does not stop a call or an
+# index: only a line break does.
+#= {result: [2, 7, 7]}
+def f = fn x -> x + 1
+def xs = [7]
+[f (1), xs [0], xs  [  0  ]]

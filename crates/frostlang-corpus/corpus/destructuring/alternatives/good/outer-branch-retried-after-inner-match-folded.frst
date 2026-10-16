@@ -1,0 +1,5 @@
+# The outer-branch retry after an inner alternative matched, over a literal
+# the optimizer may match ahead of time.
+#= {result: [5]}
+def [[a] | {a}, 1] | [a, 2] = [[5], 2]
+a

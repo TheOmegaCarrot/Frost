@@ -1,0 +1,5 @@
+# Functions stored in Arrays and Maps are called through an index or field.
+#= {result: [42, 7, 3], inputs: {n: 21}}
+def fs = [fn x -> x * 2, fn x -> x + 1]
+def ops = {add: fn a, b -> a + b}
+[fs[0](n), fs[-1](6), ops['add'](1, 2)]

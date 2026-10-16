@@ -1,0 +1,6 @@
+# When the first alternative binds a name and then fails, the second binds
+# it afresh; the arm sees only the second binding's value.
+#= {result: [[1], [1, 0]], inputs: {n: 1}}
+match [[n], [9], 5] {
+    [x, (x), 2] | [x, _, _] => [x, x + [0]],
+}

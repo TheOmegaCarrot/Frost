@@ -1,0 +1,5 @@
+# Frost has no `function` keyword; `defn` defines a named function.
+#= {rejects: 'no `function`'}
+function add(a, b) {
+    a + b
+}

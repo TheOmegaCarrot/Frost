@@ -1,0 +1,5 @@
+# A tail self-call swapping its parameters, over constant arguments the
+# optimizer may compute ahead of time, passes the old values each time.
+#= {result: [[1, 2], [2, 1], [1, 2], [2, 1]]}
+defn swap(x, y, k) -> if k == 0: [x, y] else: swap(y, x, k - 1)
+[swap(1, 2, 0), swap(1, 2, 1), swap(1, 2, 2), swap(1, 2, 3)]

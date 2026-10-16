@@ -1,0 +1,6 @@
+# A name may be a rest in one alternative and an ordinary binding in another.
+#= {result: [[1, [2, 3]], [1, 2]], inputs: {a: [1, 2, 3], b: {a: 1, r: 2}}}
+defn split(v) -> match v {
+    [a, ...r] | {a, r} => [a, r],
+}
+[split(a), split(b)]

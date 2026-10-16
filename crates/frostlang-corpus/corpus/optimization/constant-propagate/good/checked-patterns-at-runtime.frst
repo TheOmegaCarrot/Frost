@@ -1,0 +1,12 @@
+# The patterns of checked-patterns, over values only known at runtime, pass
+# the same checks and bind the same parts.
+#= {
+#=     result: [5, 'two', 7, 7, 2],
+#=     inputs: {five: 5, pair: [1, 'two'], seven_one: [7, 1], seven_two: [7, 2], keyed: {k: 'v', w: 2}},
+#= }
+def n is Int = five
+def [_, s is String] = pair
+def [a, 1] = seven_one
+def [b, (1 + 1)] = seven_two
+def {k: 'v', w} = keyed
+[n, s, a, b, w]

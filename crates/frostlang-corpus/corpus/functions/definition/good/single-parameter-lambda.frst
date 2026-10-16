@@ -1,0 +1,4 @@
+# A single unparenthesized parameter binds the one argument.
+#= {result: 8}
+def inc = fn x -> x + 1
+inc(7)

@@ -1,0 +1,7 @@
+# The Bool and Null literals equal those values known only at runtime, and nothing
+# else.
+#= {
+#=     result: [true, true, true, false, false],
+#=     inputs: {yes: true, no: false, nothing: null},
+#= }
+[true == yes, false == no, null == nothing, null == no, false == nothing]

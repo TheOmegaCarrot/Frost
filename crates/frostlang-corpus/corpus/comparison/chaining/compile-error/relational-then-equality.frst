@@ -1,0 +1,5 @@
+# A relational and an equality operator do not mix without parentheses, though
+# some languages give them different precedences: `1 < 2 == true` is
+# rejected.
+#= {rejects: 'cannot chain'}
+1 < 2 == true

@@ -1,0 +1,5 @@
+# `x` touching a quote starts a Bytes literal, whose content must be hex
+# pairs, so `x'ab cd'` is a malformed Bytes literal rather than the name `x`
+# beside a String.
+#= {rejects: 'Bytes literal',inputs: {x: 1}}
+x'ab cd'

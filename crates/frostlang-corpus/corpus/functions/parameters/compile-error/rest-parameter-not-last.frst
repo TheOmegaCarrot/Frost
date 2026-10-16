@@ -1,0 +1,3 @@
+# A rest parameter comes last; no parameter may follow it.
+#= {rejects: ['expected `->`', 'found `,`']}
+def f = fn ...rest, last -> last

@@ -1,0 +1,5 @@
+# A negative Int literal part one below the smallest Int is rejected, while
+# the smallest Int itself is accepted (see `extreme-int-literals`).
+#= {rejects: 'out of range', inputs: {xs: [1, 2]}}
+def [a, -9223372036854775809] = xs
+a

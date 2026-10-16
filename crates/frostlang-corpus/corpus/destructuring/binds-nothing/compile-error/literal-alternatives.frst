@@ -1,0 +1,4 @@
+# An alternative of literals binds no name in any branch.
+#= {rejects: 'binds no name', inputs: {v: 1}}
+def 1 | 2 = v
+0

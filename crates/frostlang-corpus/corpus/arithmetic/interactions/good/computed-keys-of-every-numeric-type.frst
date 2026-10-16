@@ -1,0 +1,19 @@
+# Arithmetic results serve as Map keys of their own type, and reach entries
+# keyed by the matching literal: Int keys by Int results, Float keys by Float
+# results, including a wrapped Int and a negative Float.
+#= {
+#=     result: ['two', 'least', 'half', 'minus one and a half'],
+#=     inputs: {one: 1, greatest: 9223372036854775807, quarter: 0.25, three: 3},
+#= }
+def m = {
+    [2]: 'two',
+    [-9223372036854775808]: 'least',
+    [0.5]: 'half',
+    [-1.5]: 'minus one and a half',
+}
+[
+    m[one + one],
+    m[greatest + one],
+    m[quarter * 2],
+    m[-three / 2.0],
+]

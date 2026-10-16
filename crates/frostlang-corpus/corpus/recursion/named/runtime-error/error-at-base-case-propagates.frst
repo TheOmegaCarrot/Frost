@@ -1,0 +1,5 @@
+# An error raised at the bottom of a recursion propagates out through every
+# level to the top.
+#= {raises: 'reached the bottom'}
+defn f(n) -> if n == 0: error('reached the bottom') else: 1 + f(n - 1)
+f(50)

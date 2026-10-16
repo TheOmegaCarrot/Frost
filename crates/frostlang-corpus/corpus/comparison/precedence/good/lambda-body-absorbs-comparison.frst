@@ -1,0 +1,10 @@
+# A lambda's body extends as far as it can, so in `f == fn x -> x == 1` the
+# comparison inside belongs to the body, and the outer `==` compares `f` with
+# a Function that behaves differently: false.
+#= {result: [false, true]}
+def f = fn x -> x
+def is_one = fn x -> x == 1
+[
+    f == fn x -> x == 1,
+    is_one(1),
+]

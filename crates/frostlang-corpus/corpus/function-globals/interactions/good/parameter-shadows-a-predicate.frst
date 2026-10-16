@@ -1,0 +1,4 @@
+# A parameter named like a predicate shadows it inside the function only.
+#= {result: ['param', true]}
+defn check(is_null) -> is_null(1)
+[check(fn v -> 'param'), is_null(null)]

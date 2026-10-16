@@ -1,0 +1,7 @@
+# After `->`, braces starting with `[` that do not parse as a Map literal are
+# a block, whose value is its last expression: here an Array literal, and an
+# index into one. Subtle because `{[x]: 1}` in the same position is a Map.
+#= {result: [[1, 2], 5]}
+def pair = fn -> {[1, 2]}
+def first = fn x -> { [x][0] }
+[pair(), first(5)]

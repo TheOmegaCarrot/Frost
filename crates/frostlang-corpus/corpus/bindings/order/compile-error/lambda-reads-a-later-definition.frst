@@ -1,0 +1,6 @@
+# A lambda captures only names bound where it is written. A name defined later
+# is not yet bound, even though the lambda is called only after that definition.
+#= {rejects: ['`later`', 'not defined']}
+def f = fn -> later
+def later = 5
+f()

@@ -1,0 +1,8 @@
+# Prefix operators combine from the right: `not -n` is not (-n). A negated
+# number is truthy even when zero, so `not -n` is false for every Int.
+#= {result: [false, false, true], inputs: {zero: 0, one: 1}}
+[
+    not -zero,
+    not -one,
+    not not -one,
+]

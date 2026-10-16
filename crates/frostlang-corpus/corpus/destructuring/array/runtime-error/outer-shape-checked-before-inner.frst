@@ -1,0 +1,5 @@
+# When both levels mismatch, the outer pattern's check fails first: here the
+# outer `[_]` needs one element, though the inner `[a, b]` also mismatches.
+#= {raises: 'exactly 1 element', inputs: {xs: [[1], 2]}}
+def [[a, b]] = xs
+[a, b]

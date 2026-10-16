@@ -1,0 +1,3 @@
+# An abbreviated lambda is a Function, whatever its placeholders.
+#= {result: [true, true, true, 'Function']}
+[is_function($(1)), is_function($($)), is_function($($$)), type($($2))]

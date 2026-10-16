@@ -1,0 +1,3 @@
+# An exported Array pattern over a runtime value of the wrong length raises.
+#= {raises: 'expected an Array', inputs: {xs: [1]}}
+export def [a, b] = xs

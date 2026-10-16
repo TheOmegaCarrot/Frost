@@ -1,0 +1,10 @@
+# After an inner `try_call` has caught one error, a new error raised later in
+# the same function is caught by the enclosing `try_call`, not the finished
+# inner one.
+#= {result: [false, 'second', 'first']}
+def outer = try_call(fn -> {
+    def inner = try_call(fn -> error('first'))
+    error('second')
+})
+def inner_again = try_call(fn -> error('first'))
+[outer.ok, outer.error, inner_again.error]

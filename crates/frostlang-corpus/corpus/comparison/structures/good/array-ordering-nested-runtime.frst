@@ -1,0 +1,12 @@
+# Array ordering recurses into nested Arrays known only at runtime, comparing
+# Int and Float elements by value at any depth.
+#= {
+#=     result: [true, true, false, true],
+#=     inputs: {a: [[1, 2], 0], b: [[1, 3], 0], ints: [[1], [2]], floats: [[1.0], [2.0]]},
+#= }
+[
+    a < b,
+    ints <= floats,
+    ints < floats,
+    [[]] < a,
+]

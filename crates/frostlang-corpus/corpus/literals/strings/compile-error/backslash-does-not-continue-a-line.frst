@@ -1,0 +1,4 @@
+# A backslash at the end of a line does not continue a quoted String onto the next.
+#= {rejects: 'unclosed String'}
+def a = "abc\
+def"

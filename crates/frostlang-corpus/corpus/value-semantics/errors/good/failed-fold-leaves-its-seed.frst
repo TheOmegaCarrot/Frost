@@ -1,0 +1,7 @@
+# A fold that raises after extending its accumulator, caught by `try_call`,
+# leaves the seed it started from as it was.
+#= {result: [false, [0]], inputs: {n: 0}}
+def seed = [n]
+def step = fn acc, x -> if x == 3: error('stop') else: acc + [x]
+def r = try_call(fn -> fold([1, 2, 3], seed, step))
+[r.ok, seed]

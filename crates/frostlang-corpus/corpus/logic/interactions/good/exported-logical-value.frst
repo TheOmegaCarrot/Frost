@@ -1,0 +1,10 @@
+# An exported binding's value may be a logical expression's result.
+#= {
+#=     result: null,
+#=     exports: {mode: 'debug', flag: null, quiet: true},
+#=     inputs: {setting: null},
+#= }
+export def mode = setting or 'debug'
+export def flag = setting and 'on'
+export def quiet = not setting
+flag

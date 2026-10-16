@@ -1,0 +1,5 @@
+# An exported binding whose constant value divides by zero raises when the
+# script runs; the failing export is not silently dropped or rejected.
+#= {raises: 'division by zero'}
+export def ratio = 1 / 0
+ratio

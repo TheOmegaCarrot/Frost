@@ -1,0 +1,9 @@
+# A function with an effect runs it on every call, even when its arguments
+# and result are constants the optimizer could otherwise compute ahead of
+# time.
+#= {result: [2, 2], printed: ['1', '1']}
+def f = fn x -> {
+    print(to_string(x))
+    x + 1
+}
+[f(1), f(1)]

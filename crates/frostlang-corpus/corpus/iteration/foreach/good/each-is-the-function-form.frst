@@ -1,0 +1,8 @@
+# `each(structure, f)` is the function form of `foreach structure with f`: it
+# calls `f` for each element or entry and yields the structure.
+#= {
+#=     result: [[1, 2], {a: 3}],
+#=     printed: ['1', '2', 'a3'],
+#=     inputs: {xs: [1, 2], m: {a: 3}},
+#= }
+[each(xs, fn x -> print(x)), each(m, fn k, v -> print(k + to_string(v)))]

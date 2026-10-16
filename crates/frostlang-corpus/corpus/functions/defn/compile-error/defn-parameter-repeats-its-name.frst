@@ -1,0 +1,3 @@
+# A `defn`'s name is its self-name, so a parameter may not reuse it.
+#= {rejects: ['`f`', 'already bound']}
+defn f(f) -> 1

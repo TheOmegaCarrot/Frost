@@ -1,0 +1,11 @@
+# `inv` turns a predicate into its complement, so `select` with it keeps what
+# the original predicate rejects. Arguments pass through to the inner function.
+#= {
+#=     result: [[1, 'a', 0], [[1, 2], [5, 3]]],
+#=     inputs: {values: [null, 1, 'a', null, 0], pairs: [[1, 2], [4, 4], [5, 3]]},
+#= }
+defn same(pair) -> pair[0] == pair[1]
+[
+    values @ select(inv(is_null)),
+    pairs @ select(inv(same)),
+]

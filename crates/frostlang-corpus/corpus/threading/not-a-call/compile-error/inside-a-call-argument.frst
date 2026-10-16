@@ -1,0 +1,4 @@
+# A threaded call without parentheses is rejected inside another call's
+# arguments too.
+#= {rejects: ['right side of `@` must be a call', 'try `len()`'], inputs: {xs: [1]}}
+collect(xs @ len)

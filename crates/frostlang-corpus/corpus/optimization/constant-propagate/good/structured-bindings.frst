@@ -1,0 +1,26 @@
+# A binding of a known String, Bytes, Array, or Map, empty or not, reads back
+# its value, and updates built from it leave it unchanged.
+#= {
+#=     result: [
+#=         ['héllo', 'héllo!'],
+#=         [x'00ff', x'00ff01'],
+#=         [[1, [2]], [1, [2], 3]],
+#=         [{a: 1}, {a: 1, b: 2}],
+#=         [[], [1]],
+#=         [{}, {k: 1}],
+#=     ],
+#= }
+def s = 'héllo'
+def bytes = x'00ff'
+def xs = [1, [2]]
+def m = {a: 1}
+def empty_array = []
+def empty_map = {}
+[
+    [s, s + '!'],
+    [bytes, bytes + x'01'],
+    [xs, xs + [3]],
+    [m, m + {b: 2}],
+    [empty_array, empty_array + [1]],
+    [empty_map, empty_map + {k: 1}],
+]

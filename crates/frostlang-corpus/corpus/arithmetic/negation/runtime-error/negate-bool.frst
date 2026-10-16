@@ -1,0 +1,4 @@
+# Unary `-` on a Bool is a type error; Bools are not numbers. Logical negation
+# is `not`.
+#= {raises: ['negate', 'Bool']}
+-true

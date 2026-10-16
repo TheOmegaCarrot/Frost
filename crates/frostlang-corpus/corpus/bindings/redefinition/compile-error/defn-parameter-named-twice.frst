@@ -1,0 +1,4 @@
+# `defn` parameters follow the lambda rule: two may not share a name.
+#= {rejects: ['`a`', 'already bound']}
+defn f(a, a) -> a
+f(1, 2)

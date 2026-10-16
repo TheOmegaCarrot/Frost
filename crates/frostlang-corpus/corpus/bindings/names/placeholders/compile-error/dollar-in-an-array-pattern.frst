@@ -1,0 +1,4 @@
+# A placeholder cannot be bound by an Array pattern element.
+#= {rejects: ['`$`', 'placeholders work only inside']}
+def [$] = [1]
+1

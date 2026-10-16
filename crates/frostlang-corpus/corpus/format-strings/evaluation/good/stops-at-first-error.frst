@@ -1,0 +1,5 @@
+# An interpolation that raises stops the format String: the interpolations
+# before it have run, and those after it never do.
+#= {result: [false, 'boom'], printed: ['before']}
+def outcome = try_call(fn -> $'${print("before")}${error("boom")}${print("after")}')
+[outcome.ok, outcome.error]

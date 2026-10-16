@@ -1,0 +1,8 @@
+# An `and` chain evaluates its operands left to right, once each, and stops at
+# the first falsy one, which is the result.
+#= {result: null, printed: ['1', '2', 'null']}
+defn note(v) -> {
+    print(v)
+    v
+}
+note(1) and note(2) and note(null) and note(4)

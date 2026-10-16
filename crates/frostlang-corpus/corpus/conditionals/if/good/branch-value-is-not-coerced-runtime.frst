@@ -1,0 +1,12 @@
+# A runtime `if` yields its taken branch's runtime value exactly, Null and
+# `false` included.
+#= {
+#=     result: [null, false, 0, ''],
+#=     inputs: {t: true, f: false, values: [null, false, 0, '']},
+#= }
+[
+    if t: values[0] else: 'other',
+    if f: 'other' else: values[1],
+    if t: values[2] else: 'other',
+    if f: 'other' else: values[3],
+]

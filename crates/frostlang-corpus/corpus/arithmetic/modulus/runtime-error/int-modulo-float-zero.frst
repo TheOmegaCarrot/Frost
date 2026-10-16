@@ -1,0 +1,4 @@
+# An Int modulo 0.0 is a type error, not a modulus by zero: `%` is defined
+# only on Ints, so a Float divisor fails on its type whatever its value.
+#= {raises: 'Int % Float'}
+7 % 0.0

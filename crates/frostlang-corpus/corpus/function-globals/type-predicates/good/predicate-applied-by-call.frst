@@ -1,0 +1,3 @@
+# A predicate applied through `call` takes its one argument from the Array.
+#= {result: [true, false]}
+[call(is_bytes, [x'01']), call(is_bytes, ['01'])]

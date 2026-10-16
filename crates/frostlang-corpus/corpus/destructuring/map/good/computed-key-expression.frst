@@ -1,0 +1,5 @@
+# A computed key may be any expression, evaluated to the key to look up.
+#= {result: ['two', 'b', 'k1'], inputs: {m: {[2]: 'two', b: 'b', k1: 'k1'}, n: 1}}
+def keys = ['a', 'b']
+def {[1 + 1]: two, [keys[n]]: b, [$'k${n}']: k} = m
+[two, b, k]

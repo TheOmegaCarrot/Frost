@@ -1,0 +1,3 @@
+# An operand that raises at runtime surfaces its error through `not`.
+#= {raises: 'the operand ran', inputs: {message: 'the operand ran'}}
+not error(message)

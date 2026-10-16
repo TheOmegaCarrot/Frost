@@ -1,0 +1,6 @@
+# `as` binds the whole Map when the optimizer can see the target ahead of time,
+# as at runtime.
+#= {result: [1, {a: 1, b: 2}]}
+match {a: 1, b: 2} {
+    {a} as whole => [a, whole],
+}

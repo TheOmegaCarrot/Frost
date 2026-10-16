@@ -1,0 +1,4 @@
+# Non-ASCII literal text passes through unchanged: accented letters, CJK,
+# symbols, and characters outside the Basic Multilingual Plane.
+#= {result: 'café ☃ 日本語 🎉'}
+$'café ☃ 日本語 🎉'

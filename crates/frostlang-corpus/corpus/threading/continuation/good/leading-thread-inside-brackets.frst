@@ -1,0 +1,15 @@
+# A leading `@` continues an element inside an Array literal and an argument
+# inside a call.
+#= {result: [[2, 4], [3]], inputs: {one: 1}}
+defn inc(x) -> x + 1
+[
+    [
+        one
+            @ inc(),
+        one
+            @ inc()
+            @ times(2),
+    ],
+    collect(one
+        @ plus(2)),
+]

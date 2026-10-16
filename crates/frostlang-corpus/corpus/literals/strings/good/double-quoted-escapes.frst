@@ -1,0 +1,12 @@
+# Each escape a double-quoted String takes stands for one character, the one its
+# Unicode escape names.
+#= {result: [true, true, true, true, true, true, [1, 1, 1, 1, 1, 1]]}
+[
+    "\n" == "\u{a}",
+    "\r" == "\u{d}",
+    "\t" == "\u{9}",
+    "\\" == "\u{5c}",
+    "\0" == "\u{0}",
+    "\"" == "\u{22}",
+    [len("\n"), len("\r"), len("\t"), len("\\"), len("\0"), len("\"")],
+]

@@ -1,0 +1,14 @@
+# A block may yield any value: Null, a structure built from its bindings, or
+# non-ASCII text.
+#= {result: [null, [1, {y: 1}], 'café ☃']}
+[
+    do { null },
+    do {
+        def y = 1
+        [y, {y}]
+    },
+    do {
+        def s = 'café'
+        s + ' ☃'
+    },
+]

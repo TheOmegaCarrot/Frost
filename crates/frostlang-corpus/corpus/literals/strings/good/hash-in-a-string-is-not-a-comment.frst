@@ -1,0 +1,3 @@
+# A `#` inside a String is text, not the start of a comment.
+#= {result: ['a # b', 5, '#', 1]}
+['a # b', len("a # b"), '#', len('#')]

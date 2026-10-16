@@ -1,0 +1,3 @@
+# Two commas in a row leave an empty entry, which is not allowed.
+#= {rejects: 'expected a name or `[`'}
+def m = {a: 1,, b: 2}

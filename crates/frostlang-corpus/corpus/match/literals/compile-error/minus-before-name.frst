@@ -1,0 +1,7 @@
+# A leading minus cannot negate a name in a pattern; `(-n)` compares by value.
+#= {rejects: 'a number after `-`'}
+def n = 1
+match -1 {
+    -n => 'minus n',
+    _ => 'other',
+}

@@ -1,0 +1,17 @@
+# A captured value is read correctly in each kind of expression.
+#= {
+#=     result: [true, -2, 2, 2, 'hi you', 1, 10, [3, 6], [2, 3], 13],
+#=     inputs: {f: fn v -> v * 5},
+#= }
+[
+    (fn p -> fn -> not p)(false)(),
+    (fn p -> fn -> -p)(2)(),
+    (fn p, q -> fn -> p and q)(1, 2)(),
+    (fn p, q -> fn -> p or q)(null, 2)(),
+    (fn n -> fn -> $'hi ${n}')('you')(),
+    (fn m -> fn -> m.a)({a: 1})(),
+    (fn g -> fn -> 2 @ g())(f)(),
+    (fn k -> fn -> map [1, 2] with fn v -> v * k)(3)(),
+    (fn lim -> fn -> filter [1, 2, 3] with fn v -> v > lim)(1)(),
+    (fn k -> fn -> reduce [1, 2] with fn a, b -> a + b + k)(10)(),
+]

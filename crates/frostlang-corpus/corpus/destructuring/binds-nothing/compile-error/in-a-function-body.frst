@@ -1,0 +1,7 @@
+# The rule holds for a def in any scope, such as a function body.
+#= {rejects: 'binds no name'}
+defn g(v) -> {
+    def [_, _] = v
+    0
+}
+g([1, 2])

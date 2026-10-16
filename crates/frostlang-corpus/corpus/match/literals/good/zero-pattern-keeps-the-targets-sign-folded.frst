@@ -1,0 +1,8 @@
+# With a constant target, matching negative zero against the `0.0` pattern
+# still leaves the target as it was: the optimizer must not swap in the
+# pattern's zero, which prints differently.
+#= {result: '-0.0'}
+def v = -0.0
+match v {
+    0.0 => to_string(v),
+}

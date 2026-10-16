@@ -1,0 +1,3 @@
+# `defn` is a statement, not an expression: it cannot be a `def`'s value.
+#= {rejects: ['expected an expression', '`defn`']}
+def g = defn f() -> 1

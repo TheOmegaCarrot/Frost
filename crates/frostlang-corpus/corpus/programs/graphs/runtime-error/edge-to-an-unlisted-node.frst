@@ -1,0 +1,14 @@
+# A depth-first walk over an adjacency Map where an edge names a node that
+# has no entry: its neighbor list reads as Null, and folding over Null
+# raises a type error rather than treating the node as a dead end.
+#= {
+#=     raises: ['Structured', 'Null'],
+#=     inputs: {graph: {a: ['b'], b: ['ghost']}},
+#= }
+defn contains(xs, x) -> fold(xs, false, fn found, y -> found or y == x)
+
+defn visit(node, seen) ->
+    if contains(seen, node): seen
+    else: fold(graph[node], seen + [node], fn acc, next -> visit(next, acc))
+
+visit('a', [])

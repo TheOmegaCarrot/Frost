@@ -1,0 +1,4 @@
+# `export` is a keyword, so it cannot be bound as a name.
+#= {rejects: ['`export`', 'keyword']}
+def export = 1
+1

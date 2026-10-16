@@ -1,0 +1,8 @@
+# A lambda body binding shadows a global only within that lambda; other code
+# still reaches the global.
+#= {result: ['local', 'String']}
+def f = fn -> {
+    def type = 'local'
+    type
+}
+[f(), type('s')]

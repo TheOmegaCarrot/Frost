@@ -1,0 +1,5 @@
+# An abbreviated lambda whose body calls its argument passes that call's
+# result straight through.
+#= {result: [3, null]}
+def apply = $($1($2))
+[apply(fn x -> x + 1, 2), apply(fn _ -> null, 2)]

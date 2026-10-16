@@ -1,0 +1,3 @@
+# Non-ASCII String keys pass through `map` intact.
+#= {result: {['日本']: 2, ['é']: 1}, inputs: {m: {['é']: 1, ['日本']: 2}}}
+map m with fn k, v -> {[k]: v}

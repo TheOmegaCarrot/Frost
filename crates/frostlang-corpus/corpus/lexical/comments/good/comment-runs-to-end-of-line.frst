@@ -1,0 +1,6 @@
+# A `#` starts a comment that runs to the end of its line; the code before it
+# on the same line still runs.
+#= {result: 3}
+def x = 1 # x is one
+def y = 2 # and y is two + 100
+x + y # the sum

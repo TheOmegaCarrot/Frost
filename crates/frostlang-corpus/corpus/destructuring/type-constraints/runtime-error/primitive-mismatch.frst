@@ -1,0 +1,4 @@
+# `is Primitive` rejects an Array: Arrays are Structured, not Primitive.
+#= {raises: 'expected a Primitive', inputs: {v: [1]}}
+def x is Primitive = v
+x

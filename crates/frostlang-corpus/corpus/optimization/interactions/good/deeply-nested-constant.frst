@@ -1,0 +1,6 @@
+# A constant nested several levels deep, mixing every value type, is read back
+# through a chain of indexes and destructured, unchanged.
+#= {result: [1.5, 'é', [null, true, 1.5, x'00', 'é'], 'deep']}
+def data = {[1]: [{a: [null, true, 1.5, x'00', 'é']}], b: {c: {d: [['deep']]}}}
+def {b: {c: {d: [[deepest]]}}} = data
+[data[1][0].a[2], data[1][0].a[-1], data[1][0].a, deepest]

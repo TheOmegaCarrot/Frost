@@ -1,0 +1,36 @@
+# Float totals in a pipeline are deterministic IEEE arithmetic done in fold
+# order: ten readings of 0.1 total just under 1.0, and [0.1, 0.2, 0.3]
+# summed forward gives 0.6000000000000001 where summed backward it gives
+# 0.6, so the order of a fold is observable. Subtle: the mean of Int
+# readings over an Int count truncates, while a Float divisor gives 1.5.
+#= {
+#=     result: {
+#=         tenths: 0.9999999999999999,
+#=         forward: 0.6000000000000001,
+#=         backward: 0.6,
+#=         same: false,
+#=         float_mean: 0.20000000000000004,
+#=         int_mean: 1,
+#=         mixed_mean: 1.5,
+#=     },
+#=     inputs: {
+#=         ten_tenths: [0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1],
+#=         readings: [0.1, 0.2, 0.3],
+#=         counts: [1, 2],
+#=     },
+#= }
+defn total(xs) -> fold(xs, 0, fn sum, x -> sum + x)
+defn reversed(xs) -> fold(xs, [], fn acc, x -> [x] + acc)
+defn mean(xs) -> total(xs) / len(xs)
+
+def forward = total(readings)
+def backward = total(reversed(readings))
+{
+    tenths: total(ten_tenths),
+    forward,
+    backward,
+    same: forward == backward,
+    float_mean: mean(readings),
+    int_mean: mean(counts),
+    mixed_mean: total(counts) / (len(counts) * 1.0),
+}

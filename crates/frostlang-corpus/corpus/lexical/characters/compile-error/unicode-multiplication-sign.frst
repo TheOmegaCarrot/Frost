@@ -1,0 +1,3 @@
+# Frost's operators are ASCII: `×` is not `*`.
+#= {rejects: 'write `*`'}
+3 × 4

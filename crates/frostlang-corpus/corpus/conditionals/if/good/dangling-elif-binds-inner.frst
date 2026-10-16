@@ -1,0 +1,10 @@
+# An `elif` after a nested `if` continues the inner one, like a dangling
+# `else`: a falsy outer condition yields Null without testing the `elif`.
+#= {
+#=     result: [1, 2, null, null],
+#=     inputs: {
+#=         cases: [[true, true, false], [true, false, true], [true, false, false], [false, true, true]],
+#=     },
+#= }
+defn pick(a, b, c) -> if a: if b: 1 elif c: 2
+map cases with fn case -> call(pick, case)

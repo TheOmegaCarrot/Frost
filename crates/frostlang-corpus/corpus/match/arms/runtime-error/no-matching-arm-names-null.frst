@@ -1,0 +1,8 @@
+# A Null target that matches no arm raises, naming the value as null; Null is
+# not a sign that nothing matched.
+#= {raises: ['no match arm', 'null'], inputs: {v: null}}
+match v {
+    false => 'false',
+    [] => 'empty',
+    {} => 'Map',
+}

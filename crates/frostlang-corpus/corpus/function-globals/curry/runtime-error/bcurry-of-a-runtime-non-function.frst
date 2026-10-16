@@ -1,0 +1,4 @@
+# `bcurry`'s Function check happens at run time on a value the compiler
+# cannot see.
+#= {raises: ['bcurry', 'Function as argument 1', 'got Bool'], inputs: {f: false}}
+bcurry(f, 1)

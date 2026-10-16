@@ -1,0 +1,8 @@
+# A truthy left operand decides `or`, so its right operand never runs: the
+# `print` it holds has no effect, even when the left operand is a "zero" value.
+#= {result: [true, 0, '']}
+[
+    true or print('right of true'),
+    0 or print('right of 0'),
+    '' or print('right of the empty String'),
+]

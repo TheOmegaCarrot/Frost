@@ -1,0 +1,3 @@
+# An Int has no fields, here reached through a field chain.
+#= {raises: ['Cannot index value', 'Int'], inputs: {m: {age: 36}}}
+m.age.years

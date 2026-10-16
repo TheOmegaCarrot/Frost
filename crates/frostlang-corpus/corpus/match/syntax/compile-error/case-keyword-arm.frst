@@ -1,0 +1,6 @@
+# Arms are bare patterns; there is no `case` keyword. `case 1` reads as a name
+# followed by stray tokens.
+#= {rejects: ['expected `=>`', 'no `case`']}
+match 1 {
+    case 1 => 'one',
+}

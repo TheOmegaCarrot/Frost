@@ -1,0 +1,4 @@
+# After an operand, `//` may be meant as floor division or as a comment; it is
+# neither, and the help covers both readings.
+#= {rejects: ['no `//`', '`#`']}
+def q = 7 // 2

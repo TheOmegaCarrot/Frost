@@ -1,0 +1,8 @@
+# A String never equals a Bytes of its UTF-8 encoding, with both known only at
+# runtime.
+#= {result: [false, false, true], inputs: {text: 'hi', octets: x'6869', empty: ''}}
+[
+    text == octets,
+    empty == x'',
+    octets != text,
+]

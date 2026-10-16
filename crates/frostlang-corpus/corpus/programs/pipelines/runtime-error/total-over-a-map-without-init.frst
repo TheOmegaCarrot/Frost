@@ -1,0 +1,9 @@
+# Totalling a Map of counts with `reduce` and no initial value fails: a
+# Map's entries are key-value pairs, so there is no element to seed the
+# accumulator with, and the program must say where to start.
+#= {
+#=     raises: 'requires an initializer',
+#=     inputs: {counts: {apples: 3, pears: 5}},
+#= }
+def total = reduce counts with fn acc, name, count -> acc + count
+$'total: ${total}'

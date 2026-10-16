@@ -1,0 +1,4 @@
+# `fold` over a Map accumulates a format String from each key and value, in the
+# Map's key order.
+#= {result: 'a=1;b=2;c=3;', inputs: {m: {c: 3, a: 1, b: 2}}}
+fold(m, '', fn acc, k, v -> $'${acc}${k}=${v};')

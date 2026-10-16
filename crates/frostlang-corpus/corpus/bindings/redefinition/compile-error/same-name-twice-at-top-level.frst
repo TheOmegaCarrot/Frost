@@ -1,0 +1,6 @@
+# A name may be bound only once in a scope: a second `def` of it at the top
+# level is a compile error, not a rebinding.
+#= {rejects: ['`x`', 'already bound']}
+def x = 1
+def x = 2
+x

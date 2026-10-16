@@ -1,0 +1,4 @@
+# `true` is a keyword, so `defn` cannot use it as a function name.
+#= {rejects: ['`true`', 'keyword']}
+defn true() -> 1
+1

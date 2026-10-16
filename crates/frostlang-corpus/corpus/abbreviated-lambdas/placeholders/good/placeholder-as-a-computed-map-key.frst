@@ -1,0 +1,6 @@
+# A placeholder can supply a Map key through a computed key, and a key
+# spelled like a placeholder is an ordinary String key.
+#= {result: [{a: 1}, {['$']: 2}]}
+def entry = $({[$1]: $2})
+def dollar = $({['$']: $})
+[entry('a', 1), dollar(2)]

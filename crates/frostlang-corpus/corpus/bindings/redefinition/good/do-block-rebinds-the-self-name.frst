@@ -1,0 +1,11 @@
+# A `do` block inside a named lambda may bind the lambda's own name, shadowing
+# it only within the block.
+#= {result: [1, true]}
+def g = fn f() -> {
+    def inner = do {
+        def f = 1
+        f
+    }
+    [inner, is_function(f)]
+}
+g()

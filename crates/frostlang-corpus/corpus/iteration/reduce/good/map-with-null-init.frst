@@ -1,0 +1,4 @@
+# `init: null` satisfies a Map's need for an initializer: it is an init, not
+# a missing one.
+#= {result: [null, 'a', 1], inputs: {m: {a: 1}}}
+reduce m init: null with fn acc, k, v -> [acc, k, v]

@@ -1,0 +1,9 @@
+# Inside a block, line breaks end statements, but parentheses within it make
+# them insignificant again.
+#= {result: 6}
+do {
+    def a = (1 +
+        2)
+    (a
+        * 2)
+}

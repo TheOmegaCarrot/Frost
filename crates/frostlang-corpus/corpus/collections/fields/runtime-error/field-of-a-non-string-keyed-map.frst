@@ -1,0 +1,4 @@
+# A field reads only a String key: an Int key `1` is not the field `a`, and a
+# Map holding only non-String keys has no field at all.
+#= {raises: 'no value at key', inputs: {m: {[1]: 'one', [true]: 'yes'}}}
+m.a

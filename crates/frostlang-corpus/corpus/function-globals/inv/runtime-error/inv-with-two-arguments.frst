@@ -1,0 +1,4 @@
+# `inv` takes exactly one argument; it does not apply the function to a
+# second.
+#= {raises: ['inv', 'expects 1', 'called with 2']}
+inv(is_null, null)

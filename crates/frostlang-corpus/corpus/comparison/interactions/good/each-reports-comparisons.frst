@@ -1,0 +1,13 @@
+# `each` runs a function per element for its effect; here each prints the
+# outcome of comparing an element with a Float threshold.
+#= {
+#=     result: [1, 5, 9],
+#=     printed: ['1 below', '5 at', '9 above'],
+#=     inputs: {xs: [1, 5, 9], threshold: 5.0},
+#= }
+defn describe(x) -> {
+    if x < threshold: 'below'
+    elif x > threshold: 'above'
+    else: 'at'
+}
+xs @ each(fn x -> print($'${x} ${describe(x)}'))

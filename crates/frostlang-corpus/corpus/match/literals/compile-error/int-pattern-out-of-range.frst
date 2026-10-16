@@ -1,0 +1,6 @@
+# An Int literal pattern one past the largest Int is rejected, not wrapped.
+#= {rejects: 'Int literal out of range'}
+match 1 {
+    9223372036854775808 => 'too big',
+    _ => 'other',
+}

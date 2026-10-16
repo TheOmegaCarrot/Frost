@@ -1,0 +1,4 @@
+# A discarded call to `compose` that would raise still raises.
+#= {raises: ['compose', 'at least 2', 'called with 1']}
+compose(len)
+'after'

@@ -1,0 +1,9 @@
+# An error raised in a callback propagates out of `transform`, `select`,
+# `fold`, and `each`, and is caught intact around the call.
+#= {result: ['t1', 's1', 'f1', 'e1'], inputs: {xs: [1, 2]}}
+[
+    try_call(fn -> transform(xs, fn x -> error($'t${x}'))).error,
+    try_call(fn -> select(xs, fn x -> error($'s${x}'))).error,
+    try_call(fn -> fold(xs, 0, fn acc, x -> error($'f${x}'))).error,
+    try_call(fn -> each(xs, fn x -> error($'e${x}'))).error,
+]

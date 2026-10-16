@@ -1,0 +1,16 @@
+# The Int arithmetic of int-arithmetic, over operands only known at runtime,
+# gives exactly the values the folder computes.
+#= {
+#=     result: [14, 20, 3, -3, 1, -1, 1, -5],
+#=     inputs: {two: 2, three: 3, four: 4, seven: 7},
+#= }
+[
+    two + three * four,
+    (two + three) * four,
+    seven / two,
+    -seven / two,
+    seven % three,
+    -seven % three,
+    seven % -three,
+    -(two + three),
+]

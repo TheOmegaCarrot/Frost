@@ -1,0 +1,3 @@
+# A block's value is its final expression, so it cannot end with a `def`.
+#= {rejects: 'must end with an expression'}
+do { def x = 5 }

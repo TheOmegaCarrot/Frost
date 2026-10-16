@@ -1,0 +1,4 @@
+# A type constraint names one of Frost's types; an unknown name is an error.
+#= {rejects: 'expected a type name'}
+def x is Integer = 1
+x

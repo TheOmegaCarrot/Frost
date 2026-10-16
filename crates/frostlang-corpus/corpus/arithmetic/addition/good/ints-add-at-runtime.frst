@@ -1,0 +1,14 @@
+# `+` on two Ints only known at runtime is Int addition, across signs and
+# with zero. The operands are inputs, so no fold can compute the sums.
+#= {
+#=     result: [5, -3, 0, -7, 0, 42],
+#=     inputs: {two: 2, three: 3, minus_four: -4, one: 1, zero: 0, hundred: 100, forty_two: 42},
+#= }
+[
+    two + three,
+    minus_four + one,
+    zero + zero,
+    -three + minus_four,
+    hundred + -hundred,
+    forty_two + zero,
+]

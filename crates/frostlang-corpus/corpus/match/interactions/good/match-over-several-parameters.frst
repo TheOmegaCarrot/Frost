@@ -1,0 +1,10 @@
+# A function's whole body may be a match over several parameters gathered into
+# an Array target.
+#= {result: ['both', 'left', 'right', 'neither'], inputs: {cases: [[1, 2], [1, null], [null, 2], [null, null]]}}
+defn which(a, b) -> match [a, b] {
+    [null, null] => 'neither',
+    [_ is Nonnull, null] => 'left',
+    [null, _] => 'right',
+    [_, _] => 'both',
+}
+transform(cases, fn c -> call(which, c))

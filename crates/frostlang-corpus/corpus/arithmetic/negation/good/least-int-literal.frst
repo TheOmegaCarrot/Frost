@@ -1,0 +1,8 @@
+# The least Int is written as a negated literal, though its magnitude alone is
+# past the greatest Int. It is an Int, one below the greatest Int's negation.
+#= {result: [-9223372036854775808, 'Int', true]}
+[
+    -9223372036854775808,
+    type(-9223372036854775808),
+    -9223372036854775808 + 1 == -9223372036854775807,
+]

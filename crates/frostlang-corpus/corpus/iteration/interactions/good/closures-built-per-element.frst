@@ -1,0 +1,5 @@
+# A `map` that returns functions builds one closure per element, each
+# capturing its own element rather than a shared, last-seen one.
+#= {result: [11, 12, 13], inputs: {xs: [1, 2, 3]}}
+def adders = map xs with fn x -> fn y -> x + y
+map adders with fn add -> add(10)

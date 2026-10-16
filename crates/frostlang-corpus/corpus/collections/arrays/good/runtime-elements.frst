@@ -1,0 +1,4 @@
+# An Array built from values only known at runtime, mixed with constant
+# elements and a constant nested Array, holds each in place.
+#= {result: [0, 'a', [1, 2], null, 'a'], inputs: {s: 'a', n: null}}
+[0, s, [1, 2], n, s]

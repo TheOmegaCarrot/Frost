@@ -1,0 +1,4 @@
+# A def pattern must be followed by `=` and the value.
+#= {rejects: 'expected `=`'}
+def [a, b] [1, 2]
+a

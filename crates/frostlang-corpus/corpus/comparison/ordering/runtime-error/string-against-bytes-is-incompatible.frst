@@ -1,0 +1,4 @@
+# Ordering a String against a Bytes raises, even when the Bytes holds the
+# String's UTF-8 encoding: the comparison operators do not mix the two.
+#= {raises: ['incompatible types', 'String', 'Bytes']}
+'a' < x'61'

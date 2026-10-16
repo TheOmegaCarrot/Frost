@@ -1,0 +1,13 @@
+# A soft index of a missing key or an out-of-range position yields Null, which
+# `or` replaces with a default; a present falsy value is replaced too.
+#= {
+#=     result: ['none', 'none', 'none', 0, 1],
+#=     inputs: {m: {k: false, z: 0}, xs: [1]},
+#= }
+[
+    m['missing'] or 'none',
+    xs[10] or 'none',
+    m['k'] or 'none',
+    m['z'] or 'none',
+    xs[0] or 'none',
+]

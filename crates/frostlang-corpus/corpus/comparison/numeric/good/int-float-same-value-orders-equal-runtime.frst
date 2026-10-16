@@ -1,0 +1,14 @@
+# An Int and a Float of the same value, known only at runtime, order as equal
+# but are not `==`. Zero and negative zero are included.
+#= {
+#=     result: [false, true, true, false, true, true],
+#=     inputs: {i: 3, f: 3.0, zero: 0, negative_zero: -0.0},
+#= }
+[
+    i < f,
+    i <= f,
+    f >= i,
+    i == f,
+    zero <= negative_zero,
+    zero >= negative_zero,
+]

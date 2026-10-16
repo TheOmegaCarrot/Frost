@@ -1,0 +1,13 @@
+# `/` on two Ints is Int division, truncating toward zero rather than
+# flooring: -7 / 2 is -3, not -4. The quotient of Ints is never a Float.
+#= {result: [3, -3, -3, 3, 0, 0, 0, 0]}
+[
+    7 / 2,
+    -7 / 2,
+    7 / -2,
+    -7 / -2,
+    1 / 2,
+    -1 / 2,
+    1 / -2,
+    2 / 3,
+]

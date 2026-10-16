@@ -1,0 +1,10 @@
+# A known function called through `@` takes the threaded value as its first
+# argument, as a direct call would.
+#= {result: [8, [2, 4, 6], 12]}
+def add = fn a, b -> a + b
+def double = fn x -> x * 2
+[
+    5 @ add(3),
+    [1, 2, 3] @ transform(double),
+    [1, 2, 3] @ transform(double) @ fold(0, add),
+]

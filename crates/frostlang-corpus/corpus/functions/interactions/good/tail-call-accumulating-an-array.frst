@@ -1,0 +1,4 @@
+# A tail-recursive function grows an Array argument call by call.
+#= {result: [3, 2, 1], inputs: {n: 3}}
+defn collect(acc, k) -> if k == 0: acc else: collect(acc + [k], k - 1)
+collect([], n)

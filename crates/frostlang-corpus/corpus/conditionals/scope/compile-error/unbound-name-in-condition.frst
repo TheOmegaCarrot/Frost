@@ -1,0 +1,3 @@
+# An unbound name as a condition is a compile error, not a falsy Null.
+#= {rejects: ['`nope`', 'not defined']}
+if nope: 1 else: 2

@@ -1,0 +1,6 @@
+# A `.` at the end of a line needs a name after it; the line break does not
+# continue the field read.
+#= {rejects: 'expected a name after `.`'}
+def m = {a: 1}
+m.
+a

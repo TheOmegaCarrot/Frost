@@ -1,0 +1,4 @@
+# A `)` not followed by the quote is text, so a raw String holds parentheses; it ends
+# at the first `)` that the quote follows.
+#= {result: ['f(x)', 'a)b', '(', ')']}
+[R'(f(x))', R'(a)b)', R'(()', R'())']

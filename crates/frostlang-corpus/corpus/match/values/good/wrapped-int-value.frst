@@ -1,0 +1,7 @@
+# A parenthesized arithmetic value wraps on overflow like any Int arithmetic,
+# so it equals the wrapped target.
+#= {result: 'wrapped', inputs: {max: 9223372036854775807, v: -9223372036854775807 - 1}}
+match v {
+    (max + 1) => 'wrapped',
+    _ => 'not wrapped',
+}

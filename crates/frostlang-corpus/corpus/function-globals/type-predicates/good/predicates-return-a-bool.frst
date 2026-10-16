@@ -1,0 +1,4 @@
+# A predicate's answer is a Bool, `true` or `false`, rather than some other
+# truthy or falsy value.
+#= {result: [true, false, 'Bool', 'Bool']}
+[is_int(1), is_int('1'), type(is_int(1)), type(is_null(1))]

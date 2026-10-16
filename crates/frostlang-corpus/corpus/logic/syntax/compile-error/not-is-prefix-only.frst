@@ -1,0 +1,3 @@
+# `not` is a prefix operator, never infix: `a not b` is not an expression.
+#= {rejects: ['expected a line break', '`not`']}
+true not false

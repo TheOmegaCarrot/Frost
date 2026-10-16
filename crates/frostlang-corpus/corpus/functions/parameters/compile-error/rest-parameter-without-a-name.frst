@@ -1,0 +1,3 @@
+# A rest parameter needs a name (or `_`) after its `...`.
+#= {rejects: ['expected a name after `...`', 'found `)`']}
+def f = fn(x, ...) -> x

@@ -1,0 +1,7 @@
+# An `as` name is bound after its Map pattern's entries, so the entries cannot
+# compare against it.
+#= {rejects: '`m` is not defined'}
+match {a: 1} {
+    {a: (m)} as m => m,
+    _ => 0,
+}

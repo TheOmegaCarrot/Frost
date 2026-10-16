@@ -1,0 +1,9 @@
+# The `is_*` type tests see a comparison's result as a Bool and nothing else.
+#= {result: [true, false, false, false]}
+def result = 1 < 2
+[
+    is_bool(result),
+    is_int(result),
+    is_null(result),
+    is_string(result),
+]

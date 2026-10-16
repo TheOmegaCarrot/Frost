@@ -1,0 +1,4 @@
+# An unbound name is a compile error even in an operand a constant left
+# operand of `and` short-circuits past.
+#= {rejects: ['`missing_name`', 'not defined']}
+false and missing_name

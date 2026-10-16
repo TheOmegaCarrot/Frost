@@ -1,0 +1,4 @@
+# Over an Array the operation receives the accumulator and the element, so a
+# three-parameter operation is an arity error rather than receiving an index.
+#= {raises: 'called with 2', inputs: {xs: [1, 2]}}
+reduce xs init: 0 with fn acc, i, x -> acc + x

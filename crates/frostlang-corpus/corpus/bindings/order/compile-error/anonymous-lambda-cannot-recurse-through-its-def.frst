@@ -1,0 +1,6 @@
+# `def f = fn ...` binds `f` only after the lambda is created, so an anonymous
+# lambda cannot call itself through that name; recursion needs a named lambda
+# or `defn`.
+#= {rejects: ['`f`', 'not defined']}
+def f = fn n -> if n == 0: 0 else: f(n - 1)
+f(3)

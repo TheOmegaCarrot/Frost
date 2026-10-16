@@ -1,0 +1,5 @@
+# Non-ASCII text in a literal is carried through unchanged; its length counts
+# characters, not bytes.
+#= {result: ['héllo, 世界 😀', 11, 'String']}
+def s = 'héllo, 世界 😀'
+[s, len(s), type(s)]

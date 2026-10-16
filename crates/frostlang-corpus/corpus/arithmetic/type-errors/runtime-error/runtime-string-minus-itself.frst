@@ -1,0 +1,4 @@
+# A runtime value minus itself is a type error when it is not a number, not
+# zero: `s - s` checks its operands like any subtraction.
+#= {raises: 'String - String', inputs: {s: 'abc'}}
+s - s

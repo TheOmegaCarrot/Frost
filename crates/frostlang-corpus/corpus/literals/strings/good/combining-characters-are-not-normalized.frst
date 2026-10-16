@@ -1,0 +1,4 @@
+# A literal is not Unicode-normalized: `e` with a combining acute accent is two
+# characters, and does not equal the single precomposed `é`, though both render alike.
+#= {result: [false, 2, 1]}
+['e\u{301}' == '\u{e9}', len('e\u{301}'), len('\u{e9}')]

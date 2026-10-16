@@ -1,0 +1,4 @@
+# A named lambda recurses through its own name, whatever name it is bound to.
+#= {result: 15, inputs: {n: 5}}
+def sum_to = fn go(k) -> if k == 0: 0 else: k + go(k - 1)
+sum_to(n)

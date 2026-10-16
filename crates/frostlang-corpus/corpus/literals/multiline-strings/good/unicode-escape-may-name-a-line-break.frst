@@ -1,0 +1,7 @@
+# A multiline String rejects `\n` and `\r`, but `\u{...}` may name any scalar,
+# line-break characters included: only the shorthand escapes are left out.
+#= {result: ['a\nb\rc', 5]}
+def text = '''
+    a\u{a}b\u{d}c
+    '''
+[text, len(text)]

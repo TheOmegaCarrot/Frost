@@ -1,0 +1,5 @@
+# A curried pure function over constants, which the optimizer may compute
+# whole, gives the same answer.
+#= {result: 6}
+def add3 = fn a -> fn b -> fn c -> a + b + c
+add3(1)(2)(3)

@@ -1,0 +1,5 @@
+# A format String in a function body is evaluated afresh on each call, with
+# that call's values.
+#= {result: ['<1>', '<2>', '<1>']}
+defn wrap(v) -> $'<${v}>'
+[wrap(1), wrap(2), wrap(1)]

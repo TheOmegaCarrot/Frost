@@ -1,0 +1,3 @@
+# A block holding only a separator holds no expression.
+#= {rejects: 'at least one expression'}
+do { ; }

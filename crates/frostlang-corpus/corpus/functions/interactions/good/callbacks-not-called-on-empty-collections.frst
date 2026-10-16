@@ -1,0 +1,11 @@
+# Over an empty collection, a callback is never called, so one that would
+# raise is harmless.
+#= {result: [[], [], 0, [], {}]}
+def boom = fn ...args -> error('called')
+[
+    transform([], boom),
+    select([], boom),
+    fold([], 0, boom),
+    each([], boom),
+    each({}, boom),
+]

@@ -1,0 +1,5 @@
+# `call` of a known function with a constant argument Array of the wrong
+# length raises the function's arity error when the program reaches it.
+#= {raises: 'expects 1 argument'}
+def f = fn x -> x
+call(f, [1, 2])

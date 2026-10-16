@@ -1,0 +1,7 @@
+# Literal alternatives against constant targets, which the optimizer may
+# resolve ahead of time, agree with runtime.
+#= {result: ['low', 'high']}
+[
+    match 2 { 1 | 2 | 3 => 'low', _ => 'high' },
+    match 4 { 1 | 2 | 3 => 'low', _ => 'high' },
+]

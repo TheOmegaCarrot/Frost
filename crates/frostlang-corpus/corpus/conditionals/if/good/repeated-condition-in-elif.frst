@@ -1,0 +1,8 @@
+# Repeating a truthy condition in later `elif`s never reaches them: the first
+# one wins. A falsy one fails every test and reaches the `else`.
+#= {result: [1, 4], inputs: {zero: 0, nothing: null}}
+defn pick(a) -> if a: 1
+    elif a: 2
+    elif a: 3
+    else: 4
+[pick(zero), pick(nothing)]

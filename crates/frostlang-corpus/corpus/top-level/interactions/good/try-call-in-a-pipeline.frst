@@ -1,0 +1,8 @@
+# `@` threads a Function into `try_call` as its first argument, and the
+# result threads on like any value.
+#= {result: [{ok: true, value: 6}, 'piped']}
+defn double(x) -> x * 2
+[
+    double @ try_call([3]),
+    (fn -> error('piped')) @ try_call() @ (fn outcome -> outcome.error)(),
+]

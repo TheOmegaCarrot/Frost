@@ -1,0 +1,8 @@
+# A pattern in a function destructures each argument afresh, whatever its
+# length, so no binding carries over between calls.
+#= {result: [[1, 2, []], [3, 4, [5, 6]], [7, 8, []]]}
+defn f(p) -> {
+    def [a, [b, ...c]] = p
+    [a, b, c]
+}
+[f([1, [2]]), f([3, [4, 5, 6]]), f([7, [8]])]

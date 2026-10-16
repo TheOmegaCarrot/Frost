@@ -1,0 +1,9 @@
+# Keys of different types are distinct even when they look alike: Int 1,
+# String "1", Float 1.5, Bool, and Bytes x'61' versus String "a" each match
+# only their own entry.
+#= {
+#=     result: ['int', 'string', 'bytes', 'text', 'false', 'zero'],
+#=     inputs: {m: {[1]: 'int', ['1']: 'string', [x'61']: 'bytes', a: 'text', [false]: 'false', [0]: 'zero'}},
+#= }
+def {[1]: i, ['1']: s, [x'61']: y, a, [false]: f, [0]: z} = m
+[i, s, y, a, f, z]

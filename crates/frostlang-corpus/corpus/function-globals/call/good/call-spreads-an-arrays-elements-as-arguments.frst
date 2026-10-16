@@ -1,0 +1,3 @@
+# `call(f, args)` passes each element of `args` as one argument, in order.
+#= {result: [3, 2, 1]}
+call(fn a, b, c -> [c, b, a], [1, 2, 3])

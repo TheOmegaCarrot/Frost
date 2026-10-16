@@ -1,0 +1,14 @@
+# Strings are equal when their text is identical: case, whitespace, and length
+# all matter, and an escape names the same character as the character itself.
+#= {result: [true, false, false, false, true, true, true, false, true]}
+[
+    'hello' == 'hello',
+    'hello' == 'Hello',
+    'hello' == 'hello ',
+    'a' == '',
+    '' == "",
+    'caf\u{e9}' == 'café',
+    '\u{3a9}' == 'Ω',
+    'Ω' == 'ω',
+    'a' != 'b',
+]

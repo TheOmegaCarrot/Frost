@@ -1,0 +1,5 @@
+# A `def` cannot read the name it is binding: the binding does not exist until
+# its value is computed.
+#= {rejects: ['`x`', 'not defined']}
+def x = x
+x

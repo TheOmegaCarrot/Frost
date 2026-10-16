@@ -1,0 +1,5 @@
+# A Map literal inside an interpolation may hold a String key that is itself
+# a closing brace. Subtle because that brace sits inside a quoted String and
+# must not end the interpolation.
+#= {result: 'got 1 and 2', inputs: {m: {['}']: 2}}}
+$'got ${ {['}']: 1}['}'] } and ${m['}']}'

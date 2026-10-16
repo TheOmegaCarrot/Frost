@@ -1,0 +1,4 @@
+# Threading puts the value first, so threading an argument Array into `call`
+# makes it the function: `[1, 2] @ call(collect)` is `call([1, 2], collect)`.
+#= {raises: ['call', 'Function as argument 1', 'got Array']}
+[1, 2] @ call(collect)

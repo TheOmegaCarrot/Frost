@@ -1,0 +1,6 @@
+# A local binding named like a global shadows it: arithmetic on the name
+# computes with the local's value, not the global function.
+#= {result: [8, 'len']}
+def len = 7
+def type = 'len'
+[len + 1, type]

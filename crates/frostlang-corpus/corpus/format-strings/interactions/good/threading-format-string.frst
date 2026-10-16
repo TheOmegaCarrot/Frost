@@ -1,0 +1,5 @@
+# A format String may be the left operand of `@`, threaded in as the first
+# argument.
+#= {result: '[7!]', inputs: {x: 7}}
+defn bracket(s) -> '[' + s + ']'
+$'${x}!' @ bracket()

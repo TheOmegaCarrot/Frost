@@ -1,0 +1,4 @@
+# Every argument to `compose` must be a Function; the error names its
+# position.
+#= {raises: ['compose', 'Function as argument 1', 'got Int']}
+compose(1, len)

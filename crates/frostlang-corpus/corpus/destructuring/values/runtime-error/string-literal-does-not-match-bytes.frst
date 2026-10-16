@@ -1,0 +1,4 @@
+# A String literal part does not match Bytes of the same content.
+#= {raises: "expected `'a'`", inputs: {xs: [0, x'61']}}
+def [b, 'a'] = xs
+b

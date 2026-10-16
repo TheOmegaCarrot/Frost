@@ -1,0 +1,3 @@
+# `map ... with` accepts an abbreviated lambda as its operation.
+#= {result: [2, 4, 6]}
+map [1, 2, 3] with $($ * 2)

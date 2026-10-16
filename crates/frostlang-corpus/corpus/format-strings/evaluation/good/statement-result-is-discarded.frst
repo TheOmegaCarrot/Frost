@@ -1,0 +1,9 @@
+# Format Strings as statements, not the tail, are evaluated and their results
+# discarded; the script's result is its tail.
+#= {result: 5, printed: ['side effect']}
+def x = 7
+$'a${x}b'
+$''
+$'c'
+$'${print("side effect")}'
+5

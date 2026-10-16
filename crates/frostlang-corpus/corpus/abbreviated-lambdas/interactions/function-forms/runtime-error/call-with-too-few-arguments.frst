@@ -1,0 +1,3 @@
+# `call` checks the abbreviated lambda's arity like a direct call does.
+#= {raises: 'expects 2 argument'}
+call($($2), [1])

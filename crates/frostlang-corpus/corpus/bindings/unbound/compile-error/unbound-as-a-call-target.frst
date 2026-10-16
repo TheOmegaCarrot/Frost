@@ -1,0 +1,3 @@
+# Calling an unbound name is a compile error, not a runtime "not a function".
+#= {rejects: ['`missing`', 'not defined']}
+missing(1)

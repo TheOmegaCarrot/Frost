@@ -1,0 +1,7 @@
+# A top-level `def` may shadow a name from the enclosing scope once, but that
+# binding then belongs to the top-level scope, so a second `def` of the name is
+# a duplicate.
+#= {rejects: ['`n`', 'already bound'], inputs: {n: 1}}
+def n = n + 1
+def n = 3
+n

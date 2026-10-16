@@ -1,0 +1,3 @@
+# Functions take no return type; the body follows `->`.
+#= {rejects: 'no return types'}
+defn f(x) -> Int { x }

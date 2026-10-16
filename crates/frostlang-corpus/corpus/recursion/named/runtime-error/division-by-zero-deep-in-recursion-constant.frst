@@ -1,0 +1,5 @@
+# A runtime error deep in a recursion on constants still surfaces when the
+# code runs, even though the optimizer may try evaluating the call early.
+#= {raises: 'Division by zero'}
+defn f(k) -> if k == 0: 1 / k else: f(k - 1)
+f(30)

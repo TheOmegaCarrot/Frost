@@ -1,0 +1,16 @@
+# One function, caught on each input: it succeeds or fails per call, and
+# each `try_call` reports only its own call.
+#= {
+#=     result: [
+#=         {ok: true, value: 10},
+#=         {ok: false, error: 'zero'},
+#=         {ok: true, value: 5},
+#=     ],
+#=     inputs: {divisors: [1, 0, 2]},
+#= }
+defn checked_div(n, d) -> if d == 0: [error('zero')] else: n / d
+defn attempt(d) -> do {
+    def outcome = try_call(checked_div, [10, d])
+    if outcome.ok: outcome else: {ok: false, error: outcome.error}
+}
+transform(divisors, attempt)

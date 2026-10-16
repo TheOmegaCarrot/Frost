@@ -1,0 +1,6 @@
+# An abbreviated lambda as a match arm's value inside another is nested.
+#= {rejects: 'cannot be nested'}
+def f = $(match $ {
+    0 => $(0),
+    _ => $1,
+})

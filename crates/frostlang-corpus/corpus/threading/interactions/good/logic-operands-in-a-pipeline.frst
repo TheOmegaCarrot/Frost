@@ -1,0 +1,5 @@
+# `or` supplies a fallback around a threaded call, which returns Null for a
+# missing key.
+#= {result: ['found', 'default'], inputs: {m: {k: 'found'}}}
+defn lookup(table, key) -> table[key]
+[m @ lookup('k') or 'default', m @ lookup('missing') or 'default']

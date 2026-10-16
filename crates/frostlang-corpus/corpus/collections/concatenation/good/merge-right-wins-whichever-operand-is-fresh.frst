@@ -1,0 +1,10 @@
+# The right operand wins a key collision whether it is a freshly built Map or
+# one still referenced elsewhere, and the referenced one is left unchanged.
+# Subtle because a fresh operand's storage may be reused for the result.
+#= {
+#=     result: [{a: 2}, {a: 1}, {a: 2}, {a: 2}],
+#=     inputs: {x: 1, shared: {a: 2}},
+#= }
+def fresh_left = {a: x} + shared
+def fresh_right = shared + {a: x}
+[fresh_left, fresh_right, shared, {a: x} + {a: x + 1}]

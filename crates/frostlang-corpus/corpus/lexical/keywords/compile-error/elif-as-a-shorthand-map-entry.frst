@@ -1,0 +1,4 @@
+# A shorthand Map entry names a variable, and `elif` is a keyword, so it
+# cannot be one.
+#= {rejects: 'keyword'}
+{elif}

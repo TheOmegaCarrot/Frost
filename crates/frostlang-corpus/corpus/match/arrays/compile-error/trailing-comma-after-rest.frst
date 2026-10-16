@@ -1,0 +1,5 @@
+# Nothing may follow a rest, not even a trailing comma.
+#= {rejects: 'comes last'}
+match [1, 2] {
+    [a, ...others,] => a,
+}

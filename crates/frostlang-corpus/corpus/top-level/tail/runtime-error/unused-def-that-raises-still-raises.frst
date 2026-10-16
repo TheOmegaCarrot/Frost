@@ -1,0 +1,6 @@
+# A `def` whose binding is never read still evaluates its value, so an error
+# there ends the program. Subtle because an optimizer may drop an unused
+# binding, but never the error computing it raises.
+#= {raises: 'unused but raised'}
+def never_read = error('unused but raised')
+'unreached'

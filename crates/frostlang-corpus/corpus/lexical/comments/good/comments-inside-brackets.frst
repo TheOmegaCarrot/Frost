@@ -1,0 +1,19 @@
+# Comments may sit on their own lines and after items inside an Array, a Map,
+# and a call's arguments.
+#= {result: [[1, 2], {a: 1, b: 2}, 2]}
+def xs = [
+    # the first
+    1, # one
+    2 # two, no trailing comma
+    # after the last
+]
+def m = {
+    a: 1, # a comment after an entry
+    # a comment between entries
+    b: 2,
+}
+def n = len(
+    # the Array
+    xs # passed alone
+)
+[xs, m, n]

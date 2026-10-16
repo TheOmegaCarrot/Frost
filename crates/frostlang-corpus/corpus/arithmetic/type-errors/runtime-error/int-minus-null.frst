@@ -1,0 +1,3 @@
+# Null is not zero: an Int minus Null is a type error.
+#= {raises: 'Int - Null'}
+5 - null

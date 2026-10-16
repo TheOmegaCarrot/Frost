@@ -1,0 +1,24 @@
+# Ten-pin bowling scores by Array patterns over the rolls: a literal 10 at
+# the head is a strike, a guard spots a spare, and each frame recurses on
+# the rolls that start the next one, so bonus rolls are read but not
+# consumed. Bonus rolls after the tenth frame are counted only as bonuses.
+#= {
+#=     result: [300, 150, 0, 20, 167, 191],
+#=     inputs: {
+#=         games: [
+#=             [10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10],
+#=             [5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5],
+#=             [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+#=             [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+#=             [10, 7, 3, 9, 0, 10, 0, 8, 8, 2, 0, 6, 10, 10, 10, 8, 1],
+#=             [9, 1, 9, 1, 9, 1, 9, 1, 9, 1, 9, 1, 9, 1, 9, 1, 9, 1, 9, 1, 10],
+#=         ],
+#=     },
+#= }
+defn score(rolls, frame) -> if frame == 10: 0 else: match rolls {
+    [10, a, b, ...rest] => 10 + a + b + score([a, b] + rest, frame + 1),
+    [x, y, a, ...rest] if: x + y == 10 => 10 + a + score([a] + rest, frame + 1),
+    [x, y, ...rest] => x + y + score(rest, frame + 1),
+}
+
+transform(games, fn rolls -> score(rolls, 0))

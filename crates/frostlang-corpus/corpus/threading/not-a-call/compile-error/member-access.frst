@@ -1,0 +1,5 @@
+# A member access on the right of `@` is not a call; the suggestion keeps
+# the whole path.
+#= {rejects: ['right side of `@` must be a call', 'try `m.f()`'], inputs: {n: 1}}
+def m = {f: fn x -> x}
+n @ m.f

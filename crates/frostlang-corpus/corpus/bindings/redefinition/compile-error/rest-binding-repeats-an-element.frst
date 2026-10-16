@@ -1,0 +1,4 @@
+# An Array pattern's rest binding may not reuse an element's name.
+#= {rejects: ['`a`', 'already bound']}
+def [a, ...a] = [1, 2]
+a

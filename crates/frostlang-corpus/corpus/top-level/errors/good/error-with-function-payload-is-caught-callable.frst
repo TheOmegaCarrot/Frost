@@ -1,0 +1,5 @@
+# Any value may be raised, a Function included: it is caught intact and can
+# still be called.
+#= {result: [false, true, 7]}
+def outcome = try_call(fn -> error(fn x -> x + 1))
+[outcome.ok, is_function(outcome.error), outcome.error(6)]

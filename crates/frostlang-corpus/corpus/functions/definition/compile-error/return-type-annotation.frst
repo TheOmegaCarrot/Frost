@@ -1,0 +1,4 @@
+# A lambda has no return type: the body follows the parameter list's `->`
+# directly.
+#= {rejects: ['found `:`', 'return type']}
+def f = fn(x): Int -> x

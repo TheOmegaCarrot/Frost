@@ -1,0 +1,6 @@
+# Inside a named lambda, its self-name shadows an outer binding of the same
+# name; outside, the outer binding is untouched.
+#= {result: ['base', 99]}
+def f = 99
+def g = fn f(n) -> if n <= 0: 'base' else: f(n - 1)
+[g(3), f]

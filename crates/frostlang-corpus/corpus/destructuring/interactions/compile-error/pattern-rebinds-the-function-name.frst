@@ -1,0 +1,8 @@
+# A named lambda's own name is bound in its body, so a pattern there may not
+# rebind it.
+#= {rejects: '`f` is already bound'}
+defn f(p) -> {
+    def {f} = p
+    f
+}
+f({f: 1})

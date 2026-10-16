@@ -1,0 +1,7 @@
+# An `if` that is itself an operand passes no tail position to its branches.
+# Subtle: the same branch would be a tail call were the `if` the function's
+# result.
+#= {result: 495}
+defn down(n) -> (if n == 0: error('bottom') else: down(n - 1)) + 0
+defn frames(n) -> len(try_call(down, [n]).trace)
+frames(500) - frames(5)

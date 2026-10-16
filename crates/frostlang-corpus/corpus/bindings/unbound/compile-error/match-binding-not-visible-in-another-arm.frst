@@ -1,0 +1,7 @@
+# Each match arm is its own scope: a name one arm binds is not visible in a
+# later arm, even when the first arm's pattern matched before its guard failed.
+#= {rejects: ['`n`', 'not defined']}
+match 1 {
+    n if: false => n,
+    _ => n,
+}

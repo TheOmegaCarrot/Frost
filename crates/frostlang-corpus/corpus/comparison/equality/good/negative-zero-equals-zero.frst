@@ -1,0 +1,8 @@
+# Negative zero and zero are the same Float value for `==` and `!=`, though
+# they are distinct bit patterns.
+#= {result: [true, false, true]}
+[
+    -0.0 == 0.0,
+    -0.0 != 0.0,
+    0.0 * -1 == 0.0,
+]

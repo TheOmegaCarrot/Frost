@@ -1,0 +1,12 @@
+# A binary operator evaluates its left operand before its right one, effects
+# included.
+#= {result: 3, printed: ['left', 'right']}
+def left = do {
+    print('left')
+    1
+}
+def sum = left + do {
+    print('right')
+    2
+}
+sum

@@ -1,0 +1,10 @@
+# Empty constants of different types in one function each keep their own
+# type, alone or nested: an empty String is not empty Bytes, and an empty
+# Array is not an empty Map.
+#= {
+#=     result: ['String', 'Bytes', 'Array', 'Map', 'String', 'Bytes', 'Array', 'Map'],
+#=     inputs: {tag: 'runtime'},
+#= }
+defn build(t) -> [t, '', x'', [], {}, [''], [x''], [[]], [{}]]
+def [_, s, b, a, m, ws, wb, wa, wm] = build(tag)
+[type(s), type(b), type(a), type(m), type(ws[0]), type(wb[0]), type(wa[0]), type(wm[0])]

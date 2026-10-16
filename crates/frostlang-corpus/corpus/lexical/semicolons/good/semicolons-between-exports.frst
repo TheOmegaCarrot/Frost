@@ -1,0 +1,3 @@
+# Exported definitions may share a line, separated by `;`.
+#= {result: 3, exports: {a: 1, b: 2}}
+export def a = 1; export def b = 2; a + b

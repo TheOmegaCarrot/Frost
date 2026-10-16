@@ -1,0 +1,9 @@
+# `compose` rejects a non-Function in any position when `compose` itself is
+# called, before any composed function exists.
+#= {result: [false, false, false, true]}
+[
+    try_call(compose, [5, len]).ok,
+    try_call(compose, [len, 5]).ok,
+    try_call(compose, [len, len, 5]).ok,
+    try_call(compose, [len, is_int]).ok,
+]

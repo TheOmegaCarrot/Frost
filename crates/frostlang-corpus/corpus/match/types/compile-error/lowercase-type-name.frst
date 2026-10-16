@@ -1,0 +1,6 @@
+# Type names are capitalized; a lowercase spelling is not a type name.
+#= {rejects: 'expected a type name'}
+match 1 {
+    n is int => n,
+    _ => 0,
+}

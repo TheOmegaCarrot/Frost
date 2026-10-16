@@ -1,0 +1,3 @@
+# Python's `r'...'` is not Frost's raw String.
+#= {rejects: 'a raw String is written'}
+r'abc'

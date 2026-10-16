@@ -1,0 +1,4 @@
+# Dividing an Int by the Int zero raises; it has no Int answer. The folder
+# must leave the failing division for runtime rather than reject the script.
+#= {raises: 'division by zero'}
+1 / 0

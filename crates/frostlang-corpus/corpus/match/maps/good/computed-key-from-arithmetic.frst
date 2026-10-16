@@ -1,0 +1,6 @@
+# A computed key expression is evaluated, and its value is the key looked up.
+#= {result: ['two', 'two'], inputs: {one: 1, v: {[2]: 'two'}}}
+[
+    match v { {[one + one]: x} => x },
+    match v { {[1 + 1]: x} => x },
+]

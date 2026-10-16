@@ -1,0 +1,7 @@
+# Two evaluations of the same lambda expression are two distinct closures, so
+# a parenthesized lambda never matches a lambda target.
+#= {result: 'different'}
+match (fn -> 1) {
+    (fn -> 1) => 'same',
+    _ => 'different',
+}

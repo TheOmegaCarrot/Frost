@@ -1,0 +1,3 @@
+# Semicolons are not statements: a `do` block holding only them is empty.
+#= {rejects: 'at least one expression'}
+do { ; ; }

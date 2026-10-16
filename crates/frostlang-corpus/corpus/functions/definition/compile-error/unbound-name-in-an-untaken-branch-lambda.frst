@@ -1,0 +1,5 @@
+# An unbound name in a nested lambda is rejected even when that lambda sits
+# in a branch that is never taken, under a lambda that is never created.
+#= {rejects: ['`missing`', 'not defined']}
+def f = fn -> if true: 1 else: fn -> missing
+f()

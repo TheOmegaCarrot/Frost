@@ -1,0 +1,4 @@
+# `-not n` negates the Bool that `not n` gives, which is a type error: unary
+# `-` does not treat a Bool as a number.
+#= {raises: ['negate', 'Bool'], inputs: {one: 1}}
+-not one

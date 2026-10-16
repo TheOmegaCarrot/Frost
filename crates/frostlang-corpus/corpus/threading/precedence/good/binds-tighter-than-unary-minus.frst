@@ -1,0 +1,6 @@
+# `@` is a postfix operator and binds tighter than prefix `-`: `-3 @ inc()`
+# is `-(inc(3))`, not `inc(-3)`. Subtle because the `-` looks like part of the
+# literal.
+#= {result: [-4, -2]}
+defn inc(x) -> x + 1
+[-3 @ inc(), (-3) @ inc()]

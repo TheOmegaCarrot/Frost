@@ -1,0 +1,8 @@
+# An `if` without `else` whose constant condition is falsy is Null; truthy, it
+# is its branch's value.
+#= {result: [null, null, 1]}
+[
+    if false: 1,
+    if null: print('never'),
+    if true: 1,
+]

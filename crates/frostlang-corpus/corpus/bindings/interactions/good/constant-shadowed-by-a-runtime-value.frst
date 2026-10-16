@@ -1,0 +1,10 @@
+# A constant binding shadowed by a runtime value: the optimizer may propagate
+# the outer constant, but must not use it for the inner name.
+#= {result: [7, 1, 8], inputs: {n: 7}}
+def x = 1
+def inner = do {
+    def x = n
+    x
+}
+def f = fn x -> x + 1
+[inner, x, f(n)]

@@ -1,0 +1,8 @@
+# An `else` on the line after a nested `if` belongs to the inner one, as it
+# does on a single line, so a falsy outer condition yields Null.
+#= {result: [null, 2], inputs: {t: true, f: false}}
+def outer_false = if f: if t: 1
+else: 2
+def inner_false = if t: if f: 1
+else: 2
+[outer_false, inner_false]

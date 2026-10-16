@@ -1,0 +1,4 @@
+# An invalid escape in a String inside an interpolation is reported like one
+# anywhere else.
+#= {rejects: ['invalid escape sequence', R'(`\q`)']}
+def s = $'${"\q"}'

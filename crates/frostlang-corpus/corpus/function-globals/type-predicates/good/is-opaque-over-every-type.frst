@@ -1,0 +1,15 @@
+# `is_opaque` is false for every type a script can write: only a host makes
+# an Opaque.
+#= {result: [false, false, false, false, false, false, false, false, false, false]}
+[
+    is_opaque(null),
+    is_opaque(false),
+    is_opaque(0),
+    is_opaque(0.0),
+    is_opaque(''),
+    is_opaque(x''),
+    is_opaque([]),
+    is_opaque({}),
+    is_opaque(fn -> null),
+    is_opaque(len),
+]

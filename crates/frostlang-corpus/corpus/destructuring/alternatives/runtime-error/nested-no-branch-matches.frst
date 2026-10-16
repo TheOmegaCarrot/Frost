@@ -1,0 +1,4 @@
+# A nested alternative with no matching branch raises the same way.
+#= {raises: 'matches no alternative', inputs: {xs: [0, 4]}}
+def [a, 1 | 2 | 3] = xs
+a

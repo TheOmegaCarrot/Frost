@@ -1,0 +1,12 @@
+# String equality compares code points with no Unicode normalization, on text
+# known only at runtime: a precomposed `é` (U+00E9) is unequal to `e` followed
+# by a combining acute accent (U+0301), though the two render alike.
+#= {
+#=     result: [false, true, true],
+#=     inputs: {precomposed: '\u{e9}', base: 'e', accent: '\u{301}'},
+#= }
+[
+    precomposed == base + accent,
+    precomposed != base + accent,
+    base + accent == 'e\u{301}',
+]

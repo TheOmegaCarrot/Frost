@@ -1,0 +1,3 @@
+# Uncaught, a Map payload's message shows its keys and values.
+#= {raises: ['code', '404']}
+error({code: 404})

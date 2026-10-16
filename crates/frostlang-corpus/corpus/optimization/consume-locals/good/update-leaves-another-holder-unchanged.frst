@@ -1,0 +1,6 @@
+# Building a new structure from a binding's last read leaves every other holder
+# of the same value unchanged: values are immutable, however the update is made.
+#= {result: [[1, 2, 4], [1, 2]], inputs: {xs: [1, 2]}}
+def a = xs
+def b = a + [4]
+[b, xs]

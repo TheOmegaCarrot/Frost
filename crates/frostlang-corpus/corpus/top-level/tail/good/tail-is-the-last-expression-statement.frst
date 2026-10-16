@@ -1,0 +1,6 @@
+# Of several expression statements, the last one's value is the tail; the
+# earlier values are dropped.
+#= {result: 'third'}
+'first'
+[2]
+'third'

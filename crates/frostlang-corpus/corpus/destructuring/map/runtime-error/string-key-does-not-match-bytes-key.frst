@@ -1,0 +1,8 @@
+# A String key does not find the Bytes key with the same content.
+#= {
+#=     raises: 'no value at key "a"',
+#=     inputs: {m: {[x'61']: 1}},
+#=     known_issue: 'FROST-155',
+#= }
+def {a} = m
+a

@@ -1,0 +1,5 @@
+# A comparison that raises, as a statement whose value is discarded, still
+# raises: its error is an effect that optimization must keep.
+#= {raises: ['incompatible types', 'Null', 'Int']}
+null < 1
+'unreached'

@@ -1,0 +1,4 @@
+# An exported pattern with alternatives raises when the value fits none of
+# them, rather than exporting anything.
+#= {raises: 'no alternative'}
+export def {a} | [a] = 5

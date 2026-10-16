@@ -1,0 +1,4 @@
+# A Null key is checked while the structure is a Map: it is an error, not a
+# miss.
+#= {raises: ['Null', 'not a valid Map key']}
+{a: 1} @ dig(null)

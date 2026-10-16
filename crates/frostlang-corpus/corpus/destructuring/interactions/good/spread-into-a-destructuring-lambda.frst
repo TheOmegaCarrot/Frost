@@ -1,0 +1,8 @@
+# `spread` passes an Array's elements as arguments to a lambda that then
+# destructures one of them.
+#= {result: 6, inputs: {args: [1, [2, 3]]}}
+def f = spread(fn a, pair -> {
+    def [b, c] = pair
+    a + b + c
+})
+f(args)

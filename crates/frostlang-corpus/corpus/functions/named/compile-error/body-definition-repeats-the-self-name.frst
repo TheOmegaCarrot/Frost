@@ -1,0 +1,7 @@
+# A `def` in the block body may not rebind the self-name, which shares the
+# body's scope (a nested `do` block may).
+#= {rejects: ['`f`', 'already bound']}
+def g = fn f() -> {
+    def f = 1
+    f
+}

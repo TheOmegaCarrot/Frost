@@ -1,0 +1,3 @@
+# Single and double quotes denote the same String: the quote style is spelling only.
+#= {result: [true, true, 'hello', 'String', 'String']}
+['hello' == "hello", '' == "", "hello", type('a'), type("a")]

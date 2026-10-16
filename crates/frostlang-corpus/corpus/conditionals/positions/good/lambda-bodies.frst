@@ -1,0 +1,6 @@
+# An `if` may be a lambda's whole body, in each lambda form.
+#= {result: ['T', 'F', 'T', 'F', 'T', 'F']}
+def full = fn x -> if x: 'T' else: 'F'
+def abbreviated = $(if $: 'T' else: 'F')
+defn named(x) -> if x: 'T' else: 'F'
+[full(0), full(null), abbreviated(''), abbreviated(false), named([]), named(null)]

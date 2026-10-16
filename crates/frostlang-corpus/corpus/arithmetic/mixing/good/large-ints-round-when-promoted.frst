@@ -1,0 +1,12 @@
+# An Int mixed with a Float becomes the nearest Float, so an Int beyond 2^53
+# can lose precision: 2^53 + 1 promotes to 2^53. Subtle because the Int itself
+# is exact; only the promotion rounds.
+#= {
+#=     result: [9007199254740992.0, 9223372036854775808.0, -9223372036854775808.0],
+#=     inputs: {past_exact: 9007199254740993, greatest: 9223372036854775807, least: -9223372036854775808},
+#= }
+[
+    past_exact + 0.0,
+    greatest * 1.0,
+    least - 0.0,
+]

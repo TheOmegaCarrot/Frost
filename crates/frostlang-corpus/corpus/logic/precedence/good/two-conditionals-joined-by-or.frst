@@ -1,0 +1,10 @@
+# `a and b or c and d` groups as `(a and b) or (c and d)`.
+#= {
+#=     result: [2, 4, false],
+#=     inputs: {one: 1, two: 2, three: 3, four: 4, f: false},
+#= }
+[
+    one and two or three and four,
+    f and two or three and four,
+    f and two or three and f,
+]

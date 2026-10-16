@@ -1,0 +1,3 @@
+# A named `fn` cannot take a placeholder as its name.
+#= {rejects: ['expected parameters', 'found `$1`']}
+def f = fn $1(x) -> x

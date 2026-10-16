@@ -1,0 +1,4 @@
+# A call that returns an effectful lambda without calling it has no effect.
+#= {result: true, printed: []}
+def make = fn -> fn -> print('never')
+is_function(make())

@@ -1,0 +1,7 @@
+# A discarded statement that would raise only if code it holds were run
+# raises nothing: a function never called, or a branch never taken.
+#= {result: 'ok'}
+fn -> 1 / 0
+if false: 1 / 0 else: 0
+false and error('never')
+'ok'

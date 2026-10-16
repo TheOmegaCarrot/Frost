@@ -1,0 +1,6 @@
+# Comments after the last statement, on its line or after it, leave that
+# statement as the tail.
+#= {result: 7}
+7 # the tail
+# A comment after the tail.
+

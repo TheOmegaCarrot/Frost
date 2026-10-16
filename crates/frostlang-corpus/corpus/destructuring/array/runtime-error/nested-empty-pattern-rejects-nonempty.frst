@@ -1,0 +1,4 @@
+# A nested `[]` rejects a non-empty Array.
+#= {raises: 'exactly 0 elements', inputs: {xs: [[1], 0]}}
+def [[], a] = xs
+a

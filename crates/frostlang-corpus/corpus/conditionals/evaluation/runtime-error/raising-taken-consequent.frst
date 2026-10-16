@@ -1,0 +1,3 @@
+# A taken consequent that raises raises from the `if`.
+#= {raises: 'division by zero'}
+if true: 1 / 0 else: 2

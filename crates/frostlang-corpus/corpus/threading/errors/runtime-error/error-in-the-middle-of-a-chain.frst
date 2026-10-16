@@ -1,0 +1,5 @@
+# An error at one step of a chain ends the chain there.
+#= {raises: 'too big: 4', inputs: {n: 1}}
+defn double(x) -> x * 2
+defn check(x) -> if x > 3: error($'too big: ${x}') else: x
+n @ double() @ check() @ double() @ check() @ double()

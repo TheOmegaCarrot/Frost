@@ -1,0 +1,4 @@
+# Adding constants of incompatible types raises when the program reaches it.
+#= {raises: 'cannot add incompatible types'}
+def s = 'a'
+s + 1

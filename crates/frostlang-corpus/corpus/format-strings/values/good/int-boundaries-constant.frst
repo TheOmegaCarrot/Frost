@@ -1,0 +1,4 @@
+# The largest and smallest Int constants, which the optimizer can fold,
+# interpolate in full, as runtime ones do.
+#= {result: ['9223372036854775807', '-9223372036854775808']}
+[$'${9223372036854775807}', $'${-9223372036854775808}']

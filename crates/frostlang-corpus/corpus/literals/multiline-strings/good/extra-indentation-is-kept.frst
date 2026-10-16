@@ -1,0 +1,8 @@
+# Indentation beyond the closing delimiter's is kept as text.
+#= {result: 'if true:\n    nested\n  half'}
+def text = """
+    if true:
+        nested
+      half
+    """
+text

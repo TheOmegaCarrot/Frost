@@ -1,0 +1,10 @@
+# A closure's captured value takes part in its arithmetic, and a curried
+# subtraction keeps its operands in parameter order.
+#= {result: [7, 7, -7], inputs: {three: 3, four: 4, ten: 10}}
+defn adder(n) -> fn x -> x + n
+def minus = fn x -> fn y -> x - y
+[
+    adder(three)(four),
+    minus(ten)(three),
+    minus(three)(ten),
+]

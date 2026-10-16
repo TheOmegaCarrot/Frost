@@ -1,0 +1,4 @@
+# Arguments are positional only: `name: value` in a call is rejected.
+#= {rejects: ['found `:`', 'named argument']}
+def f = fn x -> x
+f(x: 1)

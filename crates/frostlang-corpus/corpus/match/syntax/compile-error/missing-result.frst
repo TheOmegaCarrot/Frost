@@ -1,0 +1,5 @@
+# Each arm needs a result after its `=>`.
+#= {rejects: ['expected an expression', 'found `,`']}
+match 1 {
+    1 => ,
+}

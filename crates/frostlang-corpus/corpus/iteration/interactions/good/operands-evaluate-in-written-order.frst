@@ -1,0 +1,19 @@
+# A form evaluates its operands in the order written: the structure, then the
+# `init:`, then the operation, and only then iterates.
+#= {
+#=     result: 1,
+#=     printed: ['structure', 'init', 'operation', 'step'],
+#= }
+reduce do {
+    print('structure')
+    [1]
+} init: do {
+    print('init')
+    0
+} with do {
+    print('operation')
+    fn acc, x -> {
+        print('step')
+        acc + x
+    }
+}

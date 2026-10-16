@@ -1,0 +1,3 @@
+# A non-ASCII message is raised as written.
+#= {raises: 'h\u{e9}llo \u{2603}'}
+error('h\u{e9}llo \u{2603}')

@@ -1,0 +1,5 @@
+# A def whose type constraint its known value fails raises when the program
+# reaches it.
+#= {raises: 'expected a string'}
+def x is String = 5
+x

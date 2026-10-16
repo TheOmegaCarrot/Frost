@@ -1,0 +1,5 @@
+# An `if`/`elif`/`else` chain in an abbreviated lambda selects by its
+# arguments.
+#= {result: ['neg', 'zero', 'pos']}
+def sign = $(if $ < 0: 'neg' elif $ == 0: 'zero' else: 'pos')
+[sign(-3), sign(0), sign(3)]

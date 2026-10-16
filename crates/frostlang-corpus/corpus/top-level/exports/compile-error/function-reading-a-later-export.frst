@@ -1,0 +1,6 @@
+# An export is in scope only after its `def`, even for a function defined
+# earlier and called later: the function's body reads an unbound name.
+#= {rejects: '`later` is not defined'}
+defn get() -> later
+export def later = 1
+get()

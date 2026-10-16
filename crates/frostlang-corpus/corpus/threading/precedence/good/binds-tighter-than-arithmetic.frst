@@ -1,0 +1,5 @@
+# `@` binds tighter than every arithmetic operator: only the operand just
+# before it is threaded.
+#= {result: [4, 8, 5, 3, 1]}
+defn inc(x) -> x + 1
+[1 + 2 @ inc(), 2 * 3 @ inc(), 10 - 4 @ inc(), 12 / 3 @ inc(), 7 % 2 @ inc()]

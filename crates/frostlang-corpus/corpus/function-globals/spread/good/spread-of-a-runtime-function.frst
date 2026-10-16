@@ -1,0 +1,3 @@
+# Spreading a function known only at run time.
+#= {result: ['b', 'a'], inputs: {swap: fn a, b -> [b, a]}}
+spread(swap)(['a', 'b'])

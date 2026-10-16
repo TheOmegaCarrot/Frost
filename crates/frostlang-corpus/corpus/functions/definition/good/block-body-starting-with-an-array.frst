@@ -1,0 +1,7 @@
+# A braced body whose only statement is an Array literal is a block returning
+# the Array. Subtle: `{ [` could begin a Map with a computed key.
+#= {result: [1, 2]}
+def f = fn -> {
+    [1, 2]
+}
+f()

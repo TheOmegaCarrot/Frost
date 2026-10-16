@@ -1,0 +1,4 @@
+# The function sees the tapped value, here printing it, even though the
+# value is a constant.
+#= {result: 'seen', printed: ['seen']}
+tap('seen', print)

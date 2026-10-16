@@ -1,0 +1,4 @@
+# `as _` discards the whole Map; the entries still bind.
+#= {result: 1, inputs: {m: {a: 1}}}
+def {a} as _ = m
+a

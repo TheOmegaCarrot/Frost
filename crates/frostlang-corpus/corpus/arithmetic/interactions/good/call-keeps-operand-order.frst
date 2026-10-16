@@ -1,0 +1,8 @@
+# Calling an arithmetic lambda through `call` passes arguments in order, so
+# non-commutative operators see them as written.
+#= {result: [7, 3, 1], inputs: {args: [10, 3]}}
+[
+    call(fn a, b -> a - b, args),
+    call(fn a, b -> a / b, args),
+    call($($1 % $2), args),
+]

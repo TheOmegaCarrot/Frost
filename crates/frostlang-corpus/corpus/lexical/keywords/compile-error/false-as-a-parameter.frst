@@ -1,0 +1,3 @@
+# `false` is a literal keyword, so it cannot name a lambda's parameter.
+#= {rejects: '`false` is a keyword'}
+def f = fn false -> 1

@@ -1,0 +1,3 @@
+# `defn` requires a function name.
+#= {rejects: 'expected a function name'}
+defn (x) -> x

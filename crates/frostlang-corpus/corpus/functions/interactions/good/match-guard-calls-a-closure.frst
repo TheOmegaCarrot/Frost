@@ -1,0 +1,10 @@
+# A match guard may call a closure that captures from the enclosing function.
+#= {result: ['small', 'big'], inputs: {limit: 10}}
+def classify = fn v -> {
+    def over = fn x -> x > limit
+    match v {
+        n if: over(n) => 'big',
+        _ => 'small',
+    }
+}
+[classify(3), classify(30)]

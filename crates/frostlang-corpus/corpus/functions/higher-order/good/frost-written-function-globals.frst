@@ -1,0 +1,16 @@
+# The function combinators written in Frost build new functions from
+# lambdas: `curry` binds leading arguments, `bcurry` trailing ones, `compose`
+# applies left to right, `const` ignores its arguments, `spread` takes an
+# argument Array, `rev_args` reverses arguments, and `inv` negates a result.
+#= {result: [[1, 2, 3], [2, 3, 1], 30, 5, 7, -7, false]}
+def triple = fn a, b, c -> [a, b, c]
+def sub = fn a, b -> a - b
+[
+    curry(triple, 1)(2, 3),
+    bcurry(triple, 1)(2, 3),
+    compose(fn x -> x + 1, fn x -> x * 10)(2),
+    const(5)(1, 2, 3),
+    spread(sub)([10, 3]),
+    rev_args(sub)(10, 3),
+    inv(fn x -> x > 1)(5),
+]

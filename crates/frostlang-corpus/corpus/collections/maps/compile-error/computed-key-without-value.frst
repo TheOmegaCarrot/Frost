@@ -1,0 +1,3 @@
+# Name shorthand has no computed-key form: `{[1]}` lacks its value.
+#= {rejects: 'expected `:`'}
+def m = {[1]}

@@ -1,0 +1,7 @@
+# Keywords are lowercase: `True`, `Null`, and `None` are ordinary names that
+# may be bound, not literals.
+#= {result: ['t', 'n', 'none']}
+def True = 't'
+def Null = 'n'
+def None = 'none'
+[True, Null, None]

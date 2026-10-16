@@ -1,0 +1,6 @@
+# A statement that raises stops the program before any later statement, even
+# one whose own error could be found ahead of time.
+#= {raises: 'earlier'}
+def first = error('earlier')
+def second = 1 / 0
+[first, second]

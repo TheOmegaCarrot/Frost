@@ -1,0 +1,5 @@
+# A Map literal holding a binding and a merge derived from it keeps the
+# original under the first key.
+#= {result: {before: {k: 1}, after: {k: 1, j: 2}}, inputs: {v: 1}}
+def m = {k: v}
+{before: m, after: m + {j: 2}}

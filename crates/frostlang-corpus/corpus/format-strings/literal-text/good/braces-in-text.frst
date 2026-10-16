@@ -1,0 +1,4 @@
+# Braces not opened by `${` are literal text: a lone `{`, a lone `}`, and `{x}`
+# without its `$` neither interpolate nor need escaping.
+#= {result: '{x} } { {}'}
+$'{x} } { {}'

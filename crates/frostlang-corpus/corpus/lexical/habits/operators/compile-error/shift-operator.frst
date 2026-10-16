@@ -1,0 +1,3 @@
+# Frost has no shift operators: `<<` is two `<`, which cannot chain.
+#= {rejects: 'no shift operators'}
+1 << 2

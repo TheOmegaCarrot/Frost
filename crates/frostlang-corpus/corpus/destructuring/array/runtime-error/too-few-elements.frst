@@ -1,0 +1,4 @@
+# An exact-length Array pattern raises on an Array that is too short.
+#= {raises: 'exactly 2 elements', inputs: {xs: [1]}}
+def [a, b] = xs
+[a, b]

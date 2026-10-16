@@ -1,0 +1,7 @@
+# A call of a known non-function still evaluates its arguments, effects
+# included, before it raises: the callee being unusable is found only at the
+# call itself.
+#= {result: false, printed: ['argument']}
+def n = 5
+def r = try_call(fn -> n(print('argument')))
+r.ok

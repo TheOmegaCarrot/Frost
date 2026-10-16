@@ -1,0 +1,3 @@
+# A computed Map key is an expression, so an unbound name in it is an error.
+#= {rejects: ['`missing`', 'not defined']}
+{[missing]: 1}

@@ -1,0 +1,4 @@
+# A `;` inside a String is text, not a statement separator.
+#= {result: ['a;b', ';', 'x;']}
+def n = 'x'
+['a;b', ";", $'${n};']

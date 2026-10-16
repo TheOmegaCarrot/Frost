@@ -1,0 +1,4 @@
+# A Function is not a structure `map` iterates.
+#= {raises: ['Structured', 'argument 1', 'Function']}
+defn f(x) -> x
+map f with f

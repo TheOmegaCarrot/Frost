@@ -1,0 +1,12 @@
+# Blocks used as operands each have their own scope: the same name in each is
+# independent, and both are gone afterward.
+#= {result: [30, 'outer']}
+def y = 'outer'
+def sum = do {
+    def y = 10
+    y
+} + do {
+    def y = 20
+    y
+}
+[sum, y]

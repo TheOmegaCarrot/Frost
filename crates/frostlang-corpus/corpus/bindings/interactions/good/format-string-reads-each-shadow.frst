@@ -1,0 +1,11 @@
+# A format String interpolates whichever binding of a name is in scope where
+# the String is written.
+#= {result: ['a', 'b', 'a']}
+def x = 'a'
+def before = $'${x}'
+def during = do {
+    def x = 'b'
+    $'${x}'
+}
+def after = $'${x}'
+[before, during, after]

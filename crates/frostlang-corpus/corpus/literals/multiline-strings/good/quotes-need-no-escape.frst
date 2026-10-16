@@ -1,0 +1,15 @@
+# A multiline String holds either quote character unescaped, and the other style's
+# triple quote too.
+#= {result: ['it\'s "q"', 'a\n"""', "it's 'q'\n'''"]}
+def first = '''
+    it's "q"
+    '''
+def second = '''
+    a
+    """
+    '''
+def third = """
+    it's 'q'
+    '''
+    """
+[first, second, third]

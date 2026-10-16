@@ -1,0 +1,17 @@
+# The unary operations of unary-operators, over operands only known at
+# runtime, give exactly the values the folder computes.
+#= {
+#=     result: [-5, 5, -2.5, false, true, true, false, false, false],
+#=     inputs: {five: 5, minus_five: -5, sum: 2.5, yes: true, no: false, nothing: null, zero: 0, blank: '', empty: []},
+#= }
+[
+    -five,
+    -minus_five,
+    -sum,
+    not yes,
+    not no,
+    not nothing,
+    not zero,
+    not blank,
+    not empty,
+]

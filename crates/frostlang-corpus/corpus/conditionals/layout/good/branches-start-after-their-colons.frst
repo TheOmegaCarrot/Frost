@@ -1,0 +1,9 @@
+# Each branch may start on the line after its colon.
+#= {result: ['one', 'two', 'three'], inputs: {ns: [1, 2, 3]}}
+defn name(n) -> if n == 1:
+    'one'
+elif n == 2:
+    'two'
+else:
+    'three'
+map ns with name

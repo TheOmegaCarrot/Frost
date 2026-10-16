@@ -1,0 +1,6 @@
+# `{key: _}` requires the key without binding its value.
+#= {result: ['has a', 'no a'], inputs: {xs: [{a: null}, {b: 1}]}}
+transform(xs, fn v -> match v {
+    {a: _} => 'has a',
+    _ => 'no a',
+})

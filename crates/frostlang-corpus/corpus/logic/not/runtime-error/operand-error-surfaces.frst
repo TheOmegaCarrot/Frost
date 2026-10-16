@@ -1,0 +1,4 @@
+# `not` is total over values, but an error raised while evaluating its operand
+# still surfaces through it.
+#= {raises: 'division by zero'}
+not (1 / 0)

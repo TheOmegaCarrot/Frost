@@ -1,0 +1,4 @@
+# `$$` interpolated in a format string outside any abbreviated lambda is a
+# syntax error.
+#= {rejects: ['found `$$`', 'only inside `$( ... )`']}
+$'all: ${$$}'

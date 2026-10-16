@@ -1,0 +1,9 @@
+# A closure's names mean what they meant where it was written, not where it is
+# called: calling it inside a block that shadows the name changes nothing.
+#= {result: 1}
+def x = 1
+def f = fn -> x
+do {
+    def x = 2
+    f()
+}

@@ -1,0 +1,3 @@
+# `compose` needs at least two functions; one alone is not composed.
+#= {raises: ['compose', 'at least 2', 'called with 1']}
+compose(len)

@@ -1,0 +1,8 @@
+# A def with alternative patterns over a known value binds the parts of the
+# first alternative that matches, at the top level or nested.
+#= {result: [2, 3, 5, [1, 3]]}
+def [a, 1] | [1, a] = [1, 2]
+def [b, 1] | [1, b] = [3, 1]
+def {c} | [c] = [5]
+def [d, [e, 1 | 2] | e] = [1, [3, 2]]
+[a, b, c, [d, e]]

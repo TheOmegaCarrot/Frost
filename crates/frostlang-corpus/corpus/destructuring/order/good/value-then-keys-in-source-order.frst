@@ -1,0 +1,8 @@
+# The value is evaluated first, then each computed key once, in source order.
+#= {result: [1, 2], printed: ['value', 'b', 'a']}
+defn note(label, v) -> {
+    print(label)
+    v
+}
+def {[note('b', 'b')]: y, [note('a', 'a')]: x} = note('value', {a: 1, b: 2})
+[x, y]

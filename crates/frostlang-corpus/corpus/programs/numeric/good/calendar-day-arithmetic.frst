@@ -1,0 +1,41 @@
+# Calendar arithmetic in Ints: days since 1970-01-01 by the civil-from-days
+# algorithm, the weekday from that count, and the Gregorian leap-year rule.
+# Subtle: Int division and remainder truncate toward zero, so the era of a
+# year before 0 and the weekday of a date before 1970 each need an explicit
+# adjustment; a bare `days % 7` would be negative for 1900.
+#= {
+#=     result: {
+#=         days: [19782, 10957, 0, 20741, -25508, 47846],
+#=         weekdays: ['Thursday', 'Saturday', 'Thursday', 'Thursday', 'Thursday', 'Friday'],
+#=         leap: [false, true, true, false],
+#=         span: 73354,
+#=     },
+#=     inputs: {
+#=         dates: [[2024, 2, 29], [2000, 1, 1], [1970, 1, 1], [2026, 10, 15], [1900, 3, 1], [2100, 12, 31]],
+#=         years: [1900, 2000, 2024, 2100],
+#=     },
+#= }
+def names = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
+
+defn days_from_civil(date) -> {
+    def [year, month, day] = date
+    def y = if month <= 2: year - 1 else: year
+    def era = (if y >= 0: y else: y - 399) / 400
+    def yoe = y - era * 400
+    def doy = (153 * (if month > 2: month - 3 else: month + 9) + 2) / 5 + day - 1
+    def doe = yoe * 365 + yoe / 4 - yoe / 100 + doy
+    era * 146097 + doe - 719468
+}
+
+defn floor_mod(a, n) -> (a % n + n) % n
+
+defn weekday(date) -> names[floor_mod(days_from_civil(date) + 4, 7)]
+
+defn is_leap(year) -> (year % 4 == 0 and year % 100 != 0) or year % 400 == 0
+
+{
+    days: transform(dates, days_from_civil),
+    weekdays: transform(dates, weekday),
+    leap: transform(years, is_leap),
+    span: days_from_civil(dates[-1]) - days_from_civil(dates[-2]),
+}

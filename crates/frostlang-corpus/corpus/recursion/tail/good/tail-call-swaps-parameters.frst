@@ -1,0 +1,6 @@
+# A tail call whose arguments are the caller's parameters in another order.
+# Subtle: the callee reuses the caller's frame, so every argument must be read
+# before any parameter slot is overwritten.
+#= {result: [['a', 'b', 'c'], ['b', 'c', 'a'], ['c', 'a', 'b'], ['c', 'a', 'b']]}
+defn rotate(n, x, y, z) -> if n == 0: [x, y, z] else: rotate(n - 1, y, z, x)
+[rotate(0, 'a', 'b', 'c'), rotate(1, 'a', 'b', 'c'), rotate(2, 'a', 'b', 'c'), rotate(100001, 'a', 'b', 'c')]

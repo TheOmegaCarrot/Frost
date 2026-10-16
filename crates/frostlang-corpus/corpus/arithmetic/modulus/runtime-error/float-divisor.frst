@@ -1,0 +1,4 @@
+# `%` is Int-only: a Float divisor is a type error, even beside an Int
+# dividend. Unlike the other arithmetic operators, `%` does not promote.
+#= {raises: 'Int % Float'}
+7 % 2.0

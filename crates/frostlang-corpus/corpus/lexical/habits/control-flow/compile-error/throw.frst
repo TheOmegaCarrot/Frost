@@ -1,0 +1,3 @@
+# Frost has no `throw`; `error(value)` raises an error.
+#= {rejects: 'no `throw`'}
+throw 'x'

@@ -1,0 +1,9 @@
+# Blank lines between a branch and the next `elif` or `else` do not end the
+# `if`.
+#= {result: 3, inputs: {c: false}}
+if c: 1
+
+
+elif c: 2
+
+else: 3

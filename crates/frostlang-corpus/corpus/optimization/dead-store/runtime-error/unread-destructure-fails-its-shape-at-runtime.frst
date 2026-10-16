@@ -1,0 +1,5 @@
+# A destructure none of whose names is read still checks its value's shape, so
+# a value only known at runtime of the wrong length raises.
+#= {raises: 'exactly 1 element', inputs: {pair: [1, 2]}}
+def [unused] = pair
+'ok'

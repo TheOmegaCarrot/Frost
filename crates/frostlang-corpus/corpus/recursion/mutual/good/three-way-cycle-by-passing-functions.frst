@@ -1,0 +1,7 @@
+# Three functions in a cycle, each passing the next two along rotated, with
+# no function naming another.
+#= {result: ['a', 'b', 'c', 'b']}
+defn a(n, next, after) -> if n == 0: 'a' else: next(n - 1, after, a)
+defn b(n, next, after) -> if n == 0: 'b' else: next(n - 1, after, b)
+defn c(n, next, after) -> if n == 0: 'c' else: next(n - 1, after, c)
+[a(0, b, c), a(1, b, c), a(2, b, c), a(100000, b, c)]

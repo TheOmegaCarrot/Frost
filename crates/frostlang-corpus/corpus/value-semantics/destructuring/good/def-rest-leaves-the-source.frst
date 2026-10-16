@@ -1,0 +1,6 @@
+# A rest binding destructured with `def`, then extended, leaves the source
+# binding unchanged.
+#= {result: [[2, 3, 1], [1, 2, 3]], inputs: {n: 1}}
+def xs = [n, 2, 3]
+def [first, ...rest] = xs
+[rest + [first], xs]

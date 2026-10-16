@@ -1,0 +1,4 @@
+# Functions have no ordering: `<` between two functions raises.
+#= {raises: ['Function', 'not orderable']}
+def f = fn -> 1
+f < f

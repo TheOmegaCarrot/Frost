@@ -1,0 +1,12 @@
+# The `if`s of dead-branch-never-raises, with conditions only known at
+# runtime, never run the branch that would raise.
+#= {
+#=     result: ['safe', 'safe', 'safe', 'safe'],
+#=     inputs: {no: false, yes: true, nothing: null, zero: 0},
+#= }
+[
+    if no: 1 / 0 else: 'safe',
+    if yes: 'safe' else: error('never'),
+    if nothing: {a: 1}.b else: 'safe',
+    if zero: 'safe' else: len(5),
+]

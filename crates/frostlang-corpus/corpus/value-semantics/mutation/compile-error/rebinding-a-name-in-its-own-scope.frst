@@ -1,0 +1,5 @@
+# Binding a name again in the scope that already binds it is not an update:
+# it is rejected, so a derived value needs a new name.
+#= {rejects: 'already bound'}
+def xs = [1]
+def xs = xs + [2]

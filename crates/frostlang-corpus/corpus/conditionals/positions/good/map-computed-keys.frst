@@ -1,0 +1,13 @@
+# An `if` may compute a Map key, of each key type: String, Int, Float, Bool,
+# and Bytes.
+#= {
+#=     result: {b: 1, [2]: 2, [1.5]: 3, [false]: 4, [x'ff']: 5},
+#=     inputs: {f: false},
+#= }
+{
+    [if f: 'a' else: 'b']: 1,
+    [if f: 1 else: 2]: 2,
+    [if f: 0.5 else: 1.5]: 3,
+    [if f: true else: false]: 4,
+    [if f: x'00' else: x'ff']: 5,
+}

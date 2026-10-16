@@ -1,0 +1,11 @@
+# A structured error (a Map) raised mid-fold and never caught ends the run,
+# and its message shows the raised value, reason and data included.
+#= {
+#=     raises: ['insufficient funds', '30'],
+#=     inputs: {withdrawals: [10, 50, 5], opening: 30},
+#= }
+defn withdraw(balance, amount) ->
+    if amount > balance: error({reason: 'insufficient funds', short: amount - balance})
+    else: balance - amount
+
+fold(withdrawals, opening, withdraw)

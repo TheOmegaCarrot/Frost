@@ -1,0 +1,9 @@
+# A key present with a Null value is not the same as a missing key: a Map
+# holding `{a: null}` is unequal to the empty Map.
+#= {result: [false, true, false, true]}
+[
+    {a: null} == {},
+    {a: null} == {a: null},
+    {a: null, b: 1} == {b: 1},
+    {a: null} != {b: null},
+]

@@ -1,0 +1,11 @@
+# An export built at runtime keeps its value even when the program's last use
+# of it builds a larger value from it. Subtle because a uniquely owned value at
+# its last read may be reused in place, but an export is read after the run.
+#= {
+#=     result: [[1, 2, 3], {a: 1, b: 2}],
+#=     exports: {xs: [1, 2], m: {a: 1}},
+#=     inputs: {base: [1], key: 'a'},
+#= }
+export def xs = base + [2]
+export def m = {[key]: 1}
+[xs + [3], m + {b: 2}]

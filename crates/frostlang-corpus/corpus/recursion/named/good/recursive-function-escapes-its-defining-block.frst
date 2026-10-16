@@ -1,0 +1,8 @@
+# A `defn` made inside a `do` block and returned from it keeps recursing after
+# the block has ended and its name has gone out of scope.
+#= {result: 120}
+def fact = do {
+    defn local_fact(n) -> if n <= 1: 1 else: n * local_fact(n - 1)
+    local_fact
+}
+fact(5)

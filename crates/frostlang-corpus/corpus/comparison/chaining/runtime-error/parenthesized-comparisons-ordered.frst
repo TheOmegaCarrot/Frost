@@ -1,0 +1,3 @@
+# Ordering two parenthesized comparisons orders two Bools, which raises.
+#= {raises: ['Bool', 'not orderable'], inputs: {a: 1, b: 2}}
+(a < b) <= (b < a)

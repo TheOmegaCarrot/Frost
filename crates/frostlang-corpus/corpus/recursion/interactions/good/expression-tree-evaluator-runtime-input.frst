@@ -1,0 +1,17 @@
+# A small interpreter over an expression tree known only at runtime: a
+# recursive `match` with alternatives, type constraints, and a nested binding
+# environment.
+#= {
+#=     result: 20,
+#=     inputs: {
+#=         program: {op: 'let', name: 'x', value: 5, body: {op: '*', l: 'x', r: {op: 'plus', l: 'x', r: -1}}},
+#=     },
+#= }
+defn eval(e, env) -> match e {
+    n is Int => n,
+    v is String => env[v],
+    {op: '+' | 'plus', l, r} => eval(l, env) + eval(r, env),
+    {op: '*', l, r} => eval(l, env) * eval(r, env),
+    {op: 'let', name, value, body} => eval(body, env + {[name]: eval(value, env)}),
+}
+eval(program, {})

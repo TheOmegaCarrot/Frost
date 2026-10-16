@@ -1,0 +1,63 @@
+# An interpreter whose recursive functions are Frost named lambdas: a `fix`
+# node makes a closure that rebinds its own name in the interpreted
+# environment on every call. The interpreter evaluates a chosen branch and
+# an application in tail position, so an interpreted tail-recursive loop
+# a thousand iterations long is a chain of host tail calls; interpreted
+# non-tail recursion (factorial) works too. Builtins are variadic and
+# reached through `call`.
+#= {
+#=     result: [1000, 3628800, 5050],
+#=     inputs: {
+#=         count_up: {fix: 'loop', params: ['n', 'acc'], body: {
+#=             cond: {prim: '==', args: [{var: 'n'}, {lit: 0}]},
+#=             yes: {var: 'acc'},
+#=             no: {app: {var: 'loop'}, args: [
+#=                 {prim: '-', args: [{var: 'n'}, {lit: 1}]},
+#=                 {prim: '+', args: [{var: 'acc'}, {lit: 1}]},
+#=             ]},
+#=         }},
+#=         factorial: {fix: 'fact', params: ['n'], body: {
+#=             cond: {prim: '==', args: [{var: 'n'}, {lit: 0}]},
+#=             yes: {lit: 1},
+#=             no: {prim: '*', args: [
+#=                 {var: 'n'},
+#=                 {app: {var: 'fact'}, args: [{prim: '-', args: [{var: 'n'}, {lit: 1}]}]},
+#=             ]},
+#=         }},
+#=         sum_to: {fix: 'sum', params: ['n', 'acc'], body: {
+#=             cond: {prim: '==', args: [{var: 'n'}, {lit: 0}]},
+#=             yes: {var: 'acc'},
+#=             no: {app: {var: 'sum'}, args: [
+#=                 {prim: '-', args: [{var: 'n'}, {lit: 1}]},
+#=                 {prim: '+', args: [{var: 'acc'}, {var: 'n'}]},
+#=             ]},
+#=         }},
+#=         big: 1000,
+#=     },
+#= }
+def primitives = {
+    ['+']: fn ...xs -> fold(xs, 0, fn a, b -> a + b),
+    ['*']: fn ...xs -> fold(xs, 1, fn a, b -> a * b),
+    ['-']: fn a, b -> a - b,
+    ['==']: fn a, b -> a == b,
+}
+
+defn bind(env, names, values) -> fold(names, {env, i: 0}, fn s, name -> {
+    env: s.env + {[name]: values[s.i]},
+    i: s.i + 1,
+}).env
+
+defn evaluate(node, env) -> match node {
+    {lit} => lit,
+    {var} => env[var],
+    {prim, args} => call(primitives[prim], transform(args, fn a -> evaluate(a, env))),
+    {cond, yes, no} => if evaluate(cond, env): evaluate(yes, env) else: evaluate(no, env),
+    {app: callee, args} => call(evaluate(callee, env), transform(args, fn a -> evaluate(a, env))),
+    {fix: name, params, body} => fn self(...values) -> evaluate(body, bind(env + {[name]: self}, params, values)),
+}
+
+[
+    evaluate(count_up, {})(big, 0),
+    evaluate(factorial, {})(10),
+    evaluate(sum_to, {})(100, 0),
+]

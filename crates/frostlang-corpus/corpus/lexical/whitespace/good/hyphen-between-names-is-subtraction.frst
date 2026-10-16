@@ -1,0 +1,6 @@
+# A name cannot hold `-`, so `my-name` is `my` minus `name`, not one name:
+# a subtle trap for those used to kebab-case names.
+#= {result: 3}
+def my = 5
+def name = 2
+my-name

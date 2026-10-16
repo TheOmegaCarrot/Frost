@@ -1,0 +1,6 @@
+# An inner alternative that matched does not commit its outer branch: when a
+# later part of that branch fails, the next outer branch is tried from the
+# start. Subtle because the inner alternative already bound `a` to 5.
+#= {result: [5], inputs: {v: [[5], 2]}}
+def [[a] | {a}, 1] | [a, 2] = v
+a

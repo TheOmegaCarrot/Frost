@@ -1,0 +1,5 @@
+# In a format string's text, a `$` not followed by `{` is literal, even
+# spelled like a placeholder: only the interpolated `$1` is the argument.
+#= {result: '$1 costs $5 for x'}
+def f = $($'$1 costs $5 for ${$1}')
+f('x')

@@ -1,0 +1,8 @@
+# Unary `-` negates an Int only known at runtime, of either sign or zero.
+#= {result: [-5, 5, 0, 5], inputs: {five: 5, minus_five: -5, zero: 0}}
+[
+    -five,
+    -minus_five,
+    -zero,
+    - -five,
+]

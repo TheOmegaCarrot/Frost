@@ -1,0 +1,4 @@
+# Each step reads a Map by a key of any valid key type.
+#= {result: 'deep'}
+def nested = {[1.5]: {[true]: {[x'00']: {[7]: {s: 'deep'}}}}}
+dig(nested, 1.5, true, x'00', 7, 's')

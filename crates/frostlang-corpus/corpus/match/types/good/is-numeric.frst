@@ -1,0 +1,9 @@
+# `is Numeric` admits Int and Float only, not Bools.
+#= {
+#=     result: [0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+#=     inputs: {xs: [null, false, true, 0, -1, 0.0, 1.5, '', 'é', x'', x'00', [], [null], {}, {a: null}]},
+#= }
+transform(xs + [len], fn v -> match v {
+    _ is Numeric => 1,
+    _ => 0,
+})

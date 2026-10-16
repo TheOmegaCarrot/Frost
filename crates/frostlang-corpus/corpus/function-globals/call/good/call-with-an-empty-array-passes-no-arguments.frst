@@ -1,0 +1,3 @@
+# An empty Array of arguments is the same as passing none.
+#= {result: [0, 'zero']}
+[call(fn ...xs -> len(xs), []), call(fn -> 'zero', [])]

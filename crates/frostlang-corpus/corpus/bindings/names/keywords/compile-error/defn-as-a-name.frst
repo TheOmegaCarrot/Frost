@@ -1,0 +1,4 @@
+# `defn` is a keyword, so it cannot be bound as a name.
+#= {rejects: ['`defn`', 'keyword']}
+def defn = 1
+1

@@ -1,0 +1,5 @@
+# A tail-recursive driver applies an abbreviated lambda many times, the
+# accumulated value threading through each application.
+#= {result: [1024, 100000, 'x']}
+defn apply_n(f, n, x) -> if n == 0: x else: apply_n(f, n - 1, f(x))
+[apply_n($($ * 2), 10, 1), apply_n($($ + 1), 100000, 0), apply_n($($ + 'y'), 0, 'x')]

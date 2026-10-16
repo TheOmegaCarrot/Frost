@@ -1,0 +1,16 @@
+# `if`s nested five deep, each `else` on its own line closing the innermost
+# `if` still open: the innermost value needs every condition to hold, and
+# otherwise the first failing level's `else` is taken.
+#= {result: ['all', 'level 3', 'level 1'], inputs: {ns: [5, 2, 0]}}
+defn probe(n) -> if n > 0:
+    if n > 1:
+        if n > 2:
+            if n > 3:
+                if n > 4:
+                    'all'
+                else: 'level 5'
+            else: 'level 4'
+        else: 'level 3'
+    else: 'level 2'
+else: 'level 1'
+map ns with probe

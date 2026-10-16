@@ -1,0 +1,9 @@
+# Each part a pattern takes from a known value is itself known, and reads back
+# the part it took, at any depth and through a rest binding.
+#= {result: [42, [2, 3], 'c', 3, [1, {x: 1, y: [2]}], []]}
+def [a, {b}] = [6, {b: 7}]
+def [_, ...rest] = [1, 2, 3]
+def {k, [k]: v} = {k: 'c', c: 3}
+def {x, y: [_]} as whole = {x: 1, y: [2]}
+def [_, ...none] = [1]
+[a * b, rest, k, v, [x, whole], none]

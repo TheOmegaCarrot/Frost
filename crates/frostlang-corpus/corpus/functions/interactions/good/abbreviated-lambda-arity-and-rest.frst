@@ -1,0 +1,4 @@
+# An abbreviated lambda takes as many arguments as its highest placeholder,
+# plus any number more when it uses `$$`.
+#= {result: [2, 42, [1, [2, 3]], [2, []]]}
+[$($2)(1, 2), $(42)(), $([$1, $$])(1, 2, 3), $([$2, $$])(1, 2)]

@@ -1,0 +1,9 @@
+# Statements before a raising one have already run when it raises: their
+# output stays printed when the error is caught.
+#= {result: false, printed: ['before']}
+defn attempt() -> do {
+    print('before')
+    error('stop')
+    print('after')
+}
+try_call(attempt).ok

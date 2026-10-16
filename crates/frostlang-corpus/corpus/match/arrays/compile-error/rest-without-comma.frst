@@ -1,0 +1,5 @@
+# A rest follows the elements before it after a comma, like any element.
+#= {rejects: 'follows a comma'}
+match [1, 2] {
+    [a ...others] => a,
+}

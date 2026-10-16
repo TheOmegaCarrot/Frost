@@ -1,0 +1,4 @@
+# `as` binds the whole Map, including keys the pattern does not name.
+#= {result: [1, {a: 1, b: 2}], inputs: {m: {a: 1, b: 2}}}
+def {a} as whole = m
+[a, whole]

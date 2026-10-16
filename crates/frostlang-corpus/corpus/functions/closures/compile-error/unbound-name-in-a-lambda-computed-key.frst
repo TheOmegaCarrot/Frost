@@ -1,0 +1,6 @@
+# An unbound name in a lambda's destructuring key is rejected like any other.
+#= {rejects: ['`missing`', 'not defined']}
+def f = fn m -> {
+    def {[missing]: v} = m
+    v
+}

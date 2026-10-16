@@ -1,0 +1,6 @@
+# An inner match may rebind a name the outer arm bound; the inner binding
+# applies only inside the inner arm.
+#= {result: [2, 1], inputs: {v: [1, [2]]}}
+match v {
+    [x, inner] => [match inner { [x] => x }, x],
+}

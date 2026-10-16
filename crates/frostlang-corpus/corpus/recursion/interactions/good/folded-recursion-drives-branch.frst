@@ -1,0 +1,5 @@
+# A recursive call on constants used as a condition: whether the optimizer
+# evaluates it ahead of time or not, the same branch is taken.
+#= {result: 'taken'}
+defn fact(n) -> if n <= 1: 1 else: n * fact(n - 1)
+if fact(5) == 120: 'taken' else: 'not taken'

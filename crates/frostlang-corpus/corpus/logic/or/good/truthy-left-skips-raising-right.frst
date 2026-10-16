@@ -1,0 +1,7 @@
+# A skipped right operand of `or` is never evaluated, so one that would raise
+# does not. Subtle because the folder must not evaluate it ahead of time either.
+#= {result: [true, 0]}
+[
+    true or 1 / 0,
+    0 or error('the right operand ran'),
+]

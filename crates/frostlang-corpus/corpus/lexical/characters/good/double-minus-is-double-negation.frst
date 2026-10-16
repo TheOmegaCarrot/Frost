@@ -1,0 +1,4 @@
+# Frost has no `--` token, so `--x` is a negation of a negation and `1--1`
+# is 1 minus -1. Subtle: a C programmer reads `--x` as a decrement.
+#= {result: [5, 2, 2], inputs: {x: 5}}
+[--x, 1--1, x---3]

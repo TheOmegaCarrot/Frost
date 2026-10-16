@@ -1,0 +1,5 @@
+# `null` is an ordinary value as an element, a nested element, and a Map value: it
+# takes a place rather than leaving one empty.
+#= {result: [[null], [[null]], {a: null}, 2, true, null, null]}
+def m = {a: null}
+[[null], [[null]], m, len([null, null]), has(m, 'a'), m.a, [1, null][1]]

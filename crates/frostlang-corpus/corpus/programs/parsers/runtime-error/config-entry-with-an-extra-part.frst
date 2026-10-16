@@ -1,0 +1,11 @@
+# A config loader destructures each entry as a [key, value] pair, so an
+# entry with an extra part raises a pattern error rather than dropping the
+# extra part or binding only the first two.
+#= {
+#=     raises: 'exactly 2 elements',
+#=     inputs: {entries: [['host', 'local'], ['port', 80, 'tcp'], ['debug', true]]},
+#= }
+fold(entries, {}, fn config, entry -> {
+    def [key, value] = entry
+    config + {[key]: value}
+})

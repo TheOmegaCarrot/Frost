@@ -1,0 +1,4 @@
+# Entries are evaluated in the order written, so the first entry's error
+# surfaces, not a later one's.
+#= {raises: 'Modulus by zero'}
+{a: 1 % 0, b: 1 / 0}

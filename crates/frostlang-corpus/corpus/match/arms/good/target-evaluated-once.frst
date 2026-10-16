@@ -1,0 +1,12 @@
+# The target is evaluated exactly once, however many arms are tried against it.
+#= {result: 5, printed: ['target']}
+defn target() -> {
+    print('target')
+    5
+}
+match target() {
+    1 => 0,
+    2 => 0,
+    n if: n > 9 => 0,
+    n => n,
+}

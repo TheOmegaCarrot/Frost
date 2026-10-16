@@ -1,0 +1,6 @@
+# A global in tail position is called like any function, and the recursion's
+# result is its return value.
+#= {result: [4, 'Array']}
+defn measure(xs, n) -> if n == 0: len(xs) else: measure(xs + [n], n - 1)
+defn kind(v, n) -> if n == 0: type(v) else: kind(v, n - 1)
+[measure([], 4), kind([], 10)]

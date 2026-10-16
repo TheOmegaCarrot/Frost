@@ -1,0 +1,13 @@
+# `and` yields its left operand when that is falsy, and otherwise its right
+# operand, unchanged: the result is a deciding operand, never a coerced Bool.
+#= {result: [5, true, null, false, null, false, 'yes', [1, 2]]}
+[
+    true and 5,
+    5 and true,
+    null and 5,
+    false and 5,
+    5 and null,
+    5 and false,
+    1 and 'yes',
+    true and [1, 2],
+]

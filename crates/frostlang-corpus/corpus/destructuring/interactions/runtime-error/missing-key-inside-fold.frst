@@ -1,0 +1,10 @@
+# A missing key in a `fold` step raises out of the fold.
+#= {
+#=     raises: 'no value at key "v"',
+#=     inputs: {points: [{v: 1}, {w: 2}]},
+#=     known_issue: 'FROST-155',
+#= }
+fold(points, 0, fn acc, point -> {
+    def {v} = point
+    acc + v
+})

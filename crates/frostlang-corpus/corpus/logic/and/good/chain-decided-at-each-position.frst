@@ -1,0 +1,12 @@
+# A runtime `and` chain is decided by whichever operand is the first falsy one,
+# wherever it sits, and yields that operand.
+#= {
+#=     result: [false, null, false, 4],
+#=     inputs: {t: 1, f: false, n: null, last: 4},
+#= }
+[
+    f and t and t and t,
+    t and n and t and t,
+    t and t and f and n,
+    t and t and t and last,
+]

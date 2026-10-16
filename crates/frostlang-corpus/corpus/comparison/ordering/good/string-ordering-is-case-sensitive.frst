@@ -1,0 +1,10 @@
+# String ordering compares characters by code point, not by letter: every
+# uppercase ASCII letter sorts before every lowercase one, and digits sort
+# before letters.
+#= {result: [true, true, true, false]}
+[
+    'Z' < 'a',
+    'Apple' < 'apple',
+    '9' < 'A',
+    'b' < 'B',
+]

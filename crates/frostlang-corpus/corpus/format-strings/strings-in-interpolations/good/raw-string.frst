@@ -1,0 +1,3 @@
+# A raw String in an interpolation may hold braces and either quote.
+#= {result: ["a'b}c", 'say "}"', '{', '"']}
+[$'${R'(a'b}c)'}', $'${R"(say "}")"}', $"${R"({)"}", $"${R'(")'}"]

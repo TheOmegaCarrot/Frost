@@ -1,0 +1,7 @@
+# A field holding a function is called directly with `m.f(args)`.
+#= {result: [42, 'hi, ada']}
+def m = {
+    double: fn n -> n * 2,
+    greet: fn name -> $'hi, ${name}',
+}
+[m.double(21), m.greet('ada')]

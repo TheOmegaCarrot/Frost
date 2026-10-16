@@ -1,0 +1,4 @@
+# `try_call` requires a Function first. Its own argument errors are raised,
+# not caught by itself.
+#= {raises: ['try_call', 'argument 1', 'got Int']}
+try_call(1)

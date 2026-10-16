@@ -1,0 +1,4 @@
+# Constant `if`s as Array elements each yield one element, Null for a falsy
+# `if` with no `else`.
+#= {result: [1, null, 3, 4]}
+[if true: 1, if false: 2, if null: 0 elif true: 3, 4]

@@ -1,0 +1,6 @@
+# A match arm may bind a global's name; inside the arm it is the matched value.
+#= {result: [4, 2]}
+def r = match 3 {
+    len => len + 1,
+}
+[r, len([1, 2])]

@@ -1,0 +1,7 @@
+# `transform` builds Strings with a format String; `select` keeps elements by
+# comparing against one.
+#= {result: [['<1>', '<2>', '<3>'], ['k2']], inputs: {xs: [1, 2, 3], keys: ['k1', 'k2', 'k3']}}
+[
+    transform(xs, fn x -> $'<${x}>'),
+    select(keys, fn k -> k == $'k${xs[1]}'),
+]

@@ -1,0 +1,9 @@
+# A negated constant threaded into a call groups as the runtime form does:
+# `-3 @ square()` is -(square(3)), though `-3` alone reads as one negative
+# number.
+#= {result: [-9, 9]}
+defn square(n) -> n * n
+[
+    -3 @ square(),
+    (-3) @ square(),
+]

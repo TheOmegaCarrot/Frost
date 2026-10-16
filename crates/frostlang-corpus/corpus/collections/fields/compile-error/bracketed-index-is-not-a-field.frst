@@ -1,0 +1,4 @@
+# `.` takes a name, not a computed key: `m.[k]` is not a field read.
+#= {rejects: 'expected a name after `.`'}
+def m = {a: 1}
+m.['a']

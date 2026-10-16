@@ -1,0 +1,4 @@
+# Triple quotes do not make a one-line String: `'''abc'''` has text on its opening
+# line.
+#= {rejects: 'must begin with a newline after the opening delimiter'}
+'''abc'''

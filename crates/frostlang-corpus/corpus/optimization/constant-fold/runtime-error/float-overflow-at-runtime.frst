@@ -1,0 +1,4 @@
+# The product of float-overflow-in-constants, over a value only known at
+# runtime, raises the same error.
+#= {raises: 'infinity', inputs: {big: 1e300}}
+big * big

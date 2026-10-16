@@ -1,0 +1,8 @@
+# Array concatenation keeps left-then-right order whether the left, the
+# right, or neither operand is freshly built, and leaves a referenced operand
+# unchanged.
+#= {
+#=     result: [[1, 9], [9, 1], [9, 9], [9]],
+#=     inputs: {x: 1, shared: [9]},
+#= }
+[[x] + shared, shared + [x], shared + shared, shared]

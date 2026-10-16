@@ -1,0 +1,5 @@
+# A local function named `print` shadows the impure global: calling it prints
+# nothing, and computes the local function's result.
+#= {result: ['silent!', 'silent!']}
+def print = fn x -> x + '!'
+[print('silent'), print('silent')]

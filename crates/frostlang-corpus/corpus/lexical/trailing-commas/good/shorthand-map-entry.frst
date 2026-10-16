@@ -1,0 +1,3 @@
+# A trailing comma may follow a shorthand Map entry.
+#= {result: {a: 1, b: 2}, inputs: {a: 1, b: 2}}
+{a, b,}

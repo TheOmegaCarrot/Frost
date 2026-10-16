@@ -1,0 +1,4 @@
+# An unbound name in an operand that short-circuiting would skip is still a
+# compile error.
+#= {rejects: ['`missing`', 'not defined']}
+true or missing

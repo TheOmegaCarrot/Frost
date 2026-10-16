@@ -1,0 +1,13 @@
+# Recursion over a nested structure: the depth of an Array tree, with
+# non-Array leaves of every kind (including Null) at depth zero.
+#= {result: [0, 0, 1, 1, 4]}
+defn depth(t) -> match t {
+    [] => 1,
+    [head, ...tail] => do {
+        def below = 1 + depth(head)
+        def beside = depth(tail)
+        if below > beside: below else: beside
+    },
+    _ => 0,
+}
+[depth(null), depth('leaf'), depth([]), depth([1, 'two', null]), depth([1, [[{a: [5]}], [[x'00']]]])]

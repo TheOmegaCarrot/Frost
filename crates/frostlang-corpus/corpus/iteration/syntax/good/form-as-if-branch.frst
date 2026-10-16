@@ -1,0 +1,6 @@
+# A form may be an `if` branch; a lambda operation's body ends at the `else`
+# that follows it on the same line.
+#= {result: [[2, 4], [1, 2]], inputs: {xs: [1, 2], yes: true, no: false}}
+def taken = if yes: map xs with fn x -> x * 2 else: xs
+def skipped = if no: map xs with fn x -> x * 2 else: xs
+[taken, skipped]

@@ -1,0 +1,14 @@
+# Precedence holds for operands only known at runtime: `*`, `/`, and `%` bind
+# tighter than `+` and `-`.
+#= {
+#=     result: [14, 10, 7, 3, 9, -1],
+#=     inputs: {one: 1, two: 2, three: 3, four: 4, five: 5, seven: 7, ten: 10, twelve: 12},
+#= }
+[
+    two + three * four,
+    two * three + four,
+    one + twelve / two,
+    ten - seven % four * two - one,
+    one + two * three + two,
+    five - twelve / two,
+]

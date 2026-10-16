@@ -1,0 +1,3 @@
+# Runtime Maps have no order.
+#= {raises: 'Type Map is not orderable', inputs: {a: {x: 1}, b: {x: 2}}}
+a <= b

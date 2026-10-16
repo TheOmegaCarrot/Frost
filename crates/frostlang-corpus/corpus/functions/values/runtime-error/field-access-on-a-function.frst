@@ -1,0 +1,4 @@
+# A function has no fields: `.name` on one raises.
+#= {raises: ['index', 'Function']}
+defn f() -> 1
+f.name

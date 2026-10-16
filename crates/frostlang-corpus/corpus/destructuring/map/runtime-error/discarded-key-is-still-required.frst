@@ -1,0 +1,8 @@
+# `key: _` binds nothing, yet the key must be present.
+#= {
+#=     raises: 'no value at key "a"',
+#=     inputs: {m: {b: 1}},
+#=     known_issue: 'FROST-155',
+#= }
+def {a: _, b} = m
+b

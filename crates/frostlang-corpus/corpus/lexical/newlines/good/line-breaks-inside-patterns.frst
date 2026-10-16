@@ -1,0 +1,14 @@
+# A destructuring pattern's brackets make line breaks inside them
+# insignificant, as an expression's do.
+#= {result: [1, 2, [3], 4, 5]}
+def [
+    a,
+    b,
+    ...rest
+] = [1, 2, 3]
+def {
+    c,
+    d:
+        e,
+} = {c: 4, d: 5}
+[a, b, rest, c, e]

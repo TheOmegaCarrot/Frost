@@ -1,0 +1,9 @@
+# An effect that happens before an error on constants still happens, once,
+# though the error stops the function: the call cannot be computed ahead of
+# time as only its error.
+#= {result: false, printed: ['before']}
+def r = try_call(fn -> {
+    print('before')
+    1 / 0
+})
+r.ok

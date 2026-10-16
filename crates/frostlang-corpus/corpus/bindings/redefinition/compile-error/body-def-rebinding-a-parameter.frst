@@ -1,0 +1,8 @@
+# A lambda's parameters and its block body share one scope, so a body `def` of
+# a parameter's name is a duplicate binding, not a shadow.
+#= {rejects: ['`x`', 'already bound']}
+def f = fn x -> {
+    def x = 2
+    x
+}
+f(1)

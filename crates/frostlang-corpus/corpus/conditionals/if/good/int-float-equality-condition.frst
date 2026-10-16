@@ -1,0 +1,7 @@
+# `3 == 3.0` is false, since `==` has no cross-type numeric equality, so a
+# condition comparing an Int with an equal Float takes the alternate.
+#= {result: ['distinct', 'ordered']}
+[
+    if 3 == 3.0: 'equal' else: 'distinct',
+    if 2 < 2.5: 'ordered' else: 'unordered',
+]

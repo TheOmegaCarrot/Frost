@@ -1,0 +1,5 @@
+# A function whose only `print` sits in a branch a constant condition rules
+# out prints nothing when called, and returns its live branch's value.
+#= {result: [1, 1]}
+def f = fn -> if false: print('never') else: 1
+[f(), f()]

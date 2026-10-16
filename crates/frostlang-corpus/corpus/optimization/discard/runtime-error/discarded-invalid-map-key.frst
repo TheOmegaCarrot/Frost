@@ -1,0 +1,4 @@
+# A discarded Map literal with an invalid constant key still raises.
+#= {raises: 'not a valid map key'}
+{[[1]]: 2}
+'unreached'

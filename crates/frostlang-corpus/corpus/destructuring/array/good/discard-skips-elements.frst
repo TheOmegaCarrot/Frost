@@ -1,0 +1,4 @@
+# `_` skips an element without binding it; several `_` never collide.
+#= {result: [2, 4], inputs: {xs: [1, 2, 3, 4]}}
+def [_, a, _, b] = xs
+[a, b]

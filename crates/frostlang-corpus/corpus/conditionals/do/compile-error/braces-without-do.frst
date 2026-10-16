@@ -1,0 +1,5 @@
+# Braces alone start a Map, not a block: a block in expression position needs
+# `do`.
+#= {rejects: '`{` starts a Map here'}
+def y = 1
+def x = { y + 1 }

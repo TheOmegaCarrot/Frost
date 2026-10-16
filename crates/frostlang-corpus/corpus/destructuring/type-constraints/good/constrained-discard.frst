@@ -1,0 +1,5 @@
+# `_ is Type` checks a part's type without binding it.
+#= {result: 2, inputs: {xs: [1, null, 2], m: {k: 'x', v: 3}}}
+def [_ is Int, _ is Null, a] = xs
+def {k: _ is String, v} = m
+a + v - 3

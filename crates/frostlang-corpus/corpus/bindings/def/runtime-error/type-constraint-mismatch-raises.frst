@@ -1,0 +1,5 @@
+# A `def` whose type constraint the runtime value does not meet raises instead
+# of binding.
+#= {raises: 'expected a String', inputs: {n: 5}}
+def x is String = n
+x

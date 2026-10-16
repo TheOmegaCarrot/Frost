@@ -1,0 +1,11 @@
+# An exported `def` evaluates its value exactly once, when it runs, in order
+# with the program's other effects; reading it later repeats nothing.
+#= {
+#=     result: [null, null],
+#=     exports: {printed: null},
+#=     printed: ['before', 'side effect', 'after'],
+#= }
+print('before')
+export def printed = print('side effect')
+print('after')
+[printed, printed]

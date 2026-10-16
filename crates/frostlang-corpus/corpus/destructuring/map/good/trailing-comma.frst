@@ -1,0 +1,5 @@
+# A trailing comma after the last entry of a Map pattern is allowed, also in a
+# nested one and before `as`.
+#= {result: [1, 2, {a: {b: 1}, c: 2}], inputs: {m: {a: {b: 1}, c: 2}}}
+def {a: {b,}, c,} as whole = m
+[b, c, whole]

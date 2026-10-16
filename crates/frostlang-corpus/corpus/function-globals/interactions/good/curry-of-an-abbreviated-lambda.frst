@@ -1,0 +1,4 @@
+# Abbreviated lambdas curry like any function, their placeholders filled in
+# order from the fixed and later arguments.
+#= {result: [15, ['a', 'b']]}
+[curry($($1 + $2), 10)(5), bcurry($([$1, $2]), 'b')('a')]

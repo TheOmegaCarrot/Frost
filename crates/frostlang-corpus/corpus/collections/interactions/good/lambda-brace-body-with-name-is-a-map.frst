@@ -1,0 +1,8 @@
+# After `->`, braces holding a lone name, or starting `name:` or `name,`, are
+# a Map literal, not a block: `fn x -> {x}` returns `{x: x}`, not `x`.
+# Subtle because a block body is also written in braces.
+#= {result: [{x: 3}, {x: 3, y: 1}, {name: 3}]}
+def single = fn x -> {x}
+def pair = fn x -> {x, y: 1}
+def named = fn x -> {name: x}
+[single(3), pair(3), named(3)]

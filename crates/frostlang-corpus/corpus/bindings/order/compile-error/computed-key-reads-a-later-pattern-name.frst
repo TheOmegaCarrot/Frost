@@ -1,0 +1,5 @@
+# A Map pattern binds its parts in source order, so a computed key cannot read
+# a name the same pattern binds after it.
+#= {rejects: ['`k`', 'not defined']}
+def {[k]: v, k} = {k: 'x', x: 5}
+v

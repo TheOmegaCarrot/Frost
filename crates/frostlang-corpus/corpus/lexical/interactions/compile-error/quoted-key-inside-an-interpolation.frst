@@ -1,0 +1,4 @@
+# An interpolation is lexed apart, but the help still sees a Map opened in
+# it: a quoted name key gets the same help as elsewhere.
+#= {rejects: 'needs no quotes'}
+$'${ {"a": 1} }'

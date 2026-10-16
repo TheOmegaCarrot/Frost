@@ -1,0 +1,5 @@
+# Calling the Null a known Map of handlers gives for a missing key raises
+# when the program reaches the call.
+#= {raises: 'non-function'}
+def handlers = {add: fn a, b -> a + b}
+handlers['pow'](2, 3)

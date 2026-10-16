@@ -1,0 +1,4 @@
+# Statements in a one-line block body are separated by semicolons.
+#= {result: 6}
+def f = fn x -> { def y = x * 2; y + 2 }
+f(2)

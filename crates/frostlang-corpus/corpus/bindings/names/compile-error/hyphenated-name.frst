@@ -1,0 +1,4 @@
+# `-` is not part of a name, so `foo-bar` cannot be bound.
+#= {rejects: ['expected `=`', '`-`']}
+def foo-bar = 1
+1

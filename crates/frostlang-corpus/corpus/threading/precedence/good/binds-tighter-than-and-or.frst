@@ -1,0 +1,5 @@
+# `@` binds tighter than `and` and `or`: `false or 2 @ inc()` threads only
+# the 2.
+#= {result: [3, 3, null, 1]}
+defn inc(x) -> x + 1
+[false or 2 @ inc(), true and 2 @ inc(), null and 2 @ inc(), 1 or 2 @ inc()]

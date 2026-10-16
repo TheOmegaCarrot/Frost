@@ -1,0 +1,3 @@
+# `export` is allowed only at the top level.
+#= {rejects: 'only allowed at the top level'}
+do { export def x = 1; x }

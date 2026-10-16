@@ -1,0 +1,13 @@
+# A method read from an object is an ordinary function with an exact arity:
+# calling `add` with no argument, late in a chain, raises an arity error.
+#= {
+#=     raises: ['expects 1 argument', 'called with 0'],
+#=     inputs: {start: 0},
+#= }
+defn counter(n) -> {
+    value: fn -> n,
+    increment: fn -> counter(n + 1),
+    add: fn k -> counter(n + k),
+}
+
+counter(start).increment().add().value()

@@ -1,0 +1,9 @@
+# The value is evaluated before the pattern binds, so names in it read the
+# outer bindings the pattern then shadows.
+#= {result: [[10, 9], 9]}
+def x = 9
+def inner = do {
+    def {x, y} = {x: x + 1, y: x}
+    [x, y]
+}
+[inner, x]

@@ -1,0 +1,12 @@
+# With a constant target, parenthesized values with effects are evaluated when
+# reached, in order, and no others.
+#= {result: 'second', printed: ['1', '2']}
+defn note(n) -> {
+    print(to_string(n))
+    n
+}
+match 2 {
+    (note(1)) => 'first',
+    (note(2)) => 'second',
+    (note(3)) => 'third',
+}

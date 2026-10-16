@@ -1,0 +1,9 @@
+# A runtime binding that shadows a constant one decides the condition: the
+# outer constant must not leak into the inner test. Subtle: an optimizer
+# tracking the outer `c` as `true` must not apply it here.
+#= {result: 2, inputs: {x: false}}
+def c = true
+do {
+    def c = x
+    if c: 1 else: 2
+}

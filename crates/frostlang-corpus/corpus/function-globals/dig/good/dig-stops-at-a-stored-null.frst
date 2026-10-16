@@ -1,0 +1,3 @@
+# A key present with a Null value stops the dig as a missing one does.
+#= {result: null}
+{a: null} @ dig('a', 'b', 'c')

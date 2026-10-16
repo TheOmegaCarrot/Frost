@@ -1,0 +1,8 @@
+# Shadowing a global binds its name in the current scope, so a second `def` of
+# it there is a duplicate binding.
+#= {rejects: ['`type`', 'already bound']}
+do {
+    def type = 1
+    def type = 2
+    type
+}

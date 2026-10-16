@@ -1,0 +1,7 @@
+# Literal keys find entries looked up with keys known only at runtime.
+#= {
+#=     result: ['int', 'float', 'string', 'bytes', 'bool'],
+#=     inputs: {i: 16, f: 0.5, s: 'caf\u{e9}', b: x'00ff', t: true},
+#= }
+def m = {[0x10]: 'int', [.5]: 'float', ['café']: 'string', [x'00FF']: 'bytes', [true]: 'bool'}
+[m[i], m[f], m[s], m[b], m[t]]

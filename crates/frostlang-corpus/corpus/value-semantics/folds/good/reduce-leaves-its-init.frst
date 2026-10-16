@@ -1,0 +1,6 @@
+# A `reduce` expression with `init:` builds from the initial value without
+# changing the binding that supplied it.
+#= {result: [{a: 1, b: 2, c: 3}, {a: 1}], inputs: {v: 1}}
+def seed = {a: v}
+def built = reduce [['b', 2], ['c', 3]] init: seed with fn (acc, pair) -> acc + {[pair[0]]: pair[1]}
+[built, seed]

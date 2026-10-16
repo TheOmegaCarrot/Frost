@@ -1,0 +1,11 @@
+# Maps are equal when they hold the same keys with equal values, however they
+# were built; a differing value, an extra key, or a key of another type makes
+# them unequal.
+#= {result: [true, true, false, false, false], inputs: {m: {a: 1, b: [2]}}}
+[
+    {} == {},
+    m == {b: [2]} + {a: 1},
+    m == {a: 1, b: [3]},
+    m == {a: 1, b: [2], c: 3},
+    {[1]: 'x'} == {[1.0]: 'x'},
+]

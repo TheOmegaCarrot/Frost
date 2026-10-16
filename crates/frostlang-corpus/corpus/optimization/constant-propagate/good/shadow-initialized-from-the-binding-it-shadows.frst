@@ -1,0 +1,9 @@
+# A shadowing def's value may read the binding it shadows: the name refers to
+# the outer binding until the def completes.
+#= {result: [2, 1]}
+def x = 1
+def y = do {
+    def x = x + 1
+    x
+}
+[y, x]

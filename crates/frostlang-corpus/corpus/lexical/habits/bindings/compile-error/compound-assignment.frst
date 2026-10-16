@@ -1,0 +1,4 @@
+# Frost has no compound assignment such as `+=`.
+#= {rejects: 'no `+=`'}
+def x = 1
+x += 1

@@ -1,0 +1,18 @@
+# `is_opaque` is false for every non-Opaque type, on values known only at run
+# time.
+#= {
+#=     result: [false, false, false, false, false, false, false, false, false, false],
+#=     inputs: {n: null, b: false, i: 0, f: 0.0, s: '', y: x'', a: [], m: {}, g: fn -> null, h: len},
+#= }
+[
+    is_opaque(n),
+    is_opaque(b),
+    is_opaque(i),
+    is_opaque(f),
+    is_opaque(s),
+    is_opaque(y),
+    is_opaque(a),
+    is_opaque(m),
+    is_opaque(g),
+    is_opaque(h),
+]

@@ -1,0 +1,5 @@
+# Recursion that is not in tail position may go many thousands of calls deep
+# with no call-depth limit set.
+#= {result: 20000, inputs: {n: 20000}}
+defn depth(k) -> if k == 0: 0 else: 1 + depth(k - 1)
+depth(n)

@@ -1,0 +1,9 @@
+# Once a block shadowing a constant condition ends, the outer constant
+# decides again.
+#= {result: 2}
+def c = true
+def d = do {
+    def c = false
+    if c: 1 else: 2
+}
+if c: d else: 3

@@ -1,0 +1,4 @@
+# A point makes a literal a Float even when its value is whole, and a Float never
+# equals an Int.
+#= {result: ['Float', 'Int', false, false]}
+[type(2.0), type(2), 2.0 == 2, 0.0 == 0]

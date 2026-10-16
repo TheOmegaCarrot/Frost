@@ -1,0 +1,9 @@
+# Names that end with a keyword, or join keywords with `_`, are ordinary
+# names.
+#= {result: [1, 2, 3, 4, 5]}
+def undo = 1
+def ifdef = 2
+def if_else = 3
+def not_null = 4
+def _true = 5
+[undo, ifdef, if_else, not_null, _true]

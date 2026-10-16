@@ -1,0 +1,4 @@
+# A value of the wrong type raises, naming the expected type.
+#= {raises: 'expected an Int', inputs: {v: 's'}}
+def x is Int = v
+x

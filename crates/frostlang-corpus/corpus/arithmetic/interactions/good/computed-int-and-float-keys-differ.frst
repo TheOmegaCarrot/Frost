@@ -1,0 +1,6 @@
+# An Int and a Float are distinct Map keys, so an arithmetic result's type
+# decides which entry it reaches: 4 / 2 is the Int 2, and 4 / 2.0 the Float
+# 2.0. Subtle because the two results look like the same number.
+#= {result: ['int', 'float'], inputs: {four: 4}}
+def m = {[1 + 1]: 'int', [1 + 1.0]: 'float'}
+[m[four / 2], m[four / 2.0]]

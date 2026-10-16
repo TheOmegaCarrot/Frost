@@ -1,0 +1,9 @@
+# A single-element collection threads through function forms: `fold` with no
+# initial value returns the lone element without calling its function.
+#= {result: [7, [14], 1, {a: 2}], inputs: {one: [7], m: {a: 1}}}
+[
+    one @ fold(fn a, b -> error('never called')),
+    one @ transform(fn x -> x * 2),
+    m @ len(),
+    m @ transform(fn k, v -> {[k]: v + 1}),
+]

@@ -1,0 +1,12 @@
+# Over a single-element collection a callback runs exactly once, and `fold`
+# passes the initial value and the element.
+#= {result: [[10], 11], printed: ['call', 'call']}
+def loud_tenfold = fn x -> do {
+    print('call')
+    x * 10
+}
+def loud_add = fn acc, x -> do {
+    print('call')
+    acc + x
+}
+[transform([1], loud_tenfold), fold([1], 10, loud_add)]

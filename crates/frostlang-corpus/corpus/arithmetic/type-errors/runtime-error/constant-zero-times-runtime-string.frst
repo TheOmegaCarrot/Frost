@@ -1,0 +1,4 @@
+# A constant zero times a String only known at runtime is a type error, not
+# zero: a product is only zero once both operands are numbers.
+#= {raises: 'Int * String', inputs: {s: 'abc'}}
+0 * s

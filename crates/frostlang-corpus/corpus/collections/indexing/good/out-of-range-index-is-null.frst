@@ -1,0 +1,5 @@
+# An index past either end yields Null rather than raising: just past the
+# last element, just before the first, and far beyond.
+#= {result: [null, null, null, null]}
+def xs = [10, 20, 30]
+[xs[3], xs[-4], xs[100], xs[-100]]

@@ -1,0 +1,5 @@
+# A placeholder counts toward the arity even in a branch that never runs:
+# arity is fixed by the text, not by what the optimizer can prove.
+#= {result: 1}
+def f = $(if true: $1 else: $3)
+f(1, 2, 3)

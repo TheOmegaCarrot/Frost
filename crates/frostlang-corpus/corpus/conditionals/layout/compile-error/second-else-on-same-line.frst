@@ -1,0 +1,3 @@
+# An `if` takes at most one `else`, also on a single line.
+#= {rejects: ['expected a line break or `;`', 'found `else`']}
+if true: 1 elif false: 2 else: 3 else: 4

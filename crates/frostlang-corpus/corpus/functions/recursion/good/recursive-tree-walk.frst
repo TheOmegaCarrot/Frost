@@ -1,0 +1,9 @@
+# A recursive function walks a nested Map-and-Array tree, summing leaves.
+#= {result: 15}
+defn sum_tree(node) -> match node {
+    n is Int => n,
+    [] => 0,
+    [first, ...rest] => sum_tree(first) + sum_tree(rest),
+    {children} => sum_tree(children),
+}
+sum_tree({children: [1, [2, 3], {children: [4, {children: []}]}, 5]})

@@ -1,0 +1,12 @@
+# Bytes keys sort byte by byte, a prefix before its extensions, the empty
+# Bytes first. Bytes are unsigned: x'ff' sorts last.
+#= {result: [x'', x'00', x'0001', x'01', x'7f', x'ff']}
+def m = {
+    [x'01']: 1,
+    [x'ff']: 2,
+    [x'0001']: 3,
+    [x'']: 4,
+    [x'7f']: 5,
+    [x'00']: 6,
+}
+fold(m, [], fn acc, k, v -> acc + [k])

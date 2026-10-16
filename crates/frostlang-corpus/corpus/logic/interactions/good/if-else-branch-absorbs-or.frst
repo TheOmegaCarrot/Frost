@@ -1,0 +1,13 @@
+# An `if` branch extends as far right as it can, so in `if c: a else: b or d`
+# the `or` belongs to the `else` branch. To apply `or` to the whole `if`,
+# parenthesize it.
+#= {
+#=     result: [null, 2, 1, 1],
+#=     inputs: {t: true, f: false},
+#= }
+[
+    if t: null else: 1 or 2,
+    (if t: null else: 1) or 2,
+    if f: null else: 1 or 2,
+    (if f: null else: 1) or 2,
+]

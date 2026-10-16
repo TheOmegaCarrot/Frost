@@ -1,0 +1,4 @@
+# An arity error from a named lambda names it by its self-name.
+#= {raises: ['halve', 'expects 1 argument']}
+def f = fn halve(x) -> x / 2
+f()

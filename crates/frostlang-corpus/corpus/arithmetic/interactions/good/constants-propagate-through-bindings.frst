@@ -1,0 +1,8 @@
+# Arithmetic over bindings of computed constants gives the same answer
+# whether the compiler propagates the constants or not.
+#= {result: [10, 2.5]}
+def a = 6
+def b = a * 7
+def c = b - 2
+def d = c / 4
+[d, d / 4.0]

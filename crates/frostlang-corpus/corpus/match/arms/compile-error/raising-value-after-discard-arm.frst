@@ -1,0 +1,7 @@
+# An arm after `_` is a compile error even when its pattern holds a value
+# that would raise: the arm is rejected as dead, never evaluated.
+#= {rejects: 'unreachable match arm', known_issue: 'FROST-56'}
+match 1 {
+    _ => 1,
+    (1 / 0) => 0,
+}

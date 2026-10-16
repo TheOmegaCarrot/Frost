@@ -1,0 +1,4 @@
+# The arguments to `call` can be assembled with `+` from fixed and runtime
+# parts.
+#= {result: ['first', 1, 2, 'last'], inputs: {xs: [1, 2]}}
+call(collect, ['first'] + xs + ['last'])

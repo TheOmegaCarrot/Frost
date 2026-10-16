@@ -1,0 +1,15 @@
+# Operations that look like identities on a runtime Float follow IEEE and
+# promotion exactly: `x * 0` of a negative x is -0.0 (a Float, not the Int 0),
+# and `x + 0` of -0.0 is 0.0, not x. Subtle because rewriting these as `0` or
+# `x` would be wrong.
+#= {
+#=     result: ['-0.0', 'Float', '0.0', '-0.0', '1.5'],
+#=     inputs: {x: -1.5, minus_zero: -0.0, y: 1.5},
+#= }
+[
+    to_string(x * 0),
+    type(x * 0),
+    to_string(minus_zero + 0),
+    to_string(minus_zero - 0),
+    to_string(y * 1),
+]

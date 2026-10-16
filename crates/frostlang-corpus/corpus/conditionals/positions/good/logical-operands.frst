@@ -1,0 +1,9 @@
+# An `if` may be the right operand of `or` and `and`, and a logical may end a
+# branch: `if c: 1 else: null or 3` applies `or` inside the alternate.
+#= {result: [1, null, 3, 1], inputs: {t: true, f: false, n: null}}
+[
+    f or if t: 1 else: 2,
+    t and if f: 1,
+    if f: 1 else: n or 3,
+    if t: 1 else: n or 3,
+]

@@ -1,0 +1,4 @@
+# `rev_args` takes only the function; the arguments go to the function it
+# returns.
+#= {raises: ['rev_args', 'expects 1', 'called with 3']}
+rev_args(minus, 3, 10)

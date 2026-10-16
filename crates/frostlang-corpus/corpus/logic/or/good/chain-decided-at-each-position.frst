@@ -1,0 +1,12 @@
+# A runtime `or` chain is decided by whichever operand is the first truthy one,
+# wherever it sits, and yields that operand.
+#= {
+#=     result: [7, 7, 7, 7],
+#=     inputs: {n: null, f: false, seven: 7},
+#= }
+[
+    seven or n or f or n,
+    n or seven or f or n,
+    n or f or seven or n,
+    n or f or n or seven,
+]

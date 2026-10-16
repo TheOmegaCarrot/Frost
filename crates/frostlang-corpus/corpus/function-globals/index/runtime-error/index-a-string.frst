@@ -1,0 +1,3 @@
+# A String is a sequence but cannot be indexed.
+#= {raises: ['Cannot index', 'String']}
+index(0)('abc')

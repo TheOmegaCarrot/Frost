@@ -1,0 +1,4 @@
+# A parameter is bound only inside its lambda's body.
+#= {rejects: ['`p`', 'not defined']}
+def f = fn p -> p
+p

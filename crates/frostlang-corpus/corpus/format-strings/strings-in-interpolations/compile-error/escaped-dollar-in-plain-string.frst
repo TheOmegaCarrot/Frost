@@ -1,0 +1,5 @@
+# A plain String inside an interpolation keeps a plain String's escapes, which
+# do not include `\$`: being inside a format String does not lend it the format
+# String's escapes.
+#= {rejects: ['invalid escape sequence', 'needs no backslash outside a format String']}
+def s = $'${"\$"}'

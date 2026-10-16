@@ -1,0 +1,5 @@
+# An error raised while computing an exported value ends the program there.
+#= {raises: 'in the export'}
+export def before = 1
+export def failing = error('in the export')
+export def after = 2

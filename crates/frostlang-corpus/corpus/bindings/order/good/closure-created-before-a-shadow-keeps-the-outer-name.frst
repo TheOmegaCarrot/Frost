@@ -1,0 +1,10 @@
+# A closure written before a later shadowing `def` captured the binding visible
+# where it was written, and keeps it after the shadow appears.
+#= {result: [1, 2]}
+def x = 1
+def outer = fn -> {
+    def inner = fn -> x
+    def x = 2
+    [inner(), x]
+}
+outer()

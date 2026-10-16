@@ -1,0 +1,6 @@
+# A `defn` binds an ordinary function value: it can be passed, stored, and
+# compared like any other.
+#= {result: [[2, 4], true, 'Function']}
+defn double(x) -> x * 2
+def alias = double
+[transform([1, 2], double), alias == double, type(double)]

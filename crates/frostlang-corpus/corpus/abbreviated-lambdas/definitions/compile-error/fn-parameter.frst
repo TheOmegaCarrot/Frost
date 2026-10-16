@@ -1,0 +1,4 @@
+# A `fn` cannot name a parameter `$`; only an abbreviated lambda has
+# placeholders.
+#= {rejects: ['found `$`', 'only inside `$( ... )`']}
+def f = fn $ -> 1

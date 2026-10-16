@@ -1,0 +1,5 @@
+# A key mapped to Null is present: it counts toward the length, `has` sees
+# it, and the Map differs from one without the entry.
+#= {result: [1, true, null, false]}
+def m = {a: null}
+[len(m), has(m, 'a'), m.a, m == {}]

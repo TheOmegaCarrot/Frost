@@ -1,0 +1,4 @@
+# `not` binds tighter than `<`, so `not 1 < 2` is `(not 1) < 2`: it orders
+# the Bool `false` against an Int and raises, rather than negating `1 < 2`.
+#= {raises: ['incompatible types', 'Bool', 'Int']}
+not 1 < 2

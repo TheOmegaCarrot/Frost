@@ -1,0 +1,3 @@
+# A `try_call` whose function returns gives exactly `{ok: true, value}`.
+#= {result: {ok: true, value: 42}}
+try_call(fn -> 42)

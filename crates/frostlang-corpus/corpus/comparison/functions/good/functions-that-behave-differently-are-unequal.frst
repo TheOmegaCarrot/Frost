@@ -1,0 +1,12 @@
+# Functions that behave differently are never equal: lambdas returning
+# different values or taking different numbers of parameters, closures over
+# different captured values, and a lambda and a native global.
+#= {result: [false, false, false, false, true]}
+defn adder(n) -> fn x -> x + n
+[
+    (fn -> 1) == (fn -> 2),
+    (fn x -> x) == (fn x, y -> x),
+    adder(1) == adder(2),
+    (fn x -> x) == len,
+    (fn -> 1) != (fn -> 2),
+]

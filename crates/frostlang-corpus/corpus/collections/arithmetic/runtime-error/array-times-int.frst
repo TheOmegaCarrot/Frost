@@ -1,0 +1,3 @@
+# `*` is numeric only: it does not repeat an Array.
+#= {raises: ['Cannot multiply', 'Array * Int']}
+[0] * 3

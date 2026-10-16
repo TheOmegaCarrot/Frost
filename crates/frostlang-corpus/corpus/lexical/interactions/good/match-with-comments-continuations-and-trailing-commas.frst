@@ -1,0 +1,18 @@
+# A `match` combining comments, multiline patterns, a guard on its own line,
+# continuation lines in a result, semicolons in a `do` result, and a trailing
+# comma.
+#= {result: ['small', 3, 'many: 4'], inputs: {vs: [1, {xs: [7, 8, 9]}, [1, 2, 3, 4]]}}
+defn describe(v) -> match v {
+    # a small number
+    n is Int
+        if: n < 5
+        => 'small',
+    # a Map holding an Array
+    {xs} => xs
+        @ len(),
+    [
+        first,
+        ...rest
+    ] => do { def total = len(rest) + 1; $'many: ${total}' },
+}
+vs @ transform(describe)

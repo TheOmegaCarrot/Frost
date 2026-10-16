@@ -1,0 +1,11 @@
+# Comment lines may stand between an `if` branch and its `elif` or `else` on
+# later lines, and between a branch's colon and its expression.
+#= {result: 'two', inputs: {n: 2}}
+if n == 1: # the first case
+    'one'
+# the second case
+elif n == 2:
+    # a comment before the branch's expression
+    'two'
+# the rest
+else: 'many'

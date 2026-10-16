@@ -1,0 +1,14 @@
+# Comparisons in `match` guards select arms by ordering, across Int and Float
+# values known only at runtime.
+#= {
+#=     result: ['negative', 'zero', 'small', 'small', 'large', 'not a number'],
+#=     inputs: {values: [-1, 0, 0.5, 9, 10.0, '5']},
+#= }
+defn classify(v) -> match v {
+    n is Numeric if: n < 0 => 'negative',
+    n is Numeric if: n <= 0 => 'zero',
+    n is Numeric if: n < 10 => 'small',
+    n is Numeric => 'large',
+    _ => 'not a number',
+}
+transform(values, classify)

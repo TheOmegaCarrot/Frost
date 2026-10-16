@@ -1,0 +1,9 @@
+# Arithmetic binds tighter than `and` and `or`, which then yield one of the
+# computed operands. Zero is truthy, so `0 or ...` is 0.
+#= {result: [3, 0, 6, null], inputs: {one: 1, two: 2, three: 3, nothing: null}}
+[
+    nothing or one + two,
+    one - one or three,
+    one and two * three,
+    nothing and one + two,
+]

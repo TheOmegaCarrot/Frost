@@ -1,0 +1,6 @@
+# Inside the index brackets, the index expression may span lines.
+#= {result: 30}
+def xs = [10, 20, 30]
+xs[
+    1 + 1
+]

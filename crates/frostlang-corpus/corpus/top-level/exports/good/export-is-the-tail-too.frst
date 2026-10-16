@@ -1,0 +1,4 @@
+# The tail may be an exported binding itself: both report the same value.
+#= {result: [1, 2], exports: {pair: [1, 2]}}
+export def pair = [1, 2]
+pair

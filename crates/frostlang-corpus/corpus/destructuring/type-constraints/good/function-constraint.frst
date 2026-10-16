@@ -1,0 +1,4 @@
+# `is Function` accepts both a lambda and a native global.
+#= {result: [6, 3], inputs: {double: fn x -> x * 2}}
+def [f is Function, g is Function] = [double, len]
+[f(3), g('abc')]

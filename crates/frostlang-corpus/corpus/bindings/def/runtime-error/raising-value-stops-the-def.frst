@@ -1,0 +1,5 @@
+# An error raised while computing a binding's value propagates; the script does
+# not continue with the name unbound or Null.
+#= {raises: 'boom'}
+def x = error('boom')
+x

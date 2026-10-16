@@ -1,0 +1,11 @@
+# A failed lookup raises before the next key is evaluated.
+#= {result: false, printed: ['a'], inputs: {m: {b: 2}}}
+defn note(k) -> {
+    print(k)
+    k
+}
+def outcome = try_call(fn -> {
+    def {[note('a')]: x, [note('b')]: y} = m
+    [x, y]
+})
+outcome.ok

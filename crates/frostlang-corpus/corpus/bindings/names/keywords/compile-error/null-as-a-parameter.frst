@@ -1,0 +1,5 @@
+# `null` is a keyword, so it cannot name a lambda parameter; parameters are
+# names, not patterns that could match Null.
+#= {rejects: ['`null`', 'keyword']}
+def f = fn null -> 1
+1

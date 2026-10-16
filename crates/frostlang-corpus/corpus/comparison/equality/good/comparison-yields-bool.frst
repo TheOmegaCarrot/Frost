@@ -1,0 +1,12 @@
+# Every comparison operator yields a Bool, never a truthy or falsy stand-in.
+#= {result: ['Bool', 'Bool', 'Bool', 'Bool', 'Bool', 'Bool', true, true]}
+[
+    type(1 == 1),
+    type(1 != 1),
+    type(1 < 2),
+    type(1 <= 2),
+    type(1 > 2),
+    type(1 >= 2),
+    is_bool('a' == x'61'),
+    is_bool(null == null),
+]

@@ -1,0 +1,3 @@
+# An en dash, as text editors substitute for a hyphen, is not `-`.
+#= {rejects: 'write `-`'}
+1 – 2

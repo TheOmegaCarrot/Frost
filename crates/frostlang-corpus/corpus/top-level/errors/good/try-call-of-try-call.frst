@@ -1,0 +1,4 @@
+# `try_call` calling `try_call`: the inner one catches, so the outer one
+# succeeds with the inner failure as its value.
+#= {result: {ok: true, value: {ok: false, error: 'x', trace: ['error']}}}
+try_call(try_call, [error, ['x']])

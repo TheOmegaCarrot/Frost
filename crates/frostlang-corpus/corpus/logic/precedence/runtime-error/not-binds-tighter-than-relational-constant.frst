@@ -1,0 +1,4 @@
+# With constant operands, `not 1 < 2` is still `(not 1) < 2`, a comparison of a
+# Bool with an Int, which raises.
+#= {raises: ['compare', 'Bool']}
+not 1 < 2

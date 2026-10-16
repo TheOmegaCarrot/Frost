@@ -1,0 +1,11 @@
+# Postfix operators bind tighter than unary `-`: `-m.a` negates the field,
+# `-xs[1]` the element, and `-f(3)` the call's result.
+#= {result: [-2, -20, -6]}
+def m = {a: 2}
+def xs = [10, 20]
+defn double(n) -> n * 2
+[
+    -m.a,
+    -xs[1],
+    -double(3),
+]

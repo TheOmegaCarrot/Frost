@@ -1,0 +1,13 @@
+# `and` is left associative, but grouping its operands either way yields the
+# same value and evaluates the same operands in the same order.
+#= {
+#=     result: [false, false],
+#=     printed: ['1', 'false', '1', 'false'],
+#= }
+defn note(v) -> {
+    print(v)
+    v
+}
+def left = (note(1) and note(false)) and note(3)
+def right = note(1) and (note(false) and note(3))
+[left, right]

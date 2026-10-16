@@ -1,0 +1,7 @@
+# The extreme Ints are simply out of range for an Array, never an overflow.
+#= {result: [null, null, null]}
+[
+    index(9223372036854775807)([1]),
+    index(-9223372036854775808)([1]),
+    index(-9223372036854775808)([]),
+]

@@ -1,0 +1,7 @@
+# A multiline String with no lines between its delimiters is the empty String.
+#= {result: ['', '']}
+def single = '''
+    '''
+def double = """
+"""
+[single, double]

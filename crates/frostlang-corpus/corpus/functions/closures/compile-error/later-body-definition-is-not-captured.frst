@@ -1,0 +1,8 @@
+# Within a body, a nested lambda cannot read a local defined after it.
+#= {rejects: ['`z`', 'not defined']}
+def outer = fn -> {
+    def read = fn -> z
+    def z = 42
+    read()
+}
+1

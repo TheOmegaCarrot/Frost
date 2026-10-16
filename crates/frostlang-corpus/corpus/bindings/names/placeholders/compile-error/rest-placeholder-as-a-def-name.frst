@@ -1,0 +1,4 @@
+# The rest placeholder `$$` cannot be bound by `def`.
+#= {rejects: ['`$$`', 'placeholders work only inside']}
+def $$ = 1
+1

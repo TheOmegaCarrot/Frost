@@ -1,0 +1,3 @@
+# `\$` is a literal `$` wherever it stands, not only before `{`.
+#= {result: ['$5', '$', '$$']}
+[$'\$5', $'\$', $'\$\$']

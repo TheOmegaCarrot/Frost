@@ -1,0 +1,9 @@
+# A Float result too small to represent rounds to zero rather than raising:
+# only results too large to be finite are errors. The smallest subnormal
+# halved is 0.0.
+#= {result: [0.0, 0.0, 5e-324], inputs: {tiny: 5e-324, small: 1e-300}}
+[
+    tiny / 2.0,
+    small * small,
+    tiny * 1.0,
+]

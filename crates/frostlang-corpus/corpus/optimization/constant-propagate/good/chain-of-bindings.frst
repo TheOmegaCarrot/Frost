@@ -1,0 +1,8 @@
+# A known value propagates through a chain of bindings, each computed from the
+# one before.
+#= {result: [1, 2, 4, 8]}
+def a = 1
+def b = a * 2
+def c = b * 2
+def d = c * 2
+[a, b, c, d]

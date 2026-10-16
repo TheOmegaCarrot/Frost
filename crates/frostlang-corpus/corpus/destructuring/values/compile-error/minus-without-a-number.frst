@@ -1,0 +1,5 @@
+# A `-` in a pattern starts a negative number literal only: it cannot negate
+# a name. Negating a value is written as a pin, `(-b)`.
+#= {rejects: 'a number after `-`', inputs: {xs: [1, -2]}}
+def [a, -b] = xs
+a

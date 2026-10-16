@@ -1,0 +1,14 @@
+# In every base, as in decimal, the least Int is writable as a negated literal,
+# though its magnitude alone is past the greatest Int.
+#= {
+#=     result: [
+#=         -9223372036854775808,
+#=         -9223372036854775808,
+#=         -9223372036854775808,
+#=     ],
+#= }
+[
+    -0x8000000000000000,
+    -0o1000000000000000000000,
+    -0b1000000000000000000000000000000000000000000000000000000000000000,
+]

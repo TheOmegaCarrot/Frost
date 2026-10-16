@@ -1,0 +1,5 @@
+# The callee of a threaded call may be a Map member reached with `.`:
+# `5 @ m.add(2)` is `m.add(5, 2)`.
+#= {result: 7}
+def m = {add: fn a, b -> a + b}
+5 @ m.add(2)

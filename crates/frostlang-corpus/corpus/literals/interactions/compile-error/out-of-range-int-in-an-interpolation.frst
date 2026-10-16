@@ -1,0 +1,4 @@
+# An Int literal inside a format String's interpolation is range-checked like any
+# other.
+#= {rejects: 'Int literal out of range'}
+$'${9223372036854775808}'

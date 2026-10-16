@@ -1,0 +1,4 @@
+# The inverted function takes any arguments, but passes them on, so its
+# function's arity check still applies.
+#= {raises: ['expects 1', 'called with 0']}
+inv(fn x -> x)()

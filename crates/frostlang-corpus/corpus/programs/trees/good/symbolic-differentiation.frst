@@ -1,0 +1,71 @@
+# Symbolic differentiation over expression trees: Ints are constants, 'x' is
+# the variable, and ['+', a, b] or ['*', a, b] are operations. The derivative
+# is simplified bottom-up (folding constants, dropping zeros and ones), shown
+# as a String, and evaluated at a point. Subtle: the simplifier compares a
+# subtree with `== 0`, which is simply false, never an error, for an Array.
+#   d/dx (x * x + 3 * x)  ->  ((x + x) + 3), which is 11 at x = 4
+#   d/dx (2 + 7)          ->  0
+#   d/dx x                ->  1
+#   d/dx (x * (x * x))    ->  ((x * x) + (x * (x + x))), which is 48 at x = 4
+#= {
+#=     result: [
+#=         ['((x + x) + 3)', 11],
+#=         ['0', 0],
+#=         ['1', 1],
+#=         ['((x * x) + (x * (x + x)))', 48],
+#=     ],
+#=     inputs: {
+#=         expressions: [
+#=             ['+', ['*', 'x', 'x'], ['*', 3, 'x']],
+#=             ['+', 2, 7],
+#=             'x',
+#=             ['*', 'x', ['*', 'x', 'x']],
+#=         ],
+#=         at: 4,
+#=     },
+#= }
+defn derive(e) -> match e {
+    _ is Int => 0,
+    'x' => 1,
+    ['+', a, b] => ['+', derive(a), derive(b)],
+    ['*', a, b] => ['+', ['*', derive(a), b], ['*', a, derive(b)]],
+}
+
+defn simplify(e) -> match e {
+    ['+', a, b] => do {
+        def l = simplify(a)
+        def r = simplify(b)
+        if is_int(l) and is_int(r): l + r
+        elif l == 0: r
+        elif r == 0: l
+        else: ['+', l, r]
+    },
+    ['*', a, b] => do {
+        def l = simplify(a)
+        def r = simplify(b)
+        if is_int(l) and is_int(r): l * r
+        elif l == 0 or r == 0: 0
+        elif l == 1: r
+        elif r == 1: l
+        else: ['*', l, r]
+    },
+    _ => e,
+}
+
+defn show(e) -> match e {
+    n is Int => to_string(n),
+    'x' => 'x',
+    [op, a, b] => $'(${show(a)} ${op} ${show(b)})',
+}
+
+defn evaluate(e, x) -> match e {
+    n is Int => n,
+    'x' => x,
+    ['+', a, b] => evaluate(a, x) + evaluate(b, x),
+    ['*', a, b] => evaluate(a, x) * evaluate(b, x),
+}
+
+transform(expressions, fn e -> {
+    def d = simplify(derive(e))
+    [show(d), evaluate(d, at)]
+})

@@ -1,0 +1,3 @@
+# Null is not a valid Map key, so a literal with a Null key raises when built.
+#= {raises: ['not a valid Map key', 'Null']}
+{[null]: 1}

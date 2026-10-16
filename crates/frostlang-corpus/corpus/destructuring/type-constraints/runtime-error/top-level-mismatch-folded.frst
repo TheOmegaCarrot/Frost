@@ -1,0 +1,4 @@
+# A type mismatch the optimizer can see ahead of time still raises at runtime.
+#= {raises: 'expected an Int'}
+def x is Int = 's'
+x

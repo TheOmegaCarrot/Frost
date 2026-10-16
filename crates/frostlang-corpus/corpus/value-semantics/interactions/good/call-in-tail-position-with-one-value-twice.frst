@@ -1,0 +1,8 @@
+# `call` in tail position, given an argument Array holding one value twice,
+# passes two parameters that cannot affect each other, and the caller's
+# value is unchanged.
+#= {result: [[[1, 0], [1]], [1]], inputs: {n: 1}}
+defn first_grown(a, b) -> [a + [0], b]
+defn relay(x) -> call(first_grown, [x, x])
+def xs = [n]
+[relay(xs), xs]

@@ -1,0 +1,5 @@
+# Digits of the largest Int, known only at runtime, collected by repeated Int
+# division.
+#= {result: [9, 2, 2, 3, 3, 7, 2, 0, 3, 6, 8, 5, 4, 7, 7, 5, 8, 0, 7], inputs: {n: 9223372036854775807}}
+defn digits(k, acc) -> if k < 10: [k] + acc else: digits(k / 10, [k % 10] + acc)
+digits(n, [])

@@ -1,0 +1,14 @@
+# Rebuilding a nested structure with one innermost value extended leaves
+# every level of the original as it was.
+#= {
+#=     result: [
+#=         {outer: {inner: [[1]]}},
+#=         {outer: {inner: [[1], [2]]}},
+#=     ],
+#=     inputs: {n: 1},
+#= }
+def original = {outer: {inner: [[n]]}}
+def updated = original + {
+    outer: original.outer + {inner: original.outer.inner + [[2]]},
+}
+[original, updated]

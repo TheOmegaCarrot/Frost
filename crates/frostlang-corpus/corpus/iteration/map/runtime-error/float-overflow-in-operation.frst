@@ -1,0 +1,4 @@
+# Frost Floats are always finite, so an operation whose Float arithmetic
+# overflows raises instead of producing an infinity element.
+#= {raises: 'NaN or Infinity', inputs: {xs: [1.0, 1.0e308]}}
+map xs with fn x -> x * 10.0

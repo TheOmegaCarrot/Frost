@@ -1,0 +1,3 @@
+# Floats thread like any value, keeping their exact binary results.
+#= {result: [0.30000000000000004, 3.0, -0.5], inputs: {tenth: 0.1, fifth: 0.2, half: 0.5}}
+[tenth @ plus(fifth), 1.5 @ times(2.0), half @ (fn x -> -x)()]

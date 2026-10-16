@@ -1,0 +1,3 @@
+# A String is a sequence, but `call` does not spread its characters.
+#= {raises: ['call', 'Array as argument 2', 'got String']}
+call(collect, 'ab')

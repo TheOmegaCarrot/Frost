@@ -1,0 +1,11 @@
+# A `do` block's value is its final expression; earlier bare expressions are
+# evaluated and dropped.
+#= {result: [5, 3]}
+[
+    do { 5 },
+    do {
+        1
+        2
+        3
+    },
+]

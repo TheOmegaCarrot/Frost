@@ -1,0 +1,11 @@
+# String keys that are not identifiers (empty, punctuated, spaced, non-ASCII)
+# are written as computed keys and read back by soft index.
+#= {result: [0, 1, 2, 3, 4]}
+def m = {
+    ['']: 0,
+    ['my-key']: 1,
+    ['two words']: 2,
+    ['ключ']: 3,
+    ['日本']: 4,
+}
+[m[''], m['my-key'], m['two words'], m['ключ'], m['日本']]

@@ -1,0 +1,10 @@
+# A branch chosen by a condition bound to a constant is still in tail
+# position. Subtle: the optimizer may propagate the binding and drop the `if`,
+# keeping only the branch, which must stay a tail call.
+#= {result: 0}
+defn down(n) -> if n == 0: error('bottom') else: do {
+    def go_on = true
+    if go_on: down(n - 1) else: 'never'
+}
+defn frames(n) -> len(try_call(down, [n]).trace)
+frames(500) - frames(5)

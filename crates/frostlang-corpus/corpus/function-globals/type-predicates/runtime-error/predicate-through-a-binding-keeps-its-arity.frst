@@ -1,0 +1,5 @@
+# Bound to another name, a predicate keeps its arity, and its error still
+# names the predicate.
+#= {raises: ['is_string', 'expects 1', 'called with 2']}
+def check = is_string
+check('a', 'b')

@@ -1,0 +1,12 @@
+# String ordering by code point, not by letter, on text known only at
+# runtime: uppercase ASCII sorts before lowercase, digits before letters.
+#= {
+#=     result: [true, true, true, false],
+#=     inputs: {upper_z: 'Z', lower_a: 'a', digit: '9', upper_a: 'A'},
+#= }
+[
+    upper_z < lower_a,
+    upper_a + 'pple' < lower_a + 'pple',
+    digit < upper_a,
+    lower_a < upper_a,
+]

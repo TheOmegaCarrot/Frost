@@ -1,0 +1,7 @@
+# A formatter configured by known bindings, mapped over constants, builds the
+# text its live branch produces for each item.
+#= {result: ['> a', '> b', '> é']}
+def prefix = '>'
+def verbose = false
+defn render(item) -> if verbose: $'${prefix} ${item} (verbose)' else: $'${prefix} ${item}'
+map ['a', 'b', 'é'] with render

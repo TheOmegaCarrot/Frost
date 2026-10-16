@@ -1,0 +1,4 @@
+# Frost writes another condition with `elif`, not `else if`.
+#= {rejects: 'use `elif`', inputs: {a: false, b: true}}
+if a: 1
+else if b: 2

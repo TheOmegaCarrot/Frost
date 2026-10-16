@@ -1,0 +1,8 @@
+# A Float interpolates exactly as `to_string` renders it: whole-valued,
+# fractional, negative, negative zero, tiny, huge, and inexact sums alike.
+# The rendering itself is `to_string`'s to define.
+#= {
+#=     result: [true, true, true, true, true, true, true],
+#=     inputs: {floats: [1.0, 2.5, -0.75, -0.0, 1.5e-7, 1e20, 1.7976931348623157e308]},
+#= }
+transform(floats, fn f -> $'${f}' == to_string(f))

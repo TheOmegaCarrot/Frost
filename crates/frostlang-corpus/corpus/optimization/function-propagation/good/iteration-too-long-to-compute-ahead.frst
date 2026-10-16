@@ -1,0 +1,6 @@
+# An iteration over a large constant Array, too long for the compiler to
+# compute ahead of time, still computes its result at runtime.
+#= {result: [65536, 65536]}
+defn doubled(xs, times) -> if times == 0: xs else: doubled(xs + xs, times - 1)
+def ones = doubled([1], 16)
+[len(ones), reduce ones with fn acc, x -> acc + x]

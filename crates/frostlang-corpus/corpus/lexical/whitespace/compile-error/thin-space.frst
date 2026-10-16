@@ -1,0 +1,3 @@
+# A thin space is not a plain space either.
+#= {rejects: 'not a plain space'}
+1 + 2

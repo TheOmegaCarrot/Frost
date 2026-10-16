@@ -1,0 +1,6 @@
+# A computed key reading an earlier part of the same pattern, over a literal
+# the optimizer may match ahead of time. Subtle: the earlier name is not yet
+# settled while the pattern compiles.
+#= {result: 3}
+def {a, [a]: b} = {a: 'c', c: 3}
+b

@@ -1,0 +1,7 @@
+# A match on a placeholder with no arm for the argument raises, as any match
+# does, rather than returning Null.
+#= {raises: 'no match arm'}
+def only_zero = $(match $ {
+    0 => 'zero',
+})
+only_zero(1)

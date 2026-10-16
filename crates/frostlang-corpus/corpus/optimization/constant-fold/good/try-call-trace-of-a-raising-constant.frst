@@ -1,0 +1,12 @@
+# The trace `try_call` reports for an error raised on constants names the
+# functions that raised it, innermost first, and nothing of the compiler's
+# own, so it is the same whether the call folds or runs at runtime. A lambda
+# whose `error` call is in tail position has no frame of its own left to name.
+#= {result: [['<lambda>'], ['error'], ['inner', 'outer', '<lambda>']]}
+defn inner() -> 1 / 0
+defn outer() -> inner() + 0
+[
+    try_call(fn -> 1 / 0).trace,
+    try_call(fn -> error('boom')).trace,
+    try_call(fn -> outer() + 1).trace,
+]

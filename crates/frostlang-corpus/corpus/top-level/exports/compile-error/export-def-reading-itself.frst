@@ -1,0 +1,4 @@
+# An exported binding is not in scope in its own value, so this reads an
+# unbound name.
+#= {rejects: '`x` is not defined'}
+export def x = x + 1

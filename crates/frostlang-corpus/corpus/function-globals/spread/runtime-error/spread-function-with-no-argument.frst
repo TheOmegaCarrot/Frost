@@ -1,0 +1,3 @@
+# A spread function needs its Array; none is not an empty one.
+#= {raises: ['spread_fn', 'expects 1', 'called with 0']}
+spread(collect)()

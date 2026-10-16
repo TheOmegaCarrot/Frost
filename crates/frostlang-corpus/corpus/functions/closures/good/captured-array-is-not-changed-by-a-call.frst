@@ -1,0 +1,7 @@
+# Values are immutable: a closure that builds a new Array from a captured one
+# leaves the captured Array as it was, so every call starts from the same
+# value. Subtle: the VM may reuse a uniquely owned buffer in place, which
+# must never be observable.
+#= {result: [[1, 2, 3], [1, 2, 3], [1, 2]], inputs: {xs: [1, 2]}}
+def extend = fn -> xs + [3]
+[extend(), extend(), xs]

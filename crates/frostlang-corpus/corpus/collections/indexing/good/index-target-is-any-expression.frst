@@ -1,0 +1,12 @@
+# The indexed target may be a call result, a parenthesized `if`, or a `do`
+# block.
+#= {result: [20, 10, 2], inputs: {xs: [10, 20, 30], flag: true}}
+defn get() -> xs
+[
+    get()[1],
+    (if flag: xs else: [])[0],
+    do {
+        def ys = [1, 2]
+        ys
+    }[1],
+]

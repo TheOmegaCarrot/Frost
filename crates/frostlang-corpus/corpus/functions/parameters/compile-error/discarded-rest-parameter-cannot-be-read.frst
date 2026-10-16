@@ -1,0 +1,3 @@
+# A `..._` rest parameter binds nothing, so the body cannot read `_`.
+#= {rejects: ['`_`', 'not defined']}
+def f = fn(..._) -> _

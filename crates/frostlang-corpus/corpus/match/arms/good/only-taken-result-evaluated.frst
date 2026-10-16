@@ -1,0 +1,11 @@
+# Only the result of the arm taken is evaluated; the other arms' results never run.
+#= {result: 'b', printed: ['b']}
+defn note(v) -> {
+    print(v)
+    v
+}
+match 2 {
+    1 => note('a'),
+    2 => note('b'),
+    3 => note('c'),
+}

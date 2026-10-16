@@ -1,0 +1,8 @@
+# A lambda returned from a block body captures that body's locals,
+# computed from the call's arguments.
+#= {result: 10}
+def f = fn base -> {
+    def scaled = base * 2
+    fn -> scaled
+}
+f(5)()

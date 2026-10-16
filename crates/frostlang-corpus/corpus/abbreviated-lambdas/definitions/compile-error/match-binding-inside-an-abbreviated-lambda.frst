@@ -1,0 +1,7 @@
+# Inside an abbreviated lambda, a bare placeholder in a match pattern would
+# rebind it, so it is rejected. Subtle: written `($)`, it would instead be
+# valid, comparing against the argument.
+#= {rejects: ['expected a pattern', 'found `$`']}
+def f = $(match 1 {
+    $ => 'bound',
+})

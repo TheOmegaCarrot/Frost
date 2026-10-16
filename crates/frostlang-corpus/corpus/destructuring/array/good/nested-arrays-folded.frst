@@ -1,0 +1,5 @@
+# Array patterns nest over a literal value the optimizer may match ahead of
+# time; the result must be the same as at runtime.
+#= {result: [1, 2, 3, 4]}
+def [[a, b], [c, [d]]] = [[1, 2], [3, [4]]]
+[a, b, c, d]

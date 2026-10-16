@@ -1,0 +1,4 @@
+# A Map literal with explicit entries is a valid lambda body.
+#= {result: {name: 'ada', age: 36}}
+def person = fn n, a -> {name: n, age: a}
+person('ada', 36)

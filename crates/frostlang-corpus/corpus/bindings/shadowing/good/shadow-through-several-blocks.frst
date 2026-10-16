@@ -1,0 +1,12 @@
+# Names resolve to the innermost enclosing binding: an inner block's shadow
+# applies only inside that block, and the outer meaning returns after it.
+#= {result: 13}
+def a = 1
+do {
+    def b = a + 1
+    def inner = do {
+        def a = 10
+        a + b
+    }
+    inner + a
+}

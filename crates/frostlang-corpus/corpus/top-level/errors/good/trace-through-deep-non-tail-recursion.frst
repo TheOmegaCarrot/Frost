@@ -1,0 +1,6 @@
+# An error raised at the bottom of a deep recursion whose calls are not tail
+# calls keeps a frame for every level: 51 calls of `down`, under `error`.
+#= {result: [52, 'error', 'down', 'down'], inputs: {depth: 50}}
+defn down(n) -> if n == 0: [error('bottom')] else: [down(n - 1)]
+def trace = try_call(down, [depth]).trace
+[len(trace), trace[0], trace[1], trace[51]]

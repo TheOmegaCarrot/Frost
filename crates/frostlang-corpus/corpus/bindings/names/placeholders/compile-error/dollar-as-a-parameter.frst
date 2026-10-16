@@ -1,0 +1,4 @@
+# A placeholder cannot name a lambda parameter.
+#= {rejects: ['`$`', 'placeholders work only inside']}
+def f = fn $ -> 1
+1

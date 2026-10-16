@@ -1,0 +1,4 @@
+# A predicate maps each element to its answer, both in a `map` expression
+# and through `transform`.
+#= {result: [[false, true, false], [false, true, false]], inputs: {xs: [1, 'a', null]}}
+[map xs with is_string, transform(xs, is_string)]

@@ -1,0 +1,8 @@
+# Type names such as `Int` are not keywords, so they may be bound. A type
+# constraint still names the type, not the binding: binding `Int` does not
+# change what `is Int` tests.
+#= {result: [3, 'not a type']}
+def Int = 'not a type'
+match 3 {
+    n is Int => [n, Int],
+}

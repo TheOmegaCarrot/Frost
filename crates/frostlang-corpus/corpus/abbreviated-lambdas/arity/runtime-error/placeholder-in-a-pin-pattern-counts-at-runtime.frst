@@ -1,0 +1,8 @@
+# A placeholder used only as a pinned match pattern counts toward the arity
+# when the matched value is known only at runtime.
+#= {raises: 'expects 2 argument', inputs: {subject: 1}}
+def f = $(match subject {
+    ($2) => 'pinned',
+    _ => 'other',
+})
+f(1)

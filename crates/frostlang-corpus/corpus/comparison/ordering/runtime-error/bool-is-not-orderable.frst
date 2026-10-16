@@ -1,0 +1,4 @@
+# Bool has no ordering: `false < true` raises rather than treating the Bools
+# as `0` and `1`.
+#= {raises: ['Bool', 'not orderable']}
+false < true

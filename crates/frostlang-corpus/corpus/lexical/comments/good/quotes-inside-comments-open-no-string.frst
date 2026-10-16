@@ -1,0 +1,8 @@
+# Quote characters inside a comment open no String: an apostrophe, an
+# unbalanced double quote, and a multiline String's opener are all comment
+# text, so the code after them runs as usual.
+#= {result: 1}
+# don't "worry
+# '''
+def x = 1 # it's x, """
+x

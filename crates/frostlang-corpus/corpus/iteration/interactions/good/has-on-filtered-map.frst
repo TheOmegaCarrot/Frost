@@ -1,0 +1,4 @@
+# A filtered Map holds exactly the kept keys, as `has` observes.
+#= {result: [false, true], inputs: {m: {a: 1, b: 2}}}
+def kept = filter m with fn k, v -> v > 1
+[has(kept, 'a'), has(kept, 'b')]

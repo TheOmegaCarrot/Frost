@@ -1,0 +1,5 @@
+# `not` is a prefix operator only, so `x not in xs` is not a membership test:
+# Frost has no `in` operator, negated or not.
+#= {rejects: ['`not`', '`in`']}
+def xs = [1]
+1 not in xs

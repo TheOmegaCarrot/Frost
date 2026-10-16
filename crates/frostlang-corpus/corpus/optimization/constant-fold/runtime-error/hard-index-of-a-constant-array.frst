@@ -1,0 +1,5 @@
+# A hard index of a constant Array raises when the program reaches it: only a
+# Map has named keys.
+#= {raises: 'cannot index value of type array'}
+def xs = [1, 2]
+xs.a

@@ -1,0 +1,8 @@
+# A continuation line extends the expression just before it. After an `if`,
+# that is the `else` branch's expression, not the whole `if`: here the `.k`
+# applies only to the second Map, so a true condition yields the first Map
+# whole. Subtle, since the indentation suggests otherwise.
+#= {result: [{k: 1}, 2], inputs: {m1: {k: 1}, m2: {k: 2}}}
+defn pick(c) -> if c: m1 else: m2
+    .k
+[pick(true), pick(false)]

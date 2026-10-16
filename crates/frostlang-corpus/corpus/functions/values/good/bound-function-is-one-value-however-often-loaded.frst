@@ -1,0 +1,7 @@
+# Every lookup of a binding holding a function is the same function, even
+# when the optimizer knows the binding's value.
+#= {result: [true, true, true]}
+def f = fn x -> x * 2
+def alias = f
+def again = alias
+[f == alias, again == f, (fn -> f)() == f]

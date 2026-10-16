@@ -1,0 +1,9 @@
+# A key matches only a key of its own type: Int 1, Float 1.0, and true are
+# three different keys, so each misses the others.
+#= {result: [null, null, null, null]}
+[
+    index(1)({[1.0]: 'float'}),
+    index(1.0)({[1]: 'int'}),
+    index(true)({[1]: 'int'}),
+    index('1')({[1]: 'int'}),
+]

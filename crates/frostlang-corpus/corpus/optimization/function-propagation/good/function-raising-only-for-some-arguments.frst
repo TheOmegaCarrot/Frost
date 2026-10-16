@@ -1,0 +1,5 @@
+# A known function that would raise for some arguments computes its result for
+# the arguments it is called with, without raising for the others.
+#= {result: [null, 2]}
+defn safe_divide(a, b) -> if b == 0: null else: a / b
+[safe_divide(1, 0), safe_divide(6, 3)]

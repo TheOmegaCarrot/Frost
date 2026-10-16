@@ -1,0 +1,6 @@
+# `fold` reads the Array it folds over without changing it, even when that
+# Array is also the initial value.
+#= {result: [[1, 2, 1, 2], [1, 2]], inputs: {n: 1}}
+def xs = [n, 2]
+def built = fold(xs, xs, fn acc, x -> acc + [x])
+[built, xs]

@@ -1,0 +1,3 @@
+# A branch is an expression; Frost has no `return` to write in one.
+#= {rejects: 'has no `return`'}
+if true: return 1

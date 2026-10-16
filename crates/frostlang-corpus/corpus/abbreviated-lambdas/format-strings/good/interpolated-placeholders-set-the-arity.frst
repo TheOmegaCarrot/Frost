@@ -1,0 +1,5 @@
+# Placeholders interpolated in a format string count toward the arity like
+# any others: `$2` there makes a two-argument lambda.
+#= {result: 'x=1, y=2'}
+def show = $($'x=${$1}, y=${$2}')
+show(1, 2)

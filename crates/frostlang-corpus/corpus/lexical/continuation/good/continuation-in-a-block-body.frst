@@ -1,0 +1,9 @@
+# Continuation lines work inside a block body as at the top level.
+#= {result: [2, 3]}
+defn count_and_first(m) -> {
+    def n = m
+        .xs
+        @ len()
+    [n, m.xs[0]]
+}
+count_and_first({xs: [3, 4]})

@@ -1,0 +1,6 @@
+# A binding read in a condition, then extended in the branch it selects, is
+# the original when read after the conditional.
+#= {result: [[1, 2], [1]], inputs: {n: 1}}
+def xs = [n]
+def r = if len(xs) == 1: xs + [2] else: xs
+[r, xs]

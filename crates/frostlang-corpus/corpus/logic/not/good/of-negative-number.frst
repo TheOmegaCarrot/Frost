@@ -1,0 +1,8 @@
+# A negative number is truthy, so `not` of one is false. `not -1` applies `not`
+# to the negation, both prefix operators nesting right to left.
+#= {result: [false, false, false], inputs: {one: 1}}
+[
+    not -1,
+    not -0.5,
+    not -one,
+]

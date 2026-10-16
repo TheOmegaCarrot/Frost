@@ -1,0 +1,8 @@
+# An `if` may be a condition even without parentheses: the inner `if` ends at
+# the colon its own `else` branch cannot consume. Subtle: `if if a: b else: c: x`
+# reads as `if (if a: b else: c): x`.
+#= {result: [2, 1], inputs: {a: false, b: true, c: 0}}
+[
+    if if a: b else: false: 1 else: 2,
+    if if a: b else: c: 1 else: 2,
+]

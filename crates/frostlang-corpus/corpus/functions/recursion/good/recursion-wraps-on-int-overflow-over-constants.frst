@@ -1,0 +1,5 @@
+# The same wrapping factorial over constants, which the optimizer may compute
+# ahead of time: it must wrap exactly as the runtime does.
+#= {result: [2432902008176640000, -4249290049419214848]}
+defn fact(k) -> if k <= 1: 1 else: k * fact(k - 1)
+[fact(20), fact(21)]

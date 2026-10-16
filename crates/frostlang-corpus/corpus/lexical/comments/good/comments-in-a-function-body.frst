@@ -1,0 +1,11 @@
+# Comments inside a block body, including one right after `->` and one before
+# the closing brace, do not disturb its statements.
+#= {result: 7}
+defn f(x) -> { # the body opens
+    # a comment line
+    def y = x * 2 # doubled
+    # another
+    y + 1
+    # the last line is a comment
+}
+f(3)

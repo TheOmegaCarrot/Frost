@@ -1,0 +1,8 @@
+# A condition may read a parameter and a binding made in the same body before
+# the `if`.
+#= {result: ['big', 'small']}
+defn size(n) -> {
+    def limit = 10
+    if n > limit: 'big' else: 'small'
+}
+[size(11), size(10)]

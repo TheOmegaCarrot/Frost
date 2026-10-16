@@ -1,0 +1,7 @@
+# In a `match` pattern, alternatives are separated by `|`; `or` is an
+# expression operator, not a pattern one.
+#= {rejects: ['`or`', '`|`']}
+match 2 {
+    1 or 2 => 'low',
+    _ => 'other',
+}

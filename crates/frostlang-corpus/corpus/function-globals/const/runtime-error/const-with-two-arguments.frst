@@ -1,0 +1,4 @@
+# `const` takes exactly one value; it does not ignore extra arguments as the
+# function it returns does.
+#= {raises: ['const', 'expects 1', 'called with 2']}
+const(1, 2)

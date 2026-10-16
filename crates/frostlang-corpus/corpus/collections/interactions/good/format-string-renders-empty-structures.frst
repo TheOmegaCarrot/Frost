@@ -1,0 +1,3 @@
+# Empty structures interpolate as `[]` and `{}`.
+#= {result: '[] {}', inputs: {xs: [], m: {}}}
+$'${xs} ${m}'

@@ -1,0 +1,6 @@
+# Folding an empty Map returns the initial value, which stays unchanged when
+# the result is merged into.
+#= {result: [{k: 1, j: 2}, {k: 1}], inputs: {v: 1, none: {}}}
+def seed = {k: v}
+def same = fold(none, seed, fn acc, k, x -> acc + {[k]: x})
+[same + {j: 2}, seed]

@@ -1,0 +1,5 @@
+# A `defn` body may start on the line after its arrow.
+#= {result: 4}
+defn inc(x) ->
+    x + 1
+inc(3)

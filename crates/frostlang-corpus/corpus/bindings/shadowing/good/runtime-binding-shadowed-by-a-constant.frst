@@ -1,0 +1,9 @@
+# A runtime binding shadowed in a block by a constant: the optimizer may fold
+# the inner name, but the outer one stays the runtime value after the block.
+#= {result: [6, 3, 4], inputs: {n: 3}}
+def x = n
+def inner = do {
+    def x = 5
+    x + 1
+}
+[inner, x, x + 1]

@@ -1,0 +1,10 @@
+# Constant guards are tested for truthiness when the optimizer resolves them
+# ahead of time, as at runtime.
+#= {result: ['pass', 'pass', 'pass', 'fail', 'fail']}
+[
+    match 1 { _ if: 0 => 'pass', _ => 'fail' },
+    match 1 { _ if: '' => 'pass', _ => 'fail' },
+    match 1 { _ if: [] => 'pass', _ => 'fail' },
+    match 1 { _ if: null => 'pass', _ => 'fail' },
+    match 1 { _ if: false => 'pass', _ => 'fail' },
+]

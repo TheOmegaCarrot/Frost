@@ -1,0 +1,14 @@
+# Each function global's own type check raises an ordinary error, which
+# `try_call` catches.
+#= {result: [false, false, false, false, false, false, false, false]}
+def attempts = [
+    [call, [1]],
+    [inv, [1]],
+    [curry, [1]],
+    [bcurry, [1]],
+    [spread, [1]],
+    [rev_args, [1]],
+    [tap, [1, 1]],
+    [compose, [1, 1]],
+]
+map attempts with fn attempt -> try_call(attempt[0], attempt[1]).ok

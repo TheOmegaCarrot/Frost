@@ -1,0 +1,6 @@
+# A type constraint must name one of Frost's types or categories.
+#= {rejects: 'expected a type name'}
+match 1 {
+    n is Number => n,
+    _ => 0,
+}

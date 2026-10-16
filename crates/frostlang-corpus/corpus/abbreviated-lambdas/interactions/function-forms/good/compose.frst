@@ -1,0 +1,4 @@
+# `compose` chains abbreviated lambdas, applying the first one first.
+#= {result: 8}
+def inc_then_double = compose($($ + 1), $($ * 2))
+inc_then_double(3)

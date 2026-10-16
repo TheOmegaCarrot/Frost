@@ -1,0 +1,5 @@
+# A tab separates tokens as a space does, for indentation and between tokens.
+#= {result: [3, 2]}
+def	a	=	1
+	def b = 2
+[a	+	b, b]

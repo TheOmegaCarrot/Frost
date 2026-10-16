@@ -1,0 +1,7 @@
+# `call` given an argument Array at its binding's last use passes the right
+# elements, and a copy kept elsewhere is unchanged.
+#= {result: [[1, 2, 9], [1, 2]], inputs: {n: 1}}
+defn grow(...items) -> items + [9]
+def args = [n, 2]
+def kept = [args]
+[call(grow, args), kept[0]]

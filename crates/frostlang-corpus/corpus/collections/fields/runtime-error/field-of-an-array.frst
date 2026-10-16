@@ -1,0 +1,3 @@
+# Fields are for Maps only; an Array has none.
+#= {raises: ['Cannot index value', 'Array'], inputs: {xs: [1, 2]}}
+xs.a

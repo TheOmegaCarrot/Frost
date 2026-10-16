@@ -1,0 +1,9 @@
+# In `{[a]: a}`, the key reads the outer `a`, since the part's `a` is bound
+# only after the key is evaluated.
+#= {result: [1, 'k']}
+def a = 'k'
+def inner = do {
+    def {[a]: a} = {k: 1}
+    a
+}
+[inner, a]

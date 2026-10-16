@@ -1,0 +1,8 @@
+# A def whose known value fails its pattern, inside a function that is never
+# called, never raises.
+#= {result: 'skipped'}
+defn never() -> {
+    def [a, 1] = [7, 2]
+    a
+}
+if false: never() else: 'skipped'

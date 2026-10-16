@@ -1,0 +1,20 @@
+# A name that merely starts with, or contains, a keyword is an ordinary name:
+# the longest word wins, so `define` is not `def` followed by `ine`.
+#= {result: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]}
+def define = 1
+def iffy = 2
+def nullable = 3
+def trueish = 4
+def falsey = 5
+def android = 6
+def order = 7
+def notable = 8
+def isle = 9
+def ascend = 10
+def fnord = 11
+def matches = 12
+def exported = 13
+def elsewhere = 14
+def elifant = 15
+def done = 16
+[define, iffy, nullable, trueish, falsey, android, order, notable, isle, ascend, fnord, matches, exported, elsewhere, elifant, done]

@@ -1,0 +1,4 @@
+# An exponent too large for any machine integer still yields a value, Infinity, which
+# is rejected as any infinite literal is.
+#= {rejects: 'NaN or Infinity'}
+1e99999999999999999999

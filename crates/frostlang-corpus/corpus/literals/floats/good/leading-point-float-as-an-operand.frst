@@ -1,0 +1,4 @@
+# A leading-point Float is a whole operand in any position where an operand begins,
+# such as after an operator with no space.
+#= {result: [1.5, 0.75, 2.5]}
+[1+.5, .5*1.5, 2-(-.5)]

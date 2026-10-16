@@ -1,0 +1,7 @@
+# Each call in a chain runs exactly once, in chain order.
+#= {result: 3, printed: ['a: 1', 'b: 2']}
+defn step(x, name) -> {
+    print($'${name}: ${x}')
+    x + 1
+}
+1 @ step('a') @ step('b')

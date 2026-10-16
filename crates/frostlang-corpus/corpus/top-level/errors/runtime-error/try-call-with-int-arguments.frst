@@ -1,0 +1,3 @@
+# `try_call`'s arguments must be an Array; an Int raises a type error.
+#= {raises: ['try_call', 'argument 2', 'got Int']}
+try_call(fn x -> x, 1)

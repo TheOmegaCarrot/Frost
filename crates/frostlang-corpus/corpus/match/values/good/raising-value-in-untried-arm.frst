@@ -1,0 +1,6 @@
+# A parenthesized value that would raise is harmless in an arm never reached.
+#= {result: 'one', inputs: {v: 1, zero: 0}}
+match v {
+    1 => 'one',
+    (1 / zero) => 'never',
+}

@@ -1,0 +1,5 @@
+# Because `\${$}` is escaped text, the lambda around it takes no arguments,
+# and passing one raises.
+#= {raises: 'expects 0 argument'}
+def thunk = $($'\${$}')
+thunk('x')

@@ -1,0 +1,8 @@
+# `and` and `or` return an operand, not a Bool, and `filter` judges whatever
+# they return by truthiness: `null and ...` is Null, so its element is
+# dropped, while `0 or ...` is 0, which is kept.
+#= {
+#=     result: [[2], [0, null]],
+#=     inputs: {xs: [null, 1, 2], ys: [0, null, false]},
+#= }
+[filter xs with fn x -> x and x > 1, filter ys with fn y -> y or is_null(y)]

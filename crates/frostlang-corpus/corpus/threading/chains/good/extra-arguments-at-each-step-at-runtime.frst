@@ -1,0 +1,4 @@
+# Each step of a runtime chain takes its own written arguments after the
+# value threaded into it.
+#= {result: 14, inputs: {ten: 10, three: 3, two: 2}}
+ten @ minus(three) @ times(two)

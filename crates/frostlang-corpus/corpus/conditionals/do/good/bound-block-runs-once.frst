@@ -1,0 +1,8 @@
+# A block bound to a name runs once, where it is bound, not at each use of
+# the name.
+#= {result: [1, 1], printed: ['ran']}
+def y = do {
+    print('ran')
+    1
+}
+[y, y]

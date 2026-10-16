@@ -1,0 +1,15 @@
+# Constant structures that differ only in the type of an element, or in its
+# nesting, each keep their own: an Int is not a Float, a String is not Bytes,
+# a Bool is not an Int, and a nested Array is not its element.
+#= {
+#=     result: [['Int', 'Float'], ['String', 'Bytes'], ['Bool', 'Int'], ['Array', 'Int']],
+#=     inputs: {tag: 'runtime'},
+#= }
+defn build(t) -> [t, [1], [1.0], ['1'], [x'31'], [true], [1], [[1]], [1]]
+def [_, int, float, string, bytes, bool, one, nested, flat] = build(tag)
+[
+    [type(int[0]), type(float[0])],
+    [type(string[0]), type(bytes[0])],
+    [type(bool[0]), type(one[0])],
+    [type(nested[0]), type(flat[0])],
+]

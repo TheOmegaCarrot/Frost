@@ -1,0 +1,3 @@
+# `\$` is a format String's escape only; a plain String needs no backslash for `$`.
+#= {rejects: ['invalid escape sequence', R'(`\$`)', 'needs no backslash outside a format String']}
+'cost: \$5'

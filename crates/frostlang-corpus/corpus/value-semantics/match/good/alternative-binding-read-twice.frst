@@ -1,0 +1,6 @@
+# A name bound by the second alternative, after the first bound and dropped
+# it, can be read twice in the arm.
+#= {result: [2, 2], inputs: {n: 1}}
+match [n, 2] {
+    [x, 3] | [1, x] => [x, x],
+}

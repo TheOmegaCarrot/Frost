@@ -1,0 +1,4 @@
+# A definition's pattern starts on the line of its `def`.
+#= {rejects: 'found a line break'}
+def
+    x = 1

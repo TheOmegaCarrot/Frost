@@ -1,0 +1,7 @@
+# Functions returning format Strings work through `call`, `curry`, and
+# `compose`, which hand their arguments on unchanged.
+#= {result: ['1-2', 'x-y', '<[7]>'], inputs: {x: 7}}
+def join = fn a, b -> $'${a}-${b}'
+def angle = fn s -> $'<${s}>'
+def square = fn s -> $'[${s}]'
+[call(join, [1, 2]), curry(join, 'x')('y'), compose(square, angle)(x)]

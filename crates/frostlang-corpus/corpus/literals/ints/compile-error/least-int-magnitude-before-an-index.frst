@@ -1,0 +1,4 @@
+# An index binds tighter than unary `-`, so in `-9223372036854775808[0]` the magnitude
+# is the index's target, standing alone and out of range.
+#= {rejects: 'Int literal out of range'}
+-9223372036854775808[0]

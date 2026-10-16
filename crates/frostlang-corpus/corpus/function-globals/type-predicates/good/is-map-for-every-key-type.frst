@@ -1,0 +1,10 @@
+# A Map is a Map whatever type its keys are.
+#= {result: [true, true, true, true, true, true]}
+[
+    is_map({[true]: 1}),
+    is_map({[1]: 1}),
+    is_map({[1.5]: 1}),
+    is_map({s: 1}),
+    is_map({[x'00']: 1}),
+    is_structured({[false]: null}),
+]

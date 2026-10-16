@@ -1,0 +1,6 @@
+# A plain lambda cannot recurse through the `def` it is bound to: the name is
+# not yet bound while its right-hand side compiles. Recursion needs a
+# self-name, as `fn fact(n) -> ...` or `defn` gives.
+#= {rejects: '`fact` is not defined'}
+def fact = fn n -> if n <= 1: 1 else: n * fact(n - 1)
+fact(5)

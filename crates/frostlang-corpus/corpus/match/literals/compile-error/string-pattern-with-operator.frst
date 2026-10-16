@@ -1,0 +1,7 @@
+# A bare String pattern is a literal only: no operator may continue it. An
+# expression compared by value must be parenthesized.
+#= {rejects: ['expected `=>`', 'found `+`']}
+match 'ab' {
+    'a' + 'b' => 1,
+    _ => 0,
+}

@@ -1,0 +1,4 @@
+# `error('')` still raises: an empty message is a message, so `try_call`
+# reports a failure.
+#= {result: {ok: false, error: '', trace: ['error']}}
+try_call(error, [''])

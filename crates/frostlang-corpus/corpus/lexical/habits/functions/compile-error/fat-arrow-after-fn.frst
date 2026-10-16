@@ -1,0 +1,3 @@
+# A lambda's arrow is `->`; `=>` is a `match` arm's.
+#= {rejects: "a lambda's arrow is `->`"}
+def f = fn x => x

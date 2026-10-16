@@ -1,0 +1,4 @@
+# A function may return a function, which is called in turn.
+#= {result: [7, true]}
+def adder = fn a -> fn b -> a + b
+[adder(3)(4), is_function(adder(1))]

@@ -1,0 +1,3 @@
+# One below the least Int is out of range, even written as one negated literal.
+#= {rejects: 'Int literal out of range'}
+-9223372036854775809

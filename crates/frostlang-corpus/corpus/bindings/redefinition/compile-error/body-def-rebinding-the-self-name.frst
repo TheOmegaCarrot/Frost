@@ -1,0 +1,8 @@
+# A named lambda's own name is bound in its scope, so a body `def` of that name
+# is a duplicate binding.
+#= {rejects: ['`f`', 'already bound']}
+def g = fn f() -> {
+    def f = 1
+    f
+}
+g()

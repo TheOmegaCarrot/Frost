@@ -1,0 +1,7 @@
+# The least Int modulo -1 is 0, as for any Int. Subtle because the matching
+# division overflows; the remainder must not raise or misbehave with it.
+#= {result: [0, 0], inputs: {least: -9223372036854775808, minus_one: -1}}
+[
+    -9223372036854775808 % -1,
+    least % minus_one,
+]

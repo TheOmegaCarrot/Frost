@@ -1,0 +1,11 @@
+# Tail position passes through any nesting of `match`, `do`, `if`, and `or`.
+#= {result: 100000}
+defn down(n, acc) -> match n {
+    0 => acc,
+    _ => do {
+        def m = n - 1
+        if m % 3 == 0: (false or down(m, acc + 1))
+        else: down(m, acc + 1)
+    },
+}
+down(100000, 0)

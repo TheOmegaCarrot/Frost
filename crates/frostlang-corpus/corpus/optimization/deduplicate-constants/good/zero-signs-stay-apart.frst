@@ -1,0 +1,15 @@
+# Constant structures holding 0.0 and -0.0 are equal under `==`, yet each
+# keeps its own zero's sign, which shows when printed: sharing one stored
+# constant between them would lose it.
+#= {
+#=     result: [['0.0', '-0.0'], ['0.0', '-0.0'], ['{ [0.0]: 1 }', '{ [-0.0]: 1 }'], true],
+#=     inputs: {tag: 'runtime'},
+#= }
+defn build(t) -> [t, [0.0], [-0.0], {a: 0.0}, {a: -0.0}, {[0.0]: 1}, {[-0.0]: 1}]
+def [_, pos, neg, pos_map, neg_map, pos_key, neg_key] = build(tag)
+[
+    [to_string(pos[0]), to_string(neg[0])],
+    [to_string(pos_map.a), to_string(neg_map.a)],
+    [to_string(pos_key), to_string(neg_key)],
+    pos == neg,
+]

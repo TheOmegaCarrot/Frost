@@ -1,0 +1,3 @@
+# A Unicode escape whose brace never closes is an error.
+#= {rejects: R'(unterminated `\u` escape)'}
+def s = $'\u{41'

@@ -1,0 +1,4 @@
+# The function sees the arguments swapped, so the error describes them in the
+# swapped order.
+#= {raises: 'Int - String'}
+rev_args(minus)('a', 1)

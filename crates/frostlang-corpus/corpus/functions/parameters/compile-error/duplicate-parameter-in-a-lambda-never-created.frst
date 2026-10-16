@@ -1,0 +1,4 @@
+# A duplicate parameter is rejected even in a nested lambda that is never
+# created.
+#= {rejects: ['`x`', 'already bound']}
+if false: (fn -> fn x, x -> x) else: 1

@@ -1,0 +1,4 @@
+# A pattern may not bind the same name twice.
+#= {rejects: '`a` is already bound'}
+def [a, a] = [1, 2]
+a

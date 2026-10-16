@@ -1,0 +1,5 @@
+# An abbreviated lambda inside a variadic `fn` captures its rest parameter,
+# distinct from its own `$$`.
+#= {result: [0, [1, 2], [9]]}
+def make = fn ...rest -> $([$, rest, $$])
+make(1, 2)(0, 9)

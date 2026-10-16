@@ -1,0 +1,5 @@
+# The least Int is written as a negated literal; in parentheses, a
+# continuation line after it threads the whole Int.
+#= {result: '-9223372036854775808'}
+(-9223372036854775808)
+    @ to_string()

@@ -1,0 +1,7 @@
+# A destructuring `def` in the taken branch's block raises when the value has
+# the wrong shape.
+#= {raises: 'expected an Array of exactly 2', inputs: {p: 'not a pair'}}
+if p: do {
+    def [a, b] = p
+    a + b
+} else: 0

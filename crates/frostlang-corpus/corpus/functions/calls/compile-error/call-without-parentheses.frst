@@ -1,0 +1,5 @@
+# A call needs parentheses: a function name followed by a value is two
+# expressions with no separator, not a call.
+#= {rejects: ['line break', 'found `1`']}
+def f = fn x -> x
+f 1

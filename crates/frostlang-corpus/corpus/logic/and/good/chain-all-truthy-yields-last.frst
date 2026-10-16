@@ -1,0 +1,9 @@
+# When every operand of an `and` chain is truthy, the chain yields the last.
+#= {
+#=     result: [{}, {k: 1}],
+#=     inputs: {a: 0, b: '', c: [], d: {k: 1}},
+#= }
+[
+    1 and 'a' and [] and {},
+    a and b and c and d,
+]

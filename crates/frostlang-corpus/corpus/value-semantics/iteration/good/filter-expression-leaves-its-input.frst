@@ -1,0 +1,5 @@
+# A `filter` expression builds a new Array and leaves its input unchanged.
+#= {result: [[1, 2, 3], [2, 3]], inputs: {n: 1}}
+def xs = [n, 2, 3]
+def big = filter xs with fn x -> x > 1
+[xs, big]

@@ -1,0 +1,6 @@
+# A parenthesized threaded call can produce the callee of another: in
+# `a @ (b @ f())()`, `b` goes to `f` and `a` to the function `f(b)` returns.
+#= {result: [12, [2, 10]], inputs: {ten: 10, two: 2}}
+defn adder(k) -> fn x -> x + k
+defn pairing(a) -> fn b -> [a, b]
+[ten @ (two @ adder())(), ten @ (two @ pairing())()]

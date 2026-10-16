@@ -1,0 +1,4 @@
+# A literal part that does not equal its value raises, quoting the literal.
+#= {raises: 'expected `1`', inputs: {xs: [0, 2]}}
+def [a, 1] = xs
+a

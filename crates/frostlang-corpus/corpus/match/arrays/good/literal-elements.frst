@@ -1,0 +1,7 @@
+# Literal elements must equal the target's elements at their positions.
+#= {result: ['add 2', 'negate 5', 'unknown'], inputs: {xs: [['add', 2], ['neg', 5], ['mul', 3]]}}
+transform(xs, fn v -> match v {
+    ['add', n] => 'add ' + to_string(n),
+    ['neg', n] => 'negate ' + to_string(n),
+    _ => 'unknown',
+})

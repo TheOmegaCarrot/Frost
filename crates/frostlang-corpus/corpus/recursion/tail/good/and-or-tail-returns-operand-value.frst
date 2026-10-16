@@ -1,0 +1,7 @@
+# Through `and` and `or` in tail position, the recursion's result is the
+# deciding operand's own value, not a Bool.
+#= {result: ['found', null, 0]}
+defn first_or(n, found) -> (n == 0 and found) or first_or(n - 1, found)
+defn until_null(n) -> n and until_null(if n == 1: null else: n - 1)
+defn until_zero(n) -> (n == 0 and 0) or until_zero(n - 1)
+[first_or(1000, 'found'), until_null(1000), until_zero(1000)]

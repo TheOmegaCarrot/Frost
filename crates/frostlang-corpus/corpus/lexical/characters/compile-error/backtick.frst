@@ -1,0 +1,3 @@
+# A backtick is not a quote in Frost; the help shows the format String.
+#= {rejects: ['backtick', 'a format String is written']}
+`ls`

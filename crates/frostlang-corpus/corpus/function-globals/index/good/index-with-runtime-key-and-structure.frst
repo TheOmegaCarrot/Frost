@@ -1,0 +1,3 @@
+# A key and a structure known only at run time.
+#= {result: ['ada', 20], inputs: {k: 'name', m: {name: 'ada'}, i: -1, xs: [10, 20]}}
+[index(k)(m), index(i)(xs)]

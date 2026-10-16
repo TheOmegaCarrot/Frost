@@ -1,0 +1,5 @@
+# A Float key is matched by exact value, so a computed key that differs in
+# its last bit from the literal is a different key. `0.1 + 0.2` is not `0.3`.
+#= {result: [null, 'sum', 'exact'], inputs: {a: 0.1, b: 0.2}}
+def m = {[a + b]: 'sum', [0.3]: 'exact'}
+[{[0.1 + 0.2]: 'sum'}[0.3], m[0.1 + 0.2], m[0.3]]

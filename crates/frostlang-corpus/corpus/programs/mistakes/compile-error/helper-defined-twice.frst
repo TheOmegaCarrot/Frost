@@ -1,0 +1,11 @@
+# A program that defines a helper, uses it, and later redefines it under the
+# same name in the same scope is rejected: a name is bound once per scope,
+# so the second definition cannot quietly change the first's callers.
+#= {
+#=     rejects: ['`format`', 'already bound'],
+#=     inputs: {n: 3},
+#= }
+defn format(x) -> $'<${x}>'
+def first = format(n)
+defn format(x) -> $'[${x}]'
+[first, format(n)]

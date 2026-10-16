@@ -1,0 +1,17 @@
+# `is_bytes` is true for Bytes alone, on values known only at run time.
+#= {
+#=     result: [false, false, false, false, false, true, false, false, false, false],
+#=     inputs: {n: null, b: false, i: 0, f: 0.0, s: '', y: x'', a: [], m: {}, g: fn -> null, h: len},
+#= }
+[
+    is_bytes(n),
+    is_bytes(b),
+    is_bytes(i),
+    is_bytes(f),
+    is_bytes(s),
+    is_bytes(y),
+    is_bytes(a),
+    is_bytes(m),
+    is_bytes(g),
+    is_bytes(h),
+]

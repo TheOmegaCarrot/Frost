@@ -1,0 +1,4 @@
+# A quoted String cannot span a CRLF line break, as it cannot span LF.
+#= {rejects: 'unclosed String'}
+def s = 'a
+b'

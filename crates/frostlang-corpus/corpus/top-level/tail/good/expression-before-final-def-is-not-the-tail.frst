@@ -1,0 +1,5 @@
+# Only the last statement gives the tail. An expression statement followed by
+# a `def` is evaluated and dropped, so the tail is null, not that expression.
+#= {result: null}
+42
+def unused = 1

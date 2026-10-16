@@ -1,0 +1,13 @@
+# `not` binds tighter than `==`: `not a == b` is `(not a) == b`, comparing the
+# Bool that `not` yields, not negating the comparison. Each unparenthesized case
+# would yield true if `not` applied to the whole comparison.
+#= {
+#=     result: [false, false, false, true],
+#=     inputs: {one: 1},
+#= }
+[
+    not 1 == true,
+    not null == false,
+    not one == true,
+    not (one == true),
+]

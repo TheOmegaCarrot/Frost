@@ -1,0 +1,4 @@
+# `\0` is NUL alone, not the start of an octal escape as in C: digits after it are
+# ordinary text, so `'\012'` is three characters, not a line break.
+#= {result: [3, true, false]}
+[len('\012'), '\012' == '\u{0}' + '12', '\012' == '\n']

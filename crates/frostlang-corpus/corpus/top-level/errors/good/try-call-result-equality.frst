@@ -1,0 +1,6 @@
+# A `try_call` result is an ordinary Map, compared by value.
+#= {result: [true, false]}
+[
+    try_call(fn -> 1) == {ok: true, value: 1},
+    try_call(fn -> 1) == {ok: true, value: 1.0},
+]

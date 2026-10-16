@@ -1,0 +1,8 @@
+# A function body shares its parameters' scope, so a pattern there may not
+# rebind a parameter.
+#= {rejects: '`p` is already bound'}
+defn f(p) -> {
+    def [p, q] = p
+    [p, q]
+}
+f([1, 2])

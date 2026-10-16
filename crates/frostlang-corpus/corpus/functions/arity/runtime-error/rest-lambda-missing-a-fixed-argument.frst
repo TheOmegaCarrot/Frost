@@ -1,0 +1,4 @@
+# A rest parameter makes extra arguments optional, not the fixed ones.
+#= {raises: ['expects at least 2 argument', 'called with 1']}
+def f = fn a, b, ...rest -> rest
+f(1)

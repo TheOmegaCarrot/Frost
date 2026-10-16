@@ -1,0 +1,4 @@
+# A Map is not an Array, even one with Int keys 0 and 1.
+#= {raises: 'expected an Array', inputs: {v: {[0]: 'a', [1]: 'b'}}}
+def [a, b] = v
+[a, b]

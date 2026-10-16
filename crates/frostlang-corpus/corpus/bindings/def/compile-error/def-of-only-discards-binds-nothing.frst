@@ -1,0 +1,5 @@
+# A destructuring `def` whose every part is a discard binds no name, so it is
+# rejected like `def _`.
+#= {rejects: ['binds no name']}
+def [_, _] = [1, 2]
+1

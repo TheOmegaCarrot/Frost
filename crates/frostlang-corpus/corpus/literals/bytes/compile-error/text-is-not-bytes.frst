@@ -1,0 +1,3 @@
+# A Bytes literal is hex, not text: `x'hello'` does not spell its octets.
+#= {rejects: ['invalid character `h`', 'Bytes literal']}
+x'hello'

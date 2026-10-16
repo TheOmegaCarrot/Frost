@@ -1,0 +1,8 @@
+# A parenthesized name compares by value when everything is a compile-time
+# constant, as at runtime.
+#= {result: ['limit', 'other']}
+def limit = 10
+[
+    match 10 { (limit) => 'limit', _ => 'other' },
+    match 11 { (limit) => 'limit', _ => 'other' },
+]

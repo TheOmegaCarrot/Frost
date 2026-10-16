@@ -1,0 +1,8 @@
+# Float literal patterns against constant targets, which the optimizer may
+# resolve ahead of time.
+#= {result: ['half', 'minus two and a half', 'other']}
+[
+    match 0.5 { -0.5 => 'minus half', 0.5 => 'half', _ => 'other' },
+    match -2.5 { 2.5 => 'two and a half', -2.5 => 'minus two and a half', _ => 'other' },
+    match 0.25 { 0.5 => 'half', _ => 'other' },
+]

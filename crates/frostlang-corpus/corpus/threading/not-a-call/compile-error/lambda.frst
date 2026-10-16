@@ -1,0 +1,3 @@
+# A lambda on the right of `@` is not a call.
+#= {rejects: ['right side of `@` must be a call', 'not a call'], inputs: {n: 1}}
+n @ fn x -> x * 2

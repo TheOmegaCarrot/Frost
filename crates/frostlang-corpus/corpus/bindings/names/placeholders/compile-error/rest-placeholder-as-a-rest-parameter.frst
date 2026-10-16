@@ -1,0 +1,5 @@
+# `$$` cannot name a rest parameter, though it stands for the rest arguments
+# inside an abbreviated lambda.
+#= {rejects: ['`$$`', 'placeholders work only inside']}
+def f = fn ...$$ -> 1
+1

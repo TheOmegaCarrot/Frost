@@ -1,0 +1,5 @@
+# A literal in the name position of a `def` is a value pattern, not a name, so
+# the `def` binds nothing.
+#= {rejects: ['binds no name']}
+def 1 = 1
+1

@@ -1,0 +1,9 @@
+# Logical expressions may compute both a Map literal's key and its value.
+#= {
+#=     result: [{no: 0}, {yes: 5}],
+#=     inputs: {n: null, five: 5},
+#= }
+[
+    {[n and 'yes' or 'no']: n or 0},
+    {[five and 'yes' or 'no']: five or 0},
+]

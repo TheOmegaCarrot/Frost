@@ -1,0 +1,5 @@
+# A format string whose text holds `$$` and `$2` but no interpolation reads
+# no placeholder, so the lambda around it is a zero-argument thunk.
+#= {result: 'pay $$ or $2'}
+def thunk = $($'pay $$ or $2')
+thunk()

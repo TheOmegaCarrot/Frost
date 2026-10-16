@@ -1,0 +1,13 @@
+# A `do` block is a primary expression, so a call or index written directly
+# after its closing brace, on the same line, applies to the block's value.
+#= {result: [6, 'b']}
+[
+    do {
+        def k = 3
+        fn n -> n * k
+    }(2),
+    do {
+        def xs = ['a', 'b']
+        xs
+    }[1],
+]

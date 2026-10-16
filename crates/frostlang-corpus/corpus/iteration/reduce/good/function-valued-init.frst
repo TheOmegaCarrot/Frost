@@ -1,0 +1,7 @@
+# The init may itself be a Function: with three arguments, `fold` takes the
+# middle one as the init and the last as the operation. Each step wraps the
+# accumulated function, multiplying by an element: 5 * 2 * 3.
+#= {result: 30, inputs: {xs: [2, 3]}}
+def identity = fn y -> y
+def scale = fold(xs, identity, fn acc, x -> fn y -> acc(y) * x)
+scale(5)

@@ -1,0 +1,8 @@
+# In a file with CRLF line endings, each CRLF inside a multiline String is one line
+# break, a plain LF in the String's text: no carriage return is kept.
+#= {result: ['a\n  b', 5]}
+def text = '''
+    a
+      b
+    '''
+[text, len(text)]

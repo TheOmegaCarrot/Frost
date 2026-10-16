@@ -1,0 +1,5 @@
+# A binding nothing reads, whose value is computed from one only known at
+# runtime, still raises when that computation does.
+#= {raises: 'division by zero', inputs: {zero: 0}}
+def unused = 1 / zero
+2

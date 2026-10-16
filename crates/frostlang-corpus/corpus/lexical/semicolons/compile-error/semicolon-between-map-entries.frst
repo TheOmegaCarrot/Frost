@@ -1,0 +1,3 @@
+# Map entries are separated by `,`, not `;`.
+#= {rejects: 'separate Map entries with `,`, not `;`'}
+{a: 1; b: 2}

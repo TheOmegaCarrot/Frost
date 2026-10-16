@@ -1,0 +1,7 @@
+# `export` is only valid at the top level; a lambda's block body may not
+# export a definition.
+#= {rejects: ['expected an expression', '`export`']}
+def f = fn -> {
+    export def x = 1
+    x
+}

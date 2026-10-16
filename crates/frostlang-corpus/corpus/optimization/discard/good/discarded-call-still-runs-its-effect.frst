@@ -1,0 +1,8 @@
+# A statement whose value is discarded still runs, so a call with an effect in
+# it happens, wherever the effect sits in the statement.
+#= {result: 'done', printed: ['call', 'element', 'operand', 'branch']}
+print('call')
+[1, print('element')]
+1 + len(to_string(print('operand')))
+if true: print('branch') else: 0
+'done'

@@ -1,0 +1,8 @@
+# Arithmetic over bindings computed from a runtime value, mixed with constant
+# bindings, gives the same answer as all-constant arithmetic.
+#= {result: [10, 2.5], inputs: {six: 6}}
+def seven = 7
+def b = six * seven
+def c = b - 2
+def d = c / 4
+[d, d / 4.0]

@@ -1,0 +1,7 @@
+# Array patterns nest, each level checking its own length.
+#= {result: [6, 'inner too short', [4, 3, 2, 1]], inputs: {xs: [[[1, 2], [3]], [[1], [3]], [1, [2, [3, [4]]]]]}}
+transform(xs, fn v -> match v {
+    [[a, b], [c]] => a + b + c,
+    [[a], [c]] => 'inner too short',
+    [a, [b, [c, [d]]]] => [d, c, b, a],
+})

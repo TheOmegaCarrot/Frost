@@ -1,0 +1,4 @@
+# A Map pattern entry is renamed with `key: name`, not with `as` as
+# JavaScript's and Python's imports rename.
+#= {rejects: 'rename a Map entry with `key: name`', inputs: {m: {a: 1}}}
+match m { {a as b} => b }

@@ -1,0 +1,5 @@
+# A recursion through `call` over constants, too long for the optimizer to
+# compute ahead of time, still runs to its answer.
+#= {result: 'done'}
+defn countdown(k) -> if k == 0: 'done' else: call(countdown, [k - 1])
+countdown(200000)

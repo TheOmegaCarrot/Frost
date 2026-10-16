@@ -1,0 +1,5 @@
+# A type constraint follows a name or `_`, not an Array pattern, whose shape
+# already implies its type.
+#= {rejects: 'expected `=`'}
+def [a] is Array = [1]
+a

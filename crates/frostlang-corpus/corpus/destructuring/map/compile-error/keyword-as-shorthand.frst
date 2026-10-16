@@ -1,0 +1,4 @@
+# A keyword cannot be a shorthand key, since it cannot be a name.
+#= {rejects: 'expected a name or `[`'}
+def {if} = {['if']: 1}
+0

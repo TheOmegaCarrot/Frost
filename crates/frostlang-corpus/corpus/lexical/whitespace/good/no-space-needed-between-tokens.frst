@@ -1,0 +1,6 @@
+# Operators and punctuation separate tokens on their own, so no spaces are
+# needed around them.
+#= {result: [3, 4, 2, true, false, true, false, -5, -2, [1, 2], {k: 5}]}
+def a=5
+def m={k:a}
+[1+2,a-1,a*2/5%3,a==5,a!=5,a<=5,a>=6,-a,3-a,[1,2],m]

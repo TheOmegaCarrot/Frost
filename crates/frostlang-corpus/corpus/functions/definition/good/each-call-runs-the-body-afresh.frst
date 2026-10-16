@@ -1,0 +1,7 @@
+# Every call runs the whole body again, in order, statement by statement.
+#= {result: [2, 3], printed: ['start 1', 'start 2']}
+def f = fn x -> {
+    print($'start ${x}')
+    x + 1
+}
+[f(1), f(2)]

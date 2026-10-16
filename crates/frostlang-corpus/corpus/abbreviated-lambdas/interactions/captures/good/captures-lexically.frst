@@ -1,0 +1,9 @@
+# A captured name is the one in scope where the abbreviated lambda is
+# written; a same-named binding where it is called does not affect it.
+#= {result: 2}
+def k = 1
+def add_k = $($ + k)
+do {
+    def k = 100
+    add_k(1)
+}

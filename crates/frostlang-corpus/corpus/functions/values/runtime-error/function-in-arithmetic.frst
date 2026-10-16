@@ -1,0 +1,4 @@
+# A function is not an arithmetic operand; adding to it does not call it.
+#= {raises: 'Function + Int'}
+def f = fn -> 1
+f + 1

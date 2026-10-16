@@ -1,0 +1,5 @@
+# An unbound name in a branch that can never run is still a compile error: dead
+# code is checked like any other.
+#= {rejects: ['`missing`', 'not defined']}
+if false: missing
+else: 2

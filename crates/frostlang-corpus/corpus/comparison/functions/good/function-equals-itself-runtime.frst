@@ -1,0 +1,8 @@
+# A Function known only at runtime equals itself, including inside
+# structures.
+#= {result: [true, true, true], inputs: {f: fn x -> x}}
+[
+    f == f,
+    [f, 1] == [f, 1],
+    {k: f} == {k: f},
+]

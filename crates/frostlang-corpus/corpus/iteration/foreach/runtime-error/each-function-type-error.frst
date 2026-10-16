@@ -1,0 +1,3 @@
+# `each` called directly requires a Function as its second argument.
+#= {raises: ['each', 'Function', 'argument 2', 'Array']}
+each([1], [2])

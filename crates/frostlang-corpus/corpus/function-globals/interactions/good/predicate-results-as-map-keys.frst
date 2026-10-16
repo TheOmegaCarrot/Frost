@@ -1,0 +1,3 @@
+# A predicate's Bool is a valid Map key.
+#= {result: {[true]: 'int', [false]: 'not int'}, inputs: {a: 1, b: 'b'}}
+{[is_int(a)]: 'int', [is_int(b)]: 'not int'}

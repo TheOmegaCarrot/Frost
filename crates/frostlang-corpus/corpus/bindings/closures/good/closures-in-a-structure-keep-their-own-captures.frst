@@ -1,0 +1,7 @@
+# Closures stored in an Array and a Map each keep the captures they were made
+# with.
+#= {result: [1, 2, 'a', 'b']}
+def make = fn v -> fn -> v
+def fs = [make(1), make(2)]
+def ms = {a: make('a'), b: make('b')}
+[fs[0](), fs[1](), ms.a(), ms.b()]

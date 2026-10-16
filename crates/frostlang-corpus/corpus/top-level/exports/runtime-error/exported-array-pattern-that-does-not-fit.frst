@@ -1,0 +1,4 @@
+# An exported Array pattern whose value has the wrong length raises, rather
+# than exporting a partial binding.
+#= {raises: 'expected an Array'}
+export def [a, b] = [1]

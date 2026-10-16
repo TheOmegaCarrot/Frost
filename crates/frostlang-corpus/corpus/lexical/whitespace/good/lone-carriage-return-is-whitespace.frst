@@ -1,0 +1,5 @@
+# A carriage return not followed by a line feed is whitespace inside a line,
+# separating tokens like a space.
+#= {result: 3}
+def a = 1
+ a +2

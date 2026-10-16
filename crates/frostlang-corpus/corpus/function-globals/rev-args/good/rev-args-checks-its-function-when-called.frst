@@ -1,0 +1,4 @@
+# `rev_args` rejects a non-Function when it is called, before any reversed
+# function exists.
+#= {result: [false, true]}
+[try_call(rev_args, [1]).ok, try_call(rev_args, [minus]).ok]

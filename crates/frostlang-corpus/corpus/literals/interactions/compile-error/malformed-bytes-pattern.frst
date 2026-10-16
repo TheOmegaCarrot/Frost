@@ -1,0 +1,6 @@
+# A malformed Bytes literal is rejected in a pattern as in an expression.
+#= {rejects: 'odd number of hex digits', inputs: {b: x'00'}}
+match b {
+    x'0' => 'zero',
+    _ => 'other',
+}

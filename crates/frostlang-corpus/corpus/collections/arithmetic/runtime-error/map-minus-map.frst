@@ -1,0 +1,3 @@
+# `-` is numeric only: it does not remove keys from a Map.
+#= {raises: ['Cannot subtract', 'Map - Map']}
+{a: 1, b: 2} - {b: 2}

@@ -1,0 +1,4 @@
+# `spread` feeds an Array's elements to an abbreviated lambda as arguments,
+# and `rev_args` reverses them.
+#= {result: [3, [2, 1]]}
+[spread($($1 + $2))([1, 2]), rev_args($([$1, $2]))(1, 2)]

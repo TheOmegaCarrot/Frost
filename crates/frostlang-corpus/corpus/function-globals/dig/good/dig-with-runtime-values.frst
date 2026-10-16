@@ -1,0 +1,6 @@
+# A structure and keys known only at run time.
+#= {
+#=     result: ['ada', null],
+#=     inputs: {data: {users: [{name: 'ada'}]}, i: 0, missing: 3},
+#= }
+[dig(data, 'users', i, 'name'), dig(data, 'users', missing, 'name')]

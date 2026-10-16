@@ -1,0 +1,4 @@
+# `def name(params)` is not a pattern; it suggests `defn`.
+#= {rejects: ['`def` takes no parameters', 'defn']}
+def add(x, y) -> x + y
+add(1, 2)

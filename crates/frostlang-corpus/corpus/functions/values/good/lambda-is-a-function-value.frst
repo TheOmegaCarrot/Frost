@@ -1,0 +1,5 @@
+# Every kind of function, lambda, named lambda, `defn`, abbreviated lambda,
+# and native global, is a value of type Function.
+#= {result: ['Function', 'Function', 'Function', 'Function', 'Function', true, true]}
+defn named() -> 1
+[type(fn -> 1), type(fn me() -> me), type(named), type($($ + 1)), type(len), is_function(fn -> 1), is_function(len)]

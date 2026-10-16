@@ -1,0 +1,7 @@
+# A call that is the value a `match` matches on is not in tail position.
+#= {result: 495}
+defn down(n) -> if n == 0: error('bottom') else: match down(n - 1) {
+    _ => 'unreached',
+}
+defn frames(n) -> len(try_call(down, [n]).trace)
+frames(500) - frames(5)

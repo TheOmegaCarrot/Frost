@@ -1,0 +1,5 @@
+# `inv(f)` answers the opposite of what `f` answers.
+#= {result: [false, true]}
+def is_small = fn x -> x < 3
+def is_large = inv(is_small)
+[is_large(1), is_large(5)]

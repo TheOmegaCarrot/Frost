@@ -1,0 +1,5 @@
+# A known function bound by a destructure, called with a constant of a type
+# its body cannot add, raises when the program reaches the call.
+#= {raises: 'cannot add incompatible types'}
+def {inc} = {inc: fn x -> x + 1}
+inc('a')

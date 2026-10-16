@@ -1,0 +1,4 @@
+# After `.` comes a field name, not an expression: `$1.$2` does not index by
+# the second argument. `$1[$2]` does.
+#= {rejects: ['a name after `.`', 'found `$2`']}
+def f = $($1.$2)

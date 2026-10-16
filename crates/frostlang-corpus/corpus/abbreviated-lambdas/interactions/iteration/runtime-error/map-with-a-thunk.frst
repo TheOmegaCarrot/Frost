@@ -1,0 +1,4 @@
+# A placeholder-free abbreviated lambda takes no arguments, so it cannot be
+# a `map` operation even when it ignores the element.
+#= {raises: 'expects 0 argument', inputs: {xs: [1]}}
+map xs with $(0)

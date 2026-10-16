@@ -1,0 +1,4 @@
+# `;` separates top-level statements as a line break does, and the last
+# statement on the line is still the tail.
+#= {result: 3}
+def x = 1; def y = 2; x + y

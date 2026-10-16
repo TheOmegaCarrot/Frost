@@ -1,0 +1,3 @@
+# The Array check happens at run time on a value the compiler cannot see.
+#= {raises: ['call', 'Array as argument 2', 'got String'], inputs: {args: 'xy'}}
+call(collect, args)

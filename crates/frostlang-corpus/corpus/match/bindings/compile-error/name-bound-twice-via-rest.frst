@@ -1,0 +1,5 @@
+# A rest binding counts as a binding: it cannot reuse an element's name.
+#= {rejects: '`x` is already bound'}
+match [1, 2] {
+    [x, ...x] => x,
+}

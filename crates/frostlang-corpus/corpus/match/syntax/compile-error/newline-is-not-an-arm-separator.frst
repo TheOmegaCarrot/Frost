@@ -1,0 +1,6 @@
+# Arms are separated by commas; a line break alone does not separate them.
+#= {rejects: 'expected `,` or `}`'}
+match 1 {
+    1 => 'one'
+    2 => 'two'
+}

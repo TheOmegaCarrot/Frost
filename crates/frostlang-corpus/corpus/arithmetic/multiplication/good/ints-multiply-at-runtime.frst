@@ -1,0 +1,15 @@
+# `*` on two Ints only known at runtime is Int multiplication, across signs,
+# by one, and by zero.
+#= {
+#=     result: [12, -12, -12, 12, 0, 0, 7],
+#=     inputs: {three: 3, four: 4, five: 5, seven: 7, zero: 0, one: 1},
+#= }
+[
+    three * four,
+    -three * four,
+    three * -four,
+    -three * -four,
+    five * zero,
+    zero * -five,
+    seven * one,
+]

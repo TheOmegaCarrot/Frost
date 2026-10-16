@@ -1,0 +1,9 @@
+# A `defn` named like a global recurses to itself, not to the global it
+# shadows. Subtle: the global is pure, so a folder that resolved the name to
+# the global could compute a plausible but wrong answer.
+#= {result: 103}
+defn len(xs) -> match xs {
+    [] => 100,
+    [_, ...rest] => 1 + len(rest),
+}
+len([1, 2, 3])

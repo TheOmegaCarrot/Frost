@@ -1,0 +1,5 @@
+# A pure global bound to a local name is called as the global.
+#= {result: [3, 'Int']}
+def size = len
+def kind = type
+[size([1, 2, 3]), kind(1)]

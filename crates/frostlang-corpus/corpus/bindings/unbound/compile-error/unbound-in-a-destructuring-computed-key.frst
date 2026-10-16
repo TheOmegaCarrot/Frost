@@ -1,0 +1,5 @@
+# A computed key in a destructuring pattern is an expression read in the
+# current scope, so an unbound name in it is an error.
+#= {rejects: ['`missing`', 'not defined']}
+def {[missing]: v} = {a: 1}
+v

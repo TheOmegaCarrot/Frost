@@ -1,0 +1,4 @@
+# The `as` name takes no type constraint: it is always a Map.
+#= {rejects: 'expected `=`'}
+def {a} as m is Map = {a: 1}
+[a, m]

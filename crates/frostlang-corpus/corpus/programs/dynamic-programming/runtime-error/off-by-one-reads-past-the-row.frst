@@ -1,0 +1,11 @@
+# A dynamic-programming table with an off-by-one bug: each cell reads the
+# previous row one index too far, which past the end is Null, not an error
+# by itself; the error comes when that Null is added to.
+#= {
+#=     raises: 'Null + Int',
+#=     inputs: {rows: 3, width: 4},
+#= }
+defn upto(n) -> if n == 0: [] else: upto(n - 1) + [n - 1]
+
+def first_row = transform(upto(width), fn j -> 1)
+fold(upto(rows - 1), first_row, fn prev, i -> transform(upto(width), fn j -> prev[j + 1] + 1))

@@ -1,0 +1,5 @@
+# The length of a binding is the same before and after a longer value is
+# derived from it in the same expression.
+#= {result: [2, 4, 2], inputs: {n: 1}}
+def xs = [n, 2]
+[len(xs), len(xs + xs), len(xs)]

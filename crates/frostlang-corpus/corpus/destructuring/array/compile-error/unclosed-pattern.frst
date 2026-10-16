@@ -1,0 +1,3 @@
+# An Array pattern left open at the end of input is a syntax error.
+#= {rejects: 'end of input'}
+def [a, b

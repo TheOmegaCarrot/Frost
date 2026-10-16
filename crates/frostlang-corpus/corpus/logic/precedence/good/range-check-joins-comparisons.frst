@@ -1,0 +1,7 @@
+# Comparisons do not chain, so a range check joins two comparisons with `and`.
+# The bounds are inclusive or exclusive exactly as each comparison says.
+#= {
+#=     result: [false, true, true, true, false],
+#=     inputs: {low: 0, high: 10},
+#= }
+transform([-1, 0, 5, 10, 11], fn x -> low <= x and x <= high)

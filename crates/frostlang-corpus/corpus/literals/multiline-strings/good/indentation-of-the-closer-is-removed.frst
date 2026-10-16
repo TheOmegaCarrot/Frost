@@ -1,0 +1,8 @@
+# A multiline String's lines lose the indentation of its closing delimiter, and the
+# line breaks after the opener and before the closer are not part of the text.
+#= {result: 'hello\nworld'}
+def text = '''
+    hello
+    world
+    '''
+text

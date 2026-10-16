@@ -1,0 +1,4 @@
+# Frost has no `unless`; a negated condition is written `if not`.
+#= {rejects: ['`unless`', 'if not']}
+def a = 1
+a unless false

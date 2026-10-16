@@ -1,0 +1,3 @@
+# A named lambda invoked where it is written recurses deeply in tail position.
+#= {result: 'bottom'}
+(fn go(n) -> if n == 0: 'bottom' else: go(n - 1))(100000)

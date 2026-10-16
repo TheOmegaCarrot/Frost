@@ -1,0 +1,7 @@
+# Known abbreviated lambdas are called directly and as iteration operations,
+# with their placeholders bound to the arguments in order.
+#= {result: [42, 3, [2, 4], [[2, 3]]]}
+def double = $($ * 2)
+def add = $($1 + $2)
+def rest = $($$)
+[double(21), add(1, 2), map [1, 2] with double, [rest(2, 3)]]

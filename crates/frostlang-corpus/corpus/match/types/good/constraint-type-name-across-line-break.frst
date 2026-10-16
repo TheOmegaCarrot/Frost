@@ -1,0 +1,9 @@
+# Inside a match, a line break may fall on either side of `is`.
+#= {result: ['Int', 'String'], inputs: {i: 1, s: 'a'}}
+defn kind(v) -> match v {
+    n
+        is Int => 'Int',
+    n is
+        String => 'String',
+}
+[kind(i), kind(s)]

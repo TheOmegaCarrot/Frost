@@ -1,0 +1,11 @@
+# Ordering constant Strings with non-ASCII text folds to the same answers as
+# at runtime: text compares character by character, so an accented letter
+# sorts after every ASCII letter, and a prefix sorts first.
+#= {result: [true, true, true, true, true]}
+[
+    'é' > 'z',
+    'a' < 'é',
+    '日' > 'é',
+    'ab' < 'b',
+    'héllo' < 'héllo!',
+]

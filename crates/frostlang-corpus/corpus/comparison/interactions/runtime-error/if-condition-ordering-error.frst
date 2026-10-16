@@ -1,0 +1,4 @@
+# An ordering error in an `if` condition raises rather than counting as a
+# falsy condition and taking the `else` branch.
+#= {raises: ['Map', 'not orderable'], inputs: {a: {}, b: {}}}
+if a < b: 'less' else: 'not less'

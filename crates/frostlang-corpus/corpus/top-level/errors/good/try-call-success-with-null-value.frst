@@ -1,0 +1,4 @@
+# A function returning null still succeeds: `value` is present and null.
+#= {result: [{ok: true, value: null}, true]}
+def outcome = try_call(fn -> null)
+[outcome, has(outcome, 'value')]

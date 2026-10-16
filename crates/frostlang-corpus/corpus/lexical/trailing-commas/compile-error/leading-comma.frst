@@ -1,0 +1,3 @@
+# A list cannot start with a comma.
+#= {rejects: 'found `,`'}
+[, 1]

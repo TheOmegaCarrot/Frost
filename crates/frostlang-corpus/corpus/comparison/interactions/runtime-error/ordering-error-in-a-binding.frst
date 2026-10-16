@@ -1,0 +1,5 @@
+# A comparison of constants that raises, bound to a name that is never read,
+# still raises when the binding runs: an error is not dead code.
+#= {raises: ['Bool', 'not orderable']}
+def unused = true < false
+1

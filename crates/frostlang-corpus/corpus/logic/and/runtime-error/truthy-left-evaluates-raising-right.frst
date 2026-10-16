@@ -1,0 +1,5 @@
+# A truthy left operand leaves `and` undecided, so a right operand that raises
+# is evaluated and its error surfaces. The folder cannot complete this ahead of
+# time, so it must leave the division for runtime.
+#= {raises: 'division by zero'}
+true and 1 / 0

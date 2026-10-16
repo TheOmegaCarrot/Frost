@@ -1,0 +1,4 @@
+# A Float sum that overflows partway through a fold raises; unlike an Int sum,
+# it does not wrap.
+#= {raises: 'infinity', inputs: {xs: [1e308, 1e308, -1e308]}}
+fold(xs, 0.0, fn acc, x -> acc + x)

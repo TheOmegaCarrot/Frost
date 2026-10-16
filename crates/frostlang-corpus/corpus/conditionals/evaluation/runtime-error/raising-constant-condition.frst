@@ -1,0 +1,4 @@
+# A condition built from constants that raises is not a known constant: it
+# raises at runtime instead of picking a branch.
+#= {raises: 'division by zero'}
+if 1 / 0: 1 else: 2

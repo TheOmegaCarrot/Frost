@@ -1,0 +1,6 @@
+# A `defn` in a `do` block inside an `if` branch is local to that branch.
+#= {result: 1}
+if true: do {
+    defn one() -> 1
+    one()
+} else: 0

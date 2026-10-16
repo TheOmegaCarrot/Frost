@@ -1,0 +1,13 @@
+# Int against Float ordering with both operands known only at runtime, in
+# either operand order, including negative fractions.
+#= {
+#=     result: [true, false, true, true, true],
+#=     inputs: {one: 1, three: 3, minus_three: -3, f: 2.5, minus_f: -2.5},
+#= }
+[
+    one < f,
+    three < f,
+    f < three,
+    minus_three < minus_f,
+    minus_f > minus_three,
+]

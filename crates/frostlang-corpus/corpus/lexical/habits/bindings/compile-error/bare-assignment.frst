@@ -1,0 +1,3 @@
+# Frost has no assignment: a new name is bound with `def`.
+#= {rejects: 'no assignment'}
+x = 42

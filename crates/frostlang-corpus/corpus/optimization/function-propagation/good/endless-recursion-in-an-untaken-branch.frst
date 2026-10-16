@@ -1,0 +1,6 @@
+# A pure call over constants that would never finish, in a branch whose
+# condition is only known at runtime and is not taken, never runs: the
+# compiler gives up computing it ahead of time, and the program goes on.
+#= {result: 'skipped', inputs: {flag: false}}
+defn forever(n) -> forever(n + 1)
+if flag: forever(0) else: 'skipped'

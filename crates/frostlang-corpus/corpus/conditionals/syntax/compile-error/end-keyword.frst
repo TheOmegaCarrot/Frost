@@ -1,0 +1,3 @@
+# An `if` has no closing `end`.
+#= {rejects: ['found `end`', 'has no `end`']}
+if true: 1 else: 2 end

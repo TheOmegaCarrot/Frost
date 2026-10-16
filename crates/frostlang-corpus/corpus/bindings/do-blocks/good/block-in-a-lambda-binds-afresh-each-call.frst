@@ -1,0 +1,8 @@
+# A block inside a lambda binds its names afresh on every call; no value
+# carries over from an earlier call.
+#= {result: [3, 5, 3]}
+def f = fn n -> do {
+    def m = n * 2
+    m + 1
+}
+[f(1), f(2), f(1)]

@@ -1,0 +1,4 @@
+# A `call` that would raise is harmless when it never runs: a failing call
+# over constants is not raised ahead of time.
+#= {result: 'safe'}
+if false: call(minus, [1]) else: 'safe'

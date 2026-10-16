@@ -1,0 +1,4 @@
+# A match is an expression: inside an Array literal it contributes exactly its
+# value, between its neighbours.
+#= {result: [0, 'b', 3], inputs: {v: 2}}
+[0, match v { 1 => 'a', 2 => 'b' }, 3]

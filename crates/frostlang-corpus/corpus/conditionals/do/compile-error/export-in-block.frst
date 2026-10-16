@@ -1,0 +1,6 @@
+# `export` is allowed only at the top level, never inside a block.
+#= {rejects: ['found `export`', 'only allowed at the top level']}
+do {
+    export def x = 5
+    x
+}

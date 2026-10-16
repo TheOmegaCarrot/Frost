@@ -1,0 +1,7 @@
+# A leading minus in a pattern makes a negative number literal; before anything
+# else, it is rejected.
+#= {rejects: 'a number after `-`'}
+match 'a' {
+    -'a' => 1,
+    _ => 0,
+}

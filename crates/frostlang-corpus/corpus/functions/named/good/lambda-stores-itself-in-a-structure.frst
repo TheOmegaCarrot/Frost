@@ -1,0 +1,5 @@
+# A self-name can be stored in a structure the lambda returns, and called
+# from there.
+#= {result: 2}
+def counter = fn count(k) -> {value: k, next: fn -> count(k + 1)}
+counter(0).next().next().value

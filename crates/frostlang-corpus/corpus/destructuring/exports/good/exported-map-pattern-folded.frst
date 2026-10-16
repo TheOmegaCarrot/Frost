@@ -1,0 +1,4 @@
+# Exports of a Map pattern over a literal the optimizer may match ahead of time.
+#= {result: 0, exports: {a: 1, x: 2, whole: {a: 1, b: 2}}}
+export def {a, b: x} as whole = {a: 1, b: 2}
+0

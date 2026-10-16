@@ -1,0 +1,4 @@
+# A rest binds an Array of the elements after the named ones.
+#= {result: [1, [2, 3, 4]]}
+def [head, ...tail] = [1, 2, 3, 4]
+[head, tail]

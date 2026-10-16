@@ -1,0 +1,6 @@
+# `@` binds tighter than every arithmetic operator over runtime operands.
+#= {
+#=     result: [4, 8, 5, 3, 1],
+#=     inputs: {one: 1, two: 2, three: 3, four: 4, seven: 7, ten: 10, twelve: 12, inc: fn x -> x + 1},
+#= }
+[one + two @ inc(), two * three @ inc(), ten - four @ inc(), twelve / three @ inc(), seven % two @ inc()]

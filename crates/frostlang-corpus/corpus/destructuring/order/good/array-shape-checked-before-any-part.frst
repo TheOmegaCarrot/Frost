@@ -1,0 +1,11 @@
+# An Array pattern checks the length before destructuring any part.
+#= {result: false, printed: [], inputs: {xs: [{a: 1}, 2]}}
+defn note(k) -> {
+    print(k)
+    k
+}
+def outcome = try_call(fn -> {
+    def [{[note('a')]: x}] = xs
+    x
+})
+outcome.ok

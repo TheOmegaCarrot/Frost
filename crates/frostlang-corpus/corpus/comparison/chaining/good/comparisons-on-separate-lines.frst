@@ -1,0 +1,5 @@
+# Outside brackets a line break ends a statement, so comparisons on separate
+# lines are separate statements, not a chain; the last one is the result.
+#= {result: false}
+1 < 2
+2 < 1

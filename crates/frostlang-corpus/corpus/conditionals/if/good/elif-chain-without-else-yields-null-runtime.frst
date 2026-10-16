@@ -1,0 +1,10 @@
+# An `elif` chain with no `else` yields Null when every runtime condition is
+# falsy, and the matching branch otherwise.
+#= {
+#=     result: [null, 2, 3],
+#=     inputs: {cases: [[null, false], [false, 0], [null, '']]},
+#= }
+defn pick(a, b) -> if a: 1
+    elif b == 0: 2
+    elif b: 3
+map cases with fn case -> call(pick, case)

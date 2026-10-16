@@ -1,0 +1,10 @@
+# Outside brackets, a newline ends a statement, so a `-` that begins the next
+# line is a negation starting a new statement, not a subtraction continuing
+# the previous one. Subtle because the two lines read like one expression.
+#= {result: [5, -2]}
+def x = 5
+def y = do {
+    x
+    - 2
+}
+[x, y]

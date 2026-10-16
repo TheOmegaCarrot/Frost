@@ -1,0 +1,4 @@
+# `call` applies a function to an Array of arguments that an `if` chose.
+#= {result: [3, 30], inputs: {t: true, f: false}}
+defn add(a, b) -> a + b
+[call(add, if t: [1, 2] else: [10, 20]), call(add, if f: [1, 2] else: [10, 20])]

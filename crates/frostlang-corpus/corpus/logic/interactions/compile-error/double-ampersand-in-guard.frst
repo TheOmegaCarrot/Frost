@@ -1,0 +1,7 @@
+# A condition joined to a `match` pattern with `&&` is not a guard; a guard is
+# written `if:` after the pattern, and its conditions are joined with `and`.
+#= {rejects: ['`&`', 'guard']}
+match 2 {
+    n is Int && n > 1 => 'big',
+    _ => 'other',
+}

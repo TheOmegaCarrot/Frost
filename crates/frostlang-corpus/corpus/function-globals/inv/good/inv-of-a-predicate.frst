@@ -1,0 +1,4 @@
+# `inv` of a type predicate tests for every other type.
+#= {result: [false, true, true]}
+def present = inv(is_null)
+[present(null), present(false), present(0)]

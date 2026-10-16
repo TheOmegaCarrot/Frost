@@ -1,0 +1,4 @@
+# A CRLF line break ends a statement mid-expression, as LF does.
+#= {rejects: 'a line continues only when'}
+def x = 1 +
+    2

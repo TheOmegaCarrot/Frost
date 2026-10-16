@@ -1,0 +1,4 @@
+# Past two functions, each further one is applied to the previous result, in
+# order.
+#= {result: 9}
+compose(fn x -> x + 1, fn x -> x * 2, fn x -> x - 3)(5)

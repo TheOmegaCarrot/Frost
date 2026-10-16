@@ -1,0 +1,8 @@
+# A comparison inside a function invoked through `call` behaves as a direct
+# comparison does.
+#= {result: [true, false, true], inputs: {lt: fn a, b -> a < b}}
+[
+    call(lt, [1, 2.5]),
+    call(lt, ['b', 'a']),
+    call(fn a, b -> a == b, [[1, {k: null}], [1, {k: null}]]),
+]

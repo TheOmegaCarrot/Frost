@@ -1,0 +1,4 @@
+# Frost has no `let`, in a branch or anywhere: a name is bound with `def`.
+#= {rejects: 'has no `let`'}
+def c = true
+if c: let x = 1

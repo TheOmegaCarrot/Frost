@@ -1,0 +1,20 @@
+# Of all literals, only `null` and `false` are falsy: zero, the empty String, empty
+# Bytes, and `-0.0` are truthy.
+#= {
+#=     result: [
+#=         'truthy', 'truthy', 'truthy', 'truthy', 'truthy', 'truthy',
+#=         'truthy', 'falsy', 'falsy',
+#=     ],
+#= }
+defn truthiness(x) -> if x: 'truthy' else: 'falsy'
+[
+    truthiness(0),
+    truthiness(0.0),
+    truthiness(-0.0),
+    truthiness(''),
+    truthiness(x''),
+    truthiness(R'()'),
+    truthiness(true),
+    truthiness(false),
+    truthiness(null),
+]

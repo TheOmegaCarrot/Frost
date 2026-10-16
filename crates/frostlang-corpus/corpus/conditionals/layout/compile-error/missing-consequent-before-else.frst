@@ -1,0 +1,6 @@
+# An empty consequent is an error even when an `else` follows on the next
+# line: the `else` cannot stand in for the missing branch.
+#= {rejects: 'expected an expression, but found `else`'}
+def x = true
+if x:
+else: 2

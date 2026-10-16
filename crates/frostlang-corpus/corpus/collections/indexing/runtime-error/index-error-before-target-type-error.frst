@@ -1,0 +1,4 @@
+# Both operands are evaluated before indexing, so an error raised by the
+# index expression surfaces before the non-indexable target is rejected.
+#= {raises: 'Division by zero', inputs: {zero: 0}}
+5[1 / zero]

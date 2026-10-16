@@ -1,0 +1,9 @@
+# Keys at the edges of their types look up exactly: the smallest Int, a
+# negative Float, the empty String, and Bytes that are not valid UTF-8.
+#= {
+#=     result: ['min', 'neg', 'empty', 'raw'],
+#=     inputs: {v: {[-9223372036854775807 - 1]: 'min', [-2.5]: 'neg', ['']: 'empty', [x'ff']: 'raw'}},
+#= }
+match v {
+    {[-9223372036854775808]: a, [-2.5]: b, ['']: c, [x'ff']: d} => [a, b, c, d],
+}

@@ -1,0 +1,11 @@
+# After a destructuring arm's guard fails, the next arm sees the whole target
+# afresh, and surrounding values are undisturbed.
+#= {result: [6, 9], inputs: {v: [1, [2, 3]]}}
+[
+    match v {
+        [a, [b, c]] if: false => 0,
+        {a} => 0,
+        [a, [b, c]] => a + b + c,
+    },
+    9,
+]

@@ -1,0 +1,13 @@
+# Structural Array equality on Arrays known only at runtime, and on Arrays
+# built at runtime from separate pieces.
+#= {
+#=     result: [true, false, false, true, true],
+#=     inputs: {xs: [1, 2, 3], ys: [1, 2, 3], reversed: [3, 2, 1], one: 1, empty: []},
+#= }
+[
+    xs == ys,
+    xs == reversed,
+    xs == [1, 2],
+    [one, 2, 3] == xs,
+    empty + xs + empty == ys,
+]

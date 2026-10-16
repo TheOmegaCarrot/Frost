@@ -1,0 +1,6 @@
+# An expression statement whose value is dropped still runs, so an error it
+# raises ends the program even though a later statement is the tail. Subtle
+# because an optimizer may discard an unused value, but never its error.
+#= {raises: 'division by zero'}
+1 / 0
+5

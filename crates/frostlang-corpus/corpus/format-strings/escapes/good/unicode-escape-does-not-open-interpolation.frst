@@ -1,0 +1,5 @@
+# A `$` or `{` written as a Unicode escape is text and never forms `${` with its
+# neighbor. Subtle: escapes decode after the String's interpolations are found,
+# so `\u{24}{x}` and `$\u{7b}x}` both read as the text `${x}`.
+#= {result: ['${x}', '${x}'], inputs: {x: 7}}
+[$'\u{24}{x}', $'$\u{7b}x}']

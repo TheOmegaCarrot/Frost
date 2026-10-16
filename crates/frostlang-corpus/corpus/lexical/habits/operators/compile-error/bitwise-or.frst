@@ -1,0 +1,3 @@
+# Outside a pattern, `|` is no operator: Frost has no bitwise "or".
+#= {rejects: 'no bitwise operators'}
+1 | 2

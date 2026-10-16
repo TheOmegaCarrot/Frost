@@ -1,0 +1,3 @@
+# Frost has no unary `+`: a `+` cannot begin an expression.
+#= {rejects: ['expected an expression', '`+`']}
++5

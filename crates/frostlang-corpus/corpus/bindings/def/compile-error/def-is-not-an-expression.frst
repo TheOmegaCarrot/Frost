@@ -1,0 +1,5 @@
+# A `def` is a statement with no value, so it cannot stand where an expression
+# is expected, even in parentheses.
+#= {rejects: ['`def`', 'definition is a statement']}
+def y = (def x = 1)
+y

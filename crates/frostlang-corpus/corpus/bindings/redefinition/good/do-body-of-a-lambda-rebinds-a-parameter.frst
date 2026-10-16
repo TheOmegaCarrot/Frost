@@ -1,0 +1,9 @@
+# A lambda whose body is a `do` block, unlike one whose body is a plain block,
+# opens a scope nested inside the parameters' scope, so a `def` there shadows
+# a parameter instead of rebinding it. The shadow's value reads the parameter.
+#= {result: [6, 11], inputs: {n: 5}}
+def f = fn x -> do {
+    def x = x + 1
+    x
+}
+[f(n), f(10)]

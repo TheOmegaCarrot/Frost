@@ -1,0 +1,3 @@
+# `*` is numeric only: a Map times a Map is a type error.
+#= {raises: 'Map * Map'}
+{a: 2} * {a: 3}

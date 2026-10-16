@@ -1,0 +1,5 @@
+# An exact-length Array pattern raises on an Array that is too long: extra
+# elements are not silently dropped.
+#= {raises: 'exactly 1 element', inputs: {xs: [1, 2]}}
+def [a] = xs
+a

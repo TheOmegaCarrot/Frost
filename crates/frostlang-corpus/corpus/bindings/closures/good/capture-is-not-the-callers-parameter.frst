@@ -1,0 +1,7 @@
+# A function called from inside another whose parameter has the same name as
+# one it captures still sees its own captured binding.
+#= {result: 'captured'}
+def x = 'captured'
+def read = fn -> x
+def call_with_x = fn x -> read()
+call_with_x('parameter')

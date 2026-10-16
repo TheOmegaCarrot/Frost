@@ -1,0 +1,5 @@
+# A known Map with a key of every type is read back by each key, and by keys
+# it lacks, including an Int and a Float that are equal under `<` but not `==`.
+#= {result: ['int', 'float', 'bool', 'string', 'bytes', null, null, null]}
+def m = {[1]: 'int', [1.5]: 'float', [true]: 'bool', s: 'string', [x'01']: 'bytes'}
+[m[1], m[1.5], m[true], m.s, m[x'01'], m[false], m[1.0], m['1']]

@@ -1,0 +1,3 @@
+# A condition must be followed by a colon before its branch.
+#= {rejects: ['expected `:`', 'takes a colon after its condition']}
+if true 1

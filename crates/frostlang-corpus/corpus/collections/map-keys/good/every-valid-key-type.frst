@@ -1,0 +1,11 @@
+# Bool, Int, Float, String, and Bytes are all valid Map keys, side by side in
+# one Map, and each is read back by an equal key.
+#= {result: ['bool', 'int', 'float', 'string', 'bytes', 5]}
+def m = {
+    [true]: 'bool',
+    [1]: 'int',
+    [1.5]: 'float',
+    ['s']: 'string',
+    [x'00']: 'bytes',
+}
+[m[true], m[1], m[1.5], m['s'], m[x'00'], len(m)]

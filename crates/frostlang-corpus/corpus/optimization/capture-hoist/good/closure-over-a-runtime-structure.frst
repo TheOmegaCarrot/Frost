@@ -1,0 +1,12 @@
+# The functions of closure-over-a-known-structure, capturing structures only
+# known at runtime, return the same fresh results and leave the captures
+# unchanged.
+#= {
+#=     result: [[1, 2, 3], [1, 2, 4], [1, 2], {a: 1, b: 3}, {a: 1, b: 4}, {a: 1}],
+#=     inputs: {base_in: [1, 2], m_in: {a: 1}, three: 3, four: 4},
+#= }
+def base = base_in
+def grow = fn x -> base + [x]
+def m = m_in
+def extend = fn x -> m + {b: x}
+[grow(three), grow(four), base, extend(three), extend(four), m]

@@ -1,0 +1,3 @@
+# An Int plus an Array is a type error; `+` does not add to each element.
+#= {raises: 'Int + Array'}
+1 + [1, 2]

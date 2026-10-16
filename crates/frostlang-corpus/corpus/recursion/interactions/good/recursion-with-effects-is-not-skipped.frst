@@ -1,0 +1,12 @@
+# A recursive function that prints runs every print, in order, even when its
+# result is discarded and its argument is a constant.
+#= {
+#=     result: 'end',
+#=     printed: ['3', '2', '1'],
+#= }
+defn shout(n) -> if n == 0: null else: do {
+    print(to_string(n))
+    shout(n - 1)
+}
+shout(3)
+'end'

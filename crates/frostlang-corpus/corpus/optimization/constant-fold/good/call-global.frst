@@ -1,0 +1,8 @@
+# `call` of a pure function with a constant argument Array folds to the
+# function's result, with the Array spread as its arguments.
+#= {result: [2, 0, [1, [2, 3]]]}
+[
+    call(fn a, b -> a - b, [5, 3]),
+    call(fn -> 0, []),
+    call(fn first, ...rest -> [first, rest], [1, 2, 3]),
+]

@@ -1,0 +1,9 @@
+# An Int literal pattern matches an equal Int, including zero and negatives.
+#= {result: ['zero', 'one', 'minus one', 'other'], inputs: {xs: [0, 1, -1, 2]}}
+defn name(n) -> match n {
+    0 => 'zero',
+    1 => 'one',
+    -1 => 'minus one',
+    _ => 'other',
+}
+transform(xs, name)

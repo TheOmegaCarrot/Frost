@@ -1,0 +1,3 @@
+# A `#` in a raw String is text, not a comment.
+#= {result: ['# not a comment', 15]}
+[R'(# not a comment)', len(R"(# not a comment)")]

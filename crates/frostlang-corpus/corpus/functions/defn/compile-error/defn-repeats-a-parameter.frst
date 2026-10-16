@@ -1,0 +1,7 @@
+# A `defn` in a lambda's body may not take the name of one of its
+# parameters, which share the body's scope.
+#= {rejects: ['`g`', 'already bound']}
+def f = fn g -> {
+    defn g() -> 1
+    g()
+}

@@ -1,0 +1,9 @@
+# The extreme Ints are Ints, and overflow wraps to another Int rather than
+# becoming a Float.
+#= {result: [true, true, true, false]}
+[
+    is_int(9223372036854775807),
+    is_int(-9223372036854775808),
+    is_int(9223372036854775807 + 1),
+    is_float(9223372036854775807 + 1),
+]

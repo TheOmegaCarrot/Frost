@@ -1,0 +1,17 @@
+# Literal patterns match as `==` does when the matched values are constants
+# the optimizer can see: no Int pattern matches a Float, or the reverse.
+#= {result: ['float', 'int', 'neither']}
+[
+    match 3.0 {
+        3 => 'int',
+        3.0 => 'float',
+    },
+    match 3 {
+        3.0 => 'float',
+        3 => 'int',
+    },
+    match 0 {
+        0.0 => 'zero float',
+        _ => 'neither',
+    },
+]

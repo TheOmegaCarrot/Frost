@@ -1,0 +1,12 @@
+# When every operand of an `or` chain is falsy, the chain yields the last, so
+# whether it ends in Null or false is preserved.
+#= {
+#=     result: [false, null, false, null],
+#=     inputs: {n: null, f: false},
+#= }
+[
+    null or null or false,
+    false or false or null,
+    n or n or f,
+    f or f or n,
+]

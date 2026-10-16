@@ -1,0 +1,10 @@
+# Every number literal form is an ordinary operand. An exponent makes a Float
+# even when its value is whole, so `1e3 * 2` is 2000.0, not 2000.
+#= {result: [256, 3000, 0.75, 2000.0, 16]}
+[
+    0xff + 0b1,
+    1_000 * 3,
+    .5 + .25,
+    1e3 * 2,
+    0o20 / 1,
+]

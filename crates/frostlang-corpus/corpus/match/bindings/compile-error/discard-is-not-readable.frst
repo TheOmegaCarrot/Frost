@@ -1,0 +1,5 @@
+# The discard `_` binds nothing, so it cannot be read in the arm's result.
+#= {rejects: '`_` is not defined'}
+match 1 {
+    _ => _,
+}

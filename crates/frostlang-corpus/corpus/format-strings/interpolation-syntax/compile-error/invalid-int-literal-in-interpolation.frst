@@ -1,0 +1,4 @@
+# A malformed Int literal inside an interpolation is reported for what is wrong
+# in it.
+#= {rejects: ['invalid character `3`', 'binary Int literal']}
+def s = $'${0b3}'

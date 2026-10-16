@@ -1,0 +1,8 @@
+# A String accumulator joins non-ASCII pieces known only at runtime intact.
+#= {result: 'é-ü-日本-🦀', inputs: {parts: ['é', 'ü', '日本', '🦀']}}
+defn join(rest_parts, acc) -> match rest_parts {
+    [] => acc,
+    [part] => acc + part,
+    [part, ...rest] => join(rest, acc + part + '-'),
+}
+join(parts, '')

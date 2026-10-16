@@ -1,0 +1,9 @@
+# A leading `@` line after a `match` expression's closing brace threads the
+# match's value.
+#= {result: 6, inputs: {n: 2}}
+defn inc(x) -> x + 1
+match n {
+    1 => 10,
+    _ => 5,
+}
+    @ inc()

@@ -1,0 +1,10 @@
+# The value is evaluated before the pattern binds, so `x` in the value reads
+# the outer `x` (9), while the pin `(x)` reads the `x` the pattern just bound
+# (10). A pin reading the outer `x` would raise instead.
+#= {result: [10, 9]}
+def x = 9
+def inner = do {
+    def [x, (x)] = [x + 1, 10]
+    x
+}
+[inner, x]

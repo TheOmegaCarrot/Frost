@@ -1,0 +1,7 @@
+# A format String pattern may interpolate a name bound earlier in the same
+# pattern; it compares against that binding's value.
+#= {result: ['bound a', 'no'], inputs: {subjects: [['a', 'a1'], ['a', 'b1']]}}
+transform(subjects, fn s -> match s {
+    [p, $'${p}1'] => $'bound ${p}',
+    _ => 'no',
+})

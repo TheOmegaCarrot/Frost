@@ -1,0 +1,3 @@
+# Frost has no slice syntax inside an index.
+#= {rejects: 'no slice syntax', inputs: {xs: [1, 2, 3]}}
+xs[1:2]

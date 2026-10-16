@@ -1,0 +1,8 @@
+# Edge-valued keys look up their own entries: the empty String, negative and
+# extreme Ints, the empty Bytes, and non-ASCII text.
+#= {
+#=     result: ['empty', 'neg', 'max', 'min', 'nobytes', 'cjk'],
+#=     inputs: {m: {['']: 'empty', [-1]: 'neg', [9223372036854775807]: 'max', [-9223372036854775807 - 1]: 'min', [x'']: 'nobytes', ['日本']: 'cjk'}},
+#= }
+def {['']: e, [-1]: n, [9223372036854775807]: hi, [-9223372036854775807 - 1]: lo, [x'']: b, ['日本']: c} = m
+[e, n, hi, lo, b, c]

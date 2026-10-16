@@ -1,0 +1,5 @@
+# A Null known only at runtime passes through a function unchanged, and equals the
+# `null` literal.
+#= {result: [null, true, 'Null'], inputs: {nothing: null}}
+defn identity(x) -> x
+[identity(nothing), identity(nothing) == null, type(identity(nothing))]

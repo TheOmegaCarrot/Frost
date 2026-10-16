@@ -1,0 +1,5 @@
+# An index is an expression, so an unbound name used as one is a compile
+# error, not a missing key.
+#= {rejects: ['`missing`', 'not defined']}
+def xs = [1, 2]
+xs[missing]

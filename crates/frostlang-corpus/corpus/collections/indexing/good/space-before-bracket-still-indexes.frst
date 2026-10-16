@@ -1,0 +1,6 @@
+# A space between a value and `[` on the same line still indexes; only a
+# line break before `[` starts a new statement.
+#= {result: [20, 1]}
+def xs = [10, 20]
+def grid = [[1]]
+[xs [1], grid [0] [0]]

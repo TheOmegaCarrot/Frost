@@ -1,0 +1,7 @@
+# `xs @ reduce(0, f)` passes `reduce` an initial value besides the threaded
+# structure, so the help points to `fold(xs, v, f)`. Subtle: the threaded
+# structure counts as an argument, so two written arguments mean three.
+#= {rejects: '`fold(xs, v, f)`'}
+def xs = [1]
+def f = fn acc, x -> acc + x
+xs @ reduce(0, f)

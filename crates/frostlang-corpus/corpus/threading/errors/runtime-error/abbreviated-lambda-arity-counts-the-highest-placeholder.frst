@@ -1,0 +1,4 @@
+# An abbreviated lambda using `$2` takes two parameters, so the threaded
+# value alone is one argument too few.
+#= {raises: ['expects 2', 'called with 1'], inputs: {n: 5}}
+n @ $($2)()

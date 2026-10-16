@@ -1,0 +1,3 @@
+# String keys beyond ASCII dig like any other.
+#= {result: 'значение'}
+dig({['ключ']: {['キー']: 'значение'}}, 'ключ', 'キー')

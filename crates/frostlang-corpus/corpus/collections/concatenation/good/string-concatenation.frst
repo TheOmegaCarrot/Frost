@@ -1,0 +1,3 @@
+# `+` joins Strings, with the empty String as identity on either side.
+#= {result: ['foobar', 'foo', 'bar', '']}
+['foo' + 'bar', 'foo' + '', '' + 'bar', '' + '']

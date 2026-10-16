@@ -1,0 +1,4 @@
+# Inside an abbreviated lambda, `$1` in a format String's text is literal text;
+# only `$1` inside an interpolation is the placeholder.
+#= {result: '$1 is 5'}
+$($'$1 is ${$1}')(5)

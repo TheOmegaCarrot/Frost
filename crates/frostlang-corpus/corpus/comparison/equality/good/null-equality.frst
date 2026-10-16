@@ -1,0 +1,14 @@
+# Null equals only Null. It is not equal to any other falsy or empty value.
+#= {result: [true, false, false, false, false, false, false, false, false, true]}
+[
+    null == null,
+    null != null,
+    null == false,
+    null == 0,
+    null == 0.0,
+    null == '',
+    null == x'',
+    null == [],
+    null == {},
+    null != false,
+]

@@ -1,0 +1,4 @@
+# Equal nested Arrays order as equal even when they hold Maps: the nested
+# Arrays are `==`, so they are passed over without ordering their contents.
+#= {result: true, known_issue: 'FROST-154'}
+[[1, {}]] >= [[1, {}]]

@@ -1,0 +1,10 @@
+# The exported destructures of unread-destructured-export, of values only
+# known at runtime, export every name they bind.
+#= {
+#=     result: 'ok',
+#=     exports: {a: 1, b: [2, 3], c: 'c'},
+#=     inputs: {three: [1, 2, 3], keyed: {c: 'c'}},
+#= }
+export def [a, ...b] = three
+export def {c} = keyed
+'ok'

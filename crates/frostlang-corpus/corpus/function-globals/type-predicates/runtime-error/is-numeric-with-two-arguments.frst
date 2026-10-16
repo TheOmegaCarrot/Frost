@@ -1,0 +1,3 @@
+# `is_numeric` takes exactly one argument.
+#= {raises: ['is_numeric', 'expects 1', 'called with 2']}
+is_numeric(1, 2.0)

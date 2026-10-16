@@ -1,0 +1,9 @@
+# A block binding may shadow a global, which is back in view after the block.
+#= {result: [6, 'Int']}
+[
+    do {
+        def type = 5
+        type + 1
+    },
+    type(1),
+]

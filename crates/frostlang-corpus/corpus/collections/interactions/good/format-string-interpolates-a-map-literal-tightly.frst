@@ -1,0 +1,4 @@
+# A Map literal may open immediately after `${`: the second brace begins the
+# literal rather than closing or doubling the interpolation.
+#= {result: 'v: 1'}
+$'v: ${{a: 1}.a}'

@@ -1,0 +1,11 @@
+# Non-ASCII Strings order by code point. The last pair is subtle: U+FF61 sorts
+# before U+1F600, as code points do, although an ordering by UTF-16 code units
+# would put the emoji's leading surrogate (U+D83D) first.
+#= {result: [true, true, true, true, true]}
+[
+    'z' < '\u{e9}',
+    '\u{e9}' < '\u{3c9}',
+    'caf' < 'café',
+    'e\u{301}' < '\u{e9}',
+    '\u{ff61}' < '\u{1f600}',
+]

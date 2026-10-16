@@ -1,0 +1,4 @@
+# `as` binds a plain name; it takes no further pattern.
+#= {rejects: 'name after `as`'}
+def {a} as {b} = {a: 1, b: 2}
+a

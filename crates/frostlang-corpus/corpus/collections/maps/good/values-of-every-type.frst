@@ -1,0 +1,26 @@
+# A Map value may be of any type, Null and Function included.
+#= {
+#=     result: {
+#=         n: 'Null',
+#=         b: 'Bool',
+#=         i: 'Int',
+#=         f: 'Float',
+#=         s: 'String',
+#=         y: 'Bytes',
+#=         a: 'Array',
+#=         m: 'Map',
+#=         g: 'Function',
+#=     },
+#= }
+def m = {
+    n: null,
+    b: false,
+    i: 0,
+    f: 0.5,
+    s: '',
+    y: x'',
+    a: [],
+    m: {},
+    g: fn -> 1,
+}
+transform(m, fn k, v -> {[k]: type(v)})

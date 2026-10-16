@@ -1,0 +1,8 @@
+# A type error raised by `call` itself is an ordinary error: `try_call` catches
+# it rather than letting it end the run.
+#= {result: [false, false, true]}
+[
+    try_call(call, [1]).ok,
+    try_call(call, [collect, 5]).ok,
+    try_call(call, [collect, [5]]).ok,
+]

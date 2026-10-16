@@ -1,0 +1,7 @@
+# A `match` arm takes one guard; two conditions are joined with `and` inside
+# it, not written as a second `if:`.
+#= {rejects: ['`if`', 'one guard']}
+match 2 {
+    n if: n > 0 if: n < 5 => 'small',
+    _ => 'other',
+}

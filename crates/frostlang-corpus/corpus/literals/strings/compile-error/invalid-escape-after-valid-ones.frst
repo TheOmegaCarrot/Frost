@@ -1,0 +1,3 @@
+# Valid escapes earlier in a String do not excuse an invalid one after them.
+#= {rejects: ['invalid escape sequence', R'(`\q`)']}
+'a\nb\\c\qd'

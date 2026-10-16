@@ -1,0 +1,8 @@
+# Inside `$( ... )` line breaks are insignificant, as inside any
+# parentheses, so a long body may span lines.
+#= {result: 11}
+def f = $(
+    $1 * 2
+        + $2
+)
+f(4, 3)

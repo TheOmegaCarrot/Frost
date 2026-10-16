@@ -1,0 +1,4 @@
+# A name in an interpolation is resolved like any other: an unbound one is a
+# compile error, not a runtime Null.
+#= {rejects: ['`nope`', 'not defined']}
+def s = $'hello, ${nope}'

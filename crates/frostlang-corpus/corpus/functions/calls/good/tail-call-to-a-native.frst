@@ -1,0 +1,5 @@
+# A native global called in tail position gives its result as the caller's.
+#= {result: [3, 'Array'], inputs: {xs: [1, 2, 3]}}
+defn size(v) -> len(v)
+defn kind(v) -> type(v)
+[size(xs), kind(xs)]

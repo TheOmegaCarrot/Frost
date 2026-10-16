@@ -1,0 +1,5 @@
+# A rest with nothing left to take binds an empty Array, not Null.
+#= {result: [[1, []], [1, []]], inputs: {xs: [1]}}
+def [a, ...r] = [1]
+def [b, ...s] = xs
+[[a, r], [b, s]]

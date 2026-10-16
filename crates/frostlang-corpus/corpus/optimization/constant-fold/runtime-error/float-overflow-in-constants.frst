@@ -1,0 +1,5 @@
+# A Float product of constants too large to be finite raises when the program
+# reaches it; folding cannot turn it into a value, as Floats are always finite.
+#= {raises: 'infinity'}
+def big = 1e300
+big * big

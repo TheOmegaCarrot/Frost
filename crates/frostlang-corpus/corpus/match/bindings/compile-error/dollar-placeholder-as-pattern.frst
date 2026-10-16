@@ -1,0 +1,5 @@
+# A `$` placeholder cannot be a pattern binding.
+#= {rejects: ['expected a pattern', 'found `$`']}
+match 1 {
+    $ => 1,
+}

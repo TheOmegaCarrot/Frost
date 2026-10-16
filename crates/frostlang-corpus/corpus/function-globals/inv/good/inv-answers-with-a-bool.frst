@@ -1,0 +1,5 @@
+# An inverted function answers with a Bool, never with the value its function
+# returned.
+#= {result: [false, 'Bool', 'Bool']}
+def never_text = inv(fn -> 'text')
+[never_text(), type(never_text()), type(inv(fn -> null)())]

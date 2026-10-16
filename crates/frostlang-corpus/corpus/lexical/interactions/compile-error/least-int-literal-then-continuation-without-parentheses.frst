@@ -1,0 +1,6 @@
+# A continued `@` binds tighter than the prefix `-`, as on one line, so it
+# threads the bare magnitude 9223372036854775808, which is no Int. Subtle,
+# since the continuation sits on another line.
+#= {rejects: 'Int literal out of range'}
+-9223372036854775808
+    @ to_string()

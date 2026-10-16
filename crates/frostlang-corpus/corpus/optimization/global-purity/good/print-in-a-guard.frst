@@ -1,0 +1,8 @@
+# A guard that prints runs each time its arm's pattern matches, in arm order,
+# until an arm is chosen.
+#= {result: 'second', printed: ['first guard', 'second guard']}
+match 1 {
+    _ if: print('first guard') => 'first',
+    _ if: print('second guard') or true => 'second',
+    _ if: print('third guard') => 'third',
+}

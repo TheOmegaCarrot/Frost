@@ -1,0 +1,7 @@
+# An unparenthesized `if` may be a `map` expression's source; its alternate
+# ends at `with`.
+#= {result: [[10], [20, 30]], inputs: {t: true, f: false}}
+[
+    map if t: [1] else: [2, 3] with fn x -> x * 10,
+    map if f: [1] else: [2, 3] with fn x -> x * 10,
+]

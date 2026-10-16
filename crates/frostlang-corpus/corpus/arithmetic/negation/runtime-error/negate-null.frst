@@ -1,0 +1,3 @@
+# Unary `-` on Null is a type error; Null is not zero.
+#= {raises: ['negate', 'Null']}
+-null

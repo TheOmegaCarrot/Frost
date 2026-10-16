@@ -1,0 +1,5 @@
+# A definition's value starts on the line of its `=`; a line break there ends
+# the statement without a value.
+#= {rejects: 'a line continues only when'}
+def x =
+    1

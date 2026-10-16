@@ -1,0 +1,3 @@
+# A function past the first two is checked too, numbered by its position.
+#= {raises: ['compose', 'Function as argument 3', 'got Null']}
+compose(len, len, null)

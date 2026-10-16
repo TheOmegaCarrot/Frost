@@ -1,0 +1,5 @@
+# A continued `.` is postfix, binding tighter than a prefix `-`, just as on
+# one line: `-m` then `.k` on the next line is `-(m.k)`.
+#= {result: -2, inputs: {m: {k: 2}}}
+-m
+    .k

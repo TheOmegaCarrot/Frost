@@ -1,0 +1,8 @@
+# `.` cannot begin a statement, so a line starting with `.` continues the
+# expression on the line before.
+#= {result: 5}
+def m = {k: {j: 5}}
+def v = m
+    .k
+    .j
+v

@@ -1,0 +1,10 @@
+# `a @ f(x)` is exactly `f(a, x)`, evaluation order included: the callee
+# first, then the threaded value, then the written arguments. Subtle: the
+# threaded value is written first, yet runs second.
+#= {result: 1, printed: ['callee', 'threaded', 'written'], inputs: {one: 1}}
+defn noisy(v, label) -> {
+    print(label)
+    v
+}
+defn first(a, b) -> a
+noisy(one, 'threaded') @ (noisy(first, 'callee'))(noisy(2, 'written'))

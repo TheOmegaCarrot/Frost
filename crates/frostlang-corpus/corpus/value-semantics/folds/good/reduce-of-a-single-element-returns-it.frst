@@ -1,0 +1,6 @@
+# A `reduce` without `init:` over one element returns that element without
+# calling the function; extending the result leaves the input unchanged.
+#= {result: [[1, 2], [[1]]], inputs: {n: 1}}
+def xs = [[n]]
+def only = reduce xs with fn (acc, x) -> acc + x + x
+[only + [2], xs]

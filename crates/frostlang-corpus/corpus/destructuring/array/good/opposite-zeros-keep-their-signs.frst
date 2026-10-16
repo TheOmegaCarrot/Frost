@@ -1,0 +1,10 @@
+# Zero and negative zero are equal but distinct values: each part keeps its own
+# sign, both when the optimizer matches the literal ahead of time and at
+# runtime. Subtle because a folder that merged equal constants would lose it.
+#= {
+#=     result: ['0.0', '-0.0', '-0.0', '0.0'],
+#=     inputs: {xs: [-0.0, 0.0]},
+#= }
+def [a, b] = [0.0, -0.0]
+def [c, d] = xs
+[to_string(a), to_string(b), to_string(c), to_string(d)]

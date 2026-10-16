@@ -1,0 +1,8 @@
+# An `if` with its branches and `else` on separate CRLF lines is one
+# expression.
+#= {result: 'no', inputs: {c: false}}
+if c:
+    'yes'
+
+else:
+    'no'

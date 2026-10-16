@@ -1,0 +1,6 @@
+# A lambda whose only parameter is `...rest` takes any number of arguments,
+# in either parameter-list spelling.
+#= {result: [[1], [1, 2, 3], ['a', 'b']]}
+def bare = fn ...args -> args
+def parens = fn(...args) -> args
+[bare(1), bare(1, 2, 3), parens('a', 'b')]

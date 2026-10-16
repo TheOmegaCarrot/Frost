@@ -1,0 +1,7 @@
+# A function a closure returns from its captures is the very Function it
+# captured, equal to the binding it was captured from.
+#= {result: [true, true, 5]}
+def f = fn x -> x
+def get = fn -> f
+def box = {held: f}
+[get() == f, box.held == f, get()(5)]

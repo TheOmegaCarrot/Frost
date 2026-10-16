@@ -1,0 +1,8 @@
+# Newlines inside the brackets of an Array pattern are insignificant.
+#= {result: [1, 2, [3]], inputs: {xs: [1, 2, 3]}}
+def [
+    first,
+    second,
+    ...others
+] = xs
+[first, second, others]

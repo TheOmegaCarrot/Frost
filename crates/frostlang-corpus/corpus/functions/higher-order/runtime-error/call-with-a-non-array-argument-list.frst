@@ -1,0 +1,3 @@
+# `call` requires its arguments as an Array; a lone value is not wrapped.
+#= {raises: ['call', 'Array', 'argument 2', 'Int']}
+call(fn x -> x, 5)

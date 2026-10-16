@@ -1,0 +1,8 @@
+# `+` joins runtime Strings, non-ASCII text included, code point for code
+# point.
+#= {
+#=     result: ['héllo, 世界', 'héllo', '', 9],
+#=     inputs: {a: 'héllo', b: ', 世界', empty: ''},
+#= }
+def joined = a + b
+[joined, a + empty, empty + empty, len(joined)]

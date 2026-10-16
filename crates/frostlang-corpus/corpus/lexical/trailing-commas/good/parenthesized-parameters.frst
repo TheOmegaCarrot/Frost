@@ -1,0 +1,7 @@
+# A parenthesized parameter list, in `fn` or `defn`, may end with a trailing
+# comma; it adds no parameter, so the arity is unchanged.
+#= {result: [3, 5, 1]}
+def add = fn (a, b,) -> a + b
+defn twice(x,) -> x * 2 + 1
+def self_named = fn one(x,) -> x
+[add(1, 2), twice(2), self_named(1)]

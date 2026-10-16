@@ -1,0 +1,5 @@
+# A native global that rejects its argument raises from its own frame, so the
+# trace names it first, then its caller.
+#= {result: ['len', 'measure'], inputs: {n: 1}}
+defn measure(x) -> [len(x)]
+try_call(measure, [n]).trace

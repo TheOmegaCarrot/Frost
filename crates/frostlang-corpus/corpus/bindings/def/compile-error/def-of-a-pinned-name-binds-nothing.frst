@@ -1,0 +1,6 @@
+# A parenthesized name in a `def` compares against the existing binding rather
+# than binding it again, so the `def` binds nothing.
+#= {rejects: ['binds no name']}
+def x = 1
+def (x) = 1
+x

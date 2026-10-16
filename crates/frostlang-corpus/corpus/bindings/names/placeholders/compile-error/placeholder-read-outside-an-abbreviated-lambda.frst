@@ -1,0 +1,5 @@
+# Outside an abbreviated lambda a placeholder is not a name at all, so reading
+# one is an error rather than an unbound lookup.
+#= {rejects: ['`$1`', 'placeholders work only inside']}
+def f = fn -> $1
+1

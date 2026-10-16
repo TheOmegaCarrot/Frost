@@ -1,0 +1,5 @@
+# An abbreviated lambda reading its placeholder twice, `$($ + $)`, repeats
+# each element, and the Array transformed is unchanged.
+#= {result: [[[1, 1], [2, 2]], [[1], [2]]], inputs: {n: 1}}
+def xs = [[n], [2]]
+[transform(xs, $($ + $)), xs]

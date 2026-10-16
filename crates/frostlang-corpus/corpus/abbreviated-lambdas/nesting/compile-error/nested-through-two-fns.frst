@@ -1,0 +1,3 @@
+# Nesting is rejected however many `fn` lambdas lie between the two `$(`.
+#= {rejects: 'cannot be nested'}
+def f = $(fn -> fn -> $($))

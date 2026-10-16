@@ -1,0 +1,5 @@
+# An exported pattern may compare a part against an existing binding with
+# `(name)`; the pinned name is not exported, only the names the pattern binds.
+#= {result: null, exports: {a: 1}}
+def k = 2
+export def [a, (k)] = [1, 2]

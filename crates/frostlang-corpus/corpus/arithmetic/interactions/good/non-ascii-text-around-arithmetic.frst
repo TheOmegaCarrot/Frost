@@ -1,0 +1,4 @@
+# Arithmetic interpolated among non-ASCII text formats like any other: the
+# text around it is untouched.
+#= {result: 'π ≈ 3.142857142857143, 日本: 2', inputs: {twenty_two: 22}}
+$'π ≈ ${twenty_two / 7.0}, 日本: ${twenty_two % 4}'

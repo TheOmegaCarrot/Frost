@@ -1,0 +1,3 @@
+# Frost has no `===`; its only equality is `==`, which the error points to.
+#= {rejects: '`==`', inputs: {a: 1, b: 1}}
+a === b

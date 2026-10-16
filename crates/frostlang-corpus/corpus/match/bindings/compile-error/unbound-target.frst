@@ -1,0 +1,5 @@
+# The target must name something defined.
+#= {rejects: '`nope` is not defined'}
+match nope {
+    _ => 1,
+}

@@ -1,0 +1,10 @@
+# Arms that each extend the same outer binding differently build from the
+# original, whichever arm runs.
+#= {result: [[1, 'one'], [1, 'two'], [1, 'other', 1]], inputs: {n: 1}}
+def base = [n]
+defn tag(v) -> match v {
+    1 => base + ['one'],
+    2 => base + ['two'],
+    _ => base + ['other'] + base,
+}
+[tag(1), tag(2), tag(3)]

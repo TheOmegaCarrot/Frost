@@ -1,0 +1,4 @@
+# An exported Map pattern with `as` exports the whole Map under the `as` name,
+# beside the names its keys bind.
+#= {result: null, exports: {k: 1, whole: {k: 1, j: 2}}}
+export def {k} as whole = {k: 1, j: 2}

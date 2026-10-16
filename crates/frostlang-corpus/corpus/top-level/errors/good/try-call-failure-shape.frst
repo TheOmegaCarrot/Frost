@@ -1,0 +1,6 @@
+# A `try_call` whose function raises gives exactly `{ok: false, error, trace}`:
+# the raised value, and the names of the frames the error left, innermost
+# first. `error` is itself a frame; the frame of `try_call` is not.
+#= {result: {ok: false, error: 'boom', trace: ['error', 'raise_boom']}}
+defn raise_boom() -> [error('boom')]
+try_call(raise_boom)

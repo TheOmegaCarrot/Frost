@@ -1,0 +1,6 @@
+# The value a `match` examines is an expression, so an unbound name there is a
+# compile error.
+#= {rejects: ['`missing`', 'not defined']}
+match missing {
+    _ => 1,
+}

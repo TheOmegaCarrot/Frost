@@ -1,0 +1,6 @@
+# An anonymous lambda can recurse by being passed itself: each level calls
+# `self(self)` to rebuild the recursive step.
+#= {result: [1, 120, 3628800]}
+def step = fn self -> fn n -> if n <= 1: 1 else: n * self(self)(n - 1)
+def fact = step(step)
+[fact(0), fact(5), fact(10)]

@@ -1,0 +1,4 @@
+# `$` names the first argument of an abbreviated lambda.
+#= {result: 10}
+def double = $($ * 2)
+double(5)

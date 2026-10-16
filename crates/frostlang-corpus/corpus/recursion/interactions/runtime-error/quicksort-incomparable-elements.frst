@@ -1,0 +1,8 @@
+# A recursive sort over values that cannot be ordered against each other
+# raises from inside the recursion: a String and an Int do not compare.
+#= {raises: ['compare', 'String', 'Int']}
+defn qsort(xs) -> match xs {
+    [] => [],
+    [pivot, ...rest] => qsort(select(rest, $($ < pivot))) + [pivot] + qsort(select(rest, $($ >= pivot))),
+}
+qsort([3, 1, 'two'])

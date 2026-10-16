@@ -1,0 +1,5 @@
+# `init` is a reserved word (it names `reduce`'s initial value), so it cannot
+# be bound as a name.
+#= {rejects: ['`init`', 'keyword']}
+def init = 1
+1

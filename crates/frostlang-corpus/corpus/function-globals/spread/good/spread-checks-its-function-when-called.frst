@@ -1,0 +1,4 @@
+# `spread` rejects a non-Function when it is called, before any spread
+# function exists.
+#= {result: [false, true]}
+[try_call(spread, [[1]]).ok, try_call(spread, [len]).ok]

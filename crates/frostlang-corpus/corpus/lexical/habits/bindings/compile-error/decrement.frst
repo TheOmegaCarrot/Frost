@@ -1,0 +1,5 @@
+# Frost has no `--` decrement: a trailing `--` leaves a negation without an
+# operand.
+#= {rejects: 'no `--`'}
+def x = 1
+x--

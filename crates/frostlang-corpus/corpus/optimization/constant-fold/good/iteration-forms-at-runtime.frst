@@ -1,0 +1,15 @@
+# The iterations of iteration-forms, over structures only known at runtime,
+# give exactly the values the folder computes.
+#= {
+#=     result: [[2, 4, 6], [2, 3], 6, 16, [20, 40], [3], 6],
+#=     inputs: {xs: [1, 2, 3], tens: [10, 20]},
+#= }
+[
+    map xs with $($ * 2),
+    filter xs with fn x -> x > 1,
+    reduce xs with fn acc, x -> acc + x,
+    reduce xs init: 10 with fn acc, x -> acc + x,
+    transform(tens, fn x -> x * 2),
+    select(xs, fn x -> x > 2),
+    fold(xs, 0, fn acc, x -> acc + x),
+]

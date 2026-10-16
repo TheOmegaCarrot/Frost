@@ -1,0 +1,5 @@
+# A field read used as a statement is still performed, so a missing field
+# raises even though the result is discarded.
+#= {raises: 'no value at key'}
+{a: 1}.b
+42

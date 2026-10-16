@@ -1,0 +1,25 @@
+# The matches of match-on-a-constant, on targets only known at runtime, pick
+# the same arms, and the arms they never reach do not run.
+#= {
+#=     result: ['three', 'low', 'string', 'pair'],
+#=     inputs: {three: 3, two: 2, x: 'x', pair: [1, 2]},
+#= }
+[
+    match three {
+        1 => error('one'),
+        3 => 'three',
+        _ => error('other'),
+    },
+    match two {
+        1 | 2 | 3 => 'low',
+        _ => 'high',
+    },
+    match x {
+        _ is Int => 'int',
+        _ is String => 'string',
+    },
+    match pair {
+        [] => 'empty',
+        [_, _] => 'pair',
+    },
+]

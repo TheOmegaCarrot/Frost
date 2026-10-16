@@ -1,0 +1,6 @@
+# Indexes chain left to right through nested structures.
+#= {
+#=     result: [6, 4, 'deep', 'cy'],
+#=     inputs: {grid: [[1, 2, 3], [4, 5, 6]], m: {a: {b: ['deep']}, people: [{name: 'bo'}, {name: 'cy'}]}},
+#= }
+[grid[1][2], grid[-1][0], m['a']['b'][0], m['people'][-1]['name']]

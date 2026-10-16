@@ -1,0 +1,10 @@
+# Exported bindings may be computed from blocks and lambdas that shadow their
+# names; only the top-level bindings are exported.
+#= {result: 3, exports: {a: 1, b: 2}, inputs: {n: 1}}
+export def a = n
+export def b = do {
+    def a = a + 1
+    a
+}
+def helper = fn b -> b
+helper(a + b)

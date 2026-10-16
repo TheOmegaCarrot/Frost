@@ -1,0 +1,6 @@
+# A Map literal in a function body is the same value on every call: merging
+# into it, even replacing its key, never changes what the next call starts
+# from.
+#= {result: [{kind: 'x', value: 1}, {kind: 'y'}, {kind: 'x', value: 1}], inputs: {n: 1}}
+defn tag(extra) -> {kind: 'x'} + extra
+[tag({value: n}), tag({kind: 'y'}), tag({value: n})]

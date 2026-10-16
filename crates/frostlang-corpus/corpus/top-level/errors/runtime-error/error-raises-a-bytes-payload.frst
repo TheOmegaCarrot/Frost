@@ -1,0 +1,3 @@
+# Uncaught, a Bytes payload's message is the Bytes as text.
+#= {raises: 'ff'}
+error(x'ff')

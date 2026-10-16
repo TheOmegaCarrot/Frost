@@ -1,0 +1,4 @@
+# A condition is tested for truthiness, not compared with `true`: 1 is
+# truthy although `1 == true` is false.
+#= {result: ['truthy', false], inputs: {one: 1}}
+[if one: 'truthy' else: 'falsy', one == true]

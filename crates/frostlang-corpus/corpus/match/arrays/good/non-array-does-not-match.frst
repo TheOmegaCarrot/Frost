@@ -1,0 +1,10 @@
+# An Array pattern never matches a non-Array, even one with a length or
+# elements: Strings, Bytes, and Maps fall through.
+#= {result: ['other', 'other', 'other', 'other', 'other'], inputs: {xs: ['ab', x'0000', {a: 1}, null, 5]}}
+transform(xs, fn v -> match v {
+    [] => 'empty',
+    [x] => 'one',
+    [x, y] => 'two',
+    [..._] => 'any',
+    _ => 'other',
+})

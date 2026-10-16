@@ -1,0 +1,9 @@
+# Destructuring an Array leaves it whole for every other use, including a
+# second destructuring.
+#= {
+#=     result: [[1, [2, 3]], 1, 2, [3], 1, [[2, 3]]],
+#=     inputs: {xs: [1, [2, 3]]},
+#= }
+def [a, [b, ...c]] = xs
+def [d, ...e] = xs
+[xs, a, b, c, d, e]

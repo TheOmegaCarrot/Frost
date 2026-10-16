@@ -1,0 +1,4 @@
+# A parenthesized name followed by `=>` is not a lambda: a lambda starts with
+# `fn`.
+#= {rejects: ['found `=>`', 'lambda']}
+def f = (x) => x

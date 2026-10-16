@@ -1,0 +1,4 @@
+# A format string evaluates its interpolations in order, constant ones beside
+# them included.
+#= {result: 'null-3-null', printed: ['first', 'second']}
+$'${print('first')}-${1 + 2}-${print('second')}'

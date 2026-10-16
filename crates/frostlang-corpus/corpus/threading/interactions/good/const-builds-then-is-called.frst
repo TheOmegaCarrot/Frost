@@ -1,0 +1,4 @@
+# `5 @ const()` is `const(5)`, a function; calling it right after returns the
+# threaded value whatever it is given.
+#= {result: [5, 5], inputs: {n: 5}}
+[n @ const()(), n @ const()(1, 2)]

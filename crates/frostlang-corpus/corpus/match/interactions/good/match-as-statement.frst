@@ -1,0 +1,11 @@
+# A match used as a statement runs for its effects and its value is dropped;
+# later statements run normally.
+#= {result: 7, printed: ['matched 2'], inputs: {v: [1, 2]}}
+match v {
+    [a, b] => print($'matched ${b}'),
+}
+match v {
+    {a} => 0,
+    [..._] => 0,
+}
+7

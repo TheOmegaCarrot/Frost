@@ -1,0 +1,4 @@
+# Indexing a Map with `[]` at a missing key gives Null, so threading into it
+# calls Null, which raises.
+#= {raises: ['non-function', 'Null'], inputs: {n: 1, m: {f: fn x -> x}}}
+n @ m['g']()

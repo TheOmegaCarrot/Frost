@@ -1,0 +1,3 @@
+# The placeholders are `$`, `$1` to `$9`, and `$$`; there is no `$0`.
+#= {rejects: 'the placeholders are'}
+def f = $($0)

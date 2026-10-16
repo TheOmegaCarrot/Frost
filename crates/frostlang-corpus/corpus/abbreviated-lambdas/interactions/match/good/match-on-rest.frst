@@ -1,0 +1,9 @@
+# Matching `$$` against Array patterns dispatches on how many arguments the
+# lambda was called with.
+#= {result: ['none', 'one: a', 'many: 3']}
+def count = $(match $$ {
+    [] => 'none',
+    [x] => $'one: ${x}',
+    xs => $'many: ${len(xs)}',
+})
+[count(), count('a'), count(1, 2, 3)]

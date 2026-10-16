@@ -1,0 +1,3 @@
+# An error inside the inverted function passes out unchanged.
+#= {raises: 'from inside'}
+inv(fn -> error('from inside'))()

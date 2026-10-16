@@ -1,0 +1,7 @@
+# A format String as a match pattern compares by value against the String it
+# evaluates to.
+#= {result: ['hit', 'miss'], inputs: {x: 2, subjects: ['v2', 'v3']}}
+transform(subjects, fn s -> match s {
+    $'v${x}' => 'hit',
+    _ => 'miss',
+})

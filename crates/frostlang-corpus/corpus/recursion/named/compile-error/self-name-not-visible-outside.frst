@@ -1,0 +1,5 @@
+# A named lambda's self-name is bound only inside its own body, not in the
+# scope around the lambda.
+#= {rejects: '`go` is not defined'}
+def count_down = fn go(n) -> if n == 0: 'done' else: go(n - 1)
+go(3)

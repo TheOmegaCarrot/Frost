@@ -1,0 +1,4 @@
+# A function known only at runtime is called with its arguments like any
+# other.
+#= {result: [6, 'xy'], inputs: {f: fn a, b -> a + b}}
+[f(2, 4), f('x', 'y')]

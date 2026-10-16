@@ -1,0 +1,5 @@
+# An exported constant Array keeps its value though a value is derived from
+# it, however much of the derivation the compiler computes.
+#= {result: [1, 2], exports: {xs: [1]}}
+export def xs = [1]
+xs + [2]

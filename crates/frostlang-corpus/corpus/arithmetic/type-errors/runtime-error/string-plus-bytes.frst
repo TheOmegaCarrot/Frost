@@ -1,0 +1,4 @@
+# `+` concatenates like with like: a String plus Bytes is a type error rather
+# than either kind of join.
+#= {raises: 'String + Bytes'}
+'a' + x'62'

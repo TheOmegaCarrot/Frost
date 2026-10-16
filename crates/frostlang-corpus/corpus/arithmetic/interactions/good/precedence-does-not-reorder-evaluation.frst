@@ -1,0 +1,9 @@
+# Precedence decides how operations group, not the order operands run in:
+# in `a + b * c`, the multiplication happens first, yet `a` is still
+# evaluated before `b` and `c`.
+#= {result: 7, printed: ['a', 'b', 'c']}
+defn noisy(label, n) -> {
+    print(label)
+    n
+}
+noisy('a', 1) + noisy('b', 2) * noisy('c', 3)

@@ -1,0 +1,9 @@
+# Arithmetic binds tighter than comparison and equality, so each side of a
+# comparison is computed whole first.
+#= {result: [true, true, false, true], inputs: {one: 1, two: 2, three: 3}}
+[
+    one + two == three,
+    two * three > one + two,
+    three - two != one,
+    one <= three % two,
+]

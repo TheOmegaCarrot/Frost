@@ -1,0 +1,4 @@
+# A runtime String's length counts code points. A combining accent is a code
+# point of its own, so a decomposed `é` is two, not one.
+#= {result: [5, 2, 1, 2], inputs: {s: 'héllo', jp: '日本', pre: '\u{e9}', dec: 'e\u{301}'}}
+[len(s), len(jp), len(pre), len(dec)]

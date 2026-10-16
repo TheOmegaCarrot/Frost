@@ -1,0 +1,8 @@
+# The largest and smallest Int are each a valid literal pattern; the smallest
+# is written with a leading minus, which a pattern reads as one literal.
+#= {result: ['max', 'min'], inputs: {max: 9223372036854775807, min: -9223372036854775807 - 1}}
+defn name(n) -> match n {
+    9223372036854775807 => 'max',
+    -9223372036854775808 => 'min',
+}
+[name(max), name(min)]

@@ -1,0 +1,14 @@
+# Constant keys that look alike but differ in type, a String and Bytes of the
+# same text, an Int, a Float, and a Bool, are distinct keys: patterns and
+# indexes in one function using all of them each read their own entry.
+#= {
+#=     result: [['string', 'bytes', 'int', 'float', 'bool'], ['string', 'bytes', 'int', 'float', 'bool']],
+#=     inputs: {m: {a: 'string', [x'61']: 'bytes', [1]: 'int', [1.0]: 'float', [true]: 'bool'}},
+#= }
+defn read(r) -> [
+    match r {
+        {a, [x'61']: b, [1]: c, [1.0]: d, [true]: e} => [a, b, c, d, e],
+    },
+    [r.a, r[x'61'], r[1], r[1.0], r[true]],
+]
+read(m)

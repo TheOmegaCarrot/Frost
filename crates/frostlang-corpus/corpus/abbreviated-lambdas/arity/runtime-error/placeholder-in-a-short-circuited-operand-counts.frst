@@ -1,0 +1,5 @@
+# `$2` in the right operand of an `and` that always short-circuits still
+# makes the lambda take two arguments.
+#= {raises: 'expects 2 argument'}
+def f = $(false and $2)
+f(1)

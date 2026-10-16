@@ -1,0 +1,5 @@
+# A String key spelled like a reserved word cannot use the `name:` shorthand,
+# but a computed key makes it, and a soft index reads it.
+#= {result: [1, 2, 2]}
+def m = {['if']: 1, ['match']: 2}
+[m['if'], m['match'], len(m)]

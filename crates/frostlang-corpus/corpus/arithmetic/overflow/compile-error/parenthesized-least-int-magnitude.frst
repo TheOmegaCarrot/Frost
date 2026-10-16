@@ -1,0 +1,5 @@
+# The least Int's magnitude is a literal only when directly negated. In
+# parentheses it stands alone, past the greatest Int, and is rejected rather
+# than negated into range.
+#= {rejects: 'out of range'}
+-(9223372036854775808)

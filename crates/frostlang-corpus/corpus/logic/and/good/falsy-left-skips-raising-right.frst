@@ -1,0 +1,7 @@
+# A skipped right operand of `and` is never evaluated, so one that would raise
+# does not. Subtle because the folder must not evaluate it ahead of time either.
+#= {result: [false, null]}
+[
+    false and 1 / 0,
+    null and error('the right operand ran'),
+]

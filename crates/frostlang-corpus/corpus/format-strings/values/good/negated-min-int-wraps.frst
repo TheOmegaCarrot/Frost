@@ -1,0 +1,4 @@
+# Negating the smallest Int in an interpolation wraps back to itself, and that
+# is what interpolates.
+#= {result: '-9223372036854775808', inputs: {min: -9223372036854775808}}
+$'${-min}'

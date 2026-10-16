@@ -1,0 +1,4 @@
+# The `is_*` predicates take the value to test first, so they read naturally
+# at the end of a chain.
+#= {result: [true, true, false, true, true], inputs: {xs: [1, 2], nothing: null}}
+[xs @ is_array(), nothing @ is_null(), xs @ len() @ is_string(), xs @ len() @ is_int(), xs[0] @ is_numeric()]

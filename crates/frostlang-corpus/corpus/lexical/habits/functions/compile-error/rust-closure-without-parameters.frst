@@ -1,0 +1,4 @@
+# Rust's parameterless closure `|| 1` is not Frost's lambda; the help shows
+# how one without parameters is written.
+#= {rejects: 'a lambda without parameters is written `fn -> ...`'}
+|| 1

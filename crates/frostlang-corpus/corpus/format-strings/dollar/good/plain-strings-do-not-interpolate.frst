@@ -1,0 +1,4 @@
+# Only a `$`-prefixed String interpolates: in a plain String, `${x}` is text,
+# in either quote style. Subtle: `x` is bound nowhere, and that is no error.
+#= {result: ['${x}', '${x}']}
+['${x}', "${x}"]

@@ -1,0 +1,13 @@
+# The `and`s and `or`s of and-or-with-a-constant-left-operand, with left
+# operands only known at runtime, short-circuit the same way.
+#= {
+#=     result: [false, null, true, 0, ''],
+#=     inputs: {no: false, nothing: null, yes: true, zero: 0, blank: ''},
+#= }
+[
+    no and error('never'),
+    nothing and 1 / 0,
+    yes or error('never'),
+    zero or {a: 1}.b,
+    blank or len(5),
+]

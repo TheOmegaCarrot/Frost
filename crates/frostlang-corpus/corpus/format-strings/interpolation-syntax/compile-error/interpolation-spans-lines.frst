@@ -1,0 +1,4 @@
+# An interpolation cannot continue onto the next line, even mid-expression.
+#= {rejects: ['unclosed', 'on the same line']}
+def s = $'${1 +
+2}'

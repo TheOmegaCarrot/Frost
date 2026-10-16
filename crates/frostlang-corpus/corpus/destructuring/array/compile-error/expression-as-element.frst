@@ -1,0 +1,5 @@
+# An element of a pattern is a pattern, not an expression: an operator there
+# is a syntax error. A value to compare against goes in parentheses.
+#= {rejects: 'expected `,` or `]`'}
+def [a + b] = [1]
+a

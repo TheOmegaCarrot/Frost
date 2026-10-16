@@ -1,0 +1,3 @@
+# `'message' @ error()` is `error('message')`, which raises the message.
+#= {raises: 'the threaded message'}
+'the threaded message' @ error()

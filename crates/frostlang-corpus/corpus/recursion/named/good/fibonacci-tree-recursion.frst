@@ -1,0 +1,4 @@
+# Two recursive calls per level, each an operand of `+`: a tree recursion.
+#= {result: [0, 1, 1, 610]}
+defn fib(n) -> if n < 2: n else: fib(n - 1) + fib(n - 2)
+[fib(0), fib(1), fib(2), fib(15)]

@@ -1,0 +1,3 @@
+# An error raised evaluating the target of a field read surfaces as itself.
+#= {raises: 'Division by zero', inputs: {zero: 0}}
+(1 / zero).x

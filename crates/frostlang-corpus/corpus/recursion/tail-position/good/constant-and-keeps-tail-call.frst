@@ -1,0 +1,7 @@
+# The right operand of an `and` whose left operand is a constant `true` is
+# still in tail position. Subtle: the optimizer may drop the `and` and keep
+# only its right operand, which must stay a tail call.
+#= {result: 0}
+defn down(n) -> if n == 0: error('bottom') else: true and down(n - 1)
+defn frames(n) -> len(try_call(down, [n]).trace)
+frames(500) - frames(5)

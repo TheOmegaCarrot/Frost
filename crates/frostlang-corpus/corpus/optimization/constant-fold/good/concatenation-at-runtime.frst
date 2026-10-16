@@ -1,0 +1,32 @@
+# The concatenations and merges of concatenation, over operands only known at
+# runtime, give exactly the values the folder computes.
+#= {
+#=     result: [
+#=         'abcd',
+#=         'héllo, 日本',
+#=         x'0102',
+#=         [1, [2], 3],
+#=         {a: 1, b: 3, c: 4},
+#=         [],
+#=         {},
+#=     ],
+#=     inputs: {
+#=         ab: 'ab',
+#=         hello: 'héllo',
+#=         japan: '日本',
+#=         one: x'01',
+#=         ones: [1],
+#=         left: {a: 1, b: 2},
+#=         empty_array: [],
+#=         empty_map: {},
+#=     },
+#= }
+[
+    ab + 'cd',
+    hello + ', ' + japan,
+    one + x'02',
+    ones + [[2], 3],
+    left + {b: 3, c: 4},
+    empty_array + empty_array,
+    empty_map + empty_map,
+]

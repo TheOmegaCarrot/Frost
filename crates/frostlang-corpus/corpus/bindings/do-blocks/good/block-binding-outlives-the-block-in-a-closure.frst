@@ -1,0 +1,12 @@
+# A closure returned from a block keeps the block's binding after the block
+# ends, though the name itself is no longer in scope.
+#= {result: [1, 'inner']}
+def get = do {
+    def secret = 'inner'
+    fn -> secret
+}
+def other = do {
+    def secret = 1
+    fn -> secret
+}
+[other(), get()]

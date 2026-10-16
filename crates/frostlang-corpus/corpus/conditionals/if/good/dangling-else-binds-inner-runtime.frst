@@ -1,0 +1,8 @@
+# A lone `else` after a nested `if` belongs to the inner one, also over runtime
+# conditions: a falsy outer condition yields Null whatever the inner one is.
+#= {
+#=     result: [1, 2, null, null],
+#=     inputs: {cases: [[true, true], [true, false], [false, true], [false, false]]},
+#= }
+defn pick(a, b) -> if a: if b: 1 else: 2
+map cases with fn case -> call(pick, case)

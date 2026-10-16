@@ -1,0 +1,4 @@
+# A value threaded with `@` is the first argument, so a rest-only
+# abbreviated lambda collects it ahead of the others.
+#= {result: [[1, 2, 3], [1]], inputs: {one: 1}}
+[one @ $($$)(2, 3), one @ $($$)()]

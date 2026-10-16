@@ -1,0 +1,3 @@
+# A literal is not a parameter: a lambda does not match on its arguments.
+#= {rejects: ['expected parameters or `->`', '`42`']}
+def f = fn 42 -> 42

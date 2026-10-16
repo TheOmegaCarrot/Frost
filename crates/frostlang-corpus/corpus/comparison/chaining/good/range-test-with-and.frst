@@ -1,0 +1,7 @@
+# A range test is written as two comparisons joined by `and`, which binds
+# looser than comparison, so no parentheses are needed.
+#= {
+#=     result: [false, true, true, false],
+#=     inputs: {values: [-1, 0, 9, 10]},
+#= }
+transform(values, fn x -> 0 <= x and x < 10)

@@ -1,0 +1,3 @@
+# Sibling blocks are separate scopes, so each may bind the same name.
+#= {result: 3}
+do { def y = 1; y } + do { def y = 2; y }

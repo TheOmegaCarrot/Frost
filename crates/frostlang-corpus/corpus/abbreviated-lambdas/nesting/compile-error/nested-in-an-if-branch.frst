@@ -1,0 +1,3 @@
+# An abbreviated lambda in a branch of an `if` inside another is nested.
+#= {rejects: 'cannot be nested'}
+def f = $(if $: $($) else: 0)

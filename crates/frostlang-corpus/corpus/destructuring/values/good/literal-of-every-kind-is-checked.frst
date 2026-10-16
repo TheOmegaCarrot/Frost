@@ -1,0 +1,8 @@
+# A literal part checks the value equals it and binds nothing; every kind of
+# literal works, beside a name that does bind.
+#= {
+#=     result: 7,
+#=     inputs: {xs: [7, 1, -1, 1.5, -2.5, 'ok', x'0102', null, true, false]},
+#= }
+def [a, 1, -1, 1.5, -2.5, 'ok', x'0102', null, true, false] = xs
+a

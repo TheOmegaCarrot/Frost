@@ -1,0 +1,7 @@
+# An arity error from a threaded call is an ordinary error, which `try_call`
+# reports as a failure.
+#= {result: [false, true, 6], inputs: {n: 5}}
+defn inc(x) -> x + 1
+def bad = try_call(fn -> n @ inc(1), [])
+def good = try_call(fn -> n @ inc(), [])
+[bad.ok, good.ok, good.value]

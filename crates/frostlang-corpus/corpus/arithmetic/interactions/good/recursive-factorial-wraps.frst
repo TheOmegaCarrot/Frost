@@ -1,0 +1,5 @@
+# A recursive factorial multiplies exactly up to 20!, the largest that fits an
+# Int; 21! wraps in two's complement rather than raising.
+#= {result: [1, 120, 2432902008176640000, -4249290049419214848]}
+defn fact(n) -> if n <= 1: 1 else: n * fact(n - 1)
+[fact(0), fact(5), fact(20), fact(21)]

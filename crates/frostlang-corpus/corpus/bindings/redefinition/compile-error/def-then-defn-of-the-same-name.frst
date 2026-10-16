@@ -1,0 +1,6 @@
+# `def` and `defn` bind names in the same way, so one may not rebind the
+# other's name in the same scope.
+#= {rejects: ['`f`', 'already bound']}
+def f = 1
+defn f() -> 2
+f()

@@ -1,0 +1,8 @@
+# An earlier unequal pair of elements decides the order before a later pair
+# that could not be ordered is reached, so no error is raised.
+#= {result: [true, false, true]}
+[
+    [1, 'hello'] < [2, 3.14],
+    [2, null] < [1, null],
+    ['a', {}] < ['b', {}],
+]

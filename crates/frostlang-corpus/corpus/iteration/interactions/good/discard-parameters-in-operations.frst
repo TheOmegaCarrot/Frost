@@ -1,0 +1,8 @@
+# Discard parameters let a Map operation ignore the key or the value while
+# still accepting both.
+#= {result: [{b: 2}, 3, ['a', 'b']], inputs: {m: {a: 1, b: 2}}}
+[
+    filter m with fn _, v -> v > 1,
+    reduce m init: 0 with fn acc, _, v -> acc + v,
+    reduce m init: [] with fn acc, k, _ -> acc + [k],
+]

@@ -1,0 +1,4 @@
+# Ordering a Function against an Int raises a type mismatch.
+#= {raises: ['incompatible types', 'Function', 'Int']}
+def f = fn -> 1
+f < 1

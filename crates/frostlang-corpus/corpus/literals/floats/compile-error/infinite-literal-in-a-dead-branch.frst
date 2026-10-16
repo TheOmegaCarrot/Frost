@@ -1,0 +1,5 @@
+# An infinite literal is rejected even where it would never be evaluated: it is a
+# fault in the program text, not in a run.
+#= {rejects: 'NaN or Infinity'}
+if false: 1e400
+else: 0

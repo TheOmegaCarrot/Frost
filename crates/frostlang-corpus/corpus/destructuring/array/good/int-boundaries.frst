@@ -1,0 +1,8 @@
+# The extreme Int values destructure unchanged, and arithmetic on a bound
+# element wraps in two's complement.
+#= {
+#=     result: [9223372036854775807, -9223372036854775808, -9223372036854775808],
+#=     inputs: {xs: [9223372036854775807, -9223372036854775808]},
+#= }
+def [max, min] = xs
+[max, min, max + 1]

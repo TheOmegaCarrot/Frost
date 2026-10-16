@@ -1,0 +1,6 @@
+# `collect` gathers its arguments into a new Array on every call: extending
+# one call's result leaves another's alone.
+#= {result: [[1, 2, 3], [1, 2]], inputs: {n: 1}}
+def first = collect(n, 2)
+def second = collect(n, 2)
+[first + [3], second]

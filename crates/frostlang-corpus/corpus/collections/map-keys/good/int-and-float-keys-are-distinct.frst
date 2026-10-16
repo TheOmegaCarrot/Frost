@@ -1,0 +1,5 @@
+# Int 1 and Float 1.0 are different keys, as `1 == 1.0` is false: a Map
+# holds both, and neither finds the other.
+#= {result: [2, 'int', 'float', null, null]}
+def m = {[1]: 'int', [1.0]: 'float'}
+[len(m), m[1], m[1.0], {[1]: 'x'}[1.0], {[2.0]: 'x'}[2]]

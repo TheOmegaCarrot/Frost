@@ -1,0 +1,15 @@
+# `is_flat` is true for String and Bytes, the flat sequences, and nothing
+# else; an Array is a sequence but not flat.
+#= {result: [false, false, false, false, true, true, false, false, false, false]}
+[
+    is_flat(null),
+    is_flat(false),
+    is_flat(0),
+    is_flat(0.0),
+    is_flat(''),
+    is_flat(x''),
+    is_flat([]),
+    is_flat({}),
+    is_flat(fn -> null),
+    is_flat(len),
+]

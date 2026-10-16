@@ -1,0 +1,5 @@
+# The init may be the structure being folded: growing the accumulator never
+# changes the structure the fold walks, nor the binding holding it.
+#= {result: [[1, 2, 1, 2], [1, 2]], inputs: {xs: [1, 2]}}
+def grown = reduce xs init: xs with fn acc, x -> acc + [x]
+[grown, xs]

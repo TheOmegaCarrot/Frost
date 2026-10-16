@@ -1,0 +1,4 @@
+# `1e` is not a Float: with nothing numeric after it, the `e` begins a name, leaving
+# two operands with no operator between them.
+#= {rejects: ['found `e`', 'exponent needs digits']}
+1e

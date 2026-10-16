@@ -1,0 +1,5 @@
+# In `-9223372036854775808 @ f()`, `@` binds tighter than `-`, so the bare
+# magnitude is the threaded operand, and it is past the greatest Int.
+#= {rejects: 'Int literal out of range'}
+defn same(x) -> x
+-9223372036854775808 @ same()

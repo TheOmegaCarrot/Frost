@@ -1,0 +1,3 @@
+# `call` requires a function as its first argument.
+#= {raises: ['call', 'Function', 'argument 1', 'Int']}
+call(5, [1])

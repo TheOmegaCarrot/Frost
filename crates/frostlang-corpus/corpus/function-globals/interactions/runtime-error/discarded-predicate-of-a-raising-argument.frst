@@ -1,0 +1,5 @@
+# A predicate's argument is evaluated even when the answer is discarded, so
+# an error in it is raised.
+#= {raises: 'evaluated'}
+is_null(error('evaluated'))
+'after'

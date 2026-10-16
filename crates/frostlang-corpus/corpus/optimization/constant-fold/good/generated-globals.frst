@@ -1,0 +1,17 @@
+# Calls to the globals written in Frost fold over constant pure arguments to
+# what they return at runtime.
+#= {result: [7, 3, -7, 12, 7, 42, [1, 2], 5, false, 'deep', null, 5]}
+[
+    curry(fn a, b -> a - b, 10)(3),
+    bcurry(fn a, b -> a - b, 10)(13),
+    rev_args(fn a, b -> a - b)(10, 3),
+    compose(fn x -> x + 1, fn x -> x * 2)(5),
+    const(7)(1, 2),
+    spread(fn a, b -> a * b)([6, 7]),
+    collect(1, 2),
+    index('k')({k: 5}),
+    inv(is_int)(1),
+    dig({a: [10, {b: 'deep'}]}, 'a', 1, 'b'),
+    dig({a: null}, 'a', 'b'),
+    tap(5, fn x -> x * 100),
+]

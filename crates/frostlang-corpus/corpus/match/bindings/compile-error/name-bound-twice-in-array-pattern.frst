@@ -1,0 +1,6 @@
+# A pattern may bind a name only once; repeating it does not test equality.
+# `[a, (a)]` is how to require two equal elements.
+#= {rejects: '`x` is already bound'}
+match [1, 1] {
+    [x, x] => x,
+}

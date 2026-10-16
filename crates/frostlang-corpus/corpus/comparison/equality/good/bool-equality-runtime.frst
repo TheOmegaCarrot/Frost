@@ -1,0 +1,8 @@
+# Bool equality on values known only at runtime.
+#= {result: [true, false, true, false], inputs: {yes: true, no: false, one: 1}}
+[
+    yes == true,
+    yes == no,
+    yes != no,
+    yes == one,
+]

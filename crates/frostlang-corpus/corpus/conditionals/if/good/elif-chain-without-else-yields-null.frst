@@ -1,0 +1,5 @@
+# An `elif` chain with no `else` yields Null when every condition is falsy.
+#= {result: null}
+if false: 1
+elif null: 2
+elif false: 3

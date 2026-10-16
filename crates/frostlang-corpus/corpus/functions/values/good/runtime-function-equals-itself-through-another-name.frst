@@ -1,0 +1,5 @@
+# A function known only at runtime equals itself through another binding and
+# inside a structure.
+#= {result: [true, true], inputs: {f: fn v -> v}}
+def g = f
+[g == f, [f] == [g]]

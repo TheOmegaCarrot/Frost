@@ -1,0 +1,12 @@
+# Bytes order lexicographically by unsigned octet: `x'80'` sorts above `x'7f'`,
+# which a signed comparison would reverse. A proper prefix sorts first.
+#= {result: [true, true, true, true, false, true, true]}
+[
+    x'7f' < x'80',
+    x'00' < x'ff',
+    x'' < x'00',
+    x'6869' < x'686900',
+    x'ff' < x'00ff',
+    x'ff' >= x'ff',
+    x'0101' > x'00ff',
+]

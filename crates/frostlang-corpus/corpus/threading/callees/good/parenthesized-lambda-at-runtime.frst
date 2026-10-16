@@ -1,0 +1,4 @@
+# A parenthesized lambda over runtime values receives the threaded value as
+# its first parameter.
+#= {result: [10, 2], inputs: {five: 5, three: 3}}
+[five @ (fn x -> x * 2)(), five @ (fn x, y -> x - y)(three)]

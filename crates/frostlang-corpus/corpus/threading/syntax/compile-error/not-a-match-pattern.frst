@@ -1,0 +1,6 @@
+# `@` is an expression operator; a match pattern cannot thread.
+#= {rejects: 'expected `=>`', inputs: {x: 'a'}}
+match x {
+    'a' @ len() => 1,
+    _ => 0,
+}

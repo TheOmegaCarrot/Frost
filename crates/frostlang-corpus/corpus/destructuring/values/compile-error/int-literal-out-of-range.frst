@@ -1,0 +1,5 @@
+# An Int literal part one past the largest Int is rejected, as it is anywhere
+# else, rather than wrapping.
+#= {rejects: 'out of range', inputs: {xs: [1, 2]}}
+def [a, 9223372036854775808] = xs
+a

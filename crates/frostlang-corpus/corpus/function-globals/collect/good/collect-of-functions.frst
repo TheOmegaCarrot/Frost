@@ -1,0 +1,4 @@
+# Functions are gathered like any other value and stay callable.
+#= {result: [2, true]}
+def gathered = collect(len, is_int)
+[len(gathered), gathered[1](gathered[0]([1]))]

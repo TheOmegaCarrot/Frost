@@ -1,0 +1,4 @@
+# Null has no ordering, even against itself: `<` on two Nulls raises rather
+# than answering false.
+#= {raises: ['Null', 'not orderable']}
+null < null

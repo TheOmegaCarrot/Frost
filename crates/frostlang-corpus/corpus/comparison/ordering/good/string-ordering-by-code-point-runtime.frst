@@ -1,0 +1,11 @@
+# Non-ASCII Strings known only at runtime order by code point, including a
+# character beyond the Basic Multilingual Plane against one inside it.
+#= {
+#=     result: [true, true, false],
+#=     inputs: {z: 'z', e_acute: '\u{e9}', halfwidth: '\u{ff61}', emoji: '\u{1f600}'},
+#= }
+[
+    z < e_acute,
+    halfwidth < emoji,
+    emoji < halfwidth,
+]

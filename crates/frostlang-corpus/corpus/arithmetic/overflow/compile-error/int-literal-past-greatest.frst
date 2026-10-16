@@ -1,0 +1,5 @@
+# Arithmetic past the greatest Int wraps, but a literal past it is rejected:
+# no Int has that value to write. Subtle because `9223372036854775807 + 1` is
+# fine.
+#= {rejects: 'out of range'}
+9223372036854775808 - 1

@@ -1,0 +1,4 @@
+# A format String nests inside another's interpolation; the inner one is
+# evaluated, and its result interpolated into the outer.
+#= {result: 'ab7cd', inputs: {x: 7}}
+$'a${$"b${x}c"}d'

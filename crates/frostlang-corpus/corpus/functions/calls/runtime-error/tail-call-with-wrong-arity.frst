@@ -1,0 +1,6 @@
+# A call in tail position to another function checks that function's arity,
+# naming the callee.
+#= {raises: ['pair', 'expects 2 argument', 'called with 3'], inputs: {n: 1}}
+defn pair(a, b) -> [a, b]
+defn wrap(x) -> pair(x, x, x)
+wrap(n)

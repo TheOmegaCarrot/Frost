@@ -1,0 +1,12 @@
+# A Float beyond the Int range orders beyond every Int, out to the largest
+# finite Float. -2^63 - 2048 is the greatest Float below the least Int.
+#= {result: [true, true, true, true, true, true, true]}
+[
+    9223372036854775807 < 1e19,
+    -9223372036854775808 > -1e19,
+    9223372036854775807 < 1.7976931348623157e308,
+    -9223372036854775808 > -1.7976931348623157e308,
+    0 < 1.7976931348623157e308,
+    1e19 > 9223372036854775807,
+    -9223372036854775808 > -9223372036854777856.0,
+]

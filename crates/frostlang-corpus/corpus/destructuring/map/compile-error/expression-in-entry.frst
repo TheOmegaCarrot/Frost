@@ -1,0 +1,4 @@
+# An entry of a Map pattern is a key and a pattern, not an expression.
+#= {rejects: 'expected `,` or `}`'}
+def {foo + bar} = {foo: 1}
+foo

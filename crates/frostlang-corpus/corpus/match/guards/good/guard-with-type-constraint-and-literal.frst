@@ -1,0 +1,9 @@
+# Guards may follow any pattern form: a literal, a type-constrained name, or a
+# structure.
+#= {result: ['zero, allowed', 'positive Int', 'pair with sum 3', 'other'], inputs: {allow: true, xs: [0, 4, [1, 2], 'x']}}
+transform(xs, fn v -> match v {
+    0 if: allow => 'zero, allowed',
+    n is Int if: n > 0 => 'positive Int',
+    [a, b] if: a + b == 3 => 'pair with sum 3',
+    _ => 'other',
+})

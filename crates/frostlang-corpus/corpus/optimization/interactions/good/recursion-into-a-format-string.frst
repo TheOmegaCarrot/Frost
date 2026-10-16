@@ -1,0 +1,5 @@
+# A recursive function's result over a constant, interpolated into a format
+# string, gives the same text as at runtime.
+#= {result: '10! = 3628800'}
+defn fact(n) -> if n <= 1: 1 else: n * fact(n - 1)
+$'10! = ${fact(10)}'

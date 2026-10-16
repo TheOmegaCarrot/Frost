@@ -1,0 +1,4 @@
+# `inv` of a function known only at run time, applied to a runtime value.
+#= {result: [false, true], inputs: {positive: fn x -> x > 0, n: 5}}
+def not_positive = inv(positive)
+[not_positive(n), not_positive(-n)]

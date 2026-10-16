@@ -1,0 +1,6 @@
+# A captured Null is a value like any other: the closure keeps it and returns
+# it, with the value known only at runtime.
+#= {result: [null, true, 'fallback'], inputs: {nothing: null}}
+def make = fn p -> fn -> p
+def f = make(nothing)
+[f(), f() == null, (fn -> nothing or 'fallback')()]

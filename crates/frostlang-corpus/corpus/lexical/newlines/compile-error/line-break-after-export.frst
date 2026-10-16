@@ -1,0 +1,4 @@
+# `export` and the `def` it marks stay on one line.
+#= {rejects: 'found a line break'}
+export
+def x = 1

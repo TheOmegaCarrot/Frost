@@ -1,0 +1,13 @@
+# The zeros of zero-signs-stay-apart, in constants of the top level read
+# directly, each keep their own sign.
+#= {result: ['0.0', '-0.0', '0.0', '-0.0', '[0.0]', '[-0.0]']}
+def pos = [0.0]
+def neg = [-0.0]
+[
+    to_string(pos[0]),
+    to_string(neg[0]),
+    to_string(0.0),
+    to_string(-0.0),
+    $'[${pos[0]}]',
+    $'[${neg[0]}]',
+]

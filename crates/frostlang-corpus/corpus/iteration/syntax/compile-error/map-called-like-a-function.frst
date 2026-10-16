@@ -1,0 +1,5 @@
+# `map` is a keyword starting an expression, not a function to call; the
+# help points to the form and to its function form, `transform`.
+#= {rejects: '`transform(xs, f)`'}
+def f = fn x -> x
+map([1, 2], f)

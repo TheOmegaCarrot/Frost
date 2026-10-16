@@ -1,0 +1,3 @@
+# An exported rest that takes no elements is exported as an empty Array.
+#= {result: null, exports: {only: 'x', rest: []}}
+export def [only, ...rest] = ['x']

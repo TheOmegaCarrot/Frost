@@ -1,0 +1,4 @@
+# An Array literal of one element holds exactly that element.
+#= {result: [[42], 1, 42]}
+def xs = [42]
+[xs, len(xs), xs[0]]

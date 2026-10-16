@@ -1,0 +1,3 @@
+# Unary `-` is numeric only: it does not reverse or negate an Array.
+#= {raises: ['Cannot negate', 'Array'], inputs: {xs: [1]}}
+-xs

@@ -1,0 +1,5 @@
+# A destructuring `def` whose names are never read still checks its pattern,
+# so a value that does not fit raises even though nothing uses the binding.
+#= {raises: 'expected an Array'}
+def [only] = [1, 2]
+'unreached'

@@ -1,0 +1,6 @@
+# Another condition is written `elif`, not `else if`.
+#= {rejects: ['found `if`', 'use `elif`']}
+def a = false
+def b = true
+if a: 1
+else if b: 2

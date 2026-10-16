@@ -1,0 +1,8 @@
+# A multiline String literal may be a part, compared by its text with the
+# closer's indentation removed.
+#= {result: 1, inputs: {xs: [1, 'two\nlines']}}
+def [a, '''
+    two
+    lines
+    '''] = xs
+a

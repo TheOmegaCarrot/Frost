@@ -1,0 +1,4 @@
+# Only the order of the arguments is reversed, not the contents of an Array
+# or String argument.
+#= {result: ['ab', [1, 2]]}
+rev_args(collect)([1, 2], 'ab')

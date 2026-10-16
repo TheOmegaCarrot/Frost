@@ -1,0 +1,10 @@
+# An earlier unequal pair decides the order of Arrays known only at runtime
+# before a later, unorderable pair is reached.
+#= {
+#=     result: [true, false],
+#=     inputs: {a: [1, 'hello'], b: [2, 3.14], c: [2, null], d: [1, null]},
+#= }
+[
+    a < b,
+    c < d,
+]

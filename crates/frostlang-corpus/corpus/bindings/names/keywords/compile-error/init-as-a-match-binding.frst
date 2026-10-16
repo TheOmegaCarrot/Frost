@@ -1,0 +1,5 @@
+# `init` is reserved, so a match arm cannot bind it.
+#= {rejects: ['`init`', 'keyword']}
+match 1 {
+    init => init,
+}

@@ -1,0 +1,5 @@
+# `bcurry` appends its stored arguments to each call's: every call ends with
+# the stored arguments as they were.
+#= {result: [[2, 1], [3, 4, 1], [1]], inputs: {n: 1}}
+def gather = bcurry(collect, n)
+[gather(2), gather(3, 4), gather()]

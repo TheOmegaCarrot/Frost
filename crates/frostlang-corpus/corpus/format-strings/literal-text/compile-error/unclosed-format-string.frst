@@ -1,0 +1,3 @@
+# A format String with no closing quote is a syntax error.
+#= {rejects: 'unclosed format String'}
+def s = $'abc

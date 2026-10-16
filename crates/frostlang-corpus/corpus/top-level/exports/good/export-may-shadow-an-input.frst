@@ -1,0 +1,6 @@
+# An exported top-level binding may take the name of an input from the
+# enclosing scope. Its value reads the input; after it, the name means the
+# export. Subtle because the read must not count as a duplicate binding.
+#= {result: 2, exports: {x: 2}, inputs: {x: 1}}
+export def x = x + 1
+x

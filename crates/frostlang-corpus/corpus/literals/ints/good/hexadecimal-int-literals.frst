@@ -1,0 +1,4 @@
+# `0x` writes an Int in hexadecimal: the prefix and the digits take either case, and
+# leading zeros change nothing.
+#= {result: [0, 255, 255, 255, 255, 3735928559, 255, 'Int']}
+[0x0, 0xff, 0xFF, 0XfF, 0Xff, 0xDeadBeef, 0x00ff, type(0xff)]

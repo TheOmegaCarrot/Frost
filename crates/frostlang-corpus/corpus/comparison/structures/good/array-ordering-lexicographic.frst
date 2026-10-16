@@ -1,0 +1,11 @@
+# Arrays order lexicographically: the first unequal pair of elements decides,
+# whatever follows it.
+#= {result: [true, false, true, true, true, false]}
+[
+    [1, 2] < [1, 3],
+    [1, 3] < [1, 2],
+    [1, 9, 9] < [2, 0, 0],
+    ['b'] > ['a', 'z'],
+    [1, 2] <= [1, 2],
+    [1, 2] < [1, 2],
+]

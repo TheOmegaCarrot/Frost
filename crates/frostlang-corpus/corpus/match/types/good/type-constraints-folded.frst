@@ -1,0 +1,23 @@
+# Type constraints against constant targets, which the optimizer may resolve
+# ahead of time, pick the same arms as at runtime.
+#= {
+#=     result: [
+#=         'Null', 'Bool', 'Int', 'Float', 'String', 'Bytes', 'Array', 'Map',
+#=         'Primitive', 'Numeric', 'Structured', 'Flat', 'Nonnull',
+#=     ],
+#= }
+[
+    match null { _ is Nonnull => 'Nonnull', _ is Null => 'Null' },
+    match false { _ is Null => 'Null', _ is Bool => 'Bool' },
+    match 0 { _ is Float => 'Float', _ is Int => 'Int' },
+    match 0.0 { _ is Int => 'Int', _ is Float => 'Float' },
+    match '' { _ is Bytes => 'Bytes', _ is String => 'String' },
+    match x'' { _ is String => 'String', _ is Bytes => 'Bytes' },
+    match [] { _ is Map => 'Map', _ is Array => 'Array' },
+    match {} { _ is Array => 'Array', _ is Map => 'Map' },
+    match null { _ is Structured => 'Structured', _ is Primitive => 'Primitive' },
+    match 1.5 { _ is Flat => 'Flat', _ is Numeric => 'Numeric' },
+    match {} { _ is Primitive => 'Primitive', _ is Structured => 'Structured' },
+    match x'00' { _ is Numeric => 'Numeric', _ is Flat => 'Flat' },
+    match false { _ is Null => 'Null', _ is Nonnull => 'Nonnull' },
+]

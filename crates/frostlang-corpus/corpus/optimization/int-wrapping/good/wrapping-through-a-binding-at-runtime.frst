@@ -1,0 +1,11 @@
+# The arithmetic of wrapping-through-a-binding, on bindings of values only
+# known at runtime, wraps to the same values.
+#= {
+#=     result: [-9223372036854775808, 9223372036854775807, -9223372036854775808, -2],
+#=     inputs: {greatest_in: 9223372036854775807, least_in: -9223372036854775808},
+#= }
+def greatest = greatest_in
+def least = least_in
+def next = greatest + 1
+def previous = least - 1
+[next, previous, -least, greatest * 2]

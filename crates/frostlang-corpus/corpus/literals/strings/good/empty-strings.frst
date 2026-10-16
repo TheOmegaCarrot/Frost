@@ -1,0 +1,4 @@
+# An empty String literal in either quote style is a String of no characters, and is
+# not Null.
+#= {result: [0, 0, 'String', false]}
+[len(''), len(""), type(''), '' == null]

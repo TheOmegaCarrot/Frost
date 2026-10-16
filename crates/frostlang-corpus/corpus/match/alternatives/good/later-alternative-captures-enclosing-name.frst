@@ -1,0 +1,10 @@
+# Inside a lambda, a later alternative's parenthesized reference to an
+# enclosing name is captured, even though an earlier alternative shadows it.
+# Subtle: only the later branch uses the enclosing name.
+#= {result: [3, 0], inputs: {a: [5, 7, 3], b: [5, 6, 3]}}
+def x = 7
+def f = fn v -> match v {
+    [x, 1, _] | [_, (x), x] => x,
+    _ => 0,
+}
+[f(a), f(b)]

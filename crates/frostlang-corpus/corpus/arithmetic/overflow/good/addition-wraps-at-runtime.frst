@@ -1,0 +1,12 @@
+# Int addition of operands only known at runtime wraps past either end of the
+# range, exactly as a folded sum does.
+#= {
+#=     result: [-9223372036854775808, -2, 9223372036854775807, 0],
+#=     inputs: {greatest: 9223372036854775807, least: -9223372036854775808, one: 1},
+#= }
+[
+    greatest + one,
+    greatest + greatest,
+    least + -one,
+    least + least,
+]

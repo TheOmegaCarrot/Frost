@@ -1,0 +1,3 @@
+# An out-of-range runtime index into a runtime Array yields Null.
+#= {result: [null, null], inputs: {xs: [10, 20, 30], past: 3, before: -4}}
+[xs[past], xs[before]]

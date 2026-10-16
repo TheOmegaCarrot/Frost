@@ -1,0 +1,10 @@
+# A multi-step `@` pipeline builds a new value at each step, and the binding
+# it started from is unchanged.
+#= {result: [[1, 2, 3], [4, 6, 0]], inputs: {n: 1}}
+def xs = [n, 2, 3]
+def out = (
+    xs
+    @ transform(fn x -> x * 2)
+    @ select(fn x -> x > 2)
+)
+[xs, out + [0]]

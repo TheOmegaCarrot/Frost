@@ -1,0 +1,4 @@
+# Arithmetic that overflows a Float known only at runtime raises: a Float is always
+# finite.
+#= {raises: 'NaN or Infinity', inputs: {big: 1.7976931348623157e308}}
+big + big

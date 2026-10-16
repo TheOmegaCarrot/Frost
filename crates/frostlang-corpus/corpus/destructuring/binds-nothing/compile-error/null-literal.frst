@@ -1,0 +1,4 @@
+# A `null` literal pattern binds no name.
+#= {rejects: 'binds no name', inputs: {v: null}}
+def null = v
+0

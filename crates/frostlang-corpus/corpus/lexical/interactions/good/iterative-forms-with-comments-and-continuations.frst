@@ -1,0 +1,11 @@
+# `map`, `filter`, and `reduce` written across lines, with comments around
+# `with` and a continuation threading the result.
+#= {result: '3', inputs: {xs: [1, 2, 3, 4]}}
+def evens = filter xs # keep
+    # the even ones
+    with fn x -> x % 2 == 0
+def total = reduce map evens with fn x -> x / 2
+    init: 0 # starting from zero
+    with fn (acc, x) -> acc + x
+total
+    @ to_string()

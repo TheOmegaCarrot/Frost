@@ -1,0 +1,3 @@
+# `try_call` takes one or two arguments; with none it raises an arity error.
+#= {raises: ['try_call', 'called with 0']}
+try_call()

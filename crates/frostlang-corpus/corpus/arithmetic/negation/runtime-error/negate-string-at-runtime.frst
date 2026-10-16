@@ -1,0 +1,4 @@
+# Unary `-` on a String only known at runtime is a type error, as on a
+# constant one.
+#= {raises: ['negate', 'String'], inputs: {s: '5'}}
+-s

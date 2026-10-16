@@ -1,0 +1,5 @@
+# An arity error in a call whose result is discarded is still raised.
+#= {raises: 'expects 0 argument'}
+def f = fn -> 1
+f(1)
+'after'

@@ -1,0 +1,5 @@
+# Inside an abbreviated lambda, a placeholder may be both the threaded value
+# and the callee: `$1 @ $2()` is `$2($1)`.
+#= {result: 6, inputs: {n: 3}}
+def apply = $($1 @ $2())
+apply(n, fn v -> v * 2)

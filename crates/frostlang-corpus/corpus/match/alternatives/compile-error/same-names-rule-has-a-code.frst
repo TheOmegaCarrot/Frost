@@ -1,0 +1,5 @@
+# The same-names diagnostic carries its code, so tooling can recognize it.
+#= {rejects: 'alternative bindings'}
+match [1] {
+    [x] | [y] => 0,
+}

@@ -1,0 +1,3 @@
+# An abbreviated lambda is a value, and truthy, even one returning false.
+#= {result: ['truthy', 2]}
+[if $(false): 'truthy' else: 'falsy', $(null) and 2]

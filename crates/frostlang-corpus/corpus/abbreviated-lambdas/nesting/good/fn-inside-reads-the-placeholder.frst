@@ -1,0 +1,6 @@
+# A `fn` inside an abbreviated lambda opens no placeholder scope of its own:
+# its `$` is the enclosing lambda's first argument, captured.
+#= {result: [5, 5]}
+def a = $(fn -> $1)
+def b = $(fn -> $)
+[a(5)(), b(5)()]

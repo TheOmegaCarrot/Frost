@@ -1,0 +1,4 @@
+# A `#` inside a String in an interpolation is text, not a comment, in either
+# quote style; only a bare `#` there would start one.
+#= {result: ['#', '# x #', '<#>']}
+[$'${"#"}', $'${'#'} x ${"#"}', $"<${'#'}>"]

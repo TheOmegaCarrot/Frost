@@ -1,0 +1,6 @@
+# A function capturing both a known value and one only known at runtime reads
+# each correctly; neither takes the other's place.
+#= {result: [7, 9], inputs: {offset: 1, three: 3, four: 4}}
+def k = 2
+def f = fn x -> x * k + offset
+[f(three), f(four)]

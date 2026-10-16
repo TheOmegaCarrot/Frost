@@ -1,0 +1,5 @@
+# Arrays nest to any depth, including empty Arrays as elements, and each
+# level keeps its own length.
+#= {result: [[[1], [[2]], []], 3, 1, [2], 0]}
+def xs = [[1], [[2]], []]
+[xs, len(xs), len(xs[1]), xs[1][0], len(xs[2])]

@@ -1,0 +1,4 @@
+# `$$` collects arguments known only at runtime, Null included.
+#= {result: [[1, null, 'z'], []], inputs: {a: 1, b: null, c: 'z'}}
+def all = $($$)
+[all(a, b, c), all()]

@@ -1,0 +1,4 @@
+# A match's arms must be closed with `}`.
+#= {rejects: 'expected `,` or `}`'}
+match 1 {
+    1 => 2

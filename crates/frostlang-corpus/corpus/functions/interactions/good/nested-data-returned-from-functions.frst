@@ -1,0 +1,5 @@
+# Functions build and return nested structures, read back through chained
+# access on the call result.
+#= {result: [2, 'b', [[1]]]}
+def make = fn -> {list: [1, 2], inner: {key: 'b'}, deep: [[[1]]]}
+[make().list[1], make().inner.key, make().deep[0]]

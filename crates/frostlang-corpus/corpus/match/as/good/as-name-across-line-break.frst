@@ -1,0 +1,12 @@
+# Inside a match, a line break may fall on either side of `as`.
+#= {result: [{a: 1}, {a: 1}], inputs: {v: {a: 1}}}
+[
+    match v {
+        {a}
+            as m => m,
+    },
+    match v {
+        {a} as
+            m => m,
+    },
+]

@@ -1,0 +1,11 @@
+# A key written one way finds an entry keyed by the same value written another way:
+# the key is the value, not its spelling.
+#= {result: ['hex', 'escape', 'bytes', 'raw', 'exponent']}
+def m = {
+    [0xff]: 'hex',
+    ['\u{e9}']: 'escape',
+    [x'FF']: 'bytes',
+    [R'(\n)']: 'raw',
+    [1e2]: 'exponent',
+}
+[m[255], m['é'], m[x'ff'], m['\\n'], m[100.0]]

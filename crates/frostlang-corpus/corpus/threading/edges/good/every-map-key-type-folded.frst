@@ -1,0 +1,4 @@
+# A literal Map with a key of every permitted type threads whole.
+#= {result: [5, true, true, true, true, true, false]}
+def m = {[1]: 'i', [1.5]: 'f', [true]: 'b', s: 's', [x'00']: 'y'}
+[m @ len(), m @ has(1), m @ has(1.5), m @ has(true), m @ has('s'), m @ has(x'00'), m @ has(2)]

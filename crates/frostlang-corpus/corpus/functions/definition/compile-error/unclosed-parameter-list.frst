@@ -1,0 +1,3 @@
+# A parenthesized parameter list must be closed before the arrow.
+#= {rejects: ['expected `,` or `)`', '`->`']}
+def f = fn(x, y -> x

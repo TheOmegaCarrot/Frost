@@ -1,0 +1,3 @@
+# A `do` block must hold at least one expression; it has no empty value.
+#= {rejects: 'at least one expression'}
+do {}

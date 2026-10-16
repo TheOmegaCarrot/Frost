@@ -1,0 +1,7 @@
+# `dig` follows a path of keys and indexes through nested structures, and a
+# Null found partway stays Null instead of raising.
+#= {
+#=     result: [5, null, null, {a: [{b: 5}]}],
+#=     inputs: {data: {a: [{b: 5}]}},
+#= }
+[dig(data, 'a', 0, 'b'), dig(data, 'missing', 0, 'b'), dig(data, 'a', 9, 'b'), dig(data)]

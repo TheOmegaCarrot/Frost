@@ -1,0 +1,3 @@
+# An exported pattern of only discards and literals binds no name.
+#= {rejects: 'binds no name'}
+export def [_, 1] = [0, 1]

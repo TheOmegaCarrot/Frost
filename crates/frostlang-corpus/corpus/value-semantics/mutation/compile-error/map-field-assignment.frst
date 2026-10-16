@@ -1,0 +1,4 @@
+# A Map entry cannot be assigned through a field: values are immutable.
+#= {rejects: ['`=`', 'immutable']}
+def m = {k: 1}
+m.k = 2

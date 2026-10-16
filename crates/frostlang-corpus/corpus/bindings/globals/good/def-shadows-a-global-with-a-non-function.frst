@@ -1,0 +1,4 @@
+# A binding shadowing a global need not be a function.
+#= {result: 'mine'}
+def type = 'mine'
+type

@@ -1,0 +1,3 @@
+# `\u` takes its digits in braces; bare digits are an error.
+#= {rejects: 'must be followed by `{`'}
+def s = $'\u41'

@@ -1,0 +1,7 @@
+# Names a pattern binds in a `do` block are gone once the block ends.
+#= {rejects: '`a` is not defined'}
+def total = do {
+    def [a, b] = [1, 2]
+    a + b
+}
+a + total

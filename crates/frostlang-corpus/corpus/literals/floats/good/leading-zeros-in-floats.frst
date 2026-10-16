@@ -1,0 +1,4 @@
+# Leading zeros change nothing in a Float, in its whole part or its exponent, and an
+# exponent of zero leaves the value as written.
+#= {result: [0.5, 0.5, 7.25, 1.0, 1.0, 1.0, 1.0, 1.5]}
+[00.5, 0_0.5, 007.25, 1e00, 1e-0, 1e+0, 0.1e1, 15e-01]

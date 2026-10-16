@@ -1,0 +1,6 @@
+# A chained comparison in a `match` guard is rejected.
+#= {rejects: 'cannot chain', inputs: {v: 5}}
+match v {
+    n if: 0 < n < 10 => 'digit',
+    _ => 'other',
+}

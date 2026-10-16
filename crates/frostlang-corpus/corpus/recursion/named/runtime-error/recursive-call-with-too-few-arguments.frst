@@ -1,0 +1,5 @@
+# A recursive call in tail position that drops an argument raises an arity
+# error rather than reusing the caller's stale value.
+#= {raises: 'expects 2 arguments'}
+defn f(a, b) -> if a == 0: b else: f(a - 1)
+f(3, 'kept')

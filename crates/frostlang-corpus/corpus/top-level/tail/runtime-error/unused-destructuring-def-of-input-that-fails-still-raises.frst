@@ -1,0 +1,5 @@
+# A destructuring `def` of a runtime value, whose names are never read, still
+# checks its pattern and raises when the value does not fit.
+#= {raises: 'expected an Array', inputs: {xs: [1, 2]}}
+def [only] = xs
+'unreached'

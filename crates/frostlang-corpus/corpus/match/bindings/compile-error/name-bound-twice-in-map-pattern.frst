@@ -1,0 +1,5 @@
+# Two entries of one Map pattern cannot bind the same name.
+#= {rejects: '`v` is already bound'}
+match {a: 1, b: 2} {
+    {a: v, b: v} => v,
+}

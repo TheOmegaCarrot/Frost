@@ -1,0 +1,4 @@
+# An abbreviated lambda left open at the end of input is a syntax error
+# naming its `$(`.
+#= {rejects: '`$(` is not closed'}
+def f = $($ + 1

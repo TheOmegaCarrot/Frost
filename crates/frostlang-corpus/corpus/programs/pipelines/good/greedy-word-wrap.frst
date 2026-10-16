@@ -1,0 +1,37 @@
+# Greedy word wrapping folded over words, lines kept newest first so a guard
+# on the head decides: a word joins the current line if the line stays
+# within the width, else it starts a new one. Lengths are in
+# code points, so '日本語 café' is exactly 8 wide. A word wider than the line
+# gets a line to itself, no words give no lines, and padding fills a line to
+# the width by recursion.
+#= {
+#=     result: {
+#=         plain: ['the quick', 'brown fox', 'jumps over', 'the lazy', 'dog'],
+#=         wide: ['日本語 café', 'über ok'],
+#=         padded: ['日本語 café', 'über ok.'],
+#=         long_word: ['supercalifragilistic', 'a'],
+#=         nothing: [],
+#=     },
+#=     inputs: {
+#=         sentence: ['the', 'quick', 'brown', 'fox', 'jumps', 'over', 'the', 'lazy', 'dog'],
+#=         foreign: ['日本語', 'café', 'über', 'ok'],
+#=         overlong: ['supercalifragilistic', 'a'],
+#=     },
+#= }
+defn wrap(words, width) -> {
+    def newest_first = fold(words, [], fn lines, word -> match lines {
+        [current, ...earlier] if: len(current + ' ' + word) <= width => [current + ' ' + word] + earlier,
+        _ => [word] + lines,
+    })
+    fold(newest_first, [], fn oldest_first, line -> [line] + oldest_first)
+}
+
+defn pad(text, width) -> if len(text) >= width: text else: pad(text + '.', width)
+
+{
+    plain: wrap(sentence, 10),
+    wide: wrap(foreign, 8),
+    padded: transform(wrap(foreign, 8), fn line -> pad(line, 8)),
+    long_word: wrap(overlong, 5),
+    nothing: wrap([], 10),
+}

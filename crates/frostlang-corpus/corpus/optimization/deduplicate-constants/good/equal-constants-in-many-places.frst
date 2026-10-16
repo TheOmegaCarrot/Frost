@@ -1,0 +1,12 @@
+# The same constant written in many places, in one function and across
+# functions, reads back as the same value at each, and each read is a value of
+# its own: building on one leaves the others unchanged.
+#= {
+#=     result: [['hello', 'hello', 'hello!'], [[1, [2]], [1, [2], 3]], {a: 1, b: [2]}],
+#=     inputs: {tag: 'runtime'},
+#= }
+defn greet(t) -> ['hello', 'hello', 'hello' + '!']
+defn lists(t) -> [[1, [2]], [1, [2]] + [3]]
+defn ordered(t) -> [{a: 1, b: [2]}, {b: [2], a: 1}]
+def [first, second] = ordered(tag)
+[greet(tag), lists(tag), if first == second: first else: 'unequal']

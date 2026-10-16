@@ -1,0 +1,5 @@
+# A script function named like a predicate brings its own arity: calling it
+# with one argument fails though the predicate would accept one.
+#= {raises: ['expects 2', 'called with 1']}
+defn is_int(a, b) -> a
+is_int(1)

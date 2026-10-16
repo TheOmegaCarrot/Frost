@@ -1,0 +1,7 @@
+# An error caught within a guard does not escape it: the guard's value decides
+# the arm as usual.
+#= {result: 1, inputs: {v: [1]}}
+match v {
+    [x] if: try_call(fn -> error('boom')).ok => 0,
+    [x] => x,
+}

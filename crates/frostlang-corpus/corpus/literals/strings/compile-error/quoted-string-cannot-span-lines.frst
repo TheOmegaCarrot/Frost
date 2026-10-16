@@ -1,0 +1,5 @@
+# A quoted String is single-line: it does not run on to find a closing quote on a
+# later line, even one that would pair with it.
+#= {rejects: 'unclosed String'}
+def a = 'unclosed
+def b = 'closed'

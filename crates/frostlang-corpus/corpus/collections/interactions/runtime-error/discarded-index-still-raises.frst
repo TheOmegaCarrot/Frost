@@ -1,0 +1,5 @@
+# An index used as a statement is still performed, so a bad index raises
+# even though the result is discarded.
+#= {raises: ['Cannot index Array', 'String']}
+[1, 2]['a']
+42

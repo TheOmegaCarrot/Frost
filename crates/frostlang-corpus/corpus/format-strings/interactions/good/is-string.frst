@@ -1,0 +1,4 @@
+# The `is_*` predicates see a format String's result as a String, whatever it
+# interpolated.
+#= {result: [true, false, true, false], inputs: {b: x'00', n: 1}}
+[is_string($'${b}'), is_bytes($'${b}'), is_flat($'${n}'), is_numeric($'${n}')]

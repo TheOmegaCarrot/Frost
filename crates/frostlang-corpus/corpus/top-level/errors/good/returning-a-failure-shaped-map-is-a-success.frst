@@ -1,0 +1,4 @@
+# Only raising is failure: a function returning a Map shaped like a failure
+# result still succeeds, and `try_call` wraps that Map as its value.
+#= {result: {ok: true, value: {ok: false, error: 'fake', trace: []}}}
+try_call(fn -> {ok: false, error: 'fake', trace: []})

@@ -1,0 +1,3 @@
+# A backslash before a space is no escape; the error names the space by code point.
+#= {rejects: ['invalid escape sequence', 'U+0020']}
+'a\ b'

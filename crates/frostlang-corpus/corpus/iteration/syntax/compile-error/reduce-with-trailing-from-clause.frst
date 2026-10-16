@@ -1,0 +1,6 @@
+# Another language's trailing `from` clause for the initial value is
+# rejected, with help saying the initial value goes before `with`.
+#= {rejects: 'an initial value goes before `with`'}
+def xs = [1]
+def f = fn acc, x -> acc + x
+reduce xs with f from 0

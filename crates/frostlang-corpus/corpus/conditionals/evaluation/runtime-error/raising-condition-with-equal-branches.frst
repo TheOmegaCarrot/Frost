@@ -1,0 +1,4 @@
+# A raising condition raises even when both branches are the same constant,
+# so the `if`'s value cannot be decided without it.
+#= {raises: 'division by zero', inputs: {zero: 0}}
+if 1 / zero: 1 else: 1

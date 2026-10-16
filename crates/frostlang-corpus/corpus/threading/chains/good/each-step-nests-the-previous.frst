@@ -1,0 +1,4 @@
+# In `1 @ f(2) @ f(3)`, the first call's result is the threaded value of the
+# second: the chain is `f(f(1, 2), 3)`.
+#= {result: [[[1, 2], 3], 4], inputs: {one: 1}}
+one @ collect(2) @ collect(3) @ collect(4)

@@ -1,0 +1,3 @@
+# `tap(a, f)` calls `f(a)` for its effect and returns `a`, not `f`'s result.
+#= {result: 3, printed: ['tapped 3']}
+tap(3, fn x -> print($'tapped ${x}'))

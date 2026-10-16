@@ -1,0 +1,11 @@
+# Int ordering is signed: negatives sort below zero, and the least Int sorts
+# below the greatest, as a signed comparison of the full range must.
+#= {result: [true, true, true, true, true, false]}
+[
+    -1 < 0,
+    -10 < -9,
+    -9223372036854775808 < 9223372036854775807,
+    -9223372036854775808 < -9223372036854775807,
+    9223372036854775806 < 9223372036854775807,
+    9223372036854775807 < -9223372036854775808,
+]

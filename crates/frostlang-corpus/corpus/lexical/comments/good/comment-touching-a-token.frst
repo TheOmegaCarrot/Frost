@@ -1,0 +1,6 @@
+# A comment needs no space before its `#`: it starts right after the last
+# token of the line.
+#= {result: [1, 2]}
+def a = 1# no space
+def b = 2#
+[a, b]#also none

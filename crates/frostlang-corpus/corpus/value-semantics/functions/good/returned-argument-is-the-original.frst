@@ -1,0 +1,7 @@
+# A function returning its argument unchanged returns a value that can be
+# extended without affecting the caller's binding.
+#= {result: [[1], [1, 2]], inputs: {n: 1}}
+defn same(x) -> x
+def xs = [n]
+def ys = same(xs) + [2]
+[xs, ys]

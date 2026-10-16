@@ -1,0 +1,6 @@
+# Each branch of a conditional extends a parameter at its last use on that
+# path; neither path sees the other's element, across repeated calls.
+#= {result: [[1, 'yes'], [1, 'no'], [1, 'yes']], inputs: {n: 1}}
+defn label(c, xs) -> if c: xs + ['yes'] else: xs + ['no']
+def base = [n]
+[label(true, base), label(false, base), label(true, base)]

@@ -1,0 +1,5 @@
+# A parameter may not reuse the function's own name: both are bound in the
+# function's scope.
+#= {rejects: '`f` is already bound'}
+defn f(f) -> 1
+f(2)

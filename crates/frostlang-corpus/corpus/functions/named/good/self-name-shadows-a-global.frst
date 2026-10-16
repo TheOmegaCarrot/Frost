@@ -1,0 +1,5 @@
+# A self-name may be a global's name; inside, it is the lambda, and outside,
+# the global is unaffected.
+#= {result: ['done', 2]}
+def f = fn len(k) -> if k == 0: 'done' else: len(k - 1)
+[f(3), len([1, 2])]

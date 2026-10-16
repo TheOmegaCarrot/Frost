@@ -1,0 +1,5 @@
+# A comprehension written as a call's argument, as in a generator expression,
+# is rejected like one in an Array literal.
+#= {rejects: 'Frost has no comprehensions'}
+def xs = [1, 2]
+len(x for x in xs)

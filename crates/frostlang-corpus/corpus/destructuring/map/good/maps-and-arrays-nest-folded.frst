@@ -1,0 +1,5 @@
+# Nested Map and Array patterns over a literal the optimizer may match ahead
+# of time.
+#= {result: [1, [{x: 2}], {pts: [{x: 1}, {x: 2}]}]}
+def {pts: [{x}, ...rest]} as all = {pts: [{x: 1}, {x: 2}]}
+[x, rest, all]

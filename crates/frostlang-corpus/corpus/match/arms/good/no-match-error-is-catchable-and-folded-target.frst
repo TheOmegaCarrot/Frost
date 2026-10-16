@@ -1,0 +1,7 @@
+# A constant target that matches no arm raises at runtime even when the
+# optimizer could see that ahead of time, and the error is catchable.
+#= {result: false}
+def outcome = try_call(fn -> match 7 {
+    1 => 'one',
+})
+outcome.ok

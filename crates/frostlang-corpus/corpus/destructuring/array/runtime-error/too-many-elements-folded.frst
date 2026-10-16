@@ -1,0 +1,5 @@
+# A length mismatch the optimizer can see ahead of time still raises at
+# runtime, rather than being rejected or folded away.
+#= {raises: 'exactly 1 element'}
+def [a] = [1, 2]
+a

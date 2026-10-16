@@ -1,0 +1,4 @@
+# An arity error in a threaded call to a pure global over constants is left
+# for runtime rather than folded or rejected.
+#= {raises: ['expects 1', 'called with 2']}
+[1, 2] @ len(1)

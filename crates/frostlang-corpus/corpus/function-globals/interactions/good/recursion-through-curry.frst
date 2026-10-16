@@ -1,0 +1,4 @@
+# A function may recur through a curried copy of itself.
+#= {result: 50, inputs: {n: 50}}
+defn count(k, total) -> if k == 0: total else: curry(count, k - 1)(total + 1)
+count(n, 0)

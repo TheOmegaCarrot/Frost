@@ -1,0 +1,8 @@
+# Inside a block, as at the top level, a line break ends a statement: a
+# trailing operator does not carry the expression onto the next line.
+#= {rejects: ['found a line break', 'wrap the expression in parentheses']}
+def x = 1
+do {
+    x +
+    x
+}

@@ -1,0 +1,4 @@
+# A rest must be the last part of an Array pattern.
+#= {rejects: 'expected `]`'}
+def [...rest, last] = [1, 2]
+[rest, last]

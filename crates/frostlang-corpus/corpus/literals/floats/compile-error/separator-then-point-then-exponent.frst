@@ -1,0 +1,3 @@
+# A separator before the point does not excuse a point with no digits after it.
+#= {rejects: ['invalid number', 'digits after its point']}
+1_.E-3

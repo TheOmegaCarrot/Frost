@@ -1,0 +1,7 @@
+# `x or print(...)` as an `each` body prints only for the falsy elements.
+#= {
+#=     result: [1, null, 0, false],
+#=     printed: ['falsy', 'falsy'],
+#=     inputs: {values: [1, null, 0, false]},
+#= }
+each(values, fn x -> x or print('falsy'))

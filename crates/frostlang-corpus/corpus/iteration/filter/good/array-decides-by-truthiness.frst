@@ -1,0 +1,9 @@
+# `filter` keeps an element when the predicate's answer is truthy, not only
+# when it is `true`. Subtle: only Null and false are falsy, so 0, '', [] and
+# {} are kept when the predicate returns them.
+#= {
+#=     result: [[0, 1, '', [], {}], [0, 1, '', [], {}]],
+#=     inputs: {xs: [0, null, false, 1, '', [], {}]},
+#= }
+def identity = fn x -> x
+[filter [0, null, false, 1, '', [], {}] with identity, filter xs with identity]

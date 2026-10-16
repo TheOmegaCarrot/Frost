@@ -1,0 +1,3 @@
+# Dividing an Int by 0.0 raises, as dividing by the Int zero does.
+#= {raises: 'division by zero'}
+3 / 0.0

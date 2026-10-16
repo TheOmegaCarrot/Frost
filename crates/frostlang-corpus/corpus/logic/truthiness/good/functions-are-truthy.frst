@@ -1,0 +1,12 @@
+# Every Function is truthy: a global, a lambda, an abbreviated lambda, and a
+# lambda that itself returns a falsy value.
+#= {result: [true, true, true, true, true]}
+defn returns_null() -> null
+def constant_false = fn -> false
+[
+    not not len,
+    not not returns_null,
+    not not constant_false,
+    not not $(null),
+    not not (fn x -> x),
+]

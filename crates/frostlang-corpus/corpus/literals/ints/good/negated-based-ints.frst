@@ -1,0 +1,4 @@
+# A based literal is a magnitude: `-0xff` is negative 255, and there is no
+# two's-complement reading of the digits.
+#= {result: [-255, -1, -7, -1]}
+[-0xff, -0b1, -0o7, -0x0000000000000001]

@@ -1,0 +1,14 @@
+# A call to a function that always yields the same value, which the optimizer
+# may see through, decides a logical just as the value would at runtime: a
+# skipped right operand never runs, and a reached one does.
+#= {
+#=     result: [false, 0, null],
+#=     printed: ['right of a truthy call'],
+#= }
+defn never() -> false
+defn zero() -> 0
+[
+    never() and print('right of a falsy call'),
+    zero() or print('right of a truthy call that decides'),
+    zero() and print('right of a truthy call'),
+]

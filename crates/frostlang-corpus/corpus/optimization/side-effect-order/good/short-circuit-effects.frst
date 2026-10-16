@@ -1,0 +1,16 @@
+# `and` and `or` run their right operand's effect only when the left operand
+# does not decide the result, whether the left is constant or computed.
+#= {
+#=     result: [null, null, false, true],
+#=     printed: ['left', 'and right', 'left', 'or right'],
+#= }
+def left = fn v -> do {
+    print('left')
+    v
+}
+[
+    left(true) and print('and right'),
+    left(false) or print('or right'),
+    false and print('never'),
+    true or print('never'),
+]

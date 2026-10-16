@@ -1,0 +1,3 @@
+# A Bool is not an Array position.
+#= {raises: ['index Array', 'Bool']}
+index(true)([1])

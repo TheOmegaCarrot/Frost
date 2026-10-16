@@ -1,0 +1,4 @@
+# Haskell's `$` application operator is not Frost's: a call takes
+# parentheses.
+#= {rejects: 'no `$` operator'}
+print $ 1 + 2

@@ -1,0 +1,4 @@
+# Effects among an Array's elements happen in element order, with constant
+# elements between them computed ahead of time or not.
+#= {result: [null, 3, null, 'ab', null], printed: ['a', 'b', 'c']}
+[print('a'), 1 + 2, print('b'), 'a' + 'b', print('c')]

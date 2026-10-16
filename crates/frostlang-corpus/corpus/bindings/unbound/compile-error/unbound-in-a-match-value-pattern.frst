@@ -1,0 +1,7 @@
+# A parenthesized match pattern compares against an existing value, so its name
+# must be bound; an unbound one is an error, not a fresh binding.
+#= {rejects: ['`missing`', 'not defined']}
+match 1 {
+    (missing) => 'same',
+    _ => 'different',
+}

@@ -1,0 +1,4 @@
+# A name cannot begin with a digit: `1abc` is the Int 1 touching the name `abc`, two
+# operands with no operator between them.
+#= {rejects: 'found `abc`'}
+1abc

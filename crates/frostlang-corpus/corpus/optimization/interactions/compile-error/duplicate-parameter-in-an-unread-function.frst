@@ -1,0 +1,5 @@
+# A parameter named twice is a compile error even in a function whose binding
+# is never read.
+#= {rejects: ['`a`', 'already bound']}
+def unused = fn a, a -> a
+'ok'

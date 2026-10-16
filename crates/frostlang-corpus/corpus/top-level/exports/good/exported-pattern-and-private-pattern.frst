@@ -1,0 +1,6 @@
+# Of two destructuring `def`s, only the one written `export` is exported, though
+# both bind names usable afterward.
+#= {result: 10, exports: {shown: 1}}
+export def [shown, 2] = [1, 2]
+def [hidden, 2] = [9, 2]
+shown + hidden

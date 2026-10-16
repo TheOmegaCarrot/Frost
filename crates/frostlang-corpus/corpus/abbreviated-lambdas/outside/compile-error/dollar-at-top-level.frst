@@ -1,0 +1,3 @@
+# `$` outside an abbreviated lambda is not a name; it is a syntax error.
+#= {rejects: ['found `$`', 'only inside `$( ... )`']}
+def x = $

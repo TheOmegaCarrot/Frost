@@ -1,0 +1,7 @@
+# Two identical literals are two values as far as a program can tell, even if
+# the compiler stores them once: extending one leaves the other unchanged.
+#= {result: [[1], [1], [1, 2]]}
+def a = [1]
+def b = [1]
+def c = a + [2]
+[a, b, c]

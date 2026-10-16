@@ -1,0 +1,6 @@
+# `x` and `R` prefix Bytes and raw String literals only when a quote (and,
+# for `R`, a parenthesis) touches them; otherwise they are ordinary names.
+#= {result: ['xab', 'R(', 'xR']}
+def x = 'x'
+def R = 'R'
+[x + 'ab', R + '(', x + R]

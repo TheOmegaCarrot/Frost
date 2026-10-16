@@ -1,0 +1,6 @@
+# Binding a name twice in one scope is an error even when both values are the
+# same: the rule is about the name, not the value.
+#= {rejects: ['`x`', 'already bound']}
+def x = 1
+def x = 1
+x

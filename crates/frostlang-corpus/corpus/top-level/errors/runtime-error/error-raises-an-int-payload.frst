@@ -1,0 +1,3 @@
+# Uncaught, a non-String payload's message is the value as text.
+#= {raises: '42'}
+error(42)

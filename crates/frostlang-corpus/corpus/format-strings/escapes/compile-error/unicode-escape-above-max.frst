@@ -1,0 +1,3 @@
+# A Unicode escape past U+10FFFF names no scalar value.
+#= {rejects: 'not a valid Unicode scalar value'}
+def s = $'\u{110000}'

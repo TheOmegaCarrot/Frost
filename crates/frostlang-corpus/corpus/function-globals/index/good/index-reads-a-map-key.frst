@@ -1,0 +1,4 @@
+# `index(key)` makes a function that reads `key` from a Map.
+#= {result: [1, 'two']}
+def read_a = index('a')
+[read_a({a: 1}), read_a({a: 'two', b: 3})]

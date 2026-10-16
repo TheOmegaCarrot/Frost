@@ -1,0 +1,11 @@
+# A closure captures the value a name had where the closure was created. A
+# later definition of the same name in the same function makes a new binding
+# and does not change what the closure sees.
+#= {result: ['outer', 'inner']}
+def label = 'outer'
+def pair = do {
+    def read = fn -> label
+    def label = 'inner'
+    [read(), label]
+}
+pair

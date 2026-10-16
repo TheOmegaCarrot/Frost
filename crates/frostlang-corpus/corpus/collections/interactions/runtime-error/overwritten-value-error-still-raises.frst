@@ -1,0 +1,4 @@
+# A value a later duplicate key replaces is still evaluated, so its error
+# raises even though it would never reach the Map.
+#= {raises: 'Division by zero'}
+{a: 1 / 0, a: 10}.a

@@ -1,0 +1,10 @@
+# Statements run in order: effects between constant statements and bindings
+# happen where they are written.
+#= {result: 6, printed: ['one', '3', 'two', '6']}
+print('one')
+def a = 1 + 2
+print(to_string(a))
+def b = a * 2
+print('two')
+print(to_string(b))
+b

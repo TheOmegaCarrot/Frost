@@ -1,0 +1,3 @@
+# Bools are not numbers: a Bool times an Int is a type error.
+#= {raises: 'Bool * Int'}
+false * 1

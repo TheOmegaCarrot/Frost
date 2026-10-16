@@ -1,0 +1,5 @@
+#!/usr/bin/env frost
+# A shebang line starts with `#`, so it is an ordinary comment and a script
+# may begin with one.
+#= {result: 1}
+1

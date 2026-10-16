@@ -1,0 +1,3 @@
+# Frost spells logical "or" as the keyword `or`; `||` is not an operator.
+#= {rejects: ['`|`', '`or`']}
+true || false

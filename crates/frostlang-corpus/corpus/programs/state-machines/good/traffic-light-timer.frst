@@ -1,0 +1,40 @@
+# A timed traffic light: each tick records the current light and counts its
+# remaining time down, switching to the next light (with that light's full
+# duration) when it reaches zero. A tail-recursive driver runs it for a short
+# timeline and for ten thousand ticks, tallying ticks per light in a Map.
+#= {
+#=     result: {
+#=         timeline: ['green', 'green', 'green', 'yellow', 'red', 'red', 'green', 'green'],
+#=         after_short: {light: 'green', remaining: 1},
+#=         tally: {green: 5001, yellow: 1667, red: 3332},
+#=         after_long: {light: 'red', remaining: 2},
+#=     },
+#=     inputs: {short: 8, long: 10000},
+#= }
+def durations = {green: 3, yellow: 1, red: 2}
+def following = {green: 'yellow', yellow: 'red', red: 'green'}
+
+defn tick(light) ->
+    if light.remaining == 1: do {
+        def next = following[light.light]
+        {light: next, remaining: durations[next]}
+    }
+    else: light + {remaining: light.remaining - 1}
+
+defn record(light, n, timeline) ->
+    if n == 0: {light, timeline}
+    else: record(tick(light), n - 1, timeline + [light.light])
+
+defn tally(light, n, counts) ->
+    if n == 0: {light, counts}
+    else: tally(tick(light), n - 1, counts + {[light.light]: (counts[light.light] or 0) + 1})
+
+def start = {light: 'green', remaining: durations.green}
+def brief = record(start, short, [])
+def lengthy = tally(start, long, {})
+{
+    timeline: brief.timeline,
+    after_short: brief.light,
+    tally: lengthy.counts,
+    after_long: lengthy.light,
+}

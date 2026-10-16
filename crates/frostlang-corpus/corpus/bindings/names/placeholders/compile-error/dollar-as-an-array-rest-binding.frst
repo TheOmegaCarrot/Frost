@@ -1,0 +1,5 @@
+# A placeholder cannot be an Array pattern's rest binding.
+#= {rejects: ['`$`', 'placeholders work only inside']}
+match [1] {
+    [...$] => 1,
+}

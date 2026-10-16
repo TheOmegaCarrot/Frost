@@ -1,0 +1,3 @@
+# A backslash before a character with no escape meaning is a syntax error.
+#= {rejects: ['invalid escape sequence', R'(`\q`)']}
+def s = $'bad\q'

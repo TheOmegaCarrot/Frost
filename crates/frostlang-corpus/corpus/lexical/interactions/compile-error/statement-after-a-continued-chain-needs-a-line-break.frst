@@ -1,0 +1,5 @@
+# A continuation chain still ends like any statement: a second statement on
+# the chain's last line needs a `;`.
+#= {rejects: 'a line break or `;`', inputs: {xs: [1]}}
+xs
+    @ len() def y = 1

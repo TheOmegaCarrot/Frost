@@ -1,0 +1,5 @@
+# An `if` on a placeholder follows Frost truthiness: 0 is truthy, Null and
+# false are not.
+#= {result: ['t', 'f', 'f', 't'], inputs: {zero: 0, nothing: null}}
+def truthy = $(if $: 't' else: 'f')
+[truthy(zero), truthy(nothing), truthy(false), truthy('')]

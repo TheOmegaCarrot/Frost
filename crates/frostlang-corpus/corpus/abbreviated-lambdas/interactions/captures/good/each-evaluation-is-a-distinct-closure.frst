@@ -1,0 +1,6 @@
+# Two evaluations of the same abbreviated lambda are distinct Functions,
+# while one closure equals itself.
+#= {result: [false, true, false]}
+def make = fn -> $($)
+def g = make()
+[make() == make(), g == g, $(1) == $(1)]

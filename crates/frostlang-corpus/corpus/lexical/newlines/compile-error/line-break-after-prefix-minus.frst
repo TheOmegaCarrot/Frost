@@ -1,0 +1,5 @@
+# Outside brackets, a prefix `-` ending its line leaves it without an
+# operand.
+#= {rejects: 'a line continues only when'}
+def x = -
+    1

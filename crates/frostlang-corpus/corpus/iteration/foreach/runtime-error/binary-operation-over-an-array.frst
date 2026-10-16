@@ -1,0 +1,4 @@
+# Over an Array the operation is called with one argument, so a
+# two-parameter operation is an arity error.
+#= {raises: 'called with 1', inputs: {xs: [1]}}
+foreach xs with fn i, x -> x

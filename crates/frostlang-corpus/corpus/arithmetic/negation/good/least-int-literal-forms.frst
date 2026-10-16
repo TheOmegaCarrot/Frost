@@ -1,0 +1,8 @@
+# The least Int may be written with a space after the `-`, or in hexadecimal:
+# any negated literal of its magnitude is the least Int.
+#= {result: [-9223372036854775808, -9223372036854775808, true]}
+[
+    - 9223372036854775808,
+    -0x8000000000000000,
+    -0x8000000000000000 == -9223372036854775807 - 1,
+]

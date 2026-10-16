@@ -1,0 +1,7 @@
+# A `defn` may return an abbreviated lambda that outlives the call, keeping
+# the captured parameter.
+#= {result: [5, 12]}
+defn adder(k) -> $($ + k)
+def add_two = adder(2)
+def add_ten = adder(10)
+[add_two(3), add_ten(2)]

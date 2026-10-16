@@ -1,0 +1,3 @@
+# A hex literal's digits stop at `f`; a later letter is not one, in either case.
+#= {rejects: ['invalid character `G`', 'hexadecimal']}
+0XAG

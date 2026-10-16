@@ -1,0 +1,8 @@
+# The closing delimiter, not the first line, sets how much indentation is removed: a
+# closer at the margin removes none.
+#= {result: '    a\n      b'}
+def text = '''
+    a
+      b
+'''
+text

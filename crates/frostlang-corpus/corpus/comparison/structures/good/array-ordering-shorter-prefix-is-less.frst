@@ -1,0 +1,12 @@
+# When one Array is a proper prefix of the other, the shorter sorts first. The
+# empty Array sorts before every other Array, and equals only itself.
+#= {result: [true, false, true, false, true, true, true]}
+[
+    [1, 2] < [1, 2, 3],
+    [1, 2, 3] < [1, 2],
+    [] < [0],
+    [] < [],
+    [] <= [],
+    [] >= [],
+    [[]] > [],
+]

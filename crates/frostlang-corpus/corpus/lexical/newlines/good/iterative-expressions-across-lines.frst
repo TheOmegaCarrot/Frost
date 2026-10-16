@@ -1,0 +1,13 @@
+# `map`, `filter`, and `reduce` may break lines before and after `with`, and
+# around `reduce`'s `init:`.
+#= {result: [[2, 4, 6], [2, 3], 16], inputs: {xs: [1, 2, 3]}}
+def doubled = map xs
+    with fn x -> x * 2
+def big = filter xs with
+    fn x -> x > 1
+def total = reduce xs
+    init:
+        10
+    with
+        fn (acc, x) -> acc + x
+[doubled, big, total]

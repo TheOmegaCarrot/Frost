@@ -1,0 +1,5 @@
+# Values built by globals written in Frost destructure like any other.
+#= {result: [1, [2, 3], 'v'], inputs: {m: {k: 'v'}}}
+def [a, ...b] = collect(1, 2, 3)
+def {k} = tap(m, fn x -> x)
+[a, b, k]

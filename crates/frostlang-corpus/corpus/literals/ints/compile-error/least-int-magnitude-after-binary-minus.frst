@@ -1,0 +1,4 @@
+# The least Int's magnitude is a literal only when negated by a unary `-`. After a
+# binary `-` it stands alone, so it is out of range, though the difference would fit.
+#= {rejects: 'Int literal out of range'}
+0 - 9223372036854775808

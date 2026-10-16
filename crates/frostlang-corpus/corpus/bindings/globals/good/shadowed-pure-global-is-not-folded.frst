@@ -1,0 +1,7 @@
+# A call through a name that shadows a pure global calls the binding, never the
+# global: the optimizer must not fold the call as if it were the global's.
+#= {result: [99, 'mine', 'mine']}
+def len = fn x -> 99
+def is_int = fn x -> 'mine'
+def type = fn x -> 'mine'
+[len([1, 2, 3]), is_int(1), type(1)]

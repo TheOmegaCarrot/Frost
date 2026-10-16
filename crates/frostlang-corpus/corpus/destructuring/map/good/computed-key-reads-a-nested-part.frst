@@ -1,0 +1,8 @@
+# A computed key may read a name bound inside an earlier nested part, and a
+# nested Map's key may read a name bound by the pattern around it.
+#= {
+#=     result: [2, [0], 4],
+#=     inputs: {m: {a: ['z', 0], z: 2, k: 'x', inner: {x: 4}}},
+#= }
+def {a: [k1, ...r], [k1]: v, k, inner: {[k]: w}} = m
+[v, r, w]

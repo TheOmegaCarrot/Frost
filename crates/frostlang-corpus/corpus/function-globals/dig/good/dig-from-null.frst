@@ -1,0 +1,3 @@
+# Digging into Null itself gives Null, whatever the keys.
+#= {result: [null, null]}
+[dig(null, 'a'), dig(null, 'a', 0, true)]

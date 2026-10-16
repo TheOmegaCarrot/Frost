@@ -1,0 +1,8 @@
+# A function held in a known Map or Array, and one returned inside a structure
+# by a call, is called through its index.
+#= {result: [42, 5, 1, 7]}
+def ops = {double: fn x -> x * 2}
+def table = [fn x -> x + 1, fn x -> x - 1]
+defn pair() -> [fn x -> x, 1]
+def p = pair()
+[ops.double(21), p[0](5), p[1], table[0](table[1](7))]

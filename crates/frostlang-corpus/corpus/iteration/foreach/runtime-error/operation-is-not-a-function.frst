@@ -1,0 +1,3 @@
+# The operation must be a Function.
+#= {raises: ['Function', 'argument 2', 'String'], inputs: {xs: [1]}}
+foreach xs with 'print'

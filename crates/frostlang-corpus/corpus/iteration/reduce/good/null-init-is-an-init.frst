@@ -1,0 +1,14 @@
+# `init: null` is an initial accumulator like any other, not the absence of
+# one. Subtle: without `init:` the first element would seed instead, giving
+# [1, 2] rather than [[null, 1], 2].
+#= {
+#=     result: [[[null, 1], 2], [1, 2], [[null, 1], 2], [1, 2]],
+#=     inputs: {xs: [1, 2]},
+#= }
+def pair = fn acc, x -> [acc, x]
+[
+    reduce [1, 2] init: null with pair,
+    reduce [1, 2] with pair,
+    reduce xs init: null with pair,
+    reduce xs with pair,
+]

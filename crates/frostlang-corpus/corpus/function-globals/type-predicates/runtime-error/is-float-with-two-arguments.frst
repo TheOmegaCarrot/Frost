@@ -1,0 +1,3 @@
+# `is_float` takes exactly one argument.
+#= {raises: ['is_float', 'expects 1', 'called with 2']}
+is_float(1.0, 2.0)

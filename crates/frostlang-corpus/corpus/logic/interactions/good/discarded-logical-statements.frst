@@ -1,0 +1,16 @@
+# Logical expressions as discarded statements, deciding either way and over
+# constants or runtime values, leave nothing behind to disturb the tail value.
+#= {result: [5, 5], inputs: {n: null, zero: 0}}
+defn run(x) -> {
+    x and 1
+    x or 1
+    x and 1 or 2
+    x or x and 3
+    true and x
+    false or x
+    null and x
+    0 or x
+    not x
+    5
+}
+[run(n), run(zero)]

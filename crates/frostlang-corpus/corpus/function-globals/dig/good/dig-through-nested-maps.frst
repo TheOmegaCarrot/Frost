@@ -1,0 +1,3 @@
+# `dig(s, k1, k2, ...)` indexes by each key in turn.
+#= {result: 42}
+{a: {b: {c: 42}}} @ dig('a', 'b', 'c')

@@ -1,0 +1,3 @@
+# `call(f)` with no Array calls `f` with no arguments at all.
+#= {result: ['none', []]}
+[call(fn -> 'none'), call(collect)]

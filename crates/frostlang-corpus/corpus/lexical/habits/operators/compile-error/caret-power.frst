@@ -1,0 +1,3 @@
+# `^` is neither a power nor a bitwise operator in Frost.
+#= {rejects: 'no bitwise operators', inputs: {a: 2, b: 3}}
+a ^ b

@@ -1,0 +1,5 @@
+# `init` is reserved, so `defn` cannot use it as a function name, a natural
+# choice for a setup function in other languages.
+#= {rejects: ['`init`', 'keyword']}
+defn init() -> 1
+1

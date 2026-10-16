@@ -1,0 +1,5 @@
+# A call in tail position checks its callee like any other call: a
+# non-function callee raises, though a tail call would reuse the frame.
+#= {raises: ['non-function', 'Int'], inputs: {n: 5}}
+defn apply(g) -> g(1)
+apply(n)

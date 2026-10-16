@@ -1,0 +1,4 @@
+# An operation is compiled whether or not it will ever be called: an unbound
+# name in it is rejected even when the structure is empty.
+#= {rejects: ['`missing`', 'not defined']}
+map [] with fn x -> missing

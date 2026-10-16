@@ -1,0 +1,4 @@
+# Bytes concatenated with themselves repeat their octets and are unchanged.
+#= {result: [x'00ff00ff', x'00ff'], inputs: {b: x'00ff'}}
+def c = b + x''
+[c + c, c]

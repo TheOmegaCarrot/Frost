@@ -1,0 +1,7 @@
+# `as` binds a nested Map pattern's Map as well as the outer one.
+#= {
+#=     result: [1, {b: 1}, {a: {b: 1}, c: 2}],
+#=     inputs: {m: {a: {b: 1}, c: 2}},
+#= }
+def {a: {b} as inner} as outer = m
+[b, inner, outer]

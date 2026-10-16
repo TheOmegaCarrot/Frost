@@ -1,0 +1,4 @@
+# Merging replaces a colliding key's whole value: nested Maps are not merged
+# recursively.
+#= {result: {opts: {b: 2}}, inputs: {left: {opts: {a: 1}}, right: {opts: {b: 2}}}}
+left + right

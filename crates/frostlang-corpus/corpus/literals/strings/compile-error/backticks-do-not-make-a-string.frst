@@ -1,0 +1,3 @@
+# Backticks do not delimit a String, as they do in some languages for templates.
+#= {rejects: 'backtick'}
+`hello`

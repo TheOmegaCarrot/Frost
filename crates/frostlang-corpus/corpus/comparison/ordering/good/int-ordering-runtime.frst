@@ -1,0 +1,17 @@
+# The four ordering operators on Ints known only at runtime, each with its
+# operand below, equal to, and above the other.
+#= {
+#=     result: [
+#=         [true, false, false],
+#=         [true, true, false],
+#=         [false, false, true],
+#=         [false, true, true],
+#=     ],
+#=     inputs: {low: 3, mid: 10, high: 11},
+#= }
+[
+    [low < mid, mid < mid, high < mid],
+    [low <= mid, mid <= mid, high <= mid],
+    [low > mid, mid > mid, high > mid],
+    [low >= mid, mid >= mid, high >= mid],
+]

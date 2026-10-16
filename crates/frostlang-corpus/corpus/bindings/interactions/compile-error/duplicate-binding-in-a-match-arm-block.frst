@@ -1,0 +1,10 @@
+# A block in a match arm is one scope: binding a name twice there is an error,
+# though the block may shadow the arm's own binding once.
+#= {rejects: ['`y`', 'already bound']}
+match 1 {
+    x => do {
+        def y = x
+        def y = x + 1
+        y
+    },
+}

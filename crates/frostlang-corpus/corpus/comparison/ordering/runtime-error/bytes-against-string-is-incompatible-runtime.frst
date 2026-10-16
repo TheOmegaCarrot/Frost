@@ -1,0 +1,3 @@
+# Ordering a Bytes against a String, both known only at runtime, raises.
+#= {raises: ['incompatible types', 'Bytes', 'String'], inputs: {octets: x'61', text: 'a'}}
+octets > text

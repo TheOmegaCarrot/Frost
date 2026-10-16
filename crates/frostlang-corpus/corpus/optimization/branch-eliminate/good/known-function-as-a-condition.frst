@@ -1,0 +1,7 @@
+# A known Function is truthy as a condition, though it is never a constant.
+#= {result: ['function is truthy', 'f']}
+defn f() -> 1
+[
+    if f: 'function is truthy' else: 'falsy',
+    (f and 'f') or 'no',
+]

@@ -1,0 +1,4 @@
+# Within one branch, a name may still be bound only once.
+#= {rejects: '`x` is already bound'}
+def [x, 0] | [x, x] = [1, 0]
+x

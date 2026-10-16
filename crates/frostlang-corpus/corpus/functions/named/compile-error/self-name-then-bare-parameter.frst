@@ -1,0 +1,5 @@
+# A self-name needs a parenthesized parameter list after it: `fn name x`
+# is neither a named lambda nor a list of two parameters, which would need a
+# comma.
+#= {rejects: ['expected `->`', 'found `x`']}
+def g = fn name x -> x

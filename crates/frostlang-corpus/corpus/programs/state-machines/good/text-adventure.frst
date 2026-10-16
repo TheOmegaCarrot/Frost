@@ -1,0 +1,77 @@
+# A tiny text adventure folded over commands: the world is a Map of rooms
+# with exits and items, the player state records the room and inventory,
+# and every command prints a response. Taking an item removes it from the
+# room in the new world state only; a blocked exit and an unknown command
+# leave the state unchanged.
+#= {
+#=     result: {
+#=         room: 'vault',
+#=         inventory: ['key', 'gold'],
+#=         hall_items: [],
+#=         moves: 2,
+#=     },
+#=     printed: [
+#=         'You are in the hall.',
+#=         'Taken: key.',
+#=         'You cannot go up.',
+#=         'You are in the cellar.',
+#=         'Nothing called lamp here.',
+#=         'You are in the vault.',
+#=         'Taken: gold.',
+#=         'Unknown command: dance',
+#=     ],
+#=     inputs: {
+#=         commands: [
+#=             ['look'],
+#=             ['take', 'key'],
+#=             ['go', 'up'],
+#=             ['go', 'down'],
+#=             ['take', 'lamp'],
+#=             ['go', 'east'],
+#=             ['take', 'gold'],
+#=             ['dance'],
+#=         ],
+#=     },
+#= }
+def world = {
+    hall: {exits: {down: 'cellar'}, items: ['key']},
+    cellar: {exits: {up: 'hall', east: 'vault'}, items: []},
+    vault: {exits: {west: 'cellar'}, items: ['gold']},
+}
+
+defn without(xs, x) -> select(xs, fn y -> y != x)
+defn contains(xs, x) -> fold(xs, false, fn found, y -> found or y == x)
+
+defn say(state, text) -> {
+    print(text)
+    state
+}
+
+defn step(state, command) -> {
+    def here = state.world[state.room]
+    match command {
+        ['look'] => say(state, $'You are in the ${state.room}.'),
+        ['go', direction] if: has(here.exits, direction) => do {
+            def next = here.exits[direction]
+            say(state + {room: next, moves: state.moves + 1}, $'You are in the ${next}.')
+        },
+        ['go', direction] => say(state, $'You cannot go ${direction}.'),
+        ['take', item] if: contains(here.items, item) => say(
+            state + {
+                inventory: state.inventory + [item],
+                world: state.world + {[state.room]: here + {items: without(here.items, item)}},
+            },
+            $'Taken: ${item}.',
+        ),
+        ['take', item] => say(state, $'Nothing called ${item} here.'),
+        [verb, ..._] => say(state, $'Unknown command: ${verb}'),
+    }
+}
+
+def final = fold(commands, {room: 'hall', inventory: [], world, moves: 0}, step)
+{
+    room: final.room,
+    inventory: final.inventory,
+    hall_items: final.world.hall.items,
+    moves: final.moves,
+}

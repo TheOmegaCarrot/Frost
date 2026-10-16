@@ -1,0 +1,5 @@
+# A rest name counts as a binding for the same-names rule.
+#= {rejects: 'every alternative must bind the same names'}
+match [1] {
+    [x, ...r] | [x] => 0,
+}

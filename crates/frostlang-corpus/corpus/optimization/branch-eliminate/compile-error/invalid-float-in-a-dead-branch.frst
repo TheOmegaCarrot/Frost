@@ -1,0 +1,4 @@
+# A Float literal too large to be finite is a compile error even in a branch a
+# constant condition rules out.
+#= {rejects: 'invalid float'}
+if false: 1e999 else: 0

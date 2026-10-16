@@ -1,0 +1,5 @@
+# `defn` is a definition like `def`, so a later `def` of the same name in the
+# same scope is a duplicate binding.
+#= {rejects: ['`f`', 'already bound']}
+defn f(x) -> x
+def f = 2

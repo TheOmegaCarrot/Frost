@@ -1,0 +1,7 @@
+# A closure raising a value it captured is caught with that value, after the
+# function that made the closure has long returned.
+#= {result: ['first', {n: 2}]}
+defn raiser(payload) -> fn -> error(payload)
+def first = raiser('first')
+def second = raiser({n: 2})
+[try_call(first).error, try_call(second).error]

@@ -1,0 +1,3 @@
+# The rest parameter may not take the self-name either.
+#= {rejects: ['`f`', 'already bound']}
+def g = fn f(...f) -> null

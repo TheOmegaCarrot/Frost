@@ -1,0 +1,12 @@
+# `==` has no cross-type numeric equality, so `3 == 3.0` is false and an `or`
+# after it moves on, while `<` compares across Int and Float.
+#= {
+#=     result: ['different', true, 'different', true],
+#=     inputs: {i: 3, x: 3.0},
+#= }
+[
+    3 == 3.0 or 'different',
+    3 < 3.5 and 3.5 < 4,
+    i == x or 'different',
+    i < x + 0.5 and not (i > x),
+]

@@ -1,0 +1,6 @@
+# A parameter shadows an outer binding of the same name inside the body,
+# and leaves the outer binding untouched outside it.
+#= {result: [11, 1]}
+def x = 1
+def f = fn x -> x + 1
+[f(10), x]

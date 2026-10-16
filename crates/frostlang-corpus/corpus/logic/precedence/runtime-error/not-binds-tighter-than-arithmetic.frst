@@ -1,0 +1,5 @@
+# `not` binds tighter than arithmetic, so `not x + 1` adds 1 to the Bool that
+# `not` yields, which raises. Subtle because `not` reads like it should apply to
+# the whole sum.
+#= {raises: ['add', 'Bool'], inputs: {x: 1}}
+not x + 1

@@ -1,0 +1,11 @@
+# Map values known only at runtime compare strictly by type and
+# structurally when nested.
+#= {
+#=     result: [false, true, false],
+#=     inputs: {i: 1, f: 1.0, nested: {b: [1, {c: null}]}},
+#= }
+[
+    {a: i} == {a: f},
+    {a: nested} == {a: {b: [i, {c: null}]}},
+    {a: nested} == {a: {b: [f, {c: null}]}},
+]

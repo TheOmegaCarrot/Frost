@@ -1,0 +1,7 @@
+# A Null result is passed to the next function like any other value; the
+# chain does not stop at it.
+#= {result: [true, 'got null']}
+[
+    compose(fn -> null, is_null)(),
+    compose(fn -> null, fn v -> if is_null(v): 'got null' else: 'other')(),
+]

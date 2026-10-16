@@ -1,0 +1,3 @@
+# `map` must be followed by a structure before `with`.
+#= {rejects: 'expected an expression'}
+map with fn x -> x

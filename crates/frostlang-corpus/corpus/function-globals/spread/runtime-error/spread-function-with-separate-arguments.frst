@@ -1,0 +1,3 @@
+# A spread function takes exactly one Array, not the arguments themselves.
+#= {raises: ['spread_fn', 'expects 1', 'called with 2']}
+spread(collect)(1, 2)

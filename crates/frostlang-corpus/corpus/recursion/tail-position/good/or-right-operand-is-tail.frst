@@ -1,0 +1,6 @@
+# The right operand of `or` in tail position is in tail position: nothing is
+# left to do once it runs.
+#= {result: 0}
+defn down(n) -> (n == 0 and error('bottom')) or down(n - 1)
+defn frames(n) -> len(try_call(down, [n]).trace)
+frames(500) - frames(5)

@@ -1,0 +1,14 @@
+# A branch that appends to a binding read again after the `if` yields a new
+# Array; the binding keeps its own value. Subtle: the append is the binding's
+# last use on that branch's path only if nothing after the `if` reads it, so
+# an optimizer reusing the Array in place must not do so here.
+#= {
+#=     result: [[[0, 1, 2], [0, 1]], [[0, 1], [0, 1]]],
+#=     inputs: {xs: [0], t: true, f: false},
+#= }
+defn grow(start, c) -> {
+    def a = start + [1]
+    def b = if c: a + [2] else: a
+    [b, a]
+}
+[grow(xs, t), grow(xs, f)]

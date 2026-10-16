@@ -1,0 +1,8 @@
+# Inside an abbreviated lambda, `$` is a placeholder to read, never a name a
+# pattern may bind.
+#= {rejects: 'expected a pattern'}
+def f = $(do {
+    def [$] = [1]
+    1
+})
+f(0)

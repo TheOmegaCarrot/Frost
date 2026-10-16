@@ -1,0 +1,4 @@
+# `export` takes a definition, so an anonymous lambda cannot be exported; it
+# must be bound with `export def` or `export defn`.
+#= {rejects: '`export` takes a definition'}
+export fn x -> x

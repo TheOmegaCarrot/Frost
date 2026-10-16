@@ -1,0 +1,3 @@
+# A String naming a global is not that global.
+#= {raises: ['call', 'Function as argument 1', 'got String']}
+call('collect', [])

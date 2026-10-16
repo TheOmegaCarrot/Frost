@@ -1,0 +1,9 @@
+# An error raised at the bottom of a deep recursion can be caught by
+# `try_call`, whether the recursion was in tail position or not, and the run
+# continues afterward.
+#= {result: [false, 'bottom', false, 'bottom', 'after']}
+defn tail_down(n) -> if n == 0: error('bottom') else: tail_down(n - 1)
+defn deep_down(n) -> if n == 0: error('bottom') else: 1 + deep_down(n - 1)
+def t = try_call(tail_down, [100000])
+def d = try_call(deep_down, [5000])
+[t.ok, t.error, d.ok, d.error, 'after']

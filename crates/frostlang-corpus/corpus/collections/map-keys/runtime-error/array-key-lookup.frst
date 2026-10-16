@@ -1,0 +1,3 @@
+# Looking up an Array key raises.
+#= {raises: ['not a valid Map key', 'Array'], inputs: {m: {a: 1}, k: ['a']}}
+m[k]

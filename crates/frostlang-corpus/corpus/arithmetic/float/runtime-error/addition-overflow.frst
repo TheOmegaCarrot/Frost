@@ -1,0 +1,5 @@
+# A Float sum too large to be finite raises. Frost Floats are always finite,
+# so there is no Infinity for the sum to become. Unlike Int overflow, it does
+# not wrap.
+#= {raises: 'infinity'}
+1.7976931348623157e308 + 1.7976931348623157e308

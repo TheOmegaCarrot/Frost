@@ -1,0 +1,11 @@
+# Bindings the optimizer can propagate keep their types: `def i = 3` and
+# `def f = 3.0` order as equal but are not `==`, exactly as their literals.
+#= {result: [false, true, true, false]}
+def i = 3
+def f = 3.0
+[
+    i == f,
+    i <= f,
+    i >= f,
+    i < f,
+]

@@ -1,0 +1,4 @@
+# With no arguments to fix, a curried function passes its own straight
+# through, in order, for both `curry` and `bcurry`.
+#= {result: [7, 7, [], []]}
+[curry(minus)(10, 3), bcurry(minus)(10, 3), curry(collect)(), bcurry(collect)()]

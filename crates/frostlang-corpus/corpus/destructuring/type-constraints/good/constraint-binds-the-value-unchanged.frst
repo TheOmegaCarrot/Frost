@@ -1,0 +1,5 @@
+# A constraint checks, never converts: an Int bound through `is Numeric`
+# stays an Int, so it still differs from the equal Float.
+#= {result: ['Int', false], inputs: {v: 3}}
+def n is Numeric = v
+[type(n), n == 3.0]

@@ -1,0 +1,5 @@
+# The right operand of `and` is in tail position, so a self-call there runs
+# to a large depth and returns the operand's value.
+#= {result: 'done', inputs: {n: 100000}}
+defn down(k) -> if k == 0: 'done' else: (true and down(k - 1))
+down(n)

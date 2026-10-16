@@ -1,0 +1,5 @@
+# A Map literal whose computed key is a constant Array raises when the program
+# reaches it, as an Array is not a valid Map key.
+#= {raises: 'not a valid map key'}
+def key = [1]
+{[key]: 2}

@@ -1,0 +1,6 @@
+# A parenthesized value pattern may be a match expression.
+#= {result: 'two', inputs: {v: 2, one: 1}}
+match v {
+    (match one { y => y + 1 }) => 'two',
+    _ => 'other',
+}

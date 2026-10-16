@@ -1,0 +1,4 @@
+# The function named after `@` is resolved like any name, so an unbound one is
+# a compile error.
+#= {rejects: ['`missing`', 'not defined']}
+1 @ missing()

@@ -1,0 +1,7 @@
+# Format Strings over runtime values as statements, not the tail, leave nothing
+# behind; the script's result is its tail.
+#= {result: [5, 7], inputs: {x: 7}}
+$'a${x}b'
+$'${x}'
+$'${x}${x}${x}'
+[5, x]

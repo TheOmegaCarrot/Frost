@@ -1,0 +1,8 @@
+# A threaded call can be a `match` subject; the whole call is matched.
+#= {result: 'two', inputs: {n: 1}}
+defn inc(x) -> x + 1
+match n @ inc() {
+    1 => 'one',
+    2 => 'two',
+    _ => 'other',
+}

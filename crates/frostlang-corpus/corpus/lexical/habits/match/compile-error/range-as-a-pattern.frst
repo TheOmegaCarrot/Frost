@@ -1,0 +1,3 @@
+# A pattern cannot be a range; a guard tests one.
+#= {rejects: 'a pattern cannot be a range', inputs: {x: 1}}
+match x { 1..3 => 2 }

@@ -1,0 +1,4 @@
+# Over an Array, `map` places no constraint on what the operation returns:
+# each result, whatever its type, becomes the corresponding element.
+#= {result: ['Int', 'String', 'Null', 'Array', 'Map', 'Float', 'Bool', 'Bytes']}
+map [1, 'a', null, [2], {k: 3}, 1.5, true, x'ff'] with type

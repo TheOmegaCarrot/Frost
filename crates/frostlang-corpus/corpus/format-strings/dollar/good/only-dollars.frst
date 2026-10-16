@@ -1,0 +1,3 @@
+# A run of bare `$` characters is literal text.
+#= {result: '$$$'}
+$'$$$'

@@ -1,0 +1,4 @@
+# A Null element is a real argument, not a missing one: it counts toward
+# arity and arrives as Null.
+#= {result: [true, null, 2]}
+call(fn a, b -> [is_null(a), b, 2], [null, null])

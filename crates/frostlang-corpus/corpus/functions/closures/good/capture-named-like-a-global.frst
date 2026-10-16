@@ -1,0 +1,9 @@
+# A captured binding named like a global is the binding inside its scope;
+# outside that scope, the name is the global again.
+#= {result: [5, 'Function', 2]}
+def g = do {
+    def type = 5
+    fn -> type
+}
+def h = fn print -> fn -> print(1)
+[g(), type(g), h(fn v -> v + 1)()]

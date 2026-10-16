@@ -1,0 +1,3 @@
+# `defn`'s parameters are always parenthesized, unlike a plain lambda's.
+#= {rejects: ['expected `(`', '`x`']}
+defn f x -> x

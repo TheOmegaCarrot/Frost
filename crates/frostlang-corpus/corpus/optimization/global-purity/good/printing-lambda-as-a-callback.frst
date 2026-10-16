@@ -1,0 +1,9 @@
+# A lambda that prints, given as the operation of an iteration over a constant
+# structure, prints for each element in order when the program runs.
+#= {result: [10, 20], printed: ['saw 1', 'saw 2', 'fold 3']}
+def doubled = map [1, 2] with fn x -> do {
+    print($'saw ${x}')
+    x * 10
+}
+reduce [1, 2] with fn acc, x -> print($'fold ${acc + x}')
+doubled

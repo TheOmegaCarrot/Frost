@@ -1,0 +1,14 @@
+# The tokenizer raises its own error, naming the character, for one it has no
+# class for: here a non-ASCII letter outside its ASCII identifier rule.
+#= {
+#=     raises: 'unexpected character é',
+#=     inputs: {chars: ['a', ' ', 'é', 'b']},
+#= }
+defn is_letter(c) -> (c >= 'a' and c <= 'z') or c == '_'
+
+defn step(state, c) ->
+    if is_letter(c): state + {current: (state.current or '') + c}
+    elif c == ' ': {tokens: state.tokens + [state.current], current: null}
+    else: error($'unexpected character ${c}')
+
+reduce chars init: {tokens: [], current: null} with step

@@ -1,0 +1,5 @@
+# A duplicate parameter in a nested lambda that is never created is still a
+# compile error.
+#= {rejects: ['`x`', 'already bound']}
+def f = fn -> fn x, x -> x
+1

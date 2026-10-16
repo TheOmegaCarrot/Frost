@@ -1,0 +1,5 @@
+# `@` binds tighter than comparison and equality, so a threaded call is a
+# whole operand of either side.
+#= {result: [true, true, false, true], inputs: {n: 1}}
+defn inc(x) -> x + 1
+[n @ inc() == 2, 2 == n @ inc(), n @ inc() < n, n < n @ inc()]

@@ -1,0 +1,13 @@
+# `not` binds tighter than `and` and `or`: `not a and b` is `(not a) and b`.
+# Each case would yield a different value if `not` applied to the whole.
+#= {
+#=     result: [true, false, false, true, false],
+#=     inputs: {t: true, n: null, f: false},
+#= }
+[
+    not true or true,
+    not null and false,
+    not (true or true),
+    not t or t,
+    not n and f,
+]

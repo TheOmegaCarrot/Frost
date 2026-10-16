@@ -1,0 +1,5 @@
+# String keys compare by their exact text: precomposed U+00E9 and `e`
+# followed by combining U+0301 render alike but are different keys.
+#= {result: [2, 'precomposed', 'decomposed']}
+def m = {['\u{e9}']: 'precomposed', ['e\u{301}']: 'decomposed'}
+[len(m), m['\u{e9}'], m['e\u{301}']]

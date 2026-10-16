@@ -1,0 +1,5 @@
+# Closures built by recursion each capture the argument of their own call.
+#= {result: [3, 2, 1]}
+defn build(k) -> if k <= 0: [] else: [fn -> k] + build(k - 1)
+def fs = build(3)
+[fs[0](), fs[1](), fs[2]()]

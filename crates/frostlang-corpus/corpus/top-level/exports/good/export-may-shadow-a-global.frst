@@ -1,0 +1,5 @@
+# An exported binding may take a global's name; the program then reads its
+# own binding by that name, and the export carries it.
+#= {result: 3, exports: {len: 3}}
+export def len = 3
+len

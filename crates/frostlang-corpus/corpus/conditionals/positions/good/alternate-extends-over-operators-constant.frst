@@ -1,0 +1,4 @@
+# A branch extends as far as it can, also when the condition is a constant:
+# the trailing `+ 3` belongs to the alternate alone.
+#= {result: [1, 5]}
+[if true: 1 else: 2 + 3, if false: 1 else: 2 + 3]

@@ -1,0 +1,13 @@
+# An error in the operation stops the iteration at once: elements after the
+# failing one are never visited. `try_call` catches the error so the trace
+# can be inspected.
+#= {
+#=     result: {ok: false, error: 'stop'},
+#=     printed: ['1', '2'],
+#=     inputs: {xs: [1, 2, 3]},
+#= }
+def outcome = try_call(fn -> map xs with fn x -> {
+    print(x)
+    if x == 2: error('stop') else: x
+})
+{ok: outcome.ok, error: outcome.error}
