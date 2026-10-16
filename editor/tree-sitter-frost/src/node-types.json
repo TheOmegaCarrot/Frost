@@ -18,6 +18,10 @@
         "named": true
       },
       {
+        "type": "bytes",
+        "named": true
+      },
+      {
         "type": "double_string",
         "named": true
       },
@@ -925,6 +929,16 @@
           }
         ]
       },
+      "name": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "identifier",
+            "named": true
+          }
+        ]
+      },
       "parameters": {
         "multiple": false,
         "required": false,
@@ -1053,7 +1067,7 @@
       },
       "value": {
         "multiple": false,
-        "required": true,
+        "required": false,
         "types": [
           {
             "type": "expression",
@@ -1553,10 +1567,6 @@
       "required": false,
       "types": [
         {
-          "type": "no_nl_dot",
-          "named": true
-        },
-        {
           "type": "no_nl_index_open",
           "named": true
         },
@@ -1891,12 +1901,8 @@
     },
     "children": {
       "multiple": false,
-      "required": true,
+      "required": false,
       "types": [
-        {
-          "type": "no_nl_dot",
-          "named": true
-        },
         {
           "type": "no_nl_index_open",
           "named": true
@@ -2132,6 +2138,10 @@
     "named": false
   },
   {
+    "type": ".",
+    "named": false
+  },
+  {
     "type": "...",
     "named": false
   },
@@ -2186,6 +2196,10 @@
   {
     "type": "]",
     "named": false
+  },
+  {
+    "type": "bytes",
+    "named": true
   },
   {
     "type": "comment",
@@ -2326,10 +2340,6 @@
   },
   {
     "type": "no_nl_call_open",
-    "named": true
-  },
-  {
-    "type": "no_nl_dot",
     "named": true
   },
   {

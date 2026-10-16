@@ -10,21 +10,36 @@ variables:
   ident: '[A-Za-z_][A-Za-z0-9_]*'
   keyword: '(?:if|else|elif|defn|def|do|export|fn|reduce|map|foreach|filter|with|init|match|is|as|and|or|not)'
   constant: '(?:true|false|null)'
+  # A name, as a Map key or parameter: never a keyword or constant.
+  name: '\b(?!(?:{{keyword}}|{{constant}})\b){{ident}}\b'
+  exponent: '(?:[eE][+-]?_*\d[\d_]*)'
+  unicode_escape: 'u\{[0-9a-fA-F]{1,6}\}'
+  # A line opening a top-level definition. Every bracket context pops here, so an
+  # unclosed bracket colors at most the rest of its own definition.
+  definition_start: '^(?=(?:export\s+)?defn?\b)'
 
 contexts:
   main:
+    - include: expressions
+
+  expressions:
     - include: comments
     - include: format-strings
+    - include: bytes
     - include: dollar-identifiers
     - include: raw-strings
     - include: strings
     - include: numbers
+    - include: match-expressions
+    - include: do-blocks
+    - include: lambda-params
     - include: keywords
     - include: constants
-    - include: map-keys
     - include: function-calls
     - include: member-access
+    - include: lambda-arrows
     - include: operators
+    - include: groups
     - include: punctuation
     - include: identifiers
 
@@ -40,58 +55,6 @@ contexts:
     - match: '\b{{constant}}\b'
       scope: constant.language.frost
 
-  # A keyword is never a Map key, so an indented `else:`, `init:`, or a guard's
-  # `if:` on its own line stays a keyword.
-  map-keys:
-    # Inline entries: { foo: 1, [k]: 2 }
-    - match: '(?<=[{,])\s*(\[(?=.*\]\s*:))'
-      captures:
-        1: punctuation.section.brackets.begin.frost
-      push: map-key-bracket
-    - match: '(?<=[{,])\s*\b(?!{{keyword}}\b)({{ident}})\b(?=\s*:)'
-      captures:
-        1: support.type.property-name.frost
-    # Inline shorthand entries: { foo }, { foo, bar }, or a pattern { foo is Int }
-    - match: '(?<=[{,])\s*\b(?!{{keyword}}\b)({{ident}})\b(?=\s*[,}]|\s+is\b)'
-      captures:
-        1: support.type.property-name.frost
-    # Multiline entries:
-    # {
-    #   foo: 1,
-    #   [bar]: 2
-    # }
-    - match: '^(\s*)(\[(?=.*\]\s*:))'
-      captures:
-        2: punctuation.section.brackets.begin.frost
-      push: map-key-bracket
-    - match: '^\s*\b(?!{{keyword}}\b)({{ident}})\b(?=\s*:)'
-      captures:
-        1: support.type.property-name.frost
-    # Multiline shorthand entries
-    - match: '^\s*\b(?!{{keyword}}\b)({{ident}})\b(?=\s*[,}]|\s+is\b)'
-      captures:
-        1: support.type.property-name.frost
-
-  map-key-bracket:
-    - meta_scope: meta.mapping.key.frost
-    - include: comments
-    - include: format-strings
-    - include: raw-strings
-    - include: strings
-    - include: numbers
-    - include: keywords
-    - include: constants
-    - include: operators
-    - include: function-calls
-    - include: member-access
-    - include: identifiers
-    - match: '\['
-      scope: punctuation.section.brackets.begin.frost
-      push: map-key-bracket
-    - match: '\]'
-      scope: punctuation.section.brackets.end.frost
-      pop: true
-
   function-calls:
     - match: '\b({{ident}})\b(?=\s*\()'
       captures:
@@ -104,7 +67,7 @@ contexts:
         3: variable.other.member.frost
 
   dollar-identifiers:
-    - match: '\$\$|\$[0-9]|\$'
+    - match: '\$\$|\$[1-9]|\$'
       scope: variable.parameter.frost
 
   identifiers:
@@ -113,10 +76,15 @@ contexts:
 
   numbers:
     # Digits may hold `_` separators after the first digit (or the base prefix),
-    # so long as a digit is present.
-    - match: '\b\d[\d_]*\.\d[\d_]*([eE][+-]?_*\d[\d_]*)?\b'
+    # so long as a digit is present. A decimal number ends where its digits do, as
+    # in `1else`; a based Int runs to the end of its word.
+    - match: '\b\d[\d_]*\.\d[\d_]*{{exponent}}?'
       scope: constant.numeric.float.frost
-    - match: '\b\d[\d_]*[eE][+-]?_*\d[\d_]*\b'
+    - match: '\b\d[\d_]*{{exponent}}'
+      scope: constant.numeric.float.frost
+    # A Float may start at its point, as `.5`. Directly after an operand, as in
+    # `t.0`, the `.` reads as access instead.
+    - match: '(?<![\w)\]}.])\.\d[\d_]*{{exponent}}?'
       scope: constant.numeric.float.frost
     - match: '\b0[bB]_*[01][01_]*\b'
       scope: constant.numeric.integer.binary.frost
@@ -124,14 +92,16 @@ contexts:
       scope: constant.numeric.integer.octal.frost
     - match: '\b0[xX]_*[0-9a-fA-F][0-9a-fA-F_]*\b'
       scope: constant.numeric.integer.hexadecimal.frost
-    - match: '\b\d[\d_]*\b'
+    - match: '\b0[xXoObB]\w*'
+      scope: invalid.illegal.numeric.frost
+    - match: '\b\d[\d_]*'
       scope: constant.numeric.integer.frost
 
   operators:
     - match: '\.\.\.'
       scope: keyword.operator.variadic.frost
-    - match: '->'
-      scope: storage.type.function.arrow.frost
+    - match: '\.'
+      scope: punctuation.accessor.dot.frost
     - match: '=>'
       scope: storage.type.function.arrow.frost
     - match: '@'
@@ -145,17 +115,12 @@ contexts:
     - match: '='
       scope: keyword.operator.assignment.frost
 
+  # Closers here are stray: each bracket context consumes its own.
   punctuation:
-    - match: '\{'
-      scope: punctuation.section.braces.begin.frost
     - match: '\}'
       scope: punctuation.section.braces.end.frost
-    - match: '\('
-      scope: punctuation.section.parens.begin.frost
     - match: '\)'
       scope: punctuation.section.parens.end.frost
-    - match: '\['
-      scope: punctuation.section.brackets.begin.frost
     - match: '\]'
       scope: punctuation.section.brackets.end.frost
     - match: ':'
@@ -164,6 +129,195 @@ contexts:
       scope: punctuation.separator.sequence.frost
     - match: ';'
       scope: punctuation.terminator.statement.frost
+
+  # Brackets
+  #
+  # Map keys are scoped only at the start of an entry directly inside a brace that
+  # holds Map entries. Every bracket context pops, without consuming it, at a closer
+  # of another kind (which an enclosing context then takes) and at a definition's
+  # start, so an unbalanced bracket cannot recolor the rest of the file.
+
+  groups:
+    - match: '\{'
+      scope: punctuation.section.braces.begin.frost
+      push: map-body
+    - match: '\('
+      scope: punctuation.section.parens.begin.frost
+      push: parens-body
+    - match: '\['
+      scope: punctuation.section.brackets.begin.frost
+      push: brackets-body
+
+  stop-at-definition:
+    - match: '{{definition_start}}'
+      pop: true
+
+  parens-body:
+    - match: '\)'
+      scope: punctuation.section.parens.end.frost
+      pop: true
+    - match: '(?=[\]}])'
+      pop: true
+    - include: stop-at-definition
+    - include: expressions
+
+  brackets-body:
+    - match: '\]'
+      scope: punctuation.section.brackets.end.frost
+      pop: true
+    - match: '(?=[)}])'
+      pop: true
+    - include: stop-at-definition
+    - include: expressions
+
+  block-end:
+    - match: '\}'
+      scope: punctuation.section.braces.end.frost
+      pop: true
+    - match: '(?=[)\]])'
+      pop: true
+    - include: stop-at-definition
+
+  # A Map literal or Map pattern, at the start of an entry: a name or a computed key
+  # in brackets.
+  map-body:
+    - meta_scope: meta.mapping.frost
+    - include: block-end
+    - include: comments
+    - match: ','
+      scope: punctuation.separator.sequence.frost
+    - match: '\['
+      scope: punctuation.section.brackets.begin.frost
+      push: [map-value, map-key-bracket]
+    - match: '{{name}}'
+      scope: support.type.property-name.frost
+      push: map-value
+    - match: '(?=\S)'
+      push: map-value
+
+  # The rest of a Map entry, after its key.
+  map-value:
+    - match: '(?=[,})\]])'
+      pop: true
+    - include: stop-at-definition
+    - include: expressions
+
+  map-key-bracket:
+    - meta_scope: meta.mapping.key.frost
+    - match: '\]'
+      scope: punctuation.section.brackets.end.frost
+      pop: true
+    - match: '(?=[)}])'
+      pop: true
+    - include: stop-at-definition
+    - include: expressions
+
+  block-body:
+    - meta_scope: meta.block.frost
+    - include: block-end
+    - include: expressions
+
+  do-blocks:
+    - match: '\bdo\b'
+      scope: keyword.control.frost
+      push: do-block-start
+
+  # The `{` of a `do` block may sit on a later line.
+  do-block-start:
+    - include: comments
+    - match: '\{'
+      scope: punctuation.section.braces.begin.frost
+      set: block-body
+    - match: '(?=\S)'
+      pop: true
+
+  # A lambda's parameters run to its arrow, which may sit on a later line. Their
+  # commas, as in `{f: fn x, y -> x}`, do not end a Map entry.
+  lambda-params:
+    - match: '\bfn\b'
+      scope: keyword.control.frost
+      push: lambda-params-body
+
+  lambda-params-body:
+    - match: '(?=->)'
+      pop: true
+    - include: comments
+    - include: function-calls
+    - match: '\('
+      scope: punctuation.section.parens.begin.frost
+      push: parens-body
+    - match: '\.\.\.'
+      scope: keyword.operator.variadic.frost
+    - match: ','
+      scope: punctuation.separator.sequence.frost
+    - match: '{{name}}'
+      scope: variable.other.frost
+    - match: '(?=\S)'
+      pop: true
+
+  lambda-arrows:
+    - match: '->'
+      scope: storage.type.function.arrow.frost
+      push: lambda-body-start
+
+  # A lambda's body may start on the line after its arrow.
+  lambda-body-start:
+    - include: comments
+    - match: '\{'
+      scope: punctuation.section.braces.begin.frost
+      set: lambda-brace
+    - match: '(?=\S)'
+      pop: true
+
+  # A lambda body's `{` opens a Map when its first entry reads as one (a name
+  # followed by `:`, `,`, or `}`; a computed key; or nothing), and a block otherwise.
+  lambda-brace:
+    - include: comments
+    - match: '(?=\}|{{name}}\s*[:,}]|\[.*\]\s*:)'
+      set: map-body
+    - match: '(?=\S)'
+      set: block-body
+
+  match-expressions:
+    - match: '\bmatch\b'
+      scope: keyword.control.frost
+      push: match-subject-start
+
+  # The subject runs to the first `{` outside brackets, which opens the arms. A
+  # subject that starts with `{` is a Map literal.
+  match-subject-start:
+    - include: comments
+    - match: '\{'
+      scope: punctuation.section.braces.begin.frost
+      set: [match-subject, map-body]
+    - match: '(?=\S)'
+      set: match-subject
+
+  match-subject:
+    - match: '\{'
+      scope: punctuation.section.braces.begin.frost
+      set: match-arms
+    - match: '(?=[)\]}])'
+      pop: true
+    - include: stop-at-definition
+    - include: expressions
+
+  match-arms:
+    - meta_scope: meta.block.match.frost
+    - include: block-end
+    - include: expressions
+
+  # Strings
+
+  bytes:
+    - match: '\bx''(?:[0-9a-fA-F]{2})*'''
+      scope: string.quoted.single.bytes.frost
+    - match: '\bx"(?:[0-9a-fA-F]{2})*"'
+      scope: string.quoted.double.bytes.frost
+    - match: '\bx''[^''\n]*'''
+      scope: invalid.illegal.bytes.frost
+    - match: '\bx"[^"\n]*"'
+      scope: invalid.illegal.bytes.frost
 
   raw-strings:
     - match: 'R"\('
@@ -191,6 +345,8 @@ contexts:
       scope: invalid.illegal.newline.frost
       pop: true
 
+  # Each kind of String has its own set of escapes; every one has `\u{...}`.
+
   strings:
     - match: '"""'
       scope: punctuation.definition.string.begin.frost
@@ -210,7 +366,7 @@ contexts:
     - match: '"'
       scope: punctuation.definition.string.end.frost
       pop: true
-    - match: '\\[ntr"\\0]'
+    - match: '\\(?:[ntr"\\0]|{{unicode_escape}})'
       scope: constant.character.escape.frost
     - match: '\\.'
       scope: invalid.illegal.escape.frost
@@ -223,7 +379,7 @@ contexts:
     - match: "'"
       scope: punctuation.definition.string.end.frost
       pop: true
-    - match: "\\\\[ntr'\\\\0]"
+    - match: '\\(?:[ntr''\\0]|{{unicode_escape}})'
       scope: constant.character.escape.frost
     - match: '\\.'
       scope: invalid.illegal.escape.frost
@@ -236,7 +392,7 @@ contexts:
     - match: '"""'
       scope: punctuation.definition.string.end.frost
       pop: true
-    - match: '\\[t''"\\0]'
+    - match: '\\(?:[t''"\\0]|{{unicode_escape}})'
       scope: constant.character.escape.frost
     - match: '\\.'
       scope: invalid.illegal.escape.frost
@@ -246,7 +402,7 @@ contexts:
     - match: "'''"
       scope: punctuation.definition.string.end.frost
       pop: true
-    - match: "\\\\[t'\"\\\\0]"
+    - match: '\\(?:[t''"\\0]|{{unicode_escape}})'
       scope: constant.character.escape.frost
     - match: '\\.'
       scope: invalid.illegal.escape.frost
@@ -259,8 +415,9 @@ contexts:
       scope: punctuation.definition.string.begin.frost
       push: format-string-single
 
+  # An escape consumes its `$`, so `\${` is literal while `\\${` opens a placeholder.
   format-placeholders:
-    - match: '(?<!\\)\$\{'
+    - match: '\$\{'
       scope: punctuation.section.interpolation.begin.frost
       push: format-interpolation
 
@@ -269,32 +426,35 @@ contexts:
     - match: '\}'
       scope: punctuation.section.interpolation.end.frost
       pop: true
-    - include: main
+    # A placeholder, like its format String, is single-line.
+    - match: '(?=\n)'
+      pop: true
+    - include: expressions
 
   format-string-double:
     - meta_scope: string.quoted.double.interpolated.frost
-    - include: format-placeholders
     - match: '"'
       scope: punctuation.definition.string.end.frost
       pop: true
-    - match: '\\[ntr"\\0$]'
+    - match: '\\(?:[ntr"\\0$]|{{unicode_escape}})'
       scope: constant.character.escape.frost
     - match: '\\.'
       scope: invalid.illegal.escape.frost
+    - include: format-placeholders
     - match: '\n'
       scope: invalid.illegal.newline.frost
       pop: true
 
   format-string-single:
     - meta_scope: string.quoted.single.interpolated.frost
-    - include: format-placeholders
     - match: "'"
       scope: punctuation.definition.string.end.frost
       pop: true
-    - match: "\\\\[ntr'\\\\0$]"
+    - match: '\\(?:[ntr''\\0$]|{{unicode_escape}})'
       scope: constant.character.escape.frost
     - match: '\\.'
       scope: invalid.illegal.escape.frost
+    - include: format-placeholders
     - match: '\n'
       scope: invalid.illegal.newline.frost
       pop: true

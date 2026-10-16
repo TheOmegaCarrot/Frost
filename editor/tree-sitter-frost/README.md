@@ -9,18 +9,20 @@ From this directory:
 ```sh
 tree-sitter generate
 tree-sitter test
-tree-sitter parse -c ../../frost-scripts/hello.frst
-tree-sitter highlight --check ../../frost-scripts/hello.frst
+tree-sitter parse -c path/to/file.frst
+tree-sitter highlight -p . --check path/to/file.frst
 ```
 
 ## Compare Against Frost Parser
 
-Use the interpreter as a source of truth:
+The parser in `crates/frostlang-parse` is the source of truth. Print the syntax
+tree it gives a script, from the repository root:
 
 ```sh
-./build/frost -d -e 'def x = {foo: 1, [2+3]: 9}; x.foo'
-./build/frost -d path/to/file.frst
+cargo run -p frostlang-cli -- ast path/to/file.frst
 ```
+
+or, with the CLI already built, `frost ast path/to/file.frst`.
 
 ## Neovim Notes
 

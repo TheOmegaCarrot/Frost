@@ -670,8 +670,8 @@
                 }
               },
               {
-                "type": "SYMBOL",
-                "name": "no_nl_dot"
+                "type": "STRING",
+                "value": "."
               },
               {
                 "type": "FIELD",
@@ -791,8 +791,8 @@
                 }
               },
               {
-                "type": "SYMBOL",
-                "name": "no_nl_dot"
+                "type": "STRING",
+                "value": "."
               },
               {
                 "type": "FIELD",
@@ -1131,6 +1131,48 @@
             {
               "type": "SEQ",
               "members": [
+                {
+                  "type": "FIELD",
+                  "name": "parameters",
+                  "content": {
+                    "type": "SYMBOL",
+                    "name": "lambda_parameters_parenthesized"
+                  }
+                },
+                {
+                  "type": "STRING",
+                  "value": "->"
+                },
+                {
+                  "type": "FIELD",
+                  "name": "body",
+                  "content": {
+                    "type": "CHOICE",
+                    "members": [
+                      {
+                        "type": "SYMBOL",
+                        "name": "block"
+                      },
+                      {
+                        "type": "SYMBOL",
+                        "name": "expression"
+                      }
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "type": "SEQ",
+              "members": [
+                {
+                  "type": "FIELD",
+                  "name": "name",
+                  "content": {
+                    "type": "SYMBOL",
+                    "name": "identifier"
+                  }
+                },
                 {
                   "type": "FIELD",
                   "name": "parameters",
@@ -2174,33 +2216,37 @@
       ]
     },
     "map_literal": {
-      "type": "SEQ",
-      "members": [
-        {
-          "type": "STRING",
-          "value": "{"
-        },
-        {
-          "type": "CHOICE",
-          "members": [
-            {
-              "type": "FIELD",
-              "name": "entries",
-              "content": {
-                "type": "SYMBOL",
-                "name": "map_entries"
+      "type": "PREC_DYNAMIC",
+      "value": 1,
+      "content": {
+        "type": "SEQ",
+        "members": [
+          {
+            "type": "STRING",
+            "value": "{"
+          },
+          {
+            "type": "CHOICE",
+            "members": [
+              {
+                "type": "FIELD",
+                "name": "entries",
+                "content": {
+                  "type": "SYMBOL",
+                  "name": "map_entries"
+                }
+              },
+              {
+                "type": "BLANK"
               }
-            },
-            {
-              "type": "BLANK"
-            }
-          ]
-        },
-        {
-          "type": "STRING",
-          "value": "}"
-        }
-      ]
+            ]
+          },
+          {
+            "type": "STRING",
+            "value": "}"
+          }
+        ]
+      }
     },
     "map_entries": {
       "type": "SEQ",
@@ -2240,35 +2286,48 @@
       ]
     },
     "map_entry": {
-      "type": "SEQ",
+      "type": "CHOICE",
       "members": [
+        {
+          "type": "SEQ",
+          "members": [
+            {
+              "type": "FIELD",
+              "name": "key",
+              "content": {
+                "type": "CHOICE",
+                "members": [
+                  {
+                    "type": "SYMBOL",
+                    "name": "identifier"
+                  },
+                  {
+                    "type": "SYMBOL",
+                    "name": "map_key_expression"
+                  }
+                ]
+              }
+            },
+            {
+              "type": "STRING",
+              "value": ":"
+            },
+            {
+              "type": "FIELD",
+              "name": "value",
+              "content": {
+                "type": "SYMBOL",
+                "name": "expression"
+              }
+            }
+          ]
+        },
         {
           "type": "FIELD",
           "name": "key",
           "content": {
-            "type": "CHOICE",
-            "members": [
-              {
-                "type": "SYMBOL",
-                "name": "identifier"
-              },
-              {
-                "type": "SYMBOL",
-                "name": "map_key_expression"
-              }
-            ]
-          }
-        },
-        {
-          "type": "STRING",
-          "value": ":"
-        },
-        {
-          "type": "FIELD",
-          "name": "value",
-          "content": {
             "type": "SYMBOL",
-            "name": "expression"
+            "name": "identifier"
           }
         }
       ]
@@ -2318,6 +2377,10 @@
         },
         {
           "type": "SYMBOL",
+          "name": "bytes"
+        },
+        {
+          "type": "SYMBOL",
           "name": "format_string_double"
         },
         {
@@ -2333,11 +2396,15 @@
         "members": [
           {
             "type": "PATTERN",
-            "value": "[0-9][0-9_]*\\.[0-9][0-9_]*(e[+-]?_*[0-9][0-9_]*)?"
+            "value": "[0-9][0-9_]*\\.[0-9][0-9_]*([eE][+-]?_*[0-9][0-9_]*)?"
           },
           {
             "type": "PATTERN",
-            "value": "[0-9][0-9_]*e[+-]?_*[0-9][0-9_]*"
+            "value": "[0-9][0-9_]*[eE][+-]?_*[0-9][0-9_]*"
+          },
+          {
+            "type": "PATTERN",
+            "value": "\\.[0-9][0-9_]*([eE][+-]?_*[0-9][0-9_]*)?"
           }
         ]
       }
@@ -2476,6 +2543,22 @@
       "content": {
         "type": "PATTERN",
         "value": "R'\\([^\\n]*\\)'"
+      }
+    },
+    "bytes": {
+      "type": "TOKEN",
+      "content": {
+        "type": "CHOICE",
+        "members": [
+          {
+            "type": "PATTERN",
+            "value": "x'[0-9a-fA-F]*'"
+          },
+          {
+            "type": "PATTERN",
+            "value": "x\"[0-9a-fA-F]*\""
+          }
+        ]
       }
     },
     "format_string_double": {
@@ -2737,17 +2820,6 @@
         }
       }
     },
-    "no_nl_dot": {
-      "type": "IMMEDIATE_TOKEN",
-      "content": {
-        "type": "PREC",
-        "value": 1,
-        "content": {
-          "type": "PATTERN",
-          "value": "[ \\t\\r\\f\\v]*\\."
-        }
-      }
-    },
     "kw_do": {
       "type": "TOKEN",
       "content": {
@@ -2924,6 +2996,10 @@
     [
       "map_literal",
       "block"
+    ],
+    [
+      "map_entry",
+      "primary_expression"
     ],
     [
       "map_key_expression",

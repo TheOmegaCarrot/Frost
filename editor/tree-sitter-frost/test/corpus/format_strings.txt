@@ -26,7 +26,16 @@ def msg2 = $'value=${x}'
                       (format_string_double
                         (format_content_double)
                         (format_placeholder
-                          (identifier)))))))))))))
+                          (or_expression
+                            (and_expression
+                              (equality_expression
+                                (comparison_expression
+                                  (sum_expression
+                                    (product_expression
+                                      (unary_expression
+                                        (postfix_expression
+                                          (primary_expression
+                                            (identifier))))))))))))))))))))))
   (definition
     (kw_def)
     (pattern
@@ -45,23 +54,27 @@ def msg2 = $'value=${x}'
                       (format_string_single
                         (format_content_single)
                         (format_placeholder
-                          (identifier))))))))))))))
+                          (or_expression
+                            (and_expression
+                              (equality_expression
+                                (comparison_expression
+                                  (sum_expression
+                                    (product_expression
+                                      (unary_expression
+                                        (postfix_expression
+                                          (primary_expression
+                                            (identifier)))))))))))))))))))))))
 
 ==================
-malformed format placeholder recovers
+format placeholder holds any expression
 ==================
 
-def bad = $"${1}"
+$"${1} and ${f(x)}"
 
 ---
 
 (source_file
-  (definition
-    (kw_def)
-    (pattern
-      (pattern_atom
-        (binding_pattern
-          (identifier))))
+  (expression_statement
     (or_expression
       (and_expression
         (equality_expression
@@ -72,5 +85,72 @@ def bad = $"${1}"
                   (postfix_expression
                     (primary_expression
                       (format_string_double
-                        (format_invalid_placeholder
-                          (format_placeholder_content))))))))))))))
+                        (format_placeholder
+                          (or_expression
+                            (and_expression
+                              (equality_expression
+                                (comparison_expression
+                                  (sum_expression
+                                    (product_expression
+                                      (unary_expression
+                                        (postfix_expression
+                                          (primary_expression
+                                            (integer)))))))))))
+                        (format_content_double)
+                        (format_placeholder
+                          (or_expression
+                            (and_expression
+                              (equality_expression
+                                (comparison_expression
+                                  (sum_expression
+                                    (product_expression
+                                      (unary_expression
+                                        (postfix_expression
+                                          (postfix_expression
+                                            (primary_expression
+                                              (identifier)))
+                                          (no_nl_arguments
+                                            (no_nl_call_open)
+                                            (argument_list
+                                              (or_expression
+                                                (and_expression
+                                                  (equality_expression
+                                                    (comparison_expression
+                                                      (sum_expression
+                                                        (product_expression
+                                                          (unary_expression
+                                                            (postfix_expression
+                                                              (primary_expression
+                                                                (identifier)))))))))))))))))))))))))))))))))
+
+==================
+empty format placeholder recovers
+==================
+
+$"${}"
+
+---
+
+(source_file
+  (expression_statement
+    (or_expression
+      (and_expression
+        (equality_expression
+          (comparison_expression
+            (sum_expression
+              (product_expression
+                (unary_expression
+                  (postfix_expression
+                    (primary_expression
+                      (format_string_double
+                        (format_placeholder
+                          (or_expression
+                            (and_expression
+                              (equality_expression
+                                (comparison_expression
+                                  (sum_expression
+                                    (product_expression
+                                      (unary_expression
+                                        (postfix_expression
+                                          (primary_expression
+                                            (MISSING identifier)))))))))))))))))))))))

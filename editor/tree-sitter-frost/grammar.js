@@ -55,6 +55,7 @@ module.exports = grammar({
 
   conflicts: $ => [
     [$.map_literal, $.block],
+    [$.map_entry, $.primary_expression],
     [$.map_key_expression, $.array_elements],
   ],
 
@@ -190,10 +191,10 @@ module.exports = grammar({
         ']',
       )),
 
-      // Postfix operators cannot continue across newlines.
+      // A `.` continues across newlines: it cannot begin a statement.
       prec.left(PREC.POSTFIX, seq(
         field('value', $.postfix_expression),
-        $.no_nl_dot,
+        '.',
         field('property', $.identifier),
       )),
 
@@ -222,7 +223,7 @@ module.exports = grammar({
 
       prec.left(PREC.POSTFIX, seq(
         field('value', $.threaded_callee),
-        $.no_nl_dot,
+        '.',
         field('property', $.identifier),
       )),
     ),
@@ -299,6 +300,13 @@ module.exports = grammar({
       $.kw_fn,
       choice(
         seq(
+          field('parameters', $.lambda_parameters_parenthesized),
+          '->',
+          field('body', choice($.block, $.expression)),
+        ),
+        // A named lambda: the name is usable in the body, for recursion.
+        seq(
+          field('name', $.identifier),
           field('parameters', $.lambda_parameters_parenthesized),
           '->',
           field('body', choice($.block, $.expression)),
@@ -499,14 +507,20 @@ module.exports = grammar({
 
     array_elements: $ => commaSep1($.expression),
 
-    map_literal: $ => seq('{', optional(field('entries', $.map_entries)), '}'),
+    // Where a block is also valid (a lambda body), a `{` that parses as either
+    // is a Map: `fn -> {}` and `fn -> {a}` return a Map.
+    map_literal: $ => prec.dynamic(1, seq('{', optional(field('entries', $.map_entries)), '}')),
 
     map_entries: $ => commaSep1($.map_entry),
 
-    map_entry: $ => seq(
-      field('key', choice($.identifier, $.map_key_expression)),
-      ':',
-      field('value', $.expression),
+    // The shorthand `name` means `name: name`.
+    map_entry: $ => choice(
+      seq(
+        field('key', choice($.identifier, $.map_key_expression)),
+        ':',
+        field('value', $.expression),
+      ),
+      field('key', $.identifier),
     ),
 
     literal: $ => choice(
@@ -520,15 +534,19 @@ module.exports = grammar({
       $.single_string,
       $.raw_string_double,
       $.raw_string_single,
+      $.bytes,
       $.format_string_double,
       $.format_string_single,
     ),
 
     // Digits may hold `_` separators anywhere after the first digit (or the base
     // prefix), so long as a digit is present.
+    // A Float may start at its point (`.5`), even right after a name: `t.0` is
+    // `t` then `.0`, and a line starting `.5` is a statement of its own.
     float: _ => token(choice(
-      /[0-9][0-9_]*\.[0-9][0-9_]*(e[+-]?_*[0-9][0-9_]*)?/,
-      /[0-9][0-9_]*e[+-]?_*[0-9][0-9_]*/,
+      /[0-9][0-9_]*\.[0-9][0-9_]*([eE][+-]?_*[0-9][0-9_]*)?/,
+      /[0-9][0-9_]*[eE][+-]?_*[0-9][0-9_]*/,
+      /\.[0-9][0-9_]*([eE][+-]?_*[0-9][0-9_]*)?/,
     )),
     integer: _ => token(choice(
       /0[bB]_*[01][01_]*/,
@@ -548,6 +566,12 @@ module.exports = grammar({
 
     raw_string_double: _ => token(/R"\([^\n]*\)"/),
     raw_string_single: _ => token(/R'\([^\n]*\)'/),
+
+    // Hex digits only; an odd count, which Frost rejects, is accepted here.
+    bytes: _ => token(choice(
+      /x'[0-9a-fA-F]*'/,
+      /x"[0-9a-fA-F]*"/,
+    )),
 
     format_string_double: $ => seq(
       token(prec(2, '$"')),
@@ -607,7 +631,6 @@ module.exports = grammar({
 
     no_nl_call_open: _ => token.immediate(prec(1, /[ \t\r\f\v]*\(/)),
     no_nl_index_open: _ => token.immediate(prec(1, /[ \t\r\f\v]*\[/)),
-    no_nl_dot: _ => token.immediate(prec(1, /[ \t\r\f\v]*\./)),
 
     kw_do: _ => token('do'),
     kw_if: _ => token('if'),

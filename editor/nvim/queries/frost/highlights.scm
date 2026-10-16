@@ -29,6 +29,8 @@
 (integer) @number
 (float) @number
 
+(bytes) @string.special
+
 (
   [
     (double_string)
@@ -74,6 +76,9 @@
 (postfix_expression
   function: (postfix_expression
     property: (identifier) @function))
+
+(lambda_expression
+  name: (identifier) @function)
 
 (postfix_expression
   property: (identifier) @property)
@@ -128,9 +133,8 @@
   ":"
   ","
   ";"
+  "."
 ] @punctuation.delimiter
-
-(no_nl_dot) @punctuation.delimiter
 
 (format_placeholder "${" @punctuation.special)
 (format_placeholder "}" @punctuation.special)

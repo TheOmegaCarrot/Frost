@@ -192,3 +192,99 @@ defn g(a)
                   (postfix_expression
                     (primary_expression
                       (identifier))))))))))))
+
+==================
+named lambda
+==================
+
+fn g(n) -> g
+
+---
+
+(source_file
+  (expression_statement
+    (or_expression
+      (and_expression
+        (equality_expression
+          (comparison_expression
+            (sum_expression
+              (product_expression
+                (unary_expression
+                  (postfix_expression
+                    (primary_expression
+                      (lambda_expression
+                        (kw_fn)
+                        name: (identifier)
+                        parameters: (lambda_parameters_parenthesized
+                          payload: (lambda_parameter_payload
+                            (identifier)))
+                        body: (or_expression
+                          (and_expression
+                            (equality_expression
+                              (comparison_expression
+                                (sum_expression
+                                  (product_expression
+                                    (unary_expression
+                                      (postfix_expression
+                                        (primary_expression
+                                          (identifier))))))))))))))))))))))
+
+==================
+a lambda's brace body is a Map when it reads as one, unlike a do block
+==================
+
+fn -> {a}
+do {a}
+
+---
+
+(source_file
+  (expression_statement
+    (or_expression
+      (and_expression
+        (equality_expression
+          (comparison_expression
+            (sum_expression
+              (product_expression
+                (unary_expression
+                  (postfix_expression
+                    (primary_expression
+                      (lambda_expression
+                        (kw_fn)
+                        (or_expression
+                          (and_expression
+                            (equality_expression
+                              (comparison_expression
+                                (sum_expression
+                                  (product_expression
+                                    (unary_expression
+                                      (postfix_expression
+                                        (primary_expression
+                                          (map_literal
+                                            (map_entries
+                                              (map_entry
+                                                (identifier))))))))))))))))))))))))
+  (expression_statement
+    (or_expression
+      (and_expression
+        (equality_expression
+          (comparison_expression
+            (sum_expression
+              (product_expression
+                (unary_expression
+                  (postfix_expression
+                    (primary_expression
+                      (do_block
+                        (kw_do)
+                        (block
+                          (expression_statement
+                            (or_expression
+                              (and_expression
+                                (equality_expression
+                                  (comparison_expression
+                                    (sum_expression
+                                      (product_expression
+                                        (unary_expression
+                                          (postfix_expression
+                                            (primary_expression
+                                              (identifier))))))))))))))))))))))))
