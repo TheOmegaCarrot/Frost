@@ -1,0 +1,8 @@
+# In a destructuring `def` inside an abbreviated lambda, a part that differs
+# from the pinned placeholder `($1)` fails the definition.
+#= {raises: 'value of `($1)`', inputs: {key: 2, entry: [1, 'checked']}}
+def take = $(do {
+    def [($1), value] = $2
+    value
+})
+take(key, entry)

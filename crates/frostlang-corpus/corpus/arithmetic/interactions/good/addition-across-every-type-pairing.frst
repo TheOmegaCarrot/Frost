@@ -1,0 +1,19 @@
+# `+` across every pairing of types, with the values known only at runtime:
+# it succeeds for any two numbers, and otherwise only for two operands of the
+# same type among String, Bytes, Array, and Map. Every other pairing raises,
+# including Null, Bool, and Function with themselves.
+#= {
+#=     result: [
+#=         [false, false, false, false, false, false, false, false, false],
+#=         [false, false, false, false, false, false, false, false, false],
+#=         [false, false, true, true, false, false, false, false, false],
+#=         [false, false, true, true, false, false, false, false, false],
+#=         [false, false, false, false, true, false, false, false, false],
+#=         [false, false, false, false, false, true, false, false, false],
+#=         [false, false, false, false, false, false, true, false, false],
+#=         [false, false, false, false, false, false, false, true, false],
+#=         [false, false, false, false, false, false, false, false, false],
+#=     ],
+#=     inputs: {values: [null, true, 1, 1.5, 'a', x'62', [1], {k: 1}, fn -> 1]},
+#= }
+transform(values, fn a -> transform(values, fn b -> try_call(fn -> a + b).ok))

@@ -1,0 +1,9 @@
+# A pinned self-name `(me)` in a match pattern compares the value with the
+# lambda itself, by identity: only the very closure matches, not another
+# function or a non-function.
+#= {result: ['self', 'other', 'other']}
+def which = fn me(f) -> match f {
+    (me) => 'self',
+    _ => 'other',
+}
+[which(which), which(fn f -> f), which(1)]

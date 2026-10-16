@@ -1,0 +1,14 @@
+# A `def`'s name is unbound in its own value, but a scope inside that value may
+# bind the same name afresh: a block's `def`, a match arm's binding, or a
+# lambda's parameter. Each inner use reads that inner binding. Subtle because
+# reading the name directly in the value is an unbound-name error.
+#= {result: [5, 2, 7], inputs: {n: 1}}
+def block = do {
+    def block = 5
+    block
+}
+def arm = match n {
+    arm => arm + 1,
+}
+def param = fn param -> param
+[block, arm, param(7)]

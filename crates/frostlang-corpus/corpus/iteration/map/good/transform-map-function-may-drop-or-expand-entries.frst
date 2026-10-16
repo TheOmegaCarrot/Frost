@@ -1,0 +1,12 @@
+# Over a Map, each Map the function returns is merged into the result: an
+# empty one drops the entry, and a larger one adds several entries, whose
+# keys may even override what an entry visited earlier produced.
+#= {
+#=     result: {a: 'from c', a2: 2, c: 3},
+#=     inputs: {m: {a: 1, b: 0, c: 3}},
+#= }
+transform(m, fn k, v -> match k {
+    'a' => {a: v, a2: v * 2},
+    'b' => {},
+    'c' => {c: v, a: 'from c'},
+})

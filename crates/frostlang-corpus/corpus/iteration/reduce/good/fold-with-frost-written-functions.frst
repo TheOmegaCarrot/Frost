@@ -1,0 +1,8 @@
+# Functions built by globals written in Frost serve as `fold`'s function.
+# Subtle: `rev_args(minus)` computes `x - acc` at each step, so over
+# [1, 2, 3] it gives 3 - (2 - 1), and `const` ignores every argument.
+#= {
+#=     result: [[[1, 2], 3], 2, 'last', 'seen'],
+#=     inputs: {xs: [1, 2, 3], m: {a: 1}},
+#= }
+[fold(xs, collect), fold(xs, rev_args(minus)), fold(xs, const('last')), fold(m, 0, const('seen'))]

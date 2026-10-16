@@ -1,0 +1,10 @@
+# In mixed arithmetic the Int first becomes the nearest Float, and only then
+# does the Float operation round its result. 2^53 + 1 promotes to 2^53, and
+# 2^53 + 0.5 rounds to the nearest Float, back to 2^53; the exact sum
+# 2^53 + 1.5 would have rounded up to 2^53 + 2. Subtle because the result is two roundings
+# away from the exact answer, not one.
+#= {result: [9007199254740992.0, false], inputs: {past_exact: 9007199254740993}}
+[
+    past_exact + 0.5,
+    past_exact + 0.5 == 9007199254740994.0,
+]

@@ -1,0 +1,9 @@
+# The same computed key written twice may name different keys: an entry that
+# binds the key's name in between rebinds it for the later lookup. Subtle: the
+# first `[k]` reads the outer `k`, 'a'; the second reads the 'b' found there.
+#= {result: [['b', 1], 'no'], inputs: {xs: [{a: 'b', b: 1}, {b: 'a'}]}}
+def k = 'a'
+transform(xs, fn v -> match v {
+    {[k]: k, [k]: y} => [k, y],
+    _ => 'no',
+})

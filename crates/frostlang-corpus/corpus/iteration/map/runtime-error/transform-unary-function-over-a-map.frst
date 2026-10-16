@@ -1,0 +1,4 @@
+# Over a Map, `transform` calls its function with key and value, so a
+# one-parameter function is an arity error, even one that would return a Map.
+#= {raises: 'called with 2', inputs: {m: {a: 1}}}
+transform(m, fn entry -> {})

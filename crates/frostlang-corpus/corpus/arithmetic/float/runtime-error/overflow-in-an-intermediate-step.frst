@@ -1,0 +1,6 @@
+# A chain of Float operations raises as soon as one step is too large to be
+# finite, even though the next step would bring the value back into range:
+# `big + big - big` never yields `big`. Subtle because the exact value of the
+# whole expression is finite.
+#= {raises: 'infinity', inputs: {big: 1e308}}
+big + big - big

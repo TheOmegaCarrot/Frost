@@ -1,0 +1,5 @@
+# Both arguments are evaluated before `select` checks either: an error raised
+# while evaluating the predicate argument surfaces, not the type error the
+# wrong structure would cause.
+#= {raises: 'from the predicate argument', inputs: {s: 'text'}}
+select(s, error('from the predicate argument'))

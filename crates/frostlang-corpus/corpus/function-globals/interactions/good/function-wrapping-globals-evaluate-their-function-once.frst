@@ -1,0 +1,36 @@
+# `inv`, `spread`, `rev_args`, and `compose` evaluate their function
+# arguments once, when called, however often the function they return is
+# called. Subtle once they are inlined: substituting a function expression
+# into each call of the result would evaluate it on every call.
+#= {
+#=     result: [[true, false], [3, 7], [[2, 1], [3]], [true, true]],
+#=     printed: ['inv', 'spread', 'rev_args', 'compose first', 'compose second'],
+#= }
+def inverted = inv(do {
+    print('inv')
+    is_null
+})
+def spread_plus = spread(do {
+    print('spread')
+    plus
+})
+def reversed = rev_args(do {
+    print('rev_args')
+    collect
+})
+def composed = compose(
+    do {
+        print('compose first')
+        len
+    },
+    do {
+        print('compose second')
+        is_int
+    },
+)
+[
+    [inverted(1), inverted(null)],
+    [spread_plus([1, 2]), spread_plus([3, 4])],
+    [reversed(1, 2), reversed(3)],
+    [composed([1]), composed([])],
+]

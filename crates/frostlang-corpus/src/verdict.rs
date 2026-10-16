@@ -235,11 +235,12 @@ fn compare(expected: &Expected, observed: &Observed) -> Result<(), String> {
 }
 
 /// The text of narrated diagnostics that fragments match against: everything
-/// but the echoed source lines, so a fragment cannot match the script itself.
+/// but the echoed source lines and the lines naming the file, so a fragment
+/// cannot match the script itself or its name.
 fn diagnostic_text(narrated: &str) -> String {
     narrated
         .lines()
-        .filter(|line| !line.starts_with("snippet line"))
+        .filter(|line| !line.starts_with("snippet line") && !line.starts_with("Begin snippet"))
         .collect::<Vec<_>>()
         .join("\n")
 }

@@ -1,0 +1,4 @@
+# `call` applies `each` to an argument Array like any function: the function
+# runs for each entry, and the structure is the result.
+#= {result: {a: 1, b: 2}, printed: ['a', 'b'], inputs: {m: {b: 2, a: 1}}}
+call(each, [m, fn k, v -> print(k)])

@@ -1,0 +1,18 @@
+# A Frost-written global checks its function argument only once called, so
+# every argument is evaluated first, even one after the argument it
+# rejects. Subtle once such a global is inlined: its check must still wait
+# until every argument is evaluated, as a native's does.
+#= {result: [false, false], printed: ['curry argument', 'tap value']}
+[
+    try_call(fn -> curry(5, do {
+        print('curry argument')
+        1
+    })).ok,
+    try_call(fn -> tap(
+        do {
+            print('tap value')
+            1
+        },
+        5,
+    )).ok,
+]

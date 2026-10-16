@@ -1,0 +1,10 @@
+# A leading `@` after a `do` block's closing brace threads the block's value,
+# as a postfix operator on the block would.
+#= {result: 12, inputs: {n: 5}}
+defn inc(x) -> x + 1
+def total = do {
+    def doubled = n * 2
+    doubled + 1
+}
+    @ inc()
+total

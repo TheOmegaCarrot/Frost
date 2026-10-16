@@ -1,0 +1,5 @@
+# In a hexadecimal Int, `e` and `E` are digits, never an exponent marker, so a
+# sign after one is an operator. Subtle: `0x1E+5` reads like the Float 1e5, but
+# it is the Int 0x1E plus 5.
+#= {result: [35, 485, 13, 'Int']}
+[0x1E+5, 0x1e5, 0xe-1, type(0x1E+5)]

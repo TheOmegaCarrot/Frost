@@ -1,0 +1,21 @@
+# Heap sort with a skew heap: a node is a Map, an empty heap is Null, and
+# merging swaps children on the way down. Ints and Floats share one heap,
+# since `<=` compares across them. Draining the heap leaves it intact, so
+# the same heap drains twice to the same order.
+#= {
+#=     result: [[-2, 0, 1.5, 1.5, 2, 3], [-2, 0, 1.5, 1.5, 2, 3], 6],
+#=     inputs: {values: [3, 1.5, -2, 1.5, 0, 2]},
+#= }
+defn merge(a, b) -> match [a, b] {
+    [null, _] => b,
+    [_, null] => a,
+    _ if: a.key <= b.key => {key: a.key, left: merge(a.right, b), right: a.left},
+    _ => merge(b, a),
+}
+defn push(heap, key) -> merge(heap, {key, left: null, right: null})
+defn drain(heap, out) -> if heap == null: out
+    else: drain(merge(heap.left, heap.right), out + [heap.key])
+defn size(heap) -> if heap == null: 0 else: 1 + size(heap.left) + size(heap.right)
+
+def heap = reduce values init: null with push
+[drain(heap, []), drain(heap, []), size(heap)]

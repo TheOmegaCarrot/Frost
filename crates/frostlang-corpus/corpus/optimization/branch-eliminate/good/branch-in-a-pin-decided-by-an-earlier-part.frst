@@ -1,0 +1,13 @@
+# A branch in a pin whose condition reads a part the same pattern bound
+# earlier, from a known value, runs only the path that part picks: the other
+# path's error or effect never happens. Subtle: the condition is known only
+# once the pattern has bound the part.
+#= {result: [true, true, 1, 'x']}
+def [a, (if a: 1 else: 1 / 0)] = [true, 1]
+def [b, (b and 2 or error('never'))] = [true, 2]
+def [c, (match c {
+    1 => 'one',
+    _ => error('never'),
+})] = [1, 'one']
+def {d, e: (if d == 'x': 'ok' else: print('never'))} = {d: 'x', e: 'ok'}
+[a, b, c, d]

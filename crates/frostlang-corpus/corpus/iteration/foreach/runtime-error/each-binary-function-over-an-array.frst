@@ -1,0 +1,4 @@
+# Over an Array, `each` calls its function with the element alone, so a
+# two-parameter function is an arity error.
+#= {raises: 'called with 1', inputs: {xs: [1]}}
+each(xs, fn x, y -> x)

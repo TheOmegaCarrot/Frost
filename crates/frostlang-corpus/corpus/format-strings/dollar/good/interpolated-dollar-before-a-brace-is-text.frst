@@ -1,0 +1,5 @@
+# A `$` produced by an interpolation never forms `${` with a `{` after it, in
+# the text or from another interpolation. Subtle: the result reads `${x}`, yet
+# `x` is never interpolated, as interpolations are found in the source only.
+#= {result: ['${x}', '${x}'], inputs: {dollar: '$', brace: '{'}}
+[$'${dollar}{x}', $'${dollar}${brace}x}']

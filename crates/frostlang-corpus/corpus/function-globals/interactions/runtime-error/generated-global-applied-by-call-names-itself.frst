@@ -1,0 +1,4 @@
+# A Frost-written global applied by `call` reports its own type error,
+# naming itself rather than `call`, which passed the arguments correctly.
+#= {raises: ['inv', 'Function as argument 1', 'got Int']}
+call(inv, [5])

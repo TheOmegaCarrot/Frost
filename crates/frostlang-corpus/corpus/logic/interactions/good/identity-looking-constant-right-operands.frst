@@ -1,0 +1,16 @@
+# A constant right operand that looks like an identity is not one: `x or false`
+# yields false, not x, when x is Null, and `x and true` yields true, not x,
+# when x is truthy. Subtle because simplifying either to plain `x` would only
+# go wrong for some runtime values.
+#= {
+#=     result: [false, null, true, 1, null, false],
+#=     inputs: {n: null, one: 1, no: false},
+#= }
+[
+    n or false,
+    n and true,
+    one and true,
+    one or false,
+    no or null,
+    n or no,
+]

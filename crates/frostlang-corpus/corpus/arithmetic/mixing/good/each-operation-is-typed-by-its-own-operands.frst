@@ -1,0 +1,9 @@
+# Whether a division truncates depends only on its own two operands, never on
+# a Float elsewhere in the expression: in `seven / two * 1.0` the Int division
+# truncates before the Float joins, while `seven * 1.0 / two` divides a Float.
+#= {result: [3.0, 3.5, 3.0], inputs: {seven: 7, two: 2}}
+[
+    seven / two * 1.0,
+    seven * 1.0 / two,
+    1.0 * (seven / two),
+]

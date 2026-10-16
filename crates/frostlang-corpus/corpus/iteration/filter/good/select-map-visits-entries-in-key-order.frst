@@ -1,0 +1,11 @@
+# `select` visits a Map's entries in key order, whatever order its literal
+# wrote them in: by type (Bool, Int, Float, String), then by value.
+#= {
+#=     result: {[-1]: 'b', a: 'd'},
+#=     printed: ['false', '-1', '0.5', 'a'],
+#=     inputs: {m: {a: 'd', [0.5]: 'c', [-1]: 'b', [false]: 'a'}},
+#= }
+select(m, fn k, v -> {
+    print(to_string(k))
+    v == 'b' or v == 'd'
+})

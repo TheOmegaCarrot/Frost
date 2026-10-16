@@ -1,0 +1,24 @@
+# `fold` evaluates its arguments in the order written, the structure, the
+# init, and then the function, and only then calls the function.
+#= {
+#=     result: 3,
+#=     printed: ['structure', 'init', 'function', 'call', 'call'],
+#=     inputs: {xs: [1, 2]},
+#= }
+fold(
+    do {
+        print('structure')
+        xs
+    },
+    do {
+        print('init')
+        0
+    },
+    do {
+        print('function')
+        fn acc, x -> {
+            print('call')
+            acc + x
+        }
+    },
+)

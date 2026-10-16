@@ -1,0 +1,8 @@
+# A computed key may be an unparenthesized `if`; the closing bracket ends its
+# last branch.
+#= {result: [[1, 'none'], ['none', 2]], inputs: {t: true, f: false}}
+defn pick(c, v) -> match v {
+    {[if c: 'a' else: 'b']: x} => x,
+    _ => 'none',
+}
+[[pick(t, {a: 1}), pick(t, {b: 2})], [pick(f, {a: 1}), pick(f, {b: 2})]]

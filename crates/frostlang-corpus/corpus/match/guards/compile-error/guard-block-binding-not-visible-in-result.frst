@@ -1,0 +1,10 @@
+# A name a `do` block in a guard defines is scoped to that block; the arm's
+# result cannot read it, though the guard ran first.
+#= {rejects: '`y` is not defined'}
+match 1 {
+    x if: do {
+        def y = x * 2
+        y > 0
+    } => y,
+    _ => 0,
+}

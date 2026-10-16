@@ -1,0 +1,11 @@
+# A function capturing a known structure and holding an equal literal gives
+# independent values for the two: building on either leaves the other, and
+# the captured binding, unchanged. Subtle: the captured value may be built
+# into the function as a constant alongside the literal.
+#= {
+#=     result: [[1, 2, 3], [1, 2, 4], [1, 2], [1, 2], [1, 2]],
+#=     inputs: {three: 3, four: 4},
+#= }
+def base = [1, 2]
+def build = fn x, y -> [base + [x], [1, 2] + [y], base, [1, 2]]
+build(three, four) + [base]

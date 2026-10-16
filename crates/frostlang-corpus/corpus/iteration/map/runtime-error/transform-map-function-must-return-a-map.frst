@@ -1,0 +1,4 @@
+# Over a Map, `transform`'s function must return a Map; a `[key, value]` pair
+# Array is not accepted in its place, and the error names the type returned.
+#= {raises: ['must return a Map', 'Array'], inputs: {m: {a: 1}}}
+transform(m, fn k, v -> [k, v])

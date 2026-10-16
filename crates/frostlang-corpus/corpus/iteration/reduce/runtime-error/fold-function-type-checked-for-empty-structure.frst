@@ -1,0 +1,4 @@
+# `fold` requires a Function even when the structure is empty and the init
+# is the result, so the function would never be called.
+#= {raises: ['fold', 'argument 3', 'String'], inputs: {xs: [], op: 'plus'}}
+fold(xs, 0, op)

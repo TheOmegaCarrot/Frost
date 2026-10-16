@@ -1,0 +1,23 @@
+# Constants in one function that differ only in the sign of a zero nested
+# deep inside them, as an element, a Map value, or a Map key, each keep their
+# own sign: equal under `==` at every depth, they are still not the same.
+#= {
+#=     result: [['0.0', '-0.0'], ['0.0', '-0.0'], ['0.0', '-0.0'], true],
+#=     inputs: {tag: 'runtime'},
+#= }
+defn build(t) -> [
+    t,
+    [[0.0]],
+    [[-0.0]],
+    {a: [{b: 0.0}]},
+    {a: [{b: -0.0}]},
+    [{[0.0]: [1]}],
+    [{[-0.0]: [1]}],
+]
+def [_, pos, neg, pos_map, neg_map, pos_key, neg_key] = build(tag)
+[
+    [to_string(pos[0][0]), to_string(neg[0][0])],
+    [to_string(pos_map.a[0].b), to_string(neg_map.a[0].b)],
+    [to_string(keys(pos_key[0])[0]), to_string(keys(neg_key[0])[0])],
+    [pos, pos_map, pos_key] == [neg, neg_map, neg_key],
+]

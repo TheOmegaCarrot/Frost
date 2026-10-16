@@ -1,0 +1,6 @@
+# `$$` makes an abbreviated lambda accept any number of arguments even in a
+# branch that never runs: like the numbered placeholders, it shapes the
+# parameters by the text, not by what the optimizer can prove.
+#= {result: ['x', 'x', 'x']}
+def f = $(if true: 'x' else: $$)
+[f(), f(1), f(1, 2, 3)]

@@ -1,0 +1,6 @@
+# A Map merged with a literal that holds the Map itself under a colliding key:
+# the key's new value is the Map as it was before the merge. Subtle because the
+# merge replaces exactly the entry whose new value is the Map being merged into.
+#= {result: {a: {a: 1}, b: {a: 1}}, inputs: {one: 1}}
+def m = {a: one}
+m + {a: m, b: m}

@@ -1,0 +1,10 @@
+# An Array pattern's head and rest give `call` its function and arguments,
+# applying each row as a call. The rows themselves stay whole.
+#= {
+#=     result: [[3, [1, 2], 0], [3, 3, 2]],
+#=     inputs: {rows: [[plus, 1, 2], [collect, 1, 2], [len, []]]},
+#= }
+def results = map rows with fn row -> match row {
+    [f, ...args] => call(f, args),
+}
+[results, map rows with len]

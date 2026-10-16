@@ -1,0 +1,8 @@
+# Escaped whitespace is text, never indentation: a line indented two spaces
+# less than the closing delimiter stays under-indented though two `\u{20}`
+# escapes follow its spaces.
+#= {rejects: 'indented less than the closing delimiter'}
+def text = '''
+    a
+  \u{20}\u{20}b
+    '''

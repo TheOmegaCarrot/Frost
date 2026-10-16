@@ -1,0 +1,7 @@
+# A def over a known value whose pattern would take too long to check ahead of
+# time, here by a pin calling a long recursion, is checked when the program
+# runs, and binds its parts as usual.
+#= {result: [1, 2]}
+defn count_down(n) -> if n == 0: 0 else: count_down(n - 1)
+def [a, (count_down(150000)), b] = [1, 0, 2]
+[a, b]

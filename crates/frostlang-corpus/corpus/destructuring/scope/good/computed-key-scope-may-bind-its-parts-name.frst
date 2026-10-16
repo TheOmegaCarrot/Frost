@@ -1,0 +1,7 @@
+# A computed key cannot read the name its own part binds, but a scope inside
+# the key may bind that name afresh: a match arm or a lambda parameter there
+# is its own binding, gone before the part binds. Subtle beside
+# computed-key-reads-its-own-part, which is an unbound-name error.
+#= {result: ['Q', 'two'], inputs: {m: {q: 'Q', [2]: 'two'}}}
+def {[match 'q' { q => q }]: q, [(fn c -> c + 1)(1)]: c} = m
+[q, c]

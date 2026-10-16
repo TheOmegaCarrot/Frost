@@ -1,0 +1,7 @@
+# A rest binding is an Array even when it gathers nothing, so `is_array`
+# holds for it and `is_null` does not.
+#= {result: [[true, false, []], [true, false, [2]]], inputs: {samples: [[1], [1, 2]]}}
+map samples with fn xs -> {
+    def [_, ...rest] = xs
+    [is_array(rest), is_null(rest), rest]
+}

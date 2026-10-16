@@ -1,0 +1,14 @@
+# A Map literal evaluates all its entries before checking its keys, but a
+# nested Map literal is one complete value of the outer one: its invalid key
+# raises as soon as it is built, so the outer literal's later entries never
+# run. Subtle beside invalid-key-raises-after-every-entry-evaluates.
+#= {result: [false, false], printed: []}
+def in_map = try_call(fn -> {
+    a: {[null]: 1},
+    b: print('outer map entry'),
+})
+def in_array = try_call(fn -> [
+    {[null]: 1},
+    print('outer array element'),
+])
+[in_map.ok, in_array.ok]

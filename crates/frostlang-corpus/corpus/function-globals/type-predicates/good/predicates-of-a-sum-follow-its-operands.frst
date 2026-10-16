@@ -1,0 +1,20 @@
+# What `+` gives depends on its operands' types, so a predicate of a sum
+# answers by them. Subtle because the expression alone suggests a type:
+# `x + 1` looks Int, yet is Float for a Float `x`, and `a + a` is a String,
+# Bytes, Array, or Map as `a` is.
+#= {
+#=     result: [
+#=         [[true, false], [false, true]],
+#=         [
+#=             [true, false, false, false],
+#=             [false, true, false, false],
+#=             [false, false, true, false],
+#=             [false, false, false, true],
+#=         ],
+#=     ],
+#=     inputs: {numbers: [1, 1.5], values: ['a', x'01', [1], {k: 1}]},
+#= }
+[
+    map numbers with fn x -> [is_int(x + 1), is_float(x + 1)],
+    map values with fn a -> [is_string(a + a), is_bytes(a + a), is_array(a + a), is_map(a + a)],
+]

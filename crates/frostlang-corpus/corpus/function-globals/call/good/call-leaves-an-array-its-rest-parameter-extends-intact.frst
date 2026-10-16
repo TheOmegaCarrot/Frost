@@ -1,0 +1,9 @@
+# A rest parameter filled by `call` may be extended inside the function
+# without changing the Array the caller spread. Subtle because the rest
+# parameter holds exactly the spread Array's elements, so reusing that Array
+# as the rest parameter, and then extending it in place, would look sound.
+#= {result: [[1, 2, 3], [1, 2, 4], [1, 2]], inputs: {args: [1, 2]}}
+def extend = fn ...xs -> xs + [len(xs) + 1]
+def first = call(extend, args)
+def second = call(fn ...xs -> xs + [4], args)
+[first, second, args]

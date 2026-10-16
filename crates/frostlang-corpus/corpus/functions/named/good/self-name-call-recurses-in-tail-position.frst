@@ -1,0 +1,8 @@
+# A self-name `call` shadows the global `call`, so a tail call through it is
+# an ordinary recursive call and its Array argument is passed whole. Subtle:
+# a tail call to the global `call` is handed on to the function it calls,
+# with the Array spread into arguments, so the compiler must see that the
+# name here is not the global.
+#= {result: [1, [2, [3, []]]]}
+def nest = fn call(n, xs) -> if n == 0: xs else: call(n - 1, [n, xs])
+nest(3, [])

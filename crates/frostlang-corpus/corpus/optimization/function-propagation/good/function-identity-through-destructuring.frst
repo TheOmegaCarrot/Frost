@@ -1,0 +1,14 @@
+# Functions a pattern binds out of a known structure are the very functions
+# it holds: two parts holding one function are equal, as is each part to the
+# binding it came from, while parts of separately built structures differ.
+#= {result: [true, false, true, true, true]}
+defn pair() -> do {
+    def f = fn -> 1
+    [f, f]
+}
+def [a, b] = pair()
+def [c, _] = pair()
+def g = fn -> 2
+def {x, y: [z]} = {x: g, y: [g]}
+def [h, 1] | [_, h] = [1, g]
+[a == b, a == c, x == g, z == x, h == g]

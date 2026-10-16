@@ -1,0 +1,6 @@
+# In continuation-passing style, each step tail-calls with a new continuation
+# that closes over the previous one, and the base case calls the chain. Every
+# call, the continuations' included, is a tail call.
+#= {result: [5050, 0]}
+defn sum(n, k) -> if n == 0: k(0) else: sum(n - 1, fn r -> k(r + n))
+[sum(100, fn r -> r), sum(0, fn r -> r)]

@@ -1,0 +1,12 @@
+# An error raised by `each`'s function ends the call at once: no later
+# element is visited, and the error reaches the caller unchanged.
+#= {
+#=     result: [false, 'stop at b'],
+#=     printed: ['a', 'b'],
+#=     inputs: {xs: ['a', 'b', 'c']},
+#= }
+def outcome = try_call(fn -> each(xs, fn x -> {
+    print(x)
+    if x == 'b': error($'stop at ${x}')
+}))
+[outcome.ok, outcome.error]

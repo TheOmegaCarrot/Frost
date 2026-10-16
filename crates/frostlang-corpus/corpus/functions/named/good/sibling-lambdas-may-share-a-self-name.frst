@@ -1,0 +1,9 @@
+# Two named lambdas side by side may share a self-name: each self-name is
+# visible only in its own body, so each recursion stays within its own
+# lambda.
+#= {result: ['a', 'b']}
+def [a, b] = [
+    fn me(n) -> if n == 0: 'a' else: me(n - 1),
+    fn me(n) -> if n == 0: 'b' else: me(n - 1),
+]
+[a(2), b(2)]

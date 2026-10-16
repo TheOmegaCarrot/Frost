@@ -1,0 +1,4 @@
+# `select` with its predicate fixed by `bcurry` becomes a one-argument
+# function, which `transform` can apply to each row of a nested Array.
+#= {result: [[1], [], [2, 3]], inputs: {rows: [[1, 'a'], ['b'], [2, null, 3]]}}
+transform(rows, bcurry(select, is_int))

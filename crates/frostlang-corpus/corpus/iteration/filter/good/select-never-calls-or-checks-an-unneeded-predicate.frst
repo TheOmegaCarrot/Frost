@@ -1,0 +1,8 @@
+# Over an empty structure `select` never calls its predicate, so neither the
+# predicate's error nor its unfit parameter count surfaces.
+#= {
+#=     result: [[], {}, [], {}],
+#=     inputs: {xs: [], m: {}},
+#= }
+def boom = fn ...args -> error('called')
+[select(xs, boom), select(m, boom), select(xs, fn -> true), select(m, fn x -> true)]

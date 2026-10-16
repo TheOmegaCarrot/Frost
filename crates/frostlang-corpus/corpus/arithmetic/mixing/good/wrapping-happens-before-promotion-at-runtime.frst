@@ -1,0 +1,12 @@
+# Each operation is typed by its own operands, left to right: in
+# `greatest + 1 + 0.5` the Int sum wraps to the least Int before the Float
+# joins, so the result is hugely negative. Grouping the constants first gives a
+# Float sum that never wraps.
+#= {
+#=     result: [-9.223372036854776e18, 9.223372036854776e18],
+#=     inputs: {greatest: 9223372036854775807},
+#= }
+[
+    greatest + 1 + 0.5,
+    greatest + (1 + 0.5),
+]

@@ -1,0 +1,14 @@
+# A NUL character is an ordinary character for ordering, with the Strings
+# known only at runtime: 'a' followed by NUL sorts after 'a', its proper
+# prefix, and before 'a' followed by U+0001. Subtle because a comparison that
+# stopped at NUL would call the first pair equal.
+#= {
+#=     result: [true, true, true, false],
+#=     inputs: {a: 'a', a_nul: 'a\u{0}', a_one: 'a\u{1}', a_nul_b: 'a\u{0}b'},
+#= }
+[
+    a < a_nul,
+    a_nul < a_one,
+    a_nul < a_nul_b,
+    a_nul_b <= a_nul,
+]

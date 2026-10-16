@@ -1,0 +1,8 @@
+# An `if` without `else` may give Null as well as its branch's value, so a
+# predicate of it answers by which one it gave. Subtle because only one
+# branch is written, so its type alone looks like the `if`'s type.
+#= {result: [[true, false], [false, true]], inputs: {flags: [true, false]}}
+map flags with fn flag -> {
+    def value = if flag: 1
+    [is_int(value), is_null(value)]
+}

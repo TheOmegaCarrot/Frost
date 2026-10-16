@@ -1,0 +1,15 @@
+# A Float chain whose trailing operands are constants still groups from the
+# left: `x + 1.0 + 1.0` rounds after each addition, so at 1e16 both ones are
+# lost, and `x * 0.1 * 10.0` keeps the rounding of `x * 0.1`. Subtle because
+# folding the constant tail first (`x + 2.0`, `x * 1.0`) would give a
+# different answer.
+#= {
+#=     result: [1e16, 1.0000000000000002e16, 3.0000000000000004, 3.0],
+#=     inputs: {big: 1e16, three: 3.0},
+#= }
+[
+    big + 1.0 + 1.0,
+    big + (1.0 + 1.0),
+    three * 0.1 * 10.0,
+    three * (0.1 * 10.0),
+]

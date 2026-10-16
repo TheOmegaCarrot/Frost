@@ -1,0 +1,18 @@
+# `==` and `!=` evaluate both operands even when one is a constant whose type
+# already decides the answer: `null == x` is false for any non-Null x, yet the
+# call producing x still runs. Subtle because an optimizer knowing the left
+# operand's type might be tempted to skip the right.
+#= {
+#=     result: [false, true, false],
+#=     printed: ['right of null', 'right of a String', 'left of an Array'],
+#=     inputs: {one: 1},
+#= }
+defn noisy(label, value) -> {
+    print(label)
+    value
+}
+[
+    null == noisy('right of null', one),
+    'text' != noisy('right of a String', one),
+    noisy('left of an Array', [one]) == 1.0,
+]

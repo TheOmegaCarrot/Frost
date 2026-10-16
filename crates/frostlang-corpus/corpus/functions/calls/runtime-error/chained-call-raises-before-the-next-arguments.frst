@@ -1,0 +1,5 @@
+# In a chained call, an error in the first call is raised before the next
+# call's arguments are evaluated, so their error never happens.
+#= {raises: 'expects 1 argument'}
+def curried = fn a -> fn b -> [a, b]
+curried(1, 2)(1 / 0)

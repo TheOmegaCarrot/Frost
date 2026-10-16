@@ -1,0 +1,5 @@
+# The operation's parameter may reuse the structure's name. The structure is
+# evaluated outside the lambda, so it still names the whole Array, while the
+# body sees one element under that name.
+#= {result: [[10, 20], [1, 2]], inputs: {xs: [1, 2]}}
+[map xs with fn xs -> xs * 10, xs]

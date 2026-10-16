@@ -1,0 +1,5 @@
+# Both arguments are evaluated before `each` checks either: an error raised
+# while evaluating the function argument surfaces, not the type error the
+# wrong structure would cause.
+#= {raises: 'from the function argument', inputs: {nothing: null}}
+each(nothing, error('from the function argument'))

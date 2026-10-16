@@ -1,0 +1,7 @@
+# Each call of a constant function returns the same value: extending one
+# result leaves the next call's result unchanged. Subtle because every call
+# hands out the one captured value.
+#= {result: [[1, 2], [1], [1]], inputs: {xs: [1]}}
+def constant = const(xs)
+def extended = constant() + [2]
+[extended, constant(), xs]

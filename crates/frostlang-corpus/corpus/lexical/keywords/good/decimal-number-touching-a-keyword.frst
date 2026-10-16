@@ -1,0 +1,6 @@
+# A decimal number ends where its digits do, so a keyword touching it is a
+# separate token: `1and 2` is `1 and 2`, as `4+3` is `4 + 3`. Subtle: `1abc`
+# is rejected only because two operands cannot stand side by side, while a
+# based Int such as `0xff` runs to the end of its word.
+#= {result: [2, 1, 3, 2.5, 2], inputs: {c: false}}
+[1and 2, 1or 2, 1e5and 3, 2.5or 1, if c: 1else: 2]

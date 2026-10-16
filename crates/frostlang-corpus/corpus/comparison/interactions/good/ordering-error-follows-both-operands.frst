@@ -1,0 +1,12 @@
+# An ordering of unorderable values raises only after both operands have run:
+# each operand's effect happens, in order, before the comparison fails.
+#= {
+#=     result: false,
+#=     printed: ['left', 'right'],
+#=     inputs: {nothing: null, one: 1},
+#= }
+defn noisy(label, value) -> {
+    print(label)
+    value
+}
+try_call(fn -> noisy('left', nothing) < noisy('right', one)).ok

@@ -1,0 +1,6 @@
+# An `if` without `else` inside a `do` block ends at the block's closing brace,
+# so an `else` after the brace belongs to the outer `if`. Subtle: on one line
+# it looks like a dangling `else` that could bind the inner `if`.
+#= {result: ['both', null, 'not a'], inputs: {t: true, f: false}}
+defn choose(a, b) -> if a: do { if b: 'both' } else: 'not a'
+[choose(t, t), choose(t, f), choose(f, t)]

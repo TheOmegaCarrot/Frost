@@ -1,0 +1,9 @@
+# In `bcurry(f, a)(b)`, `a` is evaluated before `b`, though `f` receives it
+# last. Subtle once `bcurry` is inlined: rewriting the expression as
+# `f(b, a)` would evaluate `b` first.
+#= {result: [['b', 'a'], ['a', 'b']], printed: ['a', 'b', 'a', 'b']}
+defn noisy(v) -> {
+    print(v)
+    v
+}
+[bcurry(collect, noisy('a'))(noisy('b')), curry(collect, noisy('a'))(noisy('b'))]

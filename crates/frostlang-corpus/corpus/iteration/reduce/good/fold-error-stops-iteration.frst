@@ -1,0 +1,13 @@
+# An error raised by `fold`'s function ends the call at once: no later
+# element is visited, and the error reaches the caller unchanged.
+#= {
+#=     result: [false, 'over at 6'],
+#=     printed: ['3', '6'],
+#=     inputs: {xs: [1, 2, 3, 4]},
+#= }
+def outcome = try_call(fn -> fold(xs, fn acc, x -> {
+    def total = acc + x
+    print(to_string(total))
+    if total > 5: error($'over at ${total}') else: total
+}))
+[outcome.ok, outcome.error]

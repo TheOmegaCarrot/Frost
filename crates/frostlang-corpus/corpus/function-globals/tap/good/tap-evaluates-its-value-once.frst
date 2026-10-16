@@ -1,0 +1,15 @@
+# `tap` evaluates its value once, then its function, and only then calls the
+# function, though it uses the value twice: as the argument and as the
+# result. Subtle once `tap` is inlined: substituting the value's expression
+# for both uses would evaluate it twice.
+#= {result: 5, printed: ['value', 'function', 'body 5']}
+tap(
+    do {
+        print('value')
+        5
+    },
+    do {
+        print('function')
+        fn x -> print($'body ${x}')
+    },
+)

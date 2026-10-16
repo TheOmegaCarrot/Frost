@@ -1,0 +1,8 @@
+# Named lambdas written side by side in one Map literal cannot call each
+# other by their self-names: each self-name is bound only in its own body.
+#= {rejects: ['`odd`', 'not defined']}
+def parity = {
+    even: fn even(n) -> if n == 0: true else: odd(n - 1),
+    odd: fn odd(n) -> if n == 0: false else: even(n - 1),
+}
+parity.even(4)

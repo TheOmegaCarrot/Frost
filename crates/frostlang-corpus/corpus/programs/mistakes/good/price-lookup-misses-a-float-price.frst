@@ -1,0 +1,18 @@
+# A lookup filtering records by `price == 3` misses a record whose price was
+# stored as the Float `3.0`: `==` never equates an Int with a Float. Range
+# comparisons do cross the two types, so testing `>=` and `<=` finds both.
+#= {
+#=     result: [['pen'], ['pen', 'cap']],
+#=     inputs: {
+#=         items: [
+#=             {name: 'pen', price: 3},
+#=             {name: 'cap', price: 3.0},
+#=             {name: 'ink', price: 4},
+#=         ],
+#=     },
+#= }
+defn names(records) -> map records with fn r -> r.name
+[
+    names(filter items with fn r -> r.price == 3),
+    names(filter items with fn r -> r.price >= 3 and r.price <= 3),
+]

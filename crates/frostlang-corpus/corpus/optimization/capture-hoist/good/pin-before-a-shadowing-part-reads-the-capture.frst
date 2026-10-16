@@ -1,0 +1,18 @@
+# In a function, a pin or computed key written before the pattern part that
+# shadows its name reads the captured known binding, in a match arm or a def;
+# the part then binds the new value. Subtle: the pattern binds the name, yet
+# the function must still capture the outer one for the earlier read.
+#= {result: [[1, 'z'], [2, 'y'], 'b', 'no']}
+def k = 'a'
+def from_match = fn m -> match m {
+    {[k]: v, k} => [v, k],
+}
+def from_def = fn m -> {
+    def {[k]: v, k} = m
+    [v, k]
+}
+def pinned = fn m -> match m {
+    [(k), k] => k,
+    _ => 'no',
+}
+[from_match({a: 1, k: 'z'}), from_def({a: 2, k: 'y'}), pinned(['a', 'b']), pinned(['b', 'b'])]

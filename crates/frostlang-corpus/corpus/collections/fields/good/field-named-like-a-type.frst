@@ -1,0 +1,4 @@
+# Type names are not reserved words, so they may be `name:` keys and fields.
+# `m.Int` reads the key `'Int'`; it is not a type test.
+#= {result: [1, null, 'text'], inputs: {m: {Int: 1, Null: null, String: 'text'}}}
+[m.Int, m.Null, m.String]

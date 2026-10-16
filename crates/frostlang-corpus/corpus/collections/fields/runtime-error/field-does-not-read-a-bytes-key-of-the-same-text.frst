@@ -1,0 +1,4 @@
+# A field reads a String key only: `m.a` does not find the Bytes key `x'61'`,
+# though its bytes spell `a`.
+#= {raises: 'no value at key', inputs: {m: {[x'61']: 'bytes'}}}
+m.a

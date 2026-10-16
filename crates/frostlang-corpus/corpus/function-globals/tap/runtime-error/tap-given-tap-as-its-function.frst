@@ -1,0 +1,4 @@
+# `tap` accepts `tap` as its function, being a Function, but then calls it
+# with the one value, too few for `tap`.
+#= {raises: ['tap', 'expects 2', 'called with 1']}
+tap(5, tap)

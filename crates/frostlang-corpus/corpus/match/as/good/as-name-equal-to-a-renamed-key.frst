@@ -1,0 +1,6 @@
+# An `as` name may match a key its pattern looks up, as long as that entry
+# binds another name: here `name` is the whole Map, and `n` the entry.
+#= {result: ['x', {name: 'x', y: 1}], inputs: {v: {name: 'x', y: 1}}}
+match v {
+    {name: n} as name => [n, name],
+}

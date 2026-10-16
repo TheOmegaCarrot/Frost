@@ -1,0 +1,6 @@
+# A curried function whose function extends a fixed Array argument gives
+# the same answer on every call. Subtle because each call passes the one
+# captured Array on, so extending it in place would leak into the next call.
+#= {result: [[1, 9], [1, 9], [1]], inputs: {xs: [1]}}
+def extend = curry(fn v -> v + [9], xs)
+[extend(), extend(), xs]

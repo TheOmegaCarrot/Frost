@@ -1,0 +1,5 @@
+# A rest parameter's `...` comes before its name; written after it, as some
+# languages spell variadics, it is rejected.
+#= {rejects: 'found `...`'}
+def f = fn(first, rest...) -> rest
+f(1, 2)

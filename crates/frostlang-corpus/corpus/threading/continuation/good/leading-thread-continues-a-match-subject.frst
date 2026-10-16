@@ -1,0 +1,9 @@
+# A leading `@` continues a `match` subject up to the `{` opening its arms,
+# outside any brackets, so the arms match the pipeline's result.
+#= {result: 'four', inputs: {n: 3}}
+defn inc(x) -> x + 1
+match n
+    @ inc() {
+    4 => 'four',
+    _ => 'other',
+}

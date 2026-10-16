@@ -1,0 +1,7 @@
+# A name a `do` block condition defines is scoped to that block; the branch it
+# chooses cannot read it.
+#= {rejects: '`t` is not defined'}
+if do {
+    def t = 1
+    t > 0
+}: t else: 0

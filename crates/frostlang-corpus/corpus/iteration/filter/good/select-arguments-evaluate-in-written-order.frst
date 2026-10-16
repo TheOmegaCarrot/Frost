@@ -1,0 +1,20 @@
+# `select` evaluates its arguments in the order written, the structure and
+# then the predicate, and only then calls the predicate on each element.
+#= {
+#=     result: [2],
+#=     printed: ['structure', 'predicate', 'call', 'call'],
+#=     inputs: {xs: [1, 2]},
+#= }
+select(
+    do {
+        print('structure')
+        xs
+    },
+    do {
+        print('predicate')
+        fn x -> {
+            print('call')
+            x > 1
+        }
+    },
+)

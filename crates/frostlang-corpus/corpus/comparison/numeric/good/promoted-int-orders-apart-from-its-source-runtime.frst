@@ -1,0 +1,14 @@
+# Arithmetic rounds an Int when it promotes it to a Float, but ordering never
+# rounds: `x + 0.0` can order strictly apart from x itself. 2^53 + 1 promotes
+# down to 2^53, below it, and the greatest Int promotes up to 2^63, above it.
+# Subtle because adding zero looks like it should change nothing.
+#= {
+#=     result: [true, false, true, false],
+#=     inputs: {past_exact: 9007199254740993, greatest: 9223372036854775807},
+#= }
+[
+    past_exact + 0.0 < past_exact,
+    past_exact + 0.0 >= past_exact,
+    greatest + 0.0 > greatest,
+    greatest + 0.0 <= greatest,
+]

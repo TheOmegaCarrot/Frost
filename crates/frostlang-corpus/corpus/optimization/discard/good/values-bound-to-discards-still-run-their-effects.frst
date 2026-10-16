@@ -1,0 +1,10 @@
+# A value bound only to a discard is still computed, so its effect happens, in
+# order: an argument for a discarded parameter, one for a discarded rest
+# parameter, and a part of a destructured value that `_` matches.
+#= {result: ['ignored', 'rest ignored', 2], printed: ['argument', 'rest', 'part']}
+def ignore = fn _ -> 'ignored'
+def ignore_rest = fn ..._ -> 'rest ignored'
+def first = ignore(print('argument'))
+def second = ignore_rest(1, print('rest'))
+def [_, two] = [print('part'), 2]
+[first, second, two]

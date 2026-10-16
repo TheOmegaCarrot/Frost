@@ -1,0 +1,7 @@
+# A predicate of a `match` answers by the arm taken, when the arms give
+# values of different types.
+#= {result: [true, false, true], inputs: {samples: [1, 2, 'x']}}
+map samples with fn v -> is_string(match v {
+    1 => 'one',
+    _ => v,
+})

@@ -1,0 +1,7 @@
+# `each` over a constant structure with a pure function folds to what it gives
+# at runtime: the structure itself, the function's results dropped.
+#= {result: [{a: 1}, [1, 2]]}
+[
+    each({a: 1}, fn k, v -> [k, v]),
+    [1, 2] @ each($($ + 1)),
+]

@@ -1,0 +1,5 @@
+# A lone `_` is a discard where a name is bound, but after `.` it is just the
+# key `'_'`, read like any other field. Subtle because `_` can never be read
+# as a variable.
+#= {result: [1, 2], inputs: {m: {_: 2}}}
+[{_: 1}._, m._]

@@ -1,0 +1,43 @@
+# A middleware stack: each middleware takes the next handler and returns a
+# new one, and folding the stack from its innermost layer outward builds the
+# app. Requests then flow through the layers in written order and responses
+# back out in reverse, as the printed trace shows. One layer short-circuits
+# without calling the rest, so no layer inside it runs for that request.
+#= {
+#=     result: [
+#=         {status: 200, body: 'HELLO, ADA', headers: {served_by: 'frost', trace: 'log>auth>upper'}},
+#=         {status: 401, body: 'denied', headers: {served_by: 'frost'}},
+#=     ],
+#=     printed: ['-> /hello', '<- 200', '-> /secret', '<- 401'],
+#=     inputs: {
+#=         requests: [
+#=             {path: '/hello', user: 'ada', trace: []},
+#=             {path: '/secret', user: null, trace: []},
+#=         ],
+#=     },
+#= }
+defn handler(request) -> {
+    status: 200,
+    body: $'hello, ${request.user}',
+    headers: {trace: join(request.trace, '>')},
+}
+defn tagged(name, next) -> fn request -> (request + {trace: request.trace + [name]})
+    @ next()
+
+def logging = fn next -> fn request -> {
+    print($'-> ${request.path}')
+    def response = tagged('log', next)(request)
+    print($'<- ${response.status}')
+    response + {headers: response.headers + {served_by: 'frost'}}
+}
+def auth = fn next -> fn request ->
+    if request.user: tagged('auth', next)(request)
+    else: {status: 401, body: 'denied', headers: {}}
+def shouting = fn next -> fn request -> do {
+    def response = tagged('upper', next)(request)
+    response + {body: to_upper(response.body)}
+}
+
+def stack = [logging, auth, shouting]
+def app = reduce reverse(stack) init: handler with fn inner, layer -> layer(inner)
+map requests with app

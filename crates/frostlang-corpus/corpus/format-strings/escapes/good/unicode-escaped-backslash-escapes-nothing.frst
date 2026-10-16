@@ -1,0 +1,6 @@
+# A backslash written as `\u{5c}` is text and escapes nothing after it: the
+# interpolation after it still interpolates, and the quote after it still
+# closes the String. Subtle: `\\` and `\u{5c}` yield the same character, but
+# escapes decode once, never forming new ones.
+#= {result: ['\\7', '\\', '\\$7'], inputs: {x: 7}}
+[$'\u{5c}${x}', $'\u{5c}', $'\u{5c}$${x}']

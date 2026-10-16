@@ -1,0 +1,11 @@
+# Each evaluation of a lambda capturing a known value makes a new function:
+# one result equals itself, while the results of separate evaluations differ.
+# Subtle: the captured value may be built into the function ahead of time,
+# leaving each evaluation nothing of its own to capture.
+#= {result: [true, false, false, [11, 12]]}
+def k = 10
+defn make() -> fn x -> x + k
+def a = make()
+def b = make()
+def made = map [1, 2] with fn _ -> fn x -> x + k
+[a == a, a == b, made[0] == made[1], [a(1), made[1](2)]]

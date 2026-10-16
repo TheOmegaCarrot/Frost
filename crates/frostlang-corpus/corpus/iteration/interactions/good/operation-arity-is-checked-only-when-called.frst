@@ -1,0 +1,15 @@
+# A form checks that its operation is a function up front, but the
+# function's arity only matters when it is called. Subtle: each operation
+# here has the wrong arity for its form, yet none is ever called: the
+# structures are empty, or `reduce` has a lone element to seed with.
+#= {
+#=     result: [[], {}, [], 7, 0],
+#=     inputs: {empty: [], none: {}, one: [7]},
+#= }
+[
+    map empty with fn -> 0,
+    filter none with fn x -> true,
+    foreach empty with fn a, b, c -> null,
+    reduce one with fn x -> x,
+    reduce none init: 0 with fn acc, k -> acc,
+]

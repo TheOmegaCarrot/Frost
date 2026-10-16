@@ -1,0 +1,4 @@
+# A Map literal has no spread entry; `+` merges Maps, so `m + {b: 2}` is the
+# Frost form of `{...m, b: 2}`.
+#= {rejects: 'no spread', inputs: {m: {a: 1}}}
+{...m, b: 2}

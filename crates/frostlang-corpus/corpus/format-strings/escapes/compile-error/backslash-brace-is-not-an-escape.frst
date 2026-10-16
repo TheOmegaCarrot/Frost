@@ -1,0 +1,5 @@
+# A brace needs no escape in a format String, and `\{` is not one: `\$` is the
+# escape that keeps `${` from interpolating. Subtle: other languages escape the
+# brace instead.
+#= {rejects: ['invalid escape sequence', R'(`\{`)'], inputs: {x: 7}}
+def s = $'$\{x}'

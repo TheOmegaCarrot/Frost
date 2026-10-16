@@ -1,0 +1,4 @@
+# A function's parameter count is checked only when it is called, so over an
+# empty structure `each` accepts a function of any arity.
+#= {result: [[], {}, [], {}], inputs: {xs: [], m: {}}}
+[each([], fn a, b -> a), each({}, fn -> 1), each(xs, fn a, b, c -> a), each(m, fn x -> x)]

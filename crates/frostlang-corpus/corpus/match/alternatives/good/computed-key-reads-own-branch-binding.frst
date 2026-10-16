@@ -1,0 +1,10 @@
+# In a branch of an alternative, a computed key may read a name that branch
+# bound earlier, while another branch binds the same names by other means.
+#= {
+#=     result: [['z', 1], ['q', 2], 'none'],
+#=     inputs: {xs: [{k: 'z', z: 1}, ['q', 2], {k: 'z'}]},
+#= }
+transform(xs, fn v -> match v {
+    {k, [k]: x} | [k, x] => [k, x],
+    _ => 'none',
+})

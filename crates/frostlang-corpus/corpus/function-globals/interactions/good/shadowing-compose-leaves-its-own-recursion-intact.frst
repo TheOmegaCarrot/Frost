@@ -1,0 +1,8 @@
+# `compose` of three or more functions recurs through the global `compose`.
+# A script binding that shadows `compose` does not reach that recursion,
+# even when the global is called through an earlier alias. Subtle once
+# `compose` is inlined: its recursive call must still mean the global.
+#= {result: [9, 'shadow']}
+def real_compose = compose
+def compose = fn ...functions -> 'shadow'
+[real_compose(fn x -> x + 1, fn x -> x * 2, fn x -> x - 3)(5), compose()]

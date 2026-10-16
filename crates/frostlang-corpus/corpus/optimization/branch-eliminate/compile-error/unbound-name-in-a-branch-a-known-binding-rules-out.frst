@@ -1,0 +1,5 @@
+# An unbound name is a compile error even in a branch ruled out by a condition
+# known only through a binding, not written as a literal.
+#= {rejects: ['`missing_name`', 'not defined']}
+def debug = false
+if debug: missing_name else: 1

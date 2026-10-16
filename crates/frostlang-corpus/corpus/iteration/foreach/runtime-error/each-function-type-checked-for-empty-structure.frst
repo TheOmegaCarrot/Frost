@@ -1,0 +1,4 @@
+# `each` requires a Function even when the structure is empty and it would
+# never be called.
+#= {raises: ['each', 'argument 2', 'Map'], inputs: {xs: [], op: {}}}
+each(xs, op)

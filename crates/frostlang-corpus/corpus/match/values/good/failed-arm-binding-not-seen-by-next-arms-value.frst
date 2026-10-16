@@ -1,0 +1,14 @@
+# A parenthesized name in a later arm reads the enclosing binding, even when an
+# earlier arm bound the same name before its guard failed. Subtle: the first
+# arm binds `k` to the target's first element, which must not leak into the
+# second arm's `(k)`.
+#= {
+#=     result: [['second', 1, 0], 'none', ['second', 1, 7]],
+#=     inputs: {xs: [[1, 0], [5, 0], [1, 7]]},
+#= }
+def k = 1
+transform(xs, fn v -> match v {
+    [k, 0] if: false => ['first', k],
+    [(k), x] => ['second', k, x],
+    _ => 'none',
+})

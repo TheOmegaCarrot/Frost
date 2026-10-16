@@ -1,0 +1,8 @@
+# A guard written on part of a pattern is rejected with help saying that an
+# arm's guard follows its whole pattern. Subtle: inside a Map pattern, `if`
+# otherwise reads as the next entry's key.
+#= {rejects: 'guard', known_issue: 'FROST-169'}
+match {a: 1} {
+    {a: x if: x > 0} => x,
+    _ => 0,
+}

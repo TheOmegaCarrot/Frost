@@ -1,0 +1,16 @@
+# Iterating over a binding's last read with an operation that builds on each
+# element leaves unchanged an element another binding holds, and the whole
+# structure a closure made earlier captured. Subtle: the iterated structure
+# is handed over rather than copied, yet parts of it are still shared.
+#= {
+#=     result: [[[1, 0], [2, 0]], [1], [[1], [2]], [[1, 9], [2, 9]], [1]],
+#=     inputs: {one: 1, two: 2},
+#= }
+def rows = [[one], [two]]
+def first = rows[0]
+def peek = fn -> rows
+def grown = map rows with fn row -> row + [0]
+def cols = [[one], [two]]
+def head = cols[0]
+def extended = transform(cols, fn col -> col + [9])
+[grown, first, peek(), extended, head]

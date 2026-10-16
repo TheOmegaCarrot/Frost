@@ -1,0 +1,4 @@
+# An unbound name is a compile error even in an `elif` condition that an
+# earlier constant condition means is never evaluated.
+#= {rejects: ['`missing_name`', 'not defined']}
+if true: 1 elif missing_name: 2 else: 3

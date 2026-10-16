@@ -1,0 +1,15 @@
+# A lambda in the value of a `def` that shadows a local captures the outer
+# binding, not the one being defined: the new binding does not exist until the
+# lambda is created. Subtle because the read is deferred to a later call, made
+# after the shadow exists.
+#= {result: [20, 10], inputs: {base: 10}}
+def scale = 2
+def f = fn x -> {
+    def scale = fn -> x * scale
+    scale()
+}
+def g = do {
+    def base = fn -> base
+    base()
+}
+[f(base), g]

@@ -1,0 +1,9 @@
+# A `bcurry` function applied by `call` appends its fixed arguments to its
+# own copy of the arguments: the spread Array is unchanged. Subtle because
+# `bcurry` extends the Array its rest parameter holds, which must not be the
+# caller's Array extended in place.
+#= {result: [[1, 2, 9], [1, 2, 9], [1, 2]], inputs: {args: [1, 2]}}
+def append_nine = bcurry(collect, 9)
+def first = call(append_nine, args)
+def second = call(append_nine, args)
+[first, second, args]

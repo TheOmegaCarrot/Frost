@@ -1,0 +1,19 @@
+# `and` and `or` give one of their operands, so a predicate of the result
+# answers by that operand's type, never as if the result were a Bool.
+# Subtle because they read as logical operators: `x and 1` is Null, Bool, or
+# Int depending on `x`, and `0 or 1` is the truthy `0`.
+#= {
+#=     result: [
+#=         [true, false, false, true],
+#=         [false, true, false, true],
+#=         [false, false, true, false],
+#=         [false, false, true, true],
+#=     ],
+#=     inputs: {samples: [null, false, true, 0]},
+#= }
+map samples with fn x -> [
+    is_null(x and 1),
+    is_bool(x and 1),
+    is_int(x and 1),
+    is_int(x or 1),
+]

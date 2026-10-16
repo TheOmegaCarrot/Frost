@@ -1,0 +1,8 @@
+# A parenthesized value may be an `if`, compared by the value its taken branch
+# yields.
+#= {result: [['one', 'other'], ['other', 'one']], inputs: {t: true, f: false}}
+defn classify(c, v) -> match v {
+    (if c: 1 else: 2) => 'one',
+    _ => 'other',
+}
+[[classify(t, 1), classify(t, 2)], [classify(f, 1), classify(f, 2)]]

@@ -1,0 +1,6 @@
+# A lambda is an ordinary expression that ends at its block body's `}`, so an
+# operator after the block applies to the lambda itself, a type error at run
+# time. Subtle: after an expression body, the same operator would join the
+# body instead.
+#= {raises: ['Function', 'Int']}
+fn -> { 1 } + 1

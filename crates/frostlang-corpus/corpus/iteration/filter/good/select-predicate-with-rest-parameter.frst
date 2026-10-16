@@ -1,0 +1,7 @@
+# A predicate with a rest parameter after its required ones takes whatever
+# `select` passes beyond them: nothing over an Array, the value over a Map.
+#= {
+#=     result: [[1, 2], {b: 2}],
+#=     inputs: {xs: [1, 2], m: {a: 1, b: 2}},
+#= }
+[select(xs, fn x, ...rest -> rest == []), select(m, fn k, ...rest -> rest == [2])]

@@ -1,0 +1,11 @@
+# A guard may read the whole Map an `as` bound, alongside the entries' own
+# bindings.
+#= {
+#=     result: ['ada and more', 'just ada', 'unnamed'],
+#=     inputs: {xs: [{name: 'ada', age: 36}, {name: 'ada'}, {}]},
+#= }
+transform(xs, fn v -> match v {
+    {name} as m if: len(m) > 1 => name + ' and more',
+    {name} => 'just ' + name,
+    _ => 'unnamed',
+})

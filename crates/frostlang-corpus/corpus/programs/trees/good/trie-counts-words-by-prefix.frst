@@ -1,0 +1,31 @@
+# A trie of words as nested Maps: each node maps a letter to its child, and
+# a `$end` entry marks the end of a word. Inserting rebuilds only the path it
+# walks, a repeated word lands on the same `$end`, and counting folds over
+# each node's entries, recursing into children.
+#= {
+#=     result: [[3, 2, 2, 0, 5], true, false, 1],
+#=     inputs: {words: ['tea', 'ten', 'to', 'inn', 'in', 'tea']},
+#= }
+defn insert(node, letters) -> match letters {
+    [] => node + {['$end']: true},
+    [letter, ...rest] => node + {[letter]: insert(node[letter] or {}, rest)},
+}
+defn find(node, letters) -> match letters {
+    [] => node,
+    [letter, ...rest] => if has(node, letter): find(node[letter], rest) else: null,
+}
+defn count_words(node) -> reduce node init: 0 with fn total, k, child ->
+    total + (if k == '$end': 1 else: count_words(child))
+defn chars(word) -> split(word, '')
+
+def trie = reduce words init: {} with fn t, w -> insert(t, chars(w))
+def single = insert({}, chars('to'))
+[
+    map ['t', 'te', 'in', 'x', ''] with fn prefix -> do {
+        def node = find(trie, chars(prefix))
+        if node == null: 0 else: count_words(node)
+    },
+    has(find(trie, chars('in')), '$end'),
+    has(find(trie, chars('te')), '$end'),
+    count_words(single),
+]

@@ -1,0 +1,7 @@
+# A `fold` call whose result is unused still calls its function, with or
+# without an init, over a literal Array as over a runtime one.
+#= {result: 'done', printed: ['2', '3', '4'], inputs: {xs: [4]}}
+fold([1, 2], fn acc, x -> print(to_string(x)))
+fold([3], null, fn acc, x -> print(to_string(x)))
+fold(xs, 0, fn acc, x -> print(to_string(x)))
+'done'

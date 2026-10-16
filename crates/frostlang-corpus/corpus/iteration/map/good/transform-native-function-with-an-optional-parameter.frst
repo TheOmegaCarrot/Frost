@@ -1,0 +1,4 @@
+# A native taking one to three arguments receives exactly the one `transform`
+# passes over an Array: `range` with a single argument counts up from 0.
+#= {result: [[0], [0, 1]], inputs: {xs: [1, 2]}}
+transform(xs, range)

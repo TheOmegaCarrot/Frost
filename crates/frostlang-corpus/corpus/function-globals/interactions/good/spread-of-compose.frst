@@ -1,0 +1,7 @@
+# Spreading `compose` composes the functions an Array holds, in its order.
+#= {result: [8, 5]}
+def compose_all = spread(compose)
+[
+    compose_all([fn x -> x + 1, fn x -> x * 2])(3),
+    compose_all([fn x -> x * 2, fn x -> x + 1, fn x -> x - 2])(3),
+]

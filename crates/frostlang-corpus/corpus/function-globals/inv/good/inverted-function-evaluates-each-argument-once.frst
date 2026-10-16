@@ -1,0 +1,9 @@
+# An inverted function evaluates each argument once, in order, then calls
+# its function. Subtle once `inv` is inlined as `not f(...)`: the arguments
+# must still be evaluated exactly as for the plain call.
+#= {result: [false, true], printed: ['first', 'second', 'third']}
+defn noisy(v) -> {
+    print(v)
+    v
+}
+[inv(fn a, b -> a)(noisy('first'), noisy('second')), inv(is_null)(noisy('third'))]

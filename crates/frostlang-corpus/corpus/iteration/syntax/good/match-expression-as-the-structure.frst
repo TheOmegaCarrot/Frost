@@ -1,0 +1,14 @@
+# A `match` expression can be the structure without parentheses: its closing
+# brace ends it, and `with` follows.
+#= {result: [[2, 4], [20]], inputs: {xs: [1, 2], ys: [10], pick: 'xs'}}
+defn double(x) -> x * 2
+[
+    map match pick {
+        'xs' => xs,
+        _ => ys,
+    } with double,
+    map match 'other' {
+        'xs' => xs,
+        _ => ys,
+    } with double,
+]

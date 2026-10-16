@@ -1,0 +1,6 @@
+# A parameter named `print` shadows the global in its function's body, so a
+# call through it prints only when the argument is the global `print` itself.
+# Subtle: the body never loads the impure global, yet a call can still print.
+#= {result: ['quiet!', null, 'again!'], printed: ['loud!']}
+defn shout(print, s) -> print(s + '!')
+[shout(fn x -> x, 'quiet'), shout(print, 'loud'), shout(fn x -> x, 'again')]

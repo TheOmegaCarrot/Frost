@@ -1,0 +1,7 @@
+# A reversed function applied by `call` reverses its own copy of the
+# arguments: the spread Array keeps its order. Subtle because `rev_args`
+# reverses the Array its rest parameter holds, which must not be the
+# caller's Array reversed in place.
+#= {result: [[3, 2, 1], [1, 2, 3]], inputs: {args: [1, 2, 3]}}
+def reversed = call(rev_args(collect), args)
+[reversed, args]

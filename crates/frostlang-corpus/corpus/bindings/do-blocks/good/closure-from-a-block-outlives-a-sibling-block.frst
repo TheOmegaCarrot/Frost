@@ -1,0 +1,14 @@
+# A closure made in one block keeps the value it captured after a sibling
+# block binds new names, here a runtime Array whose last read is the capture.
+# Subtle because sibling blocks are separate scopes whose bindings may reuse
+# the same storage, and a last read may move the value rather than copy it.
+#= {result: [[1, 2], 'second', [1, 2]], inputs: {xs: [1, 2]}}
+def get = do {
+    def held = xs + []
+    fn -> held
+}
+def other = do {
+    def replaced = 'second'
+    replaced
+}
+[get(), other, get()]

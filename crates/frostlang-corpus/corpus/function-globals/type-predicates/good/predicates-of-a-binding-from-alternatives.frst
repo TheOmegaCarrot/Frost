@@ -1,0 +1,11 @@
+# A name bound by pattern alternatives takes its type from whichever
+# alternative matched. Subtle because one alternative constrains the binding
+# to Int while another binds an Array's element of any type.
+#= {
+#=     result: [[true, false], [false, true], [true, false], 'none'],
+#=     inputs: {samples: [1, ['x'], [2], 'y']},
+#= }
+map samples with fn v -> match v {
+    a is Int | [a] => [is_int(a), is_string(a)],
+    _ => 'none',
+}

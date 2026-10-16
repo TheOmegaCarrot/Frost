@@ -1,0 +1,15 @@
+# Folds the compiler abandons partway through a callback nested in calls to
+# pure globals, because the callback runs too long or raises, leave no trace
+# on the folds after them, even those calling back through the same globals.
+# Subtle: each abandoned fold stops with several calls still unfinished.
+#= {
+#=     result: [[[1], [2]], [2, 4], 'skipped', [2], [[10, 20], 2]],
+#=     inputs: {flag: false},
+#= }
+defn spin(n) -> if n == 0: 0 else: spin(n - 1)
+def long = transform([1, 2], fn x -> select([x], fn _ -> spin(60000) == 0))
+def after_long = transform([1, 2], fn x -> fold([x, x], 0, fn acc, y -> acc + y))
+def raising = if flag: transform([1, 0], fn x -> select([1], fn _ -> 1 / x)) else: 'skipped'
+def after_raising = select([1, 2, 3], fn x -> transform([x], $($ * 2)) == [4])
+def after_both = [fold([1, 2], [], fn acc, y -> acc + [y * 10]), 1 + 1]
+[long, after_long, raising, after_raising, after_both]

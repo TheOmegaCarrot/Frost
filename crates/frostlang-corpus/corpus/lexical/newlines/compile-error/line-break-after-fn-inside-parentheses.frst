@@ -1,0 +1,7 @@
+# Inside brackets, a line break may fall between atoms and primary
+# expressions, not after any token: `fn` does not accept one before its
+# parameters. Subtle: `(if` and `(match` followed by a line break are
+# accepted, because a condition or target is an expression.
+#= {rejects: ['parameters', 'line break']}
+(fn
+    x -> x)(1)

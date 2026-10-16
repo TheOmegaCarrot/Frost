@@ -1,0 +1,5 @@
+# In a Map literal, shorthand `{_}` reads the name `_`, which is never bound,
+# so it is an unbound name. Subtle because in a Map pattern the same `{_}` is
+# valid: there it is `{_: _}`, requiring the key `'_'`.
+#= {rejects: ['`_`', 'not defined']}
+{_}

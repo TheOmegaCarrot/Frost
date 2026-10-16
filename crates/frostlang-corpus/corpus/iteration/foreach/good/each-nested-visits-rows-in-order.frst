@@ -1,0 +1,12 @@
+# An `each` inside another's function runs fully for each outer element, so
+# the inner effects come row by row, and the outer call still yields the
+# rows themselves.
+#= {
+#=     result: [[1, 2], [], [3]],
+#=     printed: ['row', '1', '2', 'row', 'row', '3'],
+#=     inputs: {rows: [[1, 2], [], [3]]},
+#= }
+each(rows, fn row -> {
+    print('row')
+    each(row, fn x -> print(to_string(x)))
+})

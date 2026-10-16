@@ -1,0 +1,9 @@
+# Only an Array counts a negative index back from the end. On a Map, a
+# negative Int is an ordinary key: `m[-1]` finds the entry keyed `-1`, never
+# the last entry, and a Map with Int keys is not read by position.
+#= {
+#=     result: ['minus one', null, null, 'minus one', null],
+#=     inputs: {m: {[-1]: 'minus one', [0]: 'zero', [5]: 'five'}, i: -1},
+#= }
+def last_only = {[2]: 'two'}
+[m[-1], m[1], last_only[-1], m[i], last_only[i]]

@@ -1,0 +1,19 @@
+# `dig` is an ordinary call, so every key is evaluated, in order, before it
+# begins, even when the first step already finds Null. Subtle once `dig` is
+# inlined as a chain of steps: stopping at Null must not skip evaluating the
+# remaining key expressions.
+#= {result: null, printed: ['structure', 'first key', 'second key']}
+dig(
+    do {
+        print('structure')
+        null
+    },
+    do {
+        print('first key')
+        'a'
+    },
+    do {
+        print('second key')
+        'b'
+    },
+)

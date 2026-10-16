@@ -1,0 +1,7 @@
+# Each evaluation of a named lambda makes a distinct closure, and its
+# self-name is that evaluation's own closure, not another made from the same
+# text. Subtle: the lambda captures nothing but itself, so a closure shared
+# between evaluations would be indistinguishable but for identity.
+#= {result: [true, true, false, false]}
+def fs = transform([1, 2], fn _ -> fn me() -> me)
+[fs[0]() == fs[0], fs[1]() == fs[1], fs[0]() == fs[1], fs[1]() == fs[0]]

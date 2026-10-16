@@ -1,0 +1,30 @@
+# A condition written as a block ending in a constant still runs the block's
+# effects, an unread binding's among them, before its branch is taken.
+# Subtle: the value deciding the branch is known ahead of time, but the
+# block computing it has effects, so none of it may be skipped.
+#= {
+#=     result: ['then', 'or right', null, 'arm'],
+#=     printed: ['if', 'unread', 'or', 'and', 'match'],
+#= }
+[
+    if do {
+        print('if')
+        def unread = print('unread')
+        true
+    }: 'then' else: 'else',
+    do {
+        print('or')
+        null
+    } or 'or right',
+    do {
+        print('and')
+        null
+    } and error('never'),
+    match do {
+        print('match')
+        3
+    } {
+        3 => 'arm',
+        _ => 'other',
+    },
+]

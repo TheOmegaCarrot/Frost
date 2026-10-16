@@ -1,0 +1,11 @@
+# A placeholder ends where an operator begins, spaces or not. Subtle: `$-1`
+# is a subtraction, not `$` beside a negative literal, and `$$+` is the rest
+# placeholder then `+`.
+#= {result: [9, 3, 4, [2, 3, 1], true]}
+[
+    $($*$)(3),
+    $($1-$2)(5, 2),
+    $($-1)(5),
+    $($$+[$])(1, 2, 3),
+    $($1<$2)(1, 2),
+]

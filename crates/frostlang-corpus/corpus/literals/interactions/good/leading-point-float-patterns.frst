@@ -1,0 +1,15 @@
+# A Float literal pattern may be written with a leading point, negated, with an
+# exponent, or as an alternative. Subtle: each such pattern begins with the `.`
+# that elsewhere starts a field access, or with a prefix `-` before it.
+#= {
+#=     result: ['half', 'minus a quarter', 'five', 'tenth', 'other'],
+#=     inputs: {xs: [0.5, -0.25, 5.0, -0.1, 0.5e-1]},
+#= }
+defn name(x) -> match x {
+    .5 => 'half',
+    -.25 => 'minus a quarter',
+    .5e1 => 'five',
+    .1 | -.1 => 'tenth',
+    _ => 'other',
+}
+transform(xs, name)

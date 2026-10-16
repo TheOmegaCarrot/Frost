@@ -1,0 +1,4 @@
+# `bcurry` fixes `dig`'s keys after the structure, giving a reusable path
+# reader; a structure missing the path reads as Null.
+#= {result: [1, null, 3], inputs: {rows: [{a: {b: 1}}, {a: null}, {a: {b: 3}}]}}
+map rows with bcurry(dig, 'a', 'b')

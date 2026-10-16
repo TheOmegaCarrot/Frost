@@ -1,0 +1,5 @@
+# All arguments are evaluated before `fold` checks any: an error raised while
+# evaluating the function argument surfaces, not the type error the wrong
+# structure would cause.
+#= {raises: 'from the function argument', inputs: {n: 5}}
+fold(n, 0, error('from the function argument'))

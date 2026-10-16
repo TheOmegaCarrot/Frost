@@ -1,0 +1,14 @@
+# A keyword-led form needs a space only between two words: punctuation touching
+# `fn`, `defn`, `match`, `if`, `elif`, `else`, and `do` separates them from
+# their parts as a space would.
+#= {result: [2, 4, 't', 1, 2, 5], inputs: {c: true}}
+def f=fn(x)->x+1
+defn g(y)->y*2
+[
+    f(1),
+    g(2),
+    match 3{3=>'t',_=>'f'},
+    if(c):1 else:2,
+    if(not c):1 elif(c):2 else:3,
+    do{5},
+]

@@ -1,0 +1,6 @@
+# A tail call builds one argument from a parameter that a later argument's
+# closure captures. Subtle: the build is not the parameter's last read, so it
+# must not update the Array the closure goes on to hold.
+#= {result: [[3, 2, 1], [[], [3], [3, 2]]]}
+defn walk(n, acc, thunks) -> if n == 0: [acc, transform(thunks, fn t -> t())] else: walk(n - 1, acc + [n], thunks + [fn -> acc])
+walk(3, [], [])

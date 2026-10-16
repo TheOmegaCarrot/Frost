@@ -1,0 +1,12 @@
+# A capture passing through a lambda is the binding visible where the inner
+# lambda was written, even when the lambda it passes through later defines a
+# local of the same name. Subtle: the middle lambda holds both an `x` it
+# passes along and an `x` of its own.
+#= {result: ['outer', 'middle'], inputs: {outer: 'outer'}}
+def x = outer
+def middle = fn -> {
+    def inner = fn -> fn -> x
+    def x = 'middle'
+    [inner()(), x]
+}
+middle()

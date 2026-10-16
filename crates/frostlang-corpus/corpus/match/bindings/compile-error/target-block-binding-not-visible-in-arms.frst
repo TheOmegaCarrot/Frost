@@ -1,0 +1,9 @@
+# A name a `do` block target defines is scoped to that block; the arms cannot
+# read it.
+#= {rejects: '`t` is not defined'}
+match do {
+    def t = 1
+    t + 1
+} {
+    _ => t,
+}

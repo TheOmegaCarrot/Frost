@@ -1,0 +1,13 @@
+# Code may follow a multiline String's closer on its line: a binary operator or
+# `@` there applies to the whole String.
+#= {result: ['m!', 2, true]}
+def joined = '''
+    m
+    ''' + '!'
+def length = """
+    ab
+    """ @ len()
+def same = '''
+    x
+    ''' == 'x'
+[joined, length, same]

@@ -1,0 +1,11 @@
+# A match target may be an unparenthesized lambda: its body ends at the brace
+# that opens the arms, which then receive the function.
+#= {result: [2, 6]}
+[
+    match fn x -> x + 1 {
+        f => f(1),
+    },
+    match $($ * 3) {
+        f => f(2),
+    },
+]

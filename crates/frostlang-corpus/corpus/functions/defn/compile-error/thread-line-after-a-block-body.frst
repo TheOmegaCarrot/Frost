@@ -1,0 +1,9 @@
+# `defn` is a declaration, not an expression, so a continuation line after its
+# block body has nothing to apply to. Subtle: written as
+# `def wrapped = fn -> {...}`, the same continuation threads the lambda.
+#= {rejects: '`@`'}
+defn inc(x) -> x + 1
+defn wrapped() -> {
+    1
+}
+    @ inc()

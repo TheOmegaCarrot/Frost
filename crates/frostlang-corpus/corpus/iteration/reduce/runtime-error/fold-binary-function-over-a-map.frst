@@ -1,0 +1,4 @@
+# Over a Map, `fold` calls its function with accumulator, key, and value, so
+# a two-parameter function is an arity error.
+#= {raises: 'called with 3', inputs: {m: {a: 1}}}
+fold(m, 0, fn acc, v -> acc + v)

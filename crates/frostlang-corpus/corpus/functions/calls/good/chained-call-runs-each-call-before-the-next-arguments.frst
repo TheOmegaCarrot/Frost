@@ -1,0 +1,18 @@
+# In a chained call, each call is the callee of the next, so it runs in full
+# before the next call's arguments are evaluated.
+#= {
+#=     result: ['a', 'b'],
+#=     printed: ['argument a', 'body a', 'argument b', 'body b'],
+#= }
+defn note(text) -> {
+    print($'argument ${text}')
+    text
+}
+def curried = fn a -> {
+    print($'body ${a}')
+    fn b -> {
+        print($'body ${b}')
+        [a, b]
+    }
+}
+curried(note('a'))(note('b'))

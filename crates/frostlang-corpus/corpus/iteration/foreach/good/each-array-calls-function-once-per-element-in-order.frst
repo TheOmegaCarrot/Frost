@@ -1,0 +1,8 @@
+# `each` calls its function exactly once per element, first to last,
+# including for repeated and Null elements, as the printed trace shows.
+#= {
+#=     result: [3, null, 3],
+#=     printed: ['3', 'null', '3'],
+#=     inputs: {xs: [3, null, 3]},
+#= }
+each(xs, fn x -> print(to_string(x)))

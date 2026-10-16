@@ -1,0 +1,5 @@
+# Name shorthand reads any name in view, a global included: `{len, type}`
+# holds the global functions under the keys `'len'` and `'type'`.
+#= {result: [2, 'Int', ['len', 'type']]}
+def m = {len, type}
+[m.len([1, 2]), m.type(1), keys(m)]

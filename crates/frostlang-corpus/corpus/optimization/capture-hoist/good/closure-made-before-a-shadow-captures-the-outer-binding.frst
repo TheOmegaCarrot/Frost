@@ -1,0 +1,13 @@
+# In a function body that later shadows a captured known binding, a closure
+# made before the shadow captures the outer binding, as does a read before it,
+# while a read after it sees the shadow. Subtle: the function's own body binds
+# the name, yet it must still capture the outer one for the closure.
+#= {result: [1, 1, 2]}
+def k = 1
+def f = fn -> {
+    def g = fn -> k
+    def before = k
+    def k = 2
+    [g(), before, k]
+}
+f()

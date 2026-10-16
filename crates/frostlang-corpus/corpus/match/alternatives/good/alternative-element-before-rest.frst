@@ -1,0 +1,7 @@
+# An element with alternatives may precede a rest. A target long enough for
+# the rest still fails the arm when none of the element's branches match.
+#= {result: [[5, 6], 'none', []], inputs: {xs: [[2, 5, 6], [3, 5], [1]]}}
+transform(xs, fn v -> match v {
+    [1 | 2, ...r] => r,
+    _ => 'none',
+})

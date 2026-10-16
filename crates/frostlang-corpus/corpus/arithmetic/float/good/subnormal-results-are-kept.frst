@@ -1,0 +1,13 @@
+# A Float result below the smallest normal Float, yet above zero, is kept as a
+# subnormal value rather than flushed to zero: halving the smallest normal
+# Float twice is still nonzero, and doubling it back restores the original.
+#= {
+#=     result: [5.562684646268003e-309, false, 2.2250738585072014e-308],
+#=     inputs: {smallest_normal: 2.2250738585072014e-308},
+#= }
+def quarter = smallest_normal / 4.0
+[
+    quarter,
+    quarter == 0.0,
+    quarter * 4.0,
+]

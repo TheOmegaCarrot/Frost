@@ -1,0 +1,25 @@
+# A pin in a pattern over a known value may make and call a closure capturing
+# a part the same pattern bound earlier; the closure sees that part. Subtle:
+# the part is known only once the pattern has run, yet the closure capturing
+# it is made while the pattern runs.
+#= {result: [2, 5, 3, [3, 7]]}
+def [a, (do {
+    def double = fn -> a * 2
+    double()
+})] = [2, 4]
+def [b, (do {
+    def adder = fn y -> fn -> b + y
+    adder(1)()
+})] = [5, 6]
+[
+    a,
+    b,
+    match [3, 6] {
+        [c, ((fn -> c * 2)())] => c,
+        _ => 'none',
+    },
+    match [3, 7] {
+        [c, ((fn -> c * 2)())] => c,
+        [c, d] => [c, d],
+    },
+]

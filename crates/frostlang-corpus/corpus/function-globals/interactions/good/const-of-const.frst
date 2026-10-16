@@ -1,0 +1,5 @@
+# A constant function whose constant is `const` returns `const`, uncalled,
+# whatever it is given.
+#= {result: [5, 'k']}
+def gives_const = const(const)
+[gives_const()(5)(), gives_const(1, 2)('k')('ignored')]

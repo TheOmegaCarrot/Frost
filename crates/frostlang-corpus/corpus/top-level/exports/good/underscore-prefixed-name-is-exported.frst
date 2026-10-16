@@ -1,0 +1,7 @@
+# Only the lone `_` discards. A name merely starting with an underscore is an
+# ordinary name, so exporting it exports it, whatever privacy the prefix
+# suggests by convention elsewhere.
+#= {result: 3, exports: {_hidden: 1, __twice: 2}}
+export def _hidden = 1
+export def __twice = 2
+_hidden + __twice

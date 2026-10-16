@@ -1,0 +1,10 @@
+# Ordering passes over the equal leading Nulls, and the first unequal pair, two
+# distinct Functions, decides: being unorderable, it raises about Function,
+# not about the Nulls before it.
+#= {
+#=     raises: ['Function', 'not orderable'],
+#=     known_issue: 'FROST-154',
+#= }
+def first = fn -> 1
+def second = fn -> 2
+[null, first] < [null, second]

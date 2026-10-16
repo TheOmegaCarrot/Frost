@@ -1,0 +1,7 @@
+# `each` yields the structure it was given, never its function's results,
+# even when the function returns a structure of the same shape.
+#= {
+#=     result: [[1, 2], {a: 1}, [1, 2]],
+#=     inputs: {xs: [1, 2], m: {a: 1}},
+#= }
+[each(xs, fn x -> [x, x]), each(m, fn k, v -> {[k]: v * 100}), each(xs, fn x -> error)]

@@ -1,0 +1,9 @@
+# Over a Map, `fold` calls its function with exactly three arguments: the
+# accumulator, the key, then the value. `collect` returns its arguments as an
+# Array, so each step nests the previous accumulator; the Int key comes first
+# in key order.
+#= {
+#=     result: [[[], 2, null], 'a', 1],
+#=     inputs: {m: {a: 1, [2]: null}},
+#= }
+fold(m, [], collect)

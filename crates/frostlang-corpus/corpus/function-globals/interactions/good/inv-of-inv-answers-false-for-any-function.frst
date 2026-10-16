@@ -1,0 +1,6 @@
+# Inverting `inv` gives a function that answers `not inv(f)`: since
+# `inv(f)` is a function, and so truthy, the answer is false whatever `f`
+# does. Subtle because `f` itself is never called.
+#= {result: [false, false, false]}
+def never = inv(inv)
+[never(fn x -> x), never(is_null), never(fn -> error('not called'))]

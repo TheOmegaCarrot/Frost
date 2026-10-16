@@ -1,0 +1,10 @@
+# A computed key is any expression, even one that opens with its own bracket
+# or brace: `[[1, 2][0]]` is the key `1`, an index of an Array literal, and
+# `[{a: 'b'}.a]` is the key `'b'`, a field of a Map literal. Subtle because the
+# doubled opener looks like a nested literal rather than a key.
+#= {result: {[1]: 'x', [3]: 'y', b: 'z'}}
+{
+    [[1, 2][0]]: 'x',
+    [[3][-1]]: 'y',
+    [{a: 'b'}.a]: 'z',
+}

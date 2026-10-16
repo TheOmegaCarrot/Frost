@@ -1,0 +1,7 @@
+# An `each` statement over a literal Array whose result is unused still runs,
+# so its function's error still surfaces. Subtle: `each` yields its input, so
+# its value is known without any call; only the error makes the calls
+# observable.
+#= {raises: 'division by zero'}
+each([1, 0], fn x -> 1 / x)
+'unreachable'

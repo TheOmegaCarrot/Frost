@@ -1,0 +1,21 @@
+# A binding built upon in one part of an expression and read again in a later
+# part keeps its value for the later read, whatever the parts: an index target
+# then its key, a callee then its argument, a computed Map key then its value,
+# an iterated structure then its operation, and one interpolation then the
+# next. Subtle: the first read is the last in its own part.
+#= {
+#=     result: [0, 1, {[2]: [1]}, [[1, 2], [1, 2], [1, 2]], '[ 1, 2, 0 ] [ 1, 2 ]'],
+#=     inputs: {one: 1, two: 2},
+#= }
+def a = [one, two, 3]
+def fs = [fn xs -> len(xs)]
+def k = [one]
+def ys = [one, two]
+def zs = [one, two]
+[
+    (a + [0])[len(a)],
+    (fs + [1])[0](fs),
+    {[len(k + [9])]: k},
+    map ys + [0] with fn _ -> ys,
+    $'${zs + [0]} ${zs}',
+]

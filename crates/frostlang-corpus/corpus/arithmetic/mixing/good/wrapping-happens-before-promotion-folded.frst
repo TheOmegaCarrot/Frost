@@ -1,0 +1,8 @@
+# Constant chains are typed operation by operation exactly as runtime ones
+# are: the folder wraps `9223372036854775807 + 1` as an Int before adding the
+# Float, rather than regrouping the chain into a Float sum.
+#= {result: [-9.223372036854776e18, 9.223372036854776e18]}
+[
+    9223372036854775807 + 1 + 0.5,
+    9223372036854775807 + (1 + 0.5),
+]

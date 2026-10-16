@@ -1,0 +1,17 @@
+# `each` evaluates its arguments in the order written, the structure and then
+# the function, and only then calls the function on each element.
+#= {
+#=     result: [1, 2],
+#=     printed: ['structure', 'function', '1', '2'],
+#=     inputs: {xs: [1, 2]},
+#= }
+each(
+    do {
+        print('structure')
+        xs
+    },
+    do {
+        print('function')
+        fn x -> print(to_string(x))
+    },
+)

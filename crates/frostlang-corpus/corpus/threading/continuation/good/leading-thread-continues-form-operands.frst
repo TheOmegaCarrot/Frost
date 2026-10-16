@@ -1,0 +1,15 @@
+# Leading `@` lines continue a form's structure and `reduce`'s `init:`,
+# with `with` on a later line. Each pipeline ends where the next clause
+# begins, so the structure here is `twice(xs)` and the init is `inc(0)`.
+#= {result: [[1, 2, 1, 2], 7], inputs: {xs: [1, 2]}}
+defn inc(x) -> x + 1
+defn twice(ys) -> ys + ys
+def doubled = map xs
+    @ twice()
+    with fn x -> x
+def total = reduce xs
+    @ twice()
+    init: 0
+    @ inc()
+    with fn acc, x -> acc + x
+[doubled, total]

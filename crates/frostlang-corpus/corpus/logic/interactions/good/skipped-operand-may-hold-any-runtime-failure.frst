@@ -1,0 +1,16 @@
+# A skipped operand runs none of its code, so no runtime failure it holds can
+# happen: not a match with no matching arm, a failed destructuring, a missing
+# Map key, a type error, nor a call of Null.
+#= {result: [1, null, 1, null, 1], inputs: {one: 1, n: null, pair: [1, 2]}}
+[
+    one or match one {
+        2 => 'two',
+    },
+    n and do {
+        def [only] = pair
+        only
+    },
+    one or {}.missing,
+    n and -'text',
+    one or n(),
+]

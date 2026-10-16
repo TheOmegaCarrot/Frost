@@ -1,0 +1,11 @@
+# The arrow needs no spaces around it after any parameter shape, and a body
+# may begin with a minus right after it. Subtle: `->-x` lexes as the arrow,
+# then a negation.
+#= {result: [42, 2, -3, [1, 2], [2, [3]], 'done']}
+def none = fn->42
+def one = fn x->x+1
+def negate = fn x->-x
+def rest = fn ...r->r
+def both = fn(x, ...r)->[x, r]
+def named = fn me(n)->if n == 0: 'done' else: me(n - 1)
+[none(), one(1), negate(3), rest(1, 2), both(2, 3), named(3)]

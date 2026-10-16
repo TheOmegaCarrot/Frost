@@ -1,0 +1,10 @@
+# An operation may return a captured Map as its result. Merging the results
+# leaves that Map unchanged. Subtle: entry `a` is visited first, so the
+# first result is the captured Map itself, and merging the later result into
+# it in place would change `base`.
+#= {
+#=     result: [{shared: 0, b: 2}, {shared: 0}],
+#=     inputs: {m: {a: 1, b: 2}, base: {shared: 0}},
+#= }
+def merged = map m with fn k, v -> if k == 'a': base else: {[k]: v}
+[merged, base]

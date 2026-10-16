@@ -1,0 +1,9 @@
+# Once a branch of an alternative matches, its bindings stand and matching
+# moves on; if a later part of the pattern fails, the pattern fails, and the
+# alternative's other branches are not retried. Subtle: here `[_, x]` would
+# let the pin `(x)` pass, but `[x, _]` matched first.
+#= {result: ['none', 'none', 1], inputs: {xs: [[[1, 2], 2], [[0, 5], 5], [[1, 2], 1]]}}
+transform(xs, fn v -> match v {
+    [[x, _] | [_, x], (x)] => x,
+    _ => 'none',
+})

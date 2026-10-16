@@ -1,0 +1,15 @@
+# With a constant target and a constant outer `k`, an entry that rebinds `k`
+# still changes what a later `[k]` looks up: the later key must not be taken
+# for the outer constant.
+#= {result: [['b', 1], 'no']}
+def k = 'a'
+[
+    match {a: 'b', b: 1} {
+        {[k]: k, [k]: y} => [k, y],
+        _ => 'no',
+    },
+    match {b: 'a'} {
+        {[k]: k, [k]: y} => [k, y],
+        _ => 'no',
+    },
+]

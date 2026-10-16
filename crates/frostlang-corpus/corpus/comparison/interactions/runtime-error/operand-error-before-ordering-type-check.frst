@@ -1,0 +1,5 @@
+# Both operands of an ordering run before the operator checks that they can be
+# ordered: in `null < (one / zero)` the left operand alone dooms the
+# comparison, yet the right operand's division by zero raises first.
+#= {raises: 'division by zero', inputs: {one: 1, zero: 0}}
+null < (one / zero)

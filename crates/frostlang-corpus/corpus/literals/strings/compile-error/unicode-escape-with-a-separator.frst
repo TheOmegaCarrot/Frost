@@ -1,0 +1,4 @@
+# A `\u{...}` escape holds only hex digits: the `_` separator a number literal
+# allows is not one. Subtle: Rust accepts `\u{1_F600}`.
+#= {rejects: [R'(invalid `\u` escape)', '1_F600']}
+def face = '\u{1_F600}'

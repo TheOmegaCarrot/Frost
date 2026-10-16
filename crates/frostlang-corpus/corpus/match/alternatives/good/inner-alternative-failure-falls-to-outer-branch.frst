@@ -1,0 +1,11 @@
+# When every branch of an alternative nested in an outer branch fails, the
+# outer alternative moves on to its next branch with the target intact. Subtle:
+# the inner alternative fails after the outer branch has already bound `a`.
+#= {
+#=     result: [[7, [9, 3]], [9, 8], 'none'],
+#=     inputs: {xs: [[[9, 3], [7, 4]], [[9, 2], 8], [[9, 3], [7, 5]]]},
+#= }
+transform(xs, fn v -> match v {
+    [[a, 1 | 2], b] | [b, [a, 3 | 4]] => [a, b],
+    _ => 'none',
+})

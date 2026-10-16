@@ -1,0 +1,7 @@
+# Inside an abbreviated lambda, `$ (1)` is the placeholder `$` called with 1, as
+# a space before a call's parentheses changes nothing. Subtle: without the
+# space, `$(1)` would open a nested abbreviated lambda instead.
+#= {result: [2, 10]}
+def apply_to_one = $($ (1))
+def apply_to_five = $($1 (5))
+[apply_to_one(fn x -> x + 1), apply_to_five(fn x -> x * 2)]

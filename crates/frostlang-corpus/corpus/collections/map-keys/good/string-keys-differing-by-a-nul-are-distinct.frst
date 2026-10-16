@@ -1,0 +1,9 @@
+# NUL is an ordinary character in a String key: `'a'`, `'a\0'`, and
+# `'a\0b'` are three distinct keys, and a NUL sorts before every other
+# character, so each key sorts just after its prefix.
+#= {
+#=     result: [3, ['a', 'a\0', 'a\0b'], 'nul', null],
+#=     inputs: {k: 'a\0'},
+#= }
+def m = {['a\0b']: 'nul b', ['a\0']: 'nul', ['a']: 'plain'}
+[len(m), fold(m, [], fn acc, key, v -> acc + [key]), m[k], m['a\0c']]

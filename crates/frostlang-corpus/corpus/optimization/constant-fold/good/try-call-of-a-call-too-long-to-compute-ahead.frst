@@ -1,0 +1,10 @@
+# `try_call` of a pure call over constants too long for the compiler to compute
+# ahead of time gives the call's own result, computed at runtime. Subtle: the
+# compiler giving up partway through is no error of the call's, so it is never
+# caught as one, however deep inside the call it happens.
+#= {result: [[true, 0], [true, [0]], [true, {ok: true, value: 0}]]}
+defn count_down(n) -> if n == 0: 0 else: count_down(n - 1)
+def direct = try_call(count_down, [150000])
+def nested = try_call(fn -> transform([1], fn _ -> count_down(150000)))
+def twice = try_call(fn -> try_call(count_down, [150000]))
+[[direct.ok, direct.value], [nested.ok, nested.value], [twice.ok, twice.value]]

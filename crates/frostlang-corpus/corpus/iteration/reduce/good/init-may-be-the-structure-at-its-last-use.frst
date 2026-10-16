@@ -1,0 +1,15 @@
+# The init may be the very structure being folded, at that binding's last
+# use. Subtle: as the last use, the init may hand the value over to the
+# accumulator, yet growing the accumulator must not grow the structure under
+# iteration: the fold still visits only the original elements, and the
+# caller's value is unchanged.
+#= {
+#=     result: [[1, 2, 3, 10, 20, 30], [1, 2, 3], {a: 1, b: 1}],
+#=     inputs: {xs: [1, 2, 3], m: {a: 1}},
+#= }
+defn extended(ys) -> reduce ys init: ys with fn acc, y -> acc + [y * 10]
+[
+    extended(xs),
+    xs,
+    reduce m init: m with fn acc, k, v -> acc + {b: v},
+]

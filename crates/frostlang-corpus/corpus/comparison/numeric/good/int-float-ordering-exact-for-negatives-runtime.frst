@@ -1,0 +1,22 @@
+# Int against Float ordering stays exact for negative values known only at
+# runtime: -(2^53 + 1) lies strictly between the Floats -(2^53 + 2) and -2^53,
+# and a negative half separates neighboring negative Ints. Subtle because a
+# negative Float's fraction pulls it below its whole part, not above, and
+# because rounding -(2^53 + 1) to a Float would make it equal to one of them.
+#= {
+#=     result: [true, true, true, true, false],
+#=     inputs: {
+#=         odd: -9007199254740993,
+#=         above: -9007199254740992.0,
+#=         below: -9007199254740994.0,
+#=         whole: -2251799813685248,
+#=         half_below: -2251799813685248.5,
+#=     },
+#= }
+[
+    odd < above,
+    odd > below,
+    whole > half_below,
+    half_below < whole,
+    whole - 1 > half_below,
+]

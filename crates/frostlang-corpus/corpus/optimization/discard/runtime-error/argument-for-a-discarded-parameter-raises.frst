@@ -1,0 +1,5 @@
+# An argument a known function discards is still computed before the call, so
+# a constant one that raises does, though the function never reads it.
+#= {raises: 'division by zero'}
+def ignore = fn _ -> 'ignored'
+ignore(1 / 0)

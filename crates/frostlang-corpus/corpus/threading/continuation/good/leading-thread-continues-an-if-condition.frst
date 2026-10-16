@@ -1,0 +1,11 @@
+# A leading `@` continues an `if` condition up to its `:`, outside any
+# brackets, so the whole pipeline is the condition.
+#= {result: ['even', 'odd'], inputs: {n: 3}}
+defn inc(x) -> x + 1
+defn is_even(x) -> x % 2 == 0
+def next_parity = if n
+    @ inc()
+    @ is_even(): 'even' else: 'odd'
+def own_parity = if n
+    @ is_even(): 'even' else: 'odd'
+[next_parity, own_parity]

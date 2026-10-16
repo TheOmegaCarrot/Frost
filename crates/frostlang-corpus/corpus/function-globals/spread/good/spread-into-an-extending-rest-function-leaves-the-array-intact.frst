@@ -1,0 +1,6 @@
+# A spread function whose function extends its rest parameter leaves the
+# Array it was given unchanged. Subtle because the rest parameter holds
+# exactly that Array's elements.
+#= {result: [[1, 2, 9], [1, 2]], inputs: {args: [1, 2]}}
+def extended = spread(fn ...xs -> xs + [9])(args)
+[extended, args]

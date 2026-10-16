@@ -1,0 +1,12 @@
+# An error raised by `select`'s predicate ends the call at once: no later
+# entry is visited, and the error reaches the caller unchanged.
+#= {
+#=     result: [false, 'bad entry b'],
+#=     printed: ['a', 'b'],
+#=     inputs: {m: {a: 1, b: null, c: 3}},
+#= }
+def outcome = try_call(fn -> select(m, fn k, v -> {
+    print(k)
+    if is_null(v): error($'bad entry ${k}') else: true
+}))
+[outcome.ok, outcome.error]

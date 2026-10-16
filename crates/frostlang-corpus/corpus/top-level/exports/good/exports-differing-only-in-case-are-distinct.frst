@@ -1,0 +1,6 @@
+# Export names are case-sensitive, so names differing only in case are
+# separate exports, not a duplicate.
+#= {result: null, exports: {total: 1, Total: 2, TOTAL: 3}}
+export def total = 1
+export def Total = 2
+export def TOTAL = 3

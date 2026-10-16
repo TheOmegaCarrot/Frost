@@ -1,0 +1,11 @@
+# A leading `@` continues the line before as if joined, and `@` binds tighter
+# than arithmetic, so after `x * 2` it threads only the `2`. Subtle: laid
+# out like a pipeline stage over the whole body, it computes `x * inc(2)`,
+# not `inc(x * 2)`.
+#= {result: [15, 11], inputs: {n: 5}}
+defn inc(x) -> x + 1
+defn scaled(x) -> x * 2
+    @ inc()
+defn whole(x) -> (x * 2)
+    @ inc()
+[scaled(n), whole(n)]

@@ -1,0 +1,6 @@
+# Inverting `inv` accepts `inv`, a Function; the type error comes only when
+# the inverted `inv` is called with a non-Function, which it hands on to
+# `inv`.
+#= {raises: ['inv', 'Function as argument 1', 'got Int']}
+def never = inv(inv)
+never(5)

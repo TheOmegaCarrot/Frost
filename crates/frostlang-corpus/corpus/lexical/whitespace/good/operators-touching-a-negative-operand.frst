@@ -1,0 +1,9 @@
+# A binary operator may touch the prefix `-` of its right operand: no operator
+# token swallows the `-`. Subtle: `a<-1` is a comparison with -1, not an arrow,
+# and `def b=-1` binds -1.
+#= {
+#=     result: [true, true, true, false, true, false, 5, 5, -6, -1],
+#=     inputs: {a: -5},
+#= }
+def b=-1
+[a<-1, a>-9, a==-5, a!=-5, a<=-5, a>=-4, a*-1, a/-1, a+-1, b]

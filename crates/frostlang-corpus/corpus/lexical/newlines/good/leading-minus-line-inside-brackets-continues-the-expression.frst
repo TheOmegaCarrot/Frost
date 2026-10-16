@@ -1,0 +1,12 @@
+# Inside brackets, a line starting with `-` continues the expression before it,
+# since line breaks there are insignificant. Subtle: outside brackets the same
+# line would be its own statement, and here a vertical list missing its comma
+# silently subtracts instead of holding two elements.
+#= {result: [[0], {a: 4}], inputs: {n: 1}}
+def list = [
+    n
+    -1
+]
+def entries = {a: 5
+    -n}
+[list, entries]

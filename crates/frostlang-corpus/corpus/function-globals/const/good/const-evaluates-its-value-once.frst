@@ -1,0 +1,10 @@
+# `const`'s value is evaluated once, when `const` is called, not again on
+# each call of the constant function. Subtle once `const` is inlined:
+# substituting the value's expression into the constant function's body
+# would run it on every call.
+#= {result: [1, 1, 1], printed: ['value']}
+def constant = const(do {
+    print('value')
+    1
+})
+[constant(), constant(), constant()]

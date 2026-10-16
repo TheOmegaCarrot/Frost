@@ -1,0 +1,20 @@
+# Every comparison operator evaluates its left operand, then its right, before
+# comparing. Subtle because `>` and `>=` could be implemented by swapping the
+# operands of `<` and `<=`, which must not swap their evaluation.
+#= {
+#=     result: [true, false, false, true, true, false],
+#=     printed: ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l'],
+#=     inputs: {one: 1, two: 2},
+#= }
+defn noisy(label, value) -> {
+    print(label)
+    value
+}
+[
+    noisy('a', one) == noisy('b', one),
+    noisy('c', one) != noisy('d', one),
+    noisy('e', two) < noisy('f', one),
+    noisy('g', two) > noisy('h', one),
+    noisy('i', one) <= noisy('j', two),
+    noisy('k', one) >= noisy('l', two),
+]

@@ -1,0 +1,8 @@
+# A function with a rest parameter takes whatever `fold` passes beyond its
+# required parameters: nothing past the element over an Array, and the key
+# and value after the accumulator over a Map.
+#= {
+#=     result: [[[], []], [['a', 1], ['b', 2]]],
+#=     inputs: {xs: [1, 2], m: {a: 1, b: 2}},
+#= }
+[fold(xs, [], fn acc, x, ...rest -> acc + [rest]), fold(m, [], fn acc, ...entry -> acc + [entry])]

@@ -1,0 +1,17 @@
+# Digits past the Int range are no error when an exponent follows them: the
+# exponent makes the literal a Float, which rounds instead. Subtle: without its
+# `e0`, the same digits are an out-of-range Int.
+#= {
+#=     result: [
+#=         9223372036854775808.0,
+#=         'Float',
+#=         10000000000.0,
+#=         -9223372036854775808.0,
+#=     ],
+#= }
+[
+    9223372036854775808e0,
+    type(9223372036854775808e0),
+    99999999999999999999e-10,
+    -9223372036854775809e0,
+]

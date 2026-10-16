@@ -1,0 +1,5 @@
+# `transform` requires a Function even when the structure is empty and it
+# would never be called. Subtle: no element ever reaches the non-Function,
+# yet the call still fails.
+#= {raises: ['transform', 'argument 2', 'Int'], inputs: {xs: [], op: 5}}
+transform(xs, op)

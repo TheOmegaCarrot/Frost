@@ -1,0 +1,10 @@
+# A `fn` inside an abbreviated lambda may pin the captured placeholder in a
+# match pattern: `($)` compares with the enclosing lambda's argument rather
+# than binding a name.
+#= {result: ['same', 'different', 'different'], inputs: {three: 3}}
+def same_as = $(fn x -> match x {
+    ($) => 'same',
+    _ => 'different',
+})
+def is_three = same_as(three)
+[is_three(3), is_three(4), is_three(3.0)]

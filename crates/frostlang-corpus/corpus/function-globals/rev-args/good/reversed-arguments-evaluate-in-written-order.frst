@@ -1,0 +1,9 @@
+# A reversed function's arguments are evaluated in the order written, though
+# its function receives them reversed. Subtle once `rev_args` is inlined:
+# rewriting `rev_args(f)(a, b)` as `f(b, a)` would evaluate `b` first.
+#= {result: ['c', 'b', 'a'], printed: ['a', 'b', 'c']}
+defn noisy(v) -> {
+    print(v)
+    v
+}
+rev_args(collect)(noisy('a'), noisy('b'), noisy('c'))

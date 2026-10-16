@@ -1,0 +1,5 @@
+# Only decimal literals have a fractional form: `0x1.8` is the Int `0x1` touching
+# the Float `.8`, two operands with no operator between them, not a hexadecimal
+# Float.
+#= {rejects: 'found `.8`'}
+def half = 0x1.8

@@ -1,0 +1,6 @@
+# In continuation-passing style, each step tail-calls with a new continuation
+# that closes over the previous one, for a depth known only at runtime. The
+# chain of continuations unwinds by tail calls too, so it keeps no frames.
+#= {result: 50005000, inputs: {n: 10000}}
+defn sum(n, k) -> if n == 0: k(0) else: sum(n - 1, fn r -> k(r + n))
+sum(n, fn r -> r)

@@ -1,0 +1,11 @@
+# A match inside a guard may bind the same names as the arm; its bindings
+# shadow the arm's only within the inner match, and the arm's result reads the
+# arm's own values.
+#= {result: [[1, [2, 3]], 'none', 'none'], inputs: {xs: [[1, [2, 3]], [1, [3, 2]], [1, 2]]}}
+transform(xs, fn v -> match v {
+    [a, b] if: match b {
+        [a, b] => a < b,
+        _ => false,
+    } => [a, b],
+    _ => 'none',
+})

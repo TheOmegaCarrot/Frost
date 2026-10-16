@@ -1,0 +1,5 @@
+# Reversing `curry`'s arguments lets the value to fix come before the
+# function: `rev_args(curry)(a, f)` is `curry(f, a)`.
+#= {result: [[1, 2], 'fixed first']}
+def fix = rev_args(curry)
+[fix(1, collect)(2), fix('fixed', fn a, b -> $'${a} ${b}')('first')]

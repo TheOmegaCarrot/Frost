@@ -1,0 +1,8 @@
+# `index`'s key is evaluated once, when `index` is called, not again each
+# time the function it returns reads a structure.
+#= {result: [1, 2], printed: ['key']}
+def read_a = index(do {
+    print('key')
+    'a'
+})
+[read_a({a: 1}), read_a({a: 2})]

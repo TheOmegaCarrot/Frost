@@ -1,0 +1,18 @@
+# With constant targets, a parenthesized name after an alternative reads the
+# binding of whichever branch matched, as at runtime. Subtle: for the second
+# target the first branch binds `x` to 0 before failing.
+#= {result: [5, 7, 'none']}
+[
+    match [[5, 0], 5] {
+        [[x, 0] | [0, x], (x)] => x,
+        _ => 'none',
+    },
+    match [[0, 7], 7] {
+        [[x, 0] | [0, x], (x)] => x,
+        _ => 'none',
+    },
+    match [[0, 7], 0] {
+        [[x, 0] | [0, x], (x)] => x,
+        _ => 'none',
+    },
+]

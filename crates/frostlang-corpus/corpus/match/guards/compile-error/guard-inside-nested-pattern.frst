@@ -1,0 +1,7 @@
+# A guard follows an arm's whole pattern; an element of an Array pattern
+# cannot carry one.
+#= {rejects: 'found `if`'}
+match [1] {
+    [x if: x > 0] => x,
+    _ => 0,
+}

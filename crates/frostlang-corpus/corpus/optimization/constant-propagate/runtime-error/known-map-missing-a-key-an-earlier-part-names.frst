@@ -1,0 +1,5 @@
+# A def over a known Map raises when the program reaches it if a computed key,
+# read from a part the same pattern bound earlier, is missing from the Map.
+#= {raises: 'no value at key'}
+def {k, [k]: v} = {k: 'c'}
+v

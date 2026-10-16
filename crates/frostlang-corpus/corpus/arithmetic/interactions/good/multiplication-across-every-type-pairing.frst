@@ -1,0 +1,18 @@
+# `*` across every pairing of types, with the values known only at runtime:
+# it succeeds only between two numbers. No pairing repeats a String, Bytes, or
+# Array by an Int.
+#= {
+#=     result: [
+#=         [false, false, false, false, false, false, false, false, false],
+#=         [false, false, false, false, false, false, false, false, false],
+#=         [false, false, true, true, false, false, false, false, false],
+#=         [false, false, true, true, false, false, false, false, false],
+#=         [false, false, false, false, false, false, false, false, false],
+#=         [false, false, false, false, false, false, false, false, false],
+#=         [false, false, false, false, false, false, false, false, false],
+#=         [false, false, false, false, false, false, false, false, false],
+#=         [false, false, false, false, false, false, false, false, false],
+#=     ],
+#=     inputs: {values: [null, true, 2, 1.5, 'a', x'62', [1], {k: 1}, fn -> 1]},
+#= }
+transform(values, fn a -> transform(values, fn b -> try_call(fn -> a * b).ok))

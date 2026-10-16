@@ -1,0 +1,21 @@
+# `select` judges its predicate's answer by truthiness and keeps the element
+# itself, never the answer. Subtle: answers of 0, 0.0, '', empty Bytes, an
+# empty Array, and an empty Map all keep their elements; only Null and false
+# drop them.
+#= {
+#=     result: ['zero', 'float', 'text', 'bytes', 'array', 'table'],
+#=     inputs: {
+#=         answers: {
+#=             zero: 0,
+#=             float: 0.0,
+#=             text: '',
+#=             bytes: x'',
+#=             array: [],
+#=             table: {},
+#=             nothing: null,
+#=             no: false,
+#=         },
+#=         order: ['zero', 'nothing', 'float', 'text', 'no', 'bytes', 'array', 'table'],
+#=     },
+#= }
+select(order, fn name -> answers[name])

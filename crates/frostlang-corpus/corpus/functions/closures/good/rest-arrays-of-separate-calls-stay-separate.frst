@@ -1,0 +1,8 @@
+# Each call collects its own rest Array, so closures over the rest parameter
+# from separate calls each keep their own, read in any order.
+#= {result: [[1, 2], [3], [1, 2], []]}
+def keep = fn ...rest -> fn -> rest
+def a = keep(1, 2)
+def b = keep(3)
+def c = keep()
+[a(), b(), a(), c()]

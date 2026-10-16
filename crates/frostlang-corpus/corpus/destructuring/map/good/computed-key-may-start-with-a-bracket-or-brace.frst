@@ -1,0 +1,7 @@
+# A pattern's computed key is any expression, even one that opens with its own
+# bracket or brace: `[[1, 2][1]]` looks up the key `2`, and `[{k: 'key'}.k]`
+# looks up `'key'`. Subtle because the doubled opener looks like a nested
+# pattern rather than a key.
+#= {result: ['two', 'value'], inputs: {m: {[2]: 'two', key: 'value'}}}
+def {[[1, 2][1]]: two, [{k: 'key'}.k]: v} = m
+[two, v]

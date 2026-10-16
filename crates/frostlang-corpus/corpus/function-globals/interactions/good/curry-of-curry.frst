@@ -1,0 +1,7 @@
+# Currying `curry` itself with a function gives a function that fixes that
+# function's first argument: `curry(curry, f)(a)` is `curry(f, a)`. Subtle
+# because `curry` appears as both the combinator and its argument.
+#= {result: [3, [1, 2, 3]]}
+def add_to = curry(curry, plus)
+def collect_after = curry(curry, collect)
+[add_to(1)(2), collect_after(1)(2, 3)]

@@ -1,0 +1,6 @@
+# A `#` after a multiline String's opener starts no comment: it is inside the
+# String, so it is text on the opening line, which is rejected.
+#= {rejects: 'must begin with a newline after the opening delimiter'}
+def greeting = ''' # the greeting
+    hello
+    '''

@@ -1,0 +1,5 @@
+# A Float takes one point: in `1.5.e3`, the Float `1.5` is complete, and `.e3`
+# is a field access on it, which fails when it indexes the Float. Subtle: `1.e3`
+# is a malformed number, but this is no number at all past `1.5`.
+#= {raises: ['cannot index', 'Float']}
+1.5.e3

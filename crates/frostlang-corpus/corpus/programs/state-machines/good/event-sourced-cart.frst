@@ -1,0 +1,40 @@
+# An event-sourced shopping cart: the state is rebuilt by folding events
+# through one `match` over their shapes. Alternatives share an arm, a guard
+# rejects removing more than the cart holds, and a rejected event is logged
+# and skipped rather than raised. The script exports the final cart and
+# prints each rejection as the fold reaches it.
+#= {
+#=     result: 4,
+#=     exports: {cart: {items: {apple: 3, pear: 1}, rejected: 2}},
+#=     printed: ['rejected: remove 5 plum', 'rejected: checkout'],
+#=     inputs: {
+#=         events: [
+#=             {type: 'add', item: 'apple', count: 2},
+#=             {type: 'add', item: 'plum', count: 1},
+#=             {type: 'remove', item: 'plum', count: 5},
+#=             {type: 'add', item: 'pear', count: 1},
+#=             {type: 'checkout'},
+#=             {type: 'discard', item: 'plum'},
+#=             {type: 'restock', item: 'apple', count: 1},
+#=         ],
+#=     },
+#= }
+defn holding(cart, item) -> cart.items[item] or 0
+defn reject(cart, why) -> {
+    print($'rejected: ${why}')
+    cart + {rejected: cart.rejected + 1}
+}
+defn apply(cart, event) -> match event {
+    {type: 'add' | 'restock', item, count} => cart + {
+        items: cart.items + {[item]: holding(cart, item) + count},
+    },
+    {type: 'remove', item, count} if: count <= holding(cart, item) => cart + {
+        items: cart.items + {[item]: holding(cart, item) - count},
+    },
+    {type: 'remove', item, count} => reject(cart, $'remove ${count} ${item}'),
+    {type: 'discard', item} => cart + {items: filter cart.items with fn k, v -> k != item},
+    {type} => reject(cart, type),
+}
+
+export def cart = reduce events init: {items: {}, rejected: 0} with apply
+reduce cart.items init: 0 with fn total, _, count -> total + count

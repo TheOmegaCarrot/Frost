@@ -1,0 +1,10 @@
+# A statement whose value is discarded in a function body still runs on each
+# call, so a constant division by zero in it raises once the function is
+# called.
+#= {raises: 'division by zero'}
+defn check() -> {
+    1 / 0
+    'unreached'
+}
+check()
+'unreached'

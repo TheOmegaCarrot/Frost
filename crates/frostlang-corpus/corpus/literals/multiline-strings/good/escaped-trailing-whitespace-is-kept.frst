@@ -1,0 +1,12 @@
+# Whitespace written as an escape at the end of a multiline String's line is
+# text, kept in the value, in either delimiter. Subtle: whitespace typed there
+# is invisible and editors trim it, so an escape is how to mean it.
+#= {result: ['tab\t\nspace ', 'end \t']}
+def single = '''
+    tab\t
+    space\u{20}
+    '''
+def double = """
+    end\u{20}\t
+    """
+[single, double]

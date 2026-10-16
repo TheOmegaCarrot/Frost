@@ -238,6 +238,17 @@ missing + 'sentinel_text'
     assert_mentions(&reason, r#"does not mention ["sentinel_text"]"#);
 }
 
+#[test]
+fn a_compile_error_fragment_cannot_match_the_scripts_name() {
+    // The diagnostics name the file, which holds the fragment.
+    let source = r"
+#= {rejects: 'sentinel_name'}
+missing
+";
+    let reason = failure("area/compile-error/sentinel_name", source);
+    assert_mentions(&reason, r#"does not mention ["sentinel_name"]"#);
+}
+
 // -- Known issues --
 
 #[test]

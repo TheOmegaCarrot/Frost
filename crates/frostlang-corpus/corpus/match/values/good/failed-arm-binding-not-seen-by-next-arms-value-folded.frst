@@ -1,0 +1,18 @@
+# With constant targets and a constant enclosing name, a parenthesized name in
+# a later arm still reads the enclosing binding, not the one an earlier arm
+# made before its guard failed. Subtle: for the second target the failed arm
+# binds `k` to 5, which would let `(k)` match if it leaked.
+#= {result: [['second', 1, 0], 'none']}
+def k = 1
+[
+    match [1, 0] {
+        [k, 0] if: false => ['first', k],
+        [(k), x] => ['second', k, x],
+        _ => 'none',
+    },
+    match [5, 0] {
+        [k, 0] if: false => ['first', k],
+        [(k), x] => ['second', k, x],
+        _ => 'none',
+    },
+]

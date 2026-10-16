@@ -1,0 +1,11 @@
+# A function with a rest parameter after its required ones takes whatever
+# `each` passes beyond them: nothing over an Array, the value over a Map.
+#= {
+#=     result: [[1], {a: 2}],
+#=     printed: ['1 with 0 more', 'a with 1 more: 2'],
+#=     inputs: {xs: [1], m: {a: 2}},
+#= }
+[
+    each(xs, fn x, ...rest -> print($'${x} with ${len(rest)} more')),
+    each(m, fn k, ...rest -> print($'${k} with ${len(rest)} more: ${rest[0]}')),
+]

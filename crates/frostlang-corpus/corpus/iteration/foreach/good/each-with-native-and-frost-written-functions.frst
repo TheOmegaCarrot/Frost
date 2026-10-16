@@ -1,0 +1,13 @@
+# Native globals and functions built by globals written in Frost serve as
+# `each`'s function. Over a Map, `rev_args` hands the wrapped function the
+# value before the key.
+#= {
+#=     result: [['a', 'b'], {k: 'v'}, ['a', 'b']],
+#=     printed: ['a', 'b', 'v=k', 'a', 'b'],
+#=     inputs: {xs: ['a', 'b'], m: {k: 'v'}},
+#= }
+[
+    each(xs, print),
+    each(m, rev_args(fn v, k -> print($'${v}=${k}'))),
+    each(xs, compose(to_upper, fn s -> print(to_lower(s)))),
+]

@@ -1,0 +1,5 @@
+# A lambda's block body closes any `if` inside it, so an `else` after the brace
+# belongs to the `if` whose branch is the lambda.
+#= {result: [1, null, 2], inputs: {t: true, f: false}}
+defn pick(a, b) -> if a: fn -> { if b: 1 } else: fn -> 2
+[pick(t, t)(), pick(t, f)(), pick(f, t)()]

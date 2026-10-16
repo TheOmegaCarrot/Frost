@@ -1,0 +1,7 @@
+# Composing `index` functions reads a path step by step, as `dig` does,
+# where the path is present.
+#= {result: [[7, 7], ['y', 'y']], inputs: {data: {a: {b: 7}, xs: [['x', 'y']]}}}
+[
+    [compose(index('a'), index('b'))(data), dig(data, 'a', 'b')],
+    [compose(index('xs'), index(0), index(-1))(data), dig(data, 'xs', 0, -1)],
+]

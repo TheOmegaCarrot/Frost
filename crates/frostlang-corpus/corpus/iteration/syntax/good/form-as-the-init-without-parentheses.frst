@@ -1,0 +1,6 @@
+# A form can be `reduce`'s `init:` without parentheses. Subtle: the inner
+# form has a lambda whose body stops at the outer `with`, so this reads
+# `reduce xs init: (reduce xs with times) with plus`: the product 6 seeds a
+# sum, giving 6 + 1 + 2 + 3.
+#= {result: 12, inputs: {xs: [1, 2, 3]}}
+reduce xs init: reduce xs with fn acc, x -> acc * x with fn acc, x -> acc + x

@@ -1,0 +1,14 @@
+# Negating the Int 0 gives the Int 0, which has no sign to carry into later
+# Float arithmetic: `-zero * 1.0` is 0.0, while negating the Float 0.0 gives
+# -0.0, which keeps its sign. Subtle because moving the negation onto the
+# Float constant, as `zero * -1.0`, would give -0.0.
+#= {
+#=     result: ['0', 'Int', '0.0', '-0.0'],
+#=     inputs: {zero: 0, zero_float: 0.0},
+#= }
+[
+    to_string(-zero),
+    type(-zero),
+    to_string(-zero * 1.0),
+    to_string(-zero_float * 1.0),
+]

@@ -1,0 +1,4 @@
+# An abbreviated lambda naming `$2` takes two parameters, so over an Array,
+# where `select` passes only the element, it is an arity error.
+#= {raises: 'called with 1', inputs: {xs: [1]}}
+select(xs, $($2))

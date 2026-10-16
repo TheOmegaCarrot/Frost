@@ -1,0 +1,16 @@
+# Nested literals evaluate depth first: an entry's value, with everything
+# nested in it, is complete before the next entry's key runs.
+#= {
+#=     result: {[1]: {[2]: ['x', 'y']}, [3]: 'z'},
+#=     printed: ['key 1', 'key 2', 'x', 'y', 'key 3', 'z'],
+#= }
+defn note(label, v) -> {
+    print(label)
+    v
+}
+{
+    [note('key 1', 1)]: {
+        [note('key 2', 2)]: [note('x', 'x'), note('y', 'y')],
+    },
+    [note('key 3', 3)]: note('z', 'z'),
+}

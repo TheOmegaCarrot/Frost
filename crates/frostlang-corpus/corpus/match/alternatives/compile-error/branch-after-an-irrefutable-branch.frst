@@ -1,0 +1,7 @@
+# A branch of an alternative after one that matches every value can never be
+# tried: in `x | [x]`, `x` binds the whole value, so `[x]` is dead, as an arm
+# after an unguarded binding arm is.
+#= {rejects: 'unreachable', inputs: {v: [5]}, known_issue: 'FROST-56'}
+match v {
+    x | [x] => x,
+}

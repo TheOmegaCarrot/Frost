@@ -1,0 +1,6 @@
+# Inside brackets, a line break may fall between atoms and primary
+# expressions, not after any token: a lambda's bare parameter list does not
+# accept one after a comma, though an argument list does.
+#= {rejects: ['parameter', 'line break']}
+(fn x,
+    y -> x + y)(1, 2)

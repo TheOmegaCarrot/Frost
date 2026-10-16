@@ -1,0 +1,4 @@
+# A `_` separator may follow a base prefix but never split it: `0_x10` is the
+# Int `0_` touching the name `x10`, two operands with no operator between them.
+#= {rejects: 'found `x10`'}
+def n = 0_x10

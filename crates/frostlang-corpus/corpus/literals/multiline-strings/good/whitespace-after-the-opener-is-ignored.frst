@@ -1,0 +1,8 @@
+# Spaces and tabs between a multiline String's opener and its line break are
+# ignored, like trailing whitespace on its content lines. Subtle: the opening
+# line below ends in two spaces and a tab, invisible and easily trimmed.
+#= {result: 'x', known_issue: 'FROST-151'}
+def text = '''  	
+    x
+    '''
+text

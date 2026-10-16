@@ -1,0 +1,21 @@
+# A binding matched by a category constraint such as `Numeric` or `Flat`
+# may hold any of the category's types, and the predicates tell which.
+# Subtle because a match arm narrows its binding's type only to the
+# category, not to any one member of it.
+#= {
+#=     result: [
+#=         [[true, false], [false, true], 'other'],
+#=         [[true, false], [false, true], 'other'],
+#=     ],
+#=     inputs: {numbers: [1, 1.5, 'a'], texts: ['a', x'00', 1]},
+#= }
+[
+    map numbers with fn v -> match v {
+        n is Numeric => [is_int(n), is_float(n)],
+        _ => 'other',
+    },
+    map texts with fn v -> match v {
+        s is Flat => [is_string(s), is_bytes(s)],
+        _ => 'other',
+    },
+]
