@@ -42,6 +42,8 @@ const GUARD_HELP: &str = "a guard is written `if:` before its condition, like `n
 const ARM_GUARD_HELP: &str = "an arm takes one guard, between its pattern and `=>`, like \
                               `n if: n > 0 => ...`; combine conditions with `and`";
 
+const DEF_GUARD_HELP: &str = "a `def` pattern takes no guard; a guard belongs to a `match` arm";
+
 const ANNOTATION_HELP: &str = "Frost parameters have no type annotations";
 
 const RETURN_TYPE_HELP: &str = "Frost has no return types; a function body follows `->`";

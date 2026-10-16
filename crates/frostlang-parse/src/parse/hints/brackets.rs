@@ -8,8 +8,8 @@ use crate::parse::hints::site::{
     starts_an_expression, starts_an_expression_not_a_key,
 };
 use crate::parse::hints::{
-    BLOCK_HELP, CATCH_ALL_HELP, LAMBDA_HELP, MAP_ENTRY_HELP, MAP_REST_HELP, REST_HELP, SPREAD_HELP,
-    Site, destructure_help, is_iterative_keyword, iterative_help,
+    BLOCK_HELP, CATCH_ALL_HELP, DEF_GUARD_HELP, LAMBDA_HELP, MAP_ENTRY_HELP, MAP_REST_HELP,
+    REST_HELP, SPREAD_HELP, Site, destructure_help, is_iterative_keyword, iterative_help,
 };
 
 const NESTED_GUARD_HELP: &str =
@@ -155,21 +155,28 @@ impl<'src> Site<'_, 'src> {
         Some(key_help(key))
     }
 
-    /// Help for a guard written after part of a `match` arm's pattern, inside an Array
-    /// or Map pattern, as in `[x if: x > 0] => x`.
+    /// Help for a guard written after part of a pattern, inside an Array or Map
+    /// pattern: a `match` arm's, as in `[x if: x > 0] => x`, or a `def`'s.
     pub(super) fn nested_guard_help(&self) -> Option<String> {
         if self.token_at(0) != Some(&Token::KwIf) || !self.follows_an_operand(0) {
             return None;
         }
         let is_pattern =
             |open: &OpenBracket| matches!(open.kind, Bracket::ArrayPattern | Bracket::MapPattern);
-        // Inside pattern brackets that `match` arms hold, not those of a `def`
         let mut open = self.ctx.open_brackets();
-        let in_an_arm_pattern = open.next().is_some_and(|open| is_pattern(&open))
-            && open
-                .find(|open| !is_pattern(open))
-                .is_some_and(|holder| holder.kind == Bracket::MatchArms);
-        in_an_arm_pattern.then(|| NESTED_GUARD_HELP.to_owned())
+        if !open.next().is_some_and(|open| is_pattern(&open)) {
+            return None;
+        }
+        // Pattern brackets that `match` arms do not hold are a `def`'s.
+        let in_an_arm_pattern = open
+            .find(|open| !is_pattern(open))
+            .is_some_and(|holder| holder.kind == Bracket::MatchArms);
+        let help = if in_an_arm_pattern {
+            NESTED_GUARD_HELP
+        } else {
+            DEF_GUARD_HELP
+        };
+        Some(help.to_owned())
     }
 
     /// Help for list items separated by something other than a comma: a line break, as

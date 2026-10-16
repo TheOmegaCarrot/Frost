@@ -5,8 +5,8 @@ use crate::parse::ctx::Bracket;
 use crate::parse::hints::site::{is_closer, is_opener, starts_an_expression};
 use crate::parse::hints::words::{is_type_like, type_named};
 use crate::parse::hints::{
-    ALTERNATIVES_HELP, ANNOTATION_HELP, DEFAULTS_HELP, ELIF_HELP, EQUALITY_HELP, GUARD_HELP,
-    LAMBDA_HELP, MAP_ENTRY_HELP, RETURN_TYPE_HELP, SLICE_HELP, Site, destructure_help,
+    ALTERNATIVES_HELP, ANNOTATION_HELP, DEF_GUARD_HELP, DEFAULTS_HELP, ELIF_HELP, EQUALITY_HELP,
+    GUARD_HELP, LAMBDA_HELP, MAP_ENTRY_HELP, RETURN_TYPE_HELP, SLICE_HELP, Site, destructure_help,
     is_iterative_keyword, iterative_help, walrus_help,
 };
 
@@ -113,6 +113,8 @@ impl Site<'_, '_> {
             },
             Token::Assign => match found? {
                 Token::KwAs => AS_HELP,
+                // `def [x] if: x > 0 = xs`
+                Token::KwIf if self.follows_an_operand(0) => DEF_GUARD_HELP,
                 // `def x := 1`
                 Token::Colon if self.abutting_next() == Some(&Token::Assign) => {
                     let Some(Token::Identifier(name)) = previous else {

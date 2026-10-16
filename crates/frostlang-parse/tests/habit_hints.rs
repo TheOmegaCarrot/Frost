@@ -1128,17 +1128,45 @@ fn guards_inside_a_nested_pattern() {
     ]);
 }
 
-// A `def` pattern takes no guard at all, so help on where an arm's guard goes would
-// mislead there.
+// A `def` pattern takes no guard at all, after the whole pattern or inside it, so
+// help on where an arm's guard goes would mislead there.
 #[test]
-fn guards_inside_a_def_pattern_get_no_arm_guard_help() {
-    for source in ["def [x if: x > 0] = xs", "def {a: x if: x > 0} = m"] {
-        let (message, help) = diagnosis(source);
-        assert!(
-            !help.as_deref().is_some_and(|help| help.contains("arm")),
-            "{source:?} failed with {message:?}, and help about arms: {help:?}"
-        );
-    }
+fn guards_in_a_def_pattern() {
+    let help = "a `def` pattern takes no guard; a guard belongs to a `match` arm";
+    let in_a_block = r"
+        do {
+            def [x if: x > 0] = xs
+            x
+        }
+    ";
+    assert_help(&[
+        // After the whole pattern
+        ("def x if: x > 0 = 1", help),
+        ("def x is Int if: x > 0 = 1", help),
+        ("def [x] if: x > 0 = xs", help),
+        ("def {a} if: a > 0 = m", help),
+        ("export def x if: x > 0 = 1", help),
+        // In an Array pattern
+        ("def [x if: x > 0] = xs", help),
+        ("def [x if x > 0] = xs", help),
+        ("def [1, x if: x > 0] = xs", help),
+        (in_a_block, help),
+        // In a Map pattern
+        ("def {a: x if: x > 0} = m", help),
+        ("def {a if: a > 0} = m", help),
+        // In patterns within patterns
+        ("def {a: [x if: x > 0]} = m", help),
+        ("def [{a: x if: x > 0}] = xs", help),
+    ]);
+}
+
+// Where a `def` Map pattern's entry begins, `if` is a key, not a guard.
+#[test]
+fn if_as_a_key_in_a_def_pattern() {
+    assert_help(&[(
+        "def {if: x} = m",
+        "`if` is a keyword; write the key in brackets: `[\"if\"]: ...`",
+    )]);
 }
 
 // Where a Map pattern's entry begins, `if` is a key, not a guard.
