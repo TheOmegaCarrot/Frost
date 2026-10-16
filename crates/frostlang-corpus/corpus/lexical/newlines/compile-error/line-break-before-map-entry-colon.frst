@@ -1,6 +1,6 @@
 # A Map entry's `key:` stays on one line, even inside the braces where line
 # breaks are otherwise insignificant.
-#= {rejects: 'found `:`'}
+#= {rejects: ['expected `:`', 'stay on the line']}
 def m = {
     a
         : 1

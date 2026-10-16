@@ -1,0 +1,6 @@
+# A `:` stays on the line of what comes before it, even inside brackets where
+# line breaks are otherwise insignificant: `else` and its `:` share a line.
+#= {rejects: ['expected `:`', 'stay on the line'], inputs: {c: false}}
+(if c: 1
+    else
+    : 2)

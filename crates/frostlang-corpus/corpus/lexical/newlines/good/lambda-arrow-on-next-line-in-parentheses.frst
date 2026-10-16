@@ -1,6 +1,6 @@
-# Inside parentheses, line breaks are insignificant, so a lambda's `->` may
-# sit on the line after its parameters, as an `if`'s colon may there.
-#= {result: [1, 2], known_issue: 'FROST-163'}
+# A line starting with `->` continues the line before, so a lambda's `->` may
+# sit on the line after its parameters inside parentheses too.
+#= {result: [1, 2]}
 [
     (fn x
         -> x)(1),

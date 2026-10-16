@@ -1,0 +1,8 @@
+# A `defn`'s `->` may start the line after its parameters, as any lambda's
+# may, and the function still ends at the end of its body's line.
+#= {result: [6, 0]}
+defn inc(x)
+    -> x + 1
+defn count_down(n)
+    -> if n > 0: count_down(n - 1) else: n
+[inc(5), count_down(3)]

@@ -18,6 +18,7 @@ mod expressions_postfix;
 mod expressions_strings;
 mod expressions_structures;
 mod habit_hints;
+mod line_breaks;
 mod line_endings;
 mod literal_errors;
 mod parse_errors;

@@ -13,7 +13,7 @@ impl<'src> ParseCtx<'src> {
         let start = self.expect(keyword)?.span.start;
 
         let condition = self.parse_expression()?;
-        self.expect(Token::Colon)?;
+        self.expect_colon_on_the_line()?;
         // A branch may start on the line after its colon.
         self.skip_nl();
         let consequent = self.parse_expression()?;
@@ -45,7 +45,7 @@ impl<'src> ParseCtx<'src> {
             Token::KwElif => Ok(Some(self.parse_if_or_elif(Token::KwElif)?)),
             Token::KwElse => {
                 self.expect(Token::KwElse)?;
-                self.expect(Token::Colon)?;
+                self.expect_colon_on_the_line()?;
                 self.skip_nl();
                 let alternate = self.parse_expression()?;
                 Ok(Some(alternate))
@@ -59,6 +59,8 @@ impl<'src> ParseCtx<'src> {
 
     pub(crate) fn parse_do(&mut self) -> ParseResult<Spanned<Expr>> {
         let start = self.expect(Token::KwDo)?.span.start;
+        // Inside brackets, the `{` may sit on a later line, as a `match`'s may.
+        self.maybe_skip_nl();
         let (mut body, braces) = self.block(|ctx| ctx.parse_statements(StatementContext::Scope))?;
         let close_end = braces.end;
 

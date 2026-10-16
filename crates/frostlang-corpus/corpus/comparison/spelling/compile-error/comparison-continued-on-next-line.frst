@@ -1,6 +1,6 @@
 # Outside brackets a line break ends the statement, so a comparison operator
-# that starts the next line has no left operand: only `.` and `@` continue a
-# line.
+# that starts the next line has no left operand: only `.`, `@`, and `->`
+# continue a line.
 #= {rejects: 'expected an expression', inputs: {a: 1, b: 2}}
 a
     < b

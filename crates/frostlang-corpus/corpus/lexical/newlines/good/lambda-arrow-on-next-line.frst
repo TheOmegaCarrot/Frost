@@ -1,0 +1,5 @@
+# A line starting with `->` continues the line before, so a lambda's `->` may
+# sit on the line after its parameters.
+#= {result: null, lints: [['unused binding', '`f`']]}
+def f = fn x
+    -> x

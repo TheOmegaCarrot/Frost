@@ -1,5 +1,5 @@
 # A line starting with `||` gets help on both habits: the "or" is `or`, and
-# only `.` and `@` continue a line.
+# only `.`, `@`, and `->` continue a line.
 #= {rejects: ['is `or`', 'a line continues only when'], inputs: {a: null, b: 1}}
 def x = a
     || b

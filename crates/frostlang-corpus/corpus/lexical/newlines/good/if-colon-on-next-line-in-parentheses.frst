@@ -1,5 +1,0 @@
-# Inside parentheses, line breaks are insignificant, so an `if`'s colon may
-# sit on the line after its condition.
-#= {result: 1, inputs: {c: true}}
-(if c
-    : 1)

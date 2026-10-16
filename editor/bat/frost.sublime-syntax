@@ -40,17 +40,19 @@ contexts:
     - match: '\b{{constant}}\b'
       scope: constant.language.frost
 
+  # A keyword is never a Map key, so an indented `else:`, `init:`, or a guard's
+  # `if:` on its own line stays a keyword.
   map-keys:
     # Inline entries: { foo: 1, [k]: 2 }
     - match: '(?<=[{,])\s*(\[(?=.*\]\s*:))'
       captures:
         1: punctuation.section.brackets.begin.frost
       push: map-key-bracket
-    - match: '(?<=[{,])\s*\b({{ident}})\b(?=\s*:)'
+    - match: '(?<=[{,])\s*\b(?!{{keyword}}\b)({{ident}})\b(?=\s*:)'
       captures:
         1: support.type.property-name.frost
     # Inline shorthand entries: { foo }, { foo, bar }, or a pattern { foo is Int }
-    - match: '(?<=[{,])\s*\b({{ident}})\b(?=\s*[,}]|\s+is\b)'
+    - match: '(?<=[{,])\s*\b(?!{{keyword}}\b)({{ident}})\b(?=\s*[,}]|\s+is\b)'
       captures:
         1: support.type.property-name.frost
     # Multiline entries:
@@ -62,11 +64,11 @@ contexts:
       captures:
         2: punctuation.section.brackets.begin.frost
       push: map-key-bracket
-    - match: '^\s*\b({{ident}})\b(?=\s*:)'
+    - match: '^\s*\b(?!{{keyword}}\b)({{ident}})\b(?=\s*:)'
       captures:
         1: support.type.property-name.frost
     # Multiline shorthand entries
-    - match: '^\s*\b({{ident}})\b(?=\s*[,}]|\s+is\b)'
+    - match: '^\s*\b(?!{{keyword}}\b)({{ident}})\b(?=\s*[,}]|\s+is\b)'
       captures:
         1: support.type.property-name.frost
 

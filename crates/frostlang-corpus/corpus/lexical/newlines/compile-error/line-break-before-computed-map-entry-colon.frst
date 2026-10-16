@@ -1,0 +1,7 @@
+# A computed Map key and its `:` stay on one line, as a named key and its `:`
+# do, even inside the braces where line breaks are otherwise insignificant.
+#= {rejects: ['expected `:`', 'stay on the line'], inputs: {k: 'a'}}
+def m = {
+    [k]
+        : 1
+}

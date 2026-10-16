@@ -1,0 +1,33 @@
+# A line starting with `->` continues the line before, whatever the lambda's
+# parameters, as a line starting with `.` or `@` does. With no parameters,
+# `fn` then `->` on the next line reads as the two joined.
+#= {result: [1, 2, 3, [4], [5], 6, 7, 8, 9]}
+def none = fn
+    -> 1
+def one = fn x
+    -> x
+def two = fn x, y
+    -> x + y
+def rest = fn x, ...r
+    -> r
+def only_rest = fn ...r
+    -> r
+def discarded = fn _
+    -> 6
+def empty = fn ()
+    -> 7
+def grouped = fn (a, b)
+    -> a * b
+def named = fn self_named(n)
+    -> if n > 0: self_named(n - 1) else: 9
+[
+    none(),
+    one(2),
+    two(1, 2),
+    rest(0, 4),
+    only_rest(5),
+    discarded(null),
+    empty(),
+    grouped(2, 4),
+    named(3),
+]

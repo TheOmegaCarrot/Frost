@@ -1,0 +1,14 @@
+# Inside a block, where line breaks end statements, a line starting with `->`
+# still continues the line before, for a lambda and for a `defn`. Blank lines
+# and comment lines may come between.
+#= {result: [3, 10]}
+defn run(n) -> {
+    def add = fn x, y
+        -> x + y
+    defn scale(x)
+
+        # the body
+        -> x * 5
+    [add(n, 1), scale(n)]
+}
+run(2)

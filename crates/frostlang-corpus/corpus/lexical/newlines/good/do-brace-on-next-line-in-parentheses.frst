@@ -1,5 +1,5 @@
 # Inside parentheses, line breaks are insignificant, so a `do` block's `{` may
 # sit on the line after `do`, as a `match`'s `{` may there.
-#= {result: 1, known_issue: 'FROST-163'}
+#= {result: 1}
 (do
     { 1 })

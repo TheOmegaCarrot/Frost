@@ -1,5 +1,5 @@
 # A Map pattern entry's key and its `:` stay on one line.
-#= {rejects: 'expected `,` or `}`'}
+#= {rejects: ['expected `:`', 'stay on the line']}
 match {a: 1} {
     {a
         : 1} => 1,

@@ -838,13 +838,6 @@ mod newlines {
                 _ => 0
             }
         ";
-        let between_if_and_colon = r"
-            match x {
-                n if
-                    : n > 0 => n,
-                _ => 0
-            }
-        ";
         let after_colon = r"
             match x {
                 n if:
@@ -853,7 +846,6 @@ mod newlines {
             }
         ";
         assert_same_as_one_line(before_if, one_line);
-        assert_same_as_one_line(between_if_and_colon, one_line);
         assert_same_as_one_line(after_colon, one_line);
     }
 
@@ -924,7 +916,22 @@ mod newlines {
     }
 
     // -- Where a line break is still an error --
-    // `...name` and a Map entry's `key:` are each kept on one line.
+    // `...name`, a guard's `if:`, and a Map entry's `key:` are each kept on one line.
+
+    #[test]
+    fn line_break_between_guard_if_and_colon_is_an_error() {
+        let source = r"
+            match x {
+                n if
+                    : n > 0 => n,
+                _ => 0
+            }
+        ";
+        assert_eq!(
+            parse_err_message(source),
+            "expected `:`, but found a line break"
+        );
+    }
 
     #[test]
     fn line_break_after_rest_dots_is_an_error() {

@@ -1,0 +1,6 @@
+# A `:` stays on the line of what comes before it, even inside brackets where
+# line breaks are otherwise insignificant: `reduce`'s `init` and its `:` share
+# a line.
+#= {rejects: ['expected `:`', 'stay on the line'], inputs: {xs: [1, 2]}}
+(reduce xs init
+    : 0 with fn (acc, x) -> acc + x)

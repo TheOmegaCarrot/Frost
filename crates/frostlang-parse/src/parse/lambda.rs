@@ -7,6 +7,8 @@ use crate::parse::{Diagnostic, ParseResult};
 impl<'src> ParseCtx<'src> {
     pub(crate) fn parse_lambda(&mut self) -> ParseResult<Spanned<Expr>> {
         let start = self.expect(Token::KwFn)?.span.start;
+        // Without parameters, the `->` may still start the next line.
+        self.continue_to_arrow();
 
         const EXPECTED: &str = "parameters or `->`";
         let peek = self.must_peek(EXPECTED)?;
@@ -115,6 +117,7 @@ impl<'src> ParseCtx<'src> {
     pub(crate) fn parse_fn_body(
         &mut self,
     ) -> ParseResult<(Vec<Spanned<Statement>>, Spanned<Expr>, usize)> {
+        self.continue_to_arrow();
         self.expect(Token::SlimArrow)?;
         // A body may start on the line after its arrow.
         self.skip_nl();
@@ -139,6 +142,18 @@ impl<'src> ParseCtx<'src> {
                 let end = expr.span.end;
                 Ok((Vec::new(), expr, end))
             }
+        }
+    }
+
+    /// Pass over line breaks before a `->`: a line starting with `->` continues the
+    /// line before, as one starting with `.` or `@` does (see `parse_expr_bp`), since
+    /// `->` cannot begin a statement.
+    fn continue_to_arrow(&mut self) {
+        if matches!(
+            self.peek_past_nl().map(|t| &t.token),
+            Some(Token::SlimArrow)
+        ) {
+            self.skip_nl();
         }
     }
 

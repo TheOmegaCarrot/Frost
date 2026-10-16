@@ -26,8 +26,7 @@ impl<'src> ParseCtx<'src> {
         self.maybe_skip_nl();
         let guard = if matches!(self.peek().map(|t| &t.token), Some(Token::KwIf)) {
             self.advance(1);
-            self.maybe_skip_nl();
-            self.expect(Token::Colon)?;
+            self.expect_colon_on_the_line()?;
             Some(self.parse_expression()?)
         } else {
             None

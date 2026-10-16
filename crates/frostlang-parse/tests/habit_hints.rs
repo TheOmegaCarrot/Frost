@@ -54,7 +54,8 @@ const PLACEHOLDER_HELP: &str = "`$` placeholders work only inside `$( ... )`, li
 const COMMENT_HELP: &str = "a comment starts with `#`";
 
 const LINE_CONTINUATION_HELP: &str = "a line continues only when the next line starts with \
-                                      `.` or `@`; otherwise, wrap the expression in parentheses";
+                                      `.`, `@`, or `->`; otherwise, wrap the expression in \
+                                      parentheses";
 
 const CONDITIONAL_HELP: &str = "Frost's conditional is written `if a: b else: c`";
 
@@ -493,8 +494,8 @@ fn double_pipe_without_an_operand_before_it() {
     assert_help(&[
         (
             on_the_next_line,
-            "Frost's \"or\" is `or`; a line continues only when the next line starts with `.` \
-             or `@`; otherwise, wrap the expression in parentheses",
+            "Frost's \"or\" is `or`; a line continues only when the next line starts with `.`, \
+             `@`, or `->`; otherwise, wrap the expression in parentheses",
         ),
         ("|| 1", NO_PARAMETERS_HELP),
         ("f(|| 1)", NO_PARAMETERS_HELP),
@@ -572,7 +573,7 @@ fn question_and_exclamation_marks() {
     ]);
 }
 
-// A line ends an expression unless the next starts with `.` or `@`.
+// A line ends an expression unless the next starts with `.`, `@`, or `->`.
 #[test]
 fn line_breaks_inside_expressions() {
     let trailing_operator = r"

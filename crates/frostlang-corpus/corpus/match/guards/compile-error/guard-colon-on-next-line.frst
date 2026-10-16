@@ -1,0 +1,8 @@
+# A guard's `if` and its `:` share a line, though line breaks are otherwise
+# insignificant inside a `match`'s braces.
+#= {rejects: ['expected `:`', 'stay on the line'], inputs: {v: 1}}
+match v {
+    n if
+        : n == 1 => 'one',
+    _ => 'other',
+}

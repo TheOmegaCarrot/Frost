@@ -79,7 +79,7 @@ impl<'src> ParseCtx<'src> {
 
         let init = if matches!(self.peek().map(|t| &t.token), Some(Token::KwInit)) {
             self.advance(1);
-            self.expect(Token::Colon)?;
+            self.expect_colon_on_the_line()?;
             self.skip_nl();
             let expr = self.parse_expression()?;
             self.skip_nl();

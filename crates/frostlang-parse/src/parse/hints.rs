@@ -74,8 +74,8 @@ const POWER_HELP: &str = "for powers, the `std.math` module has `pow`";
 
 const BITWISE_HELP: &str = "Frost has no bitwise operators";
 
-const LINE_CONTINUATION_HELP: &str = "a line continues only when the next line starts with `.` \
-                                      or `@`; otherwise, wrap the expression in parentheses";
+const LINE_CONTINUATION_HELP: &str = "a line continues only when the next line starts with `.`, \
+                                      `@`, or `->`; otherwise, wrap the expression in parentheses";
 
 /// The tokens around an error, at index `found`.
 struct Site<'c, 'src> {

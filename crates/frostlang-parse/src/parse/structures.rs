@@ -31,7 +31,8 @@ impl<'src> ParseCtx<'src> {
                 let span: SourceSpan = peek.span.clone().into();
                 self.advance(1);
 
-                if !matches!(self.peek().map(|t| &t.token), Some(Token::Colon)) {
+                // A `:` on a later line is still this key's, misplaced.
+                if !matches!(self.peek_past_nl().map(|t| &t.token), Some(Token::Colon)) {
                     // The shorthand `name`, for `name: name`.
                     let key = Spanned::new(Expr::Literal(Literal::String(name.clone())), span);
                     let value = Spanned::new(Expr::NameLookup(name), span);
@@ -43,7 +44,7 @@ impl<'src> ParseCtx<'src> {
             _ => return Err(self.expected_in_list(EXPECTED, peek)),
         };
 
-        self.expect(Token::Colon)?;
+        self.expect_colon_on_the_line()?;
         self.maybe_skip_nl();
         let value = self.parse_expression()?;
 

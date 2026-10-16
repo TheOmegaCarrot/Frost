@@ -6,6 +6,8 @@ use crate::parse::{Diagnostic, ParseResult, hints};
 
 use logos::Logos;
 
+const COLON_ON_THE_LINE_HELP: &str = "a `:` must stay on the line of what comes before it";
+
 #[derive(Debug)]
 pub(crate) struct ParseCtx<'src> {
     /// The source this context was lexed from. For a sub-context (a
@@ -242,6 +244,29 @@ impl<'src> ParseCtx<'src> {
 
         self.advance(1);
         Ok(&self.input[self.state.pos - 1])
+    }
+
+    /// Expect a `:` on the line of the token before it.
+    /// A line break before the `:` is an error even inside brackets, where line breaks
+    /// are otherwise insignificant and the parse may already have passed over it.
+    pub(crate) fn expect_colon_on_the_line(&mut self) -> ParseResult<&SrcToken<'src>> {
+        let skipped_break = (0..self.here())
+            .rev()
+            .take_while(|&pos| self.input[pos].token == Token::Newline)
+            .last();
+        let line_break = skipped_break.or_else(|| {
+            let next = self.peek()?;
+            (next.token == Token::Newline).then_some(self.here())
+        });
+        if let Some(line_break) = line_break
+            && let Some((_, colon)) = self.get_past_nl(line_break)
+            && colon.token == Token::Colon
+        {
+            return Err(self
+                .expected("`:`", &self.input[line_break])
+                .with_help(Some(COLON_ON_THE_LINE_HELP.to_owned())));
+        }
+        self.expect(Token::Colon)
     }
 
     /// Parse `parse` inside a `kind` bracket, from its opener through its closer,

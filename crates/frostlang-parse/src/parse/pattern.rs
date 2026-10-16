@@ -252,7 +252,7 @@ impl<'src> ParseCtx<'src> {
         match peek.token {
             Token::OpenBracket => {
                 let (key, _) = self.delimited(Bracket::ComputedKey, Self::parse_expression)?;
-                self.expect(Token::Colon)?;
+                self.expect_colon_on_the_line()?;
                 self.maybe_skip_nl();
                 let pattern = self.parse_pattern()?;
                 let span = (entry_start..pattern.span.end).into();
@@ -265,10 +265,13 @@ impl<'src> ParseCtx<'src> {
                 let end = peek.span.end;
                 self.advance(1);
 
-                let peek2 = self.must_peek("`:`, `,`, or `}`")?;
+                self.must_peek("`:`, `,`, or `}`")?;
+                // A `:` on a later line is still this key's, misplaced.
+                let colon_follows =
+                    matches!(self.peek_past_nl().map(|t| &t.token), Some(Token::Colon));
 
-                let pattern = if peek2.token == Token::Colon {
-                    self.advance(1);
+                let pattern = if colon_follows {
+                    self.expect_colon_on_the_line()?;
                     self.maybe_skip_nl();
                     self.parse_pattern()?
                 } else {
