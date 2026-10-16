@@ -1,5 +1,5 @@
 # Names bound by destructuring are captured like any other binding.
-#= {result: [1, [2, 3], {a: 1}, 'v']}
+#= {result: [1, [2, 3], {a: 1}, 'v'], lints: [['unused binding', '`a`']]}
 def f = fn arr, m -> {
     def [h, ...t] = arr
     def {a} as whole = m

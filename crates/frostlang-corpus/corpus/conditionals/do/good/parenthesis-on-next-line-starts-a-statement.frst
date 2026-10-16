@@ -1,6 +1,6 @@
 # A `(` on the line after a block's closing brace starts a new statement; it
 # does not call the block's value. The script's value is that new statement.
-#= {result: 5}
+#= {result: 5, lints: [['unused binding', '`scale`']]}
 def scale = do {
     def k = 10
     fn n -> n * k

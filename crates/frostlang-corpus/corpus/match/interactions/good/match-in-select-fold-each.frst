@@ -2,6 +2,7 @@
 #= {
 #=     result: [[{ok: 1}, {ok: 3}], 4],
 #=     printed: ['error: bad'],
+#=     lints: [['unused binding', '`ok`'], ['unused binding', '`err`']],
 #=     inputs: {rs: [{ok: 1}, {err: 'bad'}, {ok: 3}]},
 #= }
 def oks = rs @ select(fn r -> match r { {ok} => true, _ => false })

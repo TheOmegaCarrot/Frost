@@ -1,5 +1,5 @@
 # A variadic `fn` inside an abbreviated lambda has its own rest parameter;
 # `$$` there is still the enclosing lambda's.
-#= {result: [[2], [1]]}
+#= {result: [[2], [1]], lints: ['lambda in abbreviated lambda']}
 def f = $(fn ...inner -> [inner, $$])
 f(1)(2)

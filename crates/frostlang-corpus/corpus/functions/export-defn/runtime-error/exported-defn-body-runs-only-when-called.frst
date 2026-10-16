@@ -1,6 +1,6 @@
 # An exported function's body runs when called, not when exported: the run
 # gets as far as the call and the error comes from the body.
-#= {raises: 'from the body'}
+#= {raises: 'from the body', lints: [['unused binding', '`ready`']]}
 export defn fail(message) -> error(message)
 def ready = 'exported'
 fail('from the body')

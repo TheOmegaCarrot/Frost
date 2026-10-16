@@ -1,6 +1,10 @@
 # Within one alternative, a parenthesized name reads that alternative's own
 # earlier binding, shadowing the enclosing name.
-#= {result: [5, 0], inputs: {a: [5, 5], b: [5, 6]}}
+#= {
+#=     result: [5, 0],
+#=     lints: [['unused binding', '`x`']],
+#=     inputs: {a: [5, 5], b: [5, 6]},
+#= }
 def x = 7
 defn same(v) -> match v {
     [x, 1] | [x, (x)] => x,

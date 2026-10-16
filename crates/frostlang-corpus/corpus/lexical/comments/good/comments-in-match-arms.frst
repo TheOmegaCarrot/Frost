@@ -1,6 +1,10 @@
 # Comments may sit between `match` arms, after an arm's comma, and around a
 # pattern's alternatives.
-#= {result: ['low', 'high', 'other'], inputs: {xs: [2, 9, 'x']}}
+#= {
+#=     result: ['low', 'high', 'other'],
+#=     lints: [['unused binding', '`n`']],
+#=     inputs: {xs: [2, 9, 'x']},
+#= }
 defn classify(v) -> match v {
     # small numbers
     1 | 2 # either

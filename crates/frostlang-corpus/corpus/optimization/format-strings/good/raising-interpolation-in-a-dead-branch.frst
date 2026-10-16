@@ -1,5 +1,5 @@
 # A format string whose interpolation would raise on constants never raises in
 # a branch that never runs, or a function never called.
-#= {result: 'ok'}
+#= {result: 'ok', lints: [['unused binding', '`never`']]}
 def never = fn -> $'${{a: 1}.b}'
 if false: $'${1 / 0}' else: 'ok'

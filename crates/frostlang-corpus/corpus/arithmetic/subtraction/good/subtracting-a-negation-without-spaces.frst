@@ -1,7 +1,10 @@
 # `3--2` is subtraction of a negated literal, not some `--` operator, and
 # `--2` alone is a double negation. Python-style comments mean `--` has no
 # other meaning in Frost.
-#= {result: [5, 2, 1]}
+#= {
+#=     result: [5, 2, 1],
+#=     lints: ['consecutive minus', 'consecutive minus', 'consecutive minus'],
+#= }
 [
     3--2,
     --2,

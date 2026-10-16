@@ -1,5 +1,5 @@
 # A def whose known value has the wrong shape binds nothing to propagate; it
 # raises when the program reaches it.
-#= {raises: 'exactly 2 elements'}
+#= {raises: 'exactly 2 elements', lints: [['unused binding', '`b`']]}
 def [a, b] = [1]
 a

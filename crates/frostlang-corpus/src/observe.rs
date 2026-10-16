@@ -1,7 +1,7 @@
 use std::collections::BTreeMap;
 use std::sync::{Arc, Mutex};
 
-use frostlang::compile::{CompilerOptions, compile_in_scope};
+use frostlang::compile::{CompilerOptions, Diagnostic, compile_in_scope};
 use frostlang::{Value, Vm, VmRuntimeConfiguration};
 
 /// What compiling and running a script does under one set of options.
@@ -11,6 +11,8 @@ pub(crate) enum Observed {
     Rejected(String),
     /// Compilation succeeded, and the run produced this.
     Ran {
+        /// Each lint, narrated, in source order.
+        lints: Vec<String>,
         /// The completed run, or the message of the error it raised.
         outcome: Result<Finished, String>,
         /// The text of each `print`, whether or not the run completed.
@@ -38,6 +40,11 @@ pub(crate) fn observe(
         Ok(output) => output,
         Err(diagnostics) => return Observed::Rejected(diagnostics.render_narrated()),
     };
+    let lints = output
+        .lints
+        .iter()
+        .map(Diagnostic::render_narrated)
+        .collect();
     let closure = output
         .code
         .close(inputs.clone())
@@ -61,5 +68,9 @@ pub(crate) fn observe(
         })
         .map_err(|error| error.into_error().message().into_owned());
     let printed = printed.lock().unwrap().clone();
-    Observed::Ran { outcome, printed }
+    Observed::Ran {
+        lints,
+        outcome,
+        printed,
+    }
 }

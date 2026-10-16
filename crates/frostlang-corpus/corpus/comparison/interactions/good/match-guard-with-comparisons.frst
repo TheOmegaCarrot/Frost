@@ -2,6 +2,7 @@
 # values known only at runtime.
 #= {
 #=     result: ['negative', 'zero', 'small', 'small', 'large', 'not a number'],
+#=     lints: [['unused binding', '`n`']],
 #=     inputs: {values: [-1, 0, 0.5, 9, 10.0, '5']},
 #= }
 defn classify(v) -> match v {

@@ -1,6 +1,14 @@
 # A Map pattern requires every key it names to be present; a missing key is a
 # mismatch, never a Null binding.
-#= {result: ['a only', 'both'], inputs: {xs: [{a: 1}, {a: 1, b: 2}]}}
+#= {
+#=     result: ['a only', 'both'],
+#=     lints: [
+#=         ['unused binding', '`a`'],
+#=         ['unused binding', '`b`'],
+#=         ['unused binding', '`a`'],
+#=     ],
+#=     inputs: {xs: [{a: 1}, {a: 1, b: 2}]},
+#= }
 transform(xs, fn v -> match v {
     {a, b} => 'both',
     {a} => 'a only',

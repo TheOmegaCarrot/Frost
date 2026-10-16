@@ -1,4 +1,4 @@
 # A program whose last statement is a `def` has no tail expression, so its tail
 # value is null, not the value the `def` binds.
-#= {result: null}
+#= {result: null, lints: [['unused binding', '`answer`']]}
 def answer = 42

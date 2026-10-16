@@ -1,5 +1,8 @@
 # A def with a rest binding whose known value is too short raises when the
 # program reaches it.
-#= {raises: 'at least 2 elements'}
+#= {
+#=     raises: 'at least 2 elements',
+#=     lints: [['unused binding', '`b`'], ['unused binding', '`rest`']],
+#= }
 def [a, b, ...rest] = [1]
 a

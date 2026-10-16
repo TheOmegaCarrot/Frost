@@ -12,6 +12,6 @@ mod observe;
 mod verdict;
 
 pub use discover::{Entry, discover};
-pub use expectation::{Expectation, Expected, Kind, KnownIssue};
+pub use expectation::{Expectation, Expected, ExpectedRun, Kind, KnownIssue};
 pub use mode::Mode;
 pub use verdict::{Report, Tally, Verdict, check, check_source};

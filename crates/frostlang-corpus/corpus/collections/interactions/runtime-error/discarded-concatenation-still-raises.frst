@@ -1,5 +1,5 @@
 # A concatenation used as a statement is still performed, so mismatched
 # operands raise even though the result is discarded.
-#= {raises: 'String + Bytes'}
+#= {raises: 'String + Bytes', lints: [['unused binding', '`unused`']]}
 def unused = 'a' + x'00'
 42

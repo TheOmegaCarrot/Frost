@@ -1,6 +1,10 @@
 # An unread binding in a function body has its value computed on every call,
 # even over constant arguments, so its effect happens once per call, in order.
-#= {result: [1, 2, 1], printed: ['1', '2', '1']}
+#= {
+#=     result: [1, 2, 1],
+#=     printed: ['1', '2', '1'],
+#=     lints: [['unused binding', '`unread`']],
+#= }
 defn log(x) -> {
     def unread = print(x)
     x

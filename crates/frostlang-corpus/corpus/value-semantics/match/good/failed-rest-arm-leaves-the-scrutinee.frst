@@ -1,6 +1,6 @@
 # An arm that splits off a rest binding and then fails its guard leaves the
 # scrutinee whole for the next arm.
-#= {result: [1, 2, 3], inputs: {n: 1}}
+#= {result: [1, 2, 3], lints: [['unused binding', '`a`']], inputs: {n: 1}}
 match [n, 2, 3] {
     [a, ...rest] if: len(rest + [0]) == 0 => 'never',
     whole => whole,

@@ -1,5 +1,5 @@
 # Building an inverted function calls nothing; its function runs only when
 # the inverted function is called.
-#= {result: 'built'}
+#= {result: 'built', lints: [['unused binding', '`never`']]}
 def never = inv(fn -> error('called'))
 'built'

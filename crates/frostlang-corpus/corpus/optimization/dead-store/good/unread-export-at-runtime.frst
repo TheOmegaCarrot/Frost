@@ -1,6 +1,11 @@
 # The export of unread-export-is-still-exported, of a value only known at
 # runtime, is still exported.
-#= {result: 3, exports: {shown: 2}, inputs: {one: 1}}
+#= {
+#=     result: 3,
+#=     exports: {shown: 2},
+#=     lints: [['unused binding', '`hidden`']],
+#=     inputs: {one: 1},
+#= }
 export def shown = one + 1
 def hidden = 2
 3

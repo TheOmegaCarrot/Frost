@@ -1,4 +1,4 @@
 # A placeholder is captured through any depth of `fn` lambdas.
-#= {result: 4}
+#= {result: 4, lints: ['lambda in abbreviated lambda']}
 def f = $(fn -> fn -> $1)
 f(4)()()

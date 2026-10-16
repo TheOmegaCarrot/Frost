@@ -1,6 +1,6 @@
 # Many match statements run in a loop of recursive calls, each dropping its
 # value and leaving nothing behind.
-#= {result: 0, inputs: {n: 500}}
+#= {result: 0, lints: [['unused binding', '`b`']], inputs: {n: 500}}
 defn go(k) -> if k == 0: 0 else: do {
     match [k, k] {
         [a, b] | {a, b} => a,

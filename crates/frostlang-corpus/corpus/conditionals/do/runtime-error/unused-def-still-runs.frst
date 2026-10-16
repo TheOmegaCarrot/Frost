@@ -1,6 +1,6 @@
 # A constant `def` whose binding is never read still runs, so its error is
 # raised rather than optimized away.
-#= {raises: 'modulus by zero'}
+#= {raises: 'modulus by zero', lints: [['unused binding', '`unused`']]}
 do {
     def unused = 1 % 0
     5

@@ -1,6 +1,9 @@
 # Keywords are lowercase words; the same letters in another case are ordinary
 # names.
-#= {result: [1, 2, 3, 4, 5]}
+#= {
+#=     result: [1, 2, 3, 4, 5],
+#=     lints: [['type name binding', '`Null`'], ['type name binding', '`Map`']],
+#= }
 def If = 1
 def INIT = 2
 def Null = 3

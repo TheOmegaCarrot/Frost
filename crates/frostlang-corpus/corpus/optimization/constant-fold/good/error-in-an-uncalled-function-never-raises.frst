@@ -1,6 +1,14 @@
 # An expression that raises on constants, inside a function that is never
 # called, never raises: folding it may not surface its error early.
-#= {result: 'never called'}
+#= {
+#=     result: 'never called',
+#=     lints: [
+#=         ['unused binding', '`divide`'],
+#=         ['unused binding', '`lookup`'],
+#=         ['unused binding', '`fail`'],
+#=         ['unused binding', '`mismatch`'],
+#=     ],
+#= }
 def divide = fn -> 1 / 0
 def lookup = fn -> {a: 1}.b
 def fail = fn -> error('boom')

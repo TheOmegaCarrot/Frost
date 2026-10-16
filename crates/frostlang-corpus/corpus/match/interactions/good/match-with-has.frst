@@ -1,6 +1,10 @@
 # A Map pattern's key-presence test agrees with `has`: a Null value is present
 # to both.
-#= {result: [[true, true], [false, false]], inputs: {xs: [{a: null}, {b: 1}]}}
+#= {
+#=     result: [[true, true], [false, false]],
+#=     lints: [['unused binding', '`a`']],
+#=     inputs: {xs: [{a: null}, {b: 1}]},
+#= }
 transform(xs, fn m -> [
     has(m, 'a'),
     match m { {a} => true, _ => false },

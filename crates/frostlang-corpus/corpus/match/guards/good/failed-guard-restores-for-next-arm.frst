@@ -1,6 +1,15 @@
 # After a destructuring arm's guard fails, the next arm sees the whole target
 # afresh, and surrounding values are undisturbed.
-#= {result: [6, 9], inputs: {v: [1, [2, 3]]}}
+#= {
+#=     result: [6, 9],
+#=     lints: [
+#=         ['unused binding', '`a`'],
+#=         ['unused binding', '`b`'],
+#=         ['unused binding', '`c`'],
+#=         ['unused binding', '`a`'],
+#=     ],
+#=     inputs: {v: [1, [2, 3]]},
+#= }
 [
     match v {
         [a, [b, c]] if: false => 0,

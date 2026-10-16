@@ -1,5 +1,5 @@
 # A comparison of constants that raises, bound to a name that is never read,
 # still raises when the binding runs: an error is not dead code.
-#= {raises: ['Bool', 'not orderable']}
+#= {raises: ['Bool', 'not orderable'], lints: [['unused binding', '`unused`']]}
 def unused = true < false
 1

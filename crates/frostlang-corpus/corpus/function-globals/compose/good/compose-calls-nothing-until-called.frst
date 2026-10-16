@@ -1,5 +1,5 @@
 # Composing calls none of the functions; they run only when the composed
 # function does.
-#= {result: 'built'}
+#= {result: 'built', lints: [['unused binding', '`never`']]}
 def never = compose(fn x -> error('first'), fn x -> error('second'), fn x -> error('third'))
 'built'

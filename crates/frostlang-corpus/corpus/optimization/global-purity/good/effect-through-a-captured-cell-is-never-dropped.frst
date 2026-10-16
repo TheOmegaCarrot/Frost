@@ -2,7 +2,7 @@
 # rather than a load of an impure global, has its effect at every call: an
 # unread result, a discarded call, and a call in a branch a constant picks
 # each count, while a function never called has none.
-#= {result: [4, 2, 3, 'skipped']}
+#= {result: [4, 2, 3, 'skipped'], lints: [['unused binding', '`unread`']]}
 def cell = mutable_cell(0)
 defn bump() -> cell.exchange(cell.get() + 1)
 def unread = bump()

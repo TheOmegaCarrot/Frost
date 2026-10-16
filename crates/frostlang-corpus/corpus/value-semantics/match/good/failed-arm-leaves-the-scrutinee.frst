@@ -1,6 +1,10 @@
 # An arm whose pattern fails partway leaves the scrutinee whole for the next
 # arm, which can still read and extend it.
-#= {result: [[1, 2], 1], inputs: {n: 1}}
+#= {
+#=     result: [[1, 2], 1],
+#=     lints: [['unused binding', '`a`'], ['unused binding', '`b`']],
+#=     inputs: {n: 1},
+#= }
 def xs = [n]
 match xs {
     [a, b] => 'two',

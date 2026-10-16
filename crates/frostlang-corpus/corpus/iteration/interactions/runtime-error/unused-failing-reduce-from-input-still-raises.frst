@@ -1,5 +1,9 @@
 # A `reduce` over runtime values bound to a name that is never read still
 # runs, so its operation's error still surfaces.
-#= {raises: 'division by zero', inputs: {xs: [1, 0]}}
+#= {
+#=     raises: 'division by zero',
+#=     lints: [['unused binding', '`unused`']],
+#=     inputs: {xs: [1, 0]},
+#= }
 def unused = reduce xs init: 1 with fn acc, x -> acc / x
 'unreachable'

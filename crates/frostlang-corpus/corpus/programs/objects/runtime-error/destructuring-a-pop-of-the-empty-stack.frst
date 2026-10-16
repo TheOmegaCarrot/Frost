@@ -3,6 +3,7 @@
 # instead of binding Nulls.
 #= {
 #=     raises: 'expected an Array',
+#=     lints: [['unused binding', '`empty`']],
 #=     inputs: {items: ['a']},
 #= }
 defn stack(xs) -> {

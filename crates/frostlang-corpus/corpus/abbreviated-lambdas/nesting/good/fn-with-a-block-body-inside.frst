@@ -1,6 +1,6 @@
 # A `fn` with a block body inside an abbreviated lambda can define names of
 # its own while reading the placeholders.
-#= {result: 25}
+#= {result: 25, lints: ['lambda in abbreviated lambda']}
 def f = $(fn -> {
     def sum = $1 + $2
     sum * sum

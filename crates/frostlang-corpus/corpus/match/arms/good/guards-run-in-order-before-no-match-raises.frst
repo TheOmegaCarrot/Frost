@@ -1,6 +1,11 @@
 # The guards tried before a match fails run in order, each only when its
 # pattern matched, and then the match raises; no arm's result runs.
-#= {result: false, printed: ['a', 'b'], inputs: {v: 7}}
+#= {
+#=     result: false,
+#=     printed: ['a', 'b'],
+#=     lints: [['unused binding', '`n`']],
+#=     inputs: {v: 7},
+#= }
 defn check(label) -> {
     print(label)
     false

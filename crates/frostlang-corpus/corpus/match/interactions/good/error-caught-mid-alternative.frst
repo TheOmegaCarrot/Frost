@@ -1,6 +1,10 @@
 # An error raised partway through an alternative, inside a caught call, leaves
 # the outer match able to fall through to its next arm cleanly.
-#= {result: 1, inputs: {v: [1]}}
+#= {
+#=     result: 1,
+#=     lints: [['unused binding', '`x`'], ['unused binding', '`a`']],
+#=     inputs: {v: [1]},
+#= }
 match v {
     [x] if: try_call(fn -> match [1, 2] {
         [a, (error('boom'))] | [a, 0] => 0,

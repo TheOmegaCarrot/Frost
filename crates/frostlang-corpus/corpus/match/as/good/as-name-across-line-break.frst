@@ -1,5 +1,9 @@
 # Inside a match, a line break may fall on either side of `as`.
-#= {result: [{a: 1}, {a: 1}], inputs: {v: {a: 1}}}
+#= {
+#=     result: [{a: 1}, {a: 1}],
+#=     lints: [['unused binding', '`a`'], ['unused binding', '`a`']],
+#=     inputs: {v: {a: 1}},
+#= }
 [
     match v {
         {a}

@@ -1,5 +1,5 @@
 # A multiline String does not interpolate, and holds `#` as text, not a comment.
-#= {result: '${x} costs $5 # not a comment'}
+#= {result: '${x} costs $5 # not a comment', lints: [['unused binding', '`x`']]}
 def x = 1
 def text = '''
     ${x} costs $5 # not a comment

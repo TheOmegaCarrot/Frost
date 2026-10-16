@@ -1,6 +1,14 @@
 # A pattern with a rest requires at least as many elements as it names; a
 # shorter Array falls through.
-#= {result: ['short', 'short', 'long enough'], inputs: {xs: [[], [1], [1, 2]]}}
+#= {
+#=     result: ['short', 'short', 'long enough'],
+#=     lints: [
+#=         ['unused binding', '`a`'],
+#=         ['unused binding', '`b`'],
+#=         ['unused binding', '`others`'],
+#=     ],
+#=     inputs: {xs: [[], [1], [1, 2]]},
+#= }
 transform(xs, fn v -> match v {
     [a, b, ...others] => 'long enough',
     _ => 'short',

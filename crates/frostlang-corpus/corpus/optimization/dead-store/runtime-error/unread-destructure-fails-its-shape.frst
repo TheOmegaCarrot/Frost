@@ -1,5 +1,5 @@
 # A destructure none of whose names is read still checks its value's shape, so
 # a known value of the wrong length raises.
-#= {raises: 'exactly 1 element'}
+#= {raises: 'exactly 1 element', lints: [['unused binding', '`unused`']]}
 def [unused] = [1, 2]
 'ok'

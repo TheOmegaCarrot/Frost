@@ -1,6 +1,13 @@
 # Bindings nothing reads, including a chain where each reads only the one
 # before and an unread part of a destructure, leave the result unchanged.
-#= {result: 1}
+#= {
+#=     result: 1,
+#=     lints: [
+#=         ['unused binding', '`unused`'],
+#=         ['unused binding', '`chain_c`'],
+#=         ['unused binding', '`b`'],
+#=     ],
+#= }
 def unused = 'never read'
 def chain_a = 1
 def chain_b = chain_a

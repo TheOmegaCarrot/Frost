@@ -1,5 +1,9 @@
 # A Map pattern never matches a non-Map; an Array is not a Map with Int keys.
-#= {result: ['other', 'other', 'other', 'other', 'other'], inputs: {xs: [[1], [], 'a', null, 5]}}
+#= {
+#=     result: ['other', 'other', 'other', 'other', 'other'],
+#=     lints: [['unused binding', '`x`']],
+#=     inputs: {xs: [[1], [], 'a', null, 5]},
+#= }
 transform(xs, fn v -> match v {
     {} => 'any Map',
     {[0]: x} => 'Int key',

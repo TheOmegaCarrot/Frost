@@ -1,6 +1,6 @@
 # A binding used as a computed key in several arms' Map patterns, and read
 # again in the arm that matches, is the original each time.
-#= {result: [[1, 2], 'ké'], inputs: {s: 'ké'}}
+#= {result: [[1, 2], 'ké'], lints: [['unused binding', '`v`']], inputs: {s: 'ké'}}
 def k = s + ''
 def m = {[k]: [1]}
 match m {

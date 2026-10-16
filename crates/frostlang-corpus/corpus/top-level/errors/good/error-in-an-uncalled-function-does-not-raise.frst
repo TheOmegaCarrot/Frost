@@ -1,5 +1,11 @@
 # Defining a function that raises raises nothing; only calling it would.
-#= {result: 'fine'}
+#= {
+#=     result: 'fine',
+#=     lints: [
+#=         ['unused binding', '`never_called`'],
+#=         ['unused binding', '`also_never_called`'],
+#=     ],
+#= }
 def never_called = fn -> error('never')
 defn also_never_called(x) -> error(x)
 'fine'

@@ -1,5 +1,5 @@
 # A binding that is never read still evaluates its call, so its error is
 # raised.
-#= {raises: 'division by zero'}
+#= {raises: 'division by zero', lints: [['unused binding', '`unused`']]}
 def unused = (fn x -> x / 0)(1)
 'after'

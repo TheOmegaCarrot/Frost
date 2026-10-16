@@ -1,5 +1,5 @@
 # A Map destructure whose name is never read still requires its key, so a
 # known Map lacking it raises.
-#= {raises: 'no value at key "a"'}
+#= {raises: 'no value at key "a"', lints: [['unused binding', '`a`']]}
 def {a} = {b: 1}
 'ok'

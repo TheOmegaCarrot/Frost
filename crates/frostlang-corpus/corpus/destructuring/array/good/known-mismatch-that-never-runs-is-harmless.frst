@@ -1,7 +1,7 @@
 # A mismatch the optimizer can see ahead of time is not a compile error: a def
 # that would raise, in a function never called or a branch never taken, never
 # raises.
-#= {result: 'fine'}
+#= {result: 'fine', lints: [['unused binding', '`never`']]}
 defn never() -> {
     def [a] = [1, 2]
     a

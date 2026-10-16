@@ -1,6 +1,6 @@
 # An abbreviated lambda captures enclosing bindings lexically, like any lambda:
 # a later shadow where it is called does not change them.
-#= {result: 6}
+#= {result: 6, lints: [['unused binding', '`k`']]}
 def k = 2
 def f = $($ * k)
 do {

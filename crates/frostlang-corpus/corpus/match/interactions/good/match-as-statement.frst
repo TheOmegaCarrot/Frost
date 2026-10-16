@@ -1,6 +1,11 @@
 # A match used as a statement runs for its effects and its value is dropped;
 # later statements run normally.
-#= {result: 7, printed: ['matched 2'], inputs: {v: [1, 2]}}
+#= {
+#=     result: 7,
+#=     printed: ['matched 2'],
+#=     lints: [['unused binding', '`a`'], ['unused binding', '`a`']],
+#=     inputs: {v: [1, 2]},
+#= }
 match v {
     [a, b] => print($'matched ${b}'),
 }

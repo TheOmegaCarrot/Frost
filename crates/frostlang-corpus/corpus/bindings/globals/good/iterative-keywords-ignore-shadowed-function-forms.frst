@@ -1,7 +1,10 @@
 # `map`, `filter`, and `reduce` are syntax, not calls to `transform`, `select`,
 # and `fold`: shadowing those globals does not change the keyword forms, while
 # a call to the shadowed name gets the binding.
-#= {result: [[2, 3], [2], 3, 'mine']}
+#= {
+#=     result: [[2, 3], [2], 3, 'mine'],
+#=     lints: [['unused binding', '`select`'], ['unused binding', '`fold`']],
+#= }
 def transform = fn xs, f -> 'mine'
 def select = fn xs, f -> 'mine'
 def fold = fn xs, start, f -> 'mine'

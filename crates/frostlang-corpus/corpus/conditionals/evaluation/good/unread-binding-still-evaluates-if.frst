@@ -1,6 +1,11 @@
 # A binding nobody reads still evaluates its `if`, so the taken branch's side
 # effect happens, whether the condition is constant or known only at runtime.
-#= {result: 5, printed: ['constant', 'runtime'], inputs: {c: true}}
+#= {
+#=     result: 5,
+#=     printed: ['constant', 'runtime'],
+#=     lints: [['unused binding', '`unread`'], ['unused binding', '`also_unread`']],
+#=     inputs: {c: true},
+#= }
 def unread = if true: print('constant')
 def also_unread = if c: print('runtime') else: 1
 5

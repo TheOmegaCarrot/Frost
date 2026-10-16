@@ -1,6 +1,6 @@
 # Keywords are lowercase: `True`, `Null`, and `None` are ordinary names that
 # may be bound, not literals.
-#= {result: ['t', 'n', 'none']}
+#= {result: ['t', 'n', 'none'], lints: [['type name binding', '`Null`']]}
 def True = 't'
 def Null = 'n'
 def None = 'none'

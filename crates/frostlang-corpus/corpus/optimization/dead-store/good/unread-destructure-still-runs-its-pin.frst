@@ -1,5 +1,5 @@
 # A destructure whose names are never read still runs its pattern, so a pin's
 # effect happens, after the value's.
-#= {result: 'ok', printed: ['value', 'pin']}
+#= {result: 'ok', printed: ['value', 'pin'], lints: [['unused binding', '`unused`']]}
 def [unused, (print('pin'))] = [print('value'), null]
 'ok'

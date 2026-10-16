@@ -1,6 +1,11 @@
 # Arms are tried top to bottom, stopping at the first that matches: the guards
 # of later arms never run.
-#= {result: 3, printed: ['1', '2', '3'], inputs: {v: 3}}
+#= {
+#=     result: 3,
+#=     printed: ['1', '2', '3'],
+#=     lints: [['unused binding', '`x`']],
+#=     inputs: {v: 3},
+#= }
 defn check(label, ok) -> {
     print(label)
     ok

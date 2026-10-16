@@ -1,5 +1,5 @@
 # A format string in a `fn` inside an abbreviated lambda interpolates the
 # enclosing placeholder, captured.
-#= {result: 'hi you'}
+#= {result: 'hi you', lints: ['lambda in abbreviated lambda']}
 def greet = $(fn -> $'hi ${$}')
 greet('you')()

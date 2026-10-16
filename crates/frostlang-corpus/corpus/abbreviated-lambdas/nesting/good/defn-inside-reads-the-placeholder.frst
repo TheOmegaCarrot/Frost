@@ -1,6 +1,6 @@
 # A `defn` in a `do` block inside an abbreviated lambda captures the
 # placeholder like any `fn` there.
-#= {result: 10}
+#= {result: 10, lints: ['lambda in abbreviated lambda']}
 def f = $(do {
     defn scale(v) -> v * $
     scale(2)

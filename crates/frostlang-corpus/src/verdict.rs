@@ -7,7 +7,7 @@ use frostlang::{Value, write_quoted_string};
 use rayon::prelude::*;
 
 use crate::discover::Entry;
-use crate::expectation::{Expectation, Expected, Kind, KnownIssue};
+use crate::expectation::{Expectation, Expected, ExpectedRun, Kind, KnownIssue};
 use crate::mode::Mode;
 use crate::observe::{Finished, Observed, observe};
 
@@ -171,34 +171,59 @@ fn panic_message(payload: &(dyn Any + Send)) -> String {
 
 fn compare(expected: &Expected, observed: &Observed) -> Result<(), String> {
     match (expected, observed) {
-        (_, Observed::Rejected(diagnostics)) => match expected {
-            Expected::Rejected(fragments) => {
-                match_fragments(fragments, &diagnostic_text(diagnostics))
-            }
-            _ => Err(format!("expected it to compile, but:\n{diagnostics}")),
-        },
+        (Expected::Rejected(fragments), Observed::Rejected(diagnostics)) => {
+            match_fragments("the error", fragments, &diagnostic_text(diagnostics))
+        }
+        (Expected::Compiles { .. }, Observed::Rejected(diagnostics)) => {
+            Err(format!("expected it to compile, but:\n{diagnostics}"))
+        }
         (Expected::Rejected(_), Observed::Ran { outcome, .. }) => Err(format!(
             "expected it not to compile, but it compiled, and {}",
             describe_outcome(outcome)
         )),
-        (Expected::Raises(fragments), Observed::Ran { outcome, .. }) => match outcome {
-            Err(message) => match_fragments(fragments, message),
+        (
+            Expected::Compiles { lints, run },
+            Observed::Ran {
+                lints: actual_lints,
+                outcome,
+                printed,
+            },
+        ) => {
+            let mismatches: Vec<String> = [
+                compare_run(run, outcome, printed),
+                compare_lints(lints, actual_lints),
+            ]
+            .into_iter()
+            .filter_map(Result::err)
+            .collect();
+            if mismatches.is_empty() {
+                Ok(())
+            } else {
+                Err(mismatches.join("\n"))
+            }
+        }
+    }
+}
+
+/// Compare a run's `outcome`, and the text it `printed`, with the expected `run`.
+fn compare_run(
+    run: &ExpectedRun,
+    outcome: &Result<Finished, String>,
+    printed: &[String],
+) -> Result<(), String> {
+    match run {
+        ExpectedRun::Raises(fragments) => match outcome {
+            Err(message) => match_fragments("the error", fragments, message),
             Ok(_) => Err(format!(
                 "expected it to raise, but {}",
                 describe_outcome(outcome)
             )),
         },
-        (
-            Expected::Completes {
-                result,
-                exports,
-                printed,
-            },
-            Observed::Ran {
-                outcome,
-                printed: actual_printed,
-            },
-        ) => {
+        ExpectedRun::Completes {
+            result,
+            exports,
+            printed: expected_printed,
+        } => {
             let Ok(finished) = outcome else {
                 return Err(format!(
                     "expected it to complete, but {}",
@@ -220,9 +245,9 @@ fn compare(expected: &Expected, observed: &Observed) -> Result<(), String> {
                     show_exports(&finished.exports)
                 ));
             }
-            if actual_printed != printed {
+            if printed != expected_printed {
                 mismatches.push(format!(
-                    "printed: expected {printed:?}, got {actual_printed:?}"
+                    "printed: expected {expected_printed:?}, got {printed:?}"
                 ));
             }
             if mismatches.is_empty() {
@@ -232,6 +257,27 @@ fn compare(expected: &Expected, observed: &Observed) -> Result<(), String> {
             }
         }
     }
+}
+
+/// Compare a script's `lints`, each narrated, with the `expected` ones: one entry
+/// each, in source order, whose fragments that lint must contain.
+fn compare_lints(expected: &[Vec<String>], lints: &[String]) -> Result<(), String> {
+    let texts: Vec<String> = lints.iter().map(|lint| diagnostic_text(lint)).collect();
+    if texts.len() != expected.len() {
+        let listing: String = texts.iter().map(|text| format!("\n{text}")).collect();
+        return Err(format!(
+            "lints: expected {}, got {}{listing}",
+            expected.len(),
+            texts.len()
+        ));
+    }
+    expected
+        .iter()
+        .zip(&texts)
+        .enumerate()
+        .try_for_each(|(index, (fragments, text))| {
+            match_fragments(&format!("lint {}", index + 1), fragments, text)
+        })
 }
 
 /// The text of narrated diagnostics that fragments match against: everything
@@ -245,7 +291,9 @@ fn diagnostic_text(narrated: &str) -> String {
         .join("\n")
 }
 
-fn match_fragments(fragments: &[String], text: &str) -> Result<(), String> {
+/// Whether `text`, that of `what` (as `the error` or `lint 2`), contains each of
+/// `fragments`, ignoring case.
+fn match_fragments(what: &str, fragments: &[String], text: &str) -> Result<(), String> {
     let lowered = text.to_lowercase();
     let missing: Vec<&String> = fragments
         .iter()
@@ -255,7 +303,7 @@ fn match_fragments(fragments: &[String], text: &str) -> Result<(), String> {
         Ok(())
     } else {
         Err(format!(
-            "the error does not mention {missing:?}; it reads:\n{text}"
+            "{what} does not mention {missing:?}; it reads:\n{text}"
         ))
     }
 }

@@ -1,6 +1,10 @@
 # A binding nothing reads still has its value computed, so an effect in it
 # happens, in order with the program's other effects.
-#= {result: 'done', printed: ['first', 'second', 'third']}
+#= {
+#=     result: 'done',
+#=     printed: ['first', 'second', 'third'],
+#=     lints: [['unused binding', '`a`'], ['unused binding', '`b`']],
+#= }
 def a = print('first')
 print('second')
 def b = print('third')

@@ -1,5 +1,9 @@
 # An arm's bindings are visible to both its guard and its result.
-#= {result: 'descending', inputs: {v: [3, 1]}}
+#= {
+#=     result: 'descending',
+#=     lints: [['unused binding', '`a`'], ['unused binding', '`b`']],
+#=     inputs: {v: [3, 1]},
+#= }
 match v {
     [a, b] if: a > b => 'descending',
     [a, b] => 'ascending',

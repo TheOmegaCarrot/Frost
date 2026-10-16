@@ -2,7 +2,11 @@
 # `String => ...` matches every value and binds it to the name `String`.
 # Subtle: type names are contextual keywords, valid as identifiers though
 # inadvisable, so this means `_ is String` only to the reader.
-#= {result: 'text', inputs: {v: 5}}
+#= {
+#=     result: 'text',
+#=     lints: [['type name binding', '`String`'], ['unused binding', '`String`']],
+#=     inputs: {v: 5},
+#= }
 match v {
     1 => 'one',
     String => 'text',

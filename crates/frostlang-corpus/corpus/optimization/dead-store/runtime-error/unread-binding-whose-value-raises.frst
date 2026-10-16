@@ -1,5 +1,5 @@
 # A binding nothing reads still has its value computed, so a constant value
 # that raises still raises.
-#= {raises: 'division by zero'}
+#= {raises: 'division by zero', lints: [['unused binding', '`unused`']]}
 def unused = 1 / 0
 2

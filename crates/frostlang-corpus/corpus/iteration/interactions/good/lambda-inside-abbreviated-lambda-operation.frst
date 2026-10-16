@@ -1,5 +1,9 @@
 # An abbreviated lambda may hold a `fn` lambda, here as the operation of a
 # form inside it. Its `$` is the abbreviated lambda's argument, each row; the
 # inner lambda's `x` is each element of that row.
-#= {result: [[2, 3], []], inputs: {rows: [[1, 2], []]}}
+#= {
+#=     result: [[2, 3], []],
+#=     lints: ['lambda in abbreviated lambda'],
+#=     inputs: {rows: [[1, 2], []]},
+#= }
 map rows with $(map $ with fn x -> x + 1)

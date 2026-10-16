@@ -1,6 +1,9 @@
 # An unread binding of a function is created but never called, so neither its
 # effect nor its error happens.
-#= {result: 'ok'}
+#= {
+#=     result: 'ok',
+#=     lints: [['unused binding', '`noisy`'], ['unused binding', '`failing`']],
+#= }
 def noisy = fn -> print('never')
 def failing = fn -> error('never')
 'ok'

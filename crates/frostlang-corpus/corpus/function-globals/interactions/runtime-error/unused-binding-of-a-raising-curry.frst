@@ -1,5 +1,8 @@
 # A binding never read is still evaluated, so the type error of the `curry`
 # it binds is raised.
-#= {raises: ['curry', 'Function as argument 1', 'got Int']}
+#= {
+#=     raises: ['curry', 'Function as argument 1', 'got Int'],
+#=     lints: [['unused binding', '`unused`']],
+#= }
 def unused = curry(1)
 'after'

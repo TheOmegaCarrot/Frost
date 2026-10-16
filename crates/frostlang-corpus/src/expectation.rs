@@ -21,7 +21,22 @@ pub struct Expectation {
 /// The outcome a script is expected to have.
 #[derive(Debug)]
 pub enum Expected {
-    /// It compiles, and the run completes.
+    /// It compiles, and its run ends as `run` expects.
+    Compiles {
+        /// Its lints, one entry each, in source order: the fragments that lint
+        /// contains, ignoring case.
+        lints: Vec<Vec<String>>,
+        run: ExpectedRun,
+    },
+    /// It fails to compile, with diagnostics containing each fragment,
+    /// ignoring case.
+    Rejected(Vec<String>),
+}
+
+/// How the run of a script that compiles is expected to end.
+#[derive(Debug)]
+pub enum ExpectedRun {
+    /// It completes.
     Completes {
         /// The tail value.
         result: Value,
@@ -30,12 +45,9 @@ pub enum Expected {
         /// The text of each `print`, in order.
         printed: Vec<String>,
     },
-    /// It compiles, and the run raises an error whose message contains each
-    /// fragment, ignoring case.
+    /// It raises an error whose message contains each fragment, ignoring
+    /// case.
     Raises(Vec<String>),
-    /// It fails to compile, with diagnostics containing each fragment,
-    /// ignoring case.
-    Rejected(Vec<String>),
 }
 
 /// The kind of outcome a script is expected to have, which also names the
@@ -61,8 +73,14 @@ pub struct KnownIssue {
 impl Expected {
     pub fn kind(&self) -> Kind {
         match self {
-            Self::Completes { .. } => Kind::Good,
-            Self::Raises(_) => Kind::RuntimeError,
+            Self::Compiles {
+                run: ExpectedRun::Completes { .. },
+                ..
+            } => Kind::Good,
+            Self::Compiles {
+                run: ExpectedRun::Raises(_),
+                ..
+            } => Kind::RuntimeError,
             Self::Rejected(_) => Kind::CompileError,
         }
     }
@@ -148,6 +166,7 @@ struct Fields {
     printed: Option<Vec<String>>,
     raises: Option<Fragments>,
     rejects: Option<Fragments>,
+    lints: Option<Vec<Fragments>>,
     known_issue: Option<String>,
     #[serde(default)]
     regression: bool,
@@ -187,13 +206,21 @@ impl Fragments {
 impl Fields {
     fn validate(self) -> Result<Expectation, String> {
         let has_completion_fields = self.exports.is_some() || self.printed.is_some();
+        let has_lints = self.lints.is_some();
+        let lints = validate_lints(self.lints)?;
         let expected = match (self.result, self.raises, self.rejects) {
-            (Some(result), None, None) => Expected::Completes {
-                result,
-                exports: self.exports.unwrap_or_default(),
-                printed: self.printed.unwrap_or_default(),
+            (Some(result), None, None) => Expected::Compiles {
+                lints,
+                run: ExpectedRun::Completes {
+                    result,
+                    exports: self.exports.unwrap_or_default(),
+                    printed: self.printed.unwrap_or_default(),
+                },
             },
-            (None, Some(fragments), None) => Expected::Raises(fragments.validate("raises")?),
+            (None, Some(fragments), None) => Expected::Compiles {
+                lints,
+                run: ExpectedRun::Raises(fragments.validate("raises")?),
+            },
             (None, None, Some(fragments)) => Expected::Rejected(fragments.validate("rejects")?),
             _ => {
                 return Err(
@@ -204,6 +231,9 @@ impl Fields {
         };
         if has_completion_fields && expected.kind() != Kind::Good {
             return Err("only an expectation with `result` may have `exports` or `printed`".into());
+        }
+        if has_lints && expected.kind() == Kind::CompileError {
+            return Err("only an expectation with `result` or `raises` may have `lints`".into());
         }
         let known_issue = match (self.known_issue, self.regression) {
             (Some(task), regression) if is_task_id(&task) => Some(KnownIssue { task, regression }),
@@ -230,6 +260,21 @@ impl Fields {
             known_issue,
         })
     }
+}
+
+/// The `lints` field's entries, each validated as fragments. Absent, the script
+/// must produce no lints, so an empty list is redundant and rejected.
+fn validate_lints(lints: Option<Vec<Fragments>>) -> Result<Vec<Vec<String>>, String> {
+    let Some(lints) = lints else {
+        return Ok(Vec::new());
+    };
+    if lints.is_empty() {
+        return Err("`lints` must name at least one lint; leave it out for none".to_string());
+    }
+    lints
+        .into_iter()
+        .map(|fragments| fragments.validate("each entry of `lints`"))
+        .collect()
 }
 
 /// Whether `id` has the shape of a Backlog task ID: `FROST-` and a number,

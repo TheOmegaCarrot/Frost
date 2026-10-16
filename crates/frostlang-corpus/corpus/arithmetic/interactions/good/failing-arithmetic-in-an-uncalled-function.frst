@@ -1,6 +1,9 @@
 # A function whose body divides by zero raises only when called: defining it,
 # even with every operand constant, is not an error.
-#= {result: 'fine'}
+#= {
+#=     result: 'fine',
+#=     lints: [['unused binding', '`boom`'], ['unused binding', '`overflow`']],
+#= }
 defn boom() -> 1 / 0
 defn overflow() -> 1e308 * 10.0
 'fine'

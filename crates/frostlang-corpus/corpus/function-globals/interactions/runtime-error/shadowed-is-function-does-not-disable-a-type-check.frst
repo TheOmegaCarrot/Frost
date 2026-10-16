@@ -1,6 +1,9 @@
 # `curry` checks its function with the global `is_function`, so a script's
 # own `is_function` that accepts everything does not let a non-Function
 # through.
-#= {raises: ['curry', 'Function as argument 1', 'got Int']}
+#= {
+#=     raises: ['curry', 'Function as argument 1', 'got Int'],
+#=     lints: [['unused binding', '`is_function`']],
+#= }
 def is_function = fn v -> true
 curry(5, 1)

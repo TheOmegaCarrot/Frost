@@ -1,5 +1,5 @@
 # A raw String never interpolates: `${...}` in it is text, even when the name in it
 # is bound.
-#= {result: ['${x}', 4]}
+#= {result: ['${x}', 4], lints: [['unused binding', '`x`']]}
 def x = 1
 [R'(${x})', len(R'(${x})')]

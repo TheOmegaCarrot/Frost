@@ -1,0 +1,6 @@
+# A binding read only in a lambda's body is used, though the read happens only
+# when the lambda is called, so it is not linted.
+#= {result: 1}
+def x = 1
+def get = fn -> x
+get()

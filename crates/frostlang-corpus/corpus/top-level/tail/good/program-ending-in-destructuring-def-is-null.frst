@@ -1,4 +1,7 @@
 # A program ending in a destructuring `def` has a null tail, whatever the
 # pattern binds.
-#= {result: null}
+#= {
+#=     result: null,
+#=     lints: [['unused binding', '`first`'], ['unused binding', '`rest`']],
+#= }
 def [first, ...rest] = [1, 2, 3]

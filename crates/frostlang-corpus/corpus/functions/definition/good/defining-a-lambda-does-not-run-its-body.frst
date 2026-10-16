@@ -1,4 +1,4 @@
 # Creating a lambda does not run its body: nothing is printed until a call.
-#= {result: 'defined', printed: []}
+#= {result: 'defined', printed: [], lints: [['unused binding', '`f`']]}
 def f = fn -> print('ran')
 'defined'

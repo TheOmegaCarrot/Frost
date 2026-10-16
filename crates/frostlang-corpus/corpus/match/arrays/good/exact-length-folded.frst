@@ -1,6 +1,19 @@
 # Array length matching against constant targets, which the optimizer may
 # resolve ahead of time, agrees with runtime.
-#= {result: [0, 2, 'other']}
+#= {
+#=     result: [0, 2, 'other'],
+#=     lints: [
+#=         ['unused binding', '`a`'],
+#=         ['unused binding', '`a`'],
+#=         ['unused binding', '`a`'],
+#=         ['unused binding', '`b`'],
+#=         ['unused binding', '`a`'],
+#=         ['unused binding', '`b`'],
+#=         ['unused binding', '`c`'],
+#=         ['unused binding', '`a`'],
+#=         ['unused binding', '`b`'],
+#=     ],
+#= }
 [
     match [] { [a] => 1, [] => 0 },
     match [1, 2] { [a] => 1, [a, b] => 2, [a, b, c] => 3 },

@@ -1,0 +1,4 @@
+# A `def` whose name nothing reads is linted as an unused binding.
+#= {result: 2, lints: [['unused binding', '`unread`']]}
+def unread = 1
+2

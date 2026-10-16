@@ -1,6 +1,16 @@
 # A missing key is a mismatch when the optimizer resolves the match ahead of
 # time, as at runtime.
-#= {result: ['a only', 'both']}
+#= {
+#=     result: ['a only', 'both'],
+#=     lints: [
+#=         ['unused binding', '`a`'],
+#=         ['unused binding', '`b`'],
+#=         ['unused binding', '`a`'],
+#=         ['unused binding', '`a`'],
+#=         ['unused binding', '`b`'],
+#=         ['unused binding', '`a`'],
+#=     ],
+#= }
 [
     match {a: 1} { {a, b} => 'both', {a} => 'a only' },
     match {a: 1, b: 2} { {a, b} => 'both', {a} => 'a only' },

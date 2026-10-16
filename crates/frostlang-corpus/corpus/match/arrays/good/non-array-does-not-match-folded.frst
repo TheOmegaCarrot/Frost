@@ -1,6 +1,9 @@
 # A constant non-Array target never matches an Array pattern, whether or not
 # the optimizer resolves the match ahead of time.
-#= {result: ['other', 'other', 'other']}
+#= {
+#=     result: ['other', 'other', 'other'],
+#=     lints: [['unused binding', '`x`'], ['unused binding', '`y`']],
+#= }
 [
     match 'ab' { [x, y] => 'two', _ => 'other' },
     match {a: 1} { [..._] => 'any', _ => 'other' },

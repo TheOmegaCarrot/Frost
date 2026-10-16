@@ -1,6 +1,15 @@
 # Entries are tried in source order, and a missing key stops the pattern:
 # later computed keys are not evaluated.
-#= {result: 'no match', printed: ['a', 'b'], inputs: {v: {a: 1}}}
+#= {
+#=     result: 'no match',
+#=     printed: ['a', 'b'],
+#=     lints: [
+#=         ['unused binding', '`x`'],
+#=         ['unused binding', '`y`'],
+#=         ['unused binding', '`z`'],
+#=     ],
+#=     inputs: {v: {a: 1}},
+#= }
 defn key(k) -> {
     print(k)
     k

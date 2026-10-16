@@ -2,6 +2,7 @@
 # its tests, and a guard that is falsy moves on to the next arm.
 #= {
 #=     result: ['small even', 'small odd', 'large or negative', 'not an Int'],
+#=     lints: [['unused binding', '`n`']],
 #=     inputs: {xs: [4, 3, 40, 'x']},
 #= }
 transform(xs, fn x -> match x {

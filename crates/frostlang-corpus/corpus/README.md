@@ -82,6 +82,7 @@ with the script's outcome directory.
 | `printed` | `good` | An Array of the text of each `print`, in order. Absent, the script must print nothing. |
 | `raises` | `runtime-error` | A String, or an Array of Strings, each of which the error's message must contain, ignoring case. |
 | `rejects` | `compile-error` | As `raises`, matched against the diagnostics: their messages, labels, help, and codes, but not the source lines they quote. |
+| `lints` | `good`, `runtime-error` | An Array with one entry per lint the script compiles with, in source order: a String, or an Array of Strings, each of which that lint must contain, matched as `rejects` is. Absent, the script must compile with no lints. |
 | `inputs` | any | A Map of values by name. Each name is in the script's enclosing scope, and its value is supplied only when the script runs. |
 | `known_issue` | any | The ID of the Backlog task tracking a bug that keeps the script from behaving as expected, such as `'FROST-123'`. |
 | `regression` | any | `true` if that bug is an accepted regression: the script once behaved as expected. Requires `known_issue`. |
@@ -102,6 +103,16 @@ match xs {
 
 Error fragments match loosely so that rewording a message does not break the
 corpus. Choose the smallest fragment that still tells this error from others.
+
+A lint's entry names its code, and the name it is about when it names one, so
+each entry tells its lint from the others:
+
+```frost
+# A binding no code reads is still evaluated, so its error still raises.
+#= {raises: 'division by zero', lints: [['unused binding', '`unused`']]}
+def unused = 1 / 0
+2
+```
 
 ## Verdicts
 

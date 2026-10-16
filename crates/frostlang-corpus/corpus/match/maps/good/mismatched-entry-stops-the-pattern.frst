@@ -1,6 +1,11 @@
 # A present key whose value fails its pattern stops the Map pattern: later
 # keys are not evaluated.
-#= {result: 'no match', printed: ['a'], inputs: {v: {a: 1, b: 2}}}
+#= {
+#=     result: 'no match',
+#=     printed: ['a'],
+#=     lints: [['unused binding', '`y`']],
+#=     inputs: {v: {a: 1, b: 2}},
+#= }
 defn key(k) -> {
     print(k)
     k

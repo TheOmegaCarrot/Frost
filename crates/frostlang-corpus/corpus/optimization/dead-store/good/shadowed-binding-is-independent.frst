@@ -1,6 +1,6 @@
 # An outer binding never read, shadowed by an inner one that is, leaves the
 # inner binding's value intact, and the outer value's effect still happens.
-#= {result: 2, printed: ['outer']}
+#= {result: 2, printed: ['outer'], lints: [['unused binding', '`x`']]}
 def x = print('outer')
 do {
     def x = 2

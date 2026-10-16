@@ -5,6 +5,7 @@
 #= {
 #=     result: ['then', 'or right', null, 'arm'],
 #=     printed: ['if', 'unread', 'or', 'and', 'match'],
+#=     lints: [['unused binding', '`unread`']],
 #= }
 [
     if do {

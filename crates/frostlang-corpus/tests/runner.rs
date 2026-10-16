@@ -249,6 +249,99 @@ missing
     assert_mentions(&reason, r#"does not mention ["sentinel_name"]"#);
 }
 
+// -- Lints --
+
+#[test]
+fn a_script_compiling_with_its_declared_lints_passes() {
+    let source = r"
+#= {result: 3, lints: [['unused binding', '`first`'], ['UNUSED BINDING', '`second`']]}
+def first = 1
+def second = 2
+3
+";
+    assert_eq!(report("area/good/script", source), Report::Passed);
+}
+
+#[test]
+fn a_runtime_error_script_may_declare_lints() {
+    let source = r"
+#= {raises: 'division by zero', lints: [['unused binding', '`unused`']]}
+def unused = 1 / 0
+2
+";
+    assert_eq!(report("area/runtime-error/script", source), Report::Passed);
+}
+
+#[test]
+fn an_undeclared_lint_fails_a_good_script() {
+    let source = r"
+#= {result: 2}
+def unused = 1
+2
+";
+    let reason = failure("area/good/script", source);
+    assert_mentions(&reason, "lints: expected 0, got 1");
+    assert_mentions(&reason, "`unused` is never used");
+}
+
+#[test]
+fn an_undeclared_lint_fails_a_runtime_error_script() {
+    let source = r"
+#= {raises: 'division by zero'}
+def unused = 1 / 0
+2
+";
+    let reason = failure("area/runtime-error/script", source);
+    assert_mentions(&reason, "lints: expected 0, got 1");
+}
+
+#[test]
+fn a_declared_lint_that_does_not_appear_fails() {
+    let source = r"
+#= {result: 1, lints: ['unused binding']}
+def used = 1
+used
+";
+    let reason = failure("area/good/script", source);
+    assert_mentions(&reason, "lints: expected 1, got 0");
+}
+
+#[test]
+fn lints_are_matched_in_source_order() {
+    let source = r"
+#= {result: 3, lints: [['unused binding', '`second`'], ['unused binding', '`first`']]}
+def first = 1
+def second = 2
+3
+";
+    let reason = failure("area/good/script", source);
+    assert_mentions(&reason, r#"lint 1 does not mention ["`second`"]"#);
+}
+
+#[test]
+fn a_lint_fragment_cannot_match_the_echoed_source() {
+    // The lint quotes the line binding the name, which holds the fragment.
+    let source = r"
+#= {result: 2, lints: [['unused binding', 'sentinel_text']]}
+def unused = 'sentinel_text'
+2
+";
+    let reason = failure("area/good/script", source);
+    assert_mentions(&reason, r#"lint 1 does not mention ["sentinel_text"]"#);
+}
+
+#[test]
+fn a_lint_mismatch_is_reported_beside_a_wrong_result() {
+    let source = r"
+#= {result: 3}
+def unused = 1
+2
+";
+    let reason = failure("area/good/script", source);
+    assert_mentions(&reason, "result: expected 3, got 2");
+    assert_mentions(&reason, "lints: expected 0, got 1");
+}
+
 // -- Known issues --
 
 #[test]
@@ -370,6 +463,32 @@ fn exports_and_printed_belong_only_to_a_good_script() {
         "#= {raises: 'x', printed: []}\n1\n",
     );
     assert_mentions(&reason, "only an expectation with `result`");
+}
+
+#[test]
+fn lints_do_not_belong_to_a_compile_error_script() {
+    let reason = malformation(
+        "area/compile-error/script",
+        "#= {rejects: 'x', lints: ['unused binding']}\nmissing\n",
+    );
+    assert_mentions(&reason, "only an expectation with `result` or `raises`");
+}
+
+#[test]
+fn an_empty_lints_list_is_malformed() {
+    let reason = malformation("area/good/script", "#= {result: 1, lints: []}\n1\n");
+    assert_mentions(&reason, "leave it out for none");
+}
+
+#[test]
+fn a_lint_entry_with_blank_or_empty_fragments_is_malformed() {
+    for entry in ["''", "' '", "[]", "['ok', '']"] {
+        let reason = malformation(
+            "area/good/script",
+            &format!("#= {{result: 1, lints: [{entry}]}}\n1\n"),
+        );
+        assert_mentions(&reason, "at least one fragment");
+    }
 }
 
 #[test]
