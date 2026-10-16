@@ -1,0 +1,38 @@
+==================
+escaped quotes break up a multiline String's delimiter
+==================
+
+'''
+    it\'''s
+    '\''
+    \'''
+    '''
+"""
+    say \"""hi
+    """
+
+---
+
+(source_file
+  (expression_statement
+    (or_expression
+      (and_expression
+        (equality_expression
+          (comparison_expression
+            (sum_expression
+              (product_expression
+                (unary_expression
+                  (postfix_expression
+                    (primary_expression
+                      (triple_string_single)))))))))))
+  (expression_statement
+    (or_expression
+      (and_expression
+        (equality_expression
+          (comparison_expression
+            (sum_expression
+              (product_expression
+                (unary_expression
+                  (postfix_expression
+                    (primary_expression
+                      (triple_string_double))))))))))))

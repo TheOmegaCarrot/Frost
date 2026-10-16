@@ -1,7 +1,7 @@
 # In a `'''` multiline String, `\'` escapes a quote, so `\'''` is an escaped quote
 # then two plain ones, not the closing delimiter. Subtle: a single `'` needs no
 # escape there, so breaking up a triple quote is what `\'` is for.
-#= {result: "it'''s", known_issue: 'FROST-150'}
+#= {result: "it'''s"}
 def text = '''
     it\'''s
     '''

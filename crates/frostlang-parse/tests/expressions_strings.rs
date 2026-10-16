@@ -1,6 +1,7 @@
 use crate::helpers;
 
 use frostlang_parse::ast::*;
+use frostlang_parse::parse_program;
 use helpers::*;
 
 /// The literal's text.
@@ -451,6 +452,111 @@ fn error_multiline_a_prefix_of_the_closers_indentation_is_less_indented() {
     assert_multiline_error("\nx\n\t", LESS_INDENTED);
     assert_multiline_error("\n\tx\n\t\t", LESS_INDENTED);
     assert_multiline_error("\n\t x\n\t  ", LESS_INDENTED);
+}
+
+// -- Multiline closing delimiters --
+//
+// The first delimiter not broken up by an escape closes a multiline String, and it
+// must start its line. Each case is written for `'''`; the same case for `"""` swaps
+// every `'` for `"`.
+
+/// `source` as written, with `'''`, and with every `'` swapped for `"`, for `"""`.
+fn in_both_delimiters(source: &str) -> [String; 2] {
+    [source.to_owned(), source.replace('\'', "\"")]
+}
+
+#[test]
+fn multiline_an_escaped_quote_breaks_up_the_delimiter() {
+    // Each a String's one line, and the text it reads as
+    let lines = [
+        // At a line's start, mid-line, and ending a line
+        (r"\'''", "'''"),
+        (r"it\'''s", "it'''s"),
+        (r"end\'''", "end'''"),
+        // Any one of the three quotes escaped, or all of them
+        (r"'\''", "'''"),
+        (r"''\'", "'''"),
+        (r"\'\'\'", "'''"),
+    ];
+    for (line, expected) in lines {
+        let source = format!("'''\n    {line}\n    '''");
+        let sources = in_both_delimiters(&source);
+        for (source, expected) in sources.iter().zip(in_both_delimiters(expected)) {
+            assert_eq!(str_text(&parse_expr(source)), expected, "{source:?}");
+        }
+    }
+}
+
+#[test]
+fn multiline_a_delimiter_of_the_other_kind_needs_no_escape() {
+    let source = r#"'''
+        a """ b
+        """
+        '''"#;
+    assert_eq!(str_text(&parse_expr(source)), "a \"\"\" b\n\"\"\"");
+}
+
+/// Asserts that `source` fails with a closer not on its own line, labeled at the
+/// closer starting at byte `closer` and helped toward escaping it.
+fn assert_closer_not_on_its_own_line(source: &str, closer: usize) {
+    let err = parse_program("test.frst", source).expect_err(source);
+    let delimiter = &source[closer..closer + 3];
+    assert_eq!(
+        err.message(),
+        "closing delimiter of multiline String must be on its own line",
+        "{source:?}"
+    );
+    let span = err.primary_span();
+    assert_eq!((span.start, span.end), (closer, closer + 3), "{source:?}");
+    assert_eq!(
+        err.help(),
+        Some(format!("to write `{delimiter}` as text, escape a quote: `\\{delimiter}`").as_str()),
+        "{source:?}"
+    );
+}
+
+#[test]
+fn error_multiline_a_delimiter_after_text_closes_the_string_mid_line() {
+    // Lines after the misplaced closer read as code if not rejected at the closer.
+    let cases = [
+        r"'''
+            it'''s
+            '''",
+        r"'''
+            a
+            b'''",
+        r"'''
+            x''' + 1",
+        // After an escaped backslash, the delimiter is not escaped.
+        r"'''
+            a\\'''
+            '''",
+        r"'''
+            \\'''
+            '''",
+    ];
+    for source in cases {
+        for source in in_both_delimiters(source) {
+            for source in [source.clone(), source.replace('\n', "\r\n")] {
+                let closer = 3 + source[3..].find(&source[..3]).expect("a closer");
+                assert_closer_not_on_its_own_line(&source, closer);
+            }
+        }
+    }
+}
+
+// Text on the opening line is the earlier fault, so it is the one reported.
+#[test]
+fn error_multiline_text_on_the_opening_line_outranks_a_misplaced_closer() {
+    let source = r"'''a
+        b'''";
+    for source in in_both_delimiters(source) {
+        assert_eq!(
+            parse_err_message(&source),
+            "multiline String must begin with a newline after the opening delimiter",
+            "{source:?}"
+        );
+    }
 }
 
 // -- Additional escape edge cases --

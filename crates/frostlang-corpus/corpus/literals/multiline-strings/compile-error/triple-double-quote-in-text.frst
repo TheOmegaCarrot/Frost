@@ -1,0 +1,7 @@
+# A `"""` in the middle of a line closes the String, so it is rejected as a closer
+# that is not on its own line. Writing it as text takes an escaped quote.
+#= {rejects: ['must be on its own line', 'escape a quote']}
+def text = """
+    say """hi
+    more
+    """

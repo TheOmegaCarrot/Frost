@@ -1,0 +1,15 @@
+# Escaping the second or third quote of a triple quote breaks it up as well as
+# escaping the first, mid-line or at the start of a line. Subtle: unescaped, a
+# triple quote at the start of a line closes the String.
+#= {result: ["a'''b\n'''c\n'''d", "e\"\"\"f\n\"\"\"g\n\"\"\"h"]}
+def single = '''
+    a'\''b
+    '\''c
+    ''\'d
+    '''
+def double = """
+    e"\""f
+    "\""g
+    ""\"h
+    """
+[single, double]

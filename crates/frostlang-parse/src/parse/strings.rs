@@ -318,6 +318,20 @@ fn expand_escapes(text: &str, kind: EscapingString, text_start: usize) -> ParseR
 /// whitespace it ignores.
 const BLANKS: [char; 2] = [' ', '\t'];
 
+/// The error for the closing `delimiter` of a multiline String, at `closer`, following
+/// text on its line.
+pub(crate) fn closer_not_on_its_own_line(closer: SourceSpan, delimiter: &str) -> Diagnostic {
+    let (quote, rest) = delimiter.split_at(1);
+    Diagnostic::at(
+        "closing delimiter of multiline String must be on its own line",
+        closer,
+        "this closes the String",
+    )
+    .with_help(Some(format!(
+        "to write `{delimiter}` as text, escape a quote: `\\{quote}{rest}`"
+    )))
+}
+
 /// The lines of a multiline String's `raw` text, without the indentation its closing
 /// delimiter sets or their trailing spaces and tabs, each with the index in `raw` where
 /// its text starts. A CRLF line break is a line break like LF.
@@ -337,22 +351,12 @@ fn multiline_lines(raw: &str) -> Result<Vec<(usize, &str)>, String> {
     };
     let content_start = raw.len() - content.len();
 
-    // The content must end with a newline followed by the closing delimiter's
-    // indentation (whitespace only). Split on the last newline.
-    // Special case: if the content is whitespace-only, the string is empty.
-    let Some(last_nl) = content.rfind('\n') else {
-        if content.trim_start_matches(BLANKS).is_empty() {
-            return Ok(Vec::new());
-        }
-        return Err("closing delimiter of multiline String must be on its own line".into());
+    // The lexer ends a multiline String only at a closer starting its line, so what
+    // follows the last line break is the closer's indentation. With no line break
+    // left, the closer is on the line after the opener's, and the String is empty.
+    let Some((body, indent)) = content.rsplit_once('\n') else {
+        return Ok(Vec::new());
     };
-
-    let body = &content[..last_nl];
-    let indent = &content[last_nl + 1..];
-
-    if !indent.trim_start_matches(BLANKS).is_empty() {
-        return Err("closing delimiter of multiline String must be on its own line".into());
-    }
 
     body.split('\n')
         .scan(content_start, |line_start, line| {

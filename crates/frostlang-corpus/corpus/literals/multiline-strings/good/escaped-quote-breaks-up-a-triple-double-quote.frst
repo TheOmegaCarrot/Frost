@@ -1,0 +1,7 @@
+# In a `"""` multiline String, `\"` escapes a quote, so `\"""` in the middle of a
+# line is three double quotes of text, not the closing delimiter.
+#= {result: 'say """hi'}
+def text = """
+    say \"""hi
+    """
+text

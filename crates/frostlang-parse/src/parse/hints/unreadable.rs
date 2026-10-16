@@ -9,7 +9,7 @@ use crate::parse::hints::{
     BITWISE_HELP, CONDITIONAL_HELP, FORMAT_STRING_HELP, GUARD_HELP, INEQUALITY_HELP, LAMBDA_HELP,
     LINE_CONTINUATION_HELP, POWER_HELP, float_point_help, raw_string_help,
 };
-use crate::parse::strings::ESCAPES;
+use crate::parse::strings::{ESCAPES, closer_not_on_its_own_line};
 
 const FALLBACK_HELP: &str = "for a fallback when a value is null, use `or`: `a or b`";
 
@@ -24,6 +24,9 @@ pub(crate) fn unreadable(src: &str, span: Range<usize>, base_offset: usize) -> D
         return diagnostic;
     }
     if let Some(diagnostic) = invalid_based_int(&src[span.clone()], span.start + base_offset) {
+        return diagnostic;
+    }
+    if let Some(diagnostic) = closer_after_text(&src[span.clone()], span.start + base_offset) {
         return diagnostic;
     }
 
@@ -204,6 +207,20 @@ fn invalid_bytes(literal: &str, start: usize) -> Option<Diagnostic> {
         ),
     };
     Some(Diagnostic::at(message, span, label).with_help(Some(help)))
+}
+
+/// The error for `text`, a multiline String the lexer read through its closer and
+/// rejected, which starts at `start` in the whole source: the closer follows text on
+/// its line. An unclosed multiline String is read only as far as its opener.
+fn closer_after_text(text: &str, start: usize) -> Option<Diagnostic> {
+    let delimiter = ["'''", r#"""""#]
+        .into_iter()
+        .find(|delimiter| text.starts_with(delimiter))?;
+    let closed = text.len() >= 2 * delimiter.len() && text.ends_with(delimiter);
+    closed.then(|| {
+        let end = start + text.len();
+        closer_not_on_its_own_line((end - delimiter.len()..end).into(), delimiter)
+    })
 }
 
 /// The error for `literal`, a `0b`, `0o`, or `0x` Int literal the lexer could not

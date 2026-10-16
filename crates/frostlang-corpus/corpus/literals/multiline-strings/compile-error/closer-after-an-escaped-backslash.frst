@@ -1,0 +1,8 @@
+# An escaped backslash escapes nothing after it, so in `\\'''` the triple quote is
+# unescaped and closes the String mid-line.
+# Subtle: the backslash before the quotes looks like an escape of the first one.
+#= {rejects: ['must be on its own line', 'escape a quote']}
+def text = '''
+    a\\'''b
+    more
+    '''

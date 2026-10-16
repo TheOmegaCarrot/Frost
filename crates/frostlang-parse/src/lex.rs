@@ -387,14 +387,35 @@ fn slice_str<'src>(lex: &logos::Lexer<'src, Token<'src>>) -> &'src str {
     &s[1..s.len() - 1]
 }
 
+/// The text of a multiline String up to its closing `delimiter`: the first not broken
+/// up by an escape, as `\'''` is.
+///
+/// A closer after text on a line past the opener's is an error here, not in parsing,
+/// so it is reported before anything the lexer would misread after it.
+/// Text on the opener's own line is left for parsing to reject.
 fn lex_multiline<'src>(
     lex: &mut logos::Lexer<'src, Token<'src>>,
     delimiter: &str,
 ) -> Option<&'src str> {
     let rest = lex.remainder();
-    let close = rest.find(delimiter)?;
+    let mut chars = rest.char_indices();
+    let close = loop {
+        let (at, c) = chars.next()?;
+        if c == '\\' {
+            chars.next();
+        } else if rest[at..].starts_with(delimiter) {
+            break at;
+        }
+    };
     lex.bump(close + delimiter.len());
-    Some(&rest[..close])
+    let text = &rest[..close];
+    let is_blank = |line: &str| line.trim_start_matches([' ', '\t']).is_empty();
+    let closer_follows_text = text.split_once('\n').is_some_and(|(opener_line, _)| {
+        let opener_line = opener_line.strip_suffix('\r').unwrap_or(opener_line);
+        let (_, closer_line) = text.rsplit_once('\n').unwrap_or_default();
+        is_blank(opener_line) && !is_blank(closer_line)
+    });
+    (!closer_follows_text).then_some(text)
 }
 
 fn lex_multiline_double<'src>(lex: &mut logos::Lexer<'src, Token<'src>>) -> Option<&'src str> {

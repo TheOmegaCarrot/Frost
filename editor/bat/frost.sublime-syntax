@@ -234,7 +234,7 @@ contexts:
     - match: '"""'
       scope: punctuation.definition.string.end.frost
       pop: true
-    - match: '\\[t"\\0]'
+    - match: '\\[t''"\\0]'
       scope: constant.character.escape.frost
     - match: '\\.'
       scope: invalid.illegal.escape.frost
@@ -244,7 +244,7 @@ contexts:
     - match: "'''"
       scope: punctuation.definition.string.end.frost
       pop: true
-    - match: "\\\\[t'\\\\0]"
+    - match: "\\\\[t'\"\\\\0]"
       scope: constant.character.escape.frost
     - match: '\\.'
       scope: invalid.illegal.escape.frost
