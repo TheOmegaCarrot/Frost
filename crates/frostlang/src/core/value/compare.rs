@@ -2,6 +2,18 @@ use std::sync::Arc;
 
 use crate::core::Value;
 
+/// Frost's `==`, which never fails.
+///
+/// Values of different variants are never equal, so an `Int` never equals a
+/// `Float`. Data compares by content: an `Array` or `Map` element by element. A
+/// Function, native or closure, equals only itself: each evaluation of a lambda
+/// expression makes a new Function, unequal to any other, even one with the
+/// same code and captures. An `Opaque` compares as
+/// [`FrostOpaque::equals`](crate::FrostOpaque::equals) describes.
+///
+/// Which values are the same Function or Opaque handle is decided by the
+/// source, never by compiler options: no optimization merges two into one or
+/// splits one into several.
 impl PartialEq for Value {
     fn eq(&self, other: &Self) -> bool {
         match (self, other) {

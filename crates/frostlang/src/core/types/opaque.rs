@@ -36,10 +36,14 @@ pub trait FrostOpaque: Any + Debug + Send + Sync + sealed::DynTypeName {
     /// Frost calls this only for two distinct handles to payloads of the same
     /// concrete type, so `other` always downcasts to `Self`; a handle always
     /// equals itself, and payloads of different types are never equal. It must
-    /// be an equivalence relation, as [`Eq`] requires.
+    /// be an equivalence relation, as [`Eq`] requires. In particular it must be
+    /// reflexive: Frost relies on every value equaling itself.
     ///
-    /// The default, `false`, makes `==` identity. A type that implements
-    /// [`Eq`] can defer to it:
+    /// The default, `false`, makes `==` identity: a handle equals only itself
+    /// and its clones. Which handles a script compares is decided by its source,
+    /// never by compiler options: no optimization merges two handles into one
+    /// or splits one into several. A type that implements [`Eq`] can defer to
+    /// it:
     ///
     /// ```ignore
     /// fn equals(&self, other: &dyn FrostOpaque) -> bool {

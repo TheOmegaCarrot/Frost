@@ -120,6 +120,58 @@ fn taking_an_opaque_shares_its_payload_without_copying() {
     assert_eq!(shared.try_into_inner().expect("unshared now"), Point(3, 4));
 }
 
+// `Point` keeps the default `equals`, so its `==` is handle identity, which no
+// optimization may change: a handle stays one value however it is reached, and
+// handles to equal payloads stay distinct. Each script runs under every
+// optimization permutation.
+
+#[test]
+fn an_opaque_handle_stays_one_value_however_it_is_reached() {
+    let source = r"
+        def p = point(1, 2)
+        def get = fn -> p
+        def ps = transform([1, 2], fn _ -> p)
+        def q = p
+        [p == p, get() == get(), ps[0] == ps[1], q == p, id(p) == p, [p] == [p]]
+        ";
+    assert_eq!(
+        script(source).run(),
+        script("[true, true, true, true, true, true]").run(),
+        "a handle equals itself wherever it flows"
+    );
+}
+
+#[test]
+fn opaque_handles_to_equal_payloads_are_never_merged() {
+    let source = r"
+        def make = fn -> point(1, 2)
+        def ps = transform([1, 2], fn _ -> point(1, 2))
+        [point(1, 2) == point(1, 2), make() == make(), ps[0] == ps[1]]
+        ";
+    assert_eq!(
+        script(source).run(),
+        script("[false, false, false]").run(),
+        "each call makes its own handle, never equal to another's"
+    );
+}
+
+#[test]
+fn an_opaque_with_its_own_equals_compares_by_it_under_every_optimization() {
+    // A NaN `SpecialFloat` equals another handle to one with the same bits.
+    let other_nan = SpecialFloat::new(f64::NAN).expect("NaN is special");
+    let source = r"
+        def get = fn -> other_nan
+        [special == other_nan, get() == special, [special] == [other_nan]]
+        ";
+    assert_eq!(
+        script(source)
+            .capture("other_nan", Value::opaque(other_nan))
+            .run(),
+        script("[true, true, true]").run(),
+        "two handles compare by the payloads' own `equals`"
+    );
+}
+
 #[test]
 fn an_opaque_converts_into_a_value_naming_its_payload_type() {
     let value = Value::from(Opaque::new(Point(5, 6)));

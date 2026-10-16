@@ -2414,6 +2414,118 @@ fn a_closure_equals_itself_wherever_it_is_stored() {
     )]);
 }
 
+// Function equality is decided by the source, so no optimization may split one
+// closure into several or merge several into one: in particular, propagating a
+// lambda to where it is used must not evaluate it again there.
+#[test]
+fn a_closure_stays_one_value_however_it_is_reached() {
+    assert_values(&[
+        // Read again by a lambda each time it is called
+        (
+            r"
+            def f = fn -> 1
+            def get = fn -> f
+            [get() == get(), get() == f]
+            ",
+            "[true, true]",
+        ),
+        // Read again for each element
+        (
+            r"
+            def f = fn -> 1
+            def fs = transform([1, 2, 3], fn _ -> f)
+            [fs[0] == fs[1], fs[2] == f]
+            ",
+            "[true, true]",
+        ),
+        // Bound again under another name, and called through it
+        (
+            r"
+            def f = fn x -> x + 1
+            def g = f
+            [g == f, g(1), call(g, [2]) == 3]
+            ",
+            "[true, 2, true]",
+        ),
+        // A closure capturing a value no optimization can know
+        (
+            r"
+            def make = fn n -> fn -> n
+            def f = make(len([1, 2]))
+            def get = fn -> f
+            get() == get()
+            ",
+            "true",
+        ),
+        // An abbreviated lambda
+        (
+            r"
+            def f = $($ + 1)
+            def get = fn -> f
+            get() == get()
+            ",
+            "true",
+        ),
+        // A native Function
+        (
+            r"
+            def l = len
+            def get = fn -> len
+            [l == len, get() == get(), id(len) == len]
+            ",
+            "[true, true, true]",
+        ),
+    ]);
+}
+
+// Lambda expressions alike in every way are still each their own Function, and
+// so is each evaluation of one, however much an optimization could share.
+#[test]
+fn closures_alike_are_never_merged() {
+    assert_values(&[
+        (
+            r"
+            def fs = [fn -> 1, fn -> 1]
+            fs[0] == fs[1]
+            ",
+            "false",
+        ),
+        (
+            r"
+            def pick = fn first -> if first: fn -> 1 else: fn -> 1
+            pick(true) == pick(false)
+            ",
+            "false",
+        ),
+        (
+            r"
+            def make = fn -> $(1)
+            def fs = transform([1, 2], fn _ -> make())
+            fs[0] == fs[1]
+            ",
+            "false",
+        ),
+        // Its only capture is a constant, which propagation may remove.
+        (
+            r"
+            def k = 1
+            def make = fn -> fn -> k
+            def fs = transform([1, 2], fn _ -> make())
+            [fs[0] == fs[1], fs[0]() == fs[1]()]
+            ",
+            "[false, true]",
+        ),
+        (
+            r"
+            def a = fn x -> x
+            def b = fn x -> x
+            [a == b, id == a]
+            ",
+            "[false, false]",
+        ),
+    ]);
+}
+
 // --- Runtime errors ---
 
 #[test]
