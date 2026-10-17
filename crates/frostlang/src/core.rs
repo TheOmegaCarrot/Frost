@@ -28,4 +28,5 @@ pub use types::value_map::{self, ValueMap};
 pub use util::identifier::{
     KEYWORDS, is_identifier_like, is_identifier_like_and_not_keyword, is_reserved_keyword,
 };
+pub(crate) use value::free;
 pub use value::{Value, write_escaped_string, write_quoted_string};

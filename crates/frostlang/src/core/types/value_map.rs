@@ -8,7 +8,7 @@ use std::{
     slice, vec,
 };
 
-use crate::core::{FrostFloat, MapKey, Value};
+use crate::core::{FrostFloat, MapKey, Value, free};
 
 /// Most entries a Map holds in its compact form, beyond which it switches to a
 /// form that stays fast as it grows.
@@ -269,6 +269,14 @@ impl PartialEq for ValueMap {
 }
 
 impl Eq for ValueMap {}
+
+impl Drop for ValueMap {
+    fn drop(&mut self) {
+        free::free(std::mem::take(&mut self.0), |repr| {
+            IntoValues(repr.into_entries())
+        });
+    }
+}
 
 impl fmt::Debug for ValueMap {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -654,8 +662,14 @@ impl IntoIterator for ValueMap {
     type Item = (MapKey, Value);
     type IntoIter = IntoIter;
 
-    fn into_iter(self) -> Self::IntoIter {
-        IntoIter(match self.0 {
+    fn into_iter(mut self) -> Self::IntoIter {
+        std::mem::take(&mut self.0).into_entries()
+    }
+}
+
+impl Repr {
+    fn into_entries(self) -> IntoIter {
+        IntoIter(match self {
             Repr::Compact(entries) => IntoIterRepr::Compact(entries.into_iter()),
             Repr::Tree(tree) => IntoIterRepr::Tree(tree.into_iter()),
         })

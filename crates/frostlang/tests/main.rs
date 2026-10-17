@@ -96,6 +96,7 @@ mod value_bytes;
 mod value_conversions;
 mod value_creation;
 mod value_equality;
+mod value_freeing;
 mod value_map;
 mod value_ordering;
 mod value_to_string;

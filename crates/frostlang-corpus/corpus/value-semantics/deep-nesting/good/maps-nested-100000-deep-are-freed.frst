@@ -1,0 +1,6 @@
+# A Map nested 100000 levels deep is freed without overflowing the native
+# stack.
+#= {result: false}
+defn nest(v, n) -> if n == 0: v else: nest({v}, n - 1)
+def deep = nest(null, 100000)
+is_null(deep)

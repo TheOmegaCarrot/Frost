@@ -1,0 +1,6 @@
+# Continuation-passing recursion nests each continuation in the capture of the
+# next, 100000 levels deep. Running the chain and freeing it must not recurse
+# once per level on the native stack.
+#= {result: 5000050000}
+defn sum(n, k) -> if n == 0: k(0) else: sum(n - 1, fn r -> k(r + n))
+sum(100000, fn r -> r)

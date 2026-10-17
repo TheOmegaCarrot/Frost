@@ -1,0 +1,7 @@
+# Arrays, Maps, and closures wrapping one another in turn, 100000 levels deep,
+# are freed without overflowing the native stack. Freeing must handle a chain
+# that changes kind at every level.
+#= {result: false}
+defn nest(v, n) -> if n == 0: v else: nest((if n % 3 == 0: [v] elif n % 3 == 1: {v} else: fn -> v), n - 1)
+def deep = nest(null, 100000)
+is_null(deep)

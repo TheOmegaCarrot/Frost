@@ -3,6 +3,7 @@
 
 use std::{collections::BTreeMap, sync::Arc};
 
+use crate::core::free;
 use crate::{MapKey, Value};
 
 use super::bytecode::Bytecode;
@@ -164,7 +165,13 @@ pub struct Closure {
     pub(super) function: Arc<CompiledFunction>,
 
     // Captured values, seated into slots 0..num_captures. Empty when nothing is captured.
-    pub(super) captures: Vec<Value>,
+    pub(crate) captures: Vec<Value>,
+}
+
+impl Drop for Closure {
+    fn drop(&mut self) {
+        free::free(std::mem::take(&mut self.captures), Vec::into_iter);
+    }
 }
 
 impl Closure {

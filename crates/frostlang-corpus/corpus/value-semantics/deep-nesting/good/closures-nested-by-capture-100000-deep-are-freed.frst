@@ -1,0 +1,7 @@
+# Each closure captures the one built before it, so 100000 levels of closures
+# nest through their captures. Freeing the outermost must not recurse once per
+# level on the native stack.
+#= {result: false}
+defn nest(v, n) -> if n == 0: v else: nest(fn -> v, n - 1)
+def deep = nest(null, 100000)
+is_null(deep)

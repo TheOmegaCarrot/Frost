@@ -1,5 +1,6 @@
 mod compare;
 mod convert;
+pub(crate) mod free;
 mod operators;
 mod stringify;
 mod type_checks;

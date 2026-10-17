@@ -1,12 +1,49 @@
-use std::ops::Index;
+use std::fmt;
+use std::ops::{Deref, DerefMut, Index};
 use std::sync::Arc;
 
-use crate::core::Value;
+use crate::core::{Value, free};
 
 /// Frost's array type. Immutable once created.
 #[derive(Clone, Debug)]
 pub struct FrostArray {
-    pub(crate) inner: Arc<Vec<Value>>,
+    pub(crate) inner: Arc<Elements>,
+}
+
+/// An Array's elements, freed by [`free::free`].
+#[derive(Clone)]
+pub(crate) struct Elements(Vec<Value>);
+
+impl Elements {
+    fn into_vec(mut self) -> Vec<Value> {
+        std::mem::take(&mut self.0)
+    }
+}
+
+impl Drop for Elements {
+    fn drop(&mut self) {
+        free::free(std::mem::take(&mut self.0), Vec::into_iter);
+    }
+}
+
+impl Deref for Elements {
+    type Target = Vec<Value>;
+
+    fn deref(&self) -> &Vec<Value> {
+        &self.0
+    }
+}
+
+impl DerefMut for Elements {
+    fn deref_mut(&mut self) -> &mut Vec<Value> {
+        &mut self.0
+    }
+}
+
+impl fmt::Debug for Elements {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        self.0.fmt(f)
+    }
 }
 
 impl<'a> IntoIterator for &'a FrostArray {
@@ -20,9 +57,7 @@ impl<'a> IntoIterator for &'a FrostArray {
 
 impl FromIterator<Value> for FrostArray {
     fn from_iter<T: IntoIterator<Item = Value>>(iter: T) -> Self {
-        Self {
-            inner: Arc::from(iter.into_iter().collect::<Vec<Value>>()),
-        }
+        Vec::from_iter(iter).into()
     }
 }
 
@@ -36,16 +71,14 @@ impl Index<usize> for FrostArray {
 
 impl From<&[Value]> for FrostArray {
     fn from(slice: &[Value]) -> Self {
-        Self {
-            inner: Arc::from(Vec::from(slice)),
-        }
+        Vec::from(slice).into()
     }
 }
 
 impl From<Vec<Value>> for FrostArray {
     fn from(vec: Vec<Value>) -> Self {
         Self {
-            inner: Arc::from(vec),
+            inner: Arc::new(Elements(vec)),
         }
     }
 }
@@ -67,9 +100,7 @@ impl Default for FrostArray {
 impl FrostArray {
     /// Creates an empty FrostArray.
     pub fn empty() -> Self {
-        Self {
-            inner: Arc::from(Vec::new()),
-        }
+        Vec::new().into()
     }
 
     /// Returns an iterator over references to the elements.
@@ -114,7 +145,7 @@ impl FrostArray {
     /// [`into_vec`](Self::into_vec).
     pub fn try_into_vec(self) -> Result<Vec<Value>, FrostArray> {
         match Arc::try_unwrap(self.inner) {
-            Ok(vec) => Ok(vec),
+            Ok(elements) => Ok(elements.into_vec()),
             Err(arc) => Err(FrostArray { inner: arc }),
         }
     }
@@ -122,6 +153,6 @@ impl FrostArray {
     /// Extract a Vec from a FrostArray.
     /// Zero-copy when possible, but quietly copies when not.
     pub fn into_vec(self) -> Vec<Value> {
-        Arc::unwrap_or_clone(self.inner)
+        Arc::unwrap_or_clone(self.inner).into_vec()
     }
 }
