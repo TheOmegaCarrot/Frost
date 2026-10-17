@@ -3,8 +3,12 @@
 //! Equality lives separately on `PartialEq` (see `value_equality.rs`).
 
 use std::cmp::Ordering;
+use std::sync::Arc;
 
-use frostlang::{FrostArray, Value};
+use frostlang::{Arity, FrostArray, NativeFunction, SpecialFloat, Value};
+
+use crate::deep;
+use crate::script::Script;
 
 // -- Int ordering --
 
@@ -375,4 +379,292 @@ fn null_vs_int_not_orderable() {
 fn string_vs_array_not_orderable() {
     let arr = Value::from(FrostArray::from(vec![]));
     assert!(Value::from("a").compare(&arr).is_err());
+}
+
+// -- Deeply nested Arrays --
+//
+// Each is ordered on a small stack (see [`deep`](crate::deep)). The assertions report
+// no values, since rendering one so deep is no part of what these test. Ordering a
+// value this deep finishes only if it takes time linear in the depth.
+
+/// How two values order, or the names of the types of the two elements that cannot be
+/// ordered.
+type Expected = Result<Ordering, (&'static str, &'static str)>;
+
+/// The error for values of the types `l` and `r`, which cannot be ordered.
+fn unorderable(l: &str, r: &str) -> String {
+    if l == r {
+        format!("Type {l} is not orderable")
+    } else {
+        format!("Cannot compare incompatible types: {l} and {r}")
+    }
+}
+
+/// Asserts that `l` and `r` order as `expected`, and `r` and `l` as its reverse.
+fn assert_orders(context: &str, l: &Value, r: &Value, expected: Expected) {
+    let outcome = |l: &Value, r: &Value| l.compare(r).map_err(|e| e.message().into_owned());
+    let forward = expected.map_err(|(l, r)| unorderable(l, r));
+    let reversed = expected
+        .map(Ordering::reverse)
+        .map_err(|(l, r)| unorderable(r, l));
+    assert_eq!(outcome(l, r), forward, "{context}: `l` with `r`");
+    assert_eq!(outcome(r, l), reversed, "{context}: `r` with `l`");
+}
+
+/// A level of nesting, built around the level below.
+type Wrap = fn(Value) -> Value;
+
+/// Each of the ways the deep cases nest, by name, built one way for one value and the
+/// other for the other: alone in an Array, or beside an element that orders as equal in
+/// both values, before or after it, orderable or not, equal or not.
+const SHAPES: [(&str, Wrap, Wrap); 6] = [
+    ("[below]", deep::in_an_array, deep::in_an_array),
+    (
+        "[1, below]",
+        |below| array(vec![Value::from(1i64), below]),
+        |below| array(vec![Value::from(1i64), below]),
+    ),
+    (
+        "[null, below]",
+        |below| array(vec![Value::Null, below]),
+        |below| array(vec![Value::Null, below]),
+    ),
+    (
+        "[below, true]",
+        |below| array(vec![below, Value::from(true)]),
+        |below| array(vec![below, Value::from(true)]),
+    ),
+    (
+        "[[null], below]",
+        |below| array(vec![array(vec![Value::Null]), below]),
+        |below| array(vec![array(vec![Value::Null]), below]),
+    ),
+    (
+        "[[1], below] and [[1.0], below]",
+        |below| array(vec![array(vec![Value::from(1i64)]), below]),
+        |below| array(vec![array(vec![float(1.0)]), below]),
+    ),
+];
+
+/// The depths around where ordering stops recursing and starts looping, and one far past.
+const DEPTHS: [usize; 11] = [1, 2, 31, 32, 33, 34, 63, 64, 65, 66, deep::DEPTH];
+
+fn float(f: f64) -> Value {
+    f.try_into().expect("a finite Float")
+}
+
+/// Asserts that `inner` and `other_inner`, which `what` describes, each nested `depth`
+/// levels deep in each shape, built apart, order as `expected`, either way round.
+fn assert_nested_ordering(
+    what: &str,
+    depth: usize,
+    inner: Value,
+    other_inner: Value,
+    expected: Expected,
+) {
+    deep::on_a_small_stack(|| {
+        for (shape, wrap, other_wrap) in SHAPES {
+            let l = deep::nested(depth, inner.clone(), wrap);
+            let r = deep::nested(depth, other_inner.clone(), other_wrap);
+            let context = format!("{what} in {shape} {depth} levels deep");
+            assert_orders(&context, &l, &r, expected);
+        }
+    });
+}
+
+/// Asserts each of `cases`, an innermost pair and how they order, at each of [`DEPTHS`].
+fn assert_innermost_cases(cases: &[(&str, Value, Value, Expected)]) {
+    for depth in DEPTHS {
+        for (what, inner, other_inner, expected) in cases {
+            assert_nested_ordering(what, depth, inner.clone(), other_inner.clone(), *expected);
+        }
+    }
+}
+
+#[test]
+fn deeply_nested_arrays_order_as_their_innermost_values() {
+    let int = |i: i64| Value::from(i);
+    assert_innermost_cases(&[
+        ("1 and 1", int(1), int(1), Ok(Ordering::Equal)),
+        ("1 and 2", int(1), int(2), Ok(Ordering::Less)),
+        ("1 and 1.0", int(1), float(1.0), Ok(Ordering::Equal)),
+        ("1 and 1.5", int(1), float(1.5), Ok(Ordering::Less)),
+        (
+            "'a' and 'b'",
+            Value::from("a"),
+            Value::from("b"),
+            Ok(Ordering::Less),
+        ),
+        (
+            "[1] and [1, 1]",
+            array(vec![int(1)]),
+            array(vec![int(1), int(1)]),
+            Ok(Ordering::Less),
+        ),
+        (
+            "[] and [null]",
+            array(vec![]),
+            array(vec![Value::Null]),
+            Ok(Ordering::Less),
+        ),
+    ]);
+}
+
+/// Equal innermost values order as equal even when they cannot be ordered; unequal ones
+/// that cannot be ordered raise, naming their own types, however deep.
+#[test]
+fn deeply_nested_arrays_pass_over_only_equal_unorderable_values() {
+    let map = || Value::from(frostlang::FrostMap::empty());
+    let infinity = || Value::opaque(SpecialFloat::new(f64::INFINITY).expect("special"));
+    let nan = Value::opaque(SpecialFloat::new(f64::NAN).expect("special"));
+    let native = Value::NativeFunction(a_native());
+    let int = Value::from(1i64);
+    assert_innermost_cases(&[
+        (
+            "null and null",
+            Value::Null,
+            Value::Null,
+            Ok(Ordering::Equal),
+        ),
+        ("{} and {}", map(), map(), Ok(Ordering::Equal)),
+        ("one Opaque", nan.clone(), nan.clone(), Ok(Ordering::Equal)),
+        ("equal Opaques", infinity(), infinity(), Ok(Ordering::Equal)),
+        ("one Function", native.clone(), native, Ok(Ordering::Equal)),
+        (
+            "true and false",
+            Value::from(true),
+            Value::from(false),
+            Err(("Bool", "Bool")),
+        ),
+        ("null and 1", Value::Null, int.clone(), Err(("Null", "Int"))),
+        ("{} and 1", map(), int.clone(), Err(("Map", "Int"))),
+        (
+            "[1] and 1",
+            array(vec![int.clone()]),
+            int,
+            Err(("Array", "Int")),
+        ),
+        (
+            "unequal Opaques",
+            infinity(),
+            nan,
+            Err(("Opaque", "Opaque")),
+        ),
+        (
+            "two Functions",
+            Value::NativeFunction(a_native()),
+            Value::NativeFunction(a_native()),
+            Err(("Function", "Function")),
+        ),
+    ]);
+}
+
+fn a_native() -> Arc<NativeFunction> {
+    Arc::new(NativeFunction::new(
+        "f",
+        Arity::Exact(0),
+        |_, _: &mut [Value]| Ok(Value::Null),
+    ))
+}
+
+/// Which element beside the deeper level a level of [`spine_with_siblings`] changes.
+#[derive(Clone, Copy, PartialEq)]
+enum Sibling {
+    Before,
+    After,
+}
+
+/// Arrays `depth` levels deep, each level `[before, below, after]` of Ints of its own,
+/// counting from the innermost, except where `changes` puts another value, or none.
+fn spine_with_siblings(depth: usize, changes: &[(usize, Sibling, Option<Value>)]) -> Value {
+    (0..depth).fold(Value::Null, |below, level| {
+        let sibling = |which| {
+            changes
+                .iter()
+                .find(|(at, side, _)| (*at, *side) == (level, which))
+                .map_or(Some(Value::from(level as i64)), |(_, _, value)| {
+                    value.clone()
+                })
+        };
+        let before = sibling(Sibling::Before);
+        let after = sibling(Sibling::After);
+        array(before.into_iter().chain([below]).chain(after).collect())
+    })
+}
+
+/// The first pair to differ decides, at whatever level and on whichever side of the
+/// deeper level it is: found as ordering recurses, as it loops, and where it takes up a
+/// level again once the one below orders as equal.
+#[test]
+fn deeply_nested_arrays_order_by_their_first_difference() {
+    let depth = deep::DEPTH;
+    deep::on_a_small_stack(|| {
+        let alike = spine_with_siblings(depth, &[]);
+        let also_alike = spine_with_siblings(depth, &[]);
+        assert_orders("alike", &alike, &also_alike, Ok(Ordering::Equal));
+
+        let levels = [
+            0,
+            1,
+            depth / 2,
+            depth - 33,
+            depth - 32,
+            depth - 31,
+            depth - 1,
+        ];
+        for level in levels {
+            for (side, name) in [(Sibling::Before, "before"), (Sibling::After, "after")] {
+                let context = format!("changed {name} the deeper level at {level}");
+                let lower = spine_with_siblings(depth, &[(level, side, Some(Value::from(-1i64)))]);
+                assert_orders(&context, &alike, &lower, Ok(Ordering::Greater));
+
+                let unorderable = spine_with_siblings(depth, &[(level, side, Some(Value::Null))]);
+                let context = format!("{context}, to null");
+                assert_orders(&context, &alike, &unorderable, Err(("Int", "Null")));
+            }
+
+            // The deeper levels order as equal, so the shorter Array orders first.
+            let context = format!("dropped after the deeper level at {level}");
+            let shorter = spine_with_siblings(depth, &[(level, Sibling::After, None)]);
+            assert_orders(&context, &alike, &shorter, Ok(Ordering::Greater));
+        }
+
+        // Only the first difference is ordered: one that cannot be, later, never is.
+        for level in [1, depth / 2, depth - 1] {
+            let context = format!("lower before the deeper level at {level}, null innermost");
+            let changes = [
+                (level, Sibling::Before, Some(Value::from(-1i64))),
+                (0, Sibling::Before, Some(Value::Null)),
+            ];
+            let lower = spine_with_siblings(depth, &changes);
+            assert_orders(&context, &alike, &lower, Ok(Ordering::Greater));
+        }
+    });
+}
+
+/// Each way a script orders values.
+#[test]
+fn a_script_orders_deeply_nested_arrays() {
+    let source = format!(
+        r"
+defn nest(v, n) -> if n == 0: v else: nest([v], n - 1)
+def a = nest(1, {depth})
+def b = nest(2, {depth})
+[
+    a < b,
+    a <= b,
+    b > a,
+    b >= a,
+    sorted([b, a]) == [a, b],
+    minimum([b, a]) == a,
+    maximum([a, b]) == b,
+    min_by([b, a], fn x -> x) == a,
+    max_by([a, b], fn x -> x) == b,
+    sort_by([b, a], fn x -> x) == [a, b],
+]
+",
+        depth = deep::DEPTH
+    );
+    let tail = deep::on_a_small_stack(|| Script::new(&source).run());
+    assert_eq!(tail, array(vec![Value::from(true); 10]), "{source}");
 }

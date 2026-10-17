@@ -1,4 +1,3 @@
-use std::cmp::Ordering;
 use std::sync::Arc;
 
 use crate::core::{FrostError, FrostFloat, Value};
@@ -142,53 +141,6 @@ impl Value {
             (Value::Int(l), Value::Int(r)) => Ok(Value::from(l.wrapping_rem(*r))),
 
             _ => Err(binop_type_error("modulus", "%", self, rhs)),
-        }
-    }
-
-    /// Frost ordered comparison, backing `<`, `<=`, `>`, and `>=`.
-    /// Returns the [`Ordering`] of two values, or a type error when they are not orderable.
-    ///
-    /// Arrays order lexicographically: element pairs that are equal (by `==`, or
-    /// as an `Int` and `Float` of the same value) are passed over, and the first
-    /// remaining pair decides, failing only if it cannot be ordered. With no such
-    /// pair, the shorter Array orders first. So two equal Arrays order as equal,
-    /// whatever they hold.
-    pub fn compare(&self, rhs: &Value) -> Result<Ordering, FrostError> {
-        match (self, rhs) {
-            (Value::Int(l), Value::Int(r)) => Ok(l.cmp(r)),
-            (Value::Float(l), Value::Float(r)) => Ok(l.cmp(r)),
-            (Value::Int(l), Value::Float(r)) => Ok(r.cmp_int(*l).reverse()),
-            (Value::Float(l), Value::Int(r)) => Ok(l.cmp_int(*r)),
-            (Value::String(l), Value::String(r)) => Ok(l.cmp(r)),
-            (Value::Bytes(l), Value::Bytes(r)) => Ok(l.cmp(r)),
-
-            (Value::Array(a), Value::Array(b)) => {
-                for (x, y) in a.iter().zip(b.iter()) {
-                    // An equal pair is not ordered, so it may hold unorderable values.
-                    if x == y {
-                        continue;
-                    }
-                    match x.compare(y)? {
-                        Ordering::Equal => continue,
-                        ordering => return Ok(ordering),
-                    }
-                }
-                Ok(a.len().cmp(&b.len()))
-            }
-
-            // Same-type values that have no ordering (Bool, Null, Map, Function, ...)
-            // are unorderable, not mismatched; naming the one type reads better than
-            // "X and X".
-            _ if self.type_name() == rhs.type_name() => {
-                Err(format!("Type {} is not orderable", self.type_name()).into())
-            }
-
-            _ => Err(format!(
-                "Cannot compare incompatible types: {} and {}",
-                self.type_name(),
-                rhs.type_name()
-            )
-            .into()),
         }
     }
 

@@ -2,6 +2,7 @@ mod convert;
 pub(crate) mod equality;
 pub(crate) mod free;
 mod operators;
+mod ordering;
 mod stringify;
 mod type_checks;
 
