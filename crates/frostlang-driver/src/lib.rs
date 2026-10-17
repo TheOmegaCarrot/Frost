@@ -42,13 +42,13 @@ use std::sync::{Arc, Mutex, MutexGuard, PoisonError};
 
 use clap::FromArgMatches;
 use frostlang::compile::{
-    CompilerOptions, Diagnostic, Diagnostics, OptimizationOptions, compile_in_scope,
+    CompilerOptions, Diagnostic, Diagnostics, OptimizationOptions, ParseLimits, compile_in_scope,
 };
 use frostlang::image::{self, ImageError};
 use frostlang::{
     FrostError, Importer, RunError, TrustedProgram, Value, Vm, VmRuntimeConfiguration,
 };
-use frostlang_parse::parse_program;
+use frostlang_parse::parse_program_with_limits;
 use frostlang_repl::{Frontend, LineFrontend, Repl};
 
 use cli::{Action, Cli, Color, Script};
@@ -70,6 +70,7 @@ pub struct Driver {
     importer: ImporterFor,
     configuration: VmRuntimeConfiguration,
     optimization: OptimizationOptions,
+    parse_limits: ParseLimits,
     repl: ReplSettings,
 }
 
@@ -81,8 +82,8 @@ impl Default for Driver {
 
 impl Driver {
     /// A driver named `frost`, with nothing importable, the default
-    /// [`VmRuntimeConfiguration`], every optimization on, and the default
-    /// [`ReplSettings`].
+    /// [`VmRuntimeConfiguration`], every optimization on, the default
+    /// [`ParseLimits`], and the default [`ReplSettings`].
     pub fn new() -> Self {
         Self {
             name: "frost".to_string(),
@@ -90,6 +91,7 @@ impl Driver {
             importer: ImporterFor::fixed(Arc::default()),
             configuration: VmRuntimeConfiguration::default(),
             optimization: OptimizationOptions::ALL,
+            parse_limits: ParseLimits::new(),
             repl: ReplSettings::new(),
         }
     }
@@ -143,6 +145,12 @@ impl Driver {
     /// `-O` changes them.
     pub fn with_optimization(mut self, optimization: OptimizationOptions) -> Self {
         self.optimization = optimization;
+        self
+    }
+
+    /// Set how deeply scripts may nest.
+    pub fn with_parse_limits(mut self, limits: ParseLimits) -> Self {
+        self.parse_limits = limits;
         self
     }
 
@@ -274,7 +282,9 @@ impl Driver {
                 .configuration
                 .clone()
                 .with_print_sink(Arc::new(print_sink)),
-            options: CompilerOptions::new().with_optimization(optimization),
+            options: CompilerOptions::new()
+                .with_optimization(optimization)
+                .with_parse_limits(self.parse_limits),
             no_args,
             color,
             terminals,
@@ -469,7 +479,8 @@ impl Session<'_> {
             Err(exit) => return exit,
         };
         let filename = name(script);
-        let program = match parse_program(&filename, &source) {
+        let program = match parse_program_with_limits(&filename, &source, self.options.parse_limits)
+        {
             Ok(program) => program,
             Err(error) => {
                 let diagnostic = Diagnostic::from_parse_error(&error, &filename, &source);
@@ -491,7 +502,8 @@ impl Session<'_> {
         let repl = Repl::new()
             .with_configuration(self.configuration.clone())
             .with_importer(Arc::clone(self.importer))
-            .with_optimization(self.options.optimization_options);
+            .with_optimization(self.options.optimization_options)
+            .with_parse_limits(self.options.parse_limits);
         let default_frontend = || -> Box<dyn Frontend> {
             if basic {
                 Box::new(LineFrontend::stdin())

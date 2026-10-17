@@ -1,0 +1,5 @@
+# Brackets nested 50 deep are within the default limit of any build: they
+# compile and run as shallower ones do. Parentheses build nothing, so the
+# value is the innermost one's.
+#= {result: 1}
+((((((((((((((((((((((((((((((((((((((((((((((((((1))))))))))))))))))))))))))))))))))))))))))))))))))

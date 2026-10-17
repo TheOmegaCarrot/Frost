@@ -7,7 +7,7 @@ use std::num::NonZeroU64;
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
 
-use frostlang::compile::{Optimization, OptimizationOptions};
+use frostlang::compile::{Optimization, OptimizationOptions, ParseLimits};
 use frostlang::{Extension, ImporterBuilder, Value, VmRuntimeConfiguration};
 use frostlang_driver::{Driver, Exit, ReplSettings};
 use frostlang_repl::{
@@ -1208,6 +1208,32 @@ fn the_drivers_default_optimizations_apply_without_a_preset() {
         &["-e", FOLDABLE],
     );
     assert_eq!(ran.exit, Exit::ScriptFailed, "{ran:?}");
+}
+
+#[test]
+fn the_drivers_parse_limits_apply_to_scripts_trees_and_sessions() {
+    let three_levels = ParseLimits::UNLIMITED.with_max_recursion_depth(NonZeroU64::new(3));
+    let driver = || Driver::new().with_parse_limits(three_levels);
+    let (within, past) = ("[[1]]", "[[[1]]]");
+    const MESSAGE: &str = "nested too deeply: the limit is 3 levels";
+
+    // Running, checking, and showing the tree each read the script from standard input.
+    for args in [vec!["-"], vec!["check", "-"], vec!["ast", "-"]] {
+        let ran = run_fed(driver(), |_| {}, within, &args);
+        assert_eq!(ran.exit, Exit::Success, "{args:?}: {ran:?}");
+        let ran = run_fed(driver(), |_| {}, past, &args);
+        assert_eq!(ran.exit, Exit::ScriptFailed, "{args:?}: {ran:?}");
+        assert!(ran.stderr.contains(MESSAGE), "{args:?}: {}", ran.stderr);
+    }
+
+    let session = run_session_configured(driver(), settings(), &[within, past], |_| {}, &["repl"]);
+    match session.outcomes.as_slice() {
+        [Ok(_), Err(ReplError::Compile(diagnostics))] => {
+            let rendered = diagnostics.render_narrated();
+            assert!(rendered.contains(MESSAGE), "{rendered}");
+        }
+        other => panic!("the second input should be past the limit, but gave {other:?}"),
+    }
 }
 
 #[test]

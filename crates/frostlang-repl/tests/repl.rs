@@ -6,7 +6,7 @@ use std::io;
 use std::num::NonZeroU64;
 use std::sync::{Arc, Mutex};
 
-use frostlang::compile::{Diagnostics, OptimizationOptions};
+use frostlang::compile::{Diagnostics, OptimizationOptions, ParseLimits};
 use frostlang::{Extension, FrostError, ImporterBuilder, Value, VmRuntimeConfiguration};
 use frostlang_repl::{
     DEFAULT_MAX_CALL_DEPTH, Frontend, InvalidName, Repl, ReplError, ScriptedFrontend, SessionError,
@@ -499,6 +499,23 @@ fn inputs_compile_with_the_optimizations_chosen() {
         .with_configuration(config())
         .with_optimization(OptimizationOptions::NONE);
     assert!(matches!(plain.evaluate(foldable), Err(ReplError::Run(_))));
+}
+
+#[test]
+fn inputs_compile_with_the_parse_limits_chosen() {
+    let three_levels = ParseLimits::UNLIMITED.with_max_recursion_depth(NonZeroU64::new(3));
+    let mut repl = Repl::new().with_parse_limits(three_levels);
+    assert!(repl.evaluate("[[1]]").is_ok());
+    match repl.evaluate("[[[1]]]") {
+        Err(ReplError::Compile(diagnostics)) => {
+            let rendered = diagnostics.render_narrated();
+            assert!(
+                rendered.contains("nested too deeply: the limit is 3 levels"),
+                "{rendered}"
+            );
+        }
+        other => panic!("should be past the limit, but gave {other:?}"),
+    }
 }
 
 // --- A whole session ---

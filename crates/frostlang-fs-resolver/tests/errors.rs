@@ -4,9 +4,11 @@
 
 use crate::common;
 
+use std::num::NonZeroU64;
 use std::sync::Arc;
 
 use common::{Tree, importer, run};
+use frostlang::compile::ParseLimits;
 use frostlang::{FrostError, ImportCtx, ImportResolver, ImporterBuilder, ModuleId, Value};
 use frostlang_fs_resolver::DiagnosticStyle;
 
@@ -63,6 +65,23 @@ fn a_parse_error_is_a_compile_error() {
     let importer = importer(tree.resolver(&["."]));
     let message = run("import('bad')", &importer).message();
     assert!(message.contains("does not compile"), "{message}");
+}
+
+#[test]
+fn a_module_compiles_under_the_resolvers_parse_limits() {
+    let tree = Tree::new("errors/parse_limits");
+    tree.file("within.frst", "export def x = [[1]]");
+    tree.file("past.frst", "export def x = [[[1]]]");
+    let three_levels = ParseLimits::UNLIMITED.with_max_recursion_depth(NonZeroU64::new(3));
+    let importer = importer(tree.resolver(&["."]).with_parse_limits(three_levels));
+    let within = run("import('within').x", &importer).value();
+    assert_eq!(within, Value::from(vec![Value::from(vec![Value::Int(1)])]));
+    let message = run("import('past')", &importer).message();
+    assert!(message.contains("does not compile"), "{message}");
+    assert!(
+        message.contains("nested too deeply: the limit is 3 levels"),
+        "{message}"
+    );
 }
 
 #[test]

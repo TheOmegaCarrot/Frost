@@ -57,7 +57,9 @@ use std::num::NonZeroU64;
 use std::path::PathBuf;
 use std::sync::Arc;
 
-use frostlang::compile::{CompilerOptions, Diagnostics, OptimizationOptions, compile_in_scope};
+use frostlang::compile::{
+    CompilerOptions, Diagnostics, OptimizationOptions, ParseLimits, compile_in_scope,
+};
 use frostlang::{
     AbortReason, CancelToken, Closure, FrostError, IdleVm, Importer, ProgramParts, RunErrorKind,
     Value, Vm, VmRuntimeConfiguration,
@@ -164,6 +166,7 @@ pub struct Repl {
     configuration: VmRuntimeConfiguration,
     importer: Arc<Importer>,
     optimization: OptimizationOptions,
+    parse_limits: ParseLimits,
     bindings: BTreeMap<String, Value>,
     // `None` for no config file.
     config_file: Option<PathBuf>,
@@ -192,14 +195,15 @@ pub const DEFAULT_MAX_CALL_DEPTH: NonZeroU64 = NonZeroU64::new(1_000_000).unwrap
 impl Repl {
     /// A REPL with nothing bound, nothing importable, the default
     /// [`VmRuntimeConfiguration`] but with a call depth of
-    /// [`DEFAULT_MAX_CALL_DEPTH`], every optimization on, five recent results
-    /// kept, and no [config file](Self#config-file).
+    /// [`DEFAULT_MAX_CALL_DEPTH`], every optimization on, the default
+    /// [`ParseLimits`], five recent results kept, and no [config file](Self#config-file).
     pub fn new() -> Self {
         Self {
             configuration: VmRuntimeConfiguration::default()
                 .with_max_call_depth(Some(DEFAULT_MAX_CALL_DEPTH)),
             importer: Arc::default(),
             optimization: OptimizationOptions::ALL,
+            parse_limits: ParseLimits::new(),
             bindings: BTreeMap::new(),
             config_file: None,
             results_kept: 5,
@@ -249,6 +253,12 @@ impl Repl {
     /// Set the optimizations inputs compile with.
     pub fn with_optimization(mut self, optimization: OptimizationOptions) -> Self {
         self.optimization = optimization;
+        self
+    }
+
+    /// Set how deeply inputs may nest.
+    pub fn with_parse_limits(mut self, limits: ParseLimits) -> Self {
+        self.parse_limits = limits;
         self
     }
 
@@ -443,6 +453,7 @@ impl Repl {
         let scope: Vec<&str> = bindings.keys().map(String::as_str).collect();
         let options = CompilerOptions::new()
             .with_optimization(self.optimization)
+            .with_parse_limits(self.parse_limits)
             // Each top-level binding is exported, to be kept for later inputs.
             .with_implicit_export(true)
             // A session shows no lints, so finds none.

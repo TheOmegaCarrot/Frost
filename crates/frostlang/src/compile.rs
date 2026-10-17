@@ -14,13 +14,14 @@ mod optimization;
 
 use crate::TrustedProgram;
 pub use error::{Diagnostic, Diagnostics};
+pub use frostlang_parse::ParseLimits;
 pub use lower::{compile_in_scope, compile_program};
 pub use optimization::{InvalidOptimizationSetting, Optimization, OptimizationOptions};
 
 /// Options for [`compile_program`] and [`compile_in_scope`].
 ///
 /// The default, [`new`](Self::new), is right for most uses: it compiles a
-/// script as written, with every optimization on.
+/// script as written, with every optimization on, under the default [`ParseLimits`].
 ///
 /// ```
 /// use frostlang::compile::{CompilerOptions, OptimizationOptions};
@@ -40,15 +41,18 @@ pub struct CompilerOptions {
     /// Look for [lints](CompilerOutput::lints). Off, the compiler spends no
     /// time looking.
     pub lints: bool,
+    /// How deeply a script may nest. One nested past them is a compile error.
+    pub parse_limits: ParseLimits,
 }
 
 impl CompilerOptions {
-    /// Every optimization on, no implicit export, and lints on.
+    /// Every optimization on, no implicit export, lints on, and the default [`ParseLimits`].
     pub const fn new() -> Self {
         Self {
             optimization_options: OptimizationOptions::ALL,
             implicit_export: false,
             lints: true,
+            parse_limits: ParseLimits::new(),
         }
     }
 
@@ -71,6 +75,13 @@ impl CompilerOptions {
     #[must_use]
     pub const fn with_lints(mut self, on: bool) -> Self {
         self.lints = on;
+        self
+    }
+
+    /// These options with [`parse_limits`](Self::parse_limits) set to `limits`.
+    #[must_use]
+    pub const fn with_parse_limits(mut self, limits: ParseLimits) -> Self {
+        self.parse_limits = limits;
         self
     }
 }

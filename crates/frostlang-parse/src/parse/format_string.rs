@@ -100,7 +100,7 @@ fn parse_interpolation(
     // reliably.
     let context = |d: Diagnostic| d.in_interpolation(open);
 
-    let mut sub_ctx = ParseCtx::new_interpolation(src, open.end).map_err(context)?;
+    let mut sub_ctx = ParseCtx::new_interpolation(src, open.end, ctx).map_err(context)?;
 
     // An interpolation is lexed separately but sits lexically inside any enclosing
     // abbreviated lambda, so the sub-context parses with its frame in hand: `$n` is
@@ -115,6 +115,7 @@ fn parse_interpolation(
             None => Ok(expr),
         });
     ctx.restore_abbrev_frame(sub_ctx.take_abbrev_frame());
+    ctx.absorb_nesting(&sub_ctx);
 
     parsed.map_err(context)
 }

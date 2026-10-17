@@ -42,7 +42,9 @@ impl<'src> ParseCtx<'src> {
         };
 
         match peek.token {
-            Token::KwElif => Ok(Some(self.parse_if_or_elif(Token::KwElif)?)),
+            Token::KwElif => Ok(Some(
+                self.nested(|ctx| ctx.parse_if_or_elif(Token::KwElif))?,
+            )),
             Token::KwElse => {
                 self.expect(Token::KwElse)?;
                 self.expect_colon_on_the_line()?;

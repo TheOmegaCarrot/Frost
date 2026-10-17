@@ -3,7 +3,7 @@
 use std::path::PathBuf;
 
 use frostlang::compile::{Diagnostic, Diagnostics, Optimization};
-use frostlang_parse::parse_program;
+use frostlang_parse::parse_program_with_limits;
 
 use crate::metacommand::{Builtin, Registry};
 use crate::{INPUT_NAME, Invocation, MetacommandError, RESULTS, Repl, ReplError};
@@ -65,10 +65,11 @@ impl Repl {
             }
             Builtin::Ast => {
                 let source = needs_argument(builtin, argument, "source to parse")?;
-                let program = parse_program(INPUT_NAME, source).map_err(|error| {
-                    let diagnostic = Diagnostic::from_parse_error(&error, INPUT_NAME, source);
-                    ReplError::Compile(Diagnostics::from(diagnostic))
-                })?;
+                let program = parse_program_with_limits(INPUT_NAME, source, self.parse_limits)
+                    .map_err(|error| {
+                        let diagnostic = Diagnostic::from_parse_error(&error, INPUT_NAME, source);
+                        ReplError::Compile(Diagnostics::from(diagnostic))
+                    })?;
                 Ok(Reply::Text(program.dump()))
             }
             Builtin::Optimize if argument.is_empty() => Ok(Reply::Text(self.list_optimizations())),

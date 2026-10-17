@@ -131,6 +131,7 @@ impl<'src> ParseCtx<'src> {
                         let end = expr.span.end;
                         Ok((Vec::new(), expr, end))
                     }
+                    Err(error) if error.past_a_limit() => Err(error),
                     Err(_) => {
                         self.restore(checkpoint);
                         self.parse_block_body()

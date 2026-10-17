@@ -1,5 +1,6 @@
 use std::ops::Range;
 
+use crate::ParseLimits;
 use crate::ast::SourceSpan;
 use crate::lex::Token;
 use crate::parse::{Diagnostic, ParseResult, hints};
@@ -26,6 +27,8 @@ pub(crate) struct ParseCtx<'src> {
 
     /// The full lexer result.
     input: Vec<SrcToken<'src>>,
+
+    limits: ParseLimits,
 
     state: ParseState,
 }
@@ -55,6 +58,29 @@ pub(crate) struct ParseState {
     /// Diagnostics read it to say where an error sits.
     /// Lives in the checkpointed state so backtracking discards speculative brackets.
     pub brackets: Vec<OpenBracket>,
+
+    /// Lives in the checkpointed state so backtracking unwinds it.
+    nesting: Nesting,
+}
+
+/// How deeply the parse is nested where it is, as [`ParseLimits`] measures it.
+#[derive(Clone, Copy, Debug, Default)]
+struct Nesting {
+    /// Levels of recursion the parse is in.
+    recursion: u64,
+    /// The tree depth of the node being built: how many nodes enclose it.
+    depth: u64,
+    /// The greatest tree depth of any node built within the node being built so far.
+    /// A chain such as `a + b + c` moves what it has built one level deeper with each link,
+    /// so it is measured after the fact, unlike `depth`.
+    deepest: u64,
+}
+
+/// Which of the [`ParseLimits`] a parse went past.
+#[derive(Clone, Copy, Debug)]
+enum Limit {
+    Recursion,
+    AstDepth,
 }
 
 /// A bracket the parser has opened and not yet closed.
@@ -168,21 +194,42 @@ impl<'src> ParseCtx<'src> {
         self.state = state;
     }
 
-    pub(crate) fn new(src: &'src str) -> ParseResult<Self> {
-        Self::lex(src, 0, None)
+    pub(crate) fn new(src: &'src str, limits: ParseLimits) -> ParseResult<Self> {
+        Self::lex(src, 0, None, limits)
     }
 
     /// A sub-context for a format-string interpolation: `src` is its text, which
     /// starts at `base_offset` in the whole source and is closed by the `}` right after it.
-    pub(crate) fn new_interpolation(src: &'src str, base_offset: usize) -> ParseResult<Self> {
+    /// It parses as nested as `parent` is where the interpolation sits;
+    /// [`absorb_nesting`](Self::absorb_nesting) brings what it builds back into `parent`'s measure.
+    pub(crate) fn new_interpolation<'parent>(
+        src: &'parent str,
+        base_offset: usize,
+        parent: &ParseCtx,
+    ) -> ParseResult<ParseCtx<'parent>> {
         let brace = base_offset + src.len();
-        Self::lex(src, base_offset, Some((brace..brace + 1).into()))
+        let mut sub_ctx = ParseCtx::lex(
+            src,
+            base_offset,
+            Some((brace..brace + 1).into()),
+            parent.limits,
+        )?;
+        sub_ctx.state.nesting = parent.state.nesting;
+        Ok(sub_ctx)
+    }
+
+    /// Account for what `sub_ctx`, made by [`new_interpolation`](Self::new_interpolation)
+    /// from this context, has built.
+    pub(crate) fn absorb_nesting(&mut self, sub_ctx: &ParseCtx) {
+        let deepest = &mut self.state.nesting.deepest;
+        *deepest = (*deepest).max(sub_ctx.state.nesting.deepest);
     }
 
     fn lex(
         src: &'src str,
         base_offset: usize,
         closing_brace: Option<SourceSpan>,
+        limits: ParseLimits,
     ) -> ParseResult<Self> {
         let mut lexer = Token::lexer(src);
         let mut input = Vec::new();
@@ -206,8 +253,95 @@ impl<'src> ParseCtx<'src> {
             base_offset,
             closing_brace,
             input,
+            limits,
             state: ParseState::default(),
         })
+    }
+
+    /// Parse `parse` one level of recursion deeper.
+    pub(crate) fn recursing<T>(
+        &mut self,
+        parse: impl FnOnce(&mut Self) -> ParseResult<T>,
+    ) -> ParseResult<T> {
+        self.enter_recursion()?;
+        let result = parse(self);
+        self.state.nesting.recursion -= 1;
+        result
+    }
+
+    /// Parse `parse`, a child of the node being built: one level of recursion and one level
+    /// of tree depth deeper.
+    pub(crate) fn nested<T>(
+        &mut self,
+        parse: impl FnOnce(&mut Self) -> ParseResult<T>,
+    ) -> ParseResult<T> {
+        self.enter_recursion()?;
+        let outer = self.state.nesting;
+        let depth = outer.depth + 1;
+        if let Some(max) = self.passes(Limit::AstDepth, depth) {
+            self.state.nesting.recursion -= 1;
+            return Err(too_deep(Limit::AstDepth, max, self.here_span()));
+        }
+        self.state.nesting.depth = depth;
+        self.state.nesting.deepest = depth;
+
+        let result = parse(self);
+
+        let nesting = &mut self.state.nesting;
+        nesting.recursion -= 1;
+        nesting.depth = outer.depth;
+        nesting.deepest = nesting.deepest.max(outer.deepest);
+        result
+    }
+
+    fn enter_recursion(&mut self) -> ParseResult<()> {
+        let recursion = self.state.nesting.recursion + 1;
+        if let Some(max) = self.passes(Limit::Recursion, recursion) {
+            return Err(too_deep(Limit::Recursion, max, self.here_span()));
+        }
+        self.state.nesting.recursion = recursion;
+        Ok(())
+    }
+
+    /// The greatest tree depth reached so far within the node being built,
+    /// for [`push_down`](Self::push_down).
+    pub(crate) fn deepest(&self) -> u64 {
+        self.state.nesting.deepest
+    }
+
+    /// Account for a node just built around what was built before it, whose deepest node
+    /// was at `below` (from [`deepest`](Self::deepest)): the new node takes its place, so it
+    /// all moves one level deeper. `at` is what an error labels: what added the node.
+    pub(crate) fn push_down(&mut self, below: u64, at: SourceSpan) -> ParseResult<()> {
+        let deepest = self.state.nesting.deepest.max(below + 1);
+        if let Some(max) = self.passes(Limit::AstDepth, deepest) {
+            return Err(too_deep(Limit::AstDepth, max, at));
+        }
+        self.state.nesting.deepest = deepest;
+        Ok(())
+    }
+
+    /// The maximum `limit` sets, if `level` is past it.
+    fn passes(&self, limit: Limit, level: u64) -> Option<u64> {
+        let max = match limit {
+            Limit::Recursion => self.limits.max_recursion_depth,
+            Limit::AstDepth => self.limits.max_ast_depth,
+        }?;
+        (level > max.get()).then_some(max.get())
+    }
+
+    /// Where the parse is, for a label: the next token, or past the last token,
+    /// an interpolation's closing `}` or the end of input.
+    fn here_span(&self) -> SourceSpan {
+        match self.peek() {
+            Some(token) => token.span.clone().into(),
+            None => {
+                let at = self
+                    .next_start()
+                    .unwrap_or(self.base_offset + self.full_source.len());
+                (at..at).into()
+            }
+        }
     }
 
     /// Peek the next token, if in-bounds, without advancing state.
@@ -615,6 +749,24 @@ impl<'src> ParseCtx<'src> {
             None => format!("`{text}`"),
         }
     }
+}
+
+/// The error for nesting past `limit`, whose maximum is `max`, at `at`.
+fn too_deep(limit: Limit, max: u64, at: SourceSpan) -> Diagnostic {
+    let levels = if max == 1 { "level" } else { "levels" };
+    let (message, help) = match limit {
+        Limit::Recursion => (
+            format!("nested too deeply: the limit is {max} {levels}"),
+            "split it up with `def`",
+        ),
+        Limit::AstDepth => (
+            format!("expression too deep: the limit is {max} {levels}"),
+            "split it up with `def`; each link of a chain such as `a + b + c` or `a.b.c` is one level deeper",
+        ),
+    };
+    Diagnostic::at(message, at, "past the limit here")
+        .with_help(Some(help.to_owned()))
+        .for_a_limit()
 }
 
 /// The Int an Int literal of `magnitude` denotes, negated if `negative`, or an

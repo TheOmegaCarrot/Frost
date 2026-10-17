@@ -3,7 +3,7 @@
 use std::num::NonZeroU64;
 use std::sync::{Arc, Mutex};
 
-use frostlang::compile::{Optimization, OptimizationOptions};
+use frostlang::compile::{Optimization, OptimizationOptions, ParseLimits};
 use frostlang::{Value, VmRuntimeConfiguration};
 use frostlang_repl::{Frontend, MetacommandError, Repl, ReplError, ScriptedFrontend, Transcript};
 
@@ -404,6 +404,26 @@ fn ast_of_source_that_does_not_parse_shows_its_diagnostic() {
         panic!("should not parse, but gave {outcomes:?}");
     };
     assert!(!errors.render_plain().is_empty());
+}
+
+#[test]
+fn ast_applies_the_parse_limits() {
+    let three_levels = ParseLimits::UNLIMITED.with_max_recursion_depth(NonZeroU64::new(3));
+    let repl = Repl::new().with_parse_limits(three_levels);
+    let transcript = session_on(repl, &[":ast [[1]]", ":ast [[[1]]]"]);
+    assert!(
+        only_text(&transcript).contains("Array"),
+        "the first shows its tree"
+    );
+    let outcomes = transcript.outcomes();
+    let [Err(ReplError::Compile(errors))] = outcomes.as_slice() else {
+        panic!("the second should be past the limit, but gave {outcomes:?}");
+    };
+    let rendered = errors.render_narrated();
+    assert!(
+        rendered.contains("nested too deeply: the limit is 3 levels"),
+        "{rendered}"
+    );
 }
 
 #[test]

@@ -1,6 +1,10 @@
 //! Building `CompilerOptions`: the starting point and each `with_*` method.
 
-use frostlang::compile::{CompilerOptions, Optimization, OptimizationOptions};
+use std::num::NonZeroU64;
+
+use frostlang::compile::{
+    CompilerOptions, Optimization, OptimizationOptions, ParseLimits, compile_program,
+};
 
 #[test]
 fn new_turns_every_optimization_on_and_exports_nothing_implicitly() {
@@ -82,6 +86,58 @@ fn lints_can_be_set_in_a_constant() {
         OPTIONS,
         CompilerOptions::new(),
         "lints take part in equality"
+    );
+}
+
+#[test]
+fn new_has_the_default_parse_limits() {
+    assert_eq!(CompilerOptions::new().parse_limits, ParseLimits::new());
+    assert_eq!(CompilerOptions::default().parse_limits, ParseLimits::new());
+}
+
+#[test]
+fn with_parse_limits_sets_only_the_parse_limits() {
+    let options = CompilerOptions::new()
+        .with_optimization(OptimizationOptions::NONE)
+        .with_implicit_export(true)
+        .with_lints(false)
+        .with_parse_limits(ParseLimits::UNLIMITED);
+    assert_eq!(options.parse_limits, ParseLimits::UNLIMITED);
+    assert_eq!(
+        options.optimization_options,
+        OptimizationOptions::NONE,
+        "the optimizations are left as they were"
+    );
+    assert!(options.implicit_export, "implicit export is left as it was");
+    assert!(!options.lints, "lints are left as they were");
+    assert_ne!(
+        options,
+        options.with_parse_limits(ParseLimits::new()),
+        "parse limits take part in equality"
+    );
+}
+
+#[test]
+fn compiling_applies_the_parse_limits() {
+    let three_levels = ParseLimits::UNLIMITED.with_max_recursion_depth(NonZeroU64::new(3));
+    let options = CompilerOptions::new().with_parse_limits(three_levels);
+    assert!(compile_program("test.frst", "[[1]]", options).is_ok());
+    let errors = compile_program("test.frst", "[[[1]]]", options).expect_err("past the limit");
+    let rendered = errors.render_narrated();
+    assert!(
+        rendered.contains("nested too deeply: the limit is 3 levels"),
+        "{rendered}"
+    );
+
+    let three_deep = ParseLimits::UNLIMITED.with_max_ast_depth(NonZeroU64::new(3));
+    let options = CompilerOptions::new().with_parse_limits(three_deep);
+    assert!(compile_program("test.frst", "1 + 1 + 1", options).is_ok());
+    let errors =
+        compile_program("test.frst", "1 + 1 + 1 + 1", options).expect_err("past the limit");
+    let rendered = errors.render_narrated();
+    assert!(
+        rendered.contains("expression too deep: the limit is 3 levels"),
+        "{rendered}"
     );
 }
 

@@ -31,6 +31,7 @@ fn options(constant_fold: bool) -> CompilerOptions {
         },
         implicit_export: false,
         lints: false,
+        ..CompilerOptions::new()
     }
 }
 

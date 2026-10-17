@@ -90,7 +90,9 @@ use std::path::{Path, PathBuf};
 use std::sync::{Mutex, MutexGuard, PoisonError};
 use std::{fs, io};
 
-use frostlang::compile::{CompilerOptions, Diagnostics, OptimizationOptions, compile_program};
+use frostlang::compile::{
+    CompilerOptions, Diagnostics, OptimizationOptions, ParseLimits, compile_program,
+};
 use frostlang::{
     FrostError, ImportCtx, ImportResolver, MapKey, ModuleId, RunError, Value, ValueMap,
 };
@@ -111,6 +113,7 @@ pub struct FsResolver {
     caching: bool,
     diagnostics: DiagnosticStyle,
     optimization: OptimizationOptions,
+    parse_limits: ParseLimits,
     // Each module's exports, by canonical path. Locked only to read or insert,
     // never while a module runs, so no import waits on another.
     cache: Mutex<HashMap<PathBuf, Value>>,
@@ -154,7 +157,7 @@ impl RootError {
 
 impl FsResolver {
     /// A resolver searching `roots`, in order, with caching on, symbolic links
-    /// not followed, and every optimization.
+    /// not followed, every optimization, and the default [`ParseLimits`].
     ///
     /// Each root is resolved to its canonical path now, so a relative root is
     /// relative to the current working directory at this call.
@@ -169,6 +172,7 @@ impl FsResolver {
             caching: true,
             diagnostics: DiagnosticStyle::default(),
             optimization: OptimizationOptions::ALL,
+            parse_limits: ParseLimits::new(),
             cache: Mutex::default(),
             id: ResolverId::unique(),
         })
@@ -199,6 +203,12 @@ impl FsResolver {
         self
     }
 
+    /// How deeply modules may nest.
+    pub fn with_parse_limits(mut self, limits: ParseLimits) -> Self {
+        self.parse_limits = limits;
+        self
+    }
+
     /// The roots, canonical, in search order.
     pub fn roots(&self) -> &[PathBuf] {
         &self.roots
@@ -217,6 +227,7 @@ impl FsResolver {
         // looked for.
         let options = CompilerOptions::new()
             .with_optimization(self.optimization)
+            .with_parse_limits(self.parse_limits)
             .with_lints(false);
         let program = compile_program(&filename, &source, options).map_err(|errors| {
             cannot_import(

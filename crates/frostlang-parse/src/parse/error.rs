@@ -38,6 +38,9 @@ struct DiagnosticData {
     /// Whether the interpolation holding the error has its label yet;
     /// see [`Diagnostic::in_interpolation`].
     interpolation_labeled: bool,
+    /// Whether the source nests past one of the [`ParseLimits`](crate::ParseLimits);
+    /// see [`Diagnostic::past_a_limit`].
+    past_a_limit: bool,
 }
 
 impl Diagnostic {
@@ -50,7 +53,21 @@ impl Diagnostic {
             labels: Vec::new(),
             help: None,
             interpolation_labeled: false,
+            past_a_limit: false,
         }))
+    }
+
+    /// Mark this as the error for nesting past one of the [`ParseLimits`](crate::ParseLimits).
+    pub(crate) fn for_a_limit(mut self) -> Self {
+        self.0.past_a_limit = true;
+        self
+    }
+
+    /// Whether this is the error for nesting past one of the
+    /// [`ParseLimits`](crate::ParseLimits). Such an error is not a reason to read the
+    /// source another way: the other reading may fail for a reason that hides it.
+    pub(crate) fn past_a_limit(&self) -> bool {
+        self.0.past_a_limit
     }
 
     /// Label `open`, the `${` of a format String interpolation the error is in,

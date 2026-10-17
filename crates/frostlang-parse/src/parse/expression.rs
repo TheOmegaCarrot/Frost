@@ -12,9 +12,17 @@ impl<'src> ParseCtx<'src> {
 
     // bp is short for "binding power"
 
+    /// An expression as a child of the node being built.
     fn parse_expr_bp(&mut self, min_bp: u8) -> ParseResult<Spanned<Expr>> {
+        self.nested(|ctx| ctx.parse_operations(min_bp))
+    }
+
+    /// An expression in the place of the node being built.
+    fn parse_operations(&mut self, min_bp: u8) -> ParseResult<Spanned<Expr>> {
         let mut lhs = self.parse_prefix()?;
 
+        // Each operator applied in this loop builds a node holding `lhs`,
+        // which moves everything in `lhs` one level deeper.
         loop {
             // `.` and `@` may continue an expression across line breaks:
             // neither can begin a statement, so a following one is unambiguously a continuation.
@@ -31,25 +39,22 @@ impl<'src> ParseCtx<'src> {
 
             // Postfix operators bind tightest and sit on the same line as their
             // operand (after any continuation absorbed above).
-            if let Some(peek) = self.peek() {
-                match peek.token {
-                    Token::OpenParen if POSTFIX_BP >= min_bp => {
-                        lhs = self.parse_call(lhs)?;
-                        continue;
-                    }
-                    Token::OpenBracket if POSTFIX_BP >= min_bp => {
-                        lhs = self.parse_index(lhs)?;
-                        continue;
-                    }
-                    Token::OpDot if POSTFIX_BP >= min_bp => {
-                        lhs = self.parse_dot_access(lhs)?;
-                        continue;
-                    }
-                    Token::OpThread if POSTFIX_BP >= min_bp => {
-                        lhs = self.parse_thread(lhs)?;
-                        continue;
-                    }
-                    _ => {}
+            if POSTFIX_BP >= min_bp
+                && let Some(peek) = self.peek()
+            {
+                let parse_postfix: Option<PostfixParser<'src>> = match peek.token {
+                    Token::OpenParen => Some(Self::parse_call),
+                    Token::OpenBracket => Some(Self::parse_index),
+                    Token::OpDot => Some(Self::parse_dot_access),
+                    Token::OpThread => Some(Self::parse_thread),
+                    _ => None,
+                };
+                if let Some(parse_postfix) = parse_postfix {
+                    let operator = peek.span.clone().into();
+                    let below = self.deepest();
+                    lhs = parse_postfix(self, lhs)?;
+                    self.push_down(below, operator)?;
+                    continue;
                 }
             }
 
@@ -70,6 +75,7 @@ impl<'src> ParseCtx<'src> {
             self.advance(1);
             self.maybe_skip_nl();
 
+            let below = self.deepest();
             let rhs = self.parse_expr_bp(bp + 1)?;
             let span = (lhs.span.start..rhs.span.end).into();
             lhs = Spanned::new(
@@ -87,6 +93,7 @@ impl<'src> ParseCtx<'src> {
                 },
                 span,
             );
+            self.push_down(below, op_span)?;
 
             if non_chainable
                 && let Some(next) = self.peek()
@@ -155,20 +162,28 @@ impl<'src> ParseCtx<'src> {
         self.expect(Token::OpThread)?;
         self.maybe_skip_nl();
 
-        let mut callee = self.parse_atom()?;
+        let callee = self.nested(|ctx| {
+            let mut callee = ctx.parse_atom()?;
 
-        loop {
-            // A `.` continues the callee path across line breaks, as it continues
-            // any expression in `parse_expr_bp`.
-            if matches!(self.peek_past_nl().map(|t| &t.token), Some(Token::OpDot)) {
-                self.skip_nl();
+            loop {
+                // A `.` continues the callee path across line breaks, as it continues
+                // any expression in `parse_operations`.
+                if matches!(ctx.peek_past_nl().map(|t| &t.token), Some(Token::OpDot)) {
+                    ctx.skip_nl();
+                }
+                let Some(peek) = ctx.peek() else { break };
+                let parse_postfix: PostfixParser<'src> = match peek.token {
+                    Token::OpDot => Self::parse_dot_access,
+                    Token::OpenBracket => Self::parse_index,
+                    _ => break,
+                };
+                let operator = peek.span.clone().into();
+                let below = ctx.deepest();
+                callee = parse_postfix(ctx, callee)?;
+                ctx.push_down(below, operator)?;
             }
-            match self.peek().map(|t| &t.token) {
-                Some(Token::OpDot) => callee = self.parse_dot_access(callee)?,
-                Some(Token::OpenBracket) => callee = self.parse_index(callee)?,
-                _ => break,
-            }
-        }
+            Ok(callee)
+        })?;
 
         if !matches!(self.peek().map(|t| &t.token), Some(Token::OpenParen)) {
             return Err(self.thread_without_call(&callee));
@@ -314,7 +329,10 @@ impl<'src> ParseCtx<'src> {
             }
 
             Token::OpenParen => {
-                let (expr, span) = self.delimited(Bracket::Group, |ctx| ctx.parse_expr_bp(0))?;
+                // Parentheses build no node, so add no tree depth.
+                let (expr, span) = self.delimited(Bracket::Group, |ctx| {
+                    ctx.recursing(|ctx| ctx.parse_operations(0))
+                })?;
 
                 // Parenthesized expression inherits the inner expression's node,
                 // but gets the outer span (including parens).
@@ -361,6 +379,9 @@ impl<'src> ParseCtx<'src> {
         }
     }
 }
+
+/// Parses a postfix operator applied to the expression it is given.
+type PostfixParser<'src> = fn(&mut ParseCtx<'src>, Spanned<Expr>) -> ParseResult<Spanned<Expr>>;
 
 // -- Binding powers --
 // Higher number = tighter binding.

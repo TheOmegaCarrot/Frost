@@ -30,7 +30,7 @@ use crate::bytecode::{Bytecode, CompiledFunction};
 use crate::{Arity, MapKey, Value};
 use frostlang_parse::{
     ast::{Expr, SourceSpan, Spanned, Statement, TypeConstraint},
-    parse_program,
+    parse_program_with_limits,
 };
 
 use fold::FoldVm;
@@ -365,7 +365,7 @@ pub fn compile_in_scope(
     options: CompilerOptions,
     outer_scope: &[&str],
 ) -> Result<CompilerOutput, Diagnostics> {
-    let ast = parse_program(filename, script)
+    let ast = parse_program_with_limits(filename, script, options.parse_limits)
         .map_err(|err| Diagnostic::from_parse_error(&err, filename, script))?;
 
     // A free name the enclosing scope supplies becomes a capture. Only names

@@ -21,6 +21,7 @@ mod habit_hints;
 mod line_breaks;
 mod line_endings;
 mod literal_errors;
+mod nesting_limits;
 mod parse_errors;
 mod render_styles;
 mod tokens;

@@ -7,14 +7,19 @@ use crate::parse::ctx::{Bracket, ParseCtx, int_literal};
 use crate::parse::strings::QuoteStyle;
 
 impl<'src> ParseCtx<'src> {
-    /// A pattern, alternatives included: `p1 | p2 | ...`.
+    /// A pattern, alternatives included: `p1 | p2 | ...`, as a child of the node being built.
     pub(crate) fn parse_pattern(&mut self) -> ParseResult<Spanned<Pattern>> {
+        self.nested(Self::parse_alternatives)
+    }
+
+    fn parse_alternatives(&mut self) -> ParseResult<Spanned<Pattern>> {
         let first = self.parse_single_pattern()?;
         self.maybe_skip_nl();
 
-        if !matches!(self.peek().map(|t| &t.token), Some(Token::Pipe)) {
+        let Some(pipe) = self.peek().filter(|t| t.token == Token::Pipe) else {
             return Ok(first);
-        }
+        };
+        let pipe = pipe.span.clone().into();
 
         let start = first.span.start;
         let mut alternatives = vec![first];
@@ -30,6 +35,9 @@ impl<'src> ParseCtx<'src> {
             .expect("alternatives has at least two elements")
             .span
             .end;
+
+        // The alternatives were parsed in the place of the node that holds them.
+        self.push_down(self.deepest(), pipe)?;
 
         Ok(Spanned::new(
             Pattern::Alternative(alternatives),

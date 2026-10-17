@@ -15,6 +15,7 @@ fn options() -> CompilerOptions {
         optimization_options: OptimizationOptions::NONE,
         implicit_export: false,
         lints: false,
+        ..CompilerOptions::new()
     }
 }
 
