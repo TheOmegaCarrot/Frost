@@ -5,6 +5,7 @@ use crate::parse::statements::StatementContext;
 use crate::parse::{Diagnostic, ParseResult};
 
 impl<'src> ParseCtx<'src> {
+    #[inline(never)] // See `parse_atom`.
     pub(crate) fn parse_lambda(&mut self) -> ParseResult<Spanned<Expr>> {
         let start = self.expect(Token::KwFn)?.span.start;
         // Without parameters, the `->` may still start the next line.
@@ -206,6 +207,7 @@ impl<'src> ParseCtx<'src> {
 
     // -- Abbreviated lambdas: $(expr) --
 
+    #[inline(never)] // See `parse_atom`.
     pub(crate) fn parse_abbreviated_lambda(&mut self) -> ParseResult<Spanned<Expr>> {
         let opener: SourceSpan = self.must_peek("`$(`")?.span.clone().into();
         // In `$(f($($ * 2)))`, which lambda a `$` belongs to is easy to misread.

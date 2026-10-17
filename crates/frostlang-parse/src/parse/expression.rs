@@ -18,96 +18,110 @@ impl<'src> ParseCtx<'src> {
     }
 
     /// An expression in the place of the node being built.
+    // Deeply nested source recurses through this function on every level, so its frame
+    // holds little beyond `lhs`: applying each operator is left to `apply_operator`, kept
+    // out of line, as an optimized build would otherwise inline it here.
     fn parse_operations(&mut self, min_bp: u8) -> ParseResult<Spanned<Expr>> {
         let mut lhs = self.parse_prefix()?;
+        while let Some(operator) = self.next_operator(min_bp) {
+            lhs = self.apply_operator(lhs, operator)?;
+        }
+        Ok(lhs)
+    }
 
-        // Each operator applied in this loop builds a node holding `lhs`,
-        // which moves everything in `lhs` one level deeper.
-        loop {
-            // `.` and `@` may continue an expression across line breaks:
-            // neither can begin a statement, so a following one is unambiguously a continuation.
-            // Absorb the intervening newlines so the postfix dispatch below treats it as same-line.
-            // Call `()` and index `[]` are not continued: a `(`/`[` on a new line begins a fresh statement.
-            if POSTFIX_BP >= min_bp
-                && matches!(
-                    self.peek_past_nl().map(|t| &t.token),
-                    Some(Token::OpDot | Token::OpThread)
-                )
-            {
-                self.skip_nl();
-            }
+    /// The operator that applies next to an operand whose operators bind at least as
+    /// tightly as `min_bp`, if one does. It is not yet consumed.
+    fn next_operator(&mut self, min_bp: u8) -> Option<Operator<'src>> {
+        // `.` and `@` may continue an expression across line breaks:
+        // neither can begin a statement, so a following one is unambiguously a continuation.
+        // Absorb the intervening newlines so the postfix dispatch below treats it as same-line.
+        // Call `()` and index `[]` are not continued: a `(`/`[` on a new line begins a fresh statement.
+        if POSTFIX_BP >= min_bp
+            && matches!(
+                self.peek_past_nl().map(|t| &t.token),
+                Some(Token::OpDot | Token::OpThread)
+            )
+        {
+            self.skip_nl();
+        }
 
-            // Postfix operators bind tightest and sit on the same line as their
-            // operand (after any continuation absorbed above).
-            if POSTFIX_BP >= min_bp
-                && let Some(peek) = self.peek()
-            {
-                let parse_postfix: Option<PostfixParser<'src>> = match peek.token {
-                    Token::OpenParen => Some(Self::parse_call),
-                    Token::OpenBracket => Some(Self::parse_index),
-                    Token::OpDot => Some(Self::parse_dot_access),
-                    Token::OpThread => Some(Self::parse_thread),
-                    _ => None,
-                };
-                if let Some(parse_postfix) = parse_postfix {
-                    let operator = peek.span.clone().into();
-                    let below = self.deepest();
-                    lhs = parse_postfix(self, lhs)?;
-                    self.push_down(below, operator)?;
-                    continue;
-                }
-            }
-
-            self.maybe_skip_nl();
-
-            let Some(peek) = self.peek() else { break };
-
-            let Some((op, bp)) = infix_bp(&peek.token) else {
-                break;
+        // Postfix operators bind tightest and sit on the same line as their
+        // operand (after any continuation absorbed above).
+        if POSTFIX_BP >= min_bp
+            && let Some(peek) = self.peek()
+        {
+            let parse_postfix: Option<PostfixParser<'src>> = match peek.token {
+                Token::OpenParen => Some(Self::parse_call),
+                Token::OpenBracket => Some(Self::parse_index),
+                Token::OpDot => Some(Self::parse_dot_access),
+                Token::OpThread => Some(Self::parse_thread),
+                _ => None,
             };
-
-            if bp < min_bp {
-                break;
-            }
-
-            let non_chainable = is_non_chainable(&peek.token);
-            let op_span: SourceSpan = peek.span.clone().into();
-            self.advance(1);
-            self.maybe_skip_nl();
-
-            let below = self.deepest();
-            let rhs = self.parse_expr_bp(bp + 1)?;
-            let span = (lhs.span.start..rhs.span.end).into();
-            lhs = Spanned::new(
-                match op {
-                    Infix::Bin(op) => Expr::BinOp {
-                        left: Box::new(lhs),
-                        op: Spanned::new(op, op_span),
-                        right: Box::new(rhs),
-                    },
-                    Infix::Logical(op) => Expr::Logical {
-                        left: Box::new(lhs),
-                        op: Spanned::new(op, op_span),
-                        right: Box::new(rhs),
-                    },
-                },
-                span,
-            );
-            self.push_down(below, op_span)?;
-
-            if non_chainable
-                && let Some(next) = self.peek()
-                && is_non_chainable(&next.token)
-            {
-                return Err(Diagnostic::at(
-                    "comparison operators cannot chain or mix",
-                    next.span.clone().into(),
-                    "wrap one comparison in parentheses",
-                ));
+            if let Some(parse_postfix) = parse_postfix {
+                return Some(Operator::Postfix(parse_postfix));
             }
         }
 
-        Ok(lhs)
+        self.maybe_skip_nl();
+        let (infix, bp) = infix_bp(&self.peek()?.token)?;
+        (bp >= min_bp).then_some(Operator::Infix(infix, bp))
+    }
+
+    /// Apply `operator`, from [`next_operator`](Self::next_operator), to `lhs`. The node
+    /// built holds `lhs`, which moves everything in it one level deeper.
+    #[inline(never)] // See `parse_operations`.
+    fn apply_operator(
+        &mut self,
+        lhs: Spanned<Expr>,
+        operator: Operator<'src>,
+    ) -> ParseResult<Spanned<Expr>> {
+        let peek = self.peek().expect("an operator is next");
+        let op_span: SourceSpan = peek.span.clone().into();
+        let below = self.deepest();
+
+        let (infix, bp) = match operator {
+            Operator::Postfix(parse_postfix) => {
+                let node = parse_postfix(self, lhs)?;
+                self.push_down(below, op_span)?;
+                return Ok(node);
+            }
+            Operator::Infix(infix, bp) => (infix, bp),
+        };
+
+        let non_chainable = is_non_chainable(&peek.token);
+        self.advance(1);
+        self.maybe_skip_nl();
+
+        let rhs = self.parse_expr_bp(bp + 1)?;
+        let span = (lhs.span.start..rhs.span.end).into();
+        let node = Spanned::new(
+            match infix {
+                Infix::Bin(op) => Expr::BinOp {
+                    left: Box::new(lhs),
+                    op: Spanned::new(op, op_span),
+                    right: Box::new(rhs),
+                },
+                Infix::Logical(op) => Expr::Logical {
+                    left: Box::new(lhs),
+                    op: Spanned::new(op, op_span),
+                    right: Box::new(rhs),
+                },
+            },
+            span,
+        );
+        self.push_down(below, op_span)?;
+
+        if non_chainable
+            && let Some(next) = self.peek()
+            && is_non_chainable(&next.token)
+        {
+            return Err(Diagnostic::at(
+                "comparison operators cannot chain or mix",
+                next.span.clone().into(),
+                "wrap one comparison in parentheses",
+            ));
+        }
+        Ok(node)
     }
 
     fn parse_call(&mut self, callee: Spanned<Expr>) -> ParseResult<Spanned<Expr>> {
@@ -222,35 +236,33 @@ impl<'src> ParseCtx<'src> {
     }
 
     fn parse_prefix(&mut self) -> ParseResult<Spanned<Expr>> {
-        let peek = self.must_peek("an expression")?;
-
-        let unary_op = match peek.token {
-            Token::OpMinus => Some((Token::OpMinus, UnaryOp::Negate)),
-            Token::OpNot => Some((Token::OpNot, UnaryOp::Not)),
-            _ => None,
-        };
-
-        if let Some((token, op)) = unary_op {
-            let op_span: SourceSpan = self.expect(token)?.span.clone().into();
-            let start = op_span.start;
-            self.maybe_skip_nl();
-            if op == UnaryOp::Negate
-                && let Some(min) = self.try_parse_min_int(start)
-            {
-                return Ok(min);
-            }
-            let operand = self.parse_expr_bp(PREFIX_BP)?;
-            let end = operand.span.end;
-            return Ok(Spanned::new(
-                Expr::UnaryOp {
-                    op: Spanned::new(op, op_span),
-                    operand: Box::new(operand),
-                },
-                (start..end).into(),
-            ));
+        match self.must_peek("an expression")?.token {
+            Token::OpMinus => self.parse_unary(Token::OpMinus, UnaryOp::Negate),
+            Token::OpNot => self.parse_unary(Token::OpNot, UnaryOp::Not),
+            _ => self.parse_atom(),
         }
+    }
 
-        self.parse_atom()
+    /// The prefix operator `op`, written `token`, and its operand.
+    #[inline(never)] // See `parse_atom`.
+    fn parse_unary(&mut self, token: Token, op: UnaryOp) -> ParseResult<Spanned<Expr>> {
+        let op_span: SourceSpan = self.expect(token)?.span.clone().into();
+        let start = op_span.start;
+        self.maybe_skip_nl();
+        if op == UnaryOp::Negate
+            && let Some(min) = self.try_parse_min_int(start)
+        {
+            return Ok(min);
+        }
+        let operand = self.parse_expr_bp(PREFIX_BP)?;
+        let end = operand.span.end;
+        Ok(Spanned::new(
+            Expr::UnaryOp {
+                op: Spanned::new(op, op_span),
+                operand: Box::new(operand),
+            },
+            (start..end).into(),
+        ))
     }
 
     /// After a `-` starting at `start`, the least Int, if the next token is a
@@ -285,6 +297,68 @@ impl<'src> ParseCtx<'src> {
     }
 
     fn parse_atom(&mut self) -> ParseResult<Spanned<Expr>> {
+        // Only dispatch is done here, so that this frame, on the path through nested
+        // brackets, holds no atom's locals. Each atom holding expressions, and each prefix
+        // operator, is parsed out of line, as an optimized build would otherwise inline it
+        // here.
+        match self.must_peek("an expression")?.token {
+            Token::OpenParen => self.parse_group(),
+
+            // -- Atoms: strings --
+            Token::SingleQuoteStringLiteral(_) => {
+                self.parse_simple_string(strings::QuoteStyle::Single)
+            }
+            Token::DoubleQuoteStringLiteral(_) => {
+                self.parse_simple_string(strings::QuoteStyle::Double)
+            }
+            Token::RawStringLiteral(_) => self.parse_raw_string(),
+            Token::MultilineStringLiteral(_) => self.parse_multiline_string(),
+            Token::SingleQuoteFormatStringLiteral(_) => {
+                self.parse_format_string(strings::QuoteStyle::Single)
+            }
+            Token::DoubleQuoteFormatStringLiteral(_) => {
+                self.parse_format_string(strings::QuoteStyle::Double)
+            }
+            Token::BytesLiteral(_) => self.parse_bytes_literal(),
+
+            // -- Atoms: composite literals --
+            Token::OpenBracket => self.parse_array_literal(),
+            Token::OpenBrace => self.parse_map_literal(),
+
+            // -- Atoms: control flow --
+            Token::KwIf => self.parse_if(),
+            Token::KwDo => self.parse_do(),
+            Token::KwMatch => self.parse_match(),
+
+            // -- Atoms: functions --
+            Token::KwFn => self.parse_lambda(),
+            Token::DollarParen => self.parse_abbreviated_lambda(),
+
+            // -- Atoms: iterative expressions --
+            Token::KwMap => self.parse_map_iter(),
+            Token::KwFilter => self.parse_filter(),
+            Token::KwForeach => self.parse_foreach(),
+            Token::KwReduce => self.parse_reduce(),
+
+            _ => self.parse_leaf(),
+        }
+    }
+
+    /// A parenthesized expression.
+    #[inline(never)] // See `parse_atom`.
+    fn parse_group(&mut self) -> ParseResult<Spanned<Expr>> {
+        // Parentheses build no node, so add no tree depth.
+        let (expr, span) = self.delimited(Bracket::Group, |ctx| {
+            ctx.recursing(|ctx| ctx.parse_operations(0))
+        })?;
+
+        // Parenthesized expression inherits the inner expression's node,
+        // but gets the outer span (including parens).
+        Ok(Spanned::new(expr.node, span))
+    }
+
+    /// An atom holding no expression: a literal other than a String, or a name.
+    fn parse_leaf(&mut self) -> ParseResult<Spanned<Expr>> {
         let peek = self.must_peek("an expression")?;
         let span = peek.span.clone();
 
@@ -327,57 +401,16 @@ impl<'src> ParseCtx<'src> {
                 self.advance(1);
                 Ok(Spanned::new(Expr::NameLookup(name), span.into()))
             }
-
-            Token::OpenParen => {
-                // Parentheses build no node, so add no tree depth.
-                let (expr, span) = self.delimited(Bracket::Group, |ctx| {
-                    ctx.recursing(|ctx| ctx.parse_operations(0))
-                })?;
-
-                // Parenthesized expression inherits the inner expression's node,
-                // but gets the outer span (including parens).
-                Ok(Spanned::new(expr.node, span))
-            }
-
-            // -- Atoms: strings --
-            Token::SingleQuoteStringLiteral(_) => {
-                self.parse_simple_string(strings::QuoteStyle::Single)
-            }
-            Token::DoubleQuoteStringLiteral(_) => {
-                self.parse_simple_string(strings::QuoteStyle::Double)
-            }
-            Token::RawStringLiteral(_) => self.parse_raw_string(),
-            Token::MultilineStringLiteral(_) => self.parse_multiline_string(),
-            Token::SingleQuoteFormatStringLiteral(_) => {
-                self.parse_format_string(strings::QuoteStyle::Single)
-            }
-            Token::DoubleQuoteFormatStringLiteral(_) => {
-                self.parse_format_string(strings::QuoteStyle::Double)
-            }
-            Token::BytesLiteral(_) => self.parse_bytes_literal(),
-
-            // -- Atoms: composite literals --
-            Token::OpenBracket => self.parse_array_literal(),
-            Token::OpenBrace => self.parse_map_literal(),
-
-            // -- Atoms: control flow --
-            Token::KwIf => self.parse_if(),
-            Token::KwDo => self.parse_do(),
-            Token::KwMatch => self.parse_match(),
-
-            // -- Atoms: functions --
-            Token::KwFn => self.parse_lambda(),
-            Token::DollarParen => self.parse_abbreviated_lambda(),
-
-            // -- Atoms: iterative expressions --
-            Token::KwMap => self.parse_map_iter(),
-            Token::KwFilter => self.parse_filter(),
-            Token::KwForeach => self.parse_foreach(),
-            Token::KwReduce => self.parse_reduce(),
-
             _ => Err(self.expected("an expression", peek)),
         }
     }
+}
+
+/// An operator applying to the operand before it.
+enum Operator<'src> {
+    Postfix(PostfixParser<'src>),
+    /// An infix operator, binding as tightly as its binding power says.
+    Infix(Infix, u8),
 }
 
 /// Parses a postfix operator applied to the expression it is given.

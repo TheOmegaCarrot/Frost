@@ -9,6 +9,7 @@ impl<'src> ParseCtx<'src> {
         self.parse_if_or_elif(Token::KwIf)
     }
 
+    #[inline(never)] // See `parse_atom`.
     fn parse_if_or_elif(&mut self, keyword: Token) -> ParseResult<Spanned<Expr>> {
         let start = self.expect(keyword)?.span.start;
 
@@ -59,6 +60,7 @@ impl<'src> ParseCtx<'src> {
         }
     }
 
+    #[inline(never)] // See `parse_atom`.
     pub(crate) fn parse_do(&mut self) -> ParseResult<Spanned<Expr>> {
         let start = self.expect(Token::KwDo)?.span.start;
         // Inside brackets, the `{` may sit on a later line, as a `match`'s may.

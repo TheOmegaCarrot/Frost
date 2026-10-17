@@ -16,11 +16,20 @@ impl<'src> ParseCtx<'src> {
         let first = self.parse_single_pattern()?;
         self.maybe_skip_nl();
 
-        let Some(pipe) = self.peek().filter(|t| t.token == Token::Pipe) else {
-            return Ok(first);
-        };
-        let pipe = pipe.span.clone().into();
+        match self.peek() {
+            Some(pipe) if pipe.token == Token::Pipe => self.parse_more_alternatives(first),
+            _ => Ok(first),
+        }
+    }
 
+    /// The alternatives after `first`, from the `|` the parse is at.
+    // Apart from `parse_alternatives`, so that a single pattern, the usual case and
+    // the path through nested patterns, has none of these locals in its frame.
+    fn parse_more_alternatives(
+        &mut self,
+        first: Spanned<Pattern>,
+    ) -> ParseResult<Spanned<Pattern>> {
+        let pipe = self.peek().expect("a `|` is next").span.clone().into();
         let start = first.span.start;
         let mut alternatives = vec![first];
 
@@ -47,18 +56,29 @@ impl<'src> ParseCtx<'src> {
 
     fn parse_single_pattern(&mut self) -> ParseResult<Spanned<Pattern>> {
         self.maybe_skip_nl();
-        let peek = self.must_peek("a pattern")?;
-
-        let (peek_start, peek_end) = (peek.span.start, peek.span.end);
-        match peek.token {
+        // Only dispatch is done here, so that this frame, on the path through nested
+        // patterns, holds no pattern's locals. Each pattern holding others is parsed out of
+        // line, as an optimized build would otherwise inline it here.
+        match self.must_peek("a pattern")?.token {
             Token::OpenBracket => self.parse_array_pattern(),
             Token::OpenBrace => self.parse_map_pattern(),
+            Token::OpenParen => self.parse_value_pattern(),
+            _ => self.parse_leaf_pattern(),
+        }
+    }
 
-            Token::OpenParen => {
-                let (expr, span) = self.delimited(Bracket::Group, Self::parse_expression)?;
-                Ok(Spanned::new(Pattern::Value(expr), span))
-            }
+    /// A parenthesized value pattern: `(expr)`.
+    #[inline(never)] // See `parse_single_pattern`.
+    fn parse_value_pattern(&mut self) -> ParseResult<Spanned<Pattern>> {
+        let (expr, span) = self.delimited(Bracket::Group, Self::parse_expression)?;
+        Ok(Spanned::new(Pattern::Value(expr), span))
+    }
 
+    /// A pattern holding no pattern or expression: a literal, or a binding.
+    fn parse_leaf_pattern(&mut self) -> ParseResult<Spanned<Pattern>> {
+        let peek = self.must_peek("a pattern")?;
+        let (peek_start, peek_end) = (peek.span.start, peek.span.end);
+        match peek.token {
             Token::IntLiteral(magnitude) => {
                 let n = int_literal(magnitude, false, peek_start..peek_end)?;
                 self.advance(1);
@@ -188,6 +208,7 @@ impl<'src> ParseCtx<'src> {
         Ok(Spanned::new(constraint, span))
     }
 
+    #[inline(never)] // See `parse_single_pattern`.
     fn parse_array_pattern(&mut self) -> ParseResult<Spanned<Pattern>> {
         let ((elements, rest), span) = self.delimited(Bracket::ArrayPattern, |ctx| {
             let mut elements = Vec::new();
@@ -225,6 +246,7 @@ impl<'src> ParseCtx<'src> {
         Ok(Spanned::new(Pattern::Array { elements, rest }, span))
     }
 
+    #[inline(never)] // See `parse_single_pattern`.
     fn parse_map_pattern(&mut self) -> ParseResult<Spanned<Pattern>> {
         let (entries, span) =
             self.parse_comma_separated(Bracket::MapPattern, Self::parse_map_pattern_entry)?;
@@ -253,18 +275,32 @@ impl<'src> ParseCtx<'src> {
     }
 
     fn parse_map_pattern_entry(&mut self) -> ParseResult<Spanned<MapPatternEntry>> {
+        let entry_start = self.must_peek("a name or `[`")?.span.start;
+        // The key is parsed apart, so that this frame, on the path through nested Map
+        // patterns, holds none of its locals.
+        let (key, shorthand) = self.parse_map_pattern_key()?;
+        let pattern = match shorthand {
+            Some(binding) => binding,
+            None => {
+                self.expect_colon_on_the_line()?;
+                self.maybe_skip_nl();
+                self.parse_pattern()?
+            }
+        };
+        let span = (entry_start..pattern.span.end).into();
+        Ok(Spanned::new(MapPatternEntry { key, pattern }, span))
+    }
+
+    /// A Map pattern entry's key, and for the shorthand `name`, which binds the value at
+    /// the key `name`, that binding. Otherwise a `:` and the entry's pattern follow.
+    fn parse_map_pattern_key(&mut self) -> ParseResult<(Spanned<Expr>, Option<Spanned<Pattern>>)> {
         const EXPECTED: &str = "a name or `[`";
         let peek = self.must_peek(EXPECTED)?;
-        let entry_start = peek.span.start;
 
         match peek.token {
             Token::OpenBracket => {
                 let (key, _) = self.delimited(Bracket::ComputedKey, Self::parse_expression)?;
-                self.expect_colon_on_the_line()?;
-                self.maybe_skip_nl();
-                let pattern = self.parse_pattern()?;
-                let span = (entry_start..pattern.span.end).into();
-                Ok(Spanned::new(MapPatternEntry { key, pattern }, span))
+                Ok((key, None))
             }
 
             Token::Identifier(name) => {
@@ -278,22 +314,12 @@ impl<'src> ParseCtx<'src> {
                 let colon_follows =
                     matches!(self.peek_past_nl().map(|t| &t.token), Some(Token::Colon));
 
-                let pattern = if colon_follows {
-                    self.expect_colon_on_the_line()?;
-                    self.maybe_skip_nl();
-                    self.parse_pattern()?
+                let shorthand = if colon_follows {
+                    None
                 } else {
-                    self.parse_binding_pattern(name.clone(), start, end)?
+                    Some(self.parse_binding_pattern(name.clone(), start, end)?)
                 };
-
-                let span = (entry_start..pattern.span.end).into();
-                Ok(Spanned::new(
-                    MapPatternEntry {
-                        key: string_key_expr(name, start, end),
-                        pattern,
-                    },
-                    span,
-                ))
+                Ok((string_key_expr(name, start, end), shorthand))
             }
 
             _ => Err(self.expected_in_list(EXPECTED, peek)),

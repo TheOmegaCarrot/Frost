@@ -4,6 +4,7 @@ use crate::parse::strings::{EscapingString, QuoteStyle, decode_escape};
 use crate::parse::{Diagnostic, ParseResult, ctx::ParseCtx};
 
 impl<'src> ParseCtx<'src> {
+    #[inline(never)] // See `parse_atom`.
     pub(crate) fn parse_format_string(&mut self, quote: QuoteStyle) -> ParseResult<Spanned<Expr>> {
         let peek = self.must_peek("a format String")?;
         let span = peek.span.clone();

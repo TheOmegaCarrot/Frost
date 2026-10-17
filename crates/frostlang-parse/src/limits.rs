@@ -35,12 +35,12 @@ pub struct ParseLimits {
 
 impl ParseLimits {
     /// Limits suited to a thread with Rust's default stack size, leaving room for the frames
-    /// of whatever calls the parser: a recursion depth of 128 and an AST depth of 512, or 64
+    /// of whatever calls the parser: a recursion depth of 128 and an AST depth of 512, or 96
     /// and 256 in a debug build.
     pub const fn new() -> Self {
         if cfg!(debug_assertions) {
             Self {
-                max_recursion_depth: NonZeroU64::new(64),
+                max_recursion_depth: NonZeroU64::new(96),
                 max_ast_depth: NonZeroU64::new(256),
             }
         } else {

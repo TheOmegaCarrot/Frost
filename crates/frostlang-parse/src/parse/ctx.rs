@@ -367,13 +367,13 @@ impl<'src> ParseCtx<'src> {
     }
 
     pub(crate) fn expect(&mut self, token: Token) -> ParseResult<&SrcToken<'src>> {
-        let expected = format!("`{token}`");
+        let expected = || format!("`{token}`");
         let Some(current) = self.peek() else {
             let help = self.habit_help(self.input.len(), Some(&token));
-            return Err(self.unexpected_eof(&expected).with_help(help));
+            return Err(self.unexpected_eof(&expected()).with_help(help));
         };
         if current.token != token {
-            return Err(self.expected_token(&expected, current, Some(&token)));
+            return Err(self.expected_token(&expected(), current, Some(&token)));
         }
 
         self.advance(1);

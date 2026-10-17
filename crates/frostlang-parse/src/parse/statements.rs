@@ -40,23 +40,19 @@ impl<'src> ParseCtx<'src> {
                 _ => {}
             }
 
-            match peek.token {
-                Token::KwExport if allow_export => {
-                    let next = self.get(self.here() + 1).map(|t| &t.token);
-                    if matches!(next, Some(Token::KwDefn)) {
-                        stmts.push(self.parse_defn(true)?);
-                    } else {
-                        stmts.push(self.parse_def(true)?);
-                    }
-                }
-                Token::KwDef => stmts.push(self.parse_def(false)?),
-                Token::KwDefn => stmts.push(self.parse_defn(false)?),
+            // A definition is parsed apart, so that only an expression statement's
+            // result takes room in this frame, on the path through nested blocks.
+            let statement = match peek.token {
+                Token::KwExport if allow_export => self.parse_definition()?,
+                Token::KwDef | Token::KwDefn => self.parse_definition()?,
                 _ => {
                     let expr = self.parse_expression()?;
                     let span = expr.span;
-                    stmts.push(Spanned::new(Statement::Expr(expr), span));
+                    Spanned::new(Statement::Expr(expr), span)
                 }
-            }
+            };
+            let statement_span = statement.span;
+            stmts.push(statement);
 
             if let Some(peek) = self.peek() {
                 if in_a_scope && peek.token == Token::CloseBrace {
@@ -67,40 +63,53 @@ impl<'src> ParseCtx<'src> {
                         self.advance(1);
                         self.maybe_skip_nl();
                     }
-                    _ => {
-                        let statement = stmts.last().expect("a statement was just parsed").span;
-                        // A token touching the statement's last name or literal, as
-                        // `b101` touches the `0` of `0b101`, makes one malformed token
-                        // with it, not a statement after a complete one. After a
-                        // closer, as in `print("a")print("b")`, it is the next statement.
-                        let last_closes = self.get(self.here() - 1).is_some_and(|last| {
-                            matches!(
-                                last.token,
-                                Token::CloseParen | Token::CloseBracket | Token::CloseBrace
-                            )
-                        });
-                        if statement.end == peek.span.start && !last_closes {
-                            return Err(self.expected("a line break or `;`", peek));
-                        }
-                        // A label across several lines renders as a cluttered bracket,
-                        // so a multiline statement gets its last token labeled instead.
-                        let (span, label) = if self.source_text(statement).contains('\n') {
-                            let last = self
-                                .get(self.here() - 1)
-                                .expect("the statement's last token");
-                            (last.span.clone().into(), "a complete statement ends here")
-                        } else {
-                            (statement, "this is a complete statement")
-                        };
-                        return Err(self
-                            .expected("a line break or `;`", peek)
-                            .with_label(span, label));
-                    }
+                    _ => return Err(self.statement_not_ended(statement_span)),
                 };
             }
         }
 
         Ok(stmts)
+    }
+
+    /// A `def`, `defn`, `export def`, or `export defn` statement.
+    fn parse_definition(&mut self) -> ParseResult<Spanned<Statement>> {
+        let exported = self.peek().is_some_and(|t| t.token == Token::KwExport);
+        let keyword = self.get(self.here() + usize::from(exported));
+        if keyword.is_some_and(|t| t.token == Token::KwDefn) {
+            self.parse_defn(exported)
+        } else {
+            self.parse_def(exported)
+        }
+    }
+
+    /// The error for the token after `statement`, which is neither a line break nor `;`.
+    fn statement_not_ended(&self, statement: SourceSpan) -> Diagnostic {
+        let peek = self.peek().expect("a token follows the statement");
+        // A token touching the statement's last name or literal, as `b101` touches the
+        // `0` of `0b101`, makes one malformed token with it, not a statement after a
+        // complete one. After a closer, as in `print("a")print("b")`, it is the next
+        // statement.
+        let last_closes = self.get(self.here() - 1).is_some_and(|last| {
+            matches!(
+                last.token,
+                Token::CloseParen | Token::CloseBracket | Token::CloseBrace
+            )
+        });
+        if statement.end == peek.span.start && !last_closes {
+            return self.expected("a line break or `;`", peek);
+        }
+        // A label across several lines renders as a cluttered bracket,
+        // so a multiline statement gets its last token labeled instead.
+        let (span, label) = if self.source_text(statement).contains('\n') {
+            let last = self
+                .get(self.here() - 1)
+                .expect("the statement's last token");
+            (last.span.clone().into(), "a complete statement ends here")
+        } else {
+            (statement, "this is a complete statement")
+        };
+        self.expected("a line break or `;`", peek)
+            .with_label(span, label)
     }
 
     fn parse_def(&mut self, exported: bool) -> ParseResult<Spanned<Statement>> {

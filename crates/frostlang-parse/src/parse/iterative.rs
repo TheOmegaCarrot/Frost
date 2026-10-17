@@ -9,6 +9,7 @@ enum IterativeKind {
 }
 
 impl<'src> ParseCtx<'src> {
+    #[inline(never)] // See `parse_atom`.
     fn parse_iterative(
         &mut self,
         keyword: Token,
@@ -71,6 +72,7 @@ impl<'src> ParseCtx<'src> {
         self.parse_iterative(Token::KwForeach, IterativeKind::Foreach)
     }
 
+    #[inline(never)] // See `parse_atom`.
     pub(crate) fn parse_reduce(&mut self) -> ParseResult<Spanned<Expr>> {
         let keyword_span: SourceSpan = self.expect(Token::KwReduce)?.span.clone().into();
 
