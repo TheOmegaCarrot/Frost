@@ -1,6 +1,6 @@
 use std::{ops::Deref, sync::Arc};
 
-use crate::core::{MapKey, Value, ValueMap, types::value_map};
+use crate::core::{MapKey, Value, ValueMap, equality, types::value_map};
 
 /// Frost's map type. Immutable once created.
 ///
@@ -34,7 +34,7 @@ impl Deref for FrostMap {
 
 impl PartialEq for FrostMap {
     fn eq(&self, other: &Self) -> bool {
-        Arc::ptr_eq(&self.inner, &other.inner) || self.inner == other.inner
+        equality::maps_equal(self, other)
     }
 }
 

@@ -2,7 +2,7 @@ use std::fmt;
 use std::ops::{Deref, DerefMut, Index};
 use std::sync::Arc;
 
-use crate::core::{Value, free};
+use crate::core::{Value, equality, free};
 
 /// Frost's array type. Immutable once created.
 #[derive(Clone, Debug)]
@@ -85,7 +85,7 @@ impl From<Vec<Value>> for FrostArray {
 
 impl PartialEq for FrostArray {
     fn eq(&self, other: &Self) -> bool {
-        Arc::ptr_eq(&self.inner, &other.inner) || self.as_slice() == other.as_slice()
+        equality::arrays_equal(self, other)
     }
 }
 

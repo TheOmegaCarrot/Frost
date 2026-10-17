@@ -2,6 +2,7 @@
 
 // Shared harnesses.
 mod common;
+mod deep;
 mod script;
 
 mod array_destructuring;

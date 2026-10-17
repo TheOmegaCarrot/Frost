@@ -1,9 +1,6 @@
 //! Freeing a Value, however deeply it nests, never overflows the native stack, and frees
 //! each Value it solely owns exactly once, even as threads release a shared tree at once.
-//!
-//! Each deep case is freed on a thread with a small stack, which freeing one native frame
-//! per level would overflow many times over. A stack overflow aborts the whole test
-//! binary, so a failure here shows as a crash rather than a failed assertion.
+//! Each deep case is freed on a small stack (see [`deep`](crate::deep)).
 
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::{Arc, Barrier};
@@ -11,38 +8,8 @@ use std::thread;
 
 use frostlang::{FrostOpaque, MapKey, OpaqueHandle, Value, ValueMap};
 
+use crate::deep::{DEPTH, SMALL_STACK, in_a_map, in_an_array, nested, on_a_small_stack};
 use crate::script::{self, Script};
-
-/// Far less stack than freeing one frame per level of [`DEPTH`] would take.
-const SMALL_STACK: usize = 512 * 1024;
-
-/// How deeply the deep cases nest.
-const DEPTH: usize = 100_000;
-
-/// Runs `f` to completion on a thread with [`SMALL_STACK`].
-fn on_a_small_stack<T: Send>(f: impl FnOnce() -> T + Send) -> T {
-    thread::scope(|scope| {
-        thread::Builder::new()
-            .stack_size(SMALL_STACK)
-            .spawn_scoped(scope, f)
-            .expect("the thread spawns")
-            .join()
-            .expect("the thread completes")
-    })
-}
-
-/// `inner` nested `depth` levels deep, each level built by `wrap` around the one below.
-fn nested(depth: usize, inner: Value, wrap: impl Fn(Value) -> Value) -> Value {
-    (0..depth).fold(inner, |below, _| wrap(below))
-}
-
-fn in_an_array(below: Value) -> Value {
-    Value::from(vec![below])
-}
-
-fn in_a_map(below: Value) -> Value {
-    Value::from(ValueMap::from([(MapKey::from("below"), below)]))
-}
 
 // -- Nesting shapes --
 

@@ -1,5 +1,5 @@
-mod compare;
 mod convert;
+pub(crate) mod equality;
 pub(crate) mod free;
 mod operators;
 mod stringify;

@@ -8,7 +8,7 @@ use std::{
     slice, vec,
 };
 
-use crate::core::{FrostFloat, MapKey, Value, free};
+use crate::core::{FrostFloat, MapKey, Value, equality, free};
 
 /// Most entries a Map holds in its compact form, beyond which it switches to a
 /// form that stays fast as it grows.
@@ -263,8 +263,7 @@ fn search(entries: &[(MapKey, Value)], key: &MapKey) -> Result<usize, usize> {
 
 impl PartialEq for ValueMap {
     fn eq(&self, other: &Self) -> bool {
-        // Both forms iterate in key order, so equal Maps iterate alike.
-        self.len() == other.len() && self.iter().eq(other.iter())
+        equality::maps_equal(self, other)
     }
 }
 
