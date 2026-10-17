@@ -2,9 +2,11 @@
 
 use std::ops::Range;
 
+use crate::ParseLimits;
 use crate::ast::{SourceSpan, TYPE_CONSTRAINTS};
 use crate::lex::{FormatStringEnd, IntBase, UnclosedInterpolation, scan_format_string};
 use crate::parse::Diagnostic;
+use crate::parse::ctx::{Limit, too_deep};
 use crate::parse::hints::{
     BITWISE_HELP, CONDITIONAL_HELP, FORMAT_STRING_HELP, GUARD_HELP, INEQUALITY_HELP, LAMBDA_HELP,
     LINE_CONTINUATION_HELP, POWER_HELP, float_point_help, raw_string_help,
@@ -14,15 +16,52 @@ use crate::parse::strings::{ESCAPES, closer_not_on_its_own_line};
 const FALLBACK_HELP: &str = "for a fallback when a value is null, use `or`: `a or b`";
 
 /// The error for source the lexer cannot read at `span`, a range of `src`, which
-/// starts at `base_offset` in the whole source.
-pub(crate) fn unreadable(src: &str, span: Range<usize>, base_offset: usize) -> Diagnostic {
+/// starts at `base_offset` in the whole source and is parsed under `limits`.
+pub(crate) fn unreadable(
+    src: &str,
+    span: Range<usize>,
+    base_offset: usize,
+    limits: ParseLimits,
+) -> Diagnostic {
+    let shifted =
+        |range: Range<usize>| SourceSpan::from(range.start + base_offset..range.end + base_offset);
+    // A String nested in an unclosed interpolation is unclosed in its own right. It may
+    // be a format String with an unclosed interpolation in turn, so this descends to
+    // the innermost such String, labeling only the interpolation holding it. Each level
+    // scans the rest of the line, so the descent stops past the recursion limit, which
+    // the String would pass if it closed.
+    let mut span = span;
+    let mut innermost_interpolation = None;
+    let mut level = 1;
+    let diagnostic = loop {
+        match unclosed_interpolation(src, span.start, base_offset) {
+            Some(UnclosedReading::Diagnostic(diagnostic)) => break diagnostic,
+            Some(UnclosedReading::NestedString { open, opener }) => {
+                level += 1;
+                if let Some(max) = limits.max_recursion_depth
+                    && level > max.get()
+                {
+                    return too_deep(Limit::Recursion, max.get(), shifted(opener));
+                }
+                innermost_interpolation = Some(open);
+                span = opener;
+            }
+            None => break unreadable_literal(src, span, base_offset),
+        }
+    };
+    match innermost_interpolation {
+        Some(open) => diagnostic.in_interpolation(shifted(open)),
+        None => diagnostic,
+    }
+}
+
+/// [`unreadable`], for source that is not a format String with an unclosed
+/// interpolation.
+fn unreadable_literal(src: &str, span: Range<usize>, base_offset: usize) -> Diagnostic {
     let shifted =
         |range: Range<usize>| SourceSpan::from(range.start + base_offset..range.end + base_offset);
     let rest = &src[span.start..];
 
-    if let Some(diagnostic) = unclosed_interpolation(src, span.start, base_offset) {
-        return diagnostic;
-    }
     if let Some(diagnostic) = invalid_based_int(&src[span.clone()], span.start + base_offset) {
         return diagnostic;
     }
@@ -68,11 +107,23 @@ struct Reading<'a> {
     help: Option<String>,
 }
 
-/// The error for the format String whose `$` is at `start` in `src`, which starts at
+/// What [`unclosed_interpolation`] makes of an interpolation that does not close.
+enum UnclosedReading {
+    /// The error for it.
+    Diagnostic(Diagnostic),
+    /// It holds a String that does not close in its own right: the String whose opener
+    /// is at `opener` in the interpolation whose `${` is at `open`.
+    NestedString {
+        open: Range<usize>,
+        opener: Range<usize>,
+    },
+}
+
+/// The reading of the format String whose `$` is at `start` in `src`, which starts at
 /// `base_offset` in the whole source, if what the lexer could not read there is an
 /// interpolation that does not close on its line, while the String's quote stands
 /// later on that line.
-fn unclosed_interpolation(src: &str, start: usize, base_offset: usize) -> Option<Diagnostic> {
+fn unclosed_interpolation(src: &str, start: usize, base_offset: usize) -> Option<UnclosedReading> {
     let shifted =
         |range: Range<usize>| SourceSpan::from(range.start + base_offset..range.end + base_offset);
     let quote = src[start..]
@@ -109,7 +160,10 @@ fn unclosed_interpolation(src: &str, start: usize, base_offset: usize) -> Option
         }
         // A String of another kind is unclosed in its own right, as in `$'${"a}'`.
         UnclosedInterpolation::String(opener) => {
-            unreadable(src, opener, base_offset).in_interpolation(shifted(open..open + 2))
+            return Some(UnclosedReading::NestedString {
+                open: open..open + 2,
+                opener,
+            });
         }
         UnclosedInterpolation::MultilineString(at) => unclosed
             .with_label(shifted(at..at + 3), "this String spans lines")
@@ -138,7 +192,7 @@ fn unclosed_interpolation(src: &str, start: usize, base_offset: usize) -> Option
             .with_help(nested_help),
         UnclosedInterpolation::LineEnd { .. } => unclosed.with_help(Some(ONE_LINE_HELP.to_owned())),
     };
-    Some(diagnostic)
+    Some(UnclosedReading::Diagnostic(diagnostic))
 }
 
 const ONE_LINE_HELP: &str = "an interpolation ends with `}` on the same line, as its format \

@@ -698,3 +698,22 @@ fn a_sequence_of_separated_literals_keeps_each_span_exact() {
         "each literal should start where its text does"
     );
 }
+
+// -- Nested format Strings --
+
+#[test]
+fn a_deeply_nested_format_string_is_one_token() {
+    // Finding where a format String ends means scanning each format String nested in
+    // it. That scan keeps no native stack per level, so no depth overflows it.
+    const DEPTH: usize = 100_000;
+    let source = format!("{}1{}", "$'${".repeat(DEPTH), "}'".repeat(DEPTH));
+    let lexed = lexed(&source);
+    assert_eq!(lexed.len(), 1, "one token for the outermost format String");
+    assert!(
+        matches!(
+            lexed[0],
+            (Ok(Token::SingleQuoteFormatStringLiteral(_)), text) if text == source
+        ),
+        "the token spans the whole source"
+    );
+}

@@ -78,7 +78,7 @@ struct Nesting {
 
 /// Which of the [`ParseLimits`] a parse went past.
 #[derive(Clone, Copy, Debug)]
-enum Limit {
+pub(crate) enum Limit {
     Recursion,
     AstDepth,
 }
@@ -239,7 +239,7 @@ impl<'src> ParseCtx<'src> {
             let shifted = (span.start + base_offset)..(span.end + base_offset);
 
             let Ok(token) = token else {
-                return Err(hints::unreadable(src, span, base_offset));
+                return Err(hints::unreadable(src, span, base_offset, limits));
             };
 
             input.push(SrcToken {
@@ -752,7 +752,7 @@ impl<'src> ParseCtx<'src> {
 }
 
 /// The error for nesting past `limit`, whose maximum is `max`, at `at`.
-fn too_deep(limit: Limit, max: u64, at: SourceSpan) -> Diagnostic {
+pub(crate) fn too_deep(limit: Limit, max: u64, at: SourceSpan) -> Diagnostic {
     let levels = if max == 1 { "level" } else { "levels" };
     let (message, help) = match limit {
         Limit::Recursion => (

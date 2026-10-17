@@ -350,6 +350,45 @@ fn passing_a_limit_at_the_end_of_input_labels_the_end() {
     assert_eq!((label.span.start, label.span.end), (1, 1));
 }
 
+// -- Deeply nested format Strings --
+// The lexer reads a whole format String, nested ones included, as one token before the
+// parser counts any level, so how deeply they nest must not matter until it does.
+
+const FORMAT_DEPTH: usize = 20_000;
+
+#[test]
+fn deeply_nested_format_strings_are_rejected_at_the_limit() {
+    let src = nest("$'${", "1", "}'", FORMAT_DEPTH);
+    let failed = failure(&src, ParseLimits::new()).expect("past the default limit");
+    assert!(failed.starts_with(RECURSION_MESSAGE), "{failed}");
+}
+
+#[test]
+fn nested_format_strings_that_never_close_are_unclosed_within_the_limit() {
+    // The error is the innermost format String's, which is what does not close.
+    let src = format!("{}1", "$'${".repeat(10));
+    assert_eq!(
+        failure(&src, recursion_limit(20)).as_deref(),
+        Some("unclosed format String")
+    );
+}
+
+#[test]
+fn nested_format_strings_that_never_close_are_too_deep_past_the_limit() {
+    // Past the limit, the String would be too deep even if it closed, and its depth
+    // comes first in the source.
+    let src = format!("{}1", "$'${".repeat(FORMAT_DEPTH));
+    let err = parse_program_with_limits("test.frst", &src, recursion_limit(20))
+        .expect_err("past the limit");
+    assert_eq!(err.message(), "nested too deeply: the limit is 20 levels");
+    let [label] = err.labels() else {
+        panic!("expected one label, got {:?}", err.labels());
+    };
+    // The 21st format String's `$'`.
+    let opener = 20 * "$'${".len();
+    assert_eq!((label.span.start, label.span.end), (opener, opener + 2));
+}
+
 // -- Defaults --
 
 #[test]

@@ -471,26 +471,46 @@ pub(crate) enum UnclosedInterpolation {
 /// Scans the format String in `text` whose text starts at `start`, just past its
 /// opening `$'` or `$"`, `quote` being its quote character.
 pub(crate) fn scan_format_string(text: &str, start: usize, quote: u8) -> FormatStringEnd {
+    let mut at = start;
+    loop {
+        match scan_format_text(text, at, quote) {
+            FormatText::Closed(end) => return FormatStringEnd::Closed(end),
+            FormatText::Unclosed => return FormatStringEnd::Unclosed,
+            FormatText::Interpolation(open) => match skip_interpolation(text, open + 2) {
+                Ok(end) => at = end,
+                Err(why) => return FormatStringEnd::UnclosedInterpolation { open, why },
+            },
+        }
+    }
+}
+
+/// Where the text of a format String, scanned up to its next interpolation, ends.
+/// Each index is into the text scanned.
+enum FormatText {
+    /// At its closing quote, at this index.
+    Closed(usize),
+    /// At an interpolation, whose `${` is at this index.
+    Interpolation(usize),
+    /// At a line break or the end of input: format Strings are single-line.
+    Unclosed,
+}
+
+/// Scans the text of the format String in `text` from `at` to its next interpolation,
+/// `quote` being its quote character.
+fn scan_format_text(text: &str, at: usize, quote: u8) -> FormatText {
     let bytes = text.as_bytes();
-    let mut i = start;
+    let mut i = at;
     while i < bytes.len() {
         match bytes[i] {
             // Escaped character: skip both the backslash and the next byte
             b'\\' if i + 1 < bytes.len() => i += 2,
-
-            b'$' if bytes.get(i + 1) == Some(&b'{') => match skip_interpolation(text, i + 2) {
-                Ok(end) => i = end,
-                Err(why) => return FormatStringEnd::UnclosedInterpolation { open: i, why },
-            },
-
-            c if c == quote => return FormatStringEnd::Closed(i),
-
-            b'\n' => return FormatStringEnd::Unclosed,
-
+            b'$' if bytes.get(i + 1) == Some(&b'{') => return FormatText::Interpolation(i),
+            c if c == quote => return FormatText::Closed(i),
+            b'\n' => return FormatText::Unclosed,
             _ => i += 1,
         }
     }
-    FormatStringEnd::Unclosed
+    FormatText::Unclosed
 }
 
 /// Scans the interpolation in `text` whose expression starts at `start`, just past
@@ -499,78 +519,214 @@ pub(crate) fn scan_format_string(text: &str, start: usize, quote: u8) -> FormatS
 /// The expression is lexed as Frost, so a brace in a String, or in a format String
 /// nested in it, does not count. Like its format String, an interpolation is
 /// single-line.
+///
+/// A format String nested in it, and the interpolations nested in that, are scanned
+/// on a stack rather than by recursing, so nesting costs no native stack. A nested
+/// format String that does not close on its line, for whatever reason, is a String
+/// in this interpolation that does not.
 pub(crate) fn skip_interpolation(text: &str, start: usize) -> Result<usize, UnclosedInterpolation> {
-    let mut open_braces = Vec::new();
-    let mut last_end = start;
-    let mut last_string = None;
-    // Why the interpolation ends at the line end at `line_end`. The lexer skips only
-    // spaces and comments, so a `#` after the last token starts a comment.
-    let at_line_end =
-        |line_end: usize, last_end: usize, open_braces: &[usize], last_string| match text
-            [last_end..line_end]
-            .find('#')
-        {
-            Some(comment) => UnclosedInterpolation::Comment(last_end + comment),
-            None => UnclosedInterpolation::LineEnd {
-                open_brace: open_braces.last().copied(),
-                last_string,
-            },
-        };
-    let mut lexer = Token::lexer(&text[start..]);
-    while let Some(token) = lexer.next() {
-        let span = start + lexer.span().start..start + lexer.span().end;
-        let mut is_string = false;
-        match token {
-            Ok(Token::OpenBrace) => open_braces.push(span.start),
-            Ok(Token::CloseBrace) => {
-                if open_braces.pop().is_none() {
-                    return Ok(span.end);
-                }
-            }
-            Ok(Token::Newline) => {
-                return Err(at_line_end(span.start, last_end, &open_braces, last_string));
-            }
-            Ok(Token::MultilineStringLiteral(_)) if lexer.slice().contains('\n') => {
-                return Err(UnclosedInterpolation::MultilineString(span.start));
-            }
-            Ok(
-                Token::SingleQuoteStringLiteral(_)
-                | Token::DoubleQuoteStringLiteral(_)
-                | Token::RawStringLiteral(_)
-                | Token::MultilineStringLiteral(_)
-                | Token::SingleQuoteFormatStringLiteral(_)
-                | Token::DoubleQuoteFormatStringLiteral(_)
-                | Token::BytesLiteral(_),
-            ) => is_string = true,
-            Ok(_) => {}
-            Err(()) => match lexer.slice().as_bytes() {
-                // A Bytes literal that closes on its line is left to the parser,
-                // which reports what is wrong inside it.
-                [b'x', quote @ (b'\'' | b'"')] => {
-                    let line = lexer.remainder().split('\n').next().unwrap_or_default();
-                    match line.find(char::from(*quote)) {
-                        Some(close) => {
-                            lexer.bump(close + 1);
-                            is_string = true;
+    let mut stack = vec![Nested::Interpolation(InterpolationScan::new(start))];
+    loop {
+        let top = stack
+            .last_mut()
+            .expect("the interpolation scanned is on the stack");
+        match top {
+            Nested::Interpolation(scan) => match scan.scan(text) {
+                InterpolationEnd::Closed(end) => {
+                    stack.pop();
+                    match stack.last_mut() {
+                        None => return Ok(end),
+                        Some(Nested::FormatString { at, .. }) => *at = end,
+                        Some(Nested::Interpolation(_)) => {
+                            unreachable!("an interpolation is nested only in a format String")
                         }
-                        None => return Err(UnclosedInterpolation::String(span)),
                     }
                 }
-                unlexable => {
-                    if let Some(opener) = STRING_OPENERS
-                        .iter()
-                        .find(|opener| unlexable.starts_with(opener.as_bytes()))
-                    {
-                        let opener = span.start..span.start + opener.len();
-                        return Err(UnclosedInterpolation::String(opener));
+                InterpolationEnd::FormatString { opener, quote } => {
+                    stack.push(Nested::FormatString {
+                        opener,
+                        quote,
+                        at: opener + 2,
+                    });
+                }
+                InterpolationEnd::Unclosed(why) if stack.len() == 1 => return Err(why),
+                InterpolationEnd::Unclosed(_) => return Err(unclosed_nested(&stack)),
+            },
+            Nested::FormatString { opener, quote, at } => match scan_format_text(text, *at, *quote)
+            {
+                FormatText::Closed(end) => {
+                    let string = *opener..end + 1;
+                    stack.pop();
+                    match stack.last_mut() {
+                        Some(Nested::Interpolation(scan)) => scan.resume_after_string(string),
+                        _ => unreachable!("a format String is nested only in an interpolation"),
                     }
                 }
+                FormatText::Interpolation(open) => {
+                    stack.push(Nested::Interpolation(InterpolationScan::new(open + 2)));
+                }
+                FormatText::Unclosed => return Err(unclosed_nested(&stack)),
             },
         }
-        last_end = start + lexer.span().end;
-        last_string = is_string.then_some(span.start..last_end);
     }
-    Err(at_line_end(text.len(), last_end, &open_braces, last_string))
+}
+
+/// What [`skip_interpolation`] has open, outermost first: the interpolation it scans,
+/// then alternately a format String nested in the one before and an interpolation in that.
+enum Nested {
+    Interpolation(InterpolationScan),
+    FormatString {
+        /// The index of its `$`.
+        opener: usize,
+        quote: u8,
+        /// The index its text is scanned from.
+        at: usize,
+    },
+}
+
+/// Why the scan of the interpolation at the bottom of `stack` fails, given that
+/// something nested in it does not close on its line: the format String nested in it
+/// that holds the failure does not.
+fn unclosed_nested(stack: &[Nested]) -> UnclosedInterpolation {
+    match stack.get(1) {
+        Some(Nested::FormatString { opener, .. }) => {
+            UnclosedInterpolation::String(*opener..opener + 2)
+        }
+        _ => unreachable!("a failure above the interpolation scanned is in a format String in it"),
+    }
+}
+
+/// The scan of one interpolation's expression, which pauses at each format String
+/// nested in it.
+struct InterpolationScan {
+    /// The index the expression is lexed from.
+    at: usize,
+    /// The index of each `{` in it still open, innermost last.
+    open_braces: Vec<usize>,
+    /// The index just past its last token.
+    last_end: usize,
+    /// The String that is its last token, if one is.
+    last_string: Option<Range<usize>>,
+}
+
+/// Where the scan of an interpolation pauses or ends.
+enum InterpolationEnd {
+    /// At its closing `}`: this is the index just past it.
+    Closed(usize),
+    /// At a format String nested in it, whose `$` is at `opener`.
+    FormatString { opener: usize, quote: u8 },
+    /// At its line's end, or at something in it that does not close on its line.
+    Unclosed(UnclosedInterpolation),
+}
+
+impl InterpolationScan {
+    fn new(start: usize) -> Self {
+        Self {
+            at: start,
+            open_braces: Vec::new(),
+            last_end: start,
+            last_string: None,
+        }
+    }
+
+    /// Continue past `string`, a format String nested in the interpolation, which is now
+    /// its last token.
+    fn resume_after_string(&mut self, string: Range<usize>) {
+        self.at = string.end;
+        self.last_end = string.end;
+        self.last_string = Some(string);
+    }
+
+    /// Lex the interpolation in `text` from where the scan is, to where it pauses or ends.
+    fn scan(&mut self, text: &str) -> InterpolationEnd {
+        let start = self.at;
+        let mut lexer = Token::lexer(&text[start..]);
+        loop {
+            // A format String is left to `skip_interpolation`, rather than lexed here,
+            // which would scan it by recursing. The lexer skips spaces before a token.
+            let rest = lexer.remainder();
+            let token = rest.trim_start_matches([' ', '\t', '\r', '\x0C']);
+            if let [b'$', quote @ (b'\'' | b'"'), ..] = token.as_bytes() {
+                let opener = text.len() - token.len();
+                return InterpolationEnd::FormatString {
+                    opener,
+                    quote: *quote,
+                };
+            }
+
+            let Some(token) = lexer.next() else { break };
+            let span = start + lexer.span().start..start + lexer.span().end;
+            let mut is_string = false;
+            match token {
+                Ok(Token::OpenBrace) => self.open_braces.push(span.start),
+                Ok(Token::CloseBrace) => {
+                    if self.open_braces.pop().is_none() {
+                        return InterpolationEnd::Closed(span.end);
+                    }
+                }
+                Ok(Token::Newline) => {
+                    return InterpolationEnd::Unclosed(self.at_line_end(text, span.start));
+                }
+                Ok(Token::MultilineStringLiteral(_)) if lexer.slice().contains('\n') => {
+                    return InterpolationEnd::Unclosed(UnclosedInterpolation::MultilineString(
+                        span.start,
+                    ));
+                }
+                Ok(
+                    Token::SingleQuoteStringLiteral(_)
+                    | Token::DoubleQuoteStringLiteral(_)
+                    | Token::RawStringLiteral(_)
+                    | Token::MultilineStringLiteral(_)
+                    | Token::BytesLiteral(_),
+                ) => is_string = true,
+                Ok(_) => {}
+                Err(()) => match lexer.slice().as_bytes() {
+                    // A Bytes literal that closes on its line is left to the parser,
+                    // which reports what is wrong inside it.
+                    [b'x', quote @ (b'\'' | b'"')] => {
+                        let line = lexer.remainder().split('\n').next().unwrap_or_default();
+                        match line.find(char::from(*quote)) {
+                            Some(close) => {
+                                lexer.bump(close + 1);
+                                is_string = true;
+                            }
+                            None => {
+                                return InterpolationEnd::Unclosed(UnclosedInterpolation::String(
+                                    span,
+                                ));
+                            }
+                        }
+                    }
+                    unlexable => {
+                        if let Some(opener) = STRING_OPENERS
+                            .iter()
+                            .find(|opener| unlexable.starts_with(opener.as_bytes()))
+                        {
+                            let opener = span.start..span.start + opener.len();
+                            return InterpolationEnd::Unclosed(UnclosedInterpolation::String(
+                                opener,
+                            ));
+                        }
+                    }
+                },
+            }
+            self.last_end = start + lexer.span().end;
+            self.last_string = is_string.then_some(span.start..self.last_end);
+        }
+        InterpolationEnd::Unclosed(self.at_line_end(text, text.len()))
+    }
+
+    /// Why the interpolation ends at the line end at `line_end` in `text`. The lexer
+    /// skips only spaces and comments, so a `#` after the last token starts a comment.
+    fn at_line_end(&self, text: &str, line_end: usize) -> UnclosedInterpolation {
+        match text[self.last_end..line_end].find('#') {
+            Some(comment) => UnclosedInterpolation::Comment(self.last_end + comment),
+            None => UnclosedInterpolation::LineEnd {
+                open_brace: self.open_braces.last().copied(),
+                last_string: self.last_string.clone(),
+            },
+        }
+    }
 }
 
 /// The openers of every String but a Bytes literal, longest first. Source the lexer
