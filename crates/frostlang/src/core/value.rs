@@ -3,11 +3,13 @@ pub(crate) mod equality;
 pub(crate) mod free;
 mod operators;
 mod ordering;
+mod render_limits;
 mod stringify;
 mod type_checks;
 
 use std::sync::Arc;
 
+pub use render_limits::RenderLimits;
 pub use stringify::{write_escaped_string, write_quoted_string};
 
 use crate::core::{

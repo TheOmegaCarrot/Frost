@@ -34,8 +34,8 @@ mod vm;
 
 pub use core::{
     BacktraceFrame, FrostArray, FrostBytes, FrostError, FrostFloat, FrostMap, FrostOpaque,
-    FrostResult, FrostString, FrostType, KEYWORDS, MapKey, OpaqueHandle, SpecialFloat, TypeSet,
-    Value, ValueMap, WithBacktrace, from_value, is_identifier_like,
+    FrostResult, FrostString, FrostType, KEYWORDS, MapKey, OpaqueHandle, RenderLimits,
+    SpecialFloat, TypeSet, Value, ValueMap, WithBacktrace, from_value, is_identifier_like,
     is_identifier_like_and_not_keyword, is_reserved_keyword, to_value, value_map,
     write_escaped_string, write_quoted_string,
 };

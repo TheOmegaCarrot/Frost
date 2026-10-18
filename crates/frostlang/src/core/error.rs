@@ -4,7 +4,7 @@ use std::sync::Arc;
 
 use itertools::Itertools;
 
-use crate::core::Value;
+use crate::core::{RenderLimits, Value};
 
 /// A runtime error produced by Frost code.
 ///
@@ -97,11 +97,14 @@ impl FrostError {
         &self.backtrace
     }
 
-    /// The error's message, for display. Borrows a plain message; renders a value payload.
+    /// The error's message, for display. Borrows a plain message; renders a value payload
+    /// within [`RenderLimits::brief`].
     pub fn message(&self) -> Cow<'_, str> {
         match &self.payload {
             ErrorPayload::Message(text) => Cow::Borrowed(text.as_ref()),
-            ErrorPayload::Value(value) => Cow::Owned(value.to_frost_string()),
+            ErrorPayload::Value(value) => {
+                Cow::Owned(value.to_frost_string_within(RenderLimits::brief()))
+            }
         }
     }
 

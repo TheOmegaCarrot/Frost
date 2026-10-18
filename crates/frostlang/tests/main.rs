@@ -100,6 +100,7 @@ mod value_equality;
 mod value_freeing;
 mod value_map;
 mod value_ordering;
+mod value_render_limits;
 mod value_to_string;
 mod value_type_category;
 mod value_type_checks;

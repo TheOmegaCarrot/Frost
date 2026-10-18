@@ -1,74 +1,110 @@
 use std::fmt::Write;
 
 use crate::core::util::identifier::is_identifier_like_and_not_keyword;
-use crate::core::{FrostMap, FrostOpaque, MapKey, Value};
+use crate::core::{FrostMap, FrostOpaque, MapKey, RenderLimits, Value};
 
 impl Value {
-    /// Converts to a compact string representation.
+    /// Converts to a compact string representation, within the default [`RenderLimits`].
     /// Strings at the top level are unquoted.
     pub fn to_frost_string(&self) -> String {
-        let mut buf = String::new();
-        stringify(self, &mut buf, &StringifyContext::compact());
-        buf
+        self.to_frost_string_within(RenderLimits::new())
     }
 
-    /// Converts to a pretty-printed string with indentation.
+    /// Converts to a compact string representation, within `limits`.
     /// Strings at the top level are unquoted.
-    pub fn to_pretty_string(&self) -> String {
-        let mut buf = String::new();
-        stringify(self, &mut buf, &StringifyContext::pretty());
-        buf
+    pub fn to_frost_string_within(&self, limits: RenderLimits) -> String {
+        render(self, limits, Style::Compact)
     }
 
-    /// Converts to a compact string representation with Strings quoted and escaped, even at the top level.
+    /// Converts to a pretty-printed string with indentation, within the default
+    /// [`RenderLimits`]. Strings at the top level are unquoted.
+    pub fn to_pretty_string(&self) -> String {
+        self.to_pretty_string_within(RenderLimits::new())
+    }
+
+    /// Converts to a pretty-printed string with indentation, within `limits`.
+    /// Strings at the top level are unquoted.
+    pub fn to_pretty_string_within(&self, limits: RenderLimits) -> String {
+        render(self, limits, Style::Pretty)
+    }
+
+    /// Converts to a compact string representation with Strings quoted and escaped, even
+    /// at the top level, within the default [`RenderLimits`].
     pub fn to_debug_string(&self) -> String {
-        let mut buf = String::new();
-        stringify(self, &mut buf, &StringifyContext::debug());
-        buf
+        self.to_debug_string_within(RenderLimits::new())
+    }
+
+    /// Converts to a compact string representation with Strings quoted and escaped, even
+    /// at the top level, within `limits`.
+    pub fn to_debug_string_within(&self, limits: RenderLimits) -> String {
+        render(self, limits, Style::Debug)
     }
 }
 
-struct StringifyContext {
-    in_structure: bool,
+#[derive(PartialEq)]
+enum Style {
+    Compact,
+    Pretty,
+    Debug,
+}
+
+fn render(value: &Value, limits: RenderLimits, style: Style) -> String {
+    let rendering = Rendering {
+        pretty: style == Style::Pretty,
+        max_depth: limits.max_depth.unwrap_or(usize::MAX),
+        max_len: limits.max_len.unwrap_or(usize::MAX),
+    };
+    let ctx = StringifyContext {
+        rendering: &rendering,
+        in_structure: style == Style::Debug,
+        depth: 0,
+    };
+    let mut buf = String::new();
+    stringify(value, &mut buf, &ctx);
+    buf
+}
+
+/// What holds for the whole of one value's rendering: its layout and its limits, each
+/// `usize::MAX` where there is none.
+struct Rendering {
     pretty: bool,
+    max_depth: usize,
+    max_len: usize,
+}
+
+/// Where in the value being rendered a part of it is.
+struct StringifyContext<'a> {
+    rendering: &'a Rendering,
+    in_structure: bool,
     depth: usize,
 }
 
-impl StringifyContext {
-    fn compact() -> Self {
-        Self {
-            in_structure: false,
-            pretty: false,
-            depth: 0,
-        }
-    }
-
-    fn pretty() -> Self {
-        Self {
-            in_structure: false,
-            pretty: true,
-            depth: 0,
-        }
-    }
-
-    fn debug() -> Self {
-        Self {
-            in_structure: true,
-            pretty: false,
-            depth: 0,
-        }
-    }
-
+impl StringifyContext<'_> {
     fn nested(&self) -> Self {
         Self {
+            rendering: self.rendering,
             in_structure: true,
-            pretty: self.pretty,
             depth: self.depth + 1,
         }
     }
 
-    fn indent(&self) -> String {
-        " ".repeat(self.depth * 4)
+    fn pretty(&self) -> bool {
+        self.rendering.pretty
+    }
+
+    fn push_indent(&self, buf: &mut String) {
+        buf.extend(std::iter::repeat_n(' ', self.depth * 4));
+    }
+
+    /// Whether a container at this depth renders as `[...]` or `{...}` in place of its
+    /// contents.
+    fn past_max_depth(&self) -> bool {
+        self.depth > self.rendering.max_depth
+    }
+
+    /// Whether the rest of a container renders as `...`, `buf` being the text so far.
+    fn at_max_len(&self, buf: &str) -> bool {
+        buf.len() >= self.rendering.max_len
     }
 }
 
@@ -178,70 +214,65 @@ pub fn write_escaped_string(text: &str, out: &mut impl Write) -> std::fmt::Resul
 fn stringify_array(elems: &[Value], buf: &mut String, ctx: &StringifyContext) {
     if elems.is_empty() {
         buf.push_str("[]");
-        return;
-    }
-
-    let nested = ctx.nested();
-
-    if ctx.pretty {
-        buf.push_str("[\n");
-        for (i, elem) in elems.iter().enumerate() {
-            if i > 0 {
-                buf.push_str(",\n");
-            }
-            buf.push_str(&nested.indent());
-            stringify(elem, buf, &nested);
-        }
-        buf.push('\n');
-        buf.push_str(&ctx.indent());
-        buf.push(']');
+    } else if ctx.past_max_depth() {
+        buf.push_str("[...]");
     } else {
-        buf.push_str("[ ");
-        for (i, elem) in elems.iter().enumerate() {
-            if i > 0 {
-                buf.push_str(", ");
-            }
-            stringify(elem, buf, &nested);
-        }
-        buf.push_str(" ]");
+        stringify_elements(('[', ']'), elems.iter(), buf, ctx, stringify);
     }
 }
 
 fn stringify_map(map: &FrostMap, buf: &mut String, ctx: &StringifyContext) {
     if map.is_empty() {
         buf.push_str("{}");
-        return;
-    }
-
-    let nested = ctx.nested();
-
-    if ctx.pretty {
-        buf.push_str("{\n");
-        for (i, (key, value)) in map.iter().enumerate() {
-            if i > 0 {
-                buf.push_str(",\n");
-            }
-            buf.push_str(&nested.indent());
-            stringify_map_entry(key, value, buf, &nested);
-        }
-        buf.push('\n');
-        buf.push_str(&ctx.indent());
-        buf.push('}');
+    } else if ctx.past_max_depth() {
+        buf.push_str("{...}");
     } else {
-        buf.push_str("{ ");
-        for (i, (key, value)) in map.iter().enumerate() {
-            if i > 0 {
-                buf.push_str(", ");
-            }
-            stringify_map_entry(key, value, buf, &nested);
-        }
-        buf.push_str(" }");
+        stringify_elements(('{', '}'), map.iter(), buf, ctx, stringify_map_entry);
     }
 }
 
-fn stringify_map_entry(key: &MapKey, value: &Value, buf: &mut String, ctx: &StringifyContext) {
+/// Writes a container at `ctx`'s depth: `elements` between the `open` and `close`
+/// brackets, each written by `write`. Once the text reaches the length limit, the rest
+/// are written as one `...`.
+fn stringify_elements<T>(
+    (open, close): (char, char),
+    elements: impl Iterator<Item = T>,
+    buf: &mut String,
+    ctx: &StringifyContext,
+    write: impl Fn(T, &mut String, &StringifyContext),
+) {
+    let nested = ctx.nested();
+    let (after_open, separator, before_close) = if ctx.pretty() {
+        ("\n", ",\n", "\n")
+    } else {
+        (" ", ", ", " ")
+    };
+
+    buf.push(open);
+    buf.push_str(after_open);
+    for (i, element) in elements.enumerate() {
+        if i > 0 {
+            buf.push_str(separator);
+        }
+        if ctx.pretty() {
+            nested.push_indent(buf);
+        }
+        if nested.at_max_len(buf) {
+            buf.push_str("...");
+            break;
+        }
+        write(element, buf, &nested);
+    }
+    buf.push_str(before_close);
+    if ctx.pretty() {
+        ctx.push_indent(buf);
+    }
+    buf.push(close);
+}
+
+fn stringify_map_entry((key, value): (&MapKey, &Value), buf: &mut String, ctx: &StringifyContext) {
     let shorthand_name = match key {
-        MapKey::String(s) if ctx.pretty && is_identifier_like_and_not_keyword(s) => {
+        MapKey::String(s) if ctx.pretty() && is_identifier_like_and_not_keyword(s) => {
             Some(s.as_ref())
         }
         _ => None,
