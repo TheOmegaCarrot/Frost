@@ -40,7 +40,7 @@ use types::*;
 /// folded. `Impure` globals (I/O, mutation, and imports) are never folded.
 /// Purity of a callback argument is a separate matter: an impure callback keeps
 /// its own call site unfoldable regardless of this flag.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub enum Purity {
     /// Eligible for constant folding.
     Pure,

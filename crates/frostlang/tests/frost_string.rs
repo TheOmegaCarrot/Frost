@@ -36,6 +36,13 @@ fn it_gives_back_its_text() {
 }
 
 #[test]
+fn the_default_is_empty_text() {
+    let text = FrostString::default();
+    assert_eq!(text, "", "the default is the empty text");
+    assert_eq!(text, FrostString::from(""), "equal to one made from \"\"");
+}
+
+#[test]
 fn a_clone_shares_the_text() {
     let text = FrostString::from("shared");
     let clone = text.clone();

@@ -31,7 +31,7 @@ pub use optimization::{InvalidOptimizationSetting, Optimization, OptimizationOpt
 ///     .with_implicit_export(true);
 /// assert!(OPTIONS.implicit_export);
 /// ```
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 #[non_exhaustive]
 pub struct CompilerOptions {
     /// Which optimizations to apply.

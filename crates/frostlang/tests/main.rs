@@ -57,6 +57,7 @@ mod logical_operations;
 mod map_destructuring;
 mod map_key;
 mod match_expressions;
+mod module_id;
 mod native_args;
 mod native_bundle;
 mod native_categories;

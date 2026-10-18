@@ -80,7 +80,7 @@ impl CompiledFunction {
 /// A malicious or runaway script is still "trusted" in this sense.
 /// What such a script may reach is governed by its [`Importer`](super::Importer),
 /// and how much it may run by [`VmRuntimeConfiguration`](super::VmRuntimeConfiguration).
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct TrustedProgram(pub(crate) Arc<CompiledFunction>);
 
 impl TrustedProgram {
@@ -148,7 +148,7 @@ pub struct NameEntry {
 /// fn a, b, c, ...more -> ...
 /// # at least 3
 /// ```
-#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]
 pub enum Arity {
     /// Exactly this many arguments.
     Exact(usize),

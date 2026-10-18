@@ -1,8 +1,33 @@
 //! The whole path a host takes to embed Frost: compile source, run it, and read
 //! its result and exports.
 
-use frostlang::compile::{CompilerOptions, compile_program};
+use std::collections::BTreeMap;
+
+use frostlang::compile::{CompilerOptions, compile_in_scope, compile_program};
 use frostlang::{ProgramParts, Value, Vm};
+
+#[test]
+fn a_host_closes_one_compiled_program_over_different_captures() {
+    // Compiled once, a program is cloned and closed once per environment.
+    let program = compile_in_scope("scaled.frst", "x * 10", CompilerOptions::new(), &["x"])
+        .expect("the source compiles")
+        .code;
+    let run_with = |x: i64| {
+        let captures = BTreeMap::from([(String::from("x"), Value::Int(x))]);
+        let closure = program
+            .clone()
+            .close(captures)
+            .expect("the capture is supplied");
+        Vm::factory()
+            .build(closure)
+            .run()
+            .expect("the program runs")
+            .tail()
+            .clone()
+    };
+    assert_eq!(run_with(1), Value::Int(10), "closed over x = 1");
+    assert_eq!(run_with(2), Value::Int(20), "closed over x = 2");
+}
 
 #[test]
 fn a_host_compiles_and_runs_source() {

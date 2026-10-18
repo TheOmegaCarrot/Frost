@@ -10,7 +10,9 @@ use crate::core::FrostString;
 ///
 /// It dereferences to `[u8]`, so every byte-slice method applies, and cloning
 /// one is cheap.
-#[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash, serde::Serialize, serde::Deserialize)]
+#[derive(
+    Clone, Default, PartialEq, Eq, PartialOrd, Ord, Hash, serde::Serialize, serde::Deserialize,
+)]
 #[serde(transparent)]
 pub struct FrostBytes(Arc<[u8]>);
 

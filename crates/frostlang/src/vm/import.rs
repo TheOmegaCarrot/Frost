@@ -1,4 +1,4 @@
-use std::{collections::BTreeMap, marker::PhantomData, sync::Arc};
+use std::{borrow::Borrow, collections::BTreeMap, marker::PhantomData, sync::Arc};
 
 use crate::native::NativeDef;
 use crate::{
@@ -19,7 +19,7 @@ mod resolve_tests;
 /// its format belongs to the resolver that produced it.
 /// A resolver handed an id it does not recognize should treat it as foreign
 /// rather than guess at its meaning.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct ModuleId(Arc<str>);
 
 impl ModuleId {
@@ -37,6 +37,18 @@ impl ModuleId {
 impl std::fmt::Display for ModuleId {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.write_str(&self.0)
+    }
+}
+
+impl AsRef<str> for ModuleId {
+    fn as_ref(&self) -> &str {
+        &self.0
+    }
+}
+
+impl Borrow<str> for ModuleId {
+    fn borrow(&self) -> &str {
+        &self.0
     }
 }
 

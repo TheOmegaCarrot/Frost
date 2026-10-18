@@ -70,7 +70,7 @@ category!(
 ///
 /// An `f64` argument accepts the same values, but takes each as a float;
 /// this keeps which it is, as for showing it back exactly as written.
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Numeric {
     /// An Int.
     Int(i64),
@@ -111,7 +111,7 @@ impl From<Numeric> for Value {
 }
 
 /// A Flat argument: a String or Bytes, the flat sequence types.
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub enum Flat {
     /// A String.
     String(FrostString),
@@ -152,7 +152,7 @@ impl From<Flat> for Value {
 }
 
 /// A Structured argument: an Array or a Map.
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub enum Structured {
     /// An Array.
     Array(FrostArray),
@@ -183,7 +183,7 @@ impl From<Structured> for Value {
 }
 
 /// A Primitive argument: Null, a Bool, an Int, a Float, a String, or Bytes.
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub enum Primitive {
     /// Null.
     Null,
@@ -230,7 +230,7 @@ impl From<Primitive> for Value {
 }
 
 /// A Nonnull argument: a value of any type but Null.
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Nonnull(Value);
 
 impl Nonnull {
@@ -275,7 +275,7 @@ impl From<Nonnull> for Value {
 ///     ctx.invoke(&function, [value])
 /// }
 /// ```
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Function(Value);
 
 impl Function {

@@ -9,7 +9,9 @@ use crate::core::{FrostBytes, FrostError, FrostFloat, FrostString, FrostType, Ty
 /// wherever `<` tells them apart: the Float keys `0.0` and `-0.0`, which `<` orders as equal, are
 /// distinct keys, with `-0.0` first.
 /// Ordering across types follows the variant order: Bool < Int < Float < String < Bytes.
-#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, serde::Serialize, serde::Deserialize)]
+#[derive(
+    Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, serde::Serialize, serde::Deserialize,
+)]
 pub enum MapKey {
     /// A Bool key.
     Bool(bool),
@@ -118,6 +120,12 @@ impl From<FrostBytes> for MapKey {
 impl From<i64> for MapKey {
     fn from(value: i64) -> Self {
         Self::Int(value)
+    }
+}
+
+impl From<i32> for MapKey {
+    fn from(value: i32) -> Self {
+        Self::Int(value.into())
     }
 }
 

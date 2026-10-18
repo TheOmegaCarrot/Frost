@@ -17,7 +17,7 @@ use std::num::NonZeroU64;
 /// const LIMITS: ParseLimits = ParseLimits::new().with_max_ast_depth(NonZeroU64::new(100));
 /// assert_eq!(LIMITS.max_ast_depth, NonZeroU64::new(100));
 /// ```
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 #[non_exhaustive]
 pub struct ParseLimits {
     /// How deeply the parser may recurse: each expression or pattern inside another is one

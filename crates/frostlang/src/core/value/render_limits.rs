@@ -27,7 +27,7 @@
 /// let short = RenderLimits::new().with_max_len(Some(3));
 /// assert_eq!(value.to_frost_string_within(short), "[ 1, ... ]");
 /// ```
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 #[non_exhaustive]
 pub struct RenderLimits {
     /// How many levels deep containers render, the value rendered being at depth 0. A

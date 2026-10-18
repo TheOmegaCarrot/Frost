@@ -115,7 +115,7 @@ impl<S: fmt::Debug> fmt::Debug for StateLock<S> {
 }
 
 /// The error locking a [`StateLock`] that a panic poisoned.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, thiserror::Error)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, thiserror::Error)]
 #[error("a panic poisoned the state")]
 pub struct PoisonedState;
 

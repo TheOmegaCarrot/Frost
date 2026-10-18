@@ -1,4 +1,5 @@
 use std::cmp::Ordering;
+use std::hash::{Hash, Hasher};
 
 use crate::core::error::FrostError;
 
@@ -101,5 +102,11 @@ impl PartialOrd for FrostFloat {
 impl Ord for FrostFloat {
     fn cmp(&self, other: &Self) -> Ordering {
         self.0.total_cmp(&other.0)
+    }
+}
+
+impl Hash for FrostFloat {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.0.to_bits().hash(state);
     }
 }

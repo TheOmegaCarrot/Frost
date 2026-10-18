@@ -20,7 +20,7 @@ pub(crate) const VERSION: &str = env!("CARGO_PKG_VERSION");
 
 /// A zero-sized [`CompiledFunction`](crate::bytecode::CompiledFunction) field that stamps the runtime
 /// version on serialize and rejects a mismatch on deserialize. Carries no runtime data.
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash)]
 pub struct FormatVersion;
 
 impl Serialize for FormatVersion {

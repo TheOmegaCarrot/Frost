@@ -5,7 +5,7 @@ use std::ops::Range;
 use serde::Serialize;
 
 /// A byte range in the source, from `start` (inclusive) to `end` (exclusive).
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash, Serialize)]
 pub struct SourceSpan {
     /// Inclusive start offset.
     pub start: usize,
@@ -66,7 +66,7 @@ impl<T> Spanned<T> {
 // -- Binding --
 
 /// A name binding: either a named identifier or a discard (`_`).
-#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash, Serialize)]
 #[serde(tag = "type", content = "value")]
 pub enum Binding {
     /// Binds the given name.
@@ -290,7 +290,7 @@ pub enum Literal {
 // -- Operators --
 
 /// The binary operators; see [`Expr::BinOp`].
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Serialize)]
 pub enum BinOp {
     /// `+`
     Add,
@@ -317,7 +317,7 @@ pub enum BinOp {
 }
 
 /// The short-circuiting logical operators; see [`Expr::Logical`].
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Serialize)]
 pub enum LogicalOp {
     /// `and`
     And,
@@ -326,7 +326,7 @@ pub enum LogicalOp {
 }
 
 /// The unary operators; see [`Expr::UnaryOp`].
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Serialize)]
 pub enum UnaryOp {
     /// `-`
     Negate,
@@ -419,7 +419,7 @@ pub struct MapPatternEntry {
 }
 
 /// The type named after `is` in a [`Pattern::Binding`].
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Serialize)]
 pub enum TypeConstraint {
     /// `is Null`
     Null,

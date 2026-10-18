@@ -29,6 +29,17 @@ fn every_way_of_making_one_gives_the_same_bytes() {
 }
 
 #[test]
+fn the_default_is_no_bytes() {
+    let bytes = FrostBytes::default();
+    assert!(bytes.is_empty(), "the default holds no bytes");
+    assert_eq!(
+        bytes,
+        FrostBytes::from(&[][..]),
+        "equal to one made from an empty slice"
+    );
+}
+
+#[test]
 fn it_gives_back_its_bytes() {
     let bytes = FrostBytes::from([7u8, 8]);
     assert_eq!(Vec::from(bytes.clone()), [7, 8]);

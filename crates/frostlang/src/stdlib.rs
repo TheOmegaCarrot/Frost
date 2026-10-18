@@ -44,7 +44,7 @@ use crate::{Stdlib, StdlibModule};
 /// The configuration of every configurable module, for the [`Stdlib`] presets.
 ///
 /// The default suits most hosts.
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug, Default, PartialEq, Eq, Hash)]
 #[non_exhaustive]
 pub struct StdlibConfig {
     /// The configuration of [`random`].

@@ -328,7 +328,7 @@ impl<W: Write> Write for Shared<W> {
 
 /// How a [`Driver`] run ended, and so the process's exit status.
 /// Return it from `main` to exit with that status.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum Exit {
     /// Everything asked for was done. Exit status 0.
     Success,

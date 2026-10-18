@@ -1,3 +1,5 @@
+use std::collections::HashSet;
+
 use frostlang::{FrostFloat, MapKey, Value};
 
 #[test]
@@ -50,6 +52,32 @@ fn map_key_to_value() {
 }
 
 #[test]
+fn a_set_holds_one_of_each_equal_key() {
+    // Keys of different types are unequal even when Frost's `<` orders them as
+    // equal, so `1` and `1.0` stay apart, as do the two zeros.
+    let float = |f| MapKey::try_from(f).unwrap();
+    let keys = [
+        MapKey::from(1i64),
+        MapKey::from(1i64),
+        float(1.0),
+        float(0.0),
+        float(-0.0),
+        MapKey::from("1"),
+        MapKey::from(&b"1"[..]),
+        MapKey::from(true),
+    ];
+    let set: HashSet<MapKey> = keys.iter().cloned().collect();
+    assert_eq!(
+        set.len(),
+        keys.len() - 1,
+        "only the repeated Int collapses: {set:?}"
+    );
+    for key in &keys {
+        assert!(set.contains(key), "{key:?} is found");
+    }
+}
+
+#[test]
 fn map_key_ordering_same_type() {
     let a = MapKey::Int(1);
     let b = MapKey::Int(2);
@@ -89,6 +117,19 @@ fn key_from_string() {
 fn key_from_i64() {
     let k: MapKey = 42i64.into();
     assert!(matches!(k, MapKey::Int(42)));
+}
+
+#[test]
+fn key_from_i32_keeps_the_value_across_its_range() {
+    for n in [0i32, 42, -1, i32::MIN, i32::MAX] {
+        assert_eq!(MapKey::from(n), MapKey::Int(n.into()), "{n}");
+    }
+}
+
+#[test]
+fn key_from_i32_matches_value_from_i32() {
+    let key = MapKey::from(-7i32);
+    assert_eq!(Value::from(key), Value::from(-7i32));
 }
 
 #[test]

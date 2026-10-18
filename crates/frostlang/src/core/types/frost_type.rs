@@ -4,7 +4,7 @@
 ///
 /// Sets of types are [`TypeSet`](crate::TypeSet)s: build one with `|`
 /// (`FrostType::Int | FrostType::Float`) or use a named category constant.
-#[derive(Clone, Copy, PartialEq, Eq, Debug, serde::Serialize, serde::Deserialize)]
+#[derive(Clone, Copy, PartialEq, Eq, Hash, Debug, serde::Serialize, serde::Deserialize)]
 pub enum FrostType {
     /// The absence of a value.
     Null,

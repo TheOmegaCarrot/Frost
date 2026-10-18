@@ -20,7 +20,7 @@ pub fn tokens(source: &str) -> impl Iterator<Item = (Result<Token<'_>, LexError>
 }
 
 /// Bytes of source that begin no [`Token`]; see [`tokens`].
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct LexError;
 
 /// One token of Frost source. See [`tokens`].

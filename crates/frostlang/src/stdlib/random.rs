@@ -14,7 +14,7 @@ use crate::{
 };
 
 /// The configuration of [`random`].
-#[derive(Clone, Copy, Debug, Default)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash)]
 pub struct RandomConfig {
     /// The seed of the module's default engine, `random.rng`.
     /// With `None`, it is seeded from the operating system's randomness,

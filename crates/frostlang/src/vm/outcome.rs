@@ -112,7 +112,7 @@ impl RunError {
 }
 
 /// How a run failed; see [`RunError::kind`].
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub enum RunErrorKind {
     /// The program raised an error that nothing caught. Frost code could have
     /// caught it with `try_call`.
@@ -123,7 +123,7 @@ pub enum RunErrorKind {
 }
 
 /// Why a run was aborted; see [`RunErrorKind::Aborted`].
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 #[non_exhaustive]
 pub enum AbortReason {
     /// The run made more function calls than its

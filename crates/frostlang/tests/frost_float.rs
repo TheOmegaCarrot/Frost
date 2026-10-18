@@ -1,6 +1,19 @@
 use std::cmp::Ordering;
+use std::collections::HashSet;
 
 use frostlang::FrostFloat;
+
+#[test]
+fn a_set_holds_one_of_each_equal_float() {
+    // Hashing must agree with bit equality: equal Floats collapse, and the two
+    // zeros, being unequal, stay apart.
+    let floats = [1.5, 1.5, 0.0, -0.0, 0.0, -0.0].map(|f| FrostFloat::new(f).unwrap());
+    let set: HashSet<FrostFloat> = floats.into_iter().collect();
+    assert_eq!(set.len(), 3, "1.5, 0.0, and -0.0: {set:?}");
+    for f in floats {
+        assert!(set.contains(&f), "{f:?} is found");
+    }
+}
 
 #[test]
 fn accepts_normal_values() {

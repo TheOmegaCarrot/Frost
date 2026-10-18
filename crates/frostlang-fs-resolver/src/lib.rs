@@ -122,7 +122,7 @@ pub struct FsResolver {
 
 /// How an import error renders a module's compile errors; see
 /// [`FsResolver::with_diagnostics`].
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
 pub enum DiagnosticStyle {
     /// Narrated plain text; see [`Diagnostics::render_narrated`]. The default
     /// without the [`graphical-diagnostics`](crate#features) feature.

@@ -181,7 +181,7 @@ pub struct InvalidMetacommand {
 }
 
 /// Why the REPL refuses a frontend's metacommand.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum MetacommandProblem {
     /// Its name is not a valid metacommand name (see [`MetacommandSpec::new`]).
     InvalidName,

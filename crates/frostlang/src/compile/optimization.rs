@@ -11,7 +11,7 @@ use itertools::Itertools;
 /// Start from a preset, [`ALL`](Self::ALL) or [`NONE`](Self::NONE), and adjust
 /// it with [`with`](Self::with), [`set`](Self::set), or
 /// [`with_settings`](Self::with_settings).
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 #[non_exhaustive]
 pub struct OptimizationOptions {
     /// Evaluate an expression built only from compile-time-known values and pure

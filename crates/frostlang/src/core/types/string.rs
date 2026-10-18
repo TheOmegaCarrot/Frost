@@ -7,7 +7,9 @@ use std::sync::Arc;
 ///
 /// It dereferences to [`str`], so every `&str` method applies, and cloning one
 /// is cheap.
-#[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash, serde::Serialize, serde::Deserialize)]
+#[derive(
+    Clone, Default, PartialEq, Eq, PartialOrd, Ord, Hash, serde::Serialize, serde::Deserialize,
+)]
 #[serde(transparent)]
 pub struct FrostString(Arc<str>);
 
