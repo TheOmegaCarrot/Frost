@@ -24,6 +24,7 @@ mod do_expressions;
 mod effects;
 mod embedding;
 mod error;
+mod folded_constants;
 mod format_strings;
 mod frost_array;
 mod frost_bytes;

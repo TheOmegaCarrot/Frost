@@ -29,4 +29,4 @@ pub use util::identifier::{
     KEYWORDS, is_identifier_like, is_identifier_like_and_not_keyword, is_reserved_keyword,
 };
 pub use value::{RenderLimits, Value, write_escaped_string, write_quoted_string};
-pub(crate) use value::{equality, free};
+pub(crate) use value::{equality, find, free};

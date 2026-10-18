@@ -30,6 +30,7 @@ use std::sync::Arc;
 use crate::bytecode::{Bytecode, CompiledFunction};
 use crate::compile::lower::assemble::assemble_code;
 use crate::compile::lower::{ExprFragment, FunctionBuilder, Ir, LocalId};
+use crate::core::find;
 use crate::{Arity, IdleVm, MapKey, Value, ValueMap, Vm, VmFactory, VmRuntimeConfiguration};
 
 // TODO: A function is effectful once it loads an impure global, even if branch
@@ -89,8 +90,7 @@ impl FoldVm {
 /// The optimal IR for a known [`Value`]: an inline push for a scalar, a
 /// constant-pool load for a structured value.
 ///
-/// `None` if the value is not const-representable: the pool cannot hold a
-/// function or opaque, or a structure that transitively contains one.
+/// `None` if the value cannot be a constant (see [`is_const_representable`]).
 pub(super) fn value_to_ir(value: Value) -> Option<Ir> {
     let ir = match value {
         Value::Null => Ir::Ready(Bytecode::PushNull),
@@ -132,14 +132,10 @@ pub(super) fn constant_key_of(code: &[Ir]) -> Option<MapKey> {
     MapKey::try_from(constant_of(code)?).ok()
 }
 
-/// Whether `value` can be a constant: neither a function nor opaque, and, for a
-/// structure, holding no function or opaque at any depth.
+/// Whether `value` can be a constant: neither a Function nor an Opaque, and, for a
+/// structure, holding no Function or Opaque at any depth. The pool holds neither.
 fn is_const_representable(value: &Value) -> bool {
-    match value {
-        Value::Array(array) => array.iter().all(is_const_representable),
-        Value::Map(map) => map.values().all(is_const_representable),
-        other => !(other.is_function() || other.is_opaque()),
-    }
+    find::find(value, |held| held.is_function() || held.is_opaque()).is_none()
 }
 
 impl FunctionBuilder<'_> {

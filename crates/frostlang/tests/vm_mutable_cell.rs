@@ -227,7 +227,7 @@ fn rejects_a_function_via_exchange() {
 
 #[test]
 fn rejects_a_function_nested_in_an_array() {
-    // forbid_cycle recurses into structures: a function buried in an array is caught.
+    // A Function buried in an Array is caught.
     assert!(new_cell(Some(arr(vec![Value::Int(1), a_function()]))).is_err());
 }
 
