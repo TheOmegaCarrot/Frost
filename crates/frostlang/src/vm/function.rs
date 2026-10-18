@@ -1,7 +1,7 @@
 //! Compiled functions and the assertion and closing that make them runnable:
 //! [`CompiledFunction`] (or [`CompiledProgram`]) -> [`WellFormedProgram`] -> [`Closure`].
 
-use std::{collections::BTreeMap, sync::Arc};
+use std::sync::Arc;
 
 use crate::core::free;
 use crate::{MapKey, Value};
@@ -114,47 +114,81 @@ pub fn closure_function(closure: &Closure) -> &Arc<CompiledFunction> {
 pub struct WellFormedProgram(pub(crate) Arc<CompiledFunction>);
 
 impl WellFormedProgram {
-    /// The names of the captures this program expects: the names to include in
-    /// the map passed to [`close`](Self::close).
+    /// The names of the captures this program expects, in capture order: the names
+    /// [`close`](Self::close) or [`close_with`](Self::close_with) must be given values for.
     pub fn capture_names(&self) -> impl Iterator<Item = &str> {
         self.0.capture_names()
     }
 
-    /// Bind this function's captures into a runnable [`Closure`].
+    /// Binds this program's captures from `captures`, yielding a runnable [`Closure`].
     ///
-    /// Required captures are looked up by name in `captures`.
-    /// Extra entries in the map are ignored.
-    /// Any required capture name absent from the map is reported, together, as [`MissingCaptures`].
-    pub fn close(self, captures: BTreeMap<String, Value>) -> Result<Arc<Closure>, MissingCaptures> {
-        let function = self.0;
-        let mut seated = Vec::with_capacity(function.num_captures);
-        let mut missing = Vec::new();
-        for entry in &function.name_table[..function.num_captures] {
-            match captures.get(entry.name.as_str()) {
-                Some(value) => seated.push(value.clone()),
-                // Keep scanning so every missing name is reported at once.
-                None => missing.push(entry.name.clone()),
+    /// Each pair names a capture and supplies its value.
+    /// A pair naming no capture of this program is ignored,
+    /// and a name given more than once takes its last value.
+    /// Every capture that no pair names is reported, together, as [`MissingCaptures`].
+    ///
+    /// This visits every pair. To close against a large environment that the program
+    /// mostly does not use, prefer [`close_with`](Self::close_with).
+    pub fn close<K: AsRef<str>>(
+        self,
+        captures: impl IntoIterator<Item = (K, Value)>,
+    ) -> Result<Arc<Closure>, MissingCaptures> {
+        let names = &self.0.name_table[..self.0.num_captures];
+        let mut slots: Vec<Option<Value>> = vec![None; names.len()];
+        for (name, value) in captures {
+            let name = name.as_ref();
+            if let Some(slot) = names.iter().position(|entry| entry.name == name) {
+                slots[slot] = Some(value);
             }
         }
-        if !missing.is_empty() {
-            return Err(MissingCaptures { names: missing });
-        }
-        Ok(Arc::new(Closure {
-            function,
-            captures: seated,
-        }))
+        self.seat(slots)
+    }
+
+    /// Binds this program's captures by asking `lookup` for each, yielding a runnable
+    /// [`Closure`].
+    ///
+    /// `lookup` is called once per capture, with its name, in the order of
+    /// [`capture_names`](Self::capture_names).
+    /// If it returns `None` for any capture, `close_with` fails: every capture it returned
+    /// `None` for is reported, together, as [`MissingCaptures`], and the values it did
+    /// return are dropped.
+    pub fn close_with(
+        self,
+        lookup: impl FnMut(&str) -> Option<Value>,
+    ) -> Result<Arc<Closure>, MissingCaptures> {
+        let slots = self.capture_names().map(lookup).collect();
+        self.seat(slots)
     }
 
     /// Convenience for [`close`](Self::close) with no host-supplied captures.
     /// Succeeds when the function needs no host captures;
     /// otherwise returns the [`MissingCaptures`] it still requires.
     pub fn into_closure(self) -> Result<Arc<Closure>, MissingCaptures> {
-        self.close(BTreeMap::new())
+        self.close_with(|_| None)
+    }
+
+    /// The closure seating `slots`, one per capture in capture order,
+    /// or every capture whose slot is empty.
+    fn seat(self, slots: Vec<Option<Value>>) -> Result<Arc<Closure>, MissingCaptures> {
+        let names: Vec<String> = self
+            .capture_names()
+            .zip(&slots)
+            .filter(|(_, slot)| slot.is_none())
+            .map(|(name, _)| name.to_owned())
+            .collect();
+        if !names.is_empty() {
+            return Err(MissingCaptures { names });
+        }
+        Ok(Arc::new(Closure {
+            function: self.0,
+            // Every slot is filled, so this keeps them all.
+            captures: slots.into_iter().flatten().collect(),
+        }))
     }
 }
 
-/// One or more required captures were absent from the map passed to [`WellFormedProgram::close`];
-/// reports every missing name, not just the first.
+/// One or more of a program's captures were given no value by [`WellFormedProgram::close`]
+/// or [`WellFormedProgram::close_with`]; reports every missing name, not just the first.
 #[derive(Debug, Clone, PartialEq, Eq, thiserror::Error)]
 #[error("missing capture(s): {}", .names.join(", "))]
 pub struct MissingCaptures {

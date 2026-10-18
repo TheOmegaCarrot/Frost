@@ -32,7 +32,6 @@ mod repl;
 
 pub use repl::ReplSettings;
 
-use std::collections::BTreeMap;
 use std::ffi::OsString;
 use std::fs;
 use std::io::{self, IsTerminal, Read, Write};
@@ -655,7 +654,7 @@ fn name(script: &Script) -> String {
 fn close(program: WellFormedProgram, args: Vec<String>) -> Arc<frostlang::Closure> {
     let args: Value = args.into_iter().map(Value::from).collect();
     program
-        .close(BTreeMap::from([(ARGS.to_string(), args)]))
+        .close([(ARGS, args)])
         .expect("a script captures nothing but its arguments")
 }
 

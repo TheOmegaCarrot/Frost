@@ -446,11 +446,13 @@ impl Repl {
     /// The input `source` compiles to, ready to run with every binding in
     /// scope.
     fn compile(&self, source: &str) -> Result<Arc<Closure>, ReplError> {
-        let mut bindings = self.bindings.clone();
-        if self.keeps_results() {
-            bindings.insert(RESULTS.to_string(), self.results.iter().cloned().collect());
-        }
-        let scope: Vec<&str> = bindings.keys().map(String::as_str).collect();
+        let keeps_results = self.keeps_results();
+        let scope: Vec<&str> = self
+            .bindings
+            .keys()
+            .map(String::as_str)
+            .chain(keeps_results.then_some(RESULTS))
+            .collect();
         let options = CompilerOptions::new()
             .with_optimization(self.optimization)
             .with_parse_limits(self.parse_limits)
@@ -462,7 +464,10 @@ impl Repl {
             .map_err(ReplError::Compile)?
             .code;
         Ok(program
-            .close(bindings)
+            .close_with(|name| match name {
+                RESULTS if keeps_results => Some(self.results.iter().cloned().collect()),
+                _ => self.bindings.get(name).cloned(),
+            })
             .expect("every name in scope is bound"))
     }
 

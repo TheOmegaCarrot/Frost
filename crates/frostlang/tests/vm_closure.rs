@@ -1,6 +1,6 @@
-//! Tests for the closing / entry-point API: `CompiledFunction::close`,
-//! `into_closure`, `capture_names`, the `MissingCaptures` error, and
-//! `Vm::run_with_args`.
+//! Tests for the closing / entry-point API: `WellFormedProgram::close` and
+//! `close_with`, `into_closure`, `capture_names`, the `MissingCaptures` error,
+//! and `Vm::run_with_args`.
 //!
 //! Unlike the opcode test files, these build top-level closures by hand with a
 //! real prelude (the leading fn-value `Pop`, plus `DefLocal`s for params), since
@@ -10,7 +10,9 @@ use std::collections::BTreeMap;
 use std::sync::Arc;
 
 use frostlang::bytecode::{Bytecode, CompiledFunction, FormatVersion, NameEntry};
-use frostlang::{Arity, FrostArray, MissingCaptures, ProgramResult, Value, Vm};
+use frostlang::{
+    Arity, FrostArray, FrostString, MissingCaptures, ProgramResult, Value, Vm, WellFormedProgram,
+};
 
 use crate::common;
 
@@ -45,12 +47,23 @@ fn compiled(
     })
 }
 
-fn capmap(pairs: Vec<(&str, Value)>) -> BTreeMap<String, Value> {
-    pairs.into_iter().map(|(n, v)| (n.to_string(), v)).collect()
-}
-
 fn run(vm: Vm) -> ProgramResult {
     vm.run().unwrap()
+}
+
+/// `fn -> <captured x>`: a program whose only capture, `x`, is its value.
+fn returns_x() -> WellFormedProgram {
+    compiled(vec![Pop, LoadLocal(0)], Arity::Exact(0), 1, &["x"]).assert_well_formed()
+}
+
+/// The tail value of running `closure`.
+fn tail_of(closure: Arc<frostlang::Closure>) -> Value {
+    run(Vm::factory().build(closure)).tail().clone()
+}
+
+/// No captures at all, as `close` takes them.
+fn no_captures() -> Vec<(&'static str, Value)> {
+    Vec::new()
 }
 
 // ============================================================
@@ -59,34 +72,82 @@ fn run(vm: Vm) -> ProgramResult {
 
 #[test]
 fn close_binds_capture_value() {
-    // fn -> <captured x>
-    let f = compiled(vec![Pop, LoadLocal(0)], Arity::Exact(0), 1, &["x"]);
-    let closure = f
-        .assert_well_formed()
-        .close(capmap(vec![("x", Value::Int(42))]))
-        .unwrap();
-    assert_eq!(run(Vm::factory().build(closure)).tail(), &Value::Int(42));
+    let closure = returns_x().close([("x", Value::Int(42))]).unwrap();
+    assert_eq!(tail_of(closure), Value::Int(42));
 }
 
 #[test]
-fn close_ignores_extra_map_entries() {
-    // The map may be a superset; unused entries are ignored.
-    let f = compiled(vec![Pop, LoadLocal(0)], Arity::Exact(0), 1, &["x"]);
-    let closure = f
-        .assert_well_formed()
-        .close(capmap(vec![
-            ("x", Value::Int(1)),
+fn close_ignores_names_the_program_does_not_capture() {
+    // The pairs may be a superset; unused ones are ignored.
+    let closure = returns_x()
+        .close([
             ("unused", Value::Int(2)),
+            ("x", Value::Int(1)),
             ("also_unused", Value::Int(3)),
-        ]))
+        ])
         .unwrap();
-    assert_eq!(run(Vm::factory().build(closure)).tail(), &Value::Int(1));
+    assert_eq!(tail_of(closure), Value::Int(1));
+}
+
+#[test]
+fn close_never_seats_a_local_named_like_a_pair() {
+    // `local` is a slot name, but not a capture: a pair naming it is ignored,
+    // and the capture it does not name is still missing.
+    let f = compiled(vec![Pop, LoadLocal(0)], Arity::Exact(0), 1, &["x", "local"]);
+    let err = f
+        .assert_well_formed()
+        .close([("local", Value::Int(1))])
+        .unwrap_err();
+    assert_eq!(err.names, ["x"], "only the capture is required");
+}
+
+#[test]
+fn close_takes_the_last_value_of_a_repeated_name() {
+    let closure = returns_x()
+        .close([
+            ("x", Value::Int(1)),
+            ("x", Value::Int(2)),
+            ("x", Value::Int(3)),
+        ])
+        .unwrap();
+    assert_eq!(tail_of(closure), Value::Int(3), "the last pair wins");
+}
+
+#[test]
+fn close_accepts_any_string_like_name() {
+    let value = || Value::Int(7);
+    let closures = [
+        ("&str", returns_x().close([("x", value())])),
+        ("String", returns_x().close([(String::from("x"), value())])),
+        (
+            "FrostString",
+            returns_x().close([(FrostString::from("x"), value())]),
+        ),
+        (
+            "Arc<str>",
+            returns_x().close([(Arc::<str>::from("x"), value())]),
+        ),
+    ];
+    for (how, closure) in closures {
+        let closure = closure.unwrap_or_else(|missing| panic!("{how}: {missing}"));
+        assert_eq!(tail_of(closure), value(), "{how}");
+    }
+}
+
+#[test]
+fn close_accepts_a_map_of_captures() {
+    // A host's map of name to value is itself an iterator of pairs.
+    let captures = BTreeMap::from([
+        (String::from("x"), Value::Int(5)),
+        (String::from("unused"), Value::Null),
+    ]);
+    let closure = returns_x().close(captures).unwrap();
+    assert_eq!(tail_of(closure), Value::Int(5));
 }
 
 #[test]
 fn close_missing_capture_is_error() {
-    let f = compiled(vec![Pop, LoadLocal(0)], Arity::Exact(0), 1, &["x"]);
-    let err = f.assert_well_formed().close(BTreeMap::new()).unwrap_err();
+    let err = returns_x().close(no_captures()).unwrap_err();
     assert_eq!(
         err,
         MissingCaptures {
@@ -109,7 +170,7 @@ fn close_reports_every_missing_capture_in_slot_order() {
     );
     let err = f
         .assert_well_formed()
-        .close(capmap(vec![("x", Value::Int(1))]))
+        .close([("x", Value::Int(1))])
         .unwrap_err();
     assert_eq!(
         err,
@@ -121,10 +182,10 @@ fn close_reports_every_missing_capture_in_slot_order() {
 
 #[test]
 fn close_seats_each_capture_in_its_own_slot() {
-    // Two captures whose names are deliberately NOT in alphabetical order, read
-    // back with a non-commutative op: slot 0 is `b` (100), slot 1 is `a` (1), so
-    // the body computes 100 - 1 = 99. Seating in BTreeMap (alphabetical) order
-    // instead of name-table order would swap them and give 1 - 100 = -99.
+    // Two captures read back with a non-commutative op: slot 0 is `b` (100),
+    // slot 1 is `a` (1), so the body computes 100 - 1 = 99. The pairs come in the
+    // other order, so seating in pair order instead of slot order would swap
+    // them and give 1 - 100 = -99.
     let f = compiled(
         vec![Pop, LoadLocal(0), LoadLocal(1), Subtract],
         Arity::Exact(0),
@@ -133,9 +194,92 @@ fn close_seats_each_capture_in_its_own_slot() {
     );
     let closure = f
         .assert_well_formed()
-        .close(capmap(vec![("b", Value::Int(100)), ("a", Value::Int(1))]))
+        .close([("a", Value::Int(1)), ("b", Value::Int(100))])
         .unwrap();
-    assert_eq!(run(Vm::factory().build(closure)).tail(), &Value::Int(99));
+    assert_eq!(tail_of(closure), Value::Int(99));
+}
+
+// ============================================================
+// close_with: capture lookup
+// ============================================================
+
+#[test]
+fn close_with_asks_once_per_capture_in_capture_order() {
+    // Capture names deliberately not in alphabetical order; `local` is not a
+    // capture, so it is never asked for.
+    let f = compiled(
+        vec![Pop, LoadLocal(0), LoadLocal(1), Subtract],
+        Arity::Exact(0),
+        3,
+        &["z", "x", "y", "local"],
+    );
+    let mut asked = Vec::new();
+    let closure = f
+        .assert_well_formed()
+        .close_with(|name| {
+            asked.push(name.to_string());
+            Some(Value::Int(if name == "z" { 10 } else { 3 }))
+        })
+        .unwrap();
+    assert_eq!(asked, ["z", "x", "y"], "once each, in capture order");
+    assert_eq!(tail_of(closure), Value::Int(7), "z - x = 10 - 3");
+}
+
+#[test]
+fn close_with_looks_captures_up_in_a_larger_environment() {
+    let environment = BTreeMap::from([
+        ("unused", Value::Null),
+        ("x", Value::Int(9)),
+        ("also_unused", Value::Null),
+    ]);
+    let closure = returns_x()
+        .close_with(|name| environment.get(name).cloned())
+        .unwrap();
+    assert_eq!(tail_of(closure), Value::Int(9));
+    assert_eq!(environment.len(), 3, "the environment is only read");
+}
+
+#[test]
+fn close_with_reports_every_capture_lookup_returned_none_for() {
+    // Only `x` is found; `z` and `y` are reported, in capture order, though
+    // `lookup` is asked for every capture before the failure.
+    let f = compiled(
+        vec![Pop, LoadLocal(0)],
+        Arity::Exact(0),
+        3,
+        &["z", "x", "y"],
+    );
+    let mut asked = 0;
+    let err = f
+        .assert_well_formed()
+        .close_with(|name| {
+            asked += 1;
+            (name == "x").then_some(Value::Int(1))
+        })
+        .unwrap_err();
+    assert_eq!(asked, 3, "every capture is asked for");
+    assert_eq!(
+        err,
+        MissingCaptures {
+            names: vec!["z".to_string(), "y".to_string()],
+        }
+    );
+}
+
+#[test]
+fn close_with_fails_when_lookup_finds_nothing() {
+    let err = returns_x().close_with(|_| None).unwrap_err();
+    assert_eq!(err.names, ["x"]);
+}
+
+#[test]
+fn close_with_never_asks_for_a_program_without_captures() {
+    let f = compiled(vec![Pop, PushInt(7)], Arity::Exact(0), 0, &[]);
+    let closure = f
+        .assert_well_formed()
+        .close_with(|name| panic!("asked for {name:?}, but nothing is captured"))
+        .unwrap();
+    assert_eq!(tail_of(closure), Value::Int(7));
 }
 
 // ============================================================
@@ -151,7 +295,7 @@ fn into_closure_for_no_captures() {
 
 #[test]
 fn into_closure_errors_when_host_capture_needed() {
-    // into_closure is `close` with an empty map, so a required host capture is missing.
+    // into_closure supplies no captures, so a required host capture is missing.
     let f = compiled(vec![Pop, LoadLocal(0)], Arity::Exact(0), 1, &["x"]);
     let err = f.assert_well_formed().into_closure().unwrap_err();
     assert_eq!(
@@ -189,16 +333,16 @@ fn a_well_formed_program_lists_only_its_captures() {
 fn a_well_formed_program_lists_the_names_close_requires() {
     // Closing with exactly the listed names succeeds; leaving any out fails.
     let names = ["a", "b"];
-    let all: BTreeMap<String, Value> = names
-        .iter()
-        .map(|name| (name.to_string(), Value::Null))
-        .collect();
     let program = || compiled(vec![Pop], Arity::Exact(0), 2, &names).assert_well_formed();
     let listed: Vec<String> = program().capture_names().map(str::to_string).collect();
     assert_eq!(listed, names);
-    assert!(program().close(all).is_ok());
+    assert!(
+        program()
+            .close(names.map(|name| (name, Value::Null)))
+            .is_ok()
+    );
     let missing = program()
-        .close(BTreeMap::new())
+        .close(no_captures())
         .expect_err("no capture supplied");
     assert_eq!(missing.names, names);
 }
@@ -251,7 +395,7 @@ fn run_with_args_alongside_captures() {
     );
     let closure = f
         .assert_well_formed()
-        .close(capmap(vec![("k", Value::Int(100))]))
+        .close([("k", Value::Int(100))])
         .unwrap();
     let result = Vm::factory()
         .build(closure)

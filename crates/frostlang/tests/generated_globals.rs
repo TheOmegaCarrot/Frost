@@ -13,7 +13,7 @@
 //! The runtime's `generated` module documents the other side: what `compiled.rs`
 //! holds, and how the runtime loads it.
 
-use std::collections::{BTreeMap, BTreeSet};
+use std::collections::BTreeSet;
 use std::sync::Arc;
 use std::{env, fs};
 
@@ -69,7 +69,7 @@ fn generate(source: &str) -> String {
     });
     let program = output
         .code
-        .close(BTreeMap::new())
+        .into_closure()
         .expect("the source's top level captures nothing");
     let functions: Vec<CompiledFunction> = closure_function(&program)
         .child_fns

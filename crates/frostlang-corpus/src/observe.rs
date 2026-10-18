@@ -47,7 +47,7 @@ pub(crate) fn observe(
         .collect();
     let closure = output
         .code
-        .close(inputs.clone())
+        .close_with(|name| inputs.get(name).cloned())
         .expect("every name in scope is supplied");
     let printed = Arc::new(Mutex::new(Vec::new()));
     let sink = {

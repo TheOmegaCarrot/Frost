@@ -35,7 +35,7 @@ impl ImportResolver for SourceModules {
         let program = compile_in_scope(module_spec, source, CompilerOptions::new(), &[])
             .unwrap_or_else(|errors| panic!("{module_spec} compiles:\n{}", errors.render_plain()))
             .code
-            .close(BTreeMap::new())
+            .into_closure()
             .expect("a module captures nothing");
         let result = ctx
             .child_factory()

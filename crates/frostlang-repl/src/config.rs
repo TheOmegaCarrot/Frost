@@ -75,7 +75,7 @@ impl Repl {
         .expect("the import compiles")
         .code;
         let closure = program
-            .close(BTreeMap::from([("path".to_owned(), Value::from(path))]))
+            .close([("path", Value::from(path))])
             .expect("the import captures only `path`");
         let token = self.cancel.begin();
         let outcome = self.run_closure(closure, token);

@@ -679,7 +679,7 @@ fn lints_off_compiles_a_program_that_behaves_the_same() {
         compile_program(FILENAME, source, options)
             .expect("compiles")
             .code
-            .close(Default::default())
+            .into_closure()
             .expect("closes")
     };
     let behaviors: Vec<Value> = [

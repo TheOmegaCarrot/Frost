@@ -2,7 +2,6 @@
 //! functions it holds, run. Apart from any session, under small limits, and
 //! importing only `std.string`, `std.math`, and the `repl` component.
 
-use std::collections::BTreeMap;
 use std::num::NonZeroU64;
 use std::sync::Arc;
 
@@ -75,7 +74,7 @@ impl ConfigRunner {
             .map_err(ScriptFailure::Compile)?
             .code;
         let closure = program
-            .close(BTreeMap::new())
+            .into_closure()
             .expect("a whole script captures nothing");
         self.run(closure, None)
             .map(|ran| ran.exports)
@@ -90,7 +89,7 @@ impl ConfigRunner {
             .expect("the wrapper compiles")
             .code;
         let closure = program
-            .close(BTreeMap::from([("function".to_owned(), function)]))
+            .close([("function", function)])
             .expect("the wrapper captures only `function`");
         match self.run(closure, None)?.tail {
             Value::Closure(wrapper) => Ok(wrapper),
