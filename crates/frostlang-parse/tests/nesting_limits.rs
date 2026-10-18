@@ -6,9 +6,10 @@
 
 use std::num::NonZeroU64;
 
+use crate::helpers::{RECURSION_MESSAGE, nest};
+
 use frostlang_parse::{ParseLimits, parse_program, parse_program_with_limits};
 
-const RECURSION_MESSAGE: &str = "nested too deeply";
 const AST_DEPTH_MESSAGE: &str = "expression too deep";
 
 /// A recursion limit of `max`, and no AST depth limit.
@@ -55,10 +56,6 @@ fn assert_boundary(
         failed.starts_with(message),
         "{name}: expected a failure starting {message:?}, got {failed:?}"
     );
-}
-
-fn nest(open: &str, inner: &str, close: &str, levels: usize) -> String {
-    format!("{}{inner}{}", open.repeat(levels), close.repeat(levels))
 }
 
 /// A source nested as many levels as it is given.

@@ -3,6 +3,7 @@
 // Shared harness.
 mod helpers;
 
+mod ambiguous_lambda_bodies;
 mod ast_equality;
 mod destructure;
 mod diagnostic_labels;

@@ -1,6 +1,14 @@
 use frostlang_parse::ast::*;
 use frostlang_parse::parse_program;
 
+/// How the error for passing the recursion limit starts.
+pub(crate) const RECURSION_MESSAGE: &str = "nested too deeply";
+
+/// `inner`, inside `levels` of `open` and `close`.
+pub(crate) fn nest(open: &str, inner: &str, close: &str, levels: usize) -> String {
+    format!("{}{inner}{}", open.repeat(levels), close.repeat(levels))
+}
+
 pub(crate) fn parse(src: &str) -> Program {
     parse_program("test.frst", src).unwrap_or_else(|_| panic!("failed to parse: {src}"))
 }

@@ -125,7 +125,19 @@ impl<'src> ParseCtx<'src> {
 
         match brace_disambiguation(self) {
             BraceKind::Block => self.parse_block_body(),
-            BraceKind::TryMap => {
+            // This Map reading failed before. Trying it again under each reading of each
+            // enclosing `{[` would double the work at every level. Only an enclosing `{[`
+            // read both ways, as a Map first, revisits this one, and its two readings
+            // share only the expression after its `[`: past the `]`, a Map needs a `:`,
+            // which a block cannot parse. Reaching here the same way under either, the
+            // Map reading would fail again: whether line breaks are skipped and whether
+            // an abbreviated lambda is open agree; the open brackets are read only by
+            // diagnostics; and the nesting counts matter only at a limit, where the
+            // outcome may differ, which is accepted.
+            BraceKind::TryMap { bracket } if self.map_reading_failed(bracket) => {
+                self.parse_block_body()
+            }
+            BraceKind::TryMap { bracket } => {
                 let checkpoint = self.checkpoint();
                 match self.parse_expression() {
                     Ok(expr) => {
@@ -135,6 +147,7 @@ impl<'src> ParseCtx<'src> {
                     Err(error) if error.past_a_limit() => Err(error),
                     Err(_) => {
                         self.restore(checkpoint);
+                        self.record_failed_map_reading(bracket);
                         self.parse_block_body()
                     }
                 }
@@ -245,7 +258,10 @@ type Params = (Vec<Spanned<Binding>>, Option<Spanned<Binding>>);
 
 enum BraceKind {
     Block,
-    TryMap,
+    TryMap {
+        /// The byte offset of the `[`.
+        bracket: usize,
+    },
     Expression,
 }
 
@@ -266,13 +282,13 @@ fn brace_disambiguation(ctx: &ParseCtx) -> BraceKind {
         return BraceKind::Expression;
     }
 
-    let (second, third) = match ctx.get_past_nl(ctx.here() + 1) {
-        Some((pos, second)) => (Some(second), ctx.get_past_nl(pos + 1)),
-        None => (None, None),
+    let Some((pos, second)) = ctx.get_past_nl(ctx.here() + 1) else {
+        return BraceKind::Block;
     };
+    let third = ctx.get_past_nl(pos + 1);
 
-    match second.map(|t| &t.token) {
-        Some(Token::Identifier(_))
+    match second.token {
+        Token::Identifier(_)
             if matches!(
                 third.map(|(_, t)| &t.token),
                 Some(Token::Colon | Token::Comma | Token::CloseBrace)
@@ -280,8 +296,10 @@ fn brace_disambiguation(ctx: &ParseCtx) -> BraceKind {
         {
             BraceKind::Expression
         }
-        Some(Token::OpenBracket) => BraceKind::TryMap,
-        Some(Token::CloseBrace) => BraceKind::Expression,
+        Token::OpenBracket => BraceKind::TryMap {
+            bracket: second.span.start,
+        },
+        Token::CloseBrace => BraceKind::Expression,
         _ => BraceKind::Block,
     }
 }

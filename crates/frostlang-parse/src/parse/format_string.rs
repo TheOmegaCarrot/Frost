@@ -101,22 +101,13 @@ fn parse_interpolation(
     // reliably.
     let context = |d: Diagnostic| d.in_interpolation(open);
 
-    let mut sub_ctx = ParseCtx::new_interpolation(src, open.end, ctx).map_err(context)?;
-
-    // An interpolation is lexed separately but sits lexically inside any enclosing
-    // abbreviated lambda, so the sub-context parses with its frame in hand: `$n` is
-    // accepted there, marks land in the lambda's frame rather than being lost (which
-    // would under-report `used_params`), and a `$(` there is nested.
-    // A leftover token's error is made while the frame is still lent, so its help sees it.
-    sub_ctx.restore_abbrev_frame(ctx.take_abbrev_frame());
-    let parsed = sub_ctx
-        .parse_expression()
-        .and_then(|expr| match sub_ctx.peek() {
+    ctx.interpolation(src, open.end, |sub_ctx| {
+        let expr = sub_ctx.parse_expression()?;
+        // Made while an abbreviated lambda's frame is still lent, so its help sees it.
+        match sub_ctx.peek() {
             Some(leftover) => Err(sub_ctx.expected("`}`", leftover)),
             None => Ok(expr),
-        });
-    ctx.restore_abbrev_frame(sub_ctx.take_abbrev_frame());
-    ctx.absorb_nesting(&sub_ctx);
-
-    parsed.map_err(context)
+        }
+    })
+    .map_err(context)
 }

@@ -1,3 +1,5 @@
+use std::collections::HashSet;
+use std::mem;
 use std::ops::Range;
 
 use crate::ParseLimits;
@@ -31,6 +33,11 @@ pub(crate) struct ParseCtx<'src> {
     limits: ParseLimits,
 
     state: ParseState,
+
+    /// The `[`s, by byte offset, at which a lambda body opening `{[` was tried as a
+    /// Map and found not to be one. Outside the checkpointed state, so backtracking
+    /// keeps it, and lent to each interpolation sub-context.
+    failed_map_readings: HashSet<usize>,
 }
 
 #[derive(Debug)]
@@ -198,31 +205,51 @@ impl<'src> ParseCtx<'src> {
         Self::lex(src, 0, None, limits)
     }
 
-    /// A sub-context for a format-string interpolation: `src` is its text, which
-    /// starts at `base_offset` in the whole source and is closed by the `}` right after it.
-    /// It parses as nested as `parent` is where the interpolation sits;
-    /// [`absorb_nesting`](Self::absorb_nesting) brings what it builds back into `parent`'s measure.
-    pub(crate) fn new_interpolation<'parent>(
-        src: &'parent str,
+    /// Parses with `parse` a format-string interpolation, lexed separately: `src` is its
+    /// text, which starts at `base_offset` in the whole source and is closed by the `}`
+    /// right after it.
+    ///
+    /// The interpolation sits lexically where this context is, so its sub-context parses
+    /// as nested as this one is, and with any abbreviated lambda's frame lent to it:
+    /// `$n` is accepted there, marks land in the lambda's frame, and a `$(` there is
+    /// nested. The frame comes back with the depth of what the sub-context built and the
+    /// [`failed_map_readings`](Self::failed_map_readings) lent to it, however `parse` ends.
+    pub(crate) fn interpolation<T>(
+        &mut self,
+        src: &str,
         base_offset: usize,
-        parent: &ParseCtx,
-    ) -> ParseResult<ParseCtx<'parent>> {
+        parse: impl FnOnce(&mut ParseCtx) -> ParseResult<T>,
+    ) -> ParseResult<T> {
         let brace = base_offset + src.len();
         let mut sub_ctx = ParseCtx::lex(
             src,
             base_offset,
             Some((brace..brace + 1).into()),
-            parent.limits,
+            self.limits,
         )?;
-        sub_ctx.state.nesting = parent.state.nesting;
-        Ok(sub_ctx)
-    }
+        sub_ctx.state.nesting = self.state.nesting;
+        sub_ctx.state.abbrev_lambda = self.state.abbrev_lambda.take();
+        sub_ctx.failed_map_readings = mem::take(&mut self.failed_map_readings);
 
-    /// Account for what `sub_ctx`, made by [`new_interpolation`](Self::new_interpolation)
-    /// from this context, has built.
-    pub(crate) fn absorb_nesting(&mut self, sub_ctx: &ParseCtx) {
+        let parsed = parse(&mut sub_ctx);
+
+        self.state.abbrev_lambda = sub_ctx.state.abbrev_lambda;
         let deepest = &mut self.state.nesting.deepest;
         *deepest = (*deepest).max(sub_ctx.state.nesting.deepest);
+        self.failed_map_readings = sub_ctx.failed_map_readings;
+        parsed
+    }
+
+    /// Whether the `[` at byte offset `bracket` is in
+    /// [`failed_map_readings`](Self::failed_map_readings).
+    pub(crate) fn map_reading_failed(&self, bracket: usize) -> bool {
+        self.failed_map_readings.contains(&bracket)
+    }
+
+    /// Adds the `[` at byte offset `bracket` to
+    /// [`failed_map_readings`](Self::failed_map_readings).
+    pub(crate) fn record_failed_map_reading(&mut self, bracket: usize) {
+        self.failed_map_readings.insert(bracket);
     }
 
     fn lex(
@@ -255,6 +282,7 @@ impl<'src> ParseCtx<'src> {
             input,
             limits,
             state: ParseState::default(),
+            failed_map_readings: HashSet::new(),
         })
     }
 
@@ -620,18 +648,6 @@ impl<'src> ParseCtx<'src> {
                 frame.mark(n);
             }
         }
-    }
-
-    /// Moves the abbreviated lambda's frame out, if any, leaving none behind.
-    ///
-    /// Paired with [`restore_abbrev_frame`](Self::restore_abbrev_frame) to lend the frame to a format-string interpolation's sub-context (see `parse_interpolation`).
-    pub(crate) fn take_abbrev_frame(&mut self) -> Option<DollarUsage> {
-        self.state.abbrev_lambda.take()
-    }
-
-    /// Seats a frame obtained from [`take_abbrev_frame`](Self::take_abbrev_frame).
-    pub(crate) fn restore_abbrev_frame(&mut self, frame: Option<DollarUsage>) {
-        self.state.abbrev_lambda = frame;
     }
 
     pub(crate) fn here(&self) -> usize {
