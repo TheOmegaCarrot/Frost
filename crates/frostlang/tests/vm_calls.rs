@@ -37,7 +37,10 @@ fn call_closure_returns_result() {
     );
     let program = func(
         vec![
-            Bytecode::CreateClosure(0),
+            Bytecode::CreateClosure {
+                child: 0,
+                captures: 0,
+            },
             Bytecode::PushInt(42),
             Bytecode::Call(1),
         ],
@@ -63,7 +66,10 @@ fn call_leaves_exactly_one_value() {
     let program = func(
         vec![
             Bytecode::PushInt(7), // sentinel
-            Bytecode::CreateClosure(0),
+            Bytecode::CreateClosure {
+                child: 0,
+                captures: 0,
+            },
             Bytecode::PushInt(42),
             Bytecode::Call(1),
             Bytecode::Pop, // discard the single result
@@ -87,7 +93,10 @@ fn caller_resumes_after_call() {
     );
     let program = func(
         vec![
-            Bytecode::CreateClosure(0),
+            Bytecode::CreateClosure {
+                child: 0,
+                captures: 0,
+            },
             Bytecode::PushInt(42),
             Bytecode::Call(1),
             Bytecode::Pop,         // drop the call's result
@@ -121,7 +130,10 @@ fn call_closure_returns_capture() {
     let program = func(
         vec![
             Bytecode::PushInt(123), // value to capture
-            Bytecode::CreateClosure(0),
+            Bytecode::CreateClosure {
+                child: 0,
+                captures: 1,
+            },
             Bytecode::Call(0),
         ],
         Arity::Exact(0),
@@ -151,7 +163,10 @@ fn call_variadic_collapses_rest() {
     );
     let program = func(
         vec![
-            Bytecode::CreateClosure(0),
+            Bytecode::CreateClosure {
+                child: 0,
+                captures: 0,
+            },
             Bytecode::PushInt(1),
             Bytecode::PushInt(2),
             Bytecode::PushInt(3),
@@ -180,7 +195,13 @@ fn call_variadic_empty_rest() {
         vec![],
     );
     let program = func(
-        vec![Bytecode::CreateClosure(0), Bytecode::Call(0)],
+        vec![
+            Bytecode::CreateClosure {
+                child: 0,
+                captures: 0,
+            },
+            Bytecode::Call(0),
+        ],
         Arity::Exact(0),
         vec![],
         vec![callee],
@@ -205,7 +226,10 @@ fn call_variadic_splits_fixed_and_rest() {
     );
     let program = func(
         vec![
-            Bytecode::CreateClosure(0),
+            Bytecode::CreateClosure {
+                child: 0,
+                captures: 0,
+            },
             Bytecode::PushInt(10), // a
             Bytecode::PushInt(20), // rest[0]
             Bytecode::PushInt(30), // rest[1]
@@ -237,7 +261,10 @@ fn call_nested_closures() {
     let a = func(
         vec![
             Bytecode::Pop, // pop A's own function value
-            Bytecode::CreateClosure(0),
+            Bytecode::CreateClosure {
+                child: 0,
+                captures: 0,
+            },
             Bytecode::Call(0),
         ],
         Arity::Exact(0),
@@ -245,7 +272,13 @@ fn call_nested_closures() {
         vec![b],
     );
     let program = func(
-        vec![Bytecode::CreateClosure(0), Bytecode::Call(0)],
+        vec![
+            Bytecode::CreateClosure {
+                child: 0,
+                captures: 0,
+            },
+            Bytecode::Call(0),
+        ],
         Arity::Exact(0),
         vec![],
         vec![a],
@@ -275,7 +308,10 @@ fn call_closure_multiple_params_in_order() {
     );
     let program = func(
         vec![
-            Bytecode::CreateClosure(0),
+            Bytecode::CreateClosure {
+                child: 0,
+                captures: 0,
+            },
             Bytecode::PushInt(10), // a
             Bytecode::PushInt(20), // b
             Bytecode::Call(2),
@@ -306,7 +342,10 @@ fn call_closure_param_seats_after_captures() {
     let program = func(
         vec![
             Bytecode::PushInt(100), // captured
-            Bytecode::CreateClosure(0),
+            Bytecode::CreateClosure {
+                child: 0,
+                captures: 1,
+            },
             Bytecode::PushInt(5), // arg
             Bytecode::Call(1),
         ],
@@ -332,7 +371,10 @@ fn call_closure_captures_in_order() {
         vec![
             Bytecode::PushInt(1), // capture 0
             Bytecode::PushInt(2), // capture 1
-            Bytecode::CreateClosure(0),
+            Bytecode::CreateClosure {
+                child: 0,
+                captures: 2,
+            },
             Bytecode::Call(0),
         ],
         Arity::Exact(0),
@@ -368,7 +410,10 @@ fn call_variadic_closure_with_capture() {
     let program = func(
         vec![
             Bytecode::PushInt(99), // captured
-            Bytecode::CreateClosure(0),
+            Bytecode::CreateClosure {
+                child: 0,
+                captures: 1,
+            },
             Bytecode::PushInt(10), // x
             Bytecode::PushInt(20), // rest[0]
             Bytecode::PushInt(30), // rest[1]
@@ -399,7 +444,10 @@ fn call_closure_reused_via_dup() {
     );
     let program = func(
         vec![
-            Bytecode::CreateClosure(0),
+            Bytecode::CreateClosure {
+                child: 0,
+                captures: 0,
+            },
             Bytecode::Dup,
             Bytecode::PushInt(5),
             Bytecode::Call(1), // call the dup with 5
@@ -431,7 +479,10 @@ fn call_closure_ignores_unused_param() {
     );
     let program = func(
         vec![
-            Bytecode::CreateClosure(0),
+            Bytecode::CreateClosure {
+                child: 0,
+                captures: 0,
+            },
             Bytecode::PushInt(5),
             Bytecode::Call(1),
         ],
@@ -461,8 +512,14 @@ fn call_result_feeds_next_call() {
     );
     let program = func(
         vec![
-            Bytecode::CreateClosure(0), // f (child 0)
-            Bytecode::CreateClosure(1), // g (child 1)
+            Bytecode::CreateClosure {
+                child: 0,
+                captures: 0,
+            }, // f (child 0)
+            Bytecode::CreateClosure {
+                child: 1,
+                captures: 0,
+            }, // g (child 1)
             Bytecode::PushInt(5),
             Bytecode::Call(1), // g(5) -> 42
             Bytecode::Call(1), // f(42) -> 42
@@ -485,19 +542,39 @@ fn call_deeply_nested_closures() {
         vec![],
     );
     let b = func(
-        vec![Bytecode::Pop, Bytecode::CreateClosure(0), Bytecode::Call(0)],
+        vec![
+            Bytecode::Pop,
+            Bytecode::CreateClosure {
+                child: 0,
+                captures: 0,
+            },
+            Bytecode::Call(0),
+        ],
         Arity::Exact(0),
         vec![],
         vec![c],
     );
     let a = func(
-        vec![Bytecode::Pop, Bytecode::CreateClosure(0), Bytecode::Call(0)],
+        vec![
+            Bytecode::Pop,
+            Bytecode::CreateClosure {
+                child: 0,
+                captures: 0,
+            },
+            Bytecode::Call(0),
+        ],
         Arity::Exact(0),
         vec![],
         vec![b],
     );
     let program = func(
-        vec![Bytecode::CreateClosure(0), Bytecode::Call(0)],
+        vec![
+            Bytecode::CreateClosure {
+                child: 0,
+                captures: 0,
+            },
+            Bytecode::Call(0),
+        ],
         Arity::Exact(0),
         vec![],
         vec![a],

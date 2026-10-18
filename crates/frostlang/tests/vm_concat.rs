@@ -5,7 +5,7 @@
 //! them deepest-first, so the top of the stack becomes the last component. It
 //! consumes exactly N items and leaves anything below them untouched. N is nonzero.
 
-use std::num::NonZeroUsize;
+use std::num::NonZeroU64;
 use std::sync::Arc;
 
 use frostlang::bytecode::{Bytecode, CompiledFunction, FormatVersion};
@@ -26,6 +26,7 @@ fn eval(constants: Vec<Value>, code: Vec<Bytecode>) -> Result<Value, FrostError>
         name_table: Vec::new(),
         num_captures: 0,
         arity: Arity::Exact(0),
+        debug_info: None,
     });
     let closure = program.assert_well_formed().into_closure().unwrap();
     Vm::factory()
@@ -35,8 +36,8 @@ fn eval(constants: Vec<Value>, code: Vec<Bytecode>) -> Result<Value, FrostError>
         .map(|r| r.tail().clone())
 }
 
-fn nz(n: usize) -> NonZeroUsize {
-    NonZeroUsize::new(n).unwrap()
+fn nz(n: u64) -> NonZeroU64 {
+    NonZeroU64::new(n).unwrap()
 }
 
 // ---- Ordering and the stack effect ----

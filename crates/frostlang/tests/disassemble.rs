@@ -3,7 +3,7 @@
 //! Every function here is written by hand rather than compiled, so the tests
 //! pin the listing's format, not what the compiler emits.
 
-use std::num::NonZeroUsize;
+use std::num::NonZeroU64;
 use std::sync::Arc;
 
 use frostlang::bytecode::{Bytecode, CompiledFunction, FormatVersion, NameEntry};
@@ -25,6 +25,7 @@ fn function(name: &str, code: Vec<Bytecode>) -> CompiledFunction {
         name_table: Vec::new(),
         num_captures: 0,
         arity: Arity::Exact(0),
+        debug_info: None,
     }
 }
 
@@ -130,6 +131,7 @@ fn globals_are_named() {
     let print = frostlang::bytecode::GLOBAL_NAMES
         .iter()
         .position(|&name| name == "print")
+        .map(|slot| slot as u64)
         .expect("a `print` global");
     let listed = listing(&function(
         "<main>",
@@ -179,7 +181,7 @@ fn other_operands_are_shown_plainly() {
         "<main>",
         vec![
             PushFloat(float),
-            Concat(NonZeroUsize::new(2).unwrap()),
+            Concat(NonZeroU64::new(2).unwrap()),
             TypeTest(FrostType::Int | FrostType::Float),
             TestArrayLenAtLeast(2),
             PeekDown(1),
@@ -204,12 +206,30 @@ fn nested_functions_follow_depth_first() {
     let mut grandchild = function("inner", vec![PushNull]);
     grandchild.num_captures = 1;
     grandchild.name_table = vec![slot("x", false)];
-    let mut first = function("first", vec![CreateClosure(0)]);
+    let mut first = function(
+        "first",
+        vec![CreateClosure {
+            child: 0,
+            captures: 1,
+        }],
+    );
     first.child_fns = vec![Arc::new(grandchild)];
     first.arity = Arity::AtLeast(1);
     let mut second = function("second", vec![PushNull]);
     second.arity = Arity::Between(1, 3);
-    let mut main = function("<main>", vec![CreateClosure(0), CreateClosure(1)]);
+    let mut main = function(
+        "<main>",
+        vec![
+            CreateClosure {
+                child: 0,
+                captures: 0,
+            },
+            CreateClosure {
+                child: 1,
+                captures: 0,
+            },
+        ],
+    );
     main.child_fns = vec![Arc::new(first), Arc::new(second)];
     let expected = r"function <main>
   arity 0, 0 captures
@@ -252,8 +272,11 @@ fn malformed_references_list_without_panicking() {
             LoadLocal(0),
             LoadConst(0),
             HardIndexMap(0),
-            LoadGlobal(usize::MAX),
-            CreateClosure(0),
+            LoadGlobal(u64::MAX),
+            CreateClosure {
+                child: 0,
+                captures: 0,
+            },
             Jump(99),
         ],
     );
@@ -264,7 +287,7 @@ fn malformed_references_list_without_panicking() {
        1  LoadConst      0                     ; ?
        2  HardIndexMap   0                     ; ?
        3  LoadGlobal     18446744073709551615  ; ?
-       4  CreateClosure  0                     ; ?
+       4  CreateClosure  0                     ; ?, 0 captures
        5  Jump           ?                     ; +99, past the end
 ";
     assert_eq!(listing(&main), expected);

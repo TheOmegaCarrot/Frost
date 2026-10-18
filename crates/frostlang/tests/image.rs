@@ -171,6 +171,7 @@ fn a_program_with_a_function_constant_cannot_be_saved() {
         name_table: Vec::new(),
         num_captures: 0,
         arity: Arity::Exact(0),
+        debug_info: None,
     })
     .assert_well_formed();
     image::encode(&program);

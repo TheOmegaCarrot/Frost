@@ -39,6 +39,7 @@ fn eval_keyed(
         name_table: Vec::new(),
         num_captures: 0,
         arity: Arity::Exact(0),
+        debug_info: None,
     });
     let closure = program.assert_well_formed().into_closure().unwrap();
     Vm::factory()

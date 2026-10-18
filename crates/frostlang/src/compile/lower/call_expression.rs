@@ -1,6 +1,7 @@
 use std::iter;
 
 use crate::bytecode::Bytecode;
+use crate::vm::to_operand;
 use frostlang_parse::ast::{Expr, Spanned};
 
 use crate::compile::{
@@ -37,8 +38,8 @@ impl FunctionBuilder<'_> {
         let (exprs, foldable) = self.fold_sibling_list(iter::once(callee).chain(args).collect());
 
         let call = match position {
-            Position::Tail => Bytecode::TailCall(arity),
-            Position::Inner => Bytecode::Call(arity),
+            Position::Tail => Bytecode::TailCall(to_operand(arity)),
+            Position::Inner => Bytecode::Call(to_operand(arity)),
         };
 
         ExprFragment {

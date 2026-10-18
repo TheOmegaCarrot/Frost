@@ -29,8 +29,8 @@ fn run_global(name: &str, args: Vec<Value>) -> Result<Value, FrostError> {
     let argc = args.len();
 
     let mut code = vec![Pop, LoadGlobal(slot)];
-    code.extend((0..argc).map(LoadLocal));
-    code.push(Call(argc));
+    code.extend((0..argc as u64).map(LoadLocal));
+    code.push(Call(argc as u64));
 
     let name_table = (0..argc)
         .map(|i| NameEntry {
@@ -49,6 +49,7 @@ fn run_global(name: &str, args: Vec<Value>) -> Result<Value, FrostError> {
         name_table,
         num_captures: argc,
         arity: Arity::Exact(0),
+        debug_info: None,
     });
     let captures: BTreeMap<String, Value> = args
         .into_iter()

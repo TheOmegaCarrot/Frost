@@ -3,9 +3,11 @@
 //!   * `MakeArray(n)` takes the top `n` values; the topmost becomes the *back*.
 //!   * `MakeMap(n)` takes the top `2n` values as `k1, v1, k2, v2, ...` (key deeper than its value).
 //!     Keys must be non-null primitives, so it is fallible; duplicate keys keep the last value (right wins).
-//!   * `ExplodeArray` is the inverse of `MakeArray`: it consumes one Array and pushes its elements (the back ends up on top).
-//!     Its operand is compiler-guaranteed to be an Array (emitted only in compiled destructuring / pattern matching),
-//!     so a non-array is an IMPOSSIBLE state: it panics and is not tested here.
+//!   * `ExplodeArray(n)` consumes an Array of `n` elements and pushes them in reverse, the first on top,
+//!     so `MakeArray(n)` after it rebuilds the Array reversed.
+//!     Its operand is compiler-guaranteed to be an Array of `n` elements (emitted only in compiled
+//!     destructuring / pattern matching), so anything else is malformed bytecode:
+//!     a non-Array panics, and a wrong length is a debug assertion (see `vm_debug_assertions`).
 //!
 //! Operands without a `Push*` opcode (String/Array/Map) come from the constant
 //! table via `LoadConst`.
@@ -33,6 +35,7 @@ fn eval(constants: Vec<Value>, code: Vec<Bytecode>) -> Result<Value, FrostError>
         name_table: Vec::new(),
         num_captures: 0,
         arity: Arity::Exact(0),
+        debug_info: None,
     });
     let closure = program.assert_well_formed().into_closure().unwrap();
     Vm::factory()
@@ -236,7 +239,7 @@ fn make_map_of(keys: &[i64]) -> Value {
         .iter()
         .enumerate()
         .flat_map(|(at, &key)| [PushInt(key), PushInt(at as i64)]);
-    val(pushes.chain([MakeMap(keys.len())]).collect())
+    val(pushes.chain([MakeMap(keys.len() as u64)]).collect())
 }
 
 #[test]
@@ -299,7 +302,7 @@ fn explode_empty_pushes_nothing() {
     // nothing, so the sentinel remains the tail.
     let out = eval(
         vec![array(vec![])],
-        vec![PushInt(99), LoadConst(0), ExplodeArray],
+        vec![PushInt(99), LoadConst(0), ExplodeArray(0)],
     )
     .unwrap();
     assert_eq!(out, Value::Int(99));
@@ -309,7 +312,7 @@ fn explode_empty_pushes_nothing() {
 fn explode_single_element() {
     let out = eval(
         vec![array(vec![Value::Int(7)])],
-        vec![LoadConst(0), ExplodeArray],
+        vec![LoadConst(0), ExplodeArray(1)],
     )
     .unwrap();
     assert_eq!(out, Value::Int(7));
@@ -321,7 +324,7 @@ fn explode_puts_first_element_on_top() {
     // two below it to isolate the top and prove it is 1.
     let out = eval(
         vec![array(vec![Value::Int(1), Value::Int(2), Value::Int(3)])],
-        vec![LoadConst(0), ExplodeArray, DropBelow(1), DropBelow(1)],
+        vec![LoadConst(0), ExplodeArray(3), DropBelow(1), DropBelow(1)],
     )
     .unwrap();
     assert_eq!(out, Value::Int(1));
@@ -333,7 +336,7 @@ fn explode_then_make_array_reverses() {
     // the array reversed. (Clone path: the constant table still references it.)
     let out = eval(
         vec![array(vec![Value::Int(1), Value::Int(2), Value::Int(3)])],
-        vec![LoadConst(0), ExplodeArray, MakeArray(3)],
+        vec![LoadConst(0), ExplodeArray(3), MakeArray(3)],
     )
     .unwrap();
     assert_eq!(
@@ -348,7 +351,13 @@ fn explode_consumes_array_and_pushes_each_element() {
     // the rebuilt array; the sentinel proves explode pushed exactly two values.
     let out = eval(
         vec![array(vec![Value::Int(1), Value::Int(2)])],
-        vec![PushInt(99), LoadConst(0), ExplodeArray, MakeArray(2), Pop],
+        vec![
+            PushInt(99),
+            LoadConst(0),
+            ExplodeArray(2),
+            MakeArray(2),
+            Pop,
+        ],
     )
     .unwrap();
     assert_eq!(out, Value::Int(99));
@@ -364,7 +373,7 @@ fn explode_uniquely_owned_array_reverses() {
             PushInt(1),
             PushInt(2),
             MakeArray(2),
-            ExplodeArray,
+            ExplodeArray(2),
             MakeArray(2)
         ]),
         array(vec![Value::Int(2), Value::Int(1)])
@@ -375,7 +384,7 @@ fn explode_uniquely_owned_array_reverses() {
 fn explode_mixed_types_reverses() {
     let out = eval(
         vec![array(vec![Value::Int(1), Value::from("x"), Value::Null])],
-        vec![LoadConst(0), ExplodeArray, MakeArray(3)],
+        vec![LoadConst(0), ExplodeArray(3), MakeArray(3)],
     )
     .unwrap();
     assert_eq!(
@@ -393,7 +402,7 @@ fn explode_is_shallow() {
             array(vec![Value::Int(1)]),
             array(vec![Value::Int(2)]),
         ])],
-        vec![LoadConst(0), ExplodeArray, MakeArray(2)],
+        vec![LoadConst(0), ExplodeArray(2), MakeArray(2)],
     )
     .unwrap();
     assert_eq!(

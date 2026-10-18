@@ -110,6 +110,7 @@ fn run_main(caps: Vec<(&str, Value)>, body: Vec<Bytecode>) -> Result<Value, Fros
         name_table: names,
         num_captures: caps.len(),
         arity: Arity::Exact(0),
+        debug_info: None,
     });
     Vm::factory()
         .build(main.assert_well_formed().close(caps).unwrap())

@@ -1,7 +1,8 @@
-use std::num::NonZeroUsize;
+use std::num::NonZeroU64;
 
 use crate::Value;
 use crate::bytecode::Bytecode;
+use crate::vm::to_operand;
 use frostlang_parse::ast::FormatSegment;
 
 use crate::compile::{
@@ -45,7 +46,8 @@ impl FunctionBuilder<'_> {
                 .into_iter()
                 .flat_map(|segment| segment.code)
                 .chain([Ir::Ready(Bytecode::Concat(
-                    NonZeroUsize::try_from(segment_count).expect("0 segment case can't reach here"),
+                    NonZeroU64::new(to_operand(segment_count))
+                        .expect("0 segment case can't reach here"),
                 ))])
                 .collect(),
         })

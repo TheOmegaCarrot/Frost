@@ -31,6 +31,7 @@ fn eval(constants: Vec<Value>, code: Vec<Bytecode>) -> Result<Value, FrostError>
         name_table: Vec::new(),
         num_captures: 0,
         arity: Arity::Exact(0),
+        debug_info: None,
     });
     let closure = program.assert_well_formed().into_closure().unwrap();
     Vm::factory()

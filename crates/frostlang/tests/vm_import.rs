@@ -49,6 +49,7 @@ fn run(constants: Vec<Value>, code: Vec<Bytecode>) -> Result<Value, FrostError> 
         name_table: Vec::new(),
         num_captures: 0,
         arity: Arity::Exact(0),
+        debug_info: None,
     });
     let closure = program.assert_well_formed().into_closure().unwrap();
     Vm::factory()
@@ -161,6 +162,7 @@ fn a_default_vm_resolves_nothing() {
         name_table: Vec::new(),
         num_captures: 0,
         arity: Arity::Exact(0),
+        debug_info: None,
     });
     let closure = program.assert_well_formed().into_closure().unwrap();
     let result = Vm::factory().build(closure).run();
@@ -184,6 +186,7 @@ fn importing_program(spec: &str) -> Arc<CompiledFunction> {
         name_table: Vec::new(),
         num_captures: 0,
         arity: Arity::Exact(0),
+        debug_info: None,
     })
 }
 
@@ -357,6 +360,7 @@ fn reports_imported() -> Arc<CompiledFunction> {
         name_table: Vec::new(),
         num_captures: 0,
         arity: Arity::Exact(0),
+        debug_info: None,
     })
 }
 

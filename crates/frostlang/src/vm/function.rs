@@ -8,6 +8,7 @@ use crate::{MapKey, Value};
 
 use super::bytecode::Bytecode;
 use super::serialize;
+use crate::vm::debug_info::DebugInfo;
 
 /// Compiled representation of a single function.
 /// A script's top-level is also a function.
@@ -45,9 +46,26 @@ pub struct CompiledFunction {
     pub num_captures: usize,
     /// The number of arguments the function accepts.
     pub arity: Arity,
+    /// Debug info for the function's code.
+    /// `None` when it was compiled without debug info or has been [stripped](Self::strip).
+    pub debug_info: Option<DebugInfo>,
 }
 
 impl CompiledFunction {
+    /// This function without [`debug_info`](Self::debug_info), nor any in the functions it defines.
+    ///
+    /// A nested function shared beyond this one, such as by a [`Closure`] made from it,
+    /// is copied rather than changed in place.
+    #[must_use]
+    pub fn strip(self) -> Self {
+        let child_fns = self.child_fns.into_iter().map(strip_shared).collect();
+        Self {
+            child_fns,
+            debug_info: None,
+            ..self
+        }
+    }
+
     /// The capture names this function expects, in slot order.
     pub fn capture_names(&self) -> impl Iterator<Item = &str> {
         self.name_table[..self.num_captures]
@@ -82,6 +100,23 @@ impl CompiledProgram {
     pub fn assert_well_formed(self) -> WellFormedProgram {
         self.0.assert_well_formed()
     }
+
+    /// This program without debug info.
+    ///
+    /// Debug info records where in source each instruction came from,
+    /// for runtime error backtraces and disassembly.
+    /// The program runs the same without it, and its `image` is smaller.
+    ///
+    /// Copies any part of the program shared beyond this one, such as by a clone of it.
+    #[must_use]
+    pub fn strip(self) -> Self {
+        Self(strip_shared(self.0))
+    }
+}
+
+/// `function` [stripped](CompiledFunction::strip), copied first if it is shared.
+fn strip_shared(function: Arc<CompiledFunction>) -> Arc<CompiledFunction> {
+    Arc::new(Arc::unwrap_or_clone(function).strip())
 }
 
 /// The [`CompiledProgram`] whose root is `function`.
@@ -118,6 +153,13 @@ impl WellFormedProgram {
     /// [`close`](Self::close) or [`close_with`](Self::close_with) must be given values for.
     pub fn capture_names(&self) -> impl Iterator<Item = &str> {
         self.0.capture_names()
+    }
+
+    /// This program [stripped](CompiledProgram::strip) of debug info. It stays well-formed.
+    /// A [`Closure`] made from it shares it, so stripping copies the shared part.
+    #[must_use]
+    pub fn strip(self) -> Self {
+        Self(strip_shared(self.0))
     }
 
     /// Binds this program's captures from `captures`, yielding a runnable [`Closure`].

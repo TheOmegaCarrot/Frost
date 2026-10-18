@@ -44,6 +44,7 @@ fn compiled(
             .collect(),
         num_captures,
         arity,
+        debug_info: None,
     })
 }
 

@@ -24,6 +24,7 @@ pub(super) fn import_global() -> Value {
             constants: vec![import_type_error()],
             key_constants: Vec::new(),
             child_fns: Vec::new(),
+            debug_info: None,
             code: vec![
                 Bytecode::DropBelow(1), // 0: drop the function itself -> ( spec )
                 // Type-check the spec: when it is a String, skip to idx 8.

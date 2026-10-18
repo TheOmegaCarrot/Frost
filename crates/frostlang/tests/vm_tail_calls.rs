@@ -32,7 +32,10 @@ fn single_tail_call() {
     let a = func(
         vec![
             Bytecode::Pop, // pop A's own function value
-            Bytecode::CreateClosure(0),
+            Bytecode::CreateClosure {
+                child: 0,
+                captures: 0,
+            },
             Bytecode::TailCall(0),
         ],
         Arity::Exact(0),
@@ -40,7 +43,13 @@ fn single_tail_call() {
         vec![b],
     );
     let program = func(
-        vec![Bytecode::CreateClosure(0), Bytecode::Call(0)],
+        vec![
+            Bytecode::CreateClosure {
+                child: 0,
+                captures: 0,
+            },
+            Bytecode::Call(0),
+        ],
         Arity::Exact(0),
         vec![],
         vec![a],
@@ -62,7 +71,10 @@ fn chain_of_tail_calls() {
     let b = func(
         vec![
             Bytecode::Pop,
-            Bytecode::CreateClosure(0),
+            Bytecode::CreateClosure {
+                child: 0,
+                captures: 0,
+            },
             Bytecode::TailCall(0),
         ],
         Arity::Exact(0),
@@ -72,7 +84,10 @@ fn chain_of_tail_calls() {
     let a = func(
         vec![
             Bytecode::Pop,
-            Bytecode::CreateClosure(0),
+            Bytecode::CreateClosure {
+                child: 0,
+                captures: 0,
+            },
             Bytecode::TailCall(0),
         ],
         Arity::Exact(0),
@@ -80,7 +95,13 @@ fn chain_of_tail_calls() {
         vec![b],
     );
     let program = func(
-        vec![Bytecode::CreateClosure(0), Bytecode::Call(0)],
+        vec![
+            Bytecode::CreateClosure {
+                child: 0,
+                captures: 0,
+            },
+            Bytecode::Call(0),
+        ],
         Arity::Exact(0),
         vec![],
         vec![a],
@@ -102,7 +123,10 @@ fn tail_call_carries_args() {
     let a = func(
         vec![
             Bytecode::Pop,
-            Bytecode::CreateClosure(0),
+            Bytecode::CreateClosure {
+                child: 0,
+                captures: 0,
+            },
             Bytecode::PushInt(42),
             Bytecode::TailCall(1),
         ],
@@ -111,7 +135,13 @@ fn tail_call_carries_args() {
         vec![b],
     );
     let program = func(
-        vec![Bytecode::CreateClosure(0), Bytecode::Call(0)],
+        vec![
+            Bytecode::CreateClosure {
+                child: 0,
+                captures: 0,
+            },
+            Bytecode::Call(0),
+        ],
         Arity::Exact(0),
         vec![],
         vec![a],
@@ -133,7 +163,10 @@ fn call_then_tail_call_returns_to_original_caller() {
     let g = func(
         vec![
             Bytecode::Pop,
-            Bytecode::CreateClosure(0),
+            Bytecode::CreateClosure {
+                child: 0,
+                captures: 0,
+            },
             Bytecode::TailCall(0),
         ],
         Arity::Exact(0),
@@ -143,7 +176,10 @@ fn call_then_tail_call_returns_to_original_caller() {
     let f = func(
         vec![
             Bytecode::Pop, // pop f's own function value
-            Bytecode::CreateClosure(0),
+            Bytecode::CreateClosure {
+                child: 0,
+                captures: 0,
+            },
             Bytecode::Call(0), // g(): g tail-calls h, whose result returns HERE
             Bytecode::Pop,     // discard h's result (7)
             Bytecode::PushInt(99),
@@ -153,7 +189,13 @@ fn call_then_tail_call_returns_to_original_caller() {
         vec![g],
     );
     let program = func(
-        vec![Bytecode::CreateClosure(0), Bytecode::Call(0)],
+        vec![
+            Bytecode::CreateClosure {
+                child: 0,
+                captures: 0,
+            },
+            Bytecode::Call(0),
+        ],
         Arity::Exact(0),
         vec![],
         vec![f],
@@ -176,7 +218,10 @@ fn tail_call_leaves_exactly_one_value() {
     let a = func(
         vec![
             Bytecode::Pop,
-            Bytecode::CreateClosure(0),
+            Bytecode::CreateClosure {
+                child: 0,
+                captures: 0,
+            },
             Bytecode::TailCall(0),
         ],
         Arity::Exact(0),
@@ -186,7 +231,10 @@ fn tail_call_leaves_exactly_one_value() {
     let program = func(
         vec![
             Bytecode::PushInt(11), // sentinel
-            Bytecode::CreateClosure(0),
+            Bytecode::CreateClosure {
+                child: 0,
+                captures: 0,
+            },
             Bytecode::Call(0),
             Bytecode::Pop, // discard the single result
         ],
@@ -211,7 +259,10 @@ fn variadic_tail_call() {
     let a = func(
         vec![
             Bytecode::Pop,
-            Bytecode::CreateClosure(0),
+            Bytecode::CreateClosure {
+                child: 0,
+                captures: 0,
+            },
             Bytecode::PushInt(1),
             Bytecode::PushInt(2),
             Bytecode::PushInt(3),
@@ -222,7 +273,13 @@ fn variadic_tail_call() {
         vec![b],
     );
     let program = func(
-        vec![Bytecode::CreateClosure(0), Bytecode::Call(0)],
+        vec![
+            Bytecode::CreateClosure {
+                child: 0,
+                captures: 0,
+            },
+            Bytecode::Call(0),
+        ],
         Arity::Exact(0),
         vec![],
         vec![a],
@@ -251,7 +308,10 @@ fn tail_call_to_closure_with_capture() {
         vec![
             Bytecode::Pop,         // pop A's own function value
             Bytecode::PushInt(55), // value to capture
-            Bytecode::CreateClosure(0),
+            Bytecode::CreateClosure {
+                child: 0,
+                captures: 1,
+            },
             Bytecode::TailCall(0),
         ],
         Arity::Exact(0),
@@ -259,7 +319,13 @@ fn tail_call_to_closure_with_capture() {
         vec![b],
     );
     let program = func(
-        vec![Bytecode::CreateClosure(0), Bytecode::Call(0)],
+        vec![
+            Bytecode::CreateClosure {
+                child: 0,
+                captures: 0,
+            },
+            Bytecode::Call(0),
+        ],
         Arity::Exact(0),
         vec![],
         vec![a],
@@ -286,7 +352,10 @@ fn variadic_tail_call_splits_fixed_and_rest() {
     let a = func(
         vec![
             Bytecode::Pop,
-            Bytecode::CreateClosure(0),
+            Bytecode::CreateClosure {
+                child: 0,
+                captures: 0,
+            },
             Bytecode::PushInt(10), // a
             Bytecode::PushInt(20), // rest[0]
             Bytecode::PushInt(30), // rest[1]
@@ -297,7 +366,13 @@ fn variadic_tail_call_splits_fixed_and_rest() {
         vec![b],
     );
     let program = func(
-        vec![Bytecode::CreateClosure(0), Bytecode::Call(0)],
+        vec![
+            Bytecode::CreateClosure {
+                child: 0,
+                captures: 0,
+            },
+            Bytecode::Call(0),
+        ],
         Arity::Exact(0),
         vec![],
         vec![a],
@@ -321,7 +396,10 @@ fn tail_called_frame_makes_normal_call() {
     let b = func(
         vec![
             Bytecode::Pop,
-            Bytecode::CreateClosure(0),
+            Bytecode::CreateClosure {
+                child: 0,
+                captures: 0,
+            },
             Bytecode::Call(0), // normal call, in tail position of B's body
         ],
         Arity::Exact(0),
@@ -331,7 +409,10 @@ fn tail_called_frame_makes_normal_call() {
     let a = func(
         vec![
             Bytecode::Pop,
-            Bytecode::CreateClosure(0),
+            Bytecode::CreateClosure {
+                child: 0,
+                captures: 0,
+            },
             Bytecode::TailCall(0),
         ],
         Arity::Exact(0),
@@ -339,7 +420,13 @@ fn tail_called_frame_makes_normal_call() {
         vec![b],
     );
     let program = func(
-        vec![Bytecode::CreateClosure(0), Bytecode::Call(0)],
+        vec![
+            Bytecode::CreateClosure {
+                child: 0,
+                captures: 0,
+            },
+            Bytecode::Call(0),
+        ],
         Arity::Exact(0),
         vec![],
         vec![a],
@@ -367,7 +454,13 @@ fn tail_position_result(
     body.push(final_op);
     let a = func(body, Arity::Exact(0), vec![], children);
     let program = func(
-        vec![Bytecode::CreateClosure(0), Bytecode::Call(0)],
+        vec![
+            Bytecode::CreateClosure {
+                child: 0,
+                captures: 0,
+            },
+            Bytecode::Call(0),
+        ],
         Arity::Exact(0),
         vec![],
         vec![a],
@@ -384,7 +477,13 @@ fn call_eq_tail_call_no_args() {
         vec![],
         vec![],
     );
-    let setup = vec![Bytecode::Pop, Bytecode::CreateClosure(0)];
+    let setup = vec![
+        Bytecode::Pop,
+        Bytecode::CreateClosure {
+            child: 0,
+            captures: 0,
+        },
+    ];
     let via_call = tail_position_result(setup.clone(), Bytecode::Call(0), vec![callee.clone()]);
     let via_tail = tail_position_result(setup, Bytecode::TailCall(0), vec![callee]);
     assert_eq!(via_call, via_tail);
@@ -407,7 +506,10 @@ fn call_eq_tail_call_multiple_params() {
     );
     let setup = vec![
         Bytecode::Pop,
-        Bytecode::CreateClosure(0),
+        Bytecode::CreateClosure {
+            child: 0,
+            captures: 0,
+        },
         Bytecode::PushInt(10),
         Bytecode::PushInt(20),
     ];
@@ -430,7 +532,10 @@ fn call_eq_tail_call_capture_and_param() {
     let setup = vec![
         Bytecode::Pop,
         Bytecode::PushInt(100), // capture value
-        Bytecode::CreateClosure(0),
+        Bytecode::CreateClosure {
+            child: 0,
+            captures: 1,
+        },
         Bytecode::PushInt(5), // arg
     ];
     let via_call = tail_position_result(setup.clone(), Bytecode::Call(1), vec![callee.clone()]);
@@ -449,7 +554,10 @@ fn call_eq_tail_call_variadic_rest() {
     );
     let setup = vec![
         Bytecode::Pop,
-        Bytecode::CreateClosure(0),
+        Bytecode::CreateClosure {
+            child: 0,
+            captures: 0,
+        },
         Bytecode::PushInt(1),
         Bytecode::PushInt(2),
         Bytecode::PushInt(3),
@@ -473,7 +581,13 @@ fn call_eq_tail_call_variadic_empty() {
         vec![entry("rest", false)],
         vec![],
     );
-    let setup = vec![Bytecode::Pop, Bytecode::CreateClosure(0)];
+    let setup = vec![
+        Bytecode::Pop,
+        Bytecode::CreateClosure {
+            child: 0,
+            captures: 0,
+        },
+    ];
     let via_call = tail_position_result(setup.clone(), Bytecode::Call(0), vec![callee.clone()]);
     let via_tail = tail_position_result(setup, Bytecode::TailCall(0), vec![callee]);
     assert_eq!(via_call, via_tail);

@@ -204,33 +204,30 @@ fn instruction(
     use Bytecode::*;
 
     let bare = |name| (name, String::new(), None);
-    let count = |name, n: usize| (name, n.to_string(), None);
-    let slot = |name, slot: usize| {
-        let named = function
-            .name_table
-            .get(slot)
-            .map(|entry| entry.name.clone());
+    let count = |name, n: u64| (name, n.to_string(), None);
+    let slot = |name, slot: u64| {
+        let named = entry(&function.name_table, slot).map(|entry| entry.name.clone());
         (
             name,
             slot.to_string(),
             Some(named.unwrap_or_else(|| "?".into())),
         )
     };
-    let key = |name, index: usize| {
-        let key = function.key_constants.get(index).map(key_access);
+    let key = |name, index: u64| {
+        let key = entry(&function.key_constants, index).map(key_access);
         (
             name,
             index.to_string(),
             Some(key.unwrap_or_else(|| "?".into())),
         )
     };
-    let jump = |name, offset: usize| {
-        let target = pc + 1 + offset;
-        let operand = match labels.at(target) {
-            Some(label) if target <= function.code.len() => format!("L{label}"),
-            _ => "?".into(),
+    let jump = |name, offset: u64| {
+        let target = jump_target(&function.code, pc, offset);
+        let operand = match target.and_then(|target| labels.at(target)) {
+            Some(label) => format!("L{label}"),
+            None => "?".into(),
         };
-        let comment = if target <= function.code.len() {
+        let comment = if target.is_some() {
             format!("+{offset}")
         } else {
             format!("+{offset}, past the end")
@@ -250,7 +247,7 @@ fn instruction(
         LoadLocal(index) => slot("LoadLocal", index),
         ConsumeLocal(index) => slot("ConsumeLocal", index),
         LoadConst(index) => {
-            let constant = function.constants.get(index).map(inline_constant);
+            let constant = entry(&function.constants, index).map(inline_constant);
             (
                 "LoadConst",
                 index.to_string(),
@@ -258,7 +255,7 @@ fn instruction(
             )
         }
         LoadGlobal(index) => {
-            let global = GLOBAL_NAMES.get(index).copied().unwrap_or("?");
+            let global = entry(GLOBAL_NAMES, index).copied().unwrap_or("?");
             ("LoadGlobal", index.to_string(), Some(global.to_string()))
         }
         Add => bare("Add"),
@@ -283,24 +280,18 @@ fn instruction(
         Call(argc) => count("Call", argc),
         TailCall(argc) => count("TailCall", argc),
         DynTailCall => bare("DynTailCall"),
-        CreateClosure(index) => {
-            let child = function.child_fns.get(index).map(|child| {
-                format!(
-                    "{}, {} {}",
-                    child.name,
-                    child.num_captures,
-                    plural(child.num_captures, "capture", "captures")
-                )
-            });
-            (
-                "CreateClosure",
-                index.to_string(),
-                Some(child.unwrap_or_else(|| "?".into())),
-            )
+        CreateClosure { child, captures } => {
+            let child_name =
+                entry(&function.child_fns, u64::from(child)).map_or("?", |child_fn| &child_fn.name);
+            let comment = format!(
+                "{child_name}, {captures} {}",
+                plural(captures, "capture", "captures")
+            );
+            ("CreateClosure", child.to_string(), Some(comment))
         }
         MakeArray(n) => count("MakeArray", n),
         MakeMap(n) => count("MakeMap", n),
-        ExplodeArray => bare("ExplodeArray"),
+        ExplodeArray(n) => count("ExplodeArray", n),
         SplitArray(n) => count("SplitArray", n),
         SoftIndexStructure => bare("SoftIndexStructure"),
         HardIndexMap(index) => key("HardIndexMap", index),
@@ -340,10 +331,9 @@ impl Labels {
                 | Bytecode::JumpIfTrue(offset)
                 | Bytecode::JumpIfFalse(offset)
                 | Bytecode::PeekJumpIfTrue(offset)
-                | Bytecode::PeekJumpIfFalse(offset) => Some(pc + 1 + offset),
+                | Bytecode::PeekJumpIfFalse(offset) => jump_target(code, pc, offset),
                 _ => None,
             })
-            .filter(|&target| target <= code.len())
             .collect();
         targets.sort_unstable();
         targets.dedup();
@@ -386,8 +376,24 @@ fn arity(arity: Arity) -> String {
     }
 }
 
-fn plural(n: usize, one: &'static str, many: &'static str) -> &'static str {
-    if n == 1 { one } else { many }
+fn plural<N: PartialEq + From<u8>>(n: N, one: &'static str, many: &'static str) -> &'static str {
+    if n == N::from(1) { one } else { many }
+}
+
+/// The entry of `items` at the operand `index`, if there is one.
+fn entry<T>(items: &[T], index: u64) -> Option<&T> {
+    usize::try_from(index)
+        .ok()
+        .and_then(|index| items.get(index))
+}
+
+/// Where a jump at `pc` skipping `offset` instructions lands,
+/// if within `code` or just past its end, where the function returns.
+fn jump_target(code: &[Bytecode], pc: usize, offset: u64) -> Option<usize> {
+    usize::try_from(offset)
+        .ok()
+        .and_then(|offset| (pc + 1).checked_add(offset))
+        .filter(|&target| target <= code.len())
 }
 
 /// Coloring with ANSI escape codes, when on.

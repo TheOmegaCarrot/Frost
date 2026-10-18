@@ -43,16 +43,21 @@ pub struct CompilerOptions {
     pub lints: bool,
     /// How deeply a script may nest. One nested past them is a compile error.
     pub parse_limits: ParseLimits,
+    /// Keep debug info. Off, the program is compiled as if
+    /// [stripped](crate::WellFormedProgram::strip).
+    pub debug_info: bool,
 }
 
 impl CompilerOptions {
-    /// Every optimization on, no implicit export, lints on, and the default [`ParseLimits`].
+    /// Every optimization on, no implicit export, lints on, the default [`ParseLimits`],
+    /// and debug info on.
     pub const fn new() -> Self {
         Self {
             optimization_options: OptimizationOptions::ALL,
             implicit_export: false,
             lints: true,
             parse_limits: ParseLimits::new(),
+            debug_info: true,
         }
     }
 
@@ -82,6 +87,13 @@ impl CompilerOptions {
     #[must_use]
     pub const fn with_parse_limits(mut self, limits: ParseLimits) -> Self {
         self.parse_limits = limits;
+        self
+    }
+
+    /// These options with [`debug_info`](Self::debug_info) on or off.
+    #[must_use]
+    pub const fn with_debug_info(mut self, on: bool) -> Self {
+        self.debug_info = on;
         self
     }
 }

@@ -27,6 +27,7 @@ use crate::compile::lower::assemble::pool::Pool;
 use crate::compile::lower::locals::SlotPlan;
 use crate::compile::lower::passes::run_passes;
 use crate::compile::lower::{ConstKeyOp, FunctionBuilder, Ir, JumpType, LoweredFunction};
+use crate::vm::to_operand;
 
 impl FunctionBuilder<'_> {
     /// End lowering: package this function's fused IR with its metadata, and
@@ -106,20 +107,28 @@ pub(super) fn assemble_code(
             }
             // Zero-width: a label contributes no instruction.
             Ir::Label(_) => {}
-            Ir::Const(value) => out.push(Bytecode::LoadConst(constants.add(value))),
+            Ir::Const(value) => out.push(Bytecode::LoadConst(to_operand(constants.add(value)))),
             Ir::ConstKey { op, key } => {
-                let index = key_constants.add(key);
+                let index = to_operand(key_constants.add(key));
                 out.push(match op {
                     ConstKeyOp::HardIndex => Bytecode::HardIndexMap(index),
                     ConstKeyOp::Test => Bytecode::TestConstKey(index),
                     ConstKeyOp::Extract => Bytecode::ExtractConstKey(index),
                 });
             }
-            Ir::LoadLocal(id) => out.push(Bytecode::LoadLocal(plan.slot_of(*id))),
-            Ir::ConsumeLocal(id) => out.push(Bytecode::ConsumeLocal(plan.slot_of(*id))),
-            Ir::DefLocal(id) => out.push(Bytecode::DefLocal(plan.slot_of(*id))),
+            Ir::LoadLocal(id) => out.push(Bytecode::LoadLocal(to_operand(plan.slot_of(*id)))),
+            Ir::ConsumeLocal(id) => {
+                out.push(Bytecode::ConsumeLocal(to_operand(plan.slot_of(*id))));
+            }
+            Ir::DefLocal(id) => out.push(Bytecode::DefLocal(to_operand(plan.slot_of(*id)))),
             Ir::Closure { compiled, .. } => {
-                out.push(Bytecode::CreateClosure(child_fns.len()));
+                // Each child function and capture takes at least one byte of source,
+                // so a count past `u32` needs a source over 4 GiB.
+                let to_u32 = |n: usize| u32::try_from(n).expect("count exceeds u32");
+                out.push(Bytecode::CreateClosure {
+                    child: to_u32(child_fns.len()),
+                    captures: to_u32(compiled.num_captures),
+                });
                 child_fns.push(Arc::clone(compiled));
             }
             Ir::Jump { kind, label } => {
@@ -146,6 +155,8 @@ pub(super) fn assemble_code(
         num_captures: plan.num_captures(),
         name_table: plan.into_name_table(),
         arity,
+        // TODO: emit debug info (FROST-177.2).
+        debug_info: None,
     })
 }
 
@@ -162,7 +173,7 @@ fn is_symbolic_opcode(bytecode: &Bytecode) -> bool {
             | Bytecode::HardIndexMap(_)
             | Bytecode::TestConstKey(_)
             | Bytecode::ExtractConstKey(_)
-            | Bytecode::CreateClosure(_)
+            | Bytecode::CreateClosure { .. }
             | Bytecode::Jump(_)
             | Bytecode::JumpIfTrue(_)
             | Bytecode::JumpIfFalse(_)
@@ -197,6 +208,7 @@ fn resolve_labels(code: &[Ir], num_labels: usize) -> Vec<Option<usize>> {
 
 /// The concrete jump opcode for a [`JumpType`] and its resolved forward offset.
 fn jump_bytecode(kind: JumpType, offset: usize) -> Bytecode {
+    let offset = to_operand(offset);
     match kind {
         JumpType::Unconditional => Bytecode::Jump(offset),
         JumpType::IfTrue => Bytecode::JumpIfTrue(offset),

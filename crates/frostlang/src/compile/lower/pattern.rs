@@ -13,6 +13,7 @@
 //! reads them alike whichever branch matched.
 
 use crate::bytecode::Bytecode;
+use crate::vm::to_operand;
 use crate::{FrostType, TypeSet, Value};
 use frostlang_parse::ast::{
     Binding, MapPatternEntry, Pattern, SourceSpan, Spanned, TypeConstraint,
@@ -186,18 +187,19 @@ impl FunctionBuilder<'_> {
     /// Array, its tail beneath the elements; the elements are exploded, the first
     /// on top. `( a -- rest? aN ... a1 a0 )`
     fn array_layout(&mut self, count: usize, rest: bool, mismatch: Mismatch) -> Vec<Ir> {
+        let operand = to_operand(count);
         let (test, bound) = if rest {
-            (Bytecode::TestArrayLenAtLeast(count), "at least")
+            (Bytecode::TestArrayLenAtLeast(operand), "at least")
         } else {
-            (Bytecode::TestArrayLenExact(count), "exactly")
+            (Bytecode::TestArrayLenExact(operand), "exactly")
         };
         let noun = if count == 1 { "element" } else { "elements" };
         self.check([Ir::Ready(test)], mismatch, || {
             format!("expected an Array of {bound} {count} {noun}")
         })
         .into_iter()
-        .chain(rest.then_some(Ir::Ready(Bytecode::SplitArray(count))))
-        .chain([Ir::Ready(Bytecode::ExplodeArray)])
+        .chain(rest.then_some(Ir::Ready(Bytecode::SplitArray(operand))))
+        .chain([Ir::Ready(Bytecode::ExplodeArray(operand))])
         .collect()
     }
 

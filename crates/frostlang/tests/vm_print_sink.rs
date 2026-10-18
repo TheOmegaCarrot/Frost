@@ -42,11 +42,12 @@ fn program(constants: Vec<Value>, code: Vec<Bytecode>) -> Arc<CompiledFunction> 
         name_table: Vec::new(),
         num_captures: 0,
         arity: Arity::Exact(0),
+        debug_info: None,
     })
 }
 
 /// Code that prints constant `index`, leaving `print`'s result.
-fn print_const(index: usize) -> [Bytecode; 3] {
+fn print_const(index: u64) -> [Bytecode; 3] {
     [LoadGlobal(global_slot("print")), LoadConst(index), Call(1)]
 }
 

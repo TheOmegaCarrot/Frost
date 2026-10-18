@@ -1,4 +1,5 @@
 use crate::bytecode::Bytecode;
+use crate::vm::to_operand;
 use frostlang_parse::ast::{Expr, MapEntry, Spanned};
 
 use crate::compile::{
@@ -25,7 +26,7 @@ impl FunctionBuilder<'_> {
             code: elements
                 .into_iter()
                 .flat_map(|fragment| fragment.code.into_iter())
-                .chain([Ir::Ready(Bytecode::MakeArray(count))])
+                .chain([Ir::Ready(Bytecode::MakeArray(to_operand(count)))])
                 .collect(),
         })
     }
@@ -50,7 +51,7 @@ impl FunctionBuilder<'_> {
             code: exprs
                 .into_iter()
                 .flat_map(|expr| expr.code)
-                .chain([Ir::Ready(Bytecode::MakeMap(pair_count))])
+                .chain([Ir::Ready(Bytecode::MakeMap(to_operand(pair_count)))])
                 .collect(),
         })
     }

@@ -1,6 +1,6 @@
 //! Type checking, conversion, and value serialization.
 
-use std::num::NonZeroUsize;
+use std::num::NonZeroU64;
 
 use crate::bytecode::Bytecode;
 use crate::native::Flat;
@@ -88,7 +88,7 @@ pub(super) fn to_string_global() -> Value {
         Arity::Exact(1),
         vec![
             Bytecode::DropBelow(1),
-            Bytecode::Concat(NonZeroUsize::new(1).unwrap()),
+            Bytecode::Concat(NonZeroU64::new(1).unwrap()),
         ],
     )
 }

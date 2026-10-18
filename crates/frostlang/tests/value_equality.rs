@@ -234,6 +234,7 @@ fn a_closure() -> Arc<Closure> {
         name_table: Vec::new(),
         num_captures: 0,
         arity: Arity::Exact(0),
+        debug_info: None,
     });
     f.assert_well_formed().into_closure().unwrap()
 }

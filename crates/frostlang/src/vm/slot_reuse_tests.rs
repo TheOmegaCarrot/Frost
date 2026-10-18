@@ -52,6 +52,7 @@ fn three_locals() -> Arc<CompiledFunction> {
             .to_vec(),
         num_captures: 0,
         arity: Arity::Exact(0),
+        debug_info: None,
     })
 }
 
@@ -59,7 +60,10 @@ fn three_locals() -> Arc<CompiledFunction> {
 /// `probe` is its capture, in slot 0.
 fn calls_then_probes(calls: usize, probe: Value) -> Arc<Closure> {
     let call_then_probe = [
-        Bytecode::CreateClosure(0),
+        Bytecode::CreateClosure {
+            child: 0,
+            captures: 0,
+        },
         Bytecode::Call(0),
         Bytecode::Pop,
         Bytecode::LoadLocal(0),
@@ -91,6 +95,7 @@ fn calls_then_probes(calls: usize, probe: Value) -> Arc<Closure> {
         }],
         num_captures: 1,
         arity: Arity::Exact(0),
+        debug_info: None,
     })
     .assert_well_formed()
     .close(BTreeMap::from([("probe".to_string(), probe)]))

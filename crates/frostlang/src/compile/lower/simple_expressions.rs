@@ -4,6 +4,7 @@ mod tests;
 use std::num::FpCategory;
 
 use crate::bytecode::Bytecode;
+use crate::vm::to_operand;
 use crate::{FrostError, FrostFloat};
 use frostlang_parse::ast::{Expr, Literal, SourceSpan, Spanned, UnaryOp};
 
@@ -87,7 +88,7 @@ impl FunctionBuilder<'_> {
         let pure = global_pure(slot);
         self.effectful |= !pure;
         ExprFragment {
-            code: vec![Ir::Ready(Bytecode::LoadGlobal(slot))],
+            code: vec![Ir::Ready(Bytecode::LoadGlobal(to_operand(slot)))],
             foldable: pure,
         }
     }

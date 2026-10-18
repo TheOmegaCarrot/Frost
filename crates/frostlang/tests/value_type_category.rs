@@ -44,7 +44,10 @@ fn closure() -> Value {
         vec![],
     );
     let program = common::func(
-        vec![Bytecode::CreateClosure(0)],
+        vec![Bytecode::CreateClosure {
+            child: 0,
+            captures: 0,
+        }],
         Arity::Exact(0),
         vec![],
         vec![child],

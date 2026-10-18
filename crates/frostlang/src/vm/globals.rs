@@ -245,6 +245,7 @@ fn bytecode_global(name: &'static str, arity: Arity, code: Vec<Bytecode>) -> Val
             key_constants: Vec::new(),
             child_fns: Vec::new(),
             code,
+            debug_info: None,
         }),
     }))
 }

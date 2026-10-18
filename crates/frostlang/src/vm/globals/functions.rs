@@ -26,6 +26,7 @@ pub(super) fn call_global() -> Value {
             constants: vec![call_type_error()],
             key_constants: Vec::new(),
             child_fns: Vec::new(),
+            debug_info: None,
             code: vec![
                 // On entry: ( call_self f a? n ),
                 // where n is the argc (1 or 2) pushed for a Between closure.

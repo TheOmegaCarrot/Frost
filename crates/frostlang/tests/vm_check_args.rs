@@ -443,7 +443,8 @@ fn entry(name: &str) -> NameEntry {
 
 /// Invoke `native` with `args` through the VM (both seated as captures).
 fn invoke(native: Value, args: Vec<Value>) -> Result<Value, FrostError> {
-    let argc = args.len();
+    let argc = args.len() as u64;
+    let num_captures = args.len() + 1;
     let mut code = vec![Bytecode::Pop, Bytecode::LoadLocal(0)]; // pop own value, load the native
     code.extend((1..=argc).map(Bytecode::LoadLocal)); // args at capture slots 1..=argc
     code.push(Bytecode::Call(argc));
@@ -460,8 +461,9 @@ fn invoke(native: Value, args: Vec<Value>) -> Result<Value, FrostError> {
         constants: Vec::new(),
         key_constants: Vec::new(),
         name_table,
-        num_captures: 1 + argc,
+        num_captures,
         arity: Arity::Exact(0),
+        debug_info: None,
     });
 
     let mut captures = BTreeMap::new();

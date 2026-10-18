@@ -54,6 +54,7 @@ fn run(
         name_table,
         num_captures: caps.len(),
         arity: Arity::Exact(0),
+        debug_info: None,
     });
     let captures: BTreeMap<String, Value> =
         caps.into_iter().map(|(n, v)| (n.to_string(), v)).collect();

@@ -34,7 +34,7 @@ fn code(source: &str) -> Emitted {
 
 /// The argument counts of the calls in the code, split into (ordinary calls,
 /// tail calls).
-fn calls_by_arity(emitted: &Emitted) -> (Vec<usize>, Vec<usize>) {
+fn calls_by_arity(emitted: &Emitted) -> (Vec<u64>, Vec<u64>) {
     let mut ordinary = Vec::new();
     let mut tail = Vec::new();
     for op in &emitted.code {
@@ -50,7 +50,7 @@ fn calls_by_arity(emitted: &Emitted) -> (Vec<usize>, Vec<usize>) {
 }
 
 /// Assert that the calls with these argument counts are ordinary and tail calls.
-fn assert_calls(source: &str, ordinary: &[usize], tail: &[usize]) {
+fn assert_calls(source: &str, ordinary: &[u64], tail: &[u64]) {
     let emitted = code(source);
     assert_eq!(
         calls_by_arity(&emitted),

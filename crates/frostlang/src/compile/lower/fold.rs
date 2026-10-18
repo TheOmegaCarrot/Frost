@@ -31,6 +31,7 @@ use crate::bytecode::{Bytecode, CompiledFunction};
 use crate::compile::lower::assemble::assemble_code;
 use crate::compile::lower::{ExprFragment, FunctionBuilder, Ir, LocalId};
 use crate::core::find;
+use crate::vm::to_operand;
 use crate::{Arity, IdleVm, MapKey, Value, ValueMap, Vm, VmFactory, VmRuntimeConfiguration};
 
 // TODO: A function is effectful once it loads an impure global, even if branch
@@ -198,7 +199,7 @@ impl FunctionBuilder<'_> {
         let collect = bound
             .iter()
             .map(|id| Ir::LoadLocal(*id))
-            .chain([Ir::Ready(Bytecode::MakeArray(bound.len()))]);
+            .chain([Ir::Ready(Bytecode::MakeArray(to_operand(bound.len())))]);
         let values = self.evaluate(code.into_iter().chain(collect).collect())?;
         let values = values
             .as_array()

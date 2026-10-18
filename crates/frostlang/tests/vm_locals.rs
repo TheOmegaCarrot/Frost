@@ -111,6 +111,7 @@ fn passed_unshared(load: Bytecode) -> Value {
         name_table: vec![entry("probe", false), entry("xs", false)],
         num_captures: 1,
         arity: Arity::Exact(0),
+        debug_info: None,
     });
     let closure = program
         .assert_well_formed()
@@ -158,10 +159,16 @@ fn a_call_never_sees_a_finished_calls_locals() {
     );
     let program = func(
         vec![
-            Bytecode::CreateClosure(0),
+            Bytecode::CreateClosure {
+                child: 0,
+                captures: 0,
+            },
             Bytecode::Call(0),
             Bytecode::Pop,
-            Bytecode::CreateClosure(1),
+            Bytecode::CreateClosure {
+                child: 1,
+                captures: 0,
+            },
             Bytecode::Call(0),
         ],
         Arity::Exact(0),

@@ -18,7 +18,7 @@ use frostlang::{Arity, FrostArray, FrostError, ProgramResult, Value, Vm, frost_c
 
 use Bytecode::*;
 
-fn call_slot() -> usize {
+fn call_slot() -> u64 {
     global_slot("call")
 }
 
@@ -42,6 +42,7 @@ fn func(name: &str, code: Vec<Bytecode>, arity: Arity, names: &[&str]) -> Value 
         name_table: names.iter().map(|n| entry(n)).collect(),
         num_captures: 0,
         arity,
+        debug_info: None,
     });
     Value::Closure(f.assert_well_formed().into_closure().unwrap())
 }
@@ -63,6 +64,7 @@ fn run_main(caps: Vec<(&str, Value)>, body: Vec<Bytecode>) -> Result<ProgramResu
         name_table: names,
         num_captures: caps.len(),
         arity: Arity::Exact(0),
+        debug_info: None,
     });
     let map: BTreeMap<String, Value> = caps.into_iter().map(|(n, v)| (n.to_string(), v)).collect();
     Vm::factory()

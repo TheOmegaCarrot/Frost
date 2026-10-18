@@ -46,6 +46,7 @@ fn named(
         name_table: names,
         num_captures: 0,
         arity,
+        debug_info: None,
     })
 }
 
@@ -60,11 +61,19 @@ fn native(
 
 /// `CreateClosure` for a capture-less child function at `idx`.
 fn closure(idx: u32) -> Bytecode {
-    Bytecode::CreateClosure(idx as usize)
+    closure_capturing(idx, 0)
+}
+
+/// `CreateClosure` for the child function at `idx`, which has `captures` captures.
+fn closure_capturing(idx: u32, captures: u32) -> Bytecode {
+    Bytecode::CreateClosure {
+        child: idx,
+        captures,
+    }
 }
 
 /// Slot index of the `try_call` global (the VM is built with the default set).
-fn try_call_slot() -> usize {
+fn try_call_slot() -> u64 {
     global_slot("try_call")
 }
 
@@ -917,7 +926,7 @@ fn catch_through_a_native_frame_discards_the_marks_above_it() {
             Bytecode::PushInt(20),
             Bytecode::LoadGlobal(try_call_slot()),
             Bytecode::LoadLocal(0),
-            closure(0),
+            closure_capturing(0, 1),
             Bytecode::Call(1),
             Bytecode::Pop,
             Bytecode::RewindToMark,
@@ -983,7 +992,7 @@ fn catch_of_a_native_error_discards_only_the_abandoned_frames_marks() {
             Bytecode::PushInt(20),
             Bytecode::LoadGlobal(try_call_slot()),
             Bytecode::LoadLocal(0),
-            closure(0),
+            closure_capturing(0, 1),
             Bytecode::Call(1),
             Bytecode::Pop,
             Bytecode::RewindToMark,
@@ -1176,6 +1185,7 @@ fn raiser_fn(message: &str) -> Arc<CompiledFunction> {
         name_table: Vec::new(),
         num_captures: 0,
         arity: Arity::Exact(0),
+        debug_info: None,
     })
 }
 
@@ -1193,6 +1203,7 @@ fn produce_error_with_string_raises_that_message() {
         name_table: Vec::new(),
         num_captures: 0,
         arity: Arity::Exact(0),
+        debug_info: None,
     });
     let err = run(program).unwrap_err();
     assert_eq!(err.message(), "boom");
@@ -1253,6 +1264,7 @@ fn produce_error_with_non_string_value_still_raises() {
         name_table: Vec::new(),
         num_captures: 0,
         arity: Arity::Exact(0),
+        debug_info: None,
     });
     let err = run(program).unwrap_err();
     assert_eq!(backtrace(&err), vec!["main"]);

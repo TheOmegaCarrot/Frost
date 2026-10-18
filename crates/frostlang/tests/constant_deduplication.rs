@@ -20,7 +20,7 @@ const FOLD_AND_DEDUPLICATE: OptimizationOptions = UNOPTIMIZED
     .with(Optimization::DeduplicateConstants, true);
 
 /// The constant-pool index of each `LoadConst` in `emitted`, in order.
-fn loads(emitted: &Emitted) -> Vec<usize> {
+fn loads(emitted: &Emitted) -> Vec<u64> {
     emitted
         .code
         .iter()
@@ -32,7 +32,7 @@ fn loads(emitted: &Emitted) -> Vec<usize> {
 }
 
 /// The key-constant index of each constant-key op in `emitted`, in order.
-fn key_loads(emitted: &Emitted) -> Vec<usize> {
+fn key_loads(emitted: &Emitted) -> Vec<u64> {
     emitted
         .code
         .iter()

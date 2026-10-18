@@ -20,7 +20,10 @@ use frostlang::bytecode::{Bytecode, CompiledFunction};
 use Bytecode::*;
 
 /// `CreateClosure` for the first child function, capturing nothing.
-const MAKE_CHILD: Bytecode = CreateClosure(0);
+const MAKE_CHILD: Bytecode = CreateClosure {
+    child: 0,
+    captures: 0,
+};
 
 /// A program that calls `callee` with no arguments, having first left `spare`
 /// values of its own on the operand stack.
@@ -211,4 +214,62 @@ fn returning_with_an_unbalanced_mark_is_caught() {
         vec![],
     );
     run_fn(calling_program(0, callee));
+}
+
+// ============================================================
+// Counts carried by an instruction
+// ============================================================
+
+#[test]
+#[should_panic(expected = "exactly its count of elements")]
+fn exploding_more_elements_than_the_array_has_is_caught() {
+    run_fn(func(
+        vec![PushInt(1), PushInt(2), MakeArray(2), ExplodeArray(3)],
+        Arity::Exact(0),
+        vec![],
+        vec![],
+    ));
+}
+
+#[test]
+#[should_panic(expected = "exactly its count of elements")]
+fn exploding_fewer_elements_than_the_array_has_is_caught() {
+    run_fn(func(
+        vec![PushInt(1), PushInt(2), MakeArray(2), ExplodeArray(1)],
+        Arity::Exact(0),
+        vec![],
+        vec![],
+    ));
+}
+
+/// A program closing over a child with one capture, `CreateClosure` claiming `captures`,
+/// with `pushed` values on the stack to capture.
+fn closing_program(captures: u32, pushed: usize) -> Arc<CompiledFunction> {
+    let child = common::func_with_captures(
+        vec![Pop, PushNull],
+        Arity::Exact(0),
+        vec![common::entry("captured", false)],
+        vec![],
+        1,
+    );
+    let mut code: Vec<Bytecode> = (0..pushed).map(|i| PushInt(i as i64)).collect();
+    code.push(CreateClosure { child: 0, captures });
+    func(code, Arity::Exact(0), vec![], vec![child])
+}
+
+#[test]
+fn closing_with_the_childs_capture_count_is_allowed() {
+    run_fn(closing_program(1, 1));
+}
+
+#[test]
+#[should_panic(expected = "capture count must be its child's")]
+fn closing_with_fewer_captures_than_the_child_has_is_caught() {
+    run_fn(closing_program(0, 1));
+}
+
+#[test]
+#[should_panic(expected = "capture count must be its child's")]
+fn closing_with_more_captures_than_the_child_has_is_caught() {
+    run_fn(closing_program(2, 2));
 }

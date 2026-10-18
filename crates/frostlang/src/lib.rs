@@ -46,8 +46,8 @@ pub use vm::{
     HostComponentError, IdleVm, ImportCtx, ImportResolver, Importer, ImporterBuilder,
     InvalidComponentName, InvalidParams, MissingCaptures, ModuleId, NativeCtx, NativeFn,
     NativeFunction, Param, Params, PrintSink, ProgramParts, ProgramResult, RunError, RunErrorKind,
-    Stdlib, StdlibError, StdlibModule, StdoutSink, Vm, VmFactory, VmRuntimeConfiguration,
-    WellFormedProgram,
+    SourceLocation, Stdlib, StdlibError, StdlibModule, StdoutSink, Vm, VmFactory,
+    VmRuntimeConfiguration, WellFormedProgram,
 };
 
 /// Makes a Frost function from a Rust function.
@@ -378,7 +378,8 @@ pub mod __private {
 /// A host running Frost programs needs nothing here.
 pub mod bytecode {
     pub use crate::vm::{
-        Bytecode, CompiledFunction, Disassembly, FormatVersion, GLOBAL_NAMES, GLOBAL_PURITY,
-        NameEntry, Purity, closure_function, program_from_function, program_function,
+        Bytecode, CompiledFunction, DebugInfo, Disassembly, FormatVersion, GLOBAL_NAMES,
+        GLOBAL_PURITY, NameEntry, OpDebugInfo, Purity, SourceLines, Span, StackEffect,
+        closure_function, program_from_function, program_function,
     };
 }

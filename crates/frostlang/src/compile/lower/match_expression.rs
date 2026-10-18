@@ -8,7 +8,7 @@
 //! abandoned arm bound are never read. A matched arm drops its mark and the
 //! target before its result, so the result is the last code its path runs.
 
-use std::num::NonZeroUsize;
+use std::num::NonZeroU64;
 
 use crate::Value;
 use crate::bytecode::Bytecode;
@@ -114,7 +114,7 @@ impl FunctionBuilder<'_> {
                     Ir::Const(Value::from(NO_MATCH)),
                     Ir::Ready(Bytecode::PeekDown(1)),
                     Ir::Ready(Bytecode::Concat(
-                        NonZeroUsize::new(2).expect("two is nonzero"),
+                        NonZeroU64::new(2).expect("two is nonzero"),
                     )),
                     Ir::Ready(Bytecode::ProduceError),
                     Ir::Label(end),

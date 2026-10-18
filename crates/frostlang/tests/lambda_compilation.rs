@@ -56,7 +56,7 @@ fn assert_folds(source: &str, optimization: OptimizationOptions) {
         !emitted
             .code
             .iter()
-            .any(|op| matches!(op, Bytecode::CreateClosure(_))),
+            .any(|op| matches!(op, Bytecode::CreateClosure { .. })),
         "{source:?}: no closure is created at runtime: {emitted:?}"
     );
 }
@@ -160,7 +160,11 @@ fn a_long_pure_recursion_runs_whether_or_not_it_folds() {
 fn a_lambda_is_never_itself_a_constant() {
     // A Function cannot be pooled, so the closure is always created at runtime.
     let emitted = code("fn v -> v", FOLD);
-    assert_eq!(emitted.count(&Bytecode::CreateClosure(0)), 1, "{emitted:?}");
+    let create_closure = Bytecode::CreateClosure {
+        child: 0,
+        captures: 0,
+    };
+    assert_eq!(emitted.count(&create_closure), 1, "{emitted:?}");
 }
 
 // --- Effects ---

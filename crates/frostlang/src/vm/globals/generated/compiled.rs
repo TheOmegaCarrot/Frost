@@ -362,7 +362,7 @@
 //       24  PeekDown           0
 //       25  TestArrayLenExact  0
 //       26  JumpIfFalse        L0   ; +8
-//       27  ExplodeArray
+//       27  ExplodeArray       0
 //       28  DropMark
 //       29  DropBelow          0
 //       30  ConsumeLocal       5    ; compose2
@@ -552,6 +552,7 @@ pub(super) fn functions() -> Value {
                         map([(string("TailCall"), int(2))]),
                     ])),
                     (string("constants"), array([])),
+                    (string("debug_info"), null()),
                     (string("key_constants"), array([])),
                     (string("name"), string("bcurry_fn")),
                     (string("name_table"), array([
@@ -591,13 +592,16 @@ pub(super) fn functions() -> Value {
                 map([(string("DropBelow"), int(0))]),
                 map([(string("ConsumeLocal"), int(1))]),
                 map([(string("ConsumeLocal"), int(0))]),
-                map([(string("CreateClosure"), int(0))]),
+                map([
+                    (string("CreateClosure"), map([(string("captures"), int(2)), (string("child"), int(0))])),
+                ]),
             ])),
             (string("constants"), array([
                 map([
                     (string("String"), string("Function bcurry requires Function as argument 1, got ")),
                 ]),
             ])),
+            (string("debug_info"), null()),
             (string("key_constants"), array([])),
             (string("name"), string("bcurry")),
             (string("name_table"), array([
@@ -617,6 +621,7 @@ pub(super) fn functions() -> Value {
                 map([(string("ConsumeLocal"), int(0))]),
             ])),
             (string("constants"), array([])),
+            (string("debug_info"), null()),
             (string("key_constants"), array([])),
             (string("name"), string("collect")),
             (string("name_table"), array([map([(string("exported"), boolean(false)), (string("name"), string("e"))])])),
@@ -662,6 +667,7 @@ pub(super) fn functions() -> Value {
                         ]),
                         map([(string("String"), string(", got "))]),
                     ])),
+                    (string("debug_info"), null()),
                     (string("key_constants"), array([])),
                     (string("name"), string("<lambda>")),
                     (string("name_table"), array([
@@ -693,6 +699,7 @@ pub(super) fn functions() -> Value {
                                 map([(string("TailCall"), int(1))]),
                             ])),
                             (string("constants"), array([])),
+                            (string("debug_info"), null()),
                             (string("key_constants"), array([])),
                             (string("name"), string("compose_fn")),
                             (string("name_table"), array([
@@ -720,9 +727,12 @@ pub(super) fn functions() -> Value {
                         map([(string("DropBelow"), int(0))]),
                         map([(string("ConsumeLocal"), int(0))]),
                         map([(string("ConsumeLocal"), int(1))]),
-                        map([(string("CreateClosure"), int(0))]),
+                        map([
+                            (string("CreateClosure"), map([(string("captures"), int(2)), (string("child"), int(0))])),
+                        ]),
                     ])),
                     (string("constants"), array([])),
+                    (string("debug_info"), null()),
                     (string("key_constants"), array([])),
                     (string("name"), string("compose2")),
                     (string("name_table"), array([
@@ -752,17 +762,21 @@ pub(super) fn functions() -> Value {
                 map([(string("Call"), int(1))]),
                 map([(string("Call"), int(1))]),
                 map([(string("ConsumeLocal"), int(4))]),
-                map([(string("CreateClosure"), int(0))]),
+                map([
+                    (string("CreateClosure"), map([(string("captures"), int(1)), (string("child"), int(0))])),
+                ]),
                 map([(string("Call"), int(2))]),
                 map([(string("DropBelow"), int(0))]),
-                map([(string("CreateClosure"), int(1))]),
+                map([
+                    (string("CreateClosure"), map([(string("captures"), int(0)), (string("child"), int(1))])),
+                ]),
                 map([(string("DefLocal"), int(5))]),
                 map([(string("LoadLocal"), int(0))]),
                 string("MarkStack"),
                 map([(string("PeekDown"), int(0))]),
                 map([(string("TestArrayLenExact"), int(0))]),
                 map([(string("JumpIfFalse"), int(8))]),
-                string("ExplodeArray"),
+                map([(string("ExplodeArray"), int(0))]),
                 string("DropMark"),
                 map([(string("DropBelow"), int(0))]),
                 map([(string("ConsumeLocal"), int(5))]),
@@ -792,6 +806,7 @@ pub(super) fn functions() -> Value {
                 string("ProduceError"),
             ])),
             (string("constants"), array([map([(string("String"), string("No match arm matches the value: "))])])),
+            (string("debug_info"), null()),
             (string("key_constants"), array([])),
             (string("name"), string("compose")),
             (string("name_table"), array([
@@ -818,6 +833,7 @@ pub(super) fn functions() -> Value {
                         map([(string("ConsumeLocal"), int(0))]),
                     ])),
                     (string("constants"), array([])),
+                    (string("debug_info"), null()),
                     (string("key_constants"), array([])),
                     (string("name"), string("const_fn")),
                     (string("name_table"), array([
@@ -832,9 +848,12 @@ pub(super) fn functions() -> Value {
                 map([(string("DefLocal"), int(0))]),
                 map([(string("DropBelow"), int(0))]),
                 map([(string("ConsumeLocal"), int(0))]),
-                map([(string("CreateClosure"), int(0))]),
+                map([
+                    (string("CreateClosure"), map([(string("captures"), int(1)), (string("child"), int(0))])),
+                ]),
             ])),
             (string("constants"), array([])),
+            (string("debug_info"), null()),
             (string("key_constants"), array([])),
             (string("name"), string("const")),
             (string("name_table"), array([map([(string("exported"), boolean(false)), (string("name"), string("v"))])])),
@@ -859,6 +878,7 @@ pub(super) fn functions() -> Value {
                         map([(string("TailCall"), int(2))]),
                     ])),
                     (string("constants"), array([])),
+                    (string("debug_info"), null()),
                     (string("key_constants"), array([])),
                     (string("name"), string("curry_fn")),
                     (string("name_table"), array([
@@ -898,13 +918,16 @@ pub(super) fn functions() -> Value {
                 map([(string("DropBelow"), int(0))]),
                 map([(string("ConsumeLocal"), int(1))]),
                 map([(string("ConsumeLocal"), int(0))]),
-                map([(string("CreateClosure"), int(0))]),
+                map([
+                    (string("CreateClosure"), map([(string("captures"), int(2)), (string("child"), int(0))])),
+                ]),
             ])),
             (string("constants"), array([
                 map([
                     (string("String"), string("Function curry requires Function as argument 1, got ")),
                 ]),
             ])),
+            (string("debug_info"), null()),
             (string("key_constants"), array([])),
             (string("name"), string("curry")),
             (string("name_table"), array([
@@ -936,6 +959,7 @@ pub(super) fn functions() -> Value {
                         string("SoftIndexStructure"),
                     ])),
                     (string("constants"), array([])),
+                    (string("debug_info"), null()),
                     (string("key_constants"), array([])),
                     (string("name"), string("step")),
                     (string("name_table"), array([
@@ -954,7 +978,9 @@ pub(super) fn functions() -> Value {
                 map([(string("DefLocal"), int(0))]),
                 map([(string("DefLocal"), int(1))]),
                 map([(string("DropBelow"), int(0))]),
-                map([(string("CreateClosure"), int(0))]),
+                map([
+                    (string("CreateClosure"), map([(string("captures"), int(0)), (string("child"), int(0))])),
+                ]),
                 map([(string("DefLocal"), int(2))]),
                 map([(string("LoadGlobal"), int(80))]),
                 map([(string("ConsumeLocal"), int(0))]),
@@ -963,6 +989,7 @@ pub(super) fn functions() -> Value {
                 map([(string("TailCall"), int(3))]),
             ])),
             (string("constants"), array([])),
+            (string("debug_info"), null()),
             (string("key_constants"), array([])),
             (string("name"), string("dig")),
             (string("name_table"), array([
@@ -988,6 +1015,7 @@ pub(super) fn functions() -> Value {
                         string("SoftIndexStructure"),
                     ])),
                     (string("constants"), array([])),
+                    (string("debug_info"), null()),
                     (string("key_constants"), array([])),
                     (string("name"), string("index_fn")),
                     (string("name_table"), array([
@@ -1006,9 +1034,12 @@ pub(super) fn functions() -> Value {
                 map([(string("DefLocal"), int(0))]),
                 map([(string("DropBelow"), int(0))]),
                 map([(string("ConsumeLocal"), int(0))]),
-                map([(string("CreateClosure"), int(0))]),
+                map([
+                    (string("CreateClosure"), map([(string("captures"), int(1)), (string("child"), int(0))])),
+                ]),
             ])),
             (string("constants"), array([])),
+            (string("debug_info"), null()),
             (string("key_constants"), array([])),
             (string("name"), string("index")),
             (string("name_table"), array([map([(string("exported"), boolean(false)), (string("name"), string("key"))])])),
@@ -1032,6 +1063,7 @@ pub(super) fn functions() -> Value {
                         string("LogicalNot"),
                     ])),
                     (string("constants"), array([])),
+                    (string("debug_info"), null()),
                     (string("key_constants"), array([])),
                     (string("name"), string("inv_fn")),
                     (string("name_table"), array([
@@ -1065,13 +1097,16 @@ pub(super) fn functions() -> Value {
                 string("PushNull"),
                 map([(string("DropBelow"), int(0))]),
                 map([(string("ConsumeLocal"), int(0))]),
-                map([(string("CreateClosure"), int(0))]),
+                map([
+                    (string("CreateClosure"), map([(string("captures"), int(1)), (string("child"), int(0))])),
+                ]),
             ])),
             (string("constants"), array([
                 map([
                     (string("String"), string("Function inv requires Function as argument 1, got ")),
                 ]),
             ])),
+            (string("debug_info"), null()),
             (string("key_constants"), array([])),
             (string("name"), string("inv")),
             (string("name_table"), array([map([(string("exported"), boolean(false)), (string("name"), string("f"))])])),
@@ -1096,6 +1131,7 @@ pub(super) fn functions() -> Value {
                         map([(string("TailCall"), int(2))]),
                     ])),
                     (string("constants"), array([])),
+                    (string("debug_info"), null()),
                     (string("key_constants"), array([])),
                     (string("name"), string("rev_args_fn")),
                     (string("name_table"), array([
@@ -1129,13 +1165,16 @@ pub(super) fn functions() -> Value {
                 string("PushNull"),
                 map([(string("DropBelow"), int(0))]),
                 map([(string("ConsumeLocal"), int(0))]),
-                map([(string("CreateClosure"), int(0))]),
+                map([
+                    (string("CreateClosure"), map([(string("captures"), int(1)), (string("child"), int(0))])),
+                ]),
             ])),
             (string("constants"), array([
                 map([
                     (string("String"), string("Function rev_args requires Function as argument 1, got ")),
                 ]),
             ])),
+            (string("debug_info"), null()),
             (string("key_constants"), array([])),
             (string("name"), string("rev_args")),
             (string("name_table"), array([map([(string("exported"), boolean(false)), (string("name"), string("f"))])])),
@@ -1177,6 +1216,7 @@ pub(super) fn functions() -> Value {
                             (string("String"), string("Function spread_fn requires Array as argument 1, got ")),
                         ]),
                     ])),
+                    (string("debug_info"), null()),
                     (string("key_constants"), array([])),
                     (string("name"), string("spread_fn")),
                     (string("name_table"), array([
@@ -1207,13 +1247,16 @@ pub(super) fn functions() -> Value {
                 string("PushNull"),
                 map([(string("DropBelow"), int(0))]),
                 map([(string("ConsumeLocal"), int(0))]),
-                map([(string("CreateClosure"), int(0))]),
+                map([
+                    (string("CreateClosure"), map([(string("captures"), int(1)), (string("child"), int(0))])),
+                ]),
             ])),
             (string("constants"), array([
                 map([
                     (string("String"), string("Function spread requires Function as argument 1, got ")),
                 ]),
             ])),
+            (string("debug_info"), null()),
             (string("key_constants"), array([])),
             (string("name"), string("spread")),
             (string("name_table"), array([map([(string("exported"), boolean(false)), (string("name"), string("f"))])])),
@@ -1254,6 +1297,7 @@ pub(super) fn functions() -> Value {
                     (string("String"), string("Function tap requires Function as argument 2, got ")),
                 ]),
             ])),
+            (string("debug_info"), null()),
             (string("key_constants"), array([])),
             (string("name"), string("tap")),
             (string("name_table"), array([

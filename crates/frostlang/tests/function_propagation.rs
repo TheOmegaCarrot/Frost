@@ -210,7 +210,10 @@ fn a_bound_function_is_loaded_not_created_again() {
     let emitted = script.code(FOLD_AND_PROPAGATE);
     let slot = emitted.slot_named("f");
     assert_eq!(
-        emitted.count(&Bytecode::CreateClosure(0)),
+        emitted.count(&Bytecode::CreateClosure {
+            child: 0,
+            captures: 0
+        }),
         1,
         "the function is created once: {emitted:?}"
     );

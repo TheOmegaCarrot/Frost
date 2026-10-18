@@ -26,6 +26,7 @@ fn sample() -> CompiledFunction {
         name_table: Vec::new(),
         num_captures: 0,
         arity: Arity::Exact(0),
+        debug_info: None,
     });
     let int_keyed_map: FrostMap = vec![(MapKey::Int(1), Value::from("one"))]
         .into_iter()
@@ -69,6 +70,7 @@ fn sample() -> CompiledFunction {
         }],
         num_captures: 0,
         arity: Arity::Between(1, 2),
+        debug_info: None,
     }
 }
 
@@ -97,6 +99,7 @@ fn a_closure_value() -> Value {
         name_table: Vec::new(),
         num_captures: 0,
         arity: Arity::Exact(0),
+        debug_info: None,
     });
     Value::Closure(f.assert_well_formed().into_closure().unwrap())
 }
@@ -144,6 +147,7 @@ fn a_function_valued_constant_cannot_be_serialized() {
         name_table: Vec::new(),
         num_captures: 0,
         arity: Arity::Exact(0),
+        debug_info: None,
     };
     assert!(postcard::to_allocvec(&cf).is_err());
 }

@@ -25,7 +25,7 @@ fn counting(arity: Arity) -> Value {
 
 /// Call `native` with `argc` integer arguments (`0..argc`), returning the run
 /// result so both the success and arity-error paths are observable.
-fn call_native(native: Value, argc: usize) -> Result<ProgramResult, FrostError> {
+fn call_native(native: Value, argc: u64) -> Result<ProgramResult, FrostError> {
     let mut code = vec![Bytecode::Pop, Bytecode::LoadLocal(0)]; // pop own closure value, load the native (capture slot 0)
     for i in 0..argc {
         code.push(Bytecode::PushInt(i as i64));
@@ -46,6 +46,7 @@ fn call_native(native: Value, argc: usize) -> Result<ProgramResult, FrostError> 
         }],
         num_captures: 1,
         arity: Arity::Exact(0),
+        debug_info: None,
     });
     let closure = program
         .assert_well_formed()
@@ -159,6 +160,7 @@ fn omitted_vs_present_probe() -> Arc<CompiledFunction> {
         }],
         num_captures: 0,
         arity: Arity::Between(0, 1),
+        debug_info: None,
     })
 }
 
@@ -188,7 +190,7 @@ fn between_closure_seating_works_through_call() {
             .into_closure()
             .unwrap(),
     );
-    let call_probe = |arg_pushes: Vec<Bytecode>, argc: usize| -> Value {
+    let call_probe = |arg_pushes: Vec<Bytecode>, argc: u64| -> Value {
         let mut code = vec![Bytecode::Pop, Bytecode::LoadLocal(0)]; // pop own closure, load probe (capture 0)
         code.extend(arg_pushes);
         code.push(Bytecode::Call(argc));
@@ -206,6 +208,7 @@ fn between_closure_seating_works_through_call() {
             }],
             num_captures: 1,
             arity: Arity::Exact(0),
+            debug_info: None,
         });
         let closure = wrapper
             .assert_well_formed()

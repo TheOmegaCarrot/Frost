@@ -1,6 +1,6 @@
 //! The bytecode instruction set.
 
-use std::num::NonZeroUsize;
+use std::num::NonZeroU64;
 
 use crate::{FrostFloat, TypeSet};
 
@@ -46,27 +46,27 @@ pub enum Bytecode {
 
     /// Copy the value N below the top of the stack onto the top: `( xN ... x0 -- xN ... x0 xN )`.
     /// `PeekDown(0)` is [`Dup`](Self::Dup).
-    PeekDown(usize),
+    PeekDown(u64),
 
     /// Remove the value N below the top of the stack, keeping the values above it.
     /// `DropBelow(0)` is [`Pop`](Self::Pop).
-    DropBelow(usize),
+    DropBelow(u64),
 
     // Slots
     /// Move the top of the stack into local slot N: `( x -- )`.
     /// Slots are indexed like the current function's [`name_table`](crate::bytecode::CompiledFunction::name_table).
-    DefLocal(usize),
+    DefLocal(u64),
     /// Copy local slot N onto the stack: `( -- x )`.
-    LoadLocal(usize),
+    LoadLocal(u64),
     /// Move local slot N onto the stack, leaving the slot empty: `( -- x )`.
     /// The value is not shared with the slot, so a structure held nowhere else
     /// can then be updated in place. The slot must not be read again unless it is
     /// defined anew.
-    ConsumeLocal(usize),
+    ConsumeLocal(u64),
     /// Copy entry N of the current function's [`constants`](crate::bytecode::CompiledFunction::constants) onto the stack.
-    LoadConst(usize),
+    LoadConst(u64),
     /// Copy predefined global N onto the stack; [`GLOBAL_NAMES`](crate::bytecode::GLOBAL_NAMES) gives the slot order.
-    LoadGlobal(usize),
+    LoadGlobal(u64),
 
     // Arithmetic
     /// `lhs + rhs`; see [`Value::add`](crate::Value::add).
@@ -103,55 +103,61 @@ pub enum Bytecode {
     /// Concatenate the top N values, deepest first, into one String: `( x1 ... xN -- s )`.
     /// Each value is converted as by the Frost `to_string` global
     /// ([`Value::to_frost_string`](crate::Value::to_frost_string)): top-level Strings are unquoted.
-    Concat(NonZeroUsize),
+    Concat(NonZeroU64),
 
     // Flow
     /// Skip the next N instructions.
     /// `Jump(0)` is [`Nop`](Self::Nop).
-    Jump(usize),
+    Jump(u64),
     /// Pop the top of the stack, and skip the next N instructions if it is truthy: `( x -- )`.
-    JumpIfTrue(usize),
+    JumpIfTrue(u64),
     /// Pop the top of the stack, and skip the next N instructions if it is falsy: `( x -- )`.
-    JumpIfFalse(usize),
+    JumpIfFalse(u64),
     /// Skip the next N instructions if the top of the stack is truthy, leaving it in place: `( x -- x )`.
-    PeekJumpIfTrue(usize),
+    PeekJumpIfTrue(u64),
     /// Skip the next N instructions if the top of the stack is falsy, leaving it in place: `( x -- x )`.
-    PeekJumpIfFalse(usize),
+    PeekJumpIfFalse(u64),
 
     // Functions
     /// Call a function with N arguments, the last on top: `( f a1 ... aN -- r )`.
     /// Errors if `f` is not a function or does not accept N arguments.
     /// See the [calling convention](Self#calling-convention).
-    Call(usize),
+    Call(u64),
     /// [`Call`](Self::Call) in tail position: the callee's result becomes the current function's result,
     /// and the call does not grow the call stack.
     /// Emit it only where the call's result is the function's result: the instructions after it may or may not run.
-    TailCall(usize),
+    TailCall(u64),
 
     // Purpose-built for the `call` builtin.
     /// [`TailCall`](Self::TailCall) with the arguments spread from an Array: `( f args -- r )`.
     /// Errors if `args` is not an Array.
     DynTailCall,
 
-    /// Create a closure over entry N of the current function's [`child_fns`](crate::bytecode::CompiledFunction::child_fns):
-    /// `( c1 ... cK -- f )`, where K is the child's [`num_captures`](crate::bytecode::CompiledFunction::num_captures).
+    /// Create a closure over a child function: `( c1 ... cK -- f )`, where K is `captures`.
     /// The top K values become its captures, deepest first.
-    CreateClosure(usize),
+    // `u32` operands keep `Bytecode` at 16 bytes.
+    CreateClosure {
+        /// The child's index in the current function's [`child_fns`](crate::bytecode::CompiledFunction::child_fns).
+        child: u32,
+        /// How many captures the closure takes;
+        /// it must be the child's [`num_captures`](crate::bytecode::CompiledFunction::num_captures).
+        captures: u32,
+    },
 
     // Data structures
     /// Collect the top N values, deepest first, into an Array: `( x1 ... xN -- a )`.
-    MakeArray(usize),
+    MakeArray(u64),
     /// Collect the top N key-value pairs into a Map, each key below its value: `( k1 v1 ... kN vN -- m )`.
     /// Errors if a key is not a valid Map key.
-    MakeMap(usize),
-    /// Push an Array's elements in reverse, so the first element ends on top: `( a -- aN ... a1 a0 )`.
-    /// Panics if the operand is not an Array.
-    ExplodeArray,
+    MakeMap(u64),
+    /// Push an Array of N elements in reverse, so the first element ends on top: `( a -- aN-1 ... a1 a0 )`.
+    /// Panics if the operand is not an Array. It must have exactly N elements.
+    ExplodeArray(u64),
 
     /// Split an Array after its first N elements: `( [X] -- [X-N] [N] )`.
     /// The remaining elements (possibly none) replace the operand, and an Array of the first N goes on top of it.
     /// Errors if the operand is not an Array or has fewer than N elements.
-    SplitArray(usize),
+    SplitArray(u64),
 
     /// Index an Array or Map, yielding `null` for a missing element or key: `( s i -- v )`.
     /// Errors if `s` is neither, or if `i` is not an Int (for an Array) or a valid Map key (for a Map).
@@ -160,7 +166,7 @@ pub enum Bytecode {
     /// Look up a constant key in a Map: `( m -- v )`.
     /// The key is entry N of the current function's [`key_constants`](crate::bytecode::CompiledFunction::key_constants).
     /// Errors if `m` is not a Map or lacks the key.
-    HardIndexMap(usize),
+    HardIndexMap(u64),
 
     /// Test whether a Map contains a key, consuming neither: `( m k -- m k b )`.
     /// `b` is false if the key is absent or `m` is not a Map.
@@ -174,22 +180,22 @@ pub enum Bytecode {
     /// Test whether a Map contains a constant key, keeping the Map: `( m -- m b )`.
     /// The key is entry N of the current function's [`key_constants`](crate::bytecode::CompiledFunction::key_constants).
     /// `b` is false if the key is absent or `m` is not a Map.
-    TestConstKey(usize),
+    TestConstKey(u64),
 
     /// Look up a constant key in a Map, keeping the Map: `( m -- m v )`.
     /// The key is entry N of the current function's [`key_constants`](crate::bytecode::CompiledFunction::key_constants).
     /// Errors if the key is absent or `m` is not a Map.
-    ExtractConstKey(usize),
+    ExtractConstKey(u64),
 
     /// Test whether a value's type is in the given set: `( x -- b )`.
     TypeTest(TypeSet),
 
     /// Test whether a value is an Array of exactly N elements, keeping it: `( x -- x b )`.
     /// `b` is false if `x` is not an Array.
-    TestArrayLenExact(usize),
+    TestArrayLenExact(u64),
     /// Test whether a value is an Array of at least N elements, keeping it: `( x -- x b )`.
     /// `b` is false if `x` is not an Array.
-    TestArrayLenAtLeast(usize),
+    TestArrayLenAtLeast(u64),
 
     // Stack marking and truncation
     /// Mark the current stack height, with no stack effect.
@@ -214,6 +220,21 @@ pub enum Bytecode {
     Import,
 }
 
+const _: () = assert!(size_of::<Bytecode>() == 16);
+
+// Operands are `u64` rather than `usize`, so bytecode is the same on every target, wasm32 included.
+
+/// `n` as an operand. Every target's `usize` fits in a `u64`.
+pub(crate) fn to_operand(n: usize) -> u64 {
+    u64::try_from(n).expect("IMPOSSIBLE: usize is wider than u64")
+}
+
+/// The count or index operand `n` as a `usize`.
+/// Panics if it exceeds the target's address space, which only malformed bytecode does.
+pub(crate) fn from_operand(n: u64) -> usize {
+    usize::try_from(n).expect("IMPOSSIBLE: operand exceeds the address space")
+}
+
 impl Bytecode {
     /// Dup is equivalent to PeekDown(0).
     #[allow(non_upper_case_globals)]
@@ -226,4 +247,169 @@ impl Bytecode {
     /// Nop is equivalent to Jump(0).
     #[allow(non_upper_case_globals)]
     pub const Nop: Bytecode = Bytecode::Jump(0);
+
+    /// How this instruction changes the operand stack when it completes without error.
+    ///
+    /// `None` only for [`RewindToMark`](Self::RewindToMark), whose effect depends on its mark.
+    /// A call's effect is the same whether its callee is native or a closure,
+    /// and a tail call's is that of the call it makes when it does not replace the frame.
+    pub fn stack_effect(&self) -> Option<StackEffect> {
+        use Bytecode::*;
+
+        // Grouped by effect: fixed effects first, then those counted by an operand.
+        let effect = match *self {
+            RewindToMark => return None,
+
+            Jump(_) | MarkStack | DropMark => StackEffect {
+                reads: 0,
+                pops: 0,
+                pushes: 0,
+            },
+            PushNull | PushTrue | PushFalse | PushInt(_) | PushFloat(_) | LoadLocal(_)
+            | ConsumeLocal(_) | LoadConst(_) | LoadGlobal(_) => StackEffect {
+                reads: 0,
+                pops: 0,
+                pushes: 1,
+            },
+            DefLocal(_) | JumpIfTrue(_) | JumpIfFalse(_) | ProduceError => StackEffect {
+                reads: 1,
+                pops: 1,
+                pushes: 0,
+            },
+            PeekJumpIfTrue(_) | PeekJumpIfFalse(_) => StackEffect {
+                reads: 1,
+                pops: 0,
+                pushes: 0,
+            },
+            LogicalNot | Negate | HardIndexMap(_) | TypeTest(_) | Import => StackEffect {
+                reads: 1,
+                pops: 1,
+                pushes: 1,
+            },
+            TestConstKey(_)
+            | ExtractConstKey(_)
+            | TestArrayLenExact(_)
+            | TestArrayLenAtLeast(_) => StackEffect {
+                reads: 1,
+                pops: 0,
+                pushes: 1,
+            },
+            SplitArray(_) => StackEffect {
+                reads: 1,
+                pops: 1,
+                pushes: 2,
+            },
+            Add
+            | Subtract
+            | Multiply
+            | Divide
+            | Modulus
+            | CompareEqual
+            | CompareNotEqual
+            | CompareLessThan
+            | CompareLessThanOrEqual
+            | CompareGreaterThan
+            | CompareGreaterThanOrEqual
+            | SoftIndexStructure
+            | DynTailCall => StackEffect {
+                reads: 2,
+                pops: 2,
+                pushes: 1,
+            },
+            TestKey => StackEffect {
+                reads: 2,
+                pops: 0,
+                pushes: 1,
+            },
+            ExtractKey => StackEffect {
+                reads: 2,
+                pops: 1,
+                pushes: 1,
+            },
+
+            PeekDown(n) => StackEffect {
+                reads: n + 1,
+                pops: 0,
+                pushes: 1,
+            },
+            DropBelow(n) => StackEffect {
+                reads: n + 1,
+                pops: n + 1,
+                pushes: n,
+            },
+            Concat(n) => StackEffect {
+                reads: n.get(),
+                pops: n.get(),
+                pushes: 1,
+            },
+            Call(argc) | TailCall(argc) => StackEffect {
+                reads: argc + 1,
+                pops: argc + 1,
+                pushes: 1,
+            },
+            CreateClosure { captures, .. } => StackEffect {
+                reads: u64::from(captures),
+                pops: u64::from(captures),
+                pushes: 1,
+            },
+            MakeArray(n) => StackEffect {
+                reads: n,
+                pops: n,
+                pushes: 1,
+            },
+            MakeMap(pairs) => StackEffect {
+                reads: 2 * pairs,
+                pops: 2 * pairs,
+                pushes: 1,
+            },
+            ExplodeArray(n) => StackEffect {
+                reads: 1,
+                pops: 1,
+                pushes: n,
+            },
+        };
+        debug_assert!(
+            effect.reads >= effect.pops,
+            "an instruction cannot pop what it does not read"
+        );
+        Some(effect)
+    }
+}
+
+/// How one instruction changes the operand stack; see [`Bytecode::stack_effect`].
+///
+/// The instruction needs at least [`reads`](Self::reads) values on the stack,
+/// removes the top [`pops`](Self::pops) of them, then pushes [`pushes`](Self::pushes) values.
+/// `reads >= pops` always holds.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub struct StackEffect {
+    reads: u64,
+    pops: u64,
+    pushes: u64,
+}
+
+impl StackEffect {
+    /// How many values, counted from the top, must be on the stack.
+    pub const fn reads(self) -> u64 {
+        self.reads
+    }
+
+    /// How many values are removed from the top.
+    pub const fn pops(self) -> u64 {
+        self.pops
+    }
+
+    /// How many values are then pushed.
+    pub const fn pushes(self) -> u64 {
+        self.pushes
+    }
+
+    /// The stack height after the instruction, given the height before it,
+    /// or `None` if the stack holds fewer than [`reads`](Self::reads) values.
+    pub const fn apply(self, height: u64) -> Option<u64> {
+        if height < self.reads {
+            return None;
+        }
+        Some(height - self.pops + self.pushes)
+    }
 }

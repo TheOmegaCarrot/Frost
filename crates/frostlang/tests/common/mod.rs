@@ -17,11 +17,11 @@ pub(crate) const Pop: Bytecode = Bytecode::Pop;
 /// The `LoadGlobal` slot index of a predefined global, by name. Panics if `name` is not
 /// a predefined global. (The runtime exposes only the ordered [`GLOBAL_NAMES`]; a slot is
 /// just its position.)
-pub(crate) fn global_slot(name: &str) -> usize {
-    GLOBAL_NAMES
-        .iter()
-        .position(|&n| n == name)
-        .unwrap_or_else(|| panic!("`{name}` is not a predefined global"))
+pub(crate) fn global_slot(name: &str) -> u64 {
+    GLOBAL_NAMES.iter().position(|&n| n == name).map_or_else(
+        || panic!("`{name}` is not a predefined global"),
+        |slot| slot as u64,
+    )
 }
 
 /// A nameless compiled function with no locals, constants, or child functions.
@@ -38,6 +38,7 @@ pub(crate) fn empty_fn(code: Vec<Bytecode>) -> Arc<CompiledFunction> {
         name_table: Vec::new(),
         num_captures: 0,
         arity: Arity::Exact(0),
+        debug_info: None,
     })
 }
 
@@ -56,6 +57,7 @@ pub(crate) fn fn_with_locals(code: Vec<Bytecode>, names: Vec<NameEntry>) -> Arc<
         name_table: names,
         num_captures: 0,
         arity: Arity::Exact(0),
+        debug_info: None,
     })
 }
 
@@ -93,6 +95,7 @@ pub(crate) fn func_with_captures(
         name_table: names,
         num_captures,
         arity,
+        debug_info: None,
     })
 }
 
@@ -146,6 +149,7 @@ pub(crate) fn closure(code: Vec<Bytecode>, names: Vec<NameEntry>) -> Arc<Closure
         name_table: names,
         num_captures: 0,
         arity: Arity::Exact(0),
+        debug_info: None,
     })
     .assert_well_formed()
     .into_closure()

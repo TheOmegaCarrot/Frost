@@ -391,12 +391,15 @@ impl Emitted {
     }
 
     /// The local slot holding the binding `name`.
-    pub(crate) fn slot_named(&self, name: &str) -> usize {
+    pub(crate) fn slot_named(&self, name: &str) -> u64 {
         self.function
             .name_table
             .iter()
             .position(|entry| entry.name == name)
-            .unwrap_or_else(|| panic!("the function has no local `{name}`"))
+            .map_or_else(
+                || panic!("the function has no local `{name}`"),
+                |slot| slot as u64,
+            )
     }
 
     /// How many captured values a closure over this function is created with.

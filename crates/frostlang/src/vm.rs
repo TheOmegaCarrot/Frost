@@ -1,5 +1,6 @@
 mod bytecode;
 mod cancel;
+mod debug_info;
 mod disassemble;
 mod function;
 mod globals;
@@ -10,8 +11,10 @@ mod params;
 mod print_sink;
 pub(crate) mod serialize;
 
-pub use bytecode::Bytecode;
+pub use bytecode::{Bytecode, StackEffect};
+pub(crate) use bytecode::{from_operand, to_operand};
 pub use cancel::CancelToken;
+pub use debug_info::{DebugInfo, OpDebugInfo, SourceLines, SourceLocation, Span};
 pub use disassemble::Disassembly;
 pub use function::{
     Arity, Closure, CompiledFunction, CompiledProgram, MissingCaptures, NameEntry,
@@ -470,7 +473,8 @@ impl Vm {
     }
 
     /// The index in `slots` of the running frame's local `idx`.
-    fn local_slot(&self, idx: usize) -> usize {
+    fn local_slot(&self, idx: u64) -> usize {
+        let idx = from_operand(idx);
         let frame = self.this_frame();
         debug_assert!(
             idx < frame.this_fn.name_table.len(),
@@ -545,7 +549,7 @@ impl Vm {
                         let from = self
                             .stack
                             .len()
-                            .checked_sub(idx + 1)
+                            .checked_sub(from_operand(idx) + 1)
                             .expect("FROST STACK UNDERFLOW");
                         self.debug_assert_own_operand(from, "PeekDown");
                         self.stack.push(self.stack[from].clone());
@@ -554,7 +558,7 @@ impl Vm {
                         let at = self
                             .stack
                             .len()
-                            .checked_sub(idx + 1)
+                            .checked_sub(from_operand(idx) + 1)
                             .expect("FROST STACK UNDERFLOW");
                         self.debug_assert_own_operand(at, "DropBelow");
                         self.stack.remove(at);
@@ -580,8 +584,10 @@ impl Vm {
                     }
                     Bytecode::LoadConst(idx) => self
                         .stack
-                        .push(self.this_frame().this_fn.constants[idx].clone()),
-                    Bytecode::LoadGlobal(idx) => self.stack.push(self.globals.get(idx).clone()),
+                        .push(self.this_frame().this_fn.constants[from_operand(idx)].clone()),
+                    Bytecode::LoadGlobal(idx) => {
+                        self.stack.push(self.globals.get(from_operand(idx)).clone());
+                    }
                     // Arithmetic delegates to the operators defined on `Value`;
                     // a type error or division by zero surfaces as an `Err` that `?` propagates straight out of this activation (see `unwind_frames`).
                     Bytecode::Add => self.do_add()?,
@@ -614,7 +620,7 @@ impl Vm {
                         self.stack.push(operand.negate()?);
                     }
                     Bytecode::Concat(n) => {
-                        let base = self.stack.len() - n.get();
+                        let base = self.stack.len() - from_operand(n.get());
                         let result =
                             self.stack
                                 .iter()
@@ -631,19 +637,19 @@ impl Vm {
                     // `pc += n` composes with the shared `pc += 1` below:
                     // the offset counts skipped instructions, not an absolute target.
                     Bytecode::Jump(n) => {
-                        pc += n;
+                        pc += from_operand(n);
                         self.debug_assert_jump_target(pc);
                     }
                     // Consuming conditional jumps: pop the tested value.
                     Bytecode::JumpIfTrue(n) => {
                         if self.stack_pop().is_truthy() {
-                            pc += n;
+                            pc += from_operand(n);
                             self.debug_assert_jump_target(pc);
                         }
                     }
                     Bytecode::JumpIfFalse(n) => {
                         if !self.stack_pop().is_truthy() {
-                            pc += n;
+                            pc += from_operand(n);
                             self.debug_assert_jump_target(pc);
                         }
                     }
@@ -652,7 +658,7 @@ impl Vm {
                         self.debug_assert_own_top("PeekJumpIfTrue");
                         let operand = self.stack.last().expect("FROST STACK UNDERFLOW");
                         if operand.is_truthy() {
-                            pc += n;
+                            pc += from_operand(n);
                             self.debug_assert_jump_target(pc);
                         }
                     }
@@ -660,11 +666,12 @@ impl Vm {
                         self.debug_assert_own_top("PeekJumpIfFalse");
                         let operand = self.stack.last().expect("FROST STACK UNDERFLOW");
                         if !operand.is_truthy() {
-                            pc += n;
+                            pc += from_operand(n);
                             self.debug_assert_jump_target(pc);
                         }
                     }
                     Bytecode::Call(argc) => {
+                        let argc = from_operand(argc);
                         self.expend_fuel()?;
                         let base = self
                             .stack
@@ -694,7 +701,7 @@ impl Vm {
                         }
                     }
                     Bytecode::TailCall(argc) => {
-                        match self.tail_call(argc, NonZeroUsize::new(pc + 1))? {
+                        match self.tail_call(from_operand(argc), NonZeroUsize::new(pc + 1))? {
                             TailFlow::Reenter => {
                                 pc = 0;
                                 continue;
@@ -732,18 +739,29 @@ impl Vm {
                             TailFlow::FellThrough => {}
                         }
                     }
-                    Bytecode::ExplodeArray => {
+                    Bytecode::ExplodeArray(count) => {
                         let Value::Array(arr) = self.stack_pop() else {
                             panic!("IMPOSSIBLE: ExplodeArray operand is not an Array");
                         };
+                        debug_assert_eq!(
+                            arr.len(),
+                            from_operand(count),
+                            "ExplodeArray's operand must have exactly its count of elements"
+                        );
                         // Pattern order: first element ends on top, last deepest.
                         match arr.try_into_vec() {
                             Ok(vec) => self.stack.extend(vec.into_iter().rev()),
                             Err(arr) => self.stack.extend(arr.iter().rev().cloned()),
                         }
                     }
-                    Bytecode::CreateClosure(function) => {
-                        let function = self.this_frame().this_fn.child_fns[function].clone();
+                    Bytecode::CreateClosure { child, captures } => {
+                        let function =
+                            self.this_frame().this_fn.child_fns[from_operand(child.into())].clone();
+                        debug_assert_eq!(
+                            from_operand(captures.into()),
+                            function.num_captures,
+                            "CreateClosure's capture count must be its child's"
+                        );
                         let split_point = self
                             .stack
                             .len()
@@ -759,7 +777,7 @@ impl Vm {
                         let split_point = self
                             .stack
                             .len()
-                            .checked_sub(num_elems)
+                            .checked_sub(from_operand(num_elems))
                             .expect("FROST STACK UNDERFLOW");
                         self.debug_assert_own_operand(split_point, "MakeArray");
                         let arr: FrostArray = self.stack.split_off(split_point).into();
@@ -769,7 +787,7 @@ impl Vm {
                         let split_point = self
                             .stack
                             .len()
-                            .checked_sub(2 * num_pairs)
+                            .checked_sub(2 * from_operand(num_pairs))
                             .expect("FROST STACK UNDERFLOW");
                         self.debug_assert_own_operand(split_point, "MakeMap");
 
@@ -783,6 +801,7 @@ impl Vm {
                         self.stack.push(Value::from(map));
                     }
                     Bytecode::SplitArray(n) => {
+                        let n = from_operand(n);
                         let arr = self.stack_pop().try_into_array().map_err(|v| {
                             FrostError::from_string(format!(
                                 "Expected Array, got {}",
@@ -840,7 +859,8 @@ impl Vm {
                             )));
                         };
 
-                        let key = &self.this_frame().this_fn.key_constants[const_pool_idx_of_key];
+                        let key = &self.this_frame().this_fn.key_constants
+                            [from_operand(const_pool_idx_of_key)];
 
                         match map.get(key) {
                             Some(result) => self.stack.push(result.clone()),
@@ -875,7 +895,8 @@ impl Vm {
                     }
                     Bytecode::TestConstKey(const_pool_idx_of_key) => {
                         let m = self.stack.last().expect("FROST STACK UNDERFLOW");
-                        let key = &self.this_frame().this_fn.key_constants[const_pool_idx_of_key];
+                        let key = &self.this_frame().this_fn.key_constants
+                            [from_operand(const_pool_idx_of_key)];
                         let has = m.as_map().is_some_and(|m| m.contains_key(key));
                         self.stack.push(Value::from(has));
                     }
@@ -884,15 +905,16 @@ impl Vm {
                         let m = m.as_map().ok_or_else(|| {
                             FrostError::from_string(format!("Expected Map, got {}", m.type_name()))
                         })?;
-                        let key = &self.this_frame().this_fn.key_constants[const_pool_idx_of_key];
+                        let key = &self.this_frame().this_fn.key_constants
+                            [from_operand(const_pool_idx_of_key)];
                         let v = m.get(key).ok_or_else(|| missing_key(m, key))?.clone();
                         self.stack.push(v);
                     }
                     Bytecode::TestArrayLenExact(size) => {
-                        self.test_array_len(|len| len == size);
+                        self.test_array_len(|len| len == from_operand(size));
                     }
                     Bytecode::TestArrayLenAtLeast(size) => {
-                        self.test_array_len(|len| len >= size);
+                        self.test_array_len(|len| len >= from_operand(size));
                     }
                     Bytecode::TypeTest(types) => {
                         let operand = self.stack_pop();

@@ -61,6 +61,7 @@ fn run_keeping_vm(
         name_table,
         num_captures: caps.len(),
         arity: Arity::Exact(0),
+        debug_info: None,
     });
     let captures: BTreeMap<String, Value> =
         caps.into_iter().map(|(n, v)| (n.to_string(), v)).collect();
@@ -323,6 +324,7 @@ fn a_recycled_vm_forgets_a_previous_abort() {
         name_table: Vec::new(),
         num_captures: 0,
         arity: Arity::Exact(0),
+        debug_info: None,
     })
     .assert_well_formed()
     .into_closure()

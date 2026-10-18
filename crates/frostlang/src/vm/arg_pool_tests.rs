@@ -13,15 +13,19 @@ use std::sync::Arc;
 use super::*;
 use crate::native::Function;
 
-fn try_call_slot() -> usize {
+fn try_call_slot() -> u64 {
     GLOBAL_NAMES
         .iter()
         .position(|&n| n == "try_call")
+        .map(|slot| slot as u64)
         .expect("try_call is a predefined global")
 }
 
 fn closure(idx: u32) -> Bytecode {
-    Bytecode::CreateClosure(idx as usize)
+    Bytecode::CreateClosure {
+        child: idx,
+        captures: 0,
+    }
 }
 
 fn func(
@@ -42,6 +46,7 @@ fn func(
         name_table,
         num_captures,
         arity: Arity::Exact(0),
+        debug_info: None,
     })
 }
 

@@ -38,6 +38,7 @@ fn func(name: &str, code: Vec<Bytecode>, arity: Arity, names: &[&str]) -> Arc<Co
         name_table: names.iter().map(|n| entry(n)).collect(),
         num_captures: 0,
         arity,
+        debug_info: None,
     })
 }
 
@@ -54,6 +55,7 @@ fn run_with_f(f: Value, body: Vec<Bytecode>) -> Value {
         name_table: vec![entry("f")],
         num_captures: 1,
         arity: Arity::Exact(0),
+        debug_info: None,
     });
     let closure = top
         .assert_well_formed()
