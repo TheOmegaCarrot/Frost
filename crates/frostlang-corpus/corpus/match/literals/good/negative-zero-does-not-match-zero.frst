@@ -1,0 +1,12 @@
+# Negative zero differs from zero, so each matches only its own literal
+# pattern.
+#= {
+#=     result: ['zero', 'other', 'minus zero', 'other'],
+#=     inputs: {pos: 0.0, neg: -0.0},
+#= }
+[
+    match pos { 0.0 => 'zero', _ => 'other' },
+    match pos { -0.0 => 'minus zero', _ => 'other' },
+    match neg { -0.0 => 'minus zero', _ => 'other' },
+    match neg { 0.0 => 'zero', _ => 'other' },
+]

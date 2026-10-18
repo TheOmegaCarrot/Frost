@@ -1,0 +1,17 @@
+# As `0.0 != -0.0`, the two are different Map keys: a lookup by one finds only
+# an entry made with the same zero, at compile time and at runtime. A pattern
+# keyed by the other zero finds nothing.
+#= {
+#=     result: ['positive', 'negative', 'negative', 'positive', 'missing', 'missing'],
+#=     inputs: {z: 0.0, nz: -0.0},
+#= }
+def pos = {[0.0]: 'positive'}
+def neg = {[nz]: 'negative'}
+[
+    pos[0.0],
+    neg[-0.0],
+    neg[nz],
+    pos[z],
+    match pos { {[-0.0]: v} => v, _ => 'missing' },
+    match neg { {[z]: v} => v, _ => 'missing' },
+]

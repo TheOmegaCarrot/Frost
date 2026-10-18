@@ -1,0 +1,12 @@
+# Zero and negative zero are different keys, so each finds only the entry
+# stored under itself.
+#= {
+#=     result: ['found', 'missing', 'found', 'missing'],
+#=     inputs: {at_zero: {[0.0]: 'found'}, at_negative: {[-0.0]: 'found'}, zero: 0.0, negative: -0.0},
+#= }
+[
+    match at_zero { {[zero]: found} => found, _ => 'missing' },
+    match at_zero { {[negative]: found} => found, _ => 'missing' },
+    match at_negative { {[negative]: found} => found, _ => 'missing' },
+    match at_negative { {[zero]: found} => found, _ => 'missing' },
+]

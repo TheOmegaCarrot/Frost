@@ -1,6 +1,6 @@
-# Zero and negative zero are equal but distinct values: each part keeps its own
-# sign, both when the optimizer matches the literal ahead of time and at
-# runtime. Subtle because a folder that merged equal constants would lose it.
+# Zero and negative zero are distinct values: each part keeps its own sign,
+# both when the optimizer matches the literal ahead of time and at runtime.
+# Subtle because a folder that merged look-alike constants would lose it.
 #= {
 #=     result: ['0.0', '-0.0', '-0.0', '0.0'],
 #=     inputs: {xs: [-0.0, 0.0]},

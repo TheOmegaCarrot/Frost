@@ -134,10 +134,6 @@ impl ValueMap {
     }
 
     /// Set `key` to `value`, returning the value it replaced, if any.
-    ///
-    /// A key already present is not replaced: the Map keeps the key it stored
-    /// first. This matters only for keys that are equal but distinguishable, such
-    /// as Float `0.0` and `-0.0`.
     pub fn insert(&mut self, key: MapKey, value: Value) -> Option<Value> {
         match self.entry(key) {
             Entry::Occupied(mut entry) => Some(entry.insert(value)),

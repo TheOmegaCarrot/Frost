@@ -1,0 +1,17 @@
+# A computed key looks up by `==`, under which `-0.0` differs from `0.0`: a
+# pattern keyed by a zero finds only the entry made with the same zero, folded
+# and at runtime, so a pattern of one zero never binds the other's entry.
+#= {
+#=     result: ['neg', 'zero', 'neg', 'zero', 'missing', 'missing'],
+#=     inputs: {m: {[-0.0]: 'neg', [0.0]: 'zero'}, only_negative: {[-0.0]: 'neg'}, z: 0.0},
+#= }
+def {[-0.0]: a, [0.0]: b} = {[0.0]: 'zero', [-0.0]: 'neg'}
+def {[-0.0]: c, [z]: d} = m
+[
+    a,
+    b,
+    c,
+    d,
+    match {[0.0]: 'zero'} { {[-0.0]: v} => v, _ => 'missing' },
+    match only_negative { {[z]: v} => v, _ => 'missing' },
+]

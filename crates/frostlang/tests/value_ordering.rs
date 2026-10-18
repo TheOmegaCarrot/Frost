@@ -46,11 +46,24 @@ fn float_less_than() {
 }
 
 #[test]
-fn float_negative_zero_equals_zero() {
+fn float_negative_zero_orders_as_zero() {
     let neg: Value = (-0.0f64).try_into().unwrap();
     let pos: Value = 0.0.try_into().unwrap();
     assert_eq!(neg.compare(&pos).unwrap(), Ordering::Equal);
     assert_eq!(pos.compare(&neg).unwrap(), Ordering::Equal);
+}
+
+/// Unequal by `==` but ordering as equal, opposite zeros are passed over like an Int and
+/// Float of the same value, and the next pair decides.
+#[test]
+fn array_passes_over_opposite_zeros() {
+    let float = |f: f64| Value::try_from(f).unwrap();
+    let zero_first = Value::array([float(0.0), Value::from(1i64)]);
+    let negative_first = Value::array([float(-0.0), Value::from(2i64)]);
+    assert_eq!(zero_first.compare(&negative_first).unwrap(), Ordering::Less);
+    let (zero, negative) = (Value::array([float(0.0)]), Value::array([float(-0.0)]));
+    assert_eq!(zero.compare(&negative).unwrap(), Ordering::Equal);
+    assert_eq!(negative.compare(&zero).unwrap(), Ordering::Equal);
 }
 
 // -- Cross-type numeric ordering (works, unlike equality) --

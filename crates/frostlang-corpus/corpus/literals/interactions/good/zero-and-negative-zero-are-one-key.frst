@@ -1,5 +1,0 @@
-# `0.0` and `-0.0` are equal, so as keys they are one entry, which the later value
-# wins.
-#= {result: [1, 'second', 'second']}
-def m = {[0.0]: 'first', [-0.0]: 'second'}
-[len(m), m[0.0], m[-0.0]]

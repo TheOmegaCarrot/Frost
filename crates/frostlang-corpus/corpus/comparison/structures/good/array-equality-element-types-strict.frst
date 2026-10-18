@@ -1,9 +1,11 @@
 # Array equality compares elements with `==`, so an Int element never equals
-# a Float element, and a String element never equals a Bytes one.
-#= {result: [false, false, false, true]}
+# a Float element, a String element never equals a Bytes one, and a `-0.0`
+# element never equals a `0.0` one.
+#= {result: [false, false, false, false, true]}
 [
     [1] == [1.0],
     [[0]] == [[0.0]],
     ['a'] == [x'61'],
     [-0.0] == [0.0],
+    [-0.0] == [-0.0],
 ]

@@ -1,0 +1,11 @@
+# Negative zero and zero are different Float values for `==` and `!=`, here
+# with both computed only at runtime.
+#= {result: [false, true, false, true, true], inputs: {zero: 0.0, minus_one: -1.0}}
+def negative_zero = zero * minus_one
+[
+    negative_zero == zero,
+    negative_zero != zero,
+    -zero == zero,
+    zero != negative_zero,
+    negative_zero == -zero,
+]

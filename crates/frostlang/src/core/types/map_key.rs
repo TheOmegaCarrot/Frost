@@ -5,7 +5,9 @@ use std::sync::Arc;
 use crate::core::{FrostBytes, FrostError, FrostFloat, FrostString, FrostType, TypeSet, Value};
 
 /// A valid Frost map key. Only non-null primitive types may be keys.
-/// Totally ordered, such that ordering of keys of the same type agrees with Frost's `<` operator.
+/// Totally ordered, such that ordering of keys of the same type agrees with Frost's `<` operator
+/// wherever `<` tells them apart: the Float keys `0.0` and `-0.0`, which `<` orders as equal, are
+/// distinct keys, with `-0.0` first.
 /// Ordering across types follows the variant order: Bool < Int < Float < String < Bytes.
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, serde::Serialize, serde::Deserialize)]
 pub enum MapKey {

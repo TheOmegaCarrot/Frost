@@ -1,7 +1,7 @@
 # The equalities of folded-equality-across-types, over values only known at
 # runtime, give the same answers.
 #= {
-#=     result: [false, false, false, false, true, true, true, false, true],
+#=     result: [false, false, false, false, true, true, false, false, true],
 #=     inputs: {
 #=         three: 3,
 #=         one: 1,

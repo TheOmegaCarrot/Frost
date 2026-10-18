@@ -1,0 +1,5 @@
+# As with a runtime value, a literal part `-0.0` does not match a constant
+# `0.0` when the optimizer destructures ahead of time.
+#= {raises: 'expected `-0.0`'}
+def [a, -0.0] = [7, 0.0]
+a

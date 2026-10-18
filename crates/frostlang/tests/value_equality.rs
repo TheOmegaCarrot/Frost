@@ -2,8 +2,8 @@ use std::sync::Arc;
 
 use frostlang::bytecode::{CompiledFunction, FormatVersion};
 use frostlang::{
-    Arity, Closure, FrostArray, FrostMap, FrostOpaque, MapKey, NativeFunction, OpaqueHandle, Value,
-    ValueMap,
+    Arity, Closure, FrostArray, FrostFloat, FrostMap, FrostOpaque, MapKey, NativeFunction,
+    OpaqueHandle, Value, ValueMap,
 };
 
 use crate::deep;
@@ -338,11 +338,21 @@ fn a_function_never_equals_a_non_function() {
 
 // -- Negative zero --
 
+/// Equal values are indistinguishable, and the zeros render differently, so they are unequal
+/// wherever they sit.
 #[test]
-fn negative_zero_equals_positive_zero() {
+fn negative_zero_does_not_equal_positive_zero() {
     let pos: Value = 0.0.try_into().unwrap();
     let neg: Value = (-0.0f64).try_into().unwrap();
-    assert_eq!(pos, neg);
+    assert_ne!(pos, neg);
+    assert_eq!(neg, (-0.0f64).try_into().unwrap());
+    assert_ne!(Value::array([pos.clone()]), Value::array([neg.clone()]));
+    assert_ne!(
+        Value::map([("k", pos.clone())]),
+        Value::map([("k", neg.clone())])
+    );
+    let keyed = |key: f64| Value::map([(FrostFloat::new(key).unwrap(), Value::Null)]);
+    assert_ne!(keyed(0.0), keyed(-0.0));
 }
 
 // -- Deeply nested values --

@@ -1,9 +1,0 @@
-# Negative zero and zero are the same Float value for `==` and `!=`, here with
-# both computed only at runtime.
-#= {result: [true, false, true], inputs: {zero: 0.0, minus_one: -1.0}}
-def negative_zero = zero * minus_one
-[
-    negative_zero == zero,
-    negative_zero != zero,
-    -zero == zero,
-]

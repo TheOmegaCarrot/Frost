@@ -1,3 +1,0 @@
-# `-0.0 == 0.0`, so structures differing only in the sign of a zero are equal.
-#= {result: [true, true], inputs: {nz: -0.0}}
-[[nz] == [0.0], {a: nz} == {a: 0.0}]

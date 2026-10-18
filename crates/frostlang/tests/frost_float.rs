@@ -1,3 +1,5 @@
+use std::cmp::Ordering;
+
 use frostlang::FrostFloat;
 
 #[test]
@@ -41,19 +43,24 @@ fn equality() {
 }
 
 #[test]
-fn negative_zero_equals_positive_zero() {
+fn negative_zero_does_not_equal_positive_zero() {
     let pos = FrostFloat::new(0.0).unwrap();
     let neg = FrostFloat::new(-0.0).unwrap();
-    assert_eq!(pos, neg);
+    assert_ne!(pos, neg);
+    assert_eq!(neg, FrostFloat::new(-0.0).unwrap());
 }
 
 #[test]
-fn negative_zero_ordering_equals_positive_zero() {
+fn negative_zero_orders_just_before_positive_zero() {
     let pos = FrostFloat::new(0.0).unwrap();
     let neg = FrostFloat::new(-0.0).unwrap();
-    assert!(pos == neg);
-    assert!(!(pos < neg));
-    assert!(!(neg < pos));
+    // The Floats nearest zero: the smallest subnormals.
+    let below = FrostFloat::new(-5e-324).unwrap();
+    let above = FrostFloat::new(5e-324).unwrap();
+    assert_eq!(neg.cmp(&pos), Ordering::Less);
+    assert_eq!(pos.cmp(&neg), Ordering::Greater);
+    assert_eq!(below.cmp(&neg), Ordering::Less);
+    assert_eq!(above.cmp(&pos), Ordering::Greater);
 }
 
 #[test]

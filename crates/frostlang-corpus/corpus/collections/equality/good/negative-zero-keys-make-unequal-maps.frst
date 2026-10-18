@@ -1,0 +1,5 @@
+# As `-0.0 != 0.0`, a Map keyed by one zero differs from a Map keyed by the
+# other, whether the keys are constants or known only at runtime. A Map keyed
+# by the same zero is equal.
+#= {result: [false, false, false, true], inputs: {nz: -0.0}}
+[{[-0.0]: 1} == {[0.0]: 1}, {[nz]: 1} == {[0.0]: 1}, {[nz]: 1} == {[0]: 1}, {[nz]: 1} == {[-0.0]: 1}]

@@ -1,0 +1,20 @@
+# When the operation's results hold `0.0` and `-0.0` keys, the merged Map
+# keeps both, each as written, with `-0.0` first in iteration order, whether
+# the optimizer computes the `map` ahead of time or it runs on a runtime Map.
+#= {
+#=     result: [
+#=         '{ [-0.0]: "from 1", [0.0]: "from 0.0" }',
+#=         '{ [-0.0]: "from -0.0", [0.0]: "from 1" }',
+#=         '{ [-0.0]: "from 1", [0.0]: "from 0.0" }',
+#=         '{ [-0.0]: "from -0.0", [0.0]: "from 1" }',
+#=     ],
+#=     inputs: {m: {[0.0]: 'from 0.0', [1]: 'from 1'}, n: {[-0.0]: 'from -0.0', [1]: 'from 1'}},
+#= }
+defn to_negative(k, v) -> {[if is_int(k): -0.0 else: k]: v}
+defn to_positive(k, v) -> {[if is_int(k): 0.0 else: k]: v}
+[
+    to_string(map {[0.0]: 'from 0.0', [1]: 'from 1'} with to_negative),
+    to_string(map {[-0.0]: 'from -0.0', [1]: 'from 1'} with to_positive),
+    to_string(map m with to_negative),
+    to_string(map n with to_positive),
+]

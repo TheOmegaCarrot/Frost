@@ -1,0 +1,5 @@
+# `0.0` and `-0.0` are different keys, so in one literal they are two entries,
+# each keeping its own value.
+#= {result: [2, 'first', 'second']}
+def m = {[0.0]: 'first', [-0.0]: 'second'}
+[len(m), m[0.0], m[-0.0]]

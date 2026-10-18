@@ -381,6 +381,20 @@ fn min_and_max_keep_an_int_of_two_ints() {
     ]);
 }
 
+/// Of two numbers of equal value, each returns the first, whatever the platform's
+/// floating-point minimum and maximum would do with the sign of zero.
+#[test]
+fn min_and_max_return_the_first_of_opposite_zeros() {
+    assert_values(&[
+        ("math.min(0.0, -0.0)", "0.0"),
+        ("math.min(-0.0, 0.0)", "-0.0"),
+        ("math.max(0.0, -0.0)", "0.0"),
+        ("math.max(-0.0, 0.0)", "-0.0"),
+        ("math.min(0, -0.0)", "0.0"),
+        ("math.max(-0.0, 0)", "-0.0"),
+    ]);
+}
+
 #[test]
 fn hypot_takes_two_or_three_lengths() {
     assert_values(&[

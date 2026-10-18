@@ -1,0 +1,8 @@
+# Negative zero differs from zero, so a Map keyed by `-0.0` is unequal to one
+# keyed by `0.0` holding the same value, even beside other equal entries.
+#= {result: [false, false, true]}
+[
+    {[-0.0]: 'z'} == {[0.0]: 'z'},
+    {[0.0]: 'z', [1.5]: 'w'} == {[1.5]: 'w', [-0.0]: 'z'},
+    {[-0.0]: 'z', [1.5]: 'w'} == {[1.5]: 'w', [-0.0]: 'z'},
+]

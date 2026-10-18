@@ -1,6 +1,5 @@
 //! Constant deduplication: equal constants in a function share one pool entry,
-//! however far apart their uses, except where a Float's sign of zero tells
-//! them apart.
+//! however far apart their uses.
 //!
 //! Code-shape cases pin exactly the options they are about. Behavioral cases
 //! run under every optimization permutation, so a wrongly shared constant shows
@@ -114,13 +113,13 @@ fn without_the_option_each_use_has_its_own_entry() {
 // --- Constants that differ stay apart ---
 
 #[test]
-fn unequal_constants_and_opposite_zeros_stay_apart() {
+fn unequal_constants_stay_apart() {
     for (a, b) in [
         ("[1]", "[1.0]"),
         (r#"["1"]"#, "[x'31']"),
         ("[[1]]", "[1]"),
         ("{a: 1}", "{a: 2}"),
-        // Equal under `==`, but printed differently.
+        // Opposite zeros, which differ only in sign.
         ("[0.0]", "[-0.0]"),
         ("{a: 0.0}", "{a: -0.0}"),
         ("{[0.0]: 1}", "{[-0.0]: 1}"),
@@ -132,7 +131,7 @@ fn unequal_constants_and_opposite_zeros_stay_apart() {
 }
 
 #[test]
-fn map_keys_that_print_differently_stay_apart() {
+fn opposite_zero_map_keys_stay_apart() {
     let source = r"
         fn m -> match m {
             {[0.0]: a} => a,

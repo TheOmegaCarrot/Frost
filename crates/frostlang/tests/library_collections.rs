@@ -1864,8 +1864,8 @@ fn unique_follows_equality() {
         // `1 == 1.0` is false, and a String never equals Bytes.
         ("unique([1, 1.0, 1, 1.0])", "[1, 1.0]"),
         ("unique(['a', x'61', 'a'])", "['a', x'61']"),
-        // `0.0 == -0.0` is true.
-        ("len(unique([0.0, -0.0]))", "1"),
+        // `0.0 == -0.0` is false.
+        ("unique([0.0, -0.0, 0.0, -0.0])", "[0.0, -0.0]"),
     ]);
 }
 

@@ -1,7 +1,0 @@
-# Matching negative zero against the `0.0` pattern does not replace the target
-# with the pattern's value: inside the arm, the target still prints as -0.0.
-# Subtle: the two zeros are equal, but they print differently.
-#= {result: '-0.0', inputs: {v: -0.0}}
-match v {
-    0.0 => to_string(v),
-}

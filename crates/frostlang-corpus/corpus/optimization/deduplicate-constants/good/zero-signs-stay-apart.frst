@@ -1,8 +1,8 @@
-# Constant structures holding 0.0 and -0.0 are equal under `==`, yet each
+# Constant structures holding 0.0 and -0.0 are unequal under `==`, and each
 # keeps its own zero's sign, which shows when printed: sharing one stored
 # constant between them would lose it.
 #= {
-#=     result: [['0.0', '-0.0'], ['0.0', '-0.0'], ['{ [0.0]: 1 }', '{ [-0.0]: 1 }'], true],
+#=     result: [['0.0', '-0.0'], ['0.0', '-0.0'], ['{ [0.0]: 1 }', '{ [-0.0]: 1 }'], false],
 #=     inputs: {tag: 'runtime'},
 #= }
 defn build(t) -> [t, [0.0], [-0.0], {a: 0.0}, {a: -0.0}, {[0.0]: 1}, {[-0.0]: 1}]

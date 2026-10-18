@@ -1,7 +1,0 @@
-# Negative zero equals zero when the optimizer resolves the match ahead of
-# time, as it does at runtime.
-#= {result: ['zero', 'minus zero']}
-[
-    match -0.0 { 0.0 => 'zero' },
-    match 0.0 { -0.0 => 'minus zero' },
-]

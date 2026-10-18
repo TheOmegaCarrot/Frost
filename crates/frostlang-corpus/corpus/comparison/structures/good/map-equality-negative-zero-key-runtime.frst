@@ -1,3 +1,0 @@
-# A Map keyed by a negative zero made at runtime equals one keyed by zero.
-#= {result: true, inputs: {zero: 0.0}}
-{[-zero]: 'z'} == {[0.0]: 'z'}

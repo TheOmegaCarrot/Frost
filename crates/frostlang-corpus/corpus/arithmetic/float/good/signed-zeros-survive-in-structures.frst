@@ -1,6 +1,6 @@
 # A signed-zero result keeps its sign inside a constant structure, even beside
-# a structure holding 0.0. Subtle because -0.0 == 0.0, so treating equal
-# constants as interchangeable would lose the sign.
+# a structure holding 0.0. Subtle because the zeros order as equal and
+# look alike, so treating the constants as interchangeable would lose the sign.
 #= {result: ['0.0', '-0.0', '-0.0', '0.0']}
 def positive = [0.0 * 1.0]
 def negative = [0.0 * -1.0]

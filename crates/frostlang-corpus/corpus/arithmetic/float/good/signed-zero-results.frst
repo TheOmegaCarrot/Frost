@@ -1,8 +1,8 @@
 # Float arithmetic follows IEEE signed zeros: a zero product or quotient with
 # one negative factor is -0.0, while a zero sum or difference of opposite
-# zeros is 0.0. A negative zero prints with its sign but equals 0.0.
+# zeros is 0.0. A negative zero prints with its sign and is not equal to 0.0.
 #= {
-#=     result: ['-0.0', '-0.0', '-0.0', '-0.0', '0.0', '0.0', true],
+#=     result: ['-0.0', '-0.0', '-0.0', '-0.0', '0.0', '0.0', false],
 #=     inputs: {zero: 0.0, minus_one: -1.0, int_zero: 0},
 #= }
 [

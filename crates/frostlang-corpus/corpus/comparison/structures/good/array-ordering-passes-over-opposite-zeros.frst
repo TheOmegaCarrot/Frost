@@ -1,0 +1,16 @@
+# Array ordering passes over an element pair that orders as equal, and the
+# next pair decides. Subtle: `0.0` and `-0.0` order as equal but are unequal
+# by `==`, so the Arrays order by their second elements while remaining
+# unequal, and Arrays of one zero each order as equal without being equal.
+#= {result: [true, false, true, false, false, true, true, false, false]}
+[
+    [0.0, 1] < [-0.0, 2],
+    [0.0, 1] > [-0.0, 2],
+    [0.0, 1] <= [-0.0, 2],
+    [0.0, 1] >= [-0.0, 2],
+    [0.0, 1] == [-0.0, 2],
+    [-0.0] <= [0.0],
+    [0.0] <= [-0.0],
+    [-0.0] < [0.0],
+    [-0.0] == [0.0],
+]

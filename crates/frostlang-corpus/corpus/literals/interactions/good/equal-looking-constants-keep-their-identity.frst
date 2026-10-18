@@ -1,6 +1,6 @@
-# Literals that compare equal or look alike stay distinct values when they share a
-# program: `1` and `1.0` keep their types, and `-0.0` keeps its sign, which its
-# String form shows. Merging equal constants must not conflate them.
+# Literals that look alike stay distinct values when they share a program: `1`
+# and `1.0` keep their types, and `-0.0` keeps its sign, which its String form
+# shows. Merging look-alike constants must not conflate them.
 #= {result: [['Int', 'Float', 'Int', 'Float'], ['0.0', '-0.0', '0.0']]}
 [
     map [1, 1.0, 1, 1.0] with fn x -> type(x),

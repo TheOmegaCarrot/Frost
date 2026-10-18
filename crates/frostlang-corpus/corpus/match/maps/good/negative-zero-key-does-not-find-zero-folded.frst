@@ -1,0 +1,9 @@
+# Zero and negative zero are different keys when the optimizer can see the
+# whole Map ahead of time, too: each finds only its own entry.
+#= {result: ['found', 'missing', 'found', 'missing']}
+[
+    match {[0.0]: 'found'} { {[0.0]: found} => found, _ => 'missing' },
+    match {[0.0]: 'found'} { {[-0.0]: found} => found, _ => 'missing' },
+    match {[-0.0]: 'found'} { {[-0.0]: found} => found, _ => 'missing' },
+    match {[-0.0]: 'found'} { {[0.0]: found} => found, _ => 'missing' },
+]

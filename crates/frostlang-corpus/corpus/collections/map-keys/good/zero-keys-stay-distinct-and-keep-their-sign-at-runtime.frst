@@ -1,0 +1,22 @@
+# The zeros of zero-keys-stay-distinct-and-keep-their-sign, known only at
+# runtime, are distinct keys the same way, in a literal and in a merge: each
+# entry keeps its key as written, and `-0.0` iterates before `0.0`.
+#= {
+#=     result: [
+#=         '{ [-0.0]: "b", [0.0]: "a" }',
+#=         '{ [-0.0]: "a", [0.0]: "b" }',
+#=         '{ [-0.0]: 1, [0.0]: 2 }',
+#=         '{ [-0.0]: 2, [0.0]: 1 }',
+#=         [-0.0, 0.0],
+#=         2,
+#=     ],
+#=     inputs: {z: 0.0, nz: -0.0},
+#= }
+[
+    to_string({[z]: 'a', [nz]: 'b'}),
+    to_string({[nz]: 'a', [z]: 'b'}),
+    to_string({[nz]: 1} + {[z]: 2}),
+    to_string({[z]: 1} + {[nz]: 2}),
+    keys({[z]: 'a', [nz]: 'b'}),
+    len({[z]: 'a', [nz]: 'b'}),
+]

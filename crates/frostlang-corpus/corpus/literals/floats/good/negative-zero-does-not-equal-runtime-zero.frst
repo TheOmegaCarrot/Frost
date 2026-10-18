@@ -1,0 +1,4 @@
+# `-0.0` is not equal to a zero known only at runtime of the other sign, and
+# is equal to one of its own sign.
+#= {result: [false, false, true, true], inputs: {zero: 0.0, negative_zero: -0.0}}
+[-0.0 == zero, 0.0 == negative_zero, -0.0 == negative_zero, 0.0 == zero]

@@ -1,0 +1,9 @@
+# Negative zero differs from zero when the optimizer resolves the match ahead
+# of time, as it does at runtime.
+#= {result: ['zero', 'other', 'minus zero', 'other']}
+[
+    match 0.0 { 0.0 => 'zero', _ => 'other' },
+    match 0.0 { -0.0 => 'minus zero', _ => 'other' },
+    match -0.0 { -0.0 => 'minus zero', _ => 'other' },
+    match -0.0 { 0.0 => 'zero', _ => 'other' },
+]

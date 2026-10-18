@@ -1,8 +1,8 @@
 # A function capturing a known structure holding -0.0, and holding a literal
-# of the same shape with 0.0, keeps each zero's sign: equal under `==`, the
-# two are still not the same constant. Subtle: the captured value may be
-# built into the function as a constant alongside the literal.
-#= {result: ['-0.0', '0.0', '0.0', '-0.0', true], inputs: {tag: 'runtime'}}
+# of the same shape with 0.0, keeps each zero's sign: the two are different
+# under `==`, so they are different constants. Subtle: the captured value may
+# be built into the function as a constant alongside the literal.
+#= {result: ['-0.0', '0.0', '0.0', '-0.0', false], inputs: {tag: 'runtime'}}
 def neg = [-0.0]
 def pos = {z: 0.0}
 def build = fn t -> [t, neg, [0.0], pos, {z: -0.0}]

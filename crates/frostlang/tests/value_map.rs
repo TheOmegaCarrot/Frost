@@ -71,39 +71,43 @@ fn inserting_a_present_key_replaces_its_value() {
 }
 
 #[test]
-fn a_present_key_keeps_its_first_stored_form() {
-    // Float `0.0` and `-0.0` are one key, told apart only by their sign.
+fn zero_and_negative_zero_are_distinct_keys_negative_first() {
     let positive = MapKey::Float(FrostFloat::new(0.0).unwrap());
     let negative = MapKey::Float(FrostFloat::new(-0.0).unwrap());
-    let stored_sign = |map: &ValueMap| match map.get_key_value(&positive) {
-        Some((MapKey::Float(float), _)) => float.get().is_sign_negative(),
-        other => panic!("a Float key, not {other:?}"),
+    let zeros_in_order = |map: &ValueMap| {
+        map.keys()
+            .filter(|key| [&positive, &negative].contains(key))
+            .cloned()
+            .collect::<Vec<_>>()
     };
     for size in SIZES {
         let mut inserted = map_of(size);
         inserted.insert(positive.clone(), Value::Int(1));
         inserted.insert(negative.clone(), Value::Int(2));
-        assert!(!stored_sign(&inserted), "size {size}: insert keeps 0.0");
-        assert_eq!(inserted[&positive], Value::Int(2), "size {size}: insert");
-        assert_eq!(inserted.len(), size as usize + 1, "size {size}: insert");
+        assert_eq!(inserted[&positive], Value::Int(1), "size {size}: insert");
+        assert_eq!(inserted[&negative], Value::Int(2), "size {size}: insert");
+        assert_eq!(inserted.len(), size as usize + 2, "size {size}: insert");
+        assert_eq!(
+            zeros_in_order(&inserted),
+            [negative.clone(), positive.clone()],
+            "size {size}: insert"
+        );
 
         let collected: ValueMap = map_of(size)
             .into_iter()
             .chain([
-                (negative.clone(), Value::Int(1)),
-                (positive.clone(), Value::Int(2)),
+                (positive.clone(), Value::Int(1)),
+                (negative.clone(), Value::Int(2)),
             ])
             .collect();
-        assert!(stored_sign(&collected), "size {size}: collect keeps -0.0");
-        assert_eq!(collected[&positive], Value::Int(2), "size {size}: collect");
+        assert_eq!(collected, inserted, "size {size}: collect");
 
         let mut extended = map_of(size);
         extended.extend([
-            (negative.clone(), Value::Int(1)),
-            (positive.clone(), Value::Int(2)),
+            (negative.clone(), Value::Int(2)),
+            (positive.clone(), Value::Int(1)),
         ]);
-        assert!(stored_sign(&extended), "size {size}: extend keeps -0.0");
-        assert_eq!(extended[&positive], Value::Int(2), "size {size}: extend");
+        assert_eq!(extended, inserted, "size {size}: extend");
     }
 }
 

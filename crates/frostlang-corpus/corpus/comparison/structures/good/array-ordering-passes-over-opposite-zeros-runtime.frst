@@ -1,0 +1,17 @@
+# The Arrays of array-ordering-passes-over-opposite-zeros, known only at
+# runtime, order the same way: the opposite zeros are passed over.
+#= {
+#=     result: [true, false, true, false, false, true, true, false, false],
+#=     inputs: {zero_first: [0.0, 1], negative_first: [-0.0, 2], zero: [0.0], negative: [-0.0]},
+#= }
+[
+    zero_first < negative_first,
+    zero_first > negative_first,
+    zero_first <= negative_first,
+    zero_first >= negative_first,
+    zero_first == negative_first,
+    negative <= zero,
+    zero <= negative,
+    negative < zero,
+    negative == zero,
+]

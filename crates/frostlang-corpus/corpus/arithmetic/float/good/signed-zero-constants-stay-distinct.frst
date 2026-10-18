@@ -1,7 +1,7 @@
-# The constants 0.0 and -0.0 in one function stay distinct, though they are
-# equal. The branch condition is an input, so the zeros are loaded as
+# The constants 0.0 and -0.0 in one function stay distinct, though they order
+# as equal. The branch condition is an input, so the zeros are loaded as
 # constants at runtime rather than folded into the result. Subtle because
-# merging equal constants would lose the sign.
+# merging look-alike constants would lose the sign.
 #= {result: ['0.0', '-0.0', '-0.0', '0.0'], inputs: {flag: true}}
 def positive = if flag: 0.0 else: 1
 def negative = if flag: -0.0 else: 1

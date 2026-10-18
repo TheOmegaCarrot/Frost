@@ -1,0 +1,22 @@
+# `0.0` and `-0.0` are distinct Map keys, so they never collide: each entry
+# keeps its key as written, whatever the insertion order, and `-0.0` iterates
+# before `0.0`. Subtle: the two zeros render differently, so `to_string`
+# shows which keys the Map holds.
+#= {
+#=     result: [
+#=         '{ [-0.0]: "b", [0.0]: "a" }',
+#=         '{ [-0.0]: "a", [0.0]: "b" }',
+#=         '{ [-0.0]: 1, [0.0]: 2 }',
+#=         '{ [-0.0]: 2, [0.0]: 1 }',
+#=         [-0.0, 0.0],
+#=         2,
+#=     ],
+#= }
+[
+    to_string({[0.0]: 'a', [-0.0]: 'b'}),
+    to_string({[-0.0]: 'a', [0.0]: 'b'}),
+    to_string({[-0.0]: 1} + {[0.0]: 2}),
+    to_string({[0.0]: 1} + {[-0.0]: 2}),
+    keys({[0.0]: 'a', [-0.0]: 'b'}),
+    len({[0.0]: 'a', [-0.0]: 'b'}),
+]

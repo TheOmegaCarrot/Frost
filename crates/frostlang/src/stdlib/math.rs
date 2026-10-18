@@ -5,6 +5,7 @@
 //! in floating point returns a Float, and a result that would be NaN or infinite
 //! is an error: a Float is always finite.
 
+use std::cmp::Ordering;
 use std::f64::consts;
 
 use crate::native::{Numeric, Optional};
@@ -49,8 +50,8 @@ pub fn math() -> StdlibModule {
         .value("floor", rounding_function("std.math.floor", f64::floor))
         .value("trunc", rounding_function("std.math.trunc", f64::trunc))
         .function(abs_frost())
-        .value("min", min_max("std.math.min", i64::min, f64::min))
-        .value("max", min_max("std.math.max", i64::max, f64::max))
+        .value("min", min_max("std.math.min", Ordering::Less))
+        .value("max", min_max("std.math.max", Ordering::Greater))
         .function(hypot_frost())
         .function(clamp_frost())
         .function(lerp_frost())
@@ -141,13 +142,25 @@ fn pow(#[frost(ctx)] ctx: &mut NativeCtx<'_>, base: Numeric, exponent: Numeric) 
     }
 }
 
-/// `min` or `max`: an Int of two Ints, else a Float.
-fn min_max(name: &'static str, ints: fn(i64, i64) -> i64, floats: fn(f64, f64) -> f64) -> Value {
+/// `min` or `max`: an Int of two Ints, else a Float. The second argument wins only by
+/// ordering `wins` against the first, so of two numbers of equal value, such as `0.0`
+/// and `-0.0`, the first is returned.
+fn min_max(name: &'static str, wins: Ordering) -> Value {
     frost_closure!(
         name,
         move |#[frost(unnamed)] a: Numeric, #[frost(unnamed)] b: Numeric| match (a, b) {
-            (Numeric::Int(a), Numeric::Int(b)) => Ok(Value::Int(ints(a, b))),
-            _ => finite(name, floats(a.to_f64(), b.to_f64()), &[a, b]),
+            (Numeric::Int(x), Numeric::Int(y)) => {
+                Ok(Value::Int(if y.cmp(&x) == wins { y } else { x }))
+            }
+            _ => {
+                let (x, y) = (a.to_f64(), b.to_f64());
+                let chosen = if y.partial_cmp(&x) == Some(wins) {
+                    y
+                } else {
+                    x
+                };
+                finite(name, chosen, &[a, b])
+            }
         }
     )
 }

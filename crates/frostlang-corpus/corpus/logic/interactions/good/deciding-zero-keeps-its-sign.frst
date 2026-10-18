@@ -1,7 +1,8 @@
 # `and` and `or` yield the deciding operand itself, so a Float zero keeps its
 # sign through them, whether the operands are constants or known only at
-# runtime. Subtle because 0.0 and -0.0 are equal by `==`, so treating the two
-# constants as one value would go unnoticed by any equality test.
+# runtime. Subtle because 0.0 and -0.0 order as equal and print alike apart
+# from the sign, so treating the two constants as one value would be easy to
+# miss.
 #= {
 #=     result: ['-0.0', '-0.0', '-0.0', '0.0', '0.0', '-0.0'],
 #=     inputs: {n: null, zero: 0.0},

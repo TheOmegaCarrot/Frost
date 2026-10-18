@@ -1,3 +1,0 @@
-# `-0.0` is a Float equal to `0.0`, and is still a Float.
-#= {result: [true, true, 'Float', false]}
-[-0.0 == 0.0, 0.0 == -0.0, type(-0.0), -0.0 == 0]

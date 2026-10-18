@@ -1,7 +1,0 @@
-# Zero and negative zero are the same key when the optimizer can see the whole
-# Map ahead of time, too: each finds the entry stored under the other.
-#= {result: ['found', 'found']}
-[
-    match {[0.0]: 'found'} { {[-0.0]: found} => found, _ => 'missing' },
-    match {[-0.0]: 'found'} { {[0.0]: found} => found, _ => 'missing' },
-]

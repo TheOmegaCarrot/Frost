@@ -1,0 +1,7 @@
+# A Map keyed by a negative zero made at runtime differs from one keyed by
+# zero, and equals one keyed by negative zero.
+#= {result: [false, true], inputs: {zero: 0.0}}
+[
+    {[-zero]: 'z'} == {[0.0]: 'z'},
+    {[-zero]: 'z'} == {[-0.0]: 'z'},
+]

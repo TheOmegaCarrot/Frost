@@ -3,7 +3,10 @@ use std::cmp::Ordering;
 use crate::core::error::FrostError;
 
 /// A validated f64 that is guaranteed to never be NaN or Infinity.
-/// This makes it safe to impl Eq and Ord.
+///
+/// Equal only to the very same value, as Frost's `==` has it: `0.0` and `-0.0` are
+/// unequal. Totally ordered, with `-0.0` just before `0.0`; Frost's `<` operator
+/// instead orders the two zeros as equal.
 ///
 /// Serialized as a plain `f64`; deserialization rejects NaN and Infinity.
 #[derive(Clone, Copy, Debug, serde::Serialize, serde::Deserialize)]
@@ -34,6 +37,14 @@ impl FrostFloat {
         whole.then_some(self.0 as i64)
     }
 
+    /// Compares this Float with another as Frost's `<` operator does: by numeric value,
+    /// so `0.0` and `-0.0` order as equal.
+    pub(crate) fn cmp_numerically(self, other: FrostFloat) -> Ordering {
+        self.0
+            .partial_cmp(&other.0)
+            .expect("finite Floats are ordered")
+    }
+
     /// Compares this Float with an Int exactly, without rounding the Int to a Float.
     pub(crate) fn cmp_int(self, int: i64) -> Ordering {
         let whole = FrostFloat(self.0.trunc());
@@ -62,9 +73,20 @@ impl From<FrostFloat> for f64 {
     }
 }
 
+// Signed zero. Equality is bit equality, so `0.0` and `-0.0` are unequal. With NaN
+// excluded, that makes equal Floats indistinguishable, which Frost relies on wherever it
+// treats equal values as interchangeable: sharing constants, Map keys, folding. Under
+// IEEE equality the zeros would be equal yet still told apart by rendering, by division,
+// and by anything reading the sign, so whichever zero a shared constant or a Map key
+// happened to keep would show through.
+//
+// Ordering differs on purpose. Frost's `<` compares numbers by value (`cmp_numerically`),
+// so the zeros order as equal, just as `1` and `1.0` do: in Frost, ordering as equal never
+// implies `==`. The `Ord` below is instead the total order consistent with equality that
+// a sorted Map needs, which puts `-0.0` just before `0.0` among Map keys.
 impl PartialEq for FrostFloat {
     fn eq(&self, other: &Self) -> bool {
-        self.0 == other.0
+        self.0.to_bits() == other.0.to_bits()
     }
 }
 
@@ -78,6 +100,6 @@ impl PartialOrd for FrostFloat {
 
 impl Ord for FrostFloat {
     fn cmp(&self, other: &Self) -> Ordering {
-        self.0.partial_cmp(&other.0).unwrap()
+        self.0.total_cmp(&other.0)
     }
 }

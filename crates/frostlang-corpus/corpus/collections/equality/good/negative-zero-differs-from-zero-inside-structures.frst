@@ -1,0 +1,4 @@
+# `-0.0 != 0.0`, so structures differing only in the sign of a zero are
+# unequal, as an Array element or a Map value.
+#= {result: [false, false], inputs: {nz: -0.0}}
+[[nz] == [0.0], {a: nz} == {a: 0.0}]
