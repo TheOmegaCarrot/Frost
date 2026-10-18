@@ -580,12 +580,19 @@ pub(super) fn chunk_by(
 /// Append `elements` to `out`, splicing in the elements of each Array among them
 /// to `depth` levels, or to every level when `depth` is `None`.
 fn flatten_into(out: &mut Vec<Value>, elements: Vec<Value>, depth: Option<usize>) {
-    for element in elements {
-        match element {
-            Value::Array(inner) if depth != Some(0) => {
-                flatten_into(out, inner.into_vec(), depth.map(|depth| depth - 1));
+    // The Arrays being spliced in, innermost last, each with how many levels below it
+    // are still to be spliced in.
+    let mut pending = vec![(elements.into_iter(), depth)];
+    while let Some((elements, depth)) = pending.last_mut() {
+        match elements.next() {
+            Some(Value::Array(inner)) if *depth != Some(0) => {
+                let below = depth.map(|depth| depth - 1);
+                pending.push((inner.into_vec().into_iter(), below));
             }
-            other => out.push(other),
+            Some(other) => out.push(other),
+            None => {
+                pending.pop();
+            }
         }
     }
 }

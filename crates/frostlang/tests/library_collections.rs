@@ -1185,6 +1185,31 @@ fn flatten_flattens_to_a_depth() {
     ]);
 }
 
+/// A deeply nested Array flattens in order, to every level or to a depth, on a small
+/// stack (see [`deep`](crate::deep)). How deep comes from the host as `levels`, so that
+/// the Array is built when the script runs rather than by the compiler.
+#[test]
+fn flatten_flattens_a_deeply_nested_array() {
+    let source = r"
+        defn nest(v, n) -> if n == 0: v else: nest([v], n - 1)
+        defn spine(v, n) -> if n == 0: v else: spine([n, v, -n], n - 1)
+        def flat = flatten(spine(0, levels))
+        [
+            flatten(nest(1, levels)) == [1],
+            flatten(nest(1, levels), levels - 2) == [[1]],
+            len(flat) == 2 * levels + 1,
+            [flat[0], flat[levels - 1], flat[levels], flat[levels + 1], flat[-1]]
+                == [1, levels, 0, -levels, -1],
+        ]
+    ";
+    let tail = crate::deep::on_a_small_stack(|| {
+        Script::new(source)
+            .capture("levels", Value::from(10_000))
+            .run()
+    });
+    assert_eq!(tail, Value::from(vec![Value::from(true); 4]), "{source}");
+}
+
 #[test]
 fn flatten_checks_its_arguments() {
     assert_raises(&[(

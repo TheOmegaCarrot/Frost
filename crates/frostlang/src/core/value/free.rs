@@ -91,9 +91,6 @@ fn take_apart(value: Value, pending: &mut Vec<Value>) {
         }
         // Holds no Values, or holds them only inside native or Opaque state, which
         // this cannot see into.
-        // TODO: A chain nesting Values through such state, alternating with
-        // containers, still recurses once per link. Nothing a script can reach
-        // builds one; only a host's own natives or Opaques can.
         Value::Null
         | Value::Bool(_)
         | Value::Int(_)

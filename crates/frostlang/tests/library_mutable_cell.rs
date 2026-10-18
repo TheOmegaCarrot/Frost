@@ -223,6 +223,69 @@ fn a_rejected_exchange_leaves_the_cell_unchanged() {
     assert_values(&[(source, "[false, 'kept']")]);
 }
 
+/// What a cell may not store is found at any depth, and the first of it found, left to
+/// right and depth first, names the error.
+#[test]
+fn a_cell_rejects_the_first_forbidden_value_however_deep() {
+    let function = "A mutable cell may not store a Function value";
+    let opaque =
+        "A mutable cell may not store an Opaque Owning, which could refer back to the cell";
+    let cases = [
+        ("mutable_cell([owning, fn -> 1])", opaque),
+        ("mutable_cell([fn -> 1, owning])", function),
+        ("mutable_cell([[[fn -> 1]], owning])", function),
+        ("mutable_cell({a: [owning], b: fn -> 1})", opaque),
+        ("mutable_cell(nest(fn -> 1, levels))", function),
+        ("mutable_cell(nest(owning, levels))", opaque),
+        ("mutable_cell().exchange(nest(fn -> 1, levels))", function),
+    ];
+    for (expression, message) in cases {
+        let source = format!(
+            r"
+            defn nest(v, n) -> if n == 0: v else: nest([v, {{k: v}}], n - 1)
+            {expression}
+            "
+        );
+        let raised = crate::deep::on_a_small_stack(|| {
+            Script::new(&source)
+                .captures(&[
+                    ("owning", Value::opaque(Owning(vec![1]))),
+                    ("levels", Value::from(10_000)),
+                ])
+                .raises()
+        });
+        assert_eq!(raised, message, "{expression}");
+    }
+}
+
+/// A cell holds a deeply nested value, and one sharing its contents, whose every
+/// element in full would number 2^40: each container held in many places is looked
+/// into once. How deep comes from the host as `levels`, and how many times doubled as
+/// `doublings`, so that the values are built when the script runs rather than by the
+/// compiler.
+#[test]
+fn a_cell_holds_a_deep_value_and_one_sharing_its_contents() {
+    let source = r"
+        defn nest(v, n) -> if n == 0: v else: nest([v, {k: v}], n - 1)
+        defn doubled(v, n) -> if n == 0: v else: doubled([v, v], n - 1)
+        def deep = nest(1, levels)
+        def wide = doubled({k: 1}, doublings)
+        def cell = mutable_cell(deep)
+        def held_deep = cell.get() == deep
+        cell.exchange(wide)
+        [held_deep, cell.get() == wide]
+    ";
+    let tail = crate::deep::on_a_small_stack(|| {
+        Script::new(source)
+            .captures(&[
+                ("levels", Value::from(10_000)),
+                ("doublings", Value::from(40)),
+            ])
+            .run()
+    });
+    assert_eq!(tail, Value::from(vec![Value::from(true); 2]), "{source}");
+}
+
 #[test]
 fn mutable_cell_takes_at_most_one_argument() {
     assert_arity("mutable_cell", "between 0 and 1", &[2, 3]);
