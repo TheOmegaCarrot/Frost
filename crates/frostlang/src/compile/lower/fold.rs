@@ -70,7 +70,7 @@ impl FoldVm {
         function: Arc<CompiledFunction>,
         captures: BTreeMap<String, Value>,
     ) -> Option<Value> {
-        let closure = function.assert_trusted().close(captures).ok()?;
+        let closure = function.assert_well_formed().close(captures).ok()?;
         let vm = match self.parked.borrow_mut().take() {
             Some(core) => core.build(closure),
             None => self.factory.build(closure),

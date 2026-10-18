@@ -50,7 +50,7 @@ fn run(constants: Vec<Value>, code: Vec<Bytecode>) -> Result<Value, FrostError> 
         num_captures: 0,
         arity: Arity::Exact(0),
     });
-    let closure = program.assert_trusted().into_closure().unwrap();
+    let closure = program.assert_well_formed().into_closure().unwrap();
     Vm::factory()
         .with_importer(importer())
         .build(closure)
@@ -162,7 +162,7 @@ fn a_default_vm_resolves_nothing() {
         num_captures: 0,
         arity: Arity::Exact(0),
     });
-    let closure = program.assert_trusted().into_closure().unwrap();
+    let closure = program.assert_well_formed().into_closure().unwrap();
     let result = Vm::factory().build(closure).run();
     assert!(result.is_err());
 }
@@ -196,7 +196,7 @@ struct RecursiveResolver;
 impl ImportResolver for RecursiveResolver {
     fn resolve(&self, ctx: &ImportCtx, module_spec: &str) -> Result<Option<Value>, FrostError> {
         let closure = importing_program(module_spec)
-            .assert_trusted()
+            .assert_well_formed()
             .into_closure()
             .expect("no captures");
         let value = ctx
@@ -231,7 +231,7 @@ fn run_with(
     module_id: Option<ModuleId>,
 ) -> Result<Value, FrostError> {
     let closure = importing_program("anything")
-        .assert_trusted()
+        .assert_well_formed()
         .into_closure()
         .unwrap();
     let mut vm = Vm::factory()
@@ -276,7 +276,7 @@ fn an_unidentified_script_imports_with_no_module_id() {
 
 /// A Vm identified as `caller-module`, running `program` under [`EchoesImporter`].
 fn identified_echo_vm(program: Arc<CompiledFunction>) -> Vm {
-    let closure = program.assert_trusted().into_closure().unwrap();
+    let closure = program.assert_well_formed().into_closure().unwrap();
     Vm::factory()
         .with_importer(
             ImporterBuilder::new()
@@ -294,7 +294,7 @@ fn echoed_id(vm: Vm) -> Value {
 
 fn echoing_closure() -> Arc<frostlang::Closure> {
     importing_program("anything")
-        .assert_trusted()
+        .assert_well_formed()
         .into_closure()
         .unwrap()
 }
@@ -368,7 +368,7 @@ struct RunsImportedReporter;
 impl ImportResolver for RunsImportedReporter {
     fn resolve(&self, ctx: &ImportCtx, _module_spec: &str) -> Result<Option<Value>, FrostError> {
         let closure = reports_imported()
-            .assert_trusted()
+            .assert_well_formed()
             .into_closure()
             .expect("no captures");
         let value = ctx

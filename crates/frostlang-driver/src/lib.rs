@@ -46,7 +46,7 @@ use frostlang::compile::{
 };
 use frostlang::image::{self, ImageError};
 use frostlang::{
-    FrostError, Importer, RunError, TrustedProgram, Value, Vm, VmRuntimeConfiguration,
+    FrostError, Importer, RunError, Value, Vm, VmRuntimeConfiguration, WellFormedProgram,
 };
 use frostlang_parse::parse_program_with_limits;
 use frostlang_repl::{Frontend, LineFrontend, Repl};
@@ -405,7 +405,7 @@ impl Session<'_> {
         if image::is_image(&contents) {
             return match image::decode(&contents) {
                 // The user chose to run this image; see `Command::Run`.
-                Ok(function) => self.run_program(Arc::new(function).assert_trusted(), args),
+                Ok(function) => self.run_program(Arc::new(function).assert_well_formed(), args),
                 Err(error) => {
                     let message = format!("cannot run {}: {}", name(script), unloadable(&error));
                     self.usage_error(&message)
@@ -525,7 +525,7 @@ impl Session<'_> {
         }
     }
 
-    fn run_program(mut self, program: TrustedProgram, args: Vec<String>) -> Exit {
+    fn run_program(mut self, program: WellFormedProgram, args: Vec<String>) -> Exit {
         if self.no_args && !args.is_empty() {
             return self.usage_error("`--no-args` takes no arguments for the script");
         }
@@ -543,7 +543,7 @@ impl Session<'_> {
 
     /// The program `source` compiles to, with `args` in scope unless
     /// `--no-args` says otherwise, or the exit for its diagnostics.
-    fn compile(&mut self, filename: &str, source: &str) -> Result<TrustedProgram, Exit> {
+    fn compile(&mut self, filename: &str, source: &str) -> Result<WellFormedProgram, Exit> {
         let scope: &[&str] = if self.no_args { &[] } else { &[ARGS] };
         match compile_in_scope(filename, source, self.options, scope) {
             Ok(output) => {
@@ -651,7 +651,7 @@ fn name(script: &Script) -> String {
 }
 
 /// `program`, ready to run with `args` as its arguments.
-fn close(program: TrustedProgram, args: Vec<String>) -> Arc<frostlang::Closure> {
+fn close(program: WellFormedProgram, args: Vec<String>) -> Arc<frostlang::Closure> {
     let args: Value = args.into_iter().map(Value::from).collect();
     program
         .close(BTreeMap::from([(ARGS.to_string(), args)]))

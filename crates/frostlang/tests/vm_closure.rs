@@ -62,7 +62,7 @@ fn close_binds_capture_value() {
     // fn -> <captured x>
     let f = compiled(vec![Pop, LoadLocal(0)], Arity::Exact(0), 1, &["x"]);
     let closure = f
-        .assert_trusted()
+        .assert_well_formed()
         .close(capmap(vec![("x", Value::Int(42))]))
         .unwrap();
     assert_eq!(run(Vm::factory().build(closure)).tail(), &Value::Int(42));
@@ -73,7 +73,7 @@ fn close_ignores_extra_map_entries() {
     // The map may be a superset; unused entries are ignored.
     let f = compiled(vec![Pop, LoadLocal(0)], Arity::Exact(0), 1, &["x"]);
     let closure = f
-        .assert_trusted()
+        .assert_well_formed()
         .close(capmap(vec![
             ("x", Value::Int(1)),
             ("unused", Value::Int(2)),
@@ -86,7 +86,7 @@ fn close_ignores_extra_map_entries() {
 #[test]
 fn close_missing_capture_is_error() {
     let f = compiled(vec![Pop, LoadLocal(0)], Arity::Exact(0), 1, &["x"]);
-    let err = f.assert_trusted().close(BTreeMap::new()).unwrap_err();
+    let err = f.assert_well_formed().close(BTreeMap::new()).unwrap_err();
     assert_eq!(
         err,
         MissingCaptures {
@@ -108,7 +108,7 @@ fn close_reports_every_missing_capture_in_slot_order() {
         &["z", "x", "y"],
     );
     let err = f
-        .assert_trusted()
+        .assert_well_formed()
         .close(capmap(vec![("x", Value::Int(1))]))
         .unwrap_err();
     assert_eq!(
@@ -132,7 +132,7 @@ fn close_seats_each_capture_in_its_own_slot() {
         &["b", "a"],
     );
     let closure = f
-        .assert_trusted()
+        .assert_well_formed()
         .close(capmap(vec![("b", Value::Int(100)), ("a", Value::Int(1))]))
         .unwrap();
     assert_eq!(run(Vm::factory().build(closure)).tail(), &Value::Int(99));
@@ -145,7 +145,7 @@ fn close_seats_each_capture_in_its_own_slot() {
 #[test]
 fn into_closure_for_no_captures() {
     let f = compiled(vec![Pop, PushInt(7)], Arity::Exact(0), 0, &[]);
-    let closure = f.assert_trusted().into_closure().unwrap();
+    let closure = f.assert_well_formed().into_closure().unwrap();
     assert_eq!(run(Vm::factory().build(closure)).tail(), &Value::Int(7));
 }
 
@@ -153,7 +153,7 @@ fn into_closure_for_no_captures() {
 fn into_closure_errors_when_host_capture_needed() {
     // into_closure is `close` with an empty map, so a required host capture is missing.
     let f = compiled(vec![Pop, LoadLocal(0)], Arity::Exact(0), 1, &["x"]);
-    let err = f.assert_trusted().into_closure().unwrap_err();
+    let err = f.assert_well_formed().into_closure().unwrap_err();
     assert_eq!(
         err,
         MissingCaptures {
@@ -180,20 +180,20 @@ fn capture_names_empty_when_none() {
 }
 
 #[test]
-fn a_trusted_program_lists_only_its_captures() {
-    let program = compiled(vec![Pop], Arity::Exact(0), 2, &["a", "b", "c"]).assert_trusted();
+fn a_well_formed_program_lists_only_its_captures() {
+    let program = compiled(vec![Pop], Arity::Exact(0), 2, &["a", "b", "c"]).assert_well_formed();
     assert_eq!(program.capture_names().collect::<Vec<_>>(), ["a", "b"]);
 }
 
 #[test]
-fn a_trusted_program_lists_the_names_close_requires() {
+fn a_well_formed_program_lists_the_names_close_requires() {
     // Closing with exactly the listed names succeeds; leaving any out fails.
     let names = ["a", "b"];
     let all: BTreeMap<String, Value> = names
         .iter()
         .map(|name| (name.to_string(), Value::Null))
         .collect();
-    let program = || compiled(vec![Pop], Arity::Exact(0), 2, &names).assert_trusted();
+    let program = || compiled(vec![Pop], Arity::Exact(0), 2, &names).assert_well_formed();
     let listed: Vec<String> = program().capture_names().map(str::to_string).collect();
     assert_eq!(listed, names);
     assert!(program().close(all).is_ok());
@@ -204,8 +204,8 @@ fn a_trusted_program_lists_the_names_close_requires() {
 }
 
 #[test]
-fn a_trusted_program_without_captures_lists_none() {
-    let program = compiled(vec![Pop], Arity::Exact(0), 0, &[]).assert_trusted();
+fn a_well_formed_program_without_captures_lists_none() {
+    let program = compiled(vec![Pop], Arity::Exact(0), 0, &[]).assert_well_formed();
     assert_eq!(program.capture_names().count(), 0);
 }
 
@@ -232,7 +232,7 @@ fn run_with_args_passes_arguments() {
         &["a", "b"],
     );
     let result = Vm::factory()
-        .build(f.assert_trusted().into_closure().unwrap())
+        .build(f.assert_well_formed().into_closure().unwrap())
         .run_with_args([Value::Int(10), Value::Int(20)])
         .unwrap();
     assert_eq!(result.tail(), &Value::Int(-10));
@@ -250,7 +250,7 @@ fn run_with_args_alongside_captures() {
         &["k", "a"],
     );
     let closure = f
-        .assert_trusted()
+        .assert_well_formed()
         .close(capmap(vec![("k", Value::Int(100))]))
         .unwrap();
     let result = Vm::factory()
@@ -270,7 +270,7 @@ fn run_with_args_variadic_collects_rest() {
         &["args"],
     );
     let result = Vm::factory()
-        .build(f.assert_trusted().into_closure().unwrap())
+        .build(f.assert_well_formed().into_closure().unwrap())
         .run_with_args([Value::Int(1), Value::Int(2), Value::Int(3)])
         .unwrap();
     assert_eq!(
@@ -299,7 +299,7 @@ fn run_with_args_too_few_is_arity_error() {
         &["a", "b"],
     );
     let err = Vm::factory()
-        .build(f.assert_trusted().into_closure().unwrap())
+        .build(f.assert_well_formed().into_closure().unwrap())
         .run_with_args([Value::Int(10)])
         .unwrap_err()
         .into_error();
@@ -326,7 +326,7 @@ fn run_with_args_too_many_is_arity_error() {
         &["a"],
     );
     let err = Vm::factory()
-        .build(f.assert_trusted().into_closure().unwrap())
+        .build(f.assert_well_formed().into_closure().unwrap())
         .run_with_args([Value::Int(1), Value::Int(2)])
         .unwrap_err()
         .into_error();
@@ -352,7 +352,7 @@ fn run_with_args_variadic_too_few_is_arity_error() {
         &["a", "b", "rest"],
     );
     let err = Vm::factory()
-        .build(f.assert_trusted().into_closure().unwrap())
+        .build(f.assert_well_formed().into_closure().unwrap())
         .run_with_args([Value::Int(1)])
         .unwrap_err()
         .into_error();
@@ -378,7 +378,7 @@ fn run_no_args_on_parameterized_is_arity_error() {
         &["a"],
     );
     let err = Vm::factory()
-        .build(f.assert_trusted().into_closure().unwrap())
+        .build(f.assert_well_formed().into_closure().unwrap())
         .run()
         .unwrap_err()
         .into_error();

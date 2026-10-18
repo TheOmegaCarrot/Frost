@@ -45,7 +45,7 @@ fn func(name: &str, code: Vec<Bytecode>, arity: Arity, names: &[&str]) -> Value 
         num_captures: 0,
         arity,
     });
-    Value::Closure(f.assert_trusted().into_closure().unwrap())
+    Value::Closure(f.assert_well_formed().into_closure().unwrap())
 }
 
 /// A native function `Value`.
@@ -103,7 +103,7 @@ fn run_main(caps: Vec<(&str, Value)>, body: Vec<Bytecode>) -> Result<Value, Fros
     });
     let map: BTreeMap<String, Value> = caps.into_iter().map(|(n, v)| (n.to_string(), v)).collect();
     Vm::factory()
-        .build(main.assert_trusted().close(map).unwrap())
+        .build(main.assert_well_formed().close(map).unwrap())
         .run()
         .map_err(frostlang::RunError::into_error)
         .map(|r| r.tail().clone())

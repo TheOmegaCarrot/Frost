@@ -123,7 +123,7 @@ pub(crate) fn run_fn(program: Arc<CompiledFunction>) -> ProgramResult {
         ..(*program).clone()
     };
     let closure = Arc::new(top)
-        .assert_trusted()
+        .assert_well_formed()
         .into_closure()
         .expect("test top-level captures nothing");
     Vm::factory().build(closure).run().unwrap()
@@ -147,7 +147,7 @@ pub(crate) fn closure(code: Vec<Bytecode>, names: Vec<NameEntry>) -> Arc<Closure
         num_captures: 0,
         arity: Arity::Exact(0),
     })
-    .assert_trusted()
+    .assert_well_formed()
     .into_closure()
     .expect("no captures")
 }

@@ -6,18 +6,18 @@
 //! ```
 //! # use std::sync::Arc;
 //! # use frostlang::image;
-//! # fn demo(program: frostlang::TrustedProgram) -> Result<(), image::ImageError> {
+//! # fn demo(program: frostlang::WellFormedProgram) -> Result<(), image::ImageError> {
 //! let bytes = image::encode(&program);
 //!
 //! // Later, perhaps in another process:
 //! let function = image::decode(&bytes)?;
-//! // Trust it only if you trust where the bytes came from.
-//! let program = Arc::new(function).assert_trusted();
+//! // Assert it well-formed only if you control where the bytes came from.
+//! let program = Arc::new(function).assert_well_formed();
 //! # Ok(())
 //! # }
 //! ```
 
-use crate::TrustedProgram;
+use crate::WellFormedProgram;
 use crate::bytecode::{CompiledFunction, FormatVersion};
 use crate::vm::serialize::VERSION;
 
@@ -37,16 +37,16 @@ pub fn is_image(bytes: &[u8]) -> bool {
 ///
 /// If a constant of `program` is a function or Opaque value, or holds one.
 /// The Frost compiler never emits such a constant.
-pub fn encode(program: &TrustedProgram) -> Vec<u8> {
+pub fn encode(program: &WellFormedProgram) -> Vec<u8> {
     postcard::to_extend(&*program.0, MAGIC.to_vec())
         .expect("an image's constants hold no function or Opaque value")
 }
 
 /// The program in `image`.
 ///
-/// The result is untrusted: running it requires
-/// [`assert_trusted`](CompiledFunction::assert_trusted), whose obligation is
-/// yours, so decode only images whose source you trust.
+/// Running the result requires
+/// [`assert_well_formed`](CompiledFunction::assert_well_formed), whose obligation is
+/// yours: assert it only of an image whose source you control.
 pub fn decode(image: &[u8]) -> Result<CompiledFunction, ImageError> {
     let body = image.strip_prefix(MAGIC).ok_or(ImageError::NotAnImage)?;
     // Every image begins with the version that wrote it. Read it first, so a

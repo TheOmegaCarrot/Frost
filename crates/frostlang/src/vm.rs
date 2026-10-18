@@ -13,7 +13,9 @@ pub(crate) mod serialize;
 pub use bytecode::Bytecode;
 pub use cancel::CancelToken;
 pub use disassemble::Disassembly;
-pub use function::{Arity, Closure, CompiledFunction, MissingCaptures, NameEntry, TrustedProgram};
+pub use function::{
+    Arity, Closure, CompiledFunction, MissingCaptures, NameEntry, WellFormedProgram,
+};
 pub use globals::{GLOBAL_NAMES, GLOBAL_PURITY, Purity};
 pub use import::{
     ComponentBuilder, Extension, ExtensionBuilder, ExtensionError, HostComponent,

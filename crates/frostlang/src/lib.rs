@@ -46,7 +46,7 @@ pub use vm::{
     IdleVm, ImportCtx, ImportResolver, Importer, ImporterBuilder, InvalidComponentName,
     InvalidParams, MissingCaptures, ModuleId, NativeCtx, NativeFn, NativeFunction, Param, Params,
     PrintSink, ProgramParts, ProgramResult, RunError, RunErrorKind, Stdlib, StdlibError,
-    StdlibModule, StdoutSink, TrustedProgram, Vm, VmFactory, VmRuntimeConfiguration,
+    StdlibModule, StdoutSink, Vm, VmFactory, VmRuntimeConfiguration, WellFormedProgram,
 };
 
 /// Makes a Frost function from a Rust function.

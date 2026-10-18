@@ -11,7 +11,7 @@ use crate::{FrostFloat, TypeSet};
 ///
 /// An instruction that errors raises a recoverable Frost error.
 /// One that panics has been given malformed bytecode
-/// (see [`CompiledFunction::assert_trusted`](crate::bytecode::CompiledFunction::assert_trusted)).
+/// (see [`CompiledFunction::assert_well_formed`](crate::bytecode::CompiledFunction::assert_well_formed)).
 ///
 /// # Calling convention
 ///

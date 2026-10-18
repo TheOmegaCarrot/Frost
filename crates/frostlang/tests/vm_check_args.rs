@@ -470,7 +470,7 @@ fn invoke(native: Value, args: Vec<Value>) -> Result<Value, FrostError> {
         captures.insert(format!("a{i}"), v);
     }
     Vm::factory()
-        .build(main.assert_trusted().close(captures).unwrap())
+        .build(main.assert_well_formed().close(captures).unwrap())
         .run()
         .map_err(frostlang::RunError::into_error)
         .map(|r| r.tail().clone())

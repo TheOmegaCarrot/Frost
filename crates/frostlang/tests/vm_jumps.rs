@@ -33,7 +33,7 @@ fn tail(code: Vec<Bytecode>) -> Value {
         num_captures: 0,
         arity: Arity::Exact(0),
     });
-    let closure = program.assert_trusted().into_closure().unwrap();
+    let closure = program.assert_well_formed().into_closure().unwrap();
     Vm::factory().build(closure).run().unwrap().tail().clone()
 }
 

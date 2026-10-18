@@ -48,7 +48,7 @@ fn call_native(native: Value, argc: usize) -> Result<ProgramResult, FrostError> 
         arity: Arity::Exact(0),
     });
     let closure = program
-        .assert_trusted()
+        .assert_well_formed()
         .close(BTreeMap::from([("f".to_string(), native)]))
         .unwrap();
     Vm::factory()
@@ -167,7 +167,7 @@ fn between_closure_distinguishes_omitted_from_explicit_null() {
     let probe = omitted_vs_present_probe();
     let run = |args: Vec<Value>| {
         Vm::factory()
-            .build(probe.clone().assert_trusted().into_closure().unwrap())
+            .build(probe.clone().assert_well_formed().into_closure().unwrap())
             .run_with_args(args)
             .unwrap()
             .tail()
@@ -184,7 +184,7 @@ fn between_closure_seating_works_through_call() {
     // argc-push is correct on the re-entrant call path, not only at the top level.
     let probe_val = Value::Closure(
         omitted_vs_present_probe()
-            .assert_trusted()
+            .assert_well_formed()
             .into_closure()
             .unwrap(),
     );
@@ -208,7 +208,7 @@ fn between_closure_seating_works_through_call() {
             arity: Arity::Exact(0),
         });
         let closure = wrapper
-            .assert_trusted()
+            .assert_well_formed()
             .close(BTreeMap::from([("probe".to_string(), probe_val.clone())]))
             .unwrap();
         Vm::factory().build(closure).run().unwrap().tail().clone()

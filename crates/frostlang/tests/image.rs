@@ -1,6 +1,7 @@
 //! Program images: `image::encode` saves a program, `image::decode` loads it
-//! back untrusted, and a load fails, with its reason, for bytes that are not an
-//! image, an image another runtime version wrote, or a damaged image.
+//! back still to be asserted well-formed, and a load fails, with its reason, for
+//! bytes that are not an image, an image another runtime version wrote, or a
+//! damaged image.
 //!
 //! The serialized form of a `CompiledFunction` itself is covered by
 //! `serialize.rs`; this covers the image around it.
@@ -11,17 +12,17 @@ use std::sync::Arc;
 use frostlang::bytecode::{CompiledFunction, FormatVersion};
 use frostlang::compile::{CompilerOptions, compile_in_scope};
 use frostlang::image::{self, ImageError};
-use frostlang::{Arity, TrustedProgram, Value, Vm, frost_closure};
+use frostlang::{Arity, Value, Vm, WellFormedProgram, frost_closure};
 
 /// `source`, compiled with `scope` as its enclosing scope.
-fn compile(source: &str, scope: &[&str]) -> TrustedProgram {
+fn compile(source: &str, scope: &[&str]) -> WellFormedProgram {
     compile_in_scope("image.frst", source, CompilerOptions::new(), scope)
         .unwrap_or_else(|errors| panic!("{source:?} compiles:\n{}", errors.render_plain()))
         .code
 }
 
 /// The tail value of running `program` with `captures`.
-fn run(program: TrustedProgram, captures: &[(&str, Value)]) -> Value {
+fn run(program: WellFormedProgram, captures: &[(&str, Value)]) -> Value {
     let captures: BTreeMap<String, Value> = captures
         .iter()
         .map(|(name, value)| (name.to_string(), value.clone()))
@@ -36,9 +37,9 @@ fn run(program: TrustedProgram, captures: &[(&str, Value)]) -> Value {
 }
 
 /// `program` saved as an image and loaded back.
-fn round_trip(program: &TrustedProgram) -> TrustedProgram {
+fn round_trip(program: &WellFormedProgram) -> WellFormedProgram {
     let bytes = image::encode(program);
-    Arc::new(image::decode(&bytes).expect("an image just encoded decodes")).assert_trusted()
+    Arc::new(image::decode(&bytes).expect("an image just encoded decodes")).assert_well_formed()
 }
 
 /// A program exercising what an image must carry: constants of every kind,
@@ -169,6 +170,6 @@ fn a_program_with_a_function_constant_cannot_be_saved() {
         num_captures: 0,
         arity: Arity::Exact(0),
     })
-    .assert_trusted();
+    .assert_well_formed();
     image::encode(&program);
 }

@@ -98,7 +98,7 @@ fn a_closure_value() -> Value {
         num_captures: 0,
         arity: Arity::Exact(0),
     });
-    Value::Closure(f.assert_trusted().into_closure().unwrap())
+    Value::Closure(f.assert_well_formed().into_closure().unwrap())
 }
 
 #[test]

@@ -92,7 +92,7 @@ fn calls_then_probes(calls: usize, probe: Value) -> Arc<Closure> {
         num_captures: 1,
         arity: Arity::Exact(0),
     })
-    .assert_trusted()
+    .assert_well_formed()
     .close(BTreeMap::from([("probe".to_string(), probe)]))
     .expect("`probe` is supplied")
 }

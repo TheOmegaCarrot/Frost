@@ -58,7 +58,7 @@ fn run(
     let captures: BTreeMap<String, Value> =
         caps.into_iter().map(|(n, v)| (n.to_string(), v)).collect();
     Vm::factory()
-        .build(main.assert_trusted().close(captures).unwrap())
+        .build(main.assert_well_formed().close(captures).unwrap())
         .run()
         .map_err(frostlang::RunError::into_error)
         .map(|r| r.tail().clone())

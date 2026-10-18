@@ -235,7 +235,7 @@ fn a_closure() -> Arc<Closure> {
         num_captures: 0,
         arity: Arity::Exact(0),
     });
-    f.assert_trusted().into_closure().unwrap()
+    f.assert_well_formed().into_closure().unwrap()
 }
 
 #[test]

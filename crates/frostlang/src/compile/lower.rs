@@ -355,7 +355,7 @@ pub fn compile_program(
 
 /// Compile a top-level nested within an enclosing scope: a free name found in
 /// `outer_scope` becomes a capture, and its value is supplied at
-/// [`close`](crate::TrustedProgram::close).
+/// [`close`](crate::WellFormedProgram::close).
 /// Use this to run a fragment against an accumulated environment,
 /// passing that environment's names, in any order, as `outer_scope`.
 /// With an empty `outer_scope`, this is exactly [`compile_program`].
@@ -415,7 +415,7 @@ pub fn compile_in_scope(
     lints.sort_by_key(Diagnostic::offset);
 
     Ok(CompilerOutput {
-        code: lowered.assemble().assert_trusted(),
+        code: lowered.assemble().assert_well_formed(),
         lints: Diagnostics::of(lints),
     })
 }

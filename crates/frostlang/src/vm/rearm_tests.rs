@@ -27,7 +27,7 @@ fn program(code: Vec<Bytecode>) -> Arc<Closure> {
         num_captures: 0,
         arity: Arity::Exact(0),
     })
-    .assert_trusted()
+    .assert_well_formed()
     .into_closure()
     .expect("captures nothing")
 }

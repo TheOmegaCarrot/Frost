@@ -113,7 +113,7 @@ fn passed_unshared(load: Bytecode) -> Value {
         arity: Arity::Exact(0),
     });
     let closure = program
-        .assert_trusted()
+        .assert_well_formed()
         .close(BTreeMap::from([("probe".to_string(), probe)]))
         .unwrap();
     Vm::factory().build(closure).run().unwrap().tail().clone()

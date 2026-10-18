@@ -50,7 +50,7 @@ pub(super) fn global(name: &str) -> Value {
         .get(name)
         .unwrap_or_else(|| panic!("there is no generated function `{name}`"));
     let closure = Arc::clone(function)
-        .assert_trusted()
+        .assert_well_formed()
         .close(BTreeMap::new())
         .expect("a generated function has no captures");
     Value::Closure(closure)

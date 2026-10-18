@@ -135,7 +135,7 @@ fn one_param_closure(slot: NameEntry, body: Vec<Bytecode>) -> Arc<Closure> {
         .chain(body)
         .collect();
     func(code, Arity::Exact(1), vec![slot], vec![])
-        .assert_trusted()
+        .assert_well_formed()
         .into_closure()
         .expect("no captures")
 }

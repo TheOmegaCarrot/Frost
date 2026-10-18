@@ -4,8 +4,8 @@
 //! stamps the runtime's crate version on save, and whose `Deserialize` rejects an image
 //! built by a different version. It is the first field, in the *only* `Deserialize` path, so
 //! a stale or mismatched image fails to load: even a bare `from_bytes::<CompiledFunction>`
-//! gets the check, with no bypass. (Deserialization yields an *untrusted* `CompiledFunction`
-//! regardless; it still earns trust via `assert_trusted` or a future verifier.)
+//! gets the check, with no bypass. (A version match does not make the result runnable: that
+//! still takes `assert_well_formed` or a future verifier.)
 //!
 //! The constant pool serializes through [`const_pool`] as tagged [`ConstValue`]s,
 //! so it round-trips through any format, including non-self-describing binary ones.

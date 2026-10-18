@@ -59,7 +59,7 @@ fn a_sink_receives_each_print_in_order() {
         .chain(print_const(1))
         .collect();
     let closure = program(vec![Value::from("hello"), Value::Int(5)], code)
-        .assert_trusted()
+        .assert_well_formed()
         .into_closure()
         .unwrap();
     let config = VmRuntimeConfiguration::default().with_print_sink(sink);
@@ -82,7 +82,7 @@ impl ImportResolver for PrintingModule {
             vec![Value::from("from the module")],
             print_const(0).to_vec(),
         )
-        .assert_trusted()
+        .assert_well_formed()
         .into_closure()
         .expect("no captures");
         ctx.child_factory()
@@ -97,7 +97,7 @@ impl ImportResolver for PrintingModule {
 fn a_module_prints_to_the_importing_vms_sink() {
     let (sink, printed) = capturing_sink();
     let closure = program(vec![Value::from("module")], vec![LoadConst(0), Import])
-        .assert_trusted()
+        .assert_well_formed()
         .into_closure()
         .unwrap();
     let config = VmRuntimeConfiguration::default().with_print_sink(sink);
@@ -126,7 +126,7 @@ fn a_type_implementing_the_trait_is_a_sink() {
     let counter = Arc::new(Counter::default());
     let config = VmRuntimeConfiguration::default().with_print_sink(counter.clone());
     let closure = program(vec![Value::Null], print_const(0).to_vec())
-        .assert_trusted()
+        .assert_well_formed()
         .into_closure()
         .unwrap();
     Vm::factory()

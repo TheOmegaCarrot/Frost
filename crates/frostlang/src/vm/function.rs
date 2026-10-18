@@ -1,5 +1,5 @@
-//! Compiled functions and the trust/closing path that makes them runnable:
-//! [`CompiledFunction`] -> [`TrustedProgram`] -> [`Closure`].
+//! Compiled functions and the assertion and closing that make them runnable:
+//! [`CompiledFunction`] -> [`WellFormedProgram`] -> [`Closure`].
 
 use std::{collections::BTreeMap, sync::Arc};
 
@@ -55,35 +55,37 @@ impl CompiledFunction {
             .map(|entry| entry.name.as_str())
     }
 
-    /// Vouch that this compiled-function tree is well-formed, yielding a runnable [`TrustedProgram`].
+    /// Asserts that this compiled-function tree is well-formed, yielding a runnable
+    /// [`WellFormedProgram`].
     ///
-    /// The VM only runs trusted bytecode: [`Closure`] (hence [`Vm`](super::Vm)) construction goes
-    /// through [`TrustedProgram`], so this is the gate.
+    /// Every [`Closure`], and so every [`Vm`](super::Vm), is built from a
+    /// [`WellFormedProgram`], so this is the gate to running bytecode.
     /// The Frost compiler's output is always well-formed;
     /// call this on deserialized or cached bytecode only when you control its source.
     ///
     /// This is an assertion, not a check: running malformed bytecode *panics*.
     /// It is never memory-unsafe, so this is a safe function, but the obligation is real.
     /// A future verifier will offer a *checked* path; prefer it for bytecode you did not author.
-    pub fn assert_trusted(self: Arc<Self>) -> TrustedProgram {
-        TrustedProgram(self)
+    pub fn assert_well_formed(self: Arc<Self>) -> WellFormedProgram {
+        WellFormedProgram(self)
     }
 }
 
 /// A [`CompiledFunction`] tree asserted (or, in future, verified) well-formed, and therefore
-/// runnable. Mint one via [`CompiledFunction::assert_trusted`]; bind its captures with
+/// runnable. Mint one via [`CompiledFunction::assert_well_formed`]; bind its captures with
 /// [`close`](Self::close) to obtain a [`Closure`].
 ///
-/// "Trusted" means the bytecode upholds the Vm's internal invariants
-/// (never popping an empty stack, never jumping out-of-bounds),
-/// *not* that the program is benign, correct, or even terminates.
-/// A malicious or runaway script is still "trusted" in this sense.
-/// What such a script may reach is governed by its [`Importer`](super::Importer),
+/// Well-formed means only that the bytecode upholds the Vm's internal invariants
+/// (never popping an empty stack, never jumping out of bounds),
+/// so running it reaches none of the Vm's panics.
+/// It says nothing of what the program does: every script that compiles is well-formed,
+/// whatever its intent, including one that is malicious, never terminates, or exhausts memory.
+/// What a script may reach is governed by its [`Importer`](super::Importer),
 /// and how much it may run by [`VmRuntimeConfiguration`](super::VmRuntimeConfiguration).
 #[derive(Debug, Clone)]
-pub struct TrustedProgram(pub(crate) Arc<CompiledFunction>);
+pub struct WellFormedProgram(pub(crate) Arc<CompiledFunction>);
 
-impl TrustedProgram {
+impl WellFormedProgram {
     /// The names of the captures this program expects: the names to include in
     /// the map passed to [`close`](Self::close).
     pub fn capture_names(&self) -> impl Iterator<Item = &str> {
@@ -123,7 +125,7 @@ impl TrustedProgram {
     }
 }
 
-/// One or more required captures were absent from the map passed to [`TrustedProgram::close`];
+/// One or more required captures were absent from the map passed to [`WellFormedProgram::close`];
 /// reports every missing name, not just the first.
 #[derive(Debug, Clone, PartialEq, Eq, thiserror::Error)]
 #[error("missing capture(s): {}", .names.join(", "))]
@@ -159,7 +161,7 @@ pub enum Arity {
 }
 
 /// A runnable function: a [`CompiledFunction`] with its captures bound.
-/// Obtain one from [`TrustedProgram::close`] and run it on a Vm built by [`VmFactory::build`](crate::VmFactory::build).
+/// Obtain one from [`WellFormedProgram::close`] and run it on a Vm built by [`VmFactory::build`](crate::VmFactory::build).
 #[derive(Debug)]
 pub struct Closure {
     pub(super) function: Arc<CompiledFunction>,

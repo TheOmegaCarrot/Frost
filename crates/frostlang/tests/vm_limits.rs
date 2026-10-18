@@ -66,7 +66,7 @@ fn run_keeping_vm(
         caps.into_iter().map(|(n, v)| (n.to_string(), v)).collect();
     Vm::factory()
         .configuration(config)
-        .build(main.assert_trusted().close(captures).unwrap())
+        .build(main.assert_well_formed().close(captures).unwrap())
         .run()
 }
 
@@ -324,7 +324,7 @@ fn a_recycled_vm_forgets_a_previous_abort() {
         num_captures: 0,
         arity: Arity::Exact(0),
     })
-    .assert_trusted()
+    .assert_well_formed()
     .into_closure()
     .unwrap();
     let kind = aborted

@@ -20,7 +20,7 @@ fn a_function() -> Value {
         SlotPlan::empty(),
         false,
     );
-    Value::Closure(function.assert_trusted().into_closure().unwrap())
+    Value::Closure(function.assert_well_formed().into_closure().unwrap())
 }
 
 fn options(constant_fold: bool) -> CompilerOptions {
