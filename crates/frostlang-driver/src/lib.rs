@@ -41,6 +41,7 @@ use std::process::{ExitCode, Termination};
 use std::sync::{Arc, Mutex, MutexGuard, PoisonError};
 
 use clap::FromArgMatches;
+use frostlang::bytecode;
 use frostlang::compile::{
     CompilerOptions, Diagnostic, Diagnostics, OptimizationOptions, ParseLimits, compile_in_scope,
 };
@@ -405,7 +406,7 @@ impl Session<'_> {
         if image::is_image(&contents) {
             return match image::decode(&contents) {
                 // The user chose to run this image; see `Command::Run`.
-                Ok(function) => self.run_program(Arc::new(function).assert_well_formed(), args),
+                Ok(program) => self.run_program(program.assert_well_formed(), args),
                 Err(error) => {
                     let message = format!("cannot run {}: {}", name(script), unloadable(&error));
                     self.usage_error(&message)
@@ -450,7 +451,7 @@ impl Session<'_> {
         };
         let function = if image::is_image(&contents) {
             match image::decode(&contents) {
-                Ok(function) => Arc::new(function),
+                Ok(program) => bytecode::program_function(&program).clone(),
                 Err(error) => {
                     let message = format!("cannot list {}: {}", name(script), unloadable(&error));
                     return self.usage_error(&message);
@@ -464,7 +465,7 @@ impl Session<'_> {
                 Ok(program) => program,
                 Err(exit) => return exit,
             };
-            close(program, Vec::new()).inner_fn_arc()
+            bytecode::closure_function(&close(program, Vec::new())).clone()
         };
         let color = self.colors(self.terminals.stdout);
         match write!(output, "{}", function.disassemble().with_color(color)) {

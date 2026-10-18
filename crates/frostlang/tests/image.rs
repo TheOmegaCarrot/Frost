@@ -39,7 +39,9 @@ fn run(program: WellFormedProgram, captures: &[(&str, Value)]) -> Value {
 /// `program` saved as an image and loaded back.
 fn round_trip(program: &WellFormedProgram) -> WellFormedProgram {
     let bytes = image::encode(program);
-    Arc::new(image::decode(&bytes).expect("an image just encoded decodes")).assert_well_formed()
+    image::decode(&bytes)
+        .expect("an image just encoded decodes")
+        .assert_well_formed()
 }
 
 /// A program exercising what an image must carry: constants of every kind,

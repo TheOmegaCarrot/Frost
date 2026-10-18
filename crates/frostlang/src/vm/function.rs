@@ -1,5 +1,5 @@
 //! Compiled functions and the assertion and closing that make them runnable:
-//! [`CompiledFunction`] -> [`WellFormedProgram`] -> [`Closure`].
+//! [`CompiledFunction`] (or [`CompiledProgram`]) -> [`WellFormedProgram`] -> [`Closure`].
 
 use std::{collections::BTreeMap, sync::Arc};
 
@@ -18,8 +18,8 @@ pub struct CompiledFunction {
     pub version: serialize::FormatVersion,
     /// The function's name, as reported in errors and backtraces.
     pub name: String,
-    /// The base name of the file the function was compiled from, such as `util.frst`,
-    /// as reported in backtraces. `None` when there is no such file.
+    /// The base name of the file the function was compiled from,
+    /// as [`BacktraceFrame::origin`](crate::BacktraceFrame::origin) reports it.
     // An `Arc` because every function from one compilation shares it.
     pub origin: Option<Arc<str>>,
     /// The function body.
@@ -56,7 +56,20 @@ impl CompiledFunction {
     }
 
     /// Asserts that this compiled-function tree is well-formed, yielding a runnable
-    /// [`WellFormedProgram`].
+    /// [`WellFormedProgram`], under the obligation of
+    /// [`CompiledProgram::assert_well_formed`].
+    pub fn assert_well_formed(self: Arc<Self>) -> WellFormedProgram {
+        WellFormedProgram(self)
+    }
+}
+
+/// A compiled program not yet asserted well-formed, such as one loaded from a program image.
+/// [`assert_well_formed`](Self::assert_well_formed) makes it runnable.
+#[derive(Debug, Clone)]
+pub struct CompiledProgram(Arc<CompiledFunction>);
+
+impl CompiledProgram {
+    /// Asserts that this program is well-formed, yielding a runnable [`WellFormedProgram`].
     ///
     /// Every [`Closure`], and so every [`Vm`](super::Vm), is built from a
     /// [`WellFormedProgram`], so this is the gate to running bytecode.
@@ -66,13 +79,28 @@ impl CompiledFunction {
     /// This is an assertion, not a check: running malformed bytecode *panics*.
     /// It is never memory-unsafe, so this is a safe function, but the obligation is real.
     /// A future verifier will offer a *checked* path; prefer it for bytecode you did not author.
-    pub fn assert_well_formed(self: Arc<Self>) -> WellFormedProgram {
-        WellFormedProgram(self)
+    pub fn assert_well_formed(self) -> WellFormedProgram {
+        self.0.assert_well_formed()
     }
 }
 
-/// A [`CompiledFunction`] tree asserted (or, in future, verified) well-formed, and therefore
-/// runnable. Mint one via [`CompiledFunction::assert_well_formed`]; bind its captures with
+/// The [`CompiledProgram`] whose root is `function`.
+pub fn program_from_function(function: Arc<CompiledFunction>) -> CompiledProgram {
+    CompiledProgram(function)
+}
+
+/// The [`CompiledFunction`] at the root of `program`.
+pub fn program_function(program: &CompiledProgram) -> &Arc<CompiledFunction> {
+    &program.0
+}
+
+/// The [`CompiledFunction`] that `closure` runs.
+pub fn closure_function(closure: &Closure) -> &Arc<CompiledFunction> {
+    &closure.function
+}
+
+/// A compiled program asserted (or, in future, verified) well-formed, and therefore
+/// runnable. Mint one via [`CompiledProgram::assert_well_formed`]; bind its captures with
 /// [`close`](Self::close) to obtain a [`Closure`].
 ///
 /// Well-formed means only that the bytecode upholds the Vm's internal invariants
@@ -160,7 +188,7 @@ pub enum Arity {
     AtLeast(usize),
 }
 
-/// A runnable function: a [`CompiledFunction`] with its captures bound.
+/// A runnable function: compiled code with its captures bound.
 /// Obtain one from [`WellFormedProgram::close`] and run it on a Vm built by [`VmFactory::build`](crate::VmFactory::build).
 #[derive(Debug)]
 pub struct Closure {
@@ -173,17 +201,5 @@ pub struct Closure {
 impl Drop for Closure {
     fn drop(&mut self) {
         free::free(std::mem::take(&mut self.captures), Vec::into_iter);
-    }
-}
-
-impl Closure {
-    /// The [`CompiledFunction`] this closure runs.
-    pub fn inner_fn(&self) -> &CompiledFunction {
-        &self.function
-    }
-
-    /// Like [`inner_fn`](Self::inner_fn), but returns a shared handle.
-    pub fn inner_fn_arc(&self) -> Arc<CompiledFunction> {
-        self.function.clone()
     }
 }

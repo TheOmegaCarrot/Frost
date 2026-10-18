@@ -14,7 +14,8 @@ pub use bytecode::Bytecode;
 pub use cancel::CancelToken;
 pub use disassemble::Disassembly;
 pub use function::{
-    Arity, Closure, CompiledFunction, MissingCaptures, NameEntry, WellFormedProgram,
+    Arity, Closure, CompiledFunction, CompiledProgram, MissingCaptures, NameEntry,
+    WellFormedProgram, closure_function, program_from_function, program_function,
 };
 pub use globals::{GLOBAL_NAMES, GLOBAL_PURITY, Purity};
 pub use import::{

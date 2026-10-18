@@ -40,8 +40,8 @@ impl BacktraceFrame {
         &self.name
     }
 
-    /// The file the function was compiled from, by base name;
-    /// see [`CompiledFunction::origin`](crate::bytecode::CompiledFunction::origin).
+    /// The base name of the file the function was compiled from, such as `util.frst`.
+    /// `None` when there is no such file.
     pub fn origin(&self) -> Option<&str> {
         self.origin.as_deref()
     }

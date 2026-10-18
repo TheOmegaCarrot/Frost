@@ -1,19 +1,18 @@
 //! Every function a compilation produces carries the base name of the file it
 //! was compiled from as its `origin`.
 
-use frostlang::bytecode::CompiledFunction;
+use frostlang::bytecode::{CompiledFunction, closure_function};
 use frostlang::compile::{CompilerOptions, OptimizationOptions, compile_program};
 
 /// The top-level function `source` compiles to as `filename`.
 fn compiled(filename: &str, source: &str) -> CompiledFunction {
     let options = CompilerOptions::new().with_optimization(OptimizationOptions::NONE);
-    compile_program(filename, source, options)
+    let closure = compile_program(filename, source, options)
         .unwrap_or_else(|errors| panic!("compiles:\n{}", errors.render_plain()))
         .code
         .into_closure()
-        .expect("captures nothing")
-        .inner_fn()
-        .clone()
+        .expect("captures nothing");
+    CompiledFunction::clone(closure_function(&closure))
 }
 
 #[test]

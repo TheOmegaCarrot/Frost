@@ -41,12 +41,13 @@ pub use core::{
 };
 
 pub use vm::{
-    AbortReason, Arity, CancelToken, ChildVmFactory, Closure, ComponentBuilder, Extension,
-    ExtensionBuilder, ExtensionError, HostComponent, HostComponentBuilder, HostComponentError,
-    IdleVm, ImportCtx, ImportResolver, Importer, ImporterBuilder, InvalidComponentName,
-    InvalidParams, MissingCaptures, ModuleId, NativeCtx, NativeFn, NativeFunction, Param, Params,
-    PrintSink, ProgramParts, ProgramResult, RunError, RunErrorKind, Stdlib, StdlibError,
-    StdlibModule, StdoutSink, Vm, VmFactory, VmRuntimeConfiguration, WellFormedProgram,
+    AbortReason, Arity, CancelToken, ChildVmFactory, Closure, CompiledProgram, ComponentBuilder,
+    Extension, ExtensionBuilder, ExtensionError, HostComponent, HostComponentBuilder,
+    HostComponentError, IdleVm, ImportCtx, ImportResolver, Importer, ImporterBuilder,
+    InvalidComponentName, InvalidParams, MissingCaptures, ModuleId, NativeCtx, NativeFn,
+    NativeFunction, Param, Params, PrintSink, ProgramParts, ProgramResult, RunError, RunErrorKind,
+    Stdlib, StdlibError, StdlibModule, StdoutSink, Vm, VmFactory, VmRuntimeConfiguration,
+    WellFormedProgram,
 };
 
 /// Makes a Frost function from a Rust function.
@@ -373,12 +374,11 @@ pub mod __private {
 
 /// The bytecode the [`Vm`] runs, as the compiler produces it.
 ///
-/// This module serves tools that work with bytecode directly, such as
-/// disassemblers or a compiler for another language. It is exempt from semver:
-/// any release may change it. A host running Frost programs needs nothing here.
+/// It is exempt from semver: any release may change it.
+/// A host running Frost programs needs nothing here.
 pub mod bytecode {
     pub use crate::vm::{
         Bytecode, CompiledFunction, Disassembly, FormatVersion, GLOBAL_NAMES, GLOBAL_PURITY,
-        NameEntry, Purity,
+        NameEntry, Purity, closure_function, program_from_function, program_function,
     };
 }

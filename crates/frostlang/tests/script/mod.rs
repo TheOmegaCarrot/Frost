@@ -24,7 +24,7 @@ use std::collections::BTreeMap;
 use std::num::NonZeroU64;
 use std::sync::{Arc, Mutex};
 
-use frostlang::bytecode::{Bytecode, CompiledFunction};
+use frostlang::bytecode::{Bytecode, CompiledFunction, closure_function};
 use frostlang::compile::{
     CompilerOptions, CompilerOutput, Diagnostics, Optimization, OptimizationOptions,
     compile_in_scope,
@@ -275,7 +275,7 @@ impl Script {
             .code
             .close(self.captures.clone())
             .expect("every capture the script uses is supplied");
-        Arc::new(closure.inner_fn().clone())
+        Arc::new(CompiledFunction::clone(closure_function(&closure)))
     }
 
     fn compile(&self, optimization: OptimizationOptions) -> Result<CompilerOutput, Diagnostics> {

@@ -17,7 +17,7 @@ use std::collections::{BTreeMap, BTreeSet};
 use std::sync::Arc;
 use std::{env, fs};
 
-use frostlang::bytecode::{CompiledFunction, GLOBAL_NAMES};
+use frostlang::bytecode::{CompiledFunction, GLOBAL_NAMES, closure_function};
 use frostlang::compile::{CompilerOptions, Optimization, OptimizationOptions, compile_in_scope};
 use frostlang::{MapKey, Value, from_value, to_value};
 
@@ -71,8 +71,7 @@ fn generate(source: &str) -> String {
         .code
         .close(BTreeMap::new())
         .expect("the source's top level captures nothing");
-    let functions: Vec<CompiledFunction> = program
-        .inner_fn()
+    let functions: Vec<CompiledFunction> = closure_function(&program)
         .child_fns
         .iter()
         .map(|function| without_origin(function))

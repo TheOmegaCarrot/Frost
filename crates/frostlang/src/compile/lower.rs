@@ -343,8 +343,8 @@ impl<'a> FunctionBuilder<'a> {
 /// Compile a standalone script: a top-level with no enclosing scope, so every
 /// free name must resolve to a global or is an error.
 ///
-/// `filename` names the script in diagnostics, and its base name is every
-/// compiled function's [`origin`](CompiledFunction::origin).
+/// `filename` names the script in diagnostics, and its base name is the
+/// [`origin`](crate::BacktraceFrame::origin) of every function compiled from it.
 pub fn compile_program(
     filename: &str,
     script: &str,

@@ -11,6 +11,7 @@ mod binary_operations;
 mod binary_operators;
 mod call_expressions;
 mod compile_in_scope;
+mod compiled_program;
 mod compiler_options;
 mod component_builder;
 mod constant_deduplication;

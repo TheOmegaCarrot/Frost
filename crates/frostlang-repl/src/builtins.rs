@@ -2,6 +2,7 @@
 
 use std::path::PathBuf;
 
+use frostlang::bytecode;
 use frostlang::compile::{Diagnostic, Diagnostics, Optimization};
 use frostlang_parse::parse_program_with_limits;
 
@@ -56,8 +57,7 @@ impl Repl {
             Builtin::Disassemble => {
                 let source = needs_argument(builtin, argument, "source to disassemble")?;
                 let closure = self.compile(source)?;
-                let listing = closure
-                    .inner_fn()
+                let listing = bytecode::closure_function(&closure)
                     .disassemble()
                     .with_color(ansi_styling)
                     .to_string();

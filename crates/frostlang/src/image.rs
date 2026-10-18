@@ -4,22 +4,23 @@
 //! An image loads only into the same version of this runtime that wrote it.
 //!
 //! ```
-//! # use std::sync::Arc;
 //! # use frostlang::image;
 //! # fn demo(program: frostlang::WellFormedProgram) -> Result<(), image::ImageError> {
 //! let bytes = image::encode(&program);
 //!
 //! // Later, perhaps in another process:
-//! let function = image::decode(&bytes)?;
+//! let loaded = image::decode(&bytes)?;
 //! // Assert it well-formed only if you control where the bytes came from.
-//! let program = Arc::new(function).assert_well_formed();
+//! let program = loaded.assert_well_formed();
 //! # Ok(())
 //! # }
 //! ```
 
-use crate::WellFormedProgram;
-use crate::bytecode::{CompiledFunction, FormatVersion};
+use std::sync::Arc;
+
+use crate::bytecode::{CompiledFunction, FormatVersion, program_from_function};
 use crate::vm::serialize::VERSION;
+use crate::{CompiledProgram, WellFormedProgram};
 
 /// Begins every image. Frost source never contains a NUL byte, so no script is
 /// mistaken for an image.
@@ -45,9 +46,9 @@ pub fn encode(program: &WellFormedProgram) -> Vec<u8> {
 /// The program in `image`.
 ///
 /// Running the result requires
-/// [`assert_well_formed`](CompiledFunction::assert_well_formed), whose obligation is
+/// [`assert_well_formed`](CompiledProgram::assert_well_formed), whose obligation is
 /// yours: assert it only of an image whose source you control.
-pub fn decode(image: &[u8]) -> Result<CompiledFunction, ImageError> {
+pub fn decode(image: &[u8]) -> Result<CompiledProgram, ImageError> {
     let body = image.strip_prefix(MAGIC).ok_or(ImageError::NotAnImage)?;
     // Every image begins with the version that wrote it. Read it first, so a
     // mismatch reports the version found rather than failing as damage.
@@ -57,7 +58,9 @@ pub fn decode(image: &[u8]) -> Result<CompiledFunction, ImageError> {
             Err(_) => ImageError::Damaged,
         });
     }
-    postcard::from_bytes(body).map_err(|_| ImageError::Damaged)
+    postcard::from_bytes::<CompiledFunction>(body)
+        .map(|function| program_from_function(Arc::new(function)))
+        .map_err(|_| ImageError::Damaged)
 }
 
 /// Why [`decode`] cannot load an image.
