@@ -1,18 +1,24 @@
 #!/usr/bin/env bash
 # Checks each way a host can link SQLite: builds the linkage probe in each, and
-# checks that the probe reports the library that mode should link. Linux only.
+# checks that the probe reports the library that mode should link, and the
+# extension behaving alike on it. Linux only.
 #
 # Usage: check-linkage.sh [mode...]
-#   Modes: api, bundled, system, static, dynamic. With none, runs every mode,
-#   skipping `system` when `pkg-config` finds no SQLite. A mode named
-#   explicitly fails rather than being skipped.
+#   Modes: api, bundled, rusqlite-bundled, system, static, dynamic. With none,
+#   runs every mode, skipping `system` when `pkg-config` finds no SQLite. A
+#   mode named explicitly fails rather than being skipped.
 #
 # `api` lints `frostlang-sqlite` without `bundled`, which disables API that
 # `cargo test` and the workspace's lints otherwise always see.
 #
+# `rusqlite-bundled` bundles SQLite through `rusqlite`'s own feature, leaving
+# `frostlang-sqlite`'s off, as a host depending on `rusqlite` directly may.
+#
 # `static` and `dynamic` compile the amalgamation that `libsqlite3-sys` ships,
 # each tagged with a compile-time option no other mode's library sets, so the
-# probe can tell which library it got.
+# probe can tell which library it got. Unlike the bundled build, they leave
+# foreign keys off and `file:` URIs uninterpreted by default, which every mode
+# checks the extension overrides.
 #
 # Needs `cargo` with Clippy, `jq`, a C compiler as `cc`, and `ar`.
 
@@ -37,6 +43,10 @@ amalgamation_version=$(sed -n 's/^#define SQLITE_VERSION *"\(.*\)"$/\1/p' "$amal
 # The option tagging each custom-built library.
 static_tag=MAX_ATTACHED=7
 dynamic_tag=MAX_ATTACHED=8
+
+# How the extension words the probe's syntax error, as a basic regular
+# expression a whole line of the report matches.
+syntax_error='Function db.script failed: near "SELEC": syntax error (SQLITE_ERROR)'
 
 # Every variable the build reads to choose a library, unset for each mode so
 # the caller's environment cannot change what it links.
@@ -96,6 +106,12 @@ check() {
         problem="expected SQLite $expected_version, but the probe reports $version"
     elif [[ -n $expected_option ]] && ! grep -qx "option $expected_option" <<<"$report"; then
         problem="the library lacks compile option $expected_option"
+    elif [[ $(grep -cx "foreign_keys open\(_readonly\|_memory\)\? enforced" <<<"$report") != 3 ]]; then
+        problem="the extension's connections do not all enforce foreign keys"
+    elif ! grep -qx "uri interpreted" <<<"$report"; then
+        problem="the extension's \`open\` does not interpret URIs"
+    elif ! grep -qx "syntax_error $syntax_error" <<<"$report"; then
+        problem="the extension words a syntax error otherwise than as \`$syntax_error\`"
     else
         local tag
         for tag in "$static_tag" "$dynamic_tag"; do
@@ -163,6 +179,13 @@ check_bundled() {
     check bundled "$amalgamation_version" ENABLE_API_ARMOR -- --features bundled
 }
 
+check_rusqlite_bundled() {
+    # The extension cannot tell this build's errors apart, so keeps rusqlite's
+    # wording, which repeats the SQL, with the code name after it.
+    local syntax_error='Function db.script failed: near "SELEC": syntax error.* (SQLITE_ERROR)'
+    check rusqlite-bundled "$amalgamation_version" ENABLE_API_ARMOR -- --features rusqlite-bundled
+}
+
 check_system() {
     if ! command -v pkg-config >/dev/null; then
         skip system "pkg-config is not installed"
@@ -183,11 +206,11 @@ check_dynamic() {
 
 modes=("$@")
 if ((${#modes[@]} == 0)); then
-    modes=(api bundled system static dynamic)
+    modes=(api bundled rusqlite-bundled system static dynamic)
 fi
 for mode in "${modes[@]}"; do
     case $mode in
-        api | bundled | system | static | dynamic) ;;
+        api | bundled | rusqlite-bundled | system | static | dynamic) ;;
         *)
             echo "unknown mode: $mode" >&2
             exit 2
@@ -196,7 +219,7 @@ for mode in "${modes[@]}"; do
 done
 for mode in "${modes[@]}"; do
     echo "== $mode"
-    "check_$mode"
+    "check_${mode//-/_}"
 done
 
 echo

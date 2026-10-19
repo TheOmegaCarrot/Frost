@@ -3,4 +3,9 @@
 // Shared harness.
 mod common;
 
+mod close;
 mod extension;
+mod factory;
+mod open;
+mod script;
+mod sharing;

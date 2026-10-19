@@ -12,8 +12,14 @@
 //!     .build();
 //! ```
 //!
-//! The extension is built on [`rusqlite`], re-exported here so a host names the
-//! same version.
+//! The extension lets scripts open any database. A host giving scripts only
+//! the databases it chooses makes a [`connection_factory`] instead, with or
+//! without the extension.
+//!
+//! The extension is built on [`rusqlite`], re-exported here. Its API behind
+//! Cargo features this crate leaves off, such as `hooks` (for an authorizer) or
+//! `limits`, needs a direct dependency on the same version with those features
+//! enabled: Cargo features unify, so the re-exported crate gains them too.
 //!
 //! # Linking SQLite
 //!
@@ -54,7 +60,7 @@
 //!   using it, such as `rusqlite`, `sqlx`, or `diesel`, must agree on its
 //!   version, and any one of them enabling its `bundled` feature bundles SQLite
 //!   for all. A host already using `rusqlite` uses the version this crate
-//!   re-exports.
+//!   re-exports, so that both name the same types.
 //! - Enabling `bundled` also enables API in [`rusqlite`] that needs a recent
 //!   SQLite. Host code using it compiles only with `bundled` enabled, and the
 //!   library linked must then be recent, even through
@@ -65,16 +71,39 @@
 //!   configured single-threaded at run time. Opening a database with such a
 //!   library is an error.
 
+mod connection;
+mod error;
+mod open;
+
+pub use connection::{Method, ScriptConnection, connection_factory};
+pub use enumset::{EnumSet, enum_set};
+pub use error::sqlite_error;
 pub use rusqlite;
 
 use frostlang::{Extension, Value};
 
 /// The `ext.sqlite` extension.
 ///
+/// - `open(path)` opens the database at `path` for reading and writing,
+///   creating it if it does not exist.
+/// - `open_readonly(path)` opens the existing database at `path` for reading
+///   only.
+/// - `open_memory()` opens a new in-memory database, private to the
+///   connection.
 /// - `version` is the version of the SQLite library in use, such as
 ///   `'3.53.2'`.
+///
+/// A `path` may also be a `file:` URI, which cannot loosen the access the
+/// function gives.
+///
+/// Each `open` function returns a connection bundle with every [`Method`]. It
+/// fails if the database cannot be opened, or the file is not a database. Its
+/// connection enforces foreign keys, whatever the library's default.
 pub fn extension() -> Extension {
     Extension::builder("sqlite")
+        .function(open::open_frost())
+        .function(open::open_readonly_frost())
+        .function(open::open_memory_frost())
         .value("version", Value::from(rusqlite::version()))
         .build()
 }

@@ -12,7 +12,10 @@ fn the_extension_is_named_sqlite() {
 
 #[test]
 fn the_extension_holds_its_entries() {
-    assert_values(&[("sorted(keys(sqlite))", "['version']")]);
+    assert_values(&[(
+        "sorted(keys(sqlite))",
+        "['open', 'open_memory', 'open_readonly', 'version']",
+    )]);
 }
 
 #[test]

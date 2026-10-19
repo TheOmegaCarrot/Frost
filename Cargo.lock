@@ -639,9 +639,12 @@ dependencies = [
 name = "frostlang-sqlite"
 version = "0.0.1"
 dependencies = [
+ "enumset",
  "frostlang",
  "frostlang-sqlite",
+ "parking_lot",
  "rusqlite",
+ "tempfile",
 ]
 
 [[package]]
@@ -650,6 +653,7 @@ version = "0.0.0"
 dependencies = [
  "frostlang",
  "frostlang-sqlite",
+ "rusqlite",
 ]
 
 [[package]]
@@ -1584,6 +1588,19 @@ name = "target-tuple"
 version = "1.0.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "876fef147edbcbddc8ac5cbbba92c7b86519e314e86638596c09673b2ed01e7f"
+
+[[package]]
+name = "tempfile"
+version = "3.27.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "32497e9a4c7b38532efcdebeef879707aa9f794296a4f0244f6f69e9bc8574bd"
+dependencies = [
+ "fastrand",
+ "getrandom",
+ "once_cell",
+ "rustix",
+ "windows-sys",
+]
 
 [[package]]
 name = "termcolor"
