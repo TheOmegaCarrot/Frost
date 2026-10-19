@@ -19,7 +19,7 @@ use crate::Value;
 use crate::bytecode::NameEntry;
 use frostlang_parse::ast::SourceSpan;
 
-use crate::compile::lower::{Ir, LocalId};
+use crate::compile::lower::{Ir, LocalId, Op};
 
 /// What role a local plays in its frame. Captures are seated by the VM into the
 /// leading slots; params and bindings are defined by the code itself.
@@ -181,10 +181,10 @@ impl Locals {
     pub(super) fn reads_pending(&self, code: &[Ir]) -> bool {
         let defines = |id| {
             code.iter()
-                .any(|ir| matches!(ir, Ir::DefLocal(defined) if *defined == id))
+                .any(|ir| matches!(ir.op, Op::DefLocal(defined) if defined == id))
         };
-        code.iter().any(|ir| match ir {
-            Ir::LoadLocal(id) => self.is_pending(*id) && !defines(*id),
+        code.iter().any(|ir| match ir.op {
+            Op::LoadLocal(id) => self.is_pending(id) && !defines(id),
             _ => false,
         })
     }
@@ -266,19 +266,19 @@ impl Locals {
     pub(super) fn plan_fragment_slots(&self, code: &[Ir]) -> (SlotPlan, BTreeMap<String, Value>) {
         let defined: HashSet<LocalId> = code
             .iter()
-            .filter_map(|ir| match ir {
-                Ir::DefLocal(id) => Some(*id),
+            .filter_map(|ir| match ir.op {
+                Op::DefLocal(id) => Some(id),
                 _ => None,
             })
             .collect();
         let mut plan = SlotPlan::sized(self.infos.len());
         let mut captures = BTreeMap::new();
         for ir in code {
-            if let Ir::LoadLocal(id) = ir
-                && !defined.contains(id)
+            if let Op::LoadLocal(id) = ir.op
+                && !defined.contains(&id)
                 && plan.slots[id.0].is_none()
             {
-                let info = self.info(*id);
+                let info = self.info(id);
                 let value = info
                     .constant
                     .clone()
@@ -290,7 +290,7 @@ impl Locals {
                     clash.is_none(),
                     "two outer locals a fragment reads share a name"
                 );
-                plan.assign(*id, info);
+                plan.assign(id, info);
             }
         }
         plan.num_captures = plan.name_table.len();
@@ -302,10 +302,10 @@ impl Locals {
     /// in first-definition order.
     fn assign_defined(&self, plan: &mut SlotPlan, code: &[Ir]) {
         for ir in code {
-            if let Ir::DefLocal(id) = ir
+            if let Op::DefLocal(id) = ir.op
                 && plan.slots[id.0].is_none()
             {
-                plan.assign(*id, self.info(*id));
+                plan.assign(id, self.info(id));
             }
         }
     }

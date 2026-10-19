@@ -12,7 +12,7 @@
 //! Every branch binds the same names into the same locals, so what follows
 //! reads them alike whichever branch matched.
 
-use crate::bytecode::Bytecode;
+use crate::bytecode::{Bytecode, Span};
 use crate::vm::to_operand;
 use crate::{FrostType, TypeSet, Value};
 use frostlang_parse::ast::{
@@ -22,7 +22,7 @@ use frostlang_parse::ast::{
 use crate::compile::{
     Diagnostic, Diagnostics,
     lower::{
-        ConstKeyOp, FunctionBuilder, Ir, JumpType, Label, LocalId, Position,
+        ConstKeyOp, FunctionBuilder, Ir, JumpType, Label, LocalId, Op, Position, debug_span,
         fold::constant_key_of,
         locals::{LocalInfo, LocalKind},
     },
@@ -53,7 +53,7 @@ pub(super) enum Mismatch {
 pub(super) struct Bound {
     pub(super) name: String,
     pub(super) id: LocalId,
-    span: SourceSpan,
+    pub(super) span: SourceSpan,
 }
 
 /// Where a pattern binds its names.
@@ -83,6 +83,7 @@ impl FunctionBuilder<'_> {
         mode: BindMode,
         bound: &mut Vec<Bound>,
     ) -> Result<PatternFragment, Diagnostics> {
+        let span = debug_span(pattern.span);
         match &pattern.node {
             Pattern::Binding {
                 name,
@@ -90,9 +91,14 @@ impl FunctionBuilder<'_> {
             } => {
                 let test = type_constraint.as_ref().map(|constraint| {
                     let (ty, described) = type_test(constraint.node);
+                    let constraint_span = debug_span(constraint.span);
                     self.check(
-                        [Ir::Ready(Bytecode::Dup), Ir::Ready(Bytecode::TypeTest(ty))],
+                        [
+                            Op::Ready(Bytecode::Dup).at(constraint_span),
+                            Op::Ready(Bytecode::TypeTest(ty)).at(constraint_span),
+                        ],
                         mismatch,
+                        constraint_span,
                         || format!("expected {described}"),
                     )
                 });
@@ -112,14 +118,15 @@ impl FunctionBuilder<'_> {
                     value
                         .code
                         .into_iter()
-                        .chain([Ir::Ready(Bytecode::CompareEqual)]),
+                        .chain([Op::Ready(Bytecode::CompareEqual).at(span)]),
                     mismatch,
+                    span,
                     || expected_value(source, pattern.span, expr.span),
                 );
                 Ok(PatternFragment { code, foldable })
             }
             Pattern::Array { elements, rest } => {
-                let layout = self.array_layout(elements.len(), rest.is_some(), mismatch);
+                let layout = self.array_layout(elements.len(), rest.is_some(), mismatch, span);
                 let parts = elements
                     .iter()
                     .map(|element| self.compile_pattern(element, mismatch, mode, bound))
@@ -140,19 +147,23 @@ impl FunctionBuilder<'_> {
             Pattern::Map {
                 entries,
                 bind_whole,
-            } => self.compile_map_pattern(entries, bind_whole.as_ref(), mismatch, mode, bound),
+            } => {
+                self.compile_map_pattern(entries, bind_whole.as_ref(), mismatch, mode, bound, span)
+            }
             Pattern::Alternative(branches) => {
-                self.compile_alternative(branches, mismatch, mode, bound)
+                self.compile_alternative(branches, mismatch, mode, bound, span)
             }
         }
     }
 
     /// Run `test`, which leaves a Bool atop the stack, and handle a false one
-    /// per `mismatch`. A raised error says the check `expected` something.
+    /// per `mismatch`, as the check at `span`. A raised error says the check
+    /// `expected` something.
     fn check(
         &mut self,
         test: impl IntoIterator<Item = Ir>,
         mismatch: Mismatch,
+        span: Span,
         expected: impl FnOnce() -> String,
     ) -> Vec<Ir> {
         let test = test.into_iter();
@@ -160,33 +171,42 @@ impl FunctionBuilder<'_> {
             Mismatch::Raise => {
                 let passed = self.next_label();
                 test.chain([
-                    Ir::Jump {
+                    Op::Jump {
                         kind: JumpType::IfTrue,
                         label: passed,
-                    },
-                    Ir::Const(Value::from(format!(
+                    }
+                    .at(span),
+                    Op::Const(Value::from(format!(
                         "{PATTERN_DOES_NOT_MATCH}{}",
                         expected()
-                    ))),
-                    Ir::Ready(Bytecode::ProduceError),
-                    Ir::Label(passed),
+                    )))
+                    .at(span),
+                    Op::Ready(Bytecode::ProduceError).at(span),
+                    Op::Label(passed).at(span),
                 ])
                 .collect()
             }
             Mismatch::Jump(label) => test
-                .chain([Ir::Jump {
+                .chain([Op::Jump {
                     kind: JumpType::IfFalse,
                     label,
-                }])
+                }
+                .at(span)])
                 .collect(),
         }
     }
 
     /// Check the value is an Array of `count` elements (at least, if `rest`), then
-    /// lay it out for the parts to consume in source order. A rest splits the
-    /// Array, its tail beneath the elements; the elements are exploded, the first
-    /// on top. `( a -- rest? aN ... a1 a0 )`
-    fn array_layout(&mut self, count: usize, rest: bool, mismatch: Mismatch) -> Vec<Ir> {
+    /// lay it out for the parts to consume in source order, as the Array pattern at
+    /// `span`. A rest splits the Array, its tail beneath the elements; the
+    /// elements are exploded, the first on top. `( a -- rest? aN ... a1 a0 )`
+    fn array_layout(
+        &mut self,
+        count: usize,
+        rest: bool,
+        mismatch: Mismatch,
+        span: Span,
+    ) -> Vec<Ir> {
         let operand = to_operand(count);
         let (test, bound) = if rest {
             (Bytecode::TestArrayLenAtLeast(operand), "at least")
@@ -194,12 +214,12 @@ impl FunctionBuilder<'_> {
             (Bytecode::TestArrayLenExact(operand), "exactly")
         };
         let noun = if count == 1 { "element" } else { "elements" };
-        self.check([Ir::Ready(test)], mismatch, || {
+        self.check([Op::Ready(test).at(span)], mismatch, span, || {
             format!("expected an Array of {bound} {count} {noun}")
         })
         .into_iter()
-        .chain(rest.then_some(Ir::Ready(Bytecode::SplitArray(operand))))
-        .chain([Ir::Ready(Bytecode::ExplodeArray(operand))])
+        .chain(rest.then_some(Op::Ready(Bytecode::SplitArray(operand)).at(span)))
+        .chain([Op::Ready(Bytecode::ExplodeArray(operand)).at(span)])
         .collect()
     }
 
@@ -218,13 +238,15 @@ impl FunctionBuilder<'_> {
         mismatch: Mismatch,
         mode: BindMode,
         bound: &mut Vec<Bound>,
+        span: Span,
     ) -> Result<PatternFragment, Diagnostics> {
         let mut code = self.check(
             [
-                Ir::Ready(Bytecode::Dup),
-                Ir::Ready(Bytecode::TypeTest(FrostType::MAP)),
+                Op::Ready(Bytecode::Dup).at(span),
+                Op::Ready(Bytecode::TypeTest(FrostType::MAP)).at(span),
             ],
             mismatch,
+            span,
             || "expected a Map".to_string(),
         );
         let mut foldable = true;
@@ -236,35 +258,44 @@ impl FunctionBuilder<'_> {
             let key = self.fold_if_eligible(key);
             let part = self.compile_pattern(&entry.node.pattern, mismatch, mode, bound)?;
             foldable &= key.foldable && part.foldable;
+            // The entry's own lookup.
+            let entry_span = debug_span(entry.span);
             let missing = match mismatch {
                 Mismatch::Raise => None,
-                Mismatch::Jump(label) => Some(Ir::Jump {
-                    kind: JumpType::IfFalse,
-                    label,
-                }),
+                Mismatch::Jump(label) => Some(
+                    Op::Jump {
+                        kind: JumpType::IfFalse,
+                        label,
+                    }
+                    .at(entry_span),
+                ),
             };
             match constant_key_of(&key.code) {
                 Some(known_key) => {
                     if let Some(missing) = missing {
                         code.extend([
-                            Ir::ConstKey {
+                            Op::ConstKey {
                                 op: ConstKeyOp::Test,
                                 key: known_key.clone(),
-                            },
+                            }
+                            .at(entry_span),
                             missing,
                         ]);
                     }
-                    code.push(Ir::ConstKey {
-                        op: ConstKeyOp::Extract,
-                        key: known_key,
-                    });
+                    code.push(
+                        Op::ConstKey {
+                            op: ConstKeyOp::Extract,
+                            key: known_key,
+                        }
+                        .at(entry_span),
+                    );
                 }
                 None => {
                     code.extend(key.code);
                     if let Some(missing) = missing {
-                        code.extend([Ir::Ready(Bytecode::TestKey), missing]);
+                        code.extend([Op::Ready(Bytecode::TestKey).at(entry_span), missing]);
                     }
-                    code.push(Ir::Ready(Bytecode::ExtractKey));
+                    code.push(Op::Ready(Bytecode::ExtractKey).at(entry_span));
                 }
             }
             code.extend(part.code);
@@ -272,7 +303,7 @@ impl FunctionBuilder<'_> {
 
         let whole = match bind_whole {
             Some(binding) => self.bind(binding, mode, bound)?,
-            None => Ir::Ready(Bytecode::Pop),
+            None => Op::Ready(Bytecode::Pop).at(span),
         };
         code.push(whole);
 
@@ -291,6 +322,7 @@ impl FunctionBuilder<'_> {
         mismatch: Mismatch,
         mode: BindMode,
         bound: &mut Vec<Bound>,
+        span: Span,
     ) -> Result<PatternFragment, Diagnostics> {
         let first = branches
             .first()
@@ -328,32 +360,38 @@ impl FunctionBuilder<'_> {
             };
             foldable &= fragment.foldable;
 
+            // Trying the branch is the branch's own.
+            let branch_span = debug_span(branch.span);
             if enclosing.is_some() {
                 code.extend(fragment.code);
             } else {
-                code.extend([Bytecode::MarkStack, Bytecode::Dup].map(Ir::Ready));
+                code.extend(
+                    [Bytecode::MarkStack, Bytecode::Dup].map(|op| Op::Ready(op).at(branch_span)),
+                );
                 code.extend(fragment.code);
                 code.extend([
-                    Ir::Ready(Bytecode::DropMark),
-                    Ir::Ready(Bytecode::Pop),
-                    Ir::Jump {
+                    Op::Ready(Bytecode::DropMark).at(branch_span),
+                    Op::Ready(Bytecode::Pop).at(branch_span),
+                    Op::Jump {
                         kind: JumpType::Unconditional,
                         label: matched,
-                    },
-                    Ir::Label(branch_fail),
-                    Ir::Ready(Bytecode::RewindToMark),
+                    }
+                    .at(branch_span),
+                    Op::Label(branch_fail).at(branch_span),
+                    Op::Ready(Bytecode::RewindToMark).at(branch_span),
                 ]);
             }
         }
         if let Mismatch::Raise = mismatch {
             code.extend([
-                Ir::Const(Value::from(format!(
+                Op::Const(Value::from(format!(
                     "{PATTERN_DOES_NOT_MATCH}the value matches no alternative"
-                ))),
-                Ir::Ready(Bytecode::ProduceError),
+                )))
+                .at(span),
+                Op::Ready(Bytecode::ProduceError).at(span),
             ]);
         }
-        code.push(Ir::Label(matched));
+        code.push(Op::Label(matched).at(span));
 
         Ok(PatternFragment { code, foldable })
     }
@@ -366,8 +404,9 @@ impl FunctionBuilder<'_> {
         mode: BindMode,
         bound: &mut Vec<Bound>,
     ) -> Result<Ir, Diagnostics> {
+        let span = debug_span(binding.span);
         let Binding::Named(name) = &binding.node else {
-            return Ok(Ir::Ready(Bytecode::Pop));
+            return Ok(Op::Ready(Bytecode::Pop).at(span));
         };
         let id = match mode {
             BindMode::Arm => self.define_binding(binding, name, false)?,
@@ -408,7 +447,7 @@ impl FunctionBuilder<'_> {
             id,
             span: binding.span,
         });
-        Ok(Ir::DefLocal(id))
+        Ok(Op::DefLocal(id).at(span))
     }
 
     /// Define `name`, which `binding` binds, as a new local in the current scope.

@@ -1,10 +1,10 @@
-use crate::bytecode::Bytecode;
+use crate::bytecode::{Bytecode, Span};
 use crate::vm::to_operand;
 use frostlang_parse::ast::{Expr, MapEntry, Spanned};
 
 use crate::compile::{
     Diagnostics,
-    lower::{ExprFragment, FunctionBuilder, Ir, Position},
+    lower::{ExprFragment, FunctionBuilder, Op, Position},
 };
 
 impl FunctionBuilder<'_> {
@@ -12,6 +12,7 @@ impl FunctionBuilder<'_> {
     pub(super) fn compile_array_literal(
         &mut self,
         elements: &[Spanned<Expr>],
+        span: Span,
     ) -> Result<ExprFragment, Diagnostics> {
         let count = elements.len();
 
@@ -26,7 +27,7 @@ impl FunctionBuilder<'_> {
             code: elements
                 .into_iter()
                 .flat_map(|fragment| fragment.code.into_iter())
-                .chain([Ir::Ready(Bytecode::MakeArray(to_operand(count)))])
+                .chain([Op::Ready(Bytecode::MakeArray(to_operand(count))).at(span)])
                 .collect(),
         })
     }
@@ -35,6 +36,7 @@ impl FunctionBuilder<'_> {
     pub(super) fn compile_map_literal(
         &mut self,
         entries: &[Spanned<MapEntry>],
+        span: Span,
     ) -> Result<ExprFragment, Diagnostics> {
         let pair_count = entries.len();
 
@@ -51,7 +53,7 @@ impl FunctionBuilder<'_> {
             code: exprs
                 .into_iter()
                 .flat_map(|expr| expr.code)
-                .chain([Ir::Ready(Bytecode::MakeMap(to_operand(pair_count)))])
+                .chain([Op::Ready(Bytecode::MakeMap(to_operand(pair_count))).at(span)])
                 .collect(),
         })
     }

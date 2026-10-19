@@ -22,8 +22,9 @@ pub struct OpDebugInfo {
     pub span: Span,
     /// The operand stack height on entry to the instruction, counting the callee and its arguments
     /// as the [calling convention](crate::bytecode::Bytecode#calling-convention) lays them out.
-    /// `None` when it is not statically known,
-    /// which is only on entry to [`RewindToMark`](crate::bytecode::Bytecode::RewindToMark).
+    /// `None` when it is not statically known: on entry to a
+    /// [`RewindToMark`](crate::bytecode::Bytecode::RewindToMark) reached at different heights,
+    /// and in code that nothing reaches.
     pub stack_height: Option<u32>,
 }
 

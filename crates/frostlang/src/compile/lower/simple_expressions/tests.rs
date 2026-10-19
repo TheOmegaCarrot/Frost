@@ -36,6 +36,7 @@ fn builder(options: &CompilerOptions) -> FunctionBuilder<'_> {
         effectful: false,
         lints: Vec::new(),
         abbreviated: None,
+        debug_lines: None,
     }
 }
 

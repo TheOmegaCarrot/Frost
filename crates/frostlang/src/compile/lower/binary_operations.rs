@@ -1,9 +1,9 @@
-use crate::bytecode::Bytecode;
+use crate::bytecode::{Bytecode, Span};
 use frostlang_parse::ast::{BinOp, Expr, LogicalOp, Spanned};
 
 use crate::compile::{
     Diagnostics,
-    lower::{ExprFragment, FunctionBuilder, Ir, JumpType, Position, fold::constant_of},
+    lower::{ExprFragment, FunctionBuilder, JumpType, Op, Position, fold::constant_of},
 };
 
 impl FunctionBuilder<'_> {
@@ -12,6 +12,7 @@ impl FunctionBuilder<'_> {
         left: &Spanned<Expr>,
         op: &Spanned<BinOp>,
         right: &Spanned<Expr>,
+        span: Span,
     ) -> Result<ExprFragment, Diagnostics> {
         if op.node == BinOp::Sub {
             self.lint_consecutive_minus(op.span);
@@ -20,7 +21,7 @@ impl FunctionBuilder<'_> {
         let rhs = self.compile_expression(right, Position::Inner)?;
         let ([lhs, rhs], foldable) = self.fold_siblings([lhs, rhs]);
 
-        let operation = Ir::Ready(match op.node {
+        let operation = Op::Ready(match op.node {
             BinOp::Add => Bytecode::Add,
             BinOp::Sub => Bytecode::Subtract,
             BinOp::Mul => Bytecode::Multiply,
@@ -32,7 +33,8 @@ impl FunctionBuilder<'_> {
             BinOp::Lte => Bytecode::CompareLessThanOrEqual,
             BinOp::Gt => Bytecode::CompareGreaterThan,
             BinOp::Gte => Bytecode::CompareGreaterThanOrEqual,
-        });
+        })
+        .at(span);
 
         Ok(ExprFragment {
             code: lhs
@@ -51,6 +53,7 @@ impl FunctionBuilder<'_> {
         op: &Spanned<LogicalOp>,
         right: &Spanned<Expr>,
         position: Position,
+        span: Span,
     ) -> Result<ExprFragment, Diagnostics> {
         // When the right operand runs, its value is the result: nothing follows
         // it but the join label.
@@ -72,7 +75,7 @@ impl FunctionBuilder<'_> {
 
         let past = self.next_label();
 
-        let jump_over = Ir::Jump {
+        let jump_over = Op::Jump {
             label: past,
             kind: match op.node {
                 LogicalOp::And => JumpType::PeekIfFalse,
@@ -84,9 +87,9 @@ impl FunctionBuilder<'_> {
             code: lhs
                 .code
                 .into_iter()
-                .chain([jump_over, Ir::Ready(Bytecode::Pop)])
+                .chain([jump_over.at(span), Op::Ready(Bytecode::Pop).at(span)])
                 .chain(rhs.code)
-                .chain([Ir::Label(past)])
+                .chain([Op::Label(past).at(span)])
                 .collect(),
             foldable,
         })

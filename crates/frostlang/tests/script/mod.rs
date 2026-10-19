@@ -24,7 +24,7 @@ use std::collections::BTreeMap;
 use std::num::NonZeroU64;
 use std::sync::{Arc, Mutex};
 
-use frostlang::bytecode::{Bytecode, CompiledFunction, closure_function};
+use frostlang::bytecode::{Bytecode, CompiledFunction, DebugInfo, closure_function};
 use frostlang::compile::{
     CompilerOptions, CompilerOutput, Diagnostics, Optimization, OptimizationOptions,
     compile_in_scope,
@@ -415,6 +415,11 @@ impl Emitted {
     /// The Map keys the function's constant-key ops look up.
     pub(crate) fn key_constants(&self) -> &[MapKey] {
         &self.function.key_constants
+    }
+
+    /// The function's debug info, if it was compiled with it.
+    pub(crate) fn debug_info(&self) -> Option<&DebugInfo> {
+        self.function.debug_info.as_ref()
     }
 
     /// How many times `op` appears in the code.

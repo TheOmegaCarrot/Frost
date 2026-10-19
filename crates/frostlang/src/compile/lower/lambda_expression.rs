@@ -9,7 +9,7 @@ use frostlang_parse::ast::{Binding, Expr, SourceSpan, Spanned, Statement};
 use crate::compile::{
     Diagnostics,
     lower::{
-        ExprFragment, FunctionBuilder, Ir, Position,
+        ExprFragment, FunctionBuilder, Ir, Op, Position, debug_span,
         fold::constant_of,
         locals::{LocalInfo, LocalKind},
         prewalk,
@@ -36,12 +36,12 @@ struct NormalizedLambda<'a> {
 /// A parameter binding, borrowed from the script or generated.
 type Param<'a> = Spanned<Cow<'a, Binding>>;
 
-/// A parameter the compiler generates, which has no span of its own in the
-/// source.
-fn generated(binding: Binding) -> Param<'static> {
+/// A parameter the compiler generates for the lambda spanning `lambda`.
+/// Having no source of its own, it takes the lambda's span.
+fn generated(binding: Binding, lambda: SourceSpan) -> Param<'static> {
     Spanned {
         node: Cow::Owned(binding),
-        span: SourceSpan::default(),
+        span: lambda,
     }
 }
 
@@ -55,8 +55,9 @@ fn written(binding: &Spanned<Binding>) -> Param<'_> {
 
 impl<'a> NormalizedLambda<'a> {
     /// `lambda` must be an [`Expr::Lambda`] or [`Expr::AbbreviatedLambda`].
-    fn new(lambda: &'a Expr) -> Self {
-        match lambda {
+    fn new(lambda: &'a Spanned<Expr>) -> Self {
+        let generated = |binding| generated(binding, lambda.span);
+        match &lambda.node {
             Expr::Lambda {
                 params,
                 variadic_param,
@@ -156,17 +157,24 @@ impl FunctionBuilder<'_> {
         // constants can still be evaluated in a fold; hoisted, it is built into
         // the child instead and not pushed at all. A known value that cannot be
         // a constant is pushed from its local, and known to the child's folds.
+        // Seating the captures and creating the closure are the lambda's own.
+        let span = debug_span(lambda.span);
         let hoist = self.options.optimization_options.capture_hoist;
         let mut captures = Vec::new();
         let mut capture_pushes = Vec::new();
         let mut hoisted = Vec::new();
         for name in free_names {
-            let push = self.compile_name_lookup(&name, SourceSpan::default())?;
+            let push = self.compile_name_lookup(&name, lambda.span)?;
             match constant_of(&push.code) {
                 Some(value) if hoist => hoisted.push((name, value)),
                 _ => {
                     let known = match push.code.as_slice() {
-                        [Ir::LoadLocal(id)] => self.locals.constant(*id).cloned(),
+                        [
+                            Ir {
+                                op: Op::LoadLocal(id),
+                                ..
+                            },
+                        ] => self.locals.constant(*id).cloned(),
                         _ => None,
                     };
                     captures.push((name, known));
@@ -176,7 +184,7 @@ impl FunctionBuilder<'_> {
         }
 
         let lambda_start = lambda.span.start;
-        let lambda = NormalizedLambda::new(&lambda.node);
+        let lambda = NormalizedLambda::new(lambda);
         let mut child = self.child(lambda.name.to_owned(), lambda.arity(), captures, hoisted);
         child.abbreviated = abbreviated;
 
@@ -197,29 +205,32 @@ impl FunctionBuilder<'_> {
         // The call leaves `[closure, arg1 .. argN, rest?]` on the stack, which is
         // also source order. Define the names in that order, so a duplicate is
         // reported at its second appearance, then store from the top down.
-        let slots = [&lambda.self_binding]
+        let stores = [&lambda.self_binding]
             .into_iter()
             .chain(&lambda.params)
             .chain(&lambda.variadic_param)
-            .map(|param| match param.node.as_ref() {
-                Binding::Discarded => Ok(None),
-                Binding::Named(name) => child
-                    .locals
-                    .define(LocalInfo {
-                        name: name.clone(),
-                        span: param.span,
-                        exported: false,
-                        constant: None,
-                        kind: LocalKind::Param,
-                    })
-                    .map(Some)
-                    .map_err(|original| self.duplicate_binding(name, param.span, original)),
+            .map(|param| {
+                let op = match param.node.as_ref() {
+                    Binding::Discarded => Op::Ready(Bytecode::Pop),
+                    Binding::Named(name) => Op::DefLocal(
+                        child
+                            .locals
+                            .define(LocalInfo {
+                                name: name.clone(),
+                                span: param.span,
+                                exported: false,
+                                constant: None,
+                                kind: LocalKind::Param,
+                            })
+                            .map_err(|original| {
+                                self.duplicate_binding(name, param.span, original)
+                            })?,
+                    ),
+                };
+                Ok(op.at(debug_span(param.span)))
             })
-            .collect::<Result<Vec<_>, _>>()?;
-        let prelude = slots.into_iter().rev().map(|slot| match slot {
-            Some(id) => Ir::DefLocal(id),
-            None => Ir::Ready(Bytecode::Pop),
-        });
+            .collect::<Result<Vec<_>, Diagnostics>>()?;
+        let prelude = stores.into_iter().rev();
 
         let compiled_body = lambda
             .body
@@ -233,7 +244,6 @@ impl FunctionBuilder<'_> {
         let compiled_tail = child.fold_if_eligible(compiled_tail);
 
         let child_ir: Vec<Ir> = prelude
-            .into_iter()
             .chain(compiled_body.into_iter().flat_map(|stmt| stmt.code))
             .chain(compiled_tail.code)
             .collect();
@@ -252,7 +262,7 @@ impl FunctionBuilder<'_> {
             code: capture_pushes
                 .into_iter()
                 .flat_map(|push| push.code)
-                .chain([Ir::closure(lowered)])
+                .chain([Op::closure(lowered).at(span)])
                 .collect(),
         })
     }

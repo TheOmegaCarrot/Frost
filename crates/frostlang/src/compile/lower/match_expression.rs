@@ -11,13 +11,13 @@
 use std::num::NonZeroU64;
 
 use crate::Value;
-use crate::bytecode::Bytecode;
+use crate::bytecode::{Bytecode, Span};
 use frostlang_parse::ast::{Expr, MatchArm, Pattern, Spanned};
 
 use crate::compile::{
     Diagnostic, Diagnostics,
     lower::{
-        ExprFragment, FunctionBuilder, Ir, JumpType, Label, Position,
+        ExprFragment, FunctionBuilder, Ir, JumpType, Label, Op, Position, debug_span,
         pattern::{BindMode, Mismatch, PatternFragment},
     },
 };
@@ -25,45 +25,64 @@ use crate::compile::{
 /// The message raised when no arm matches, followed by the value.
 const NO_MATCH: &str = "No match arm matches the value: ";
 
-/// A compiled arm, and the label its mismatches jump to.
+/// A compiled arm, the label its mismatches jump to, and the arm's span, which
+/// trying the arm is derived from.
 struct ArmFragment {
     fail: Label,
     pattern: PatternFragment,
-    guard: Option<ExprFragment>,
+    guard: Option<Guard>,
     result: ExprFragment,
+    span: Span,
+}
+
+/// A compiled guard, and its span, which its check is derived from.
+struct Guard {
+    fragment: ExprFragment,
+    span: Span,
 }
 
 impl ArmFragment {
     fn foldable(&self) -> bool {
         self.pattern.foldable
-            && self.guard.as_ref().is_none_or(|guard| guard.foldable)
+            && self
+                .guard
+                .as_ref()
+                .is_none_or(|guard| guard.fragment.foldable)
             && self.result.foldable
     }
 
     /// `( t -- r )` on to the end of the match if the arm matches, else
     /// `( t -- t )` on to the next arm.
     fn code(self, end: Label) -> impl Iterator<Item = Ir> {
-        let fail = self.fail;
-        let guard = self.guard.into_iter().flat_map(move |guard| {
-            guard.code.into_iter().chain([Ir::Jump {
+        let Self {
+            fail,
+            pattern,
+            guard,
+            result,
+            span,
+        } = self;
+        let guard = guard.into_iter().flat_map(move |guard| {
+            guard.fragment.code.into_iter().chain([Op::Jump {
                 kind: JumpType::IfFalse,
                 label: fail,
-            }])
+            }
+            .at(guard.span)])
         });
         [Bytecode::MarkStack, Bytecode::Dup]
-            .map(Ir::Ready)
+            .map(|op| Op::Ready(op).at(span))
             .into_iter()
-            .chain(self.pattern.code)
+            .chain(pattern.code)
             .chain(guard)
-            .chain([Bytecode::DropMark, Bytecode::Pop].map(Ir::Ready))
-            .chain(self.result.code)
+            .chain([Bytecode::DropMark, Bytecode::Pop].map(|op| Op::Ready(op).at(span)))
+            .chain(result.code)
             .chain([
-                Ir::Jump {
+                Op::Jump {
                     kind: JumpType::Unconditional,
                     label: end,
-                },
-                Ir::Label(fail),
-                Ir::Ready(Bytecode::RewindToMark),
+                }
+                .at(span),
+                Op::Label(fail).at(span),
+                Op::Ready(Bytecode::RewindToMark).at(span),
             ])
     }
 }
@@ -74,6 +93,7 @@ impl FunctionBuilder<'_> {
         target: &Spanned<Expr>,
         arms: &[Spanned<MatchArm>],
         position: Position,
+        span: Span,
     ) -> Result<ExprFragment, Diagnostics> {
         let target = self.compile_expression(target, Position::Inner)?;
         if self.lints_on() {
@@ -81,7 +101,7 @@ impl FunctionBuilder<'_> {
         }
         let arms = arms
             .iter()
-            .map(|arm| self.in_scope(|this| this.compile_arm(&arm.node, position)))
+            .map(|arm| self.in_scope(|this| this.compile_arm(arm, position)))
             .collect::<Result<Vec<_>, _>>()?;
 
         // TODO: with a constant target, branch elimination could pick the arm at
@@ -95,7 +115,10 @@ impl FunctionBuilder<'_> {
             let arms = arms
                 .into_iter()
                 .map(|arm| ArmFragment {
-                    guard: arm.guard.map(|guard| self.fold_if_eligible(guard)),
+                    guard: arm.guard.map(|guard| Guard {
+                        fragment: self.fold_if_eligible(guard.fragment),
+                        ..guard
+                    }),
                     result: self.fold_if_eligible(arm.result),
                     ..arm
                 })
@@ -111,13 +134,14 @@ impl FunctionBuilder<'_> {
                 .into_iter()
                 .chain(arms.into_iter().flat_map(|arm| arm.code(end)))
                 .chain([
-                    Ir::Const(Value::from(NO_MATCH)),
-                    Ir::Ready(Bytecode::PeekDown(1)),
-                    Ir::Ready(Bytecode::Concat(
+                    Op::Const(Value::from(NO_MATCH)).at(span),
+                    Op::Ready(Bytecode::PeekDown(1)).at(span),
+                    Op::Ready(Bytecode::Concat(
                         NonZeroU64::new(2).expect("two is nonzero"),
-                    )),
-                    Ir::Ready(Bytecode::ProduceError),
-                    Ir::Label(end),
+                    ))
+                    .at(span),
+                    Op::Ready(Bytecode::ProduceError).at(span),
+                    Op::Label(end).at(span),
                 ])
                 .collect(),
         })
@@ -150,27 +174,35 @@ impl FunctionBuilder<'_> {
     /// and result only.
     fn compile_arm(
         &mut self,
-        arm: &MatchArm,
+        arm: &Spanned<MatchArm>,
         position: Position,
     ) -> Result<ArmFragment, Diagnostics> {
         let fail = self.next_label();
         let pattern = self.compile_pattern(
-            &arm.pattern,
+            &arm.node.pattern,
             Mismatch::Jump(fail),
             BindMode::Arm,
             &mut Vec::new(),
         )?;
         let guard = arm
+            .node
             .guard
             .as_ref()
-            .map(|guard| self.compile_expression(guard, Position::Inner))
+            .map(|guard| {
+                self.compile_expression(guard, Position::Inner)
+                    .map(|fragment| Guard {
+                        fragment,
+                        span: debug_span(guard.span),
+                    })
+            })
             .transpose()?;
-        let result = self.compile_expression(&arm.result, position)?;
+        let result = self.compile_expression(&arm.node.result, position)?;
         Ok(ArmFragment {
             fail,
             pattern,
             guard,
             result,
+            span: debug_span(arm.span),
         })
     }
 }

@@ -1,3 +1,4 @@
+use crate::bytecode::Span;
 use frostlang_parse::ast::{Expr, Spanned};
 
 use crate::compile::{
@@ -42,10 +43,11 @@ impl FunctionBuilder<'_> {
         operation: &Spanned<Expr>,
         init: Option<&Spanned<Expr>>,
         position: Position,
+        span: Span,
     ) -> Result<ExprFragment, Diagnostics> {
         let slot = global_slot(iteration.global())
             .unwrap_or_else(|| panic!("`{}` is a global", iteration.global()));
-        let callee = self.load_global(slot);
+        let callee = self.load_global(slot, span);
 
         let args = std::iter::once(structure)
             .chain(init)
@@ -53,6 +55,6 @@ impl FunctionBuilder<'_> {
             .map(|expr| self.compile_expression(expr, Position::Inner))
             .collect::<Result<Vec<_>, _>>()?;
 
-        Ok(self.call(callee, args, position))
+        Ok(self.call(callee, args, position, span))
     }
 }

@@ -7,7 +7,7 @@
 //! (empty body, target one past the end, large offsets).
 
 use crate::compile::lower::locals::{LocalInfo, LocalKind, Locals};
-use crate::compile::lower::{ConstKeyOp, FunctionBuilder, Ir, JumpType, Label, NO_SOURCE};
+use crate::compile::lower::{ConstKeyOp, FunctionBuilder, Ir, JumpType, Label, NO_SOURCE, Op};
 use crate::compile::{CompilerOptions, OptimizationOptions};
 
 use crate::bytecode::{Bytecode, CompiledFunction};
@@ -18,10 +18,11 @@ use std::sync::Arc;
 
 /// A hard index of `m.key`, for `key`.
 fn hard_index(key: MapKey) -> Ir {
-    Ir::ConstKey {
+    Op::ConstKey {
         op: ConstKeyOp::HardIndex,
         key,
     }
+    .sourceless()
 }
 
 fn options() -> CompilerOptions {
@@ -55,23 +56,25 @@ fn with_name(options: &CompilerOptions, name: String, arity: Arity) -> FunctionB
         effectful: false,
         lints: Vec::new(),
         abbreviated: None,
+        debug_lines: None,
     }
 }
 
 /// The closure-creation op for a trivial child function, for exercising
 /// closure pooling.
 fn child_closure(options: &CompilerOptions) -> Ir {
-    Ir::closure(
+    Op::closure(
         builder(options)
-            .finish(vec![Ir::Ready(Bytecode::PushNull)])
+            .finish(vec![Op::Ready(Bytecode::PushNull).sourceless()])
             .0,
     )
+    .sourceless()
 }
 
 /// The assembled child function a closure op carries.
 fn compiled(closure: &Ir) -> &Arc<CompiledFunction> {
-    match closure {
-        Ir::Closure { compiled, .. } => compiled,
+    match &closure.op {
+        Op::Closure { compiled, .. } => compiled,
         other => panic!("not a closure op: {other:?}"),
     }
 }
@@ -86,15 +89,16 @@ fn forward_jump_offset_skips_intervening_ops() {
 
     // if-false over two pushes, landing on the trailing PushNull.
     let f = b.assemble(vec![
-        Ir::Ready(Bytecode::PushTrue),
-        Ir::Jump {
+        Op::Ready(Bytecode::PushTrue).sourceless(),
+        Op::Jump {
             kind: JumpType::IfFalse,
             label: end,
-        },
-        Ir::Ready(Bytecode::PushInt(1)),
-        Ir::Ready(Bytecode::PushInt(2)),
-        Ir::Label(end),
-        Ir::Ready(Bytecode::PushNull),
+        }
+        .sourceless(),
+        Op::Ready(Bytecode::PushInt(1)).sourceless(),
+        Op::Ready(Bytecode::PushInt(2)).sourceless(),
+        Op::Label(end).sourceless(),
+        Op::Ready(Bytecode::PushNull).sourceless(),
     ]);
 
     // Label sits at index 4 (Label is zero-width); the jump sits at index 1,
@@ -119,12 +123,13 @@ fn jump_to_immediately_following_label_is_zero_offset() {
     let here = b.next_label();
 
     let f = b.assemble(vec![
-        Ir::Jump {
+        Op::Jump {
             kind: JumpType::Unconditional,
             label: here,
-        },
-        Ir::Label(here),
-        Ir::Ready(Bytecode::PushNull),
+        }
+        .sourceless(),
+        Op::Label(here).sourceless(),
+        Op::Ready(Bytecode::PushNull).sourceless(),
     ]);
 
     assert_eq!(
@@ -141,13 +146,14 @@ fn single_jump_code(kind: JumpType) -> Vec<Bytecode> {
     let mut b = builder(&options);
     let target = b.next_label();
     b.assemble(vec![
-        Ir::Jump {
+        Op::Jump {
             kind,
             label: target,
-        },
-        Ir::Ready(Bytecode::PushInt(1)),
-        Ir::Label(target),
-        Ir::Ready(Bytecode::PushNull),
+        }
+        .sourceless(),
+        Op::Ready(Bytecode::PushInt(1)).sourceless(),
+        Op::Label(target).sourceless(),
+        Op::Ready(Bytecode::PushNull).sourceless(),
     ])
     .code
     .clone()
@@ -184,18 +190,20 @@ fn multiple_jumps_to_one_label_get_distinct_offsets() {
     let end = b.next_label();
 
     let f = b.assemble(vec![
-        Ir::Jump {
+        Op::Jump {
             kind: JumpType::IfTrue,
             label: end,
-        },
-        Ir::Ready(Bytecode::PushInt(1)),
-        Ir::Jump {
+        }
+        .sourceless(),
+        Op::Ready(Bytecode::PushInt(1)).sourceless(),
+        Op::Jump {
             kind: JumpType::IfFalse,
             label: end,
-        },
-        Ir::Ready(Bytecode::PushInt(2)),
-        Ir::Label(end),
-        Ir::Ready(Bytecode::PushNull),
+        }
+        .sourceless(),
+        Op::Ready(Bytecode::PushInt(2)).sourceless(),
+        Op::Label(end).sourceless(),
+        Op::Ready(Bytecode::PushNull).sourceless(),
     ]);
 
     // end is at index 4. From site 0: 4 - 1 = 3. From site 2: 4 - 3 = 1.
@@ -221,13 +229,14 @@ fn target_one_past_the_end_is_permitted() {
     // The label trails every instruction, so its index equals the code length:
     // a jump there falls off the end (the VM treats that as a return).
     let f = b.assemble(vec![
-        Ir::Jump {
+        Op::Jump {
             kind: JumpType::Unconditional,
             label: end,
-        },
-        Ir::Ready(Bytecode::PushInt(1)),
-        Ir::Ready(Bytecode::PushInt(2)),
-        Ir::Label(end),
+        }
+        .sourceless(),
+        Op::Ready(Bytecode::PushInt(1)).sourceless(),
+        Op::Ready(Bytecode::PushInt(2)).sourceless(),
+        Op::Label(end).sourceless(),
     ]);
 
     // end is at index 3 (== len). From site 0: 3 - 1 = 2.
@@ -248,10 +257,10 @@ fn target_one_past_the_end_is_permitted() {
 fn inline_payloads_drain_into_their_pools() {
     let options = options();
     let f = builder(&options).assemble(vec![
-        Ir::Const(Value::Int(42)),
-        Ir::Const(Value::Bool(true)),
+        Op::Const(Value::Int(42)).sourceless(),
+        Op::Const(Value::Bool(true)).sourceless(),
         hard_index(MapKey::from("name")),
-        Ir::Ready(Bytecode::Pop),
+        Op::Ready(Bytecode::Pop).sourceless(),
     ]);
 
     assert_eq!(
@@ -273,9 +282,12 @@ fn inline_payloads_drain_into_their_pools() {
 #[test]
 fn every_constant_key_op_shares_the_key_pool() {
     let options = options();
-    let const_key = |op, key: &str| Ir::ConstKey {
-        op,
-        key: MapKey::from(key),
+    let const_key = |op, key: &str| {
+        Op::ConstKey {
+            op,
+            key: MapKey::from(key),
+        }
+        .sourceless()
     };
     let f = builder(&options).assemble(vec![
         const_key(ConstKeyOp::Test, "a"),
@@ -309,7 +321,7 @@ fn finishing_a_builder_keeps_its_metadata() {
     b.next_label();
     b.effectful = true;
 
-    let (lowered, _) = b.finish(vec![Ir::Ready(Bytecode::PushNull)]);
+    let (lowered, _) = b.finish(vec![Op::Ready(Bytecode::PushNull).sourceless()]);
     assert_eq!(lowered.name, "named");
     assert_eq!(lowered.arity, Arity::AtLeast(1));
     assert_eq!(
@@ -324,7 +336,7 @@ fn finishing_a_builder_keeps_its_metadata() {
 fn a_closure_op_carries_its_lowered_form_and_that_form_assembled() {
     let options = options();
     let closure = child_closure(&options);
-    let Ir::Closure { lowered, compiled } = &closure else {
+    let Op::Closure { lowered, compiled } = &closure.op else {
         panic!("not a closure op: {closure:?}");
     };
     assert_eq!(lowered.code.len(), 1, "the lowered IR is kept");
@@ -363,12 +375,12 @@ fn pool_counters_are_independent_under_interleaving() {
     let child = child_closure(&options);
 
     let f = builder(&options).assemble(vec![
-        Ir::Const(Value::Int(10)),
+        Op::Const(Value::Int(10)).sourceless(),
         hard_index(MapKey::from("a")),
-        Ir::Const(Value::Bool(true)),
+        Op::Const(Value::Bool(true)).sourceless(),
         child,
         hard_index(MapKey::from("b")),
-        Ir::Const(Value::Int(20)),
+        Op::Const(Value::Int(20)).sourceless(),
     ]);
 
     // Each pool advances on its own; interleaving must not cross indices.
@@ -401,15 +413,16 @@ fn payload_ops_count_toward_jump_offsets() {
     // A jump over a Const, a ConstKey, and a Closure must skip all three: each
     // lowers to exactly one instruction, so they count like any other op.
     let f = b.assemble(vec![
-        Ir::Jump {
+        Op::Jump {
             kind: JumpType::Unconditional,
             label: end,
-        },
-        Ir::Const(Value::Int(1)),
+        }
+        .sourceless(),
+        Op::Const(Value::Int(1)).sourceless(),
         hard_index(MapKey::from("k")),
         child,
-        Ir::Label(end),
-        Ir::Ready(Bytecode::PushNull),
+        Op::Label(end).sourceless(),
+        Op::Ready(Bytecode::PushNull).sourceless(),
     ]);
 
     // end is at index 4. From site 0: 4 - 1 = 3.
@@ -447,7 +460,7 @@ fn a_body_of_only_labels_is_empty_code() {
     let mut b = builder(&options);
     let (l0, l1) = (b.next_label(), b.next_label());
 
-    let f = b.assemble(vec![Ir::Label(l0), Ir::Label(l1)]);
+    let f = b.assemble(vec![Op::Label(l0).sourceless(), Op::Label(l1).sourceless()]);
 
     assert!(
         f.code.is_empty(),
@@ -481,7 +494,10 @@ fn function_metadata_passes_through() {
 
     // The capture is seated by the VM, so it needs no `DefLocal` yet still leads
     // the slot table; `result` earns its slot by being defined in the code.
-    let f = b.assemble(vec![Ir::Ready(Bytecode::PushNull), Ir::DefLocal(result)]);
+    let f = b.assemble(vec![
+        Op::Ready(Bytecode::PushNull).sourceless(),
+        Op::DefLocal(result).sourceless(),
+    ]);
 
     assert_eq!(f.name, "greet");
     assert_eq!(f.arity, Arity::Between(1, 3));
@@ -504,11 +520,12 @@ fn jump_to_undefined_label_panics() {
     let dangling = b.next_label(); // minted but never placed
 
     let _ = b.assemble(vec![
-        Ir::Jump {
+        Op::Jump {
             kind: JumpType::Unconditional,
             label: dangling,
-        },
-        Ir::Ready(Bytecode::PushNull),
+        }
+        .sourceless(),
+        Op::Ready(Bytecode::PushNull).sourceless(),
     ]);
 }
 
@@ -520,24 +537,25 @@ fn backward_jump_panics() {
     let start = b.next_label();
 
     let _ = b.assemble(vec![
-        Ir::Label(start),
-        Ir::Ready(Bytecode::PushInt(1)),
-        Ir::Jump {
+        Op::Label(start).sourceless(),
+        Op::Ready(Bytecode::PushInt(1)).sourceless(),
+        Op::Jump {
             kind: JumpType::Unconditional,
             label: start,
-        },
+        }
+        .sourceless(),
     ]);
 }
 
 // The next two guards are `debug_assert!`s, so they only fire in debug builds.
 #[test]
 #[cfg(debug_assertions)]
-#[should_panic(expected = "another Ir variant owns")]
+#[should_panic(expected = "another Op variant owns")]
 fn ir_ready_wrapping_a_symbolic_opcode_panics() {
-    // `LoadLocal` is `Ir::LoadLocal`'s opcode, not a plain `Ir::Ready`; wrapping
+    // `LoadLocal` is `Op::LoadLocal`'s opcode, not a plain `Op::Ready`; wrapping
     // it bypasses the pass that resolves its slot, which is a compiler bug.
     let options = options();
-    let _ = builder(&options).assemble(vec![Ir::Ready(Bytecode::LoadLocal(0))]);
+    let _ = builder(&options).assemble(vec![Op::Ready(Bytecode::LoadLocal(0)).sourceless()]);
 }
 
 #[test]
@@ -549,9 +567,9 @@ fn a_label_emitted_twice_panics() {
     let l = b.next_label();
 
     let _ = b.assemble(vec![
-        Ir::Label(l),
-        Ir::Ready(Bytecode::PushNull),
-        Ir::Label(l),
+        Op::Label(l).sourceless(),
+        Op::Ready(Bytecode::PushNull).sourceless(),
+        Op::Label(l).sourceless(),
     ]);
 }
 
@@ -564,11 +582,12 @@ fn self_jump_panics() {
 
     // The label precedes the jump itself: the jump targets its own slot.
     let _ = b.assemble(vec![
-        Ir::Label(here),
-        Ir::Jump {
+        Op::Label(here).sourceless(),
+        Op::Jump {
             kind: JumpType::Unconditional,
             label: here,
-        },
+        }
+        .sourceless(),
     ]);
 }
 
@@ -581,13 +600,16 @@ fn long_forward_jump_offset() {
     let mut b = builder(&options);
     let end = b.next_label();
 
-    let mut code = vec![Ir::Jump {
-        kind: JumpType::Unconditional,
-        label: end,
-    }];
-    code.extend((0..N).map(|i| Ir::Ready(Bytecode::PushInt(i as i64))));
-    code.push(Ir::Label(end));
-    code.push(Ir::Ready(Bytecode::PushNull));
+    let mut code = vec![
+        Op::Jump {
+            kind: JumpType::Unconditional,
+            label: end,
+        }
+        .sourceless(),
+    ];
+    code.extend((0..N).map(|i| Op::Ready(Bytecode::PushInt(i as i64)).sourceless()));
+    code.push(Op::Label(end).sourceless());
+    code.push(Op::Ready(Bytecode::PushNull).sourceless());
 
     let f = b.assemble(code);
 
@@ -605,22 +627,25 @@ fn dense_mix_of_jumps_labels_and_payloads() {
     let a = b.next_label();
     let z = b.next_label();
 
+    // Trailing comments give each op's final instruction index.
     let f = b.assemble(vec![
-        Ir::Jump {
+        Op::Jump {
             kind: JumpType::IfFalse,
             label: z,
-        }, // 0
-        Ir::Const(Value::Int(7)), // 1
-        Ir::Jump {
+        }
+        .sourceless(), // 0
+        Op::Const(Value::Int(7)).sourceless(), // 1
+        Op::Jump {
             kind: JumpType::Unconditional,
             label: a,
-        }, // 2
-        hard_index(MapKey::from("k")), // 3
-        Ir::Label(a),             // -> index 4
-        child,                    // 4
-        Ir::Ready(Bytecode::Pop), // 5
-        Ir::Label(z),             // -> index 6
-        Ir::Ready(Bytecode::PushNull), // 6
+        }
+        .sourceless(), // 2
+        hard_index(MapKey::from("k")),         // 3
+        Op::Label(a).sourceless(),             // -> index 4
+        child,                                 // 4
+        Op::Ready(Bytecode::Pop).sourceless(), // 5
+        Op::Label(z).sourceless(),             // -> index 6
+        Op::Ready(Bytecode::PushNull).sourceless(), // 6
     ]);
 
     // a is at index 4, z at index 6.
@@ -663,39 +688,44 @@ fn convoluted_program_keeps_every_pool_and_jump_straight() {
     // target. The right column is the final instruction index of each op; a
     // `Label -> N` line binds the label to the next index without occupying one.
     let f = b.assemble(vec![
-        Ir::Jump {
+        Op::Jump {
             kind: JumpType::IfTrue,
             label: l1,
-        }, // 0  -> l1 (5)
-        Ir::Jump {
+        }
+        .sourceless(), // 0  -> l1 (5)
+        Op::Jump {
             kind: JumpType::IfFalse,
             label: l2,
-        }, // 1  -> l2 (7), past l1
-        Ir::Const(Value::Int(10)),     // 2
-        hard_index(MapKey::from("a")), // 3
-        child_a.clone(),               // 4
-        Ir::Label(l1),                 // -> 5
-        Ir::Const(Value::Int(20)),     // 5
-        Ir::Jump {
+        }
+        .sourceless(), // 1  -> l2 (7), past l1
+        Op::Const(Value::Int(10)).sourceless(), // 2
+        hard_index(MapKey::from("a")),          // 3
+        child_a.clone(),                        // 4
+        Op::Label(l1).sourceless(),             // -> 5
+        Op::Const(Value::Int(20)).sourceless(), // 5
+        Op::Jump {
             kind: JumpType::Unconditional,
             label: l3,
-        }, // 6  -> l3 (12), past l2
-        Ir::Label(l2),                 // -> 7
-        hard_index(MapKey::from("b")), // 7
-        child_b.clone(),               // 8
-        Ir::Jump {
+        }
+        .sourceless(), // 6  -> l3 (12), past l2
+        Op::Label(l2).sourceless(),             // -> 7
+        hard_index(MapKey::from("b")),          // 7
+        child_b.clone(),                        // 8
+        Op::Jump {
             kind: JumpType::PeekIfTrue,
             label: l3,
-        }, // 9  -> l3 (12), shares target with site 6
-        Ir::Jump {
+        }
+        .sourceless(), // 9  -> l3 (12), shares target with site 6
+        Op::Jump {
             kind: JumpType::PeekIfFalse,
             label: l4,
-        }, // 10 -> l4 (13), past l3
-        Ir::Const(Value::Bool(true)),  // 11
-        Ir::Label(l3),                 // -> 12
-        hard_index(MapKey::from("c")), // 12
-        Ir::Label(l4),                 // -> 13
-        Ir::Ready(Bytecode::PushNull), // 13
+        }
+        .sourceless(), // 10 -> l4 (13), past l3
+        Op::Const(Value::Bool(true)).sourceless(), // 11
+        Op::Label(l3).sourceless(),             // -> 12
+        hard_index(MapKey::from("c")),          // 12
+        Op::Label(l4).sourceless(),             // -> 13
+        Op::Ready(Bytecode::PushNull).sourceless(), // 13
     ]);
 
     assert_eq!(

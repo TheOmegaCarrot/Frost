@@ -26,7 +26,7 @@ use crate::compile::{
     CompilerOptions, CompilerOutput, Diagnostic, Diagnostics, OptimizationOptions,
 };
 
-use crate::bytecode::{Bytecode, CompiledFunction};
+use crate::bytecode::{Bytecode, CompiledFunction, SourceLines, Span};
 use crate::{Arity, MapKey, Value};
 use frostlang_parse::{
     ast::{Expr, SourceSpan, Spanned, Statement, TypeConstraint},
@@ -73,8 +73,18 @@ enum ConstKeyOp {
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 struct LocalId(usize);
 
+/// One IR instruction, and the source it is derived from: the innermost AST node
+/// that unambiguously produced it.
 #[derive(Clone, Debug)]
-enum Ir {
+struct Ir {
+    op: Op,
+    span: Span,
+}
+
+/// What an IR instruction does. An [`Op::Label`] is zero-width: it emits
+/// nothing, so its span only widens a fragment's [`code_span`].
+#[derive(Clone, Debug)]
+enum Op {
     Ready(Bytecode),
     Jump {
         kind: JumpType,
@@ -93,22 +103,53 @@ enum Ir {
     DefLocal(LocalId),
     /// Create a closure over a nested function. Both forms are kept: `compiled`
     /// is what assembly pools, `lowered` is the IR it was assembled from.
-    /// Build with [`Ir::closure`] so the two always match.
+    /// Build with [`Op::closure`] so the two always match.
     Closure {
         lowered: Arc<LoweredFunction>,
         compiled: Arc<CompiledFunction>,
     },
 }
 
-impl Ir {
+impl Op {
     /// The closure-creation op for a nested function, assembled once here.
     fn closure(lowered: LoweredFunction) -> Self {
         let compiled = lowered.assemble();
-        Ir::Closure {
+        Op::Closure {
             lowered: Arc::new(lowered),
             compiled,
         }
     }
+
+    /// This op, derived from the source at `span`.
+    fn at(self, span: Span) -> Ir {
+        Ir { op: self, span }
+    }
+
+    /// This op, for a test whose IR has no source. Unlike [`UNEMITTED`] IR, a
+    /// test's IR is emitted, just without debug info.
+    #[cfg(test)]
+    fn sourceless(self) -> Ir {
+        self.at(Span { start: 0, end: 0 })
+    }
+}
+
+/// The debug-info span of a source span. Offsets past `u32` saturate: debug info
+/// is inexact past the first 4 GiB of source.
+fn debug_span(span: SourceSpan) -> Span {
+    let offset = |offset: usize| u32::try_from(offset).unwrap_or(u32::MAX);
+    Span {
+        start: offset(span.start),
+        end: offset(span.end),
+    }
+}
+
+/// The span of IR that is evaluated at compile time but never emitted, so has
+/// no debug info to read it.
+const UNEMITTED: Span = Span { start: 0, end: 0 };
+
+/// The filled union of the spans of `code`, or `None` if it is empty.
+fn code_span(code: &[Ir]) -> Option<Span> {
+    code.iter().map(|ir| ir.span).reduce(Span::filled_union)
 }
 
 /// A function after lowering, before assembly: its IR and everything needed to
@@ -126,6 +167,8 @@ struct LoweredFunction {
     effectful: bool,
     // See `OptimizationOptions::deduplicate_constants`.
     deduplicate_constants: bool,
+    // The compilation's line table, if it keeps debug info.
+    debug_lines: Option<Arc<SourceLines>>,
 }
 
 #[derive(Debug)]
@@ -170,6 +213,9 @@ struct FunctionBuilder<'a> {
     filename: &'a str,
     // Every function of one compilation shares its origin.
     origin: Option<Arc<str>>,
+    // Every function of one compilation shares its line table: `Some` if the
+    // compilation keeps debug info.
+    debug_lines: Option<Arc<SourceLines>>,
     options: &'a CompilerOptions,
     // The warm VM for constant-folding, shared across the whole compilation.
     // `None` when there is no folding (e.g. a test that only assembles).
@@ -208,6 +254,7 @@ impl<'a> FunctionBuilder<'a> {
             shared_source: self.shared_source,
             filename: self.filename,
             origin: self.origin.clone(),
+            debug_lines: self.debug_lines.clone(),
             options: self.options,
             fold_vm: self.fold_vm,
             top_level: false,
@@ -391,6 +438,9 @@ pub fn compile_in_scope(
             .file_name()
             .and_then(OsStr::to_str)
             .map(Arc::from),
+        debug_lines: options
+            .debug_info
+            .then(|| Arc::new(SourceLines::new(script))),
         options: &options,
         fold_vm: Some(&fold_vm),
         top_level: true,
@@ -399,8 +449,10 @@ pub fn compile_in_scope(
         abbreviated: None,
     };
 
-    // Consume the top-level's own function value (see the calling convention on `Bytecode`).
-    let mut ir: Vec<Ir> = vec![Ir::Ready(Bytecode::Pop)];
+    // Consume the top-level's own function value (see the calling convention on
+    // `Bytecode`), which the whole script is.
+    let script_span = debug_span(SourceSpan::from(0..script.len()));
+    let mut ir: Vec<Ir> = vec![Op::Ready(Bytecode::Pop).at(script_span)];
 
     if let Some((tail, body)) = ast.statements.split_last() {
         for stmt in body {
@@ -459,7 +511,9 @@ impl FunctionBuilder<'_> {
                 let expr_fragment = self.compile_expression(expr, position)?;
                 let mut folded = self.fold_if_eligible(expr_fragment);
                 if position == Position::Inner {
-                    folded.code.push(Ir::Ready(Bytecode::Pop));
+                    folded
+                        .code
+                        .push(Op::Ready(Bytecode::Pop).at(debug_span(stmt.span)));
                 }
                 Ok(StatementFragment {
                     code: folded.code,
@@ -479,33 +533,47 @@ impl FunctionBuilder<'_> {
         expr: &Spanned<Expr>,
         position: Position,
     ) -> Result<ExprFragment, Diagnostics> {
+        // The span of the code this node emits itself; its children's code
+        // carries their own.
+        let span = debug_span(expr.span);
         match &expr.node {
             Expr::Literal(literal) => self.compile_literal(literal, expr.span),
             Expr::NameLookup(name) => self.compile_name_lookup(name, expr.span),
-            Expr::BinOp { left, op, right } => self.compile_binop(left, op, right),
-            Expr::Logical { left, op, right } => self.compile_logical(left, op, right, position),
-            Expr::UnaryOp { op, operand } => self.compile_unary(op, operand),
+            Expr::BinOp { left, op, right } => self.compile_binop(left, op, right, span),
+            Expr::Logical { left, op, right } => {
+                self.compile_logical(left, op, right, position, span)
+            }
+            Expr::UnaryOp { op, operand } => self.compile_unary(op, operand, span),
             Expr::If {
                 condition,
                 consequent,
                 alternate,
-            } => self.compile_if_expression(condition, consequent, alternate, position),
+            } => self.compile_if_expression(condition, consequent, alternate, position, span),
             Expr::Do { body, value } => self.compile_do_expression(body, value, position),
-            Expr::Call { callee, args } => self.compile_call_expression(callee, args, position),
-            Expr::SoftIndex { target, key } => self.compile_soft_index(target, key),
-            Expr::HardIndex { target, key } => self.compile_hard_index(target, key),
-            Expr::Array(elements) => self.compile_array_literal(elements),
-            Expr::Map(entries) => self.compile_map_literal(entries),
-            Expr::FormatString(segments) => self.compile_format_string(segments),
+            Expr::Call { callee, args } => {
+                self.compile_call_expression(callee, args, position, span)
+            }
+            Expr::SoftIndex { target, key } => self.compile_soft_index(target, key, span),
+            Expr::HardIndex { target, key } => self.compile_hard_index(target, key, span),
+            Expr::Array(elements) => self.compile_array_literal(elements, span),
+            Expr::Map(entries) => self.compile_map_literal(entries, span),
+            Expr::FormatString(segments) => self.compile_format_string(segments, span),
             Expr::Lambda { .. } | Expr::AbbreviatedLambda { .. } => self.compile_lambda(expr),
             Expr::Filter {
                 structure,
                 operation,
-            } => self.compile_iteration(Iteration::Filter, structure, operation, None, position),
+            } => self.compile_iteration(
+                Iteration::Filter,
+                structure,
+                operation,
+                None,
+                position,
+                span,
+            ),
             Expr::MapIter {
                 structure,
                 operation,
-            } => self.compile_iteration(Iteration::Map, structure, operation, None, position),
+            } => self.compile_iteration(Iteration::Map, structure, operation, None, position, span),
             Expr::Reduce {
                 structure,
                 operation,
@@ -516,12 +584,22 @@ impl FunctionBuilder<'_> {
                 operation,
                 init.as_deref(),
                 position,
+                span,
             ),
             Expr::Foreach {
                 structure,
                 operation,
-            } => self.compile_iteration(Iteration::Foreach, structure, operation, None, position),
-            Expr::Match { target, arms } => self.compile_match_expression(target, arms, position),
+            } => self.compile_iteration(
+                Iteration::Foreach,
+                structure,
+                operation,
+                None,
+                position,
+                span,
+            ),
+            Expr::Match { target, arms } => {
+                self.compile_match_expression(target, arms, position, span)
+            }
         }
     }
 }

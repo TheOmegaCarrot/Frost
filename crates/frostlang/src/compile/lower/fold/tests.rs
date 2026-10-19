@@ -2,23 +2,27 @@
 //! hand-built fragments.
 
 use crate::bytecode::Bytecode;
+use crate::compile::lower::assemble::AssemblyOptions;
 use crate::compile::lower::assemble::assemble_code;
-use crate::compile::lower::fold::{FoldVm, constant_of, value_to_ir};
+use crate::compile::lower::fold::{FoldVm, constant_of, value_to_op};
 use crate::compile::lower::locals::{Locals, SlotPlan};
-use crate::compile::lower::{ExprFragment, FunctionBuilder, Ir, Label, LocalId, NO_SOURCE};
+use crate::compile::lower::{ExprFragment, FunctionBuilder, Ir, Label, LocalId, NO_SOURCE, Op};
 use crate::compile::{CompilerOptions, OptimizationOptions};
 use crate::{Arity, FrostFloat, MapKey, Value};
 
 /// A function [`Value`], for exercising the const-representability guard.
 fn a_function() -> Value {
     let function = assemble_code(
-        &[Ir::Ready(Bytecode::PushNull)],
+        &[Op::Ready(Bytecode::PushNull).sourceless()],
         0,
         "<f>".to_string(),
         None,
         Arity::Exact(0),
         SlotPlan::empty(),
-        false,
+        AssemblyOptions {
+            deduplicate_constants: false,
+            debug_lines: None,
+        },
     );
     Value::Closure(function.assert_well_formed().into_closure().unwrap())
 }
@@ -42,9 +46,13 @@ fn a_fragment_ending_in_closure_creation_is_not_evaluated() {
     // panic: the test passing proves no evaluation is attempted.
     let options = options(true);
     let fold_vm = FoldVm::new();
-    let (child, _) = builder(&options, &fold_vm).finish(vec![Ir::Ready(Bytecode::PushNull)]);
+    let (child, _) =
+        builder(&options, &fold_vm).finish(vec![Op::Ready(Bytecode::PushNull).sourceless()]);
     let fragment = ExprFragment {
-        code: vec![Ir::LoadLocal(LocalId(0)), Ir::closure(child)],
+        code: vec![
+            Op::LoadLocal(LocalId(0)).sourceless(),
+            Op::closure(child).sourceless(),
+        ],
         foldable: true,
     };
     let result = builder(&options, &fold_vm).fold_if_eligible(fragment);
@@ -68,6 +76,7 @@ fn builder<'a>(options: &'a CompilerOptions, fold_vm: &'a FoldVm) -> FunctionBui
         effectful: false,
         lints: Vec::new(),
         abbreviated: None,
+        debug_lines: None,
     }
 }
 
@@ -75,9 +84,9 @@ fn builder<'a>(options: &'a CompilerOptions, fold_vm: &'a FoldVm) -> FunctionBui
 fn arithmetic(op: Bytecode) -> ExprFragment {
     ExprFragment {
         code: vec![
-            Ir::Ready(Bytecode::PushInt(1)),
-            Ir::Ready(Bytecode::PushInt(2)),
-            Ir::Ready(op),
+            Op::Ready(Bytecode::PushInt(1)).sourceless(),
+            Op::Ready(Bytecode::PushInt(2)).sourceless(),
+            Op::Ready(op).sourceless(),
         ],
         foldable: true,
     }
@@ -87,9 +96,9 @@ fn arithmetic(op: Bytecode) -> ExprFragment {
 fn local_plus_one() -> ExprFragment {
     ExprFragment {
         code: vec![
-            Ir::LoadLocal(LocalId(0)),
-            Ir::Ready(Bytecode::PushInt(1)),
-            Ir::Ready(Bytecode::Add),
+            Op::LoadLocal(LocalId(0)).sourceless(),
+            Op::Ready(Bytecode::PushInt(1)).sourceless(),
+            Op::Ready(Bytecode::Add).sourceless(),
         ],
         foldable: false,
     }
@@ -97,7 +106,16 @@ fn local_plus_one() -> ExprFragment {
 
 /// Whether `fragment` was folded to the lone `PushInt(value)`.
 fn is_folded_to(fragment: &ExprFragment, value: i64) -> bool {
-    matches!(fragment.code.as_slice(), [Ir::Ready(Bytecode::PushInt(v))] if *v == value)
+    let [
+        Ir {
+            op: Op::Ready(Bytecode::PushInt(pushed)),
+            ..
+        },
+    ] = fragment.code.as_slice()
+    else {
+        return false;
+    };
+    *pushed == value
 }
 
 /// Whether `fragment` is still the unfolded `1 op 2` or `x + 1` (three ops).
@@ -106,57 +124,57 @@ fn is_intact(fragment: &ExprFragment) -> bool {
 }
 
 #[test]
-fn value_to_ir_inlines_scalars_and_pools_structured() {
+fn value_to_op_inlines_scalars_and_pools_structured() {
     assert!(matches!(
-        value_to_ir(Value::Null),
-        Some(Ir::Ready(Bytecode::PushNull))
+        value_to_op(Value::Null),
+        Some(Op::Ready(Bytecode::PushNull))
     ));
     assert!(matches!(
-        value_to_ir(Value::Bool(true)),
-        Some(Ir::Ready(Bytecode::PushTrue))
+        value_to_op(Value::Bool(true)),
+        Some(Op::Ready(Bytecode::PushTrue))
     ));
     assert!(matches!(
-        value_to_ir(Value::Bool(false)),
-        Some(Ir::Ready(Bytecode::PushFalse))
+        value_to_op(Value::Bool(false)),
+        Some(Op::Ready(Bytecode::PushFalse))
     ));
     assert!(matches!(
-        value_to_ir(Value::Int(7)),
-        Some(Ir::Ready(Bytecode::PushInt(7)))
+        value_to_op(Value::Int(7)),
+        Some(Op::Ready(Bytecode::PushInt(7)))
     ));
     // A string cannot be inlined, so it goes to the constant pool.
-    assert!(matches!(value_to_ir(Value::from("hi")), Some(Ir::Const(_))));
+    assert!(matches!(value_to_op(Value::from("hi")), Some(Op::Const(_))));
     // A float is also an inline push, like the other scalars.
     let float = FrostFloat::new(1.5).expect("1.5 is a valid Frost float");
     assert!(matches!(
-        value_to_ir(Value::Float(float)),
-        Some(Ir::Ready(Bytecode::PushFloat(f))) if f.get() == 1.5
+        value_to_op(Value::Float(float)),
+        Some(Op::Ready(Bytecode::PushFloat(f))) if f.get() == 1.5
     ));
 }
 
 #[test]
-fn value_to_ir_rejects_functions_transitively() {
+fn value_to_op_rejects_functions_transitively() {
     // A bare function is not const-representable.
-    assert!(value_to_ir(a_function()).is_none());
+    assert!(value_to_op(a_function()).is_none());
     // Nor is a structure that transitively holds one.
     let array = Value::from(vec![Value::Int(1), a_function()]);
-    assert!(value_to_ir(array).is_none());
+    assert!(value_to_op(array).is_none());
     // A function-free structure still pools.
     let clean = Value::from(vec![Value::Int(1), Value::Int(2)]);
-    assert!(matches!(value_to_ir(clean), Some(Ir::Const(_))));
+    assert!(matches!(value_to_op(clean), Some(Op::Const(_))));
 }
 
 #[test]
-fn value_to_ir_rejects_a_map_holding_a_function() {
+fn value_to_op_rejects_a_map_holding_a_function() {
     // The transitive check applies to a Map's values just as it does to an
     // Array's elements.
     let map = Value::from_iter([(MapKey::from("f"), a_function())]);
     assert!(
-        value_to_ir(map).is_none(),
+        value_to_op(map).is_none(),
         "a function nested in a map is not const-representable"
     );
     let clean = Value::from_iter([(MapKey::from("n"), Value::Int(1))]);
     assert!(
-        matches!(value_to_ir(clean), Some(Ir::Const(_))),
+        matches!(value_to_op(clean), Some(Op::Const(_))),
         "a function-free map still pools"
     );
 }
@@ -165,24 +183,24 @@ fn value_to_ir_rejects_a_map_holding_a_function() {
 fn constant_of_reads_a_lone_value_op() {
     // Every inline scalar push, and a pooled value.
     assert_eq!(
-        constant_of(&[Ir::Ready(Bytecode::PushNull)]),
+        constant_of(&[Op::Ready(Bytecode::PushNull).sourceless()]),
         Some(Value::Null)
     );
     assert_eq!(
-        constant_of(&[Ir::Ready(Bytecode::PushTrue)]),
+        constant_of(&[Op::Ready(Bytecode::PushTrue).sourceless()]),
         Some(Value::Bool(true))
     );
     assert_eq!(
-        constant_of(&[Ir::Ready(Bytecode::PushInt(5))]),
+        constant_of(&[Op::Ready(Bytecode::PushInt(5)).sourceless()]),
         Some(Value::Int(5))
     );
     assert_eq!(
-        constant_of(&[Ir::Const(Value::from("hi"))]),
+        constant_of(&[Op::Const(Value::from("hi")).sourceless()]),
         Some(Value::from("hi"))
     );
     let float = FrostFloat::new(2.5).expect("2.5 is a valid Frost float");
     assert_eq!(
-        constant_of(&[Ir::Ready(Bytecode::PushFloat(float))]),
+        constant_of(&[Op::Ready(Bytecode::PushFloat(float)).sourceless()]),
         Some(Value::Float(float))
     );
 }
@@ -190,16 +208,22 @@ fn constant_of_reads_a_lone_value_op() {
 #[test]
 fn constant_of_reads_an_empty_structure_literal() {
     assert_eq!(
-        constant_of(&[Ir::Ready(Bytecode::MakeArray(0))]),
+        constant_of(&[Op::Ready(Bytecode::MakeArray(0)).sourceless()]),
         Some(Value::from_iter(std::iter::empty::<Value>()))
     );
     assert_eq!(
-        constant_of(&[Ir::Ready(Bytecode::MakeMap(0))]),
+        constant_of(&[Op::Ready(Bytecode::MakeMap(0)).sourceless()]),
         Some(Value::from_iter(std::iter::empty::<(MapKey, Value)>()))
     );
     // A nonempty one consumes operands, so alone it is no value.
-    assert_eq!(constant_of(&[Ir::Ready(Bytecode::MakeArray(1))]), None);
-    assert_eq!(constant_of(&[Ir::Ready(Bytecode::MakeMap(1))]), None);
+    assert_eq!(
+        constant_of(&[Op::Ready(Bytecode::MakeArray(1)).sourceless()]),
+        None
+    );
+    assert_eq!(
+        constant_of(&[Op::Ready(Bytecode::MakeMap(1)).sourceless()]),
+        None
+    );
 }
 
 #[test]
@@ -208,13 +232,13 @@ fn constant_of_rejects_anything_but_a_lone_value_op() {
     assert_eq!(constant_of(&[]), None);
     assert_eq!(
         constant_of(&[
-            Ir::Ready(Bytecode::PushInt(1)),
-            Ir::Ready(Bytecode::PushInt(2)),
-            Ir::Ready(Bytecode::Add),
+            Op::Ready(Bytecode::PushInt(1)).sourceless(),
+            Op::Ready(Bytecode::PushInt(2)).sourceless(),
+            Op::Ready(Bytecode::Add).sourceless(),
         ]),
         None
     );
-    assert_eq!(constant_of(&[Ir::LoadLocal(LocalId(0))]), None);
+    assert_eq!(constant_of(&[Op::LoadLocal(LocalId(0)).sourceless()]), None);
 }
 
 #[test]
@@ -224,7 +248,7 @@ fn folds_a_pure_arithmetic_fragment_to_an_inline_push() {
     let folded = builder(&options, &fold_vm).fold_if_eligible(arithmetic(Bytecode::Add));
     assert_eq!(folded.code.len(), 1, "collapsed to one op");
     assert!(
-        matches!(folded.code[0], Ir::Ready(Bytecode::PushInt(3))),
+        matches!(folded.code[0].op, Op::Ready(Bytecode::PushInt(3))),
         "1 + 2 folded to an inline PushInt(3), not a pool load"
     );
     assert!(folded.foldable, "a folded constant is itself foldable");
@@ -235,9 +259,9 @@ fn a_non_foldable_fragment_is_left_alone() {
     let options = options(true);
     let fragment = ExprFragment {
         code: vec![
-            Ir::LoadLocal(LocalId(0)),
-            Ir::Ready(Bytecode::PushInt(1)),
-            Ir::Ready(Bytecode::Add),
+            Op::LoadLocal(LocalId(0)).sourceless(),
+            Op::Ready(Bytecode::PushInt(1)).sourceless(),
+            Op::Ready(Bytecode::Add).sourceless(),
         ],
         foldable: false,
     };
@@ -269,12 +293,15 @@ fn a_single_op_fragment_is_not_re_folded() {
     // Already minimal: folding would only spend a VM run to reproduce it.
     let options = options(true);
     let fragment = ExprFragment {
-        code: vec![Ir::Ready(Bytecode::PushInt(42))],
+        code: vec![Op::Ready(Bytecode::PushInt(42)).sourceless()],
         foldable: true,
     };
     let fold_vm = FoldVm::new();
     let folded = builder(&options, &fold_vm).fold_if_eligible(fragment);
-    assert!(matches!(folded.code[0], Ir::Ready(Bytecode::PushInt(42))));
+    assert!(matches!(
+        folded.code[0].op,
+        Op::Ready(Bytecode::PushInt(42))
+    ));
     assert_eq!(folded.code.len(), 1);
 }
 
@@ -298,6 +325,7 @@ fn folding_without_a_fold_vm_leaves_the_fragment_unchanged() {
         effectful: false,
         lints: Vec::new(),
         abbreviated: None,
+        debug_lines: None,
     };
     let folded = no_fold_vm.fold_if_eligible(arithmetic(Bytecode::Add));
     assert_eq!(
@@ -314,9 +342,9 @@ fn a_fragment_that_errors_when_evaluated_is_kept_as_bytecode() {
     let options = options(true);
     let fragment = ExprFragment {
         code: vec![
-            Ir::Ready(Bytecode::PushInt(1)),
-            Ir::Ready(Bytecode::PushInt(0)),
-            Ir::Ready(Bytecode::Divide),
+            Op::Ready(Bytecode::PushInt(1)).sourceless(),
+            Op::Ready(Bytecode::PushInt(0)).sourceless(),
+            Op::Ready(Bytecode::Divide).sourceless(),
         ],
         foldable: true,
     };
@@ -448,9 +476,9 @@ fn a_failing_sibling_fold_keeps_its_bytecode() {
     let fold_vm = FoldVm::new();
     let zero_division = ExprFragment {
         code: vec![
-            Ir::Ready(Bytecode::PushInt(1)),
-            Ir::Ready(Bytecode::PushInt(0)),
-            Ir::Ready(Bytecode::Divide),
+            Op::Ready(Bytecode::PushInt(1)).sourceless(),
+            Op::Ready(Bytecode::PushInt(0)).sourceless(),
+            Op::Ready(Bytecode::Divide).sourceless(),
         ],
         foldable: true,
     };

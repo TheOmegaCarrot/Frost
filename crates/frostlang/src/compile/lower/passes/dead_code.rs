@@ -13,52 +13,55 @@
 //! local is no read of it, which can make an earlier store dead, and a dead
 //! store's `Pop` can remove the load of its value. Walking backward, each `Pop`
 //! is held back as pending, and is emitted only on meeting an instruction it
-//! cannot remove.
+//! cannot remove. A dead store's `Pop` keeps the store's span.
 
-use std::collections::HashSet;
-use std::iter;
+#[cfg(test)]
+mod tests;
+
+use std::collections::{HashSet, VecDeque};
 
 use crate::bytecode::Bytecode;
 
 use crate::compile::OptimizationOptions;
-use crate::compile::lower::{Ir, LoweredFunction};
+use crate::compile::lower::{Ir, LoweredFunction, Op};
 
 pub(super) fn eliminate_dead_code(
     mut function: LoweredFunction,
     options: &OptimizationOptions,
 ) -> LoweredFunction {
     let mut read_later = HashSet::new();
-    let mut pending_pops = 0;
+    // In code order: the front is nearest the walk.
+    let mut pending_pops: VecDeque<Ir> = VecDeque::new();
     // Built back to front.
     let mut reversed = Vec::with_capacity(function.code.len());
     for ir in function.code.into_iter().rev() {
-        let is_dead_store = matches!(ir, Ir::DefLocal(id)
+        let is_dead_store = matches!(ir.op, Op::DefLocal(id)
             if options.dead_store_eliminate
                 && !read_later.contains(&id)
                 && !function.locals.is_exported(id));
-        if matches!(ir, Ir::Ready(Bytecode::Pop)) || is_dead_store {
-            pending_pops += 1;
-        } else if pending_pops > 0 && options.discard_eliminate && is_load(&ir) {
-            pending_pops -= 1;
+        if matches!(ir.op, Op::Ready(Bytecode::Pop)) || is_dead_store {
+            pending_pops.push_front(Op::Ready(Bytecode::Pop).at(ir.span));
+        } else if !pending_pops.is_empty() && options.discard_eliminate && is_load(&ir.op) {
+            // The load's value is what the first Pop after it pops.
+            pending_pops.pop_front();
         } else {
-            reversed.extend(iter::repeat_n(Ir::Ready(Bytecode::Pop), pending_pops));
-            pending_pops = 0;
-            if let Ir::LoadLocal(id) | Ir::ConsumeLocal(id) = ir {
+            reversed.extend(pending_pops.drain(..).rev());
+            if let Op::LoadLocal(id) | Op::ConsumeLocal(id) = ir.op {
                 read_later.insert(id);
             }
             reversed.push(ir);
         }
     }
-    reversed.extend(iter::repeat_n(Ir::Ready(Bytecode::Pop), pending_pops));
+    reversed.extend(pending_pops.drain(..).rev());
     reversed.reverse();
     function.code = reversed;
     function
 }
 
-/// Whether `ir` only pushes a value, `( -- x )`, and cannot raise.
-fn is_load(ir: &Ir) -> bool {
-    match ir {
-        Ir::Ready(bytecode) => matches!(
+/// Whether `op` only pushes a value, `( -- x )`, and cannot raise.
+fn is_load(op: &Op) -> bool {
+    match op {
+        Op::Ready(bytecode) => matches!(
             bytecode,
             Bytecode::PushNull
                 | Bytecode::PushTrue
@@ -70,9 +73,9 @@ fn is_load(ir: &Ir) -> bool {
                 | Bytecode::MakeArray(0)
                 | Bytecode::MakeMap(0)
         ),
-        Ir::Const(_) | Ir::LoadLocal(_) | Ir::ConsumeLocal(_) => true,
+        Op::Const(_) | Op::LoadLocal(_) | Op::ConsumeLocal(_) => true,
         // Creating a closure pops its captures.
-        Ir::Closure { compiled, .. } => compiled.num_captures == 0,
-        Ir::ConstKey { .. } | Ir::DefLocal(_) | Ir::Label(_) | Ir::Jump { .. } => false,
+        Op::Closure { compiled, .. } => compiled.num_captures == 0,
+        Op::ConstKey { .. } | Op::DefLocal(_) | Op::Label(_) | Op::Jump { .. } => false,
     }
 }

@@ -1,13 +1,13 @@
 use std::num::NonZeroU64;
 
 use crate::Value;
-use crate::bytecode::Bytecode;
+use crate::bytecode::{Bytecode, Span};
 use crate::vm::to_operand;
 use frostlang_parse::ast::FormatSegment;
 
 use crate::compile::{
     Diagnostics,
-    lower::{ExprFragment, FunctionBuilder, Ir, Position},
+    lower::{ExprFragment, FunctionBuilder, Op, Position},
 };
 
 impl FunctionBuilder<'_> {
@@ -15,21 +15,23 @@ impl FunctionBuilder<'_> {
     pub(super) fn compile_format_string(
         &mut self,
         segments: &[FormatSegment],
+        span: Span,
     ) -> Result<ExprFragment, Diagnostics> {
         let segment_count = segments.len();
 
         if segment_count == 0 {
             return Ok(ExprFragment {
-                code: vec![Ir::Const(Value::from(""))],
+                code: vec![Op::Const(Value::from("")).at(span)],
                 foldable: true,
             });
         }
 
+        // A literal segment has no node of its own, so it is the format string's.
         let segment_exprs = segments
             .iter()
             .map(|segment| match segment {
                 FormatSegment::Literal(str) => Ok(ExprFragment {
-                    code: vec![Ir::Const(Value::from(str.clone()))],
+                    code: vec![Op::Const(Value::from(str.clone())).at(span)],
                     foldable: true,
                 }),
                 FormatSegment::Interpolation(expr) => {
@@ -45,10 +47,11 @@ impl FunctionBuilder<'_> {
             code: segment_exprs
                 .into_iter()
                 .flat_map(|segment| segment.code)
-                .chain([Ir::Ready(Bytecode::Concat(
+                .chain([Op::Ready(Bytecode::Concat(
                     NonZeroU64::new(to_operand(segment_count))
                         .expect("0 segment case can't reach here"),
-                ))])
+                ))
+                .at(span)])
                 .collect(),
         })
     }

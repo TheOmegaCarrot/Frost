@@ -3,8 +3,8 @@ use frostlang_parse::ast::{Binding, Expr, Pattern, Spanned};
 use crate::compile::{
     Diagnostics,
     lower::{
-        FunctionBuilder, Ir, Position, StatementFragment,
-        fold::value_to_ir,
+        FunctionBuilder, Op, Position, StatementFragment, debug_span,
+        fold::value_to_op,
         pattern::{BindMode, Mismatch},
     },
 };
@@ -78,10 +78,18 @@ impl FunctionBuilder<'_> {
         let mut code = None;
         if let Some(values) = matched {
             if fold && !plain {
+                // Each value comes of matching the whole value against the whole
+                // pattern; each store is its binding's.
+                let matched_span = debug_span(pattern.span).filled_union(debug_span(expr.span));
                 code = values
                     .iter()
-                    .zip(&ids)
-                    .map(|(value, id)| Some([value_to_ir(value.clone())?, Ir::DefLocal(*id)]))
+                    .zip(&bound)
+                    .map(|(value, bound)| {
+                        Some([
+                            value_to_op(value.clone())?.at(matched_span),
+                            Op::DefLocal(bound.id).at(debug_span(bound.span)),
+                        ])
+                    })
                     .collect::<Option<Vec<_>>>()
                     .map(|binds| binds.into_iter().flatten().collect());
             }

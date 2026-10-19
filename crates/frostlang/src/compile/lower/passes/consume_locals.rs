@@ -15,7 +15,7 @@
 
 use std::collections::HashSet;
 
-use crate::compile::lower::{Ir, JumpType, LoweredFunction};
+use crate::compile::lower::{JumpType, LoweredFunction, Op};
 
 pub(super) fn consume_locals(mut function: LoweredFunction) -> LoweredFunction {
     // The locals some path from the current point reads again, and the same at
@@ -23,9 +23,9 @@ pub(super) fn consume_locals(mut function: LoweredFunction) -> LoweredFunction {
     let mut read_later = HashSet::new();
     let mut read_after_label = vec![HashSet::new(); function.num_labels];
     for ir in function.code.iter_mut().rev() {
-        match ir {
-            Ir::Label(label) => read_after_label[label.0].clone_from(&read_later),
-            Ir::Jump { kind, label } => {
+        match &mut ir.op {
+            Op::Label(label) => read_after_label[label.0].clone_from(&read_later),
+            Op::Jump { kind, label } => {
                 let at_target = &read_after_label[label.0];
                 match kind {
                     // The next instruction in code order never runs after this one.
@@ -36,15 +36,15 @@ pub(super) fn consume_locals(mut function: LoweredFunction) -> LoweredFunction {
                     | JumpType::PeekIfFalse => read_later.extend(at_target),
                 }
             }
-            Ir::LoadLocal(id) => {
+            Op::LoadLocal(id) => {
                 let id = *id;
                 if read_later.insert(id) && !function.locals.is_exported(id) {
-                    *ir = Ir::ConsumeLocal(id);
+                    ir.op = Op::ConsumeLocal(id);
                 }
             }
             // A definition replaces the slot's value: no read before it reaches a
             // read after it.
-            Ir::DefLocal(id) => {
+            Op::DefLocal(id) => {
                 read_later.remove(id);
             }
             _ => {}

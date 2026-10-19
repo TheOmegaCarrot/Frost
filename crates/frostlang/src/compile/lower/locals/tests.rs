@@ -3,7 +3,7 @@
 //! metadata a binding carries, and the slot plan assembly derives from the code.
 
 use crate::compile::lower::locals::{LocalInfo, LocalKind, Locals, SlotPlan};
-use crate::compile::lower::{Ir, LocalId};
+use crate::compile::lower::{Ir, LocalId, Op};
 
 use crate::Value;
 use frostlang_parse::ast::SourceSpan;
@@ -335,7 +335,7 @@ fn a_binding_may_shadow_a_same_scope_capture() {
 
 /// A `DefLocal` of `id`, the way body code introduces a binding.
 fn def(id: LocalId) -> Ir {
-    Ir::DefLocal(id)
+    Op::DefLocal(id).sourceless()
 }
 
 #[test]
@@ -476,7 +476,7 @@ fn bind_known(locals: &mut Locals, name: &str, value: Value) -> LocalId {
 }
 
 fn load(id: LocalId) -> Ir {
-    Ir::LoadLocal(id)
+    Op::LoadLocal(id).sourceless()
 }
 
 #[test]

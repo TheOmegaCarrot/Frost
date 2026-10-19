@@ -1,9 +1,9 @@
-use crate::bytecode::Bytecode;
+use crate::bytecode::{Bytecode, Span};
 use frostlang_parse::ast::{Expr, Spanned};
 
 use crate::compile::{
     Diagnostics,
-    lower::{ExprFragment, FunctionBuilder, Ir, JumpType, Position, fold::constant_of},
+    lower::{ExprFragment, FunctionBuilder, JumpType, Op, Position, fold::constant_of},
 };
 
 impl FunctionBuilder<'_> {
@@ -13,6 +13,7 @@ impl FunctionBuilder<'_> {
         consequent: &Spanned<Expr>,
         alternate: &Option<Box<Spanned<Expr>>>,
         position: Position,
+        span: Span,
     ) -> Result<ExprFragment, Diagnostics> {
         // Each branch is the last code its path runs: the consequent is followed
         // only by the jump past the alternate, the alternate only by the end.
@@ -22,8 +23,9 @@ impl FunctionBuilder<'_> {
             .as_deref()
             .map(|expr| self.compile_expression(expr, position))
             .transpose()?
+            // An omitted `else` is the `if`'s own.
             .unwrap_or(ExprFragment {
-                code: vec![Ir::Ready(Bytecode::PushNull)],
+                code: vec![Op::Ready(Bytecode::PushNull).at(span)],
                 foldable: true,
             });
 
@@ -59,20 +61,22 @@ impl FunctionBuilder<'_> {
             code: condition
                 .code
                 .into_iter()
-                .chain([Ir::Jump {
+                .chain([Op::Jump {
                     label: to_alternate,
                     kind: JumpType::IfFalse,
-                }])
+                }
+                .at(span)])
                 .chain(consequent.code)
                 .chain([
-                    Ir::Jump {
+                    Op::Jump {
                         label: past_alternate,
                         kind: JumpType::Unconditional,
-                    },
-                    Ir::Label(to_alternate),
+                    }
+                    .at(span),
+                    Op::Label(to_alternate).at(span),
                 ])
                 .chain(alternate.code)
-                .chain([Ir::Label(past_alternate)])
+                .chain([Op::Label(past_alternate).at(span)])
                 .collect(),
         })
     }

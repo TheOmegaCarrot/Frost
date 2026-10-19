@@ -10,23 +10,29 @@
 //!   constants that are the same share a slot (see [`pool`]).
 //! - `LoadLocal`, `ConsumeLocal`, and `DefLocal` ids resolve to their frame
 //!   slots per the [`SlotPlan`].
+//! - Each instruction's span goes to the function's debug info, beside the
+//!   stack height on entry to it (see [`heights`]), if the compilation keeps
+//!   debug info.
 //!
 //! Assembly is infallible. The IR is compiler-produced and already well-formed,
 //! so an undefined label or a backward jump is a compiler bug, not a user error:
 //! it panics rather than returning a diagnostic.
 
+mod heights;
 mod pool;
 
 use std::sync::Arc;
 
 use crate::Arity;
-use crate::bytecode::{Bytecode, CompiledFunction, FormatVersion};
+use crate::bytecode::{
+    Bytecode, CompiledFunction, DebugInfo, FormatVersion, OpDebugInfo, SourceLines,
+};
 
 use crate::compile::Diagnostic;
 use crate::compile::lower::assemble::pool::Pool;
 use crate::compile::lower::locals::SlotPlan;
 use crate::compile::lower::passes::run_passes;
-use crate::compile::lower::{ConstKeyOp, FunctionBuilder, Ir, JumpType, LoweredFunction};
+use crate::compile::lower::{ConstKeyOp, FunctionBuilder, Ir, JumpType, LoweredFunction, Op};
 use crate::vm::to_operand;
 
 impl FunctionBuilder<'_> {
@@ -46,6 +52,7 @@ impl FunctionBuilder<'_> {
             num_labels: self.next_label.0,
             effectful: self.effectful,
             deduplicate_constants: self.options.optimization_options.deduplicate_constants,
+            debug_lines: self.debug_lines,
         };
         let function = run_passes(function, &self.options.optimization_options);
         (function, self.lints)
@@ -70,9 +77,20 @@ impl LoweredFunction {
             self.origin.clone(),
             self.arity,
             plan,
-            self.deduplicate_constants,
+            AssemblyOptions {
+                deduplicate_constants: self.deduplicate_constants,
+                debug_lines: self.debug_lines.as_ref(),
+            },
         )
     }
+}
+
+/// How to assemble a function, beyond its code and metadata.
+pub(super) struct AssemblyOptions<'a> {
+    /// See [`OptimizationOptions::deduplicate_constants`](crate::compile::OptimizationOptions::deduplicate_constants).
+    pub(super) deduplicate_constants: bool,
+    /// The compilation's line table, to keep debug info against; `None` keeps none.
+    pub(super) debug_lines: Option<&'a Arc<SourceLines>>,
 }
 
 /// Lower fused IR into a [`CompiledFunction`] with the given metadata.
@@ -87,51 +105,51 @@ pub(super) fn assemble_code(
     origin: Option<Arc<str>>,
     arity: Arity,
     plan: SlotPlan,
-    deduplicate_constants: bool,
+    options: AssemblyOptions,
 ) -> Arc<CompiledFunction> {
     let label_positions = resolve_labels(code, num_labels);
 
     let mut out = Vec::new();
-    let mut constants = Pool::new(deduplicate_constants);
-    let mut key_constants = Pool::new(deduplicate_constants);
+    let mut spans = Vec::new();
+    let mut constants = Pool::new(options.deduplicate_constants);
+    let mut key_constants = Pool::new(options.deduplicate_constants);
     let mut child_fns = Vec::new();
 
     for ir in code {
-        match ir {
-            Ir::Ready(bytecode) => {
+        let bytecode = match &ir.op {
+            Op::Ready(bytecode) => {
                 debug_assert!(
                     !is_symbolic_opcode(bytecode),
-                    "Ir::Ready holds {bytecode:?}, an opcode another Ir variant owns"
+                    "Op::Ready holds {bytecode:?}, an opcode another Op variant owns"
                 );
-                out.push(*bytecode);
+                *bytecode
             }
             // Zero-width: a label contributes no instruction.
-            Ir::Label(_) => {}
-            Ir::Const(value) => out.push(Bytecode::LoadConst(to_operand(constants.add(value)))),
-            Ir::ConstKey { op, key } => {
+            Op::Label(_) => continue,
+            Op::Const(value) => Bytecode::LoadConst(to_operand(constants.add(value))),
+            Op::ConstKey { op, key } => {
                 let index = to_operand(key_constants.add(key));
-                out.push(match op {
+                match op {
                     ConstKeyOp::HardIndex => Bytecode::HardIndexMap(index),
                     ConstKeyOp::Test => Bytecode::TestConstKey(index),
                     ConstKeyOp::Extract => Bytecode::ExtractConstKey(index),
-                });
+                }
             }
-            Ir::LoadLocal(id) => out.push(Bytecode::LoadLocal(to_operand(plan.slot_of(*id)))),
-            Ir::ConsumeLocal(id) => {
-                out.push(Bytecode::ConsumeLocal(to_operand(plan.slot_of(*id))));
-            }
-            Ir::DefLocal(id) => out.push(Bytecode::DefLocal(to_operand(plan.slot_of(*id)))),
-            Ir::Closure { compiled, .. } => {
+            Op::LoadLocal(id) => Bytecode::LoadLocal(to_operand(plan.slot_of(*id))),
+            Op::ConsumeLocal(id) => Bytecode::ConsumeLocal(to_operand(plan.slot_of(*id))),
+            Op::DefLocal(id) => Bytecode::DefLocal(to_operand(plan.slot_of(*id))),
+            Op::Closure { compiled, .. } => {
                 // Each child function and capture takes at least one byte of source,
                 // so a count past `u32` needs a source over 4 GiB.
                 let to_u32 = |n: usize| u32::try_from(n).expect("count exceeds u32");
-                out.push(Bytecode::CreateClosure {
-                    child: to_u32(child_fns.len()),
-                    captures: to_u32(compiled.num_captures),
-                });
+                let child = to_u32(child_fns.len());
                 child_fns.push(Arc::clone(compiled));
+                Bytecode::CreateClosure {
+                    child,
+                    captures: to_u32(compiled.num_captures),
+                }
             }
-            Ir::Jump { kind, label } => {
+            Op::Jump { kind, label } => {
                 let target =
                     label_positions[label.0].expect("jump to a label that was never emitted");
                 // `Jump(n)` skips n instructions, so from site p it lands at
@@ -139,10 +157,24 @@ pub(super) fn assemble_code(
                 let offset = target
                     .checked_sub(out.len() + 1)
                     .expect("backward or self jump: the VM only jumps forward");
-                out.push(jump_bytecode(*kind, offset));
+                jump_bytecode(*kind, offset)
             }
-        }
+        };
+        out.push(bytecode);
+        spans.push(ir.span);
     }
+
+    let debug_info = options.debug_lines.map(|lines| DebugInfo {
+        ops: spans
+            .into_iter()
+            .zip(heights::entry_heights(&out, arity))
+            .map(|(span, height)| OpDebugInfo {
+                span,
+                stack_height: height.and_then(|height| u32::try_from(height).ok()),
+            })
+            .collect(),
+        lines: Arc::clone(lines),
+    });
 
     Arc::new(CompiledFunction {
         version: FormatVersion,
@@ -155,13 +187,12 @@ pub(super) fn assemble_code(
         num_captures: plan.num_captures(),
         name_table: plan.into_name_table(),
         arity,
-        // TODO: emit debug info (FROST-177.2).
-        debug_info: None,
+        debug_info,
     })
 }
 
-/// Whether an opcode carries an index or offset that some other `Ir` variant
-/// assigns at assembly. `Ir::Ready` is for already-final opcodes, so it must
+/// Whether an opcode carries an index or offset that some other `Op` variant
+/// assigns at assembly. `Op::Ready` is for already-final opcodes, so it must
 /// never hold one of these.
 fn is_symbolic_opcode(bytecode: &Bytecode) -> bool {
     matches!(
@@ -191,8 +222,8 @@ fn resolve_labels(code: &[Ir], num_labels: usize) -> Vec<Option<usize>> {
     let mut positions = vec![None; num_labels];
     let mut index = 0;
     for ir in code {
-        match ir {
-            Ir::Label(label) => {
+        match ir.op {
+            Op::Label(label) => {
                 debug_assert!(
                     positions[label.0].is_none(),
                     "label {} emitted more than once",

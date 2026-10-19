@@ -25,6 +25,7 @@ mod disassemble;
 mod do_expressions;
 mod effects;
 mod embedding;
+mod emitted_debug_info;
 mod error;
 mod folded_constants;
 mod format_strings;

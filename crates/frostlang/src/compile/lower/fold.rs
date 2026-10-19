@@ -28,8 +28,8 @@ use std::num::NonZeroU64;
 use std::sync::Arc;
 
 use crate::bytecode::{Bytecode, CompiledFunction};
-use crate::compile::lower::assemble::assemble_code;
-use crate::compile::lower::{ExprFragment, FunctionBuilder, Ir, LocalId};
+use crate::compile::lower::assemble::{AssemblyOptions, assemble_code};
+use crate::compile::lower::{ExprFragment, FunctionBuilder, Ir, LocalId, Op, UNEMITTED, code_span};
 use crate::core::find;
 use crate::vm::to_operand;
 use crate::{Arity, IdleVm, MapKey, Value, ValueMap, Vm, VmFactory, VmRuntimeConfiguration};
@@ -88,43 +88,50 @@ impl FoldVm {
     }
 }
 
-/// The optimal IR for a known [`Value`]: an inline push for a scalar, a
+/// The optimal op for a known [`Value`]: an inline push for a scalar, a
 /// constant-pool load for a structured value.
 ///
 /// `None` if the value cannot be a constant (see [`is_const_representable`]).
-pub(super) fn value_to_ir(value: Value) -> Option<Ir> {
-    let ir = match value {
-        Value::Null => Ir::Ready(Bytecode::PushNull),
-        Value::Bool(true) => Ir::Ready(Bytecode::PushTrue),
-        Value::Bool(false) => Ir::Ready(Bytecode::PushFalse),
-        Value::Int(int) => Ir::Ready(Bytecode::PushInt(int)),
-        Value::Float(float) => Ir::Ready(Bytecode::PushFloat(float)),
+pub(super) fn value_to_op(value: Value) -> Option<Op> {
+    let op = match value {
+        Value::Null => Op::Ready(Bytecode::PushNull),
+        Value::Bool(true) => Op::Ready(Bytecode::PushTrue),
+        Value::Bool(false) => Op::Ready(Bytecode::PushFalse),
+        Value::Int(int) => Op::Ready(Bytecode::PushInt(int)),
+        Value::Float(float) => Op::Ready(Bytecode::PushFloat(float)),
         // Structured (String, Bytes, Array, Map): not inlinable,
         // so put it in the constant pool (if eligible)
-        other if is_const_representable(&other) => Ir::Const(other),
+        other if is_const_representable(&other) => Op::Const(other),
         _ => return None,
     };
-    Some(ir)
+    Some(op)
 }
 
 /// The compile-time constant a fragment loads, if its code is a single
 /// value-producing op (a literal, a fold result, or a propagated constant).
 pub(super) fn constant_of(code: &[Ir]) -> Option<Value> {
-    let [op] = code else {
+    let [ir] = code else {
         return None;
     };
-    match op {
-        Ir::Ready(Bytecode::PushNull) => Some(Value::Null),
-        Ir::Ready(Bytecode::PushTrue) => Some(Value::Bool(true)),
-        Ir::Ready(Bytecode::PushFalse) => Some(Value::Bool(false)),
-        Ir::Ready(Bytecode::PushInt(int)) => Some(Value::Int(*int)),
-        Ir::Ready(Bytecode::PushFloat(float)) => Some(Value::Float(*float)),
+    match &ir.op {
+        Op::Ready(Bytecode::PushNull) => Some(Value::Null),
+        Op::Ready(Bytecode::PushTrue) => Some(Value::Bool(true)),
+        Op::Ready(Bytecode::PushFalse) => Some(Value::Bool(false)),
+        Op::Ready(Bytecode::PushInt(int)) => Some(Value::Int(*int)),
+        Op::Ready(Bytecode::PushFloat(float)) => Some(Value::Float(*float)),
         // An empty literal builds its structure from nothing.
-        Ir::Ready(Bytecode::MakeArray(0)) => Some(Value::from(Vec::<Value>::new())),
-        Ir::Ready(Bytecode::MakeMap(0)) => Some(Value::from(ValueMap::new())),
-        Ir::Const(value) => Some(value.clone()),
+        Op::Ready(Bytecode::MakeArray(0)) => Some(Value::from(Vec::<Value>::new())),
+        Op::Ready(Bytecode::MakeMap(0)) => Some(Value::from(ValueMap::new())),
+        Op::Const(value) => Some(value.clone()),
         _ => None,
     }
+}
+
+/// The single op loading `value` in place of `code`, which computes it,
+/// derived from all of `code`'s source. `None` if `value` cannot be a constant.
+fn load_of_folded(value: Value, code: &[Ir]) -> Option<Ir> {
+    let span = code_span(code).expect("folded code is not empty");
+    Some(value_to_op(value)?.at(span))
 }
 
 /// The compile-time key a fragment loads: its [`constant_of`], if that is a valid
@@ -151,11 +158,20 @@ impl FunctionBuilder<'_> {
         if !self.options.optimization_options.constant_fold
             || !fragment.foldable
             || fragment.code.len() <= 1
-            || matches!(fragment.code.last(), Some(Ir::Closure { .. }))
+            || matches!(
+                fragment.code.last(),
+                Some(Ir {
+                    op: Op::Closure { .. },
+                    ..
+                })
+            )
         {
             return fragment;
         }
-        match self.evaluate(fragment.code.clone()).and_then(value_to_ir) {
+        let folded = self
+            .evaluate(fragment.code.clone())
+            .and_then(|value| load_of_folded(value, &fragment.code));
+        match folded {
             Some(ir) => ExprFragment {
                 code: vec![ir],
                 foldable: true,
@@ -183,7 +199,7 @@ impl FunctionBuilder<'_> {
         let Some(value) = self.evaluate(fragment.code.clone()) else {
             return (fragment, None);
         };
-        let fragment = match value_to_ir(value.clone()) {
+        let fragment = match load_of_folded(value.clone(), &fragment.code) {
             Some(ir) => ExprFragment {
                 code: vec![ir],
                 foldable: true,
@@ -198,8 +214,8 @@ impl FunctionBuilder<'_> {
     pub(super) fn fold_bindings(&self, code: Vec<Ir>, bound: &[LocalId]) -> Option<Vec<Value>> {
         let collect = bound
             .iter()
-            .map(|id| Ir::LoadLocal(*id))
-            .chain([Ir::Ready(Bytecode::MakeArray(to_operand(bound.len())))]);
+            .map(|id| Op::LoadLocal(*id).at(UNEMITTED))
+            .chain([Op::Ready(Bytecode::MakeArray(to_operand(bound.len()))).at(UNEMITTED)]);
         let values = self.evaluate(code.into_iter().chain(collect).collect())?;
         let values = values
             .as_array()
@@ -249,7 +265,7 @@ impl FunctionBuilder<'_> {
         }
         // Wrap as a zero-arg top-level function: the runner pushes the closure,
         // which the leading Pop discards; the fragment then leaves the value.
-        let mut wrapped = vec![Ir::Ready(Bytecode::Pop)];
+        let mut wrapped = vec![Op::Ready(Bytecode::Pop).at(UNEMITTED)];
         wrapped.extend(code);
         let (plan, captures) = self.locals.plan_fragment_slots(&wrapped);
         let function = assemble_code(
@@ -259,8 +275,12 @@ impl FunctionBuilder<'_> {
             self.origin.clone(),
             Arity::Exact(0),
             plan,
-            // Run once and discarded: a smaller pool would save nothing.
-            false,
+            AssemblyOptions {
+                // Run once and discarded: a smaller pool would save nothing,
+                // and nothing reads its debug info.
+                deduplicate_constants: false,
+                debug_lines: None,
+            },
         );
         self.fold_vm?.evaluate(function, captures)
     }
