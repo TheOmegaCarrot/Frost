@@ -96,12 +96,22 @@ fn list(f: &mut Formatter<'_>, function: &ListedFunction, paint: Paint) -> fmt::
 
     if !function.slots.is_empty() {
         writeln!(f, "  slots")?;
+        let name_width = function
+            .slots
+            .iter()
+            .map(|slot| slot.name.chars().count())
+            .max()
+            .unwrap_or(0);
         for (index, slot) in function.slots.iter().enumerate() {
             let kinds: Vec<&str> = [(slot.capture, "capture"), (slot.exported, "export")]
                 .into_iter()
                 .filter_map(|(is, kind)| is.then_some(kind))
                 .collect();
-            let line = format!("    {index:>4}  {:<12}{}", slot.name, kinds.join(", "));
+            let line = format!(
+                "    {index:>4}  {:<name_width$}  {}",
+                slot.name,
+                kinds.join(", ")
+            );
             writeln!(f, "{}", line.trim_end())?;
         }
     }

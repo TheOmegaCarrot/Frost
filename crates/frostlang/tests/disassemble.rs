@@ -67,8 +67,8 @@ fn slots_are_listed_with_what_kind_each_is() {
     let expected = r"function <main>
   arity 0, 1 capture
   slots
-       0  greeting    capture
-       1  total       export
+       0  greeting  capture
+       1  total     export
        2  n
   code
        0  LoadLocal  0  ; greeting
@@ -76,6 +76,25 @@ fn slots_are_listed_with_what_kind_each_is() {
        2  LoadLocal  2  ; n
 ";
     assert_eq!(listing(&main), expected);
+}
+
+#[test]
+fn a_long_slot_name_stays_apart_from_its_markers() {
+    let mut main = function("<main>", vec![PushNull]);
+    main.name_table = vec![slot("continuation_prompt", true), slot("n", true)];
+    let expected = r"function <main>
+  arity 0, 0 captures
+  slots
+       0  continuation_prompt  export
+       1  n                    export
+  code
+       0  PushNull
+";
+    assert_eq!(
+        listing(&main),
+        expected,
+        "the markers sit two spaces past the longest name, in one column"
+    );
 }
 
 #[test]
@@ -252,7 +271,7 @@ function first (child 0)
 function inner (child 0.0)
   arity 0, 1 capture
   slots
-       0  x           capture
+       0  x  capture
   code
        0  PushNull
 

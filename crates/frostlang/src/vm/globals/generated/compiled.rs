@@ -36,7 +36,7 @@
 // function inv_fn (child 0)
 //   arity 0 or more, 1 capture
 //   slots
-//        0  f           capture
+//        0  f     capture
 //        1  args
 //   code
 //        0  DefLocal      1    ; args
@@ -84,8 +84,8 @@
 // function curry_fn (child 0)
 //   arity 0 or more, 2 captures
 //   slots
-//        0  f           capture
-//        1  outer       capture
+//        0  f      capture
+//        1  outer  capture
 //        2  inner
 //   code
 //        0  DefLocal      2    ; inner
@@ -134,8 +134,8 @@
 // function bcurry_fn (child 0)
 //   arity 0 or more, 2 captures
 //   slots
-//        0  f           capture
-//        1  outer       capture
+//        0  f      capture
+//        1  outer  capture
 //        2  inner
 //   code
 //        0  DefLocal      2    ; inner
@@ -190,7 +190,7 @@
 // function spread_fn (child 0)
 //   arity 1, 1 capture
 //   slots
-//        0  f           capture
+//        0  f    capture
 //        1  arr
 //   constants
 //        0  "Function spread_fn requires Array as argument 1, got "
@@ -253,7 +253,7 @@
 // function rev_args_fn (child 0)
 //   arity 0 or more, 1 capture
 //   slots
-//        0  f           capture
+//        0  f     capture
 //        1  args
 //   code
 //        0  DefLocal      1    ; args
@@ -314,7 +314,7 @@
 // function const_fn (child 0)
 //   arity 0 or more, 1 capture
 //   slots
-//        0  v           capture
+//        0  v  capture
 //   code
 //        0  DropBelow     0
 //        1  DropBelow     0
@@ -397,7 +397,7 @@
 // function <lambda> (child 0)
 //   arity 1, 1 capture
 //   slots
-//        0  functions   capture
+//        0  functions  capture
 //        1  i
 //        2  h
 //   constants
@@ -450,8 +450,8 @@
 // function compose_fn (child 1.0)
 //   arity 0 or more, 2 captures
 //   slots
-//        0  f2          capture
-//        1  f1          capture
+//        0  f2    capture
+//        1  f1    capture
 //        2  args
 //   code
 //        0  DefLocal      2    ; args
@@ -478,7 +478,7 @@
 // function index_fn (child 0)
 //   arity 1, 1 capture
 //   slots
-//        0  key         capture
+//        0  key        capture
 //        1  structure
 //   code
 //        0  DefLocal            1  ; structure
