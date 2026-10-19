@@ -334,7 +334,7 @@ impl Repl {
         source: &str,
         token: CancelToken,
     ) -> Result<Value, ReplError> {
-        let closure = self.compile(source)?;
+        let closure = self.compile(source, false)?;
         let (tail, exports) = self.run_closure(closure, token)?;
         self.bindings.extend(exports);
         if self.results_limit() > 0 && tail != Value::Null {
@@ -444,8 +444,8 @@ impl Repl {
     }
 
     /// The input `source` compiles to, ready to run with every binding in
-    /// scope.
-    fn compile(&self, source: &str) -> Result<Arc<Closure>, ReplError> {
+    /// scope, with debug info if `debug_info`.
+    fn compile(&self, source: &str, debug_info: bool) -> Result<Arc<Closure>, ReplError> {
         let keeps_results = self.keeps_results();
         let scope: Vec<&str> = self
             .bindings
@@ -459,7 +459,8 @@ impl Repl {
             // Each top-level binding is exported, to be kept for later inputs.
             .with_implicit_export(true)
             // A session shows no lints, so finds none.
-            .with_lints(false);
+            .with_lints(false)
+            .with_debug_info(debug_info);
         let program = compile_in_scope(INPUT_NAME, source, options, &scope)
             .map_err(ReplError::Compile)?
             .code;

@@ -56,7 +56,8 @@ impl Repl {
             Builtin::Undef => self.undefine(builtin, argument),
             Builtin::Disassemble => {
                 let source = needs_argument(builtin, argument, "source to disassemble")?;
-                let closure = self.compile(source)?;
+                // A disassembly is for inspecting the code, so it shows debug info.
+                let closure = self.compile(source, true)?;
                 let listing = bytecode::closure_function(&closure)
                     .disassemble()
                     .with_color(ansi_styling)

@@ -5,6 +5,7 @@ mod disassemble;
 mod function;
 mod globals;
 mod import;
+mod listing;
 mod native;
 mod outcome;
 mod params;
@@ -25,6 +26,9 @@ pub use import::{
     ComponentBuilder, Extension, ExtensionBuilder, ExtensionError, HostComponent,
     HostComponentBuilder, HostComponentError, ImportCtx, ImportResolver, Importer, ImporterBuilder,
     InvalidComponentName, ModuleId, Stdlib, StdlibError, StdlibModule,
+};
+pub use listing::{
+    JumpTarget, ListedDebugInfo, ListedFunction, ListedInstruction, ListedSlot, Listing, Reference,
 };
 pub use native::{NativeCtx, NativeFn, NativeFunction};
 pub use outcome::{AbortReason, IdleVm, ProgramParts, ProgramResult, RunError, RunErrorKind};

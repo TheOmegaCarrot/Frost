@@ -379,7 +379,8 @@ pub mod __private {
 pub mod bytecode {
     pub use crate::vm::{
         Bytecode, CompiledFunction, DebugInfo, Disassembly, FormatVersion, GLOBAL_NAMES,
-        GLOBAL_PURITY, NameEntry, OpDebugInfo, Purity, SourceLines, Span, StackEffect,
+        GLOBAL_PURITY, JumpTarget, ListedDebugInfo, ListedFunction, ListedInstruction, ListedSlot,
+        Listing, NameEntry, OpDebugInfo, Purity, Reference, SourceLines, Span, StackEffect,
         closure_function, program_from_function, program_function,
     };
 }

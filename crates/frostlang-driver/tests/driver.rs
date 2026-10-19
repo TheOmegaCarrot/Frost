@@ -1087,11 +1087,89 @@ fn list_shows_an_images_bytecode_as_compiled() {
     ";
     let script = script("list-image.frst", source);
     let image = image("list-image", source, &["-O", "none"]);
-    // Whatever the command line now asks for, the image lists as it was compiled.
+    // Whatever the command line now asks for, the image lists as it was compiled:
+    // with the same code, and, as an image is compiled, without debug info.
     let from_image = run(&["list", &image]);
     let from_script = run(&["list", "-O", "none", &script]);
     assert_eq!(from_image.exit, Exit::Success, "{from_image:?}");
-    assert_eq!(from_image.stdout, from_script.stdout);
+    assert!(
+        from_script
+            .stdout
+            .contains("code (line:column, stack height)"),
+        "a script lists with its debug info: {}",
+        from_script.stdout
+    );
+    assert_eq!(
+        from_image.stdout,
+        without_debug_columns(&from_script.stdout),
+        "the image lists the script's code"
+    );
+}
+
+/// `listing` without its debug info: the code heading's column names, and each
+/// instruction's location and height columns.
+fn without_debug_columns(listing: &str) -> String {
+    const DEBUG_HEADING: &str = "  code (line:column, stack height)";
+    let mut in_debug_code = false;
+    let mut stripped = String::new();
+    for line in listing.lines() {
+        if line == DEBUG_HEADING {
+            in_debug_code = true;
+            stripped.push_str("  code\n");
+            continue;
+        }
+        // A code section runs to the blank line before the next function.
+        if line.is_empty() {
+            in_debug_code = false;
+        }
+        stripped.push_str(&if in_debug_code {
+            without_debug_row_columns(line)
+        } else {
+            line.to_string()
+        });
+        stripped.push('\n');
+    }
+    stripped
+}
+
+/// `line`, from a code section with debug info, without its location and
+/// height. A row is `    {index:>4}  {location}  {height}  {rest}`, its columns
+/// padded, and blank where it has no debug info; a label line has no index.
+fn without_debug_row_columns(line: &str) -> String {
+    let Some(row) = line.strip_prefix("    ") else {
+        return line.to_string();
+    };
+    let (index, columns) = row.split_at(4);
+    assert!(
+        index.trim_start().chars().all(|c| c.is_ascii_digit()),
+        "a row starts with its index: {line:?}"
+    );
+    let columns = columns.trim_start();
+    let rest = match columns.split_once(' ') {
+        Some((location, after)) if is_location(location) => {
+            let after = after.trim_start();
+            let (height, rest) = after
+                .split_once(' ')
+                .expect("a height follows the location");
+            assert!(
+                height == "-" || height.chars().all(|c| c.is_ascii_digit()),
+                "a height is a number or `-`: {line:?}"
+            );
+            rest.trim_start()
+        }
+        // Blank debug columns.
+        _ => columns,
+    };
+    format!("    {index}  {rest}")
+}
+
+/// Whether `text` is a `line:column`.
+fn is_location(text: &str) -> bool {
+    text.split_once(':').is_some_and(|(line, column)| {
+        [line, column]
+            .iter()
+            .all(|part| !part.is_empty() && part.chars().all(|c| c.is_ascii_digit()))
+    })
 }
 
 #[test]

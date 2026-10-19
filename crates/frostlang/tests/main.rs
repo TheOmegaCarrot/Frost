@@ -55,6 +55,7 @@ mod library_output;
 mod library_strings;
 mod library_types;
 mod lints;
+mod listing;
 mod literals;
 mod logical_operations;
 mod map_destructuring;

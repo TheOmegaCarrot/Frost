@@ -6,7 +6,9 @@
 use std::num::NonZeroU64;
 use std::sync::Arc;
 
-use frostlang::bytecode::{Bytecode, CompiledFunction, FormatVersion, NameEntry};
+use frostlang::bytecode::{
+    Bytecode, CompiledFunction, DebugInfo, FormatVersion, NameEntry, OpDebugInfo, SourceLines, Span,
+};
 use frostlang::{Arity, FrostFloat, FrostType, MapKey, Value};
 
 use Bytecode::*;
@@ -303,6 +305,150 @@ fn color_is_off_unless_asked_for() {
     // Coloring changes nothing but the escape codes.
     let stripped = strip_escapes(&colored);
     assert_eq!(stripped, plain);
+}
+
+// ============================================================
+// Debug info
+// ============================================================
+
+/// `function` with debug info against `source`: for each instruction, the
+/// span starting at the given offset (one byte long) and the given height.
+fn with_debug_info(
+    mut function: CompiledFunction,
+    source: &str,
+    ops: &[(u32, Option<u32>)],
+) -> CompiledFunction {
+    function.debug_info = Some(DebugInfo {
+        ops: ops
+            .iter()
+            .map(|&(start, stack_height)| OpDebugInfo {
+                span: Span {
+                    start,
+                    end: start + 1,
+                },
+                stack_height,
+            })
+            .collect(),
+        lines: Arc::new(SourceLines::new(source)),
+    });
+    function
+}
+
+#[test]
+fn debug_info_shows_each_instructions_location_and_entry_height() {
+    // `1` is at 1:1, `null` at 2:3, `+` at 12:1.
+    let source = format!("1\n  null{}+", "\n".repeat(10));
+    let main = with_debug_info(
+        function("<main>", vec![PushInt(1), PushNull, Add]),
+        &source,
+        &[(0, Some(1)), (4, Some(9)), (18, Some(10))],
+    );
+    let expected = r"function <main>
+  arity 0, 0 captures
+  code (line:column, stack height)
+       0  1:1    1  PushInt   1
+       1  2:3    9  PushNull
+       2  12:1  10  Add
+";
+    assert_eq!(
+        listing(&main),
+        expected,
+        "the location column is as wide as its widest, and heights align right"
+    );
+}
+
+#[test]
+fn an_unknown_height_shows_as_a_dash_and_a_missing_entry_as_blanks() {
+    let main = with_debug_info(
+        function("<main>", vec![MarkStack, RewindToMark, PushNull]),
+        "abc",
+        // The last instruction has no entry.
+        &[(0, Some(1)), (1, None)],
+    );
+    let expected = r"function <main>
+  arity 0, 0 captures
+  code (line:column, stack height)
+       0  1:1  1  MarkStack
+       1  1:2  -  RewindToMark
+       2          PushNull
+";
+    assert_eq!(listing(&main), expected);
+}
+
+#[test]
+fn a_function_without_debug_info_lists_as_before_beside_one_with_it() {
+    let child = function("child", vec![PushNull]);
+    let mut main = with_debug_info(
+        function(
+            "<main>",
+            vec![
+                CreateClosure {
+                    child: 0,
+                    captures: 0,
+                },
+                Bytecode::Pop,
+            ],
+        ),
+        "fn -> null",
+        &[(0, Some(1)), (0, Some(2))],
+    );
+    main.child_fns = vec![Arc::new(child)];
+    let expected = r"function <main>
+  arity 0, 0 captures
+  children
+       0  child (child 0)
+  code (line:column, stack height)
+       0  1:1  1  CreateClosure  0  ; child, 0 captures
+       1  1:1  2  DropBelow      0
+
+function child (child 0)
+  arity 0, 0 captures
+  code
+       0  PushNull
+";
+    assert_eq!(listing(&main), expected);
+}
+
+#[test]
+fn labels_and_the_end_align_with_debug_info() {
+    // Index 1 jumps to 4 (the end), index 2 jumps to 3.
+    let main = with_debug_info(
+        function("<main>", vec![PushTrue, JumpIfFalse(2), Jump(0), PushNull]),
+        "abcd",
+        &[(0, Some(1)), (1, Some(2)), (2, Some(1)), (3, Some(1))],
+    );
+    let expected = r"function <main>
+  arity 0, 0 captures
+  code (line:column, stack height)
+       0  1:1  1  PushTrue
+       1  1:2  2  JumpIfFalse  L1  ; +2
+       2  1:3  1  Jump         L0  ; +0
+  L0:
+       3  1:4  1  PushNull
+  L1:
+       4          (end)
+";
+    assert_eq!(
+        listing(&main),
+        expected,
+        "labels sit above their instructions, and the end under the opcodes"
+    );
+}
+
+#[test]
+fn debug_info_is_colored_like_the_rest() {
+    let main = with_debug_info(
+        function("<main>", vec![PushTrue, JumpIfFalse(0), PushNull]),
+        "abc",
+        &[(0, Some(1)), (1, Some(2)), (2, Some(1))],
+    );
+    let plain = main.disassemble().to_string();
+    let colored = main.disassemble().with_color(true).to_string();
+    assert_eq!(
+        strip_escapes(&colored),
+        plain,
+        "coloring changes nothing but the escape codes"
+    );
 }
 
 /// `text` without its ANSI color escape codes.

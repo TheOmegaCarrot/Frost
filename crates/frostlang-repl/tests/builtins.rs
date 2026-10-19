@@ -312,6 +312,16 @@ fn disassemble_styles_the_bytecode_for_a_frontend_that_takes_ansi() {
 }
 
 #[test]
+fn disassemble_shows_debug_info() {
+    let listing = only_text(&session(&[":disassemble print(1)"]));
+    assert!(
+        listing.contains("code (line:column, stack height)"),
+        "a disassembly is for inspecting the code, so it shows each instruction's \
+         location and stack height: {listing}"
+    );
+}
+
+#[test]
 fn disassemble_does_not_run_the_source() {
     let printed = Arc::new(Mutex::new(Vec::new()));
     let sink = {

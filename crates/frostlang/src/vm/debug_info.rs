@@ -109,7 +109,7 @@ fn ascending_offsets<'de, D: serde::Deserializer<'de>>(
 }
 
 /// A position in source text.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, serde::Serialize)]
 pub struct SourceLocation {
     line: u32,
     column: u32,
