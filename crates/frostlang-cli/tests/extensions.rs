@@ -24,3 +24,17 @@ fn uuid_is_installed() {
     ";
     assert_eq!(eval(code), "4\n");
 }
+
+/// `frost` links the bundled SQLite, whose header the bindings were built
+/// from.
+#[test]
+fn sqlite_is_installed_bundled() {
+    let code = r"
+        def sqlite = import('ext.sqlite')
+        print(sqlite.version)
+    ";
+    let bundled = frostlang_sqlite::rusqlite::ffi::SQLITE_VERSION
+        .to_str()
+        .expect("the version is UTF-8");
+    assert_eq!(eval(code), format!("{bundled}\n"));
+}

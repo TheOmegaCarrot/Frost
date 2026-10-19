@@ -52,6 +52,7 @@ fn importer(script: Option<&Path>) -> Arc<Importer> {
     let importer = ImporterBuilder::new()
         .with_stdlib(Stdlib::complete(StdlibConfig::default()))
         .with_extension(frostlang_uuid::extension())
+        .and_then(|importer| importer.with_extension(frostlang_sqlite::extension()))
         .expect("each extension has its own name");
     match FsResolver::new(roots) {
         Ok(resolver) => importer.append_resolver(Arc::new(

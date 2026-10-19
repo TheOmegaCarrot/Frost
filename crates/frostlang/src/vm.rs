@@ -12,8 +12,11 @@ mod params;
 mod print_sink;
 pub(crate) mod serialize;
 
+pub(crate) use bytecode::from_operand;
 pub use bytecode::{Bytecode, StackEffect};
-pub(crate) use bytecode::{from_operand, to_operand};
+// Only the compiler uses it, which is absent without the `compile` feature.
+#[allow(unused)]
+pub(crate) use bytecode::to_operand;
 pub use cancel::CancelToken;
 pub use debug_info::{DebugInfo, OpDebugInfo, SourceLines, SourceLocation, Span};
 pub use disassemble::Disassembly;

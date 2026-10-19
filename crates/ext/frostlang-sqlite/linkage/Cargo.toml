@@ -1,0 +1,18 @@
+[package]
+name = "frostlang-sqlite-linkage"
+version = "0.0.0"
+edition.workspace = true
+rust-version.workspace = true
+description = "Reports which SQLite `frostlang-sqlite` linked; driven by `check-linkage.sh`."
+publish = false
+
+[dependencies]
+frostlang.workspace = true
+# Without `bundled`, so the script chooses the linkage mode.
+frostlang-sqlite = { path = ".." }
+
+[features]
+bundled = ["frostlang-sqlite/bundled"]
+
+[lints]
+workspace = true

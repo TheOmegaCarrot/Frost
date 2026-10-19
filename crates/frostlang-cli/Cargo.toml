@@ -22,6 +22,8 @@ frostlang-driver = { workspace = true, features = ["graphical-diagnostics"] }
 frostlang-fs-resolver = { workspace = true, features = ["graphical-diagnostics"] }
 frostlang.workspace = true
 frostlang-uuid.workspace = true
+# Bundled, so `frost` needs no SQLite installed.
+frostlang-sqlite = { workspace = true, features = ["bundled"] }
 
 [lints]
 workspace = true

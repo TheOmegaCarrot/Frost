@@ -1,0 +1,40 @@
+[package]
+name = "frostlang-sqlite"
+version = "0.0.1"
+edition.workspace = true
+rust-version.workspace = true
+# See `[[test]]`.
+autotests = false
+
+[features]
+# Compile SQLite from source, rather than linking a system or custom-built one.
+# The crate docs' "Linking SQLite" says why it is off by default.
+bundled = ["rusqlite/bundled"]
+
+[dependencies]
+frostlang = { path = "../../frostlang", version = "0.0.1", default-features = false }
+# Without the defaults: a statement cache (`cache`) and a WebAssembly build of
+# SQLite (`ffi-sqlite-wasm-rs`).
+# TODO: Decide on `cache` with the connection API (FROST-10.2).
+rusqlite = { version = "0.40", default-features = false }
+
+[dev-dependencies]
+# The tests compile Frost source.
+frostlang.workspace = true
+# The tests always link the bundled SQLite, so they need no SQLite installed.
+# `linkage/` exercises the other modes.
+frostlang-sqlite = { path = ".", features = ["bundled"] }
+
+# One binary for every integration test, rather than one per file, to save the
+# build time and disk of linking each separately. Each file in `tests/` is a
+# module of `tests/main.rs`, which must declare it.
+[[test]]
+name = "integration"
+path = "tests/main.rs"
+# The dev-dependency above enables it. A published package drops that
+# dependency, so its tests are then skipped rather than run against whatever
+# SQLite is found.
+required-features = ["bundled"]
+
+[lints]
+workspace = true

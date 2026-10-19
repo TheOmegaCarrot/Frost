@@ -225,6 +225,8 @@ const _: () = assert!(size_of::<Bytecode>() == 16);
 // Operands are `u64` rather than `usize`, so bytecode is the same on every target, wasm32 included.
 
 /// `n` as an operand. Every target's `usize` fits in a `u64`.
+// Only the compiler uses it, which is absent without the `compile` feature.
+#[allow(unused)]
 pub(crate) fn to_operand(n: usize) -> u64 {
     u64::try_from(n).expect("IMPOSSIBLE: usize is wider than u64")
 }
