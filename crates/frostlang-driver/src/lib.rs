@@ -457,6 +457,9 @@ impl Session<'_> {
                 }
             }
         } else {
+            // A listing is for inspecting the code, so it keeps the debug info.
+            // TODO: the disassembly does not show debug info yet (FROST-177.4).
+            self.options = self.options.with_debug_info(true);
             let program = match self
                 .source(script, contents)
                 .and_then(|source| self.compile(&name(script), &source))

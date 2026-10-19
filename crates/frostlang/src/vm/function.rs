@@ -103,8 +103,8 @@ impl CompiledProgram {
 
     /// This program without debug info.
     ///
-    /// Debug info records where in source each instruction came from,
-    /// for runtime error backtraces and disassembly.
+    /// Debug info records where in source each instruction came from, and the
+    /// stack height each expects, for inspecting compiled code.
     /// The program runs the same without it, and its `image` is smaller.
     ///
     /// Copies any part of the program shared beyond this one, such as by a clone of it.

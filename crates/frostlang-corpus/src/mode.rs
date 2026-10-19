@@ -30,7 +30,9 @@ impl Mode {
     /// The options to run under. The first is the baseline the others must
     /// agree with.
     pub fn options(self) -> Vec<CompilerOptions> {
-        let defaults = CompilerOptions::new();
+        // With debug info, so that a debug build checks each script's stack
+        // heights against what the compiler recorded.
+        let defaults = CompilerOptions::new().with_debug_info(true);
         let count = Optimization::ALL.len();
         let all: u64 = (1 << count) - 1;
         // The same selection as the `frostlang` crate's own script tests make.

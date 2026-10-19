@@ -194,12 +194,20 @@ fn filled_union_is_symmetric() {
 
 /// Debug info for `code`, one entry per instruction, against `lines`.
 fn debug_info_for(code: &[Bytecode], lines: &Arc<SourceLines>) -> DebugInfo {
-    let ops = (0..code.len())
-        .map(|index| {
+    // `code` runs straight through from a function of no parameters, so each
+    // height follows from the one before; the VM checks them in a debug build.
+    let heights = code.iter().scan(Some(1), |height: &mut Option<u64>, op| {
+        let entry = *height;
+        *height = entry.and_then(|height| op.stack_effect()?.apply(height));
+        Some(entry)
+    });
+    let ops = heights
+        .enumerate()
+        .map(|(index, height)| {
             let index = u32::try_from(index).unwrap();
             OpDebugInfo {
                 span: span(index, index + 1),
-                stack_height: Some(index + 1),
+                stack_height: height.map(|height| u32::try_from(height).unwrap()),
             }
         })
         .collect();
@@ -504,16 +512,16 @@ fn a_stripped_image_is_smaller() {
 // ============================================================
 
 #[test]
-fn debug_info_is_on_by_default() {
-    assert!(CompilerOptions::new().debug_info);
-    assert!(CompilerOptions::default().debug_info);
+fn debug_info_is_off_by_default() {
+    assert!(!CompilerOptions::new().debug_info);
+    assert!(!CompilerOptions::default().debug_info);
 }
 
 #[test]
 fn with_debug_info_sets_only_debug_info() {
-    let off = CompilerOptions::new().with_debug_info(false);
-    assert!(!off.debug_info);
-    assert_eq!(off.with_debug_info(true), CompilerOptions::new());
+    let on = CompilerOptions::new().with_debug_info(true);
+    assert!(on.debug_info);
+    assert_eq!(on.with_debug_info(false), CompilerOptions::new());
 }
 
 /// Every function in the tree of `source`, compiled with `options`, by whether it has debug info.
@@ -546,5 +554,43 @@ fn compiling_without_debug_info_gives_none_anywhere() {
     );
 }
 
-// TODO: once the compiler emits debug info (FROST-177.2), test that compiling with it on
-// gives every function debug info.
+#[test]
+fn compiling_with_debug_info_gives_every_function_some() {
+    // Unoptimized, so folding cannot collapse the nested functions into a constant.
+    let options = CompilerOptions::new()
+        .with_optimization(OptimizationOptions::NONE)
+        .with_debug_info(true);
+    let presence = compiled_debug_info_presence(NESTED_SOURCE, options);
+    assert!(
+        presence.len() >= 3,
+        "the program, outer, and its lambda: {presence:?}"
+    );
+    assert!(
+        presence.iter().all(|(_, has)| *has),
+        "every function has debug info: {presence:?}"
+    );
+}
+
+#[test]
+fn debug_info_locates_an_instruction_by_its_index() {
+    let lines = Arc::new(SourceLines::new("one\ntwo"));
+    let debug_info = DebugInfo {
+        ops: vec![
+            OpDebugInfo {
+                span: span(0, 3),
+                stack_height: Some(1),
+            },
+            OpDebugInfo {
+                span: span(4, 7),
+                stack_height: Some(0),
+            },
+        ],
+        lines,
+    };
+    assert_eq!(
+        debug_info.location(1).map(|at| (at.line(), at.column())),
+        Some((2, 1)),
+        "the second instruction starts the second line"
+    );
+    assert_eq!(debug_info.location(2), None, "past the last entry");
+}

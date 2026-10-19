@@ -14,8 +14,10 @@ use std::sync::Arc;
 use crate::common;
 
 use common::{Pop, func, run_fn};
-use frostlang::Arity;
-use frostlang::bytecode::{Bytecode, CompiledFunction};
+use frostlang::bytecode::{
+    Bytecode, CompiledFunction, DebugInfo, FormatVersion, OpDebugInfo, SourceLines, Span,
+};
+use frostlang::{Arity, Vm};
 
 use Bytecode::*;
 
@@ -272,4 +274,90 @@ fn closing_with_fewer_captures_than_the_child_has_is_caught() {
 #[should_panic(expected = "capture count must be its child's")]
 fn closing_with_more_captures_than_the_child_has_is_caught() {
     run_fn(closing_program(2, 2));
+}
+
+// ============================================================
+// Debug info
+// ============================================================
+
+/// Run `code` as a top level whose debug info records `heights`, one per
+/// instruction, and gives instruction N the one-byte span at offset N of a
+/// one-line source in `test.frst`.
+fn run_with_heights(code: Vec<Bytecode>, heights: Vec<Option<u32>>) {
+    assert_eq!(code.len(), heights.len(), "one height per instruction");
+    let source = "x".repeat(code.len());
+    let ops = heights
+        .into_iter()
+        .enumerate()
+        .map(|(index, stack_height)| {
+            let start = u32::try_from(index).unwrap();
+            OpDebugInfo {
+                span: Span {
+                    start,
+                    end: start + 1,
+                },
+                stack_height,
+            }
+        })
+        .collect();
+    let function = Arc::new(CompiledFunction {
+        version: FormatVersion,
+        name: "<heights>".to_string(),
+        origin: Some(Arc::from("test.frst")),
+        code,
+        child_fns: Vec::new(),
+        constants: Vec::new(),
+        key_constants: Vec::new(),
+        name_table: Vec::new(),
+        num_captures: 0,
+        arity: Arity::Exact(0),
+        debug_info: Some(DebugInfo {
+            ops,
+            lines: Arc::new(SourceLines::new(&source)),
+        }),
+    });
+    let closure = function.assert_well_formed().into_closure().unwrap();
+    Vm::factory().build(closure).run().unwrap();
+}
+
+#[test]
+fn a_stack_at_its_recorded_heights_runs() {
+    run_with_heights(vec![Pop, PushInt(1)], vec![Some(1), Some(0)]);
+}
+
+#[test]
+fn an_unknown_height_is_not_checked() {
+    run_with_heights(vec![Pop, PushInt(1)], vec![Some(1), None]);
+}
+
+#[test]
+#[should_panic(
+    expected = "the operand stack is not at the height debug info records, \
+                at instruction 1 of `<heights>` (test.frst:1:2)"
+)]
+fn a_stack_off_its_recorded_height_is_caught_where_it_is() {
+    run_with_heights(vec![Pop, PushInt(1)], vec![Some(1), Some(5)]);
+}
+
+#[test]
+#[should_panic(
+    expected = "exactly its count of elements, at instruction 3 of `<heights>` (test.frst:1:4)"
+)]
+fn a_malformed_instruction_with_debug_info_is_caught_where_it_is() {
+    run_with_heights(
+        vec![Pop, PushInt(1), MakeArray(1), ExplodeArray(2)],
+        vec![Some(1), Some(0), Some(1), Some(1)],
+    );
+}
+
+#[test]
+#[should_panic(expected = "exactly its count of elements, at instruction 3 of `<test>`")]
+fn a_malformed_instruction_without_debug_info_is_caught_by_index() {
+    // `run_fn` splices in the leading `Pop`, so the explode is instruction 3.
+    run_fn(func(
+        vec![PushInt(1), MakeArray(1), ExplodeArray(2)],
+        Arity::Exact(0),
+        vec![],
+        vec![],
+    ));
 }

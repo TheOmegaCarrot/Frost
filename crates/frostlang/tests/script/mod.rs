@@ -279,9 +279,12 @@ impl Script {
     }
 
     fn compile(&self, optimization: OptimizationOptions) -> Result<CompilerOutput, Diagnostics> {
+        // With debug info, so that a debug build checks the script's stack
+        // heights against what the compiler recorded.
         let options = CompilerOptions::new()
             .with_optimization(optimization)
-            .with_implicit_export(self.implicit_export);
+            .with_implicit_export(self.implicit_export)
+            .with_debug_info(true);
         let scope: Vec<&str> = self.scope.iter().map(String::as_str).collect();
         compile_in_scope(&self.filename, &self.source, options, &scope)
     }

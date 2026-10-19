@@ -960,7 +960,9 @@ fn compile_tree(source: &str, options: CompilerOptions) -> CompiledFunction {
 fn every_tree() -> impl Iterator<Item = (&'static str, OptimizationOptions, CompiledFunction)> {
     SCRIPTS.iter().flat_map(|&source| {
         optimization_permutations().map(move |optimization| {
-            let options = CompilerOptions::new().with_optimization(optimization);
+            let options = CompilerOptions::new()
+                .with_optimization(optimization)
+                .with_debug_info(true);
             (source, optimization, compile_tree(source, options))
         })
     })
@@ -1076,7 +1078,7 @@ fn without_debug_info_no_function_has_any_and_the_code_is_the_same_under_every_o
     for source in SCRIPTS {
         for optimization in optimization_permutations() {
             let options = CompilerOptions::new().with_optimization(optimization);
-            let with = compile_tree(source, options);
+            let with = compile_tree(source, options.with_debug_info(true));
             let without = compile_tree(source, options.with_debug_info(false));
             assert!(
                 functions(&without)

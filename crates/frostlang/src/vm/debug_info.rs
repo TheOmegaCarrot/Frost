@@ -15,6 +15,14 @@ pub struct DebugInfo {
     pub lines: Arc<SourceLines>,
 }
 
+impl DebugInfo {
+    /// Where the instruction at `index` starts in source, or `None` if it has no entry.
+    pub fn location(&self, index: usize) -> Option<SourceLocation> {
+        let op = self.ops.get(index)?;
+        Some(self.lines.location(op.span.start))
+    }
+}
+
 /// Debug info for one instruction: the source it came from, and the stack height on entry to it.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 pub struct OpDebugInfo {

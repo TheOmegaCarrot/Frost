@@ -533,6 +533,8 @@ impl Vm {
 
         loop {
             while let Some(&op) = self.this_frame().this_fn.code.get(pc) {
+                #[cfg(debug_assertions)]
+                self.debug_assert_entry_height(pc);
                 match op {
                     Bytecode::PushNull => {
                         self.stack.push(Value::Null);
@@ -746,7 +748,8 @@ impl Vm {
                         debug_assert_eq!(
                             arr.len(),
                             from_operand(count),
-                            "ExplodeArray's operand must have exactly its count of elements"
+                            "ExplodeArray's operand must have exactly its count of elements, {}",
+                            self.instruction_context(pc)
                         );
                         // Pattern order: first element ends on top, last deepest.
                         match arr.try_into_vec() {
@@ -760,7 +763,8 @@ impl Vm {
                         debug_assert_eq!(
                             from_operand(captures.into()),
                             function.num_captures,
-                            "CreateClosure's capture count must be its child's"
+                            "CreateClosure's capture count must be its child's, {}",
+                            self.instruction_context(pc)
                         );
                         let split_point = self
                             .stack
@@ -974,6 +978,57 @@ impl Vm {
                 .return_address
                 .expect("IMPOSSIBLE: Callee lacks return address")
                 .get();
+        }
+    }
+
+    /// Where instruction `pc` of the running function is, for a debug assertion
+    /// about malformed bytecode: its function and index, and its source location
+    /// if the function has debug info.
+    #[cold]
+    fn instruction_context(&self, pc: usize) -> String {
+        let function = &self.this_frame().this_fn;
+        let location = function
+            .debug_info
+            .as_ref()
+            .and_then(|debug_info| debug_info.location(pc));
+        let name = &function.name;
+        match (location, function.origin.as_deref()) {
+            (Some(location), Some(origin)) => format!(
+                "at instruction {pc} of `{name}` ({origin}:{}:{})",
+                location.line(),
+                location.column()
+            ),
+            (Some(location), None) => format!(
+                "at instruction {pc} of `{name}` ({}:{})",
+                location.line(),
+                location.column()
+            ),
+            (None, _) => format!("at instruction {pc} of `{name}`"),
+        }
+    }
+
+    /// Check the operand stack is at the height debug info records on entry to
+    /// instruction `pc` of the running function, if it records one.
+    #[cfg(debug_assertions)]
+    fn debug_assert_entry_height(&self, pc: usize) {
+        let frame = self.this_frame();
+        let recorded = frame
+            .this_fn
+            .debug_info
+            .as_ref()
+            .and_then(|debug_info| debug_info.ops.get(pc)?.stack_height);
+        if let Some(recorded) = recorded {
+            let height = self
+                .stack
+                .len()
+                .checked_sub(frame.base_idx)
+                .and_then(|height| u64::try_from(height).ok());
+            debug_assert_eq!(
+                height,
+                Some(u64::from(recorded)),
+                "the operand stack is not at the height debug info records, {}",
+                self.instruction_context(pc)
+            );
         }
     }
 

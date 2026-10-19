@@ -50,14 +50,14 @@ pub struct CompilerOptions {
 
 impl CompilerOptions {
     /// Every optimization on, no implicit export, lints on, the default [`ParseLimits`],
-    /// and debug info on.
+    /// and debug info off.
     pub const fn new() -> Self {
         Self {
             optimization_options: OptimizationOptions::ALL,
             implicit_export: false,
             lints: true,
             parse_limits: ParseLimits::new(),
-            debug_info: true,
+            debug_info: false,
         }
     }
 
