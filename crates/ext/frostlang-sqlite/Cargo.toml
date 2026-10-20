@@ -18,7 +18,8 @@ parking_lot = "0.12"
 # Without the defaults: a statement cache (`cache`) and a WebAssembly build of
 # SQLite (`ffi-sqlite-wasm-rs`).
 # TODO: Decide on `cache` with the connection API (FROST-10.2).
-rusqlite = { version = "0.40", default-features = false }
+# `hooks` for the authorizer.
+rusqlite = { version = "0.40", default-features = false, features = ["hooks"] }
 
 [dev-dependencies]
 # The tests compile Frost source.

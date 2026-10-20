@@ -17,9 +17,9 @@
 //! without the extension.
 //!
 //! The extension is built on [`rusqlite`], re-exported here. Its API behind
-//! Cargo features this crate leaves off, such as `hooks` (for an authorizer) or
-//! `limits`, needs a direct dependency on the same version with those features
-//! enabled: Cargo features unify, so the re-exported crate gains them too.
+//! Cargo features this crate leaves off, such as `limits`, needs a direct
+//! dependency on the same version with those features enabled: Cargo features
+//! unify, so the re-exported crate gains them too.
 //!
 //! # Linking SQLite
 //!
@@ -71,10 +71,12 @@
 //!   configured single-threaded at run time. Opening a database with such a
 //!   library is an error.
 
+mod authorizer;
 mod connection;
 mod error;
 mod open;
 
+pub use authorizer::{Authorizer, REPORTING_PRAGMAS};
 pub use connection::{Method, ScriptConnection, connection_factory};
 pub use enumset::{EnumSet, enum_set};
 pub use error::sqlite_error;

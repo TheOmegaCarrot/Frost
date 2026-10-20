@@ -11,9 +11,32 @@ use rusqlite::ffi;
 /// Where SQLite reported the failure, the error gives SQLite's message, then
 /// the name of its result code, as in `Function app.open_db failed: unable to
 /// open database file: app.db (SQLITE_CANTOPEN)`. Otherwise it gives
-/// `rusqlite`'s description.
+/// `rusqlite`'s description. An authorizer's denial, which SQLite reports as
+/// `SQLITE_AUTH`, is worded `not authorized (SQLITE_AUTH)` whatever SQLite's
+/// message, as an [`Authorizer`](crate::Authorizer)'s are.
 pub fn sqlite_error(function: &str, err: &rusqlite::Error) -> FrostError {
     FrostError::from_string(format!("Function {function} failed: {}", describe(err)))
+}
+
+/// The error for `function` failing on an action the connection's authorizer
+/// denied.
+pub(crate) fn denied_error(function: &str) -> FrostError {
+    FrostError::from_string(format!(
+        "Function {function} failed: {}",
+        with_code(NOT_AUTHORIZED, ffi::SQLITE_AUTH)
+    ))
+}
+
+/// How every denial is worded, saying no more, so as not to help a script map
+/// out an authorizer's rules.
+const NOT_AUTHORIZED: &str = "not authorized";
+
+/// Whether `err` is worded as SQLite words a statement using a function the
+/// authorizer denied, which it reports as `SQLITE_ERROR`.
+pub(crate) fn is_function_denial(err: &rusqlite::Error) -> bool {
+    // Every variant SQLite's failure may arrive as displays its message first.
+    err.to_string()
+        .starts_with("not authorized to use function: ")
 }
 
 /// The error for `function` used on a closed connection.
@@ -68,6 +91,8 @@ fn describe(err: &rusqlite::Error) -> String {
         .and_then(|source| source.downcast_ref::<ffi::Error>())
         .map(|failure| failure.extended_code);
     match code {
+        // SQLite's own wording of a denial can name what was denied.
+        Some(code) if code & 0xff == ffi::SQLITE_AUTH => with_code(NOT_AUTHORIZED, code),
         Some(code) => with_code(&message, code),
         None => message,
     }

@@ -56,5 +56,5 @@ fn connection_bundle(ctx: &NativeCtx<'_>, path: &str, flags: OpenFlags) -> Frost
     connection
         .pragma_update(None, "foreign_keys", true)
         .map_err(fail)?;
-    Ok(ScriptConnection::new(connection).into_bundle())
+    ScriptConnection::new(connection).into_bundle(ctx.name())
 }

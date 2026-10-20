@@ -4,15 +4,21 @@
 use std::cell::RefCell;
 use std::fmt;
 use std::ops::{Deref, DerefMut};
+use std::sync::Arc;
+use std::sync::atomic::{AtomicU64, Ordering};
 
 use enumset::{EnumSet, EnumSetType};
 use frostlang::native::{Bundle, Optional};
 use frostlang::{FrostError, FrostString, NativeCtx, Value, frost_bundle, frost_closure};
 use parking_lot::ReentrantMutex;
 use rusqlite::fallible_iterator::FallibleIterator;
+use rusqlite::hooks::{AuthContext, Authorization};
 use rusqlite::{Batch, Connection};
 
-use crate::error::{closed_error, in_use_error, nul_error, sqlite_error};
+use crate::Authorizer;
+use crate::error::{
+    closed_error, denied_error, in_use_error, is_function_denial, nul_error, sqlite_error,
+};
 
 /// A method of a connection bundle, the value through which a script uses a
 /// database.
@@ -53,14 +59,19 @@ pub enum Method {
 /// holds any of those functions: an owned connection is closed, and a pooled
 /// one returned to its pool.
 pub struct ScriptConnection {
-    connection: Held,
+    connection: Source,
     methods: EnumSet<Method>,
+    authorizer: Option<Authorizer>,
+    filter: Option<SqlFilter>,
 }
+
+/// A host's SQL filter; see [`ScriptConnection::with_sql_filter`].
+type SqlFilter = Box<dyn Fn(&str) -> Result<(), FrostError> + Send + Sync>;
 
 impl ScriptConnection {
     /// Exposes `connection`.
     pub fn new(connection: Connection) -> Self {
-        Self::holding(Held::Owned(connection))
+        Self::holding(Source::Owned(connection))
     }
 
     /// Exposes `connection`, taken from a pool.
@@ -71,7 +82,7 @@ impl ScriptConnection {
     /// share the pool. A transaction a script leaves open is rolled back
     /// before the connection returns to its pool.
     pub fn pooled(connection: impl DerefMut<Target = Connection> + Send + 'static) -> Self {
-        Self::holding(Held::Pooled(Box::new(connection)))
+        Self::holding(Source::Pooled(Box::new(connection)))
     }
 
     /// Exposes only `methods`, rather than every [`Method`], the default.
@@ -84,19 +95,96 @@ impl ScriptConnection {
         Self { methods, ..self }
     }
 
-    fn holding(connection: Held) -> Self {
+    /// Checks every statement the connection's scripts run with `authorizer`,
+    /// replacing any authorizer given before.
+    ///
+    /// SQLite gives a connection one authorizer, so this replaces any the
+    /// connection had, for good: a pooled connection returns to its pool with
+    /// no authorizer at all. Without this, the extension leaves the
+    /// connection's authorizer as it was, in use and after.
+    #[must_use]
+    pub fn with_authorizer(self, authorizer: Authorizer) -> Self {
         Self {
-            connection,
-            methods: EnumSet::all(),
+            authorizer: Some(authorizer),
+            ..self
         }
     }
 
-    /// The connection bundle.
-    pub(crate) fn into_bundle(self) -> Value {
-        let state = Db {
-            connection: ReentrantMutex::new(RefCell::new(Some(self.connection))),
+    /// Passes the SQL of every call a script makes to `filter`, exactly as the
+    /// script gave it, before SQLite sees it, replacing any filter given
+    /// before. An error from `filter` is the call's error.
+    ///
+    /// A call failing the extension's own checks, as on a closed connection,
+    /// never reaches the filter. Nor does the SQL that SQLite runs for a
+    /// statement, such as a trigger's or a view's, which only an
+    /// [`Authorizer`] judges.
+    ///
+    /// ```
+    /// use frostlang::FrostError;
+    /// use frostlang_sqlite::ScriptConnection;
+    /// use frostlang_sqlite::rusqlite::Connection;
+    ///
+    /// # fn main() -> Result<(), frostlang_sqlite::rusqlite::Error> {
+    /// let connection = ScriptConnection::new(Connection::open_in_memory()?).with_sql_filter(|sql| {
+    ///     if sql.len() > 10_000 {
+    ///         Err(FrostError::from_static("SQL is limited to 10000 bytes"))
+    ///     } else {
+    ///         Ok(())
+    ///     }
+    /// });
+    /// # Ok(())
+    /// # }
+    /// ```
+    #[must_use]
+    pub fn with_sql_filter(
+        self,
+        filter: impl Fn(&str) -> Result<(), FrostError> + Send + Sync + 'static,
+    ) -> Self {
+        Self {
+            filter: Some(Box::new(filter)),
+            ..self
+        }
+    }
+
+    fn holding(connection: Source) -> Self {
+        Self {
+            connection,
+            methods: EnumSet::all(),
+            authorizer: None,
+            filter: None,
+        }
+    }
+
+    /// The connection bundle, failing as `function` if SQLite refuses to
+    /// install the authorizer.
+    pub(crate) fn into_bundle(self, function: &str) -> Result<Value, FrostError> {
+        let denials = Arc::new(AtomicU64::new(0));
+        let authorized = match self.authorizer {
+            Some(authorizer) => {
+                let counted = Arc::clone(&denials);
+                self.connection
+                    .authorizer(Some(move |ctx: AuthContext<'_>| {
+                        let judgement = authorizer.judge(ctx);
+                        if judgement == Authorization::Deny {
+                            counted.fetch_add(1, Ordering::Relaxed);
+                        }
+                        judgement
+                    }))
+                    .map_err(|err| sqlite_error(function, &err))?;
+                true
+            }
+            None => false,
         };
-        self.methods
+        let state = Db {
+            connection: ReentrantMutex::new(RefCell::new(Some(Held {
+                source: self.connection,
+                authorized,
+            }))),
+            filter: self.filter,
+            denials,
+        };
+        let bundle = self
+            .methods
             .iter()
             .fold(Bundle::new(state), |bundle, method| {
                 bundle.with(match method {
@@ -104,7 +192,8 @@ impl ScriptConnection {
                     Method::Close => Db::close_method,
                 })
             })
-            .build()
+            .build();
+        Ok(bundle)
     }
 }
 
@@ -118,6 +207,8 @@ impl fmt::Debug for ScriptConnection {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("ScriptConnection")
             .field("methods", &self.methods)
+            .field("authorizer", &self.authorizer)
+            .field("filters_sql", &self.filter.is_some())
             .finish_non_exhaustive()
     }
 }
@@ -161,17 +252,17 @@ where
     F: Fn(Option<Value>) -> Result<ScriptConnection, FrostError> + Send + Sync + 'static,
 {
     frost_closure!(name, move |argument: Optional<Value>| {
-        factory(argument.0).map(ScriptConnection::into_bundle)
+        factory(argument.0)?.into_bundle(name)
     })
 }
 
-/// A connection as a [`ScriptConnection`] holds it.
-enum Held {
+/// Where a [`ScriptConnection`]'s connection comes from.
+enum Source {
     Owned(Connection),
     Pooled(Box<dyn DerefMut<Target = Connection> + Send>),
 }
 
-impl Deref for Held {
+impl Deref for Source {
     type Target = Connection;
 
     fn deref(&self) -> &Connection {
@@ -182,30 +273,83 @@ impl Deref for Held {
     }
 }
 
+/// A connection as its bundle holds it.
+struct Held {
+    source: Source,
+    /// Whether the extension installed the connection's authorizer.
+    authorized: bool,
+}
+
+impl Deref for Held {
+    type Target = Connection;
+
+    fn deref(&self) -> &Connection {
+        &self.source
+    }
+}
+
 impl Drop for Held {
     fn drop(&mut self) {
-        // SQLite rolls back an owned connection's open transaction as it closes
-        // it, but a pooled one stays open for its next user, who must not
-        // inherit the transaction or the locks it holds. A failed rollback
-        // leaves nothing better to do.
-        if let Self::Pooled(connection) = self
-            && !connection.is_autocommit()
-        {
+        // An owned connection closes, and with it go its authorizer and any
+        // open transaction, which SQLite rolls back. A pooled one stays open
+        // for its next user, who must inherit neither. The authorizer goes
+        // first, lest it deny the rollback. A failure leaves nothing better to
+        // do.
+        let Source::Pooled(connection) = &self.source else {
+            return;
+        };
+        if self.authorized {
+            let _ = connection.authorizer(None::<fn(AuthContext<'_>) -> Authorization>);
+        }
+        if !connection.is_autocommit() {
             let _ = connection.execute_batch("ROLLBACK");
         }
     }
 }
 
-/// A connection bundle's state: its connection, until closed.
+/// A connection bundle's state: its connection, until closed, and its SQL
+/// filter.
 struct Db {
     // Reentrant, since a method running a statement may call back into Frost,
     // which may use the same connection on the same thread. The `RefCell` lets
     // `close` take the connection, and tell when a call further up the stack
     // is still using it.
     connection: ReentrantMutex<RefCell<Option<Held>>>,
+    filter: Option<SqlFilter>,
+    /// How many actions the connection's authorizer has denied.
+    denials: Arc<AtomicU64>,
 }
 
 impl Db {
+    /// Runs `operation` on the connection with `sql`, for the function `ctx`
+    /// runs, once `sql` passes the extension's checks and the host's filter.
+    fn with_sql<T>(
+        &self,
+        ctx: &NativeCtx<'_>,
+        sql: &str,
+        operation: impl FnOnce(&Connection, &str) -> rusqlite::Result<T>,
+    ) -> Result<T, FrostError> {
+        if sql.contains('\0') {
+            return Err(nul_error(ctx.name()));
+        }
+        self.with_connection(ctx, |connection| {
+            if let Some(filter) = &self.filter {
+                filter(sql)?;
+            }
+            let denials = self.denials.load(Ordering::Relaxed);
+            operation(connection, sql).map_err(|err| {
+                // SQLite words a denied function under another code than
+                // `SQLITE_AUTH`, naming it. Its wording alone could be any
+                // failure's, so only a denial during this call confirms it.
+                if self.denials.load(Ordering::Relaxed) != denials && is_function_denial(&err) {
+                    denied_error(ctx.name())
+                } else {
+                    sqlite_error(ctx.name(), &err)
+                }
+            })
+        })
+    }
+
     /// Runs `operation` on the connection, for the function `ctx` runs.
     fn with_connection<T>(
         &self,
@@ -232,12 +376,9 @@ impl Db {
         #[frost(ctx)] ctx: &mut NativeCtx<'_>,
         sql: FrostString,
     ) -> Result<i64, FrostError> {
-        if sql.contains('\0') {
-            return Err(nul_error(ctx.name()));
-        }
-        self.with_connection(ctx, |connection| {
+        self.with_sql(ctx, &sql, |connection, sql| {
             let before = connection.total_changes();
-            run_to_completion(connection, &sql).map_err(|err| sqlite_error(ctx.name(), &err))?;
+            run_to_completion(connection, sql)?;
             Ok(changes_since(connection, before))
         })
     }

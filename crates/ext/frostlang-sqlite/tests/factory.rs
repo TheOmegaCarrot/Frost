@@ -1,57 +1,20 @@
 //! Host connection factories: a host giving scripts its own connections,
 //! without `ext.sqlite`.
 
-use std::ops::{Deref, DerefMut};
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex};
 
-use frostlang::{FrostError, HostComponent, MapKey, Value, frost_closure};
+use frostlang::{FrostError, MapKey, Value, frost_closure};
 use frostlang_sqlite::rusqlite::{self, Connection, ffi};
 use frostlang_sqlite::{EnumSet, Method, ScriptConnection, connection_factory, sqlite_error};
 
-use crate::common::{host_importer, run_source};
-
-/// A new in-memory connection, failing as the factory `app.open_db`.
-fn memory_connection() -> Result<Connection, FrostError> {
-    Connection::open_in_memory().map_err(|err| sqlite_error("app.open_db", &err))
-}
+use crate::common::{Pooled, app_raises, app_value, frost, memory_connection, run_app};
 
 /// A factory of in-memory connections exposing `methods`.
 fn memory_factory(methods: EnumSet<Method>) -> Value {
     connection_factory("app.open_db", move |_| {
         Ok(ScriptConnection::from(memory_connection()?).with_methods(methods))
     })
-}
-
-/// Run `source` with only the host component `app`, holding `entries`.
-fn run_app(source: &str, entries: Vec<(&str, Value)>) -> Result<Value, FrostError> {
-    let app = entries
-        .into_iter()
-        .fold(HostComponent::builder("app"), |app, (key, value)| {
-            app.value(key, value)
-        })
-        .build();
-    run_source(source, host_importer(app))
-}
-
-/// The value of `source`, run with `app.open_db` from `factory`, which must
-/// run.
-fn app_value(source: &str, factory: Value) -> Value {
-    run_app(source, vec![("open_db", factory)])
-        .unwrap_or_else(|error| panic!("{source:?} should run, but raised: {error}"))
-}
-
-/// The error message `source` raises, run with `app.open_db` from `factory`.
-fn app_raises(source: &str, factory: Value) -> String {
-    match run_app(source, vec![("open_db", factory)]) {
-        Ok(value) => panic!("{source:?} should raise, but produced {value:?}"),
-        Err(error) => error.message().into_owned(),
-    }
-}
-
-/// The value of the Frost expression `expression`, which needs no import.
-fn frost(expression: &str) -> Value {
-    run_app(expression, Vec::new()).expect("the expected value runs")
 }
 
 #[test]
@@ -245,36 +208,6 @@ fn a_factory_takes_at_most_one_argument() {
 /// transaction open.
 type Releases = Arc<Mutex<Vec<bool>>>;
 
-/// A pooled connection that records its release to its pool.
-struct Pooled {
-    connection: Connection,
-    releases: Releases,
-}
-
-impl Deref for Pooled {
-    type Target = Connection;
-
-    fn deref(&self) -> &Connection {
-        &self.connection
-    }
-}
-
-impl DerefMut for Pooled {
-    fn deref_mut(&mut self) -> &mut Connection {
-        &mut self.connection
-    }
-}
-
-impl Drop for Pooled {
-    fn drop(&mut self) {
-        let autocommit = self.connection.is_autocommit();
-        self.releases
-            .lock()
-            .expect("no test panicked")
-            .push(autocommit);
-    }
-}
-
 /// `app.open_db`, a factory of pooled connections exposing `methods`, and
 /// `app.released`, how many of them have been released; with the record of
 /// their releases.
@@ -282,10 +215,13 @@ fn pooled_app(methods: EnumSet<Method>) -> (Vec<(&'static str, Value)>, Releases
     let releases = Releases::default();
     let recorded = Arc::clone(&releases);
     let factory = connection_factory("app.open_db", move |_| {
-        let pooled = Pooled {
-            connection: memory_connection()?,
-            releases: Arc::clone(&recorded),
-        };
+        let recorded = Arc::clone(&recorded);
+        let pooled = Pooled::new(memory_connection()?, move |connection| {
+            recorded
+                .lock()
+                .expect("no test panicked")
+                .push(connection.is_autocommit());
+        });
         Ok(ScriptConnection::pooled(pooled).with_methods(methods))
     });
     let counted = Arc::clone(&releases);
@@ -381,13 +317,26 @@ fn a_pooled_connection_returns_to_its_pool_with_no_transaction_open() {
 }
 
 #[test]
-fn a_script_connection_shows_its_methods() {
-    let connection = Connection::open_in_memory().expect("an in-memory database opens");
-    let shown = format!(
-        "{:?}",
-        ScriptConnection::new(connection).with_methods(EnumSet::only(Method::Script))
-    );
-    assert_eq!(shown, "ScriptConnection { methods: EnumSet(Script), .. }");
+fn a_script_connection_shows_how_it_is_exposed() {
+    let connection = || Connection::open_in_memory().expect("an in-memory database opens");
+    let cases = [
+        (
+            ScriptConnection::new(connection()).with_methods(EnumSet::only(Method::Script)),
+            "ScriptConnection { methods: EnumSet(Script), authorizer: None, filters_sql: false, .. }",
+        ),
+        (
+            ScriptConnection::new(connection())
+                .with_methods(EnumSet::empty())
+                .with_authorizer(frostlang_sqlite::Authorizer::new().deny_attach())
+                .with_sql_filter(|_| Ok(())),
+            "ScriptConnection { methods: EnumSet(), authorizer: Some(Authorizer { deny_writes: \
+             false, deny_attach: true, pragmas: None, allowed_functions: None, denied_functions: \
+             {}, rules: 0 }), filters_sql: true, .. }",
+        ),
+    ];
+    for (connection, expected) in cases {
+        assert_eq!(format!("{connection:?}"), expected);
+    }
 }
 
 #[test]

@@ -2,11 +2,14 @@
 //! installed, bound as `sqlite`, or with a host's own component.
 
 use std::fmt::Display;
+use std::ops::{Deref, DerefMut};
 use std::path::PathBuf;
 use std::sync::Arc;
 
 use frostlang::compile::{CompilerOptions, compile_program};
 use frostlang::{FrostError, HostComponent, Importer, ImporterBuilder, RunError, Value, Vm};
+use frostlang_sqlite::rusqlite::Connection;
+use frostlang_sqlite::sqlite_error;
 use tempfile::TempDir;
 
 /// An importer providing only the extension.
@@ -23,6 +26,82 @@ pub(crate) fn host_importer(component: HostComponent) -> Arc<Importer> {
         .with_component(component)
         .expect("a lone component is accepted")
         .build()
+}
+
+/// Run `source` with only the host component `app`, holding `entries`.
+pub(crate) fn run_app(source: &str, entries: Vec<(&str, Value)>) -> Result<Value, FrostError> {
+    let app = entries
+        .into_iter()
+        .fold(HostComponent::builder("app"), |app, (key, value)| {
+            app.value(key, value)
+        })
+        .build();
+    run_source(source, host_importer(app))
+}
+
+/// The value of `source`, run with `app.open_db` from `factory`, which must
+/// run.
+pub(crate) fn app_value(source: &str, factory: Value) -> Value {
+    run_app(source, vec![("open_db", factory)])
+        .unwrap_or_else(|error| panic!("{source:?} should run, but raised: {error}"))
+}
+
+/// The error message `source` raises, run with `app.open_db` from `factory`.
+pub(crate) fn app_raises(source: &str, factory: Value) -> String {
+    match run_app(source, vec![("open_db", factory)]) {
+        Ok(value) => panic!("{source:?} should raise, but produced {value:?}"),
+        Err(error) => error.message().into_owned(),
+    }
+}
+
+/// The value of the Frost expression `expression`, which needs no import.
+pub(crate) fn frost(expression: &str) -> Value {
+    run_app(expression, Vec::new()).expect("the expected value runs")
+}
+
+/// A new in-memory connection, failing as the factory `app.open_db`.
+pub(crate) fn memory_connection() -> Result<Connection, FrostError> {
+    Connection::open_in_memory().map_err(|err| sqlite_error("app.open_db", &err))
+}
+
+/// A connection as a pool lends it, which runs a check on the connection as
+/// it returns to the pool.
+pub(crate) struct Pooled {
+    connection: Connection,
+    on_release: Box<dyn FnMut(&Connection) + Send>,
+}
+
+impl Pooled {
+    /// Lends `connection`, running `on_release` on it as it returns.
+    pub(crate) fn new(
+        connection: Connection,
+        on_release: impl FnMut(&Connection) + Send + 'static,
+    ) -> Self {
+        Self {
+            connection,
+            on_release: Box::new(on_release),
+        }
+    }
+}
+
+impl Deref for Pooled {
+    type Target = Connection;
+
+    fn deref(&self) -> &Connection {
+        &self.connection
+    }
+}
+
+impl DerefMut for Pooled {
+    fn deref_mut(&mut self) -> &mut Connection {
+        &mut self.connection
+    }
+}
+
+impl Drop for Pooled {
+    fn drop(&mut self) {
+        (self.on_release)(&self.connection);
+    }
 }
 
 /// Run `source` as a whole script with `importer`.
