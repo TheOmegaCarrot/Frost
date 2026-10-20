@@ -4,7 +4,7 @@ use std::fmt;
 use serde::de::{self, DeserializeOwned, IntoDeserializer, Visitor};
 use serde::{Deserialize, Deserializer};
 
-use crate::core::serde::{float_value, special_float};
+use crate::core::serde::special_float;
 use crate::core::util::identifier::is_identifier_like_and_not_keyword;
 use crate::core::{FrostArray, FrostType, MapKey, TypeSet, Value, ValueMap};
 
@@ -779,7 +779,7 @@ impl<'de> Visitor<'de> for ValueVisitor {
     }
 
     fn visit_f64<E>(self, v: f64) -> Result<Value, E> {
-        Ok(float_value(v))
+        Ok(Value::from_f64(v))
     }
 
     fn visit_str<E>(self, v: &str) -> Result<Value, E> {

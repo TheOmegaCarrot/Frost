@@ -15,6 +15,7 @@ pub use stringify::{write_escaped_string, write_quoted_string};
 
 use crate::core::{
     FrostArray, FrostBytes, FrostFloat, FrostMap, FrostOpaque, FrostString, OpaqueHandle,
+    SpecialFloat,
 };
 use crate::vm::Closure;
 use crate::vm::NativeFunction;
@@ -176,6 +177,15 @@ impl Value {
     /// instead of cloning. Shorthand for `std::mem::replace(&mut value, Value::Null)`.
     pub fn take(&mut self) -> Value {
         std::mem::replace(self, Value::Null)
+    }
+
+    /// `f` as a value: a Float if it is finite, else a [`SpecialFloat`] Opaque
+    /// holding it.
+    pub fn from_f64(f: f64) -> Value {
+        match SpecialFloat::new(f) {
+            Some(special) => Value::opaque(special),
+            None => Value::Float(FrostFloat::new(f).expect("IMPOSSIBLE: a finite float is valid")),
+        }
     }
 
     /// Wrap host data as an `Opaque` value.

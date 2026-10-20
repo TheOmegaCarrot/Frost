@@ -114,24 +114,88 @@ fn a_filters_error_is_the_calls_error() {
 }
 
 #[test]
+fn every_method_running_sql_passes_it_through_the_filter() {
+    let seen = Seen::default();
+    let source = r"
+        def db = import('app').open_db()
+        db.script('CREATE TABLE t (x)')
+        db.exec('INSERT INTO t VALUES (?)', [1])
+        db.query('SELECT x FROM t WHERE x = :x', {x: 1})
+        db.fold('SELECT x FROM t', null, fn acc, row -> db.query('SELECT 2'))
+        db.last_insert_rowid()
+    ";
+    assert_eq!(
+        app_value(source, filtered(&seen, |_| Ok(()))),
+        Value::Int(1)
+    );
+    assert_eq!(
+        seen_sql(&seen),
+        [
+            "CREATE TABLE t (x)",
+            "INSERT INTO t VALUES (?)",
+            "SELECT x FROM t WHERE x = :x",
+            "SELECT x FROM t",
+            // The callback's own call.
+            "SELECT 2",
+        ],
+        "each call's SQL once, placeholders and all"
+    );
+}
+
+#[test]
+fn a_filter_refuses_sql_before_it_is_bound_or_run() {
+    let seen = Seen::default();
+    let refuse_all = |_: &str| Err(FrostError::from_static("refused"));
+    let source = r"
+        def db = import('app').open_db()
+        [
+            try_call(db.exec, ['INSERT INTO missing VALUES (?)', [[1]]]).error,
+            try_call(db.query, ['SELECT :x', {y: 1}]).error,
+            try_call(db.fold, ['NOT VALID SQL', null, fn acc, row -> acc]).error,
+        ]
+    ";
+    assert_eq!(
+        app_value(source, filtered(&seen, refuse_all)),
+        frost("['refused', 'refused', 'refused']"),
+        "the filter's error, rather than the binding's or SQLite's"
+    );
+}
+
+#[test]
 fn a_filter_sees_no_call_that_fails_first() {
     let seen = Seen::default();
     let source = r"
         def db = import('app').open_db()
+        def fails = fn function, args -> try_call(function, args).ok
         [
-            try_call(db.script, [1]).ok,
-            try_call(db.script, ['SELECT 1;\0']).ok,
+            fails(db.script, [1]),
+            fails(db.script, ['SELECT 1;\0']),
+            fails(db.exec, [1]),
+            fails(db.exec, ['SELECT 1', 1]),
+            fails(db.exec, ['SELECT 1;\0']),
+            fails(db.query, [1]),
+            fails(db.query, ['SELECT 1', 1]),
+            fails(db.query, ['SELECT 1;\0']),
+            fails(db.fold, [1, null, fn acc, row -> acc]),
+            fails(db.fold, ['SELECT 1', 1, null, fn acc, row -> acc]),
+            fails(db.fold, ['SELECT 1', null, 1]),
+            fails(db.fold, ['SELECT 1;\0', null, fn acc, row -> acc]),
             db.close(),
-            try_call(db.script, ['SELECT 1']).ok,
+            fails(db.script, ['SELECT 1']),
+            fails(db.exec, ['SELECT 1']),
+            fails(db.query, ['SELECT 1']),
+            fails(db.fold, ['SELECT 1', null, fn acc, row -> acc]),
         ]
     ";
     assert_eq!(
         app_value(source, filtered(&seen, |_| Ok(()))),
-        frost("[false, false, null, false]")
+        frost(
+            "[false, false, false, false, false, false, false, false, false, false, false, false, null, false, false, false, false]"
+        )
     );
     assert!(
         seen_sql(&seen).is_empty(),
-        "the wrong type, a NUL, and a closed connection each fail before the filter"
+        "a wrong type, a NUL, and a closed connection each fail before the filter, in every method"
     );
 }
 

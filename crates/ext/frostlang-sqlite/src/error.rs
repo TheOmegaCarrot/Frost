@@ -1,5 +1,7 @@
 //! The errors the extension reports.
 
+use std::fmt::Display;
+
 use frostlang::FrostError;
 use rusqlite::ffi;
 
@@ -67,6 +69,109 @@ pub(crate) fn nul_error(function: &str) -> FrostError {
 pub(crate) fn nul_path_error(function: &str) -> FrostError {
     FrostError::from_string(format!(
         "Function {function} requires a path without NUL characters"
+    ))
+}
+
+/// The error for `function` given SQL holding no statement.
+pub(crate) fn no_statement_error(function: &str) -> FrostError {
+    FrostError::from_string(format!(
+        "Function {function} requires SQL of exactly one statement, but it has none"
+    ))
+}
+
+/// The error for `function` given SQL holding more than one statement.
+pub(crate) fn statements_error(function: &str) -> FrostError {
+    FrostError::from_string(format!(
+        "Function {function} requires SQL of exactly one statement, but it has more than one"
+    ))
+}
+
+/// The error for `function` given `got` bindings for SQL of `expected`
+/// parameters.
+pub(crate) fn binding_count_error(function: &str, expected: usize, got: usize) -> FrostError {
+    FrostError::from_string(format!(
+        "Function {function} requires {}, but got {got}",
+        bindings(expected)
+    ))
+}
+
+/// The error for `function` given no bindings for SQL of `expected`
+/// parameters.
+pub(crate) fn no_bindings_error(function: &str, expected: usize) -> FrostError {
+    FrostError::from_string(format!(
+        "Function {function} requires {}, but none were given",
+        bindings(expected)
+    ))
+}
+
+/// `count` bindings, in words.
+fn bindings(count: usize) -> String {
+    let plural = if count == 1 { "" } else { "s" };
+    format!("{count} binding{plural}")
+}
+
+/// The error for `function` given a Map of bindings for SQL with a parameter
+/// not named with a prefix.
+pub(crate) fn nameless_parameter_error(function: &str) -> FrostError {
+    FrostError::from_string(format!(
+        "Function {function} requires an Array of bindings, as the SQL has a parameter not named with :, @, or $"
+    ))
+}
+
+/// The error for `function` given no binding named `name`, for `parameter`.
+pub(crate) fn missing_binding_error(function: &str, name: &str, parameter: &str) -> FrostError {
+    FrostError::from_string(format!(
+        "Function {function} requires a binding named '{name}', for parameter {parameter}"
+    ))
+}
+
+/// The error for `function` given a binding named `name`, which no
+/// parameter has.
+pub(crate) fn unknown_binding_error(function: &str, name: &str) -> FrostError {
+    FrostError::from_string(format!(
+        "Function {function} got a binding named '{name}', but the SQL has no parameter of that name"
+    ))
+}
+
+/// The error for `function` given a Map of bindings with a key of type
+/// `kind`, not String.
+pub(crate) fn binding_key_type_error(function: &str, kind: &str) -> FrostError {
+    FrostError::from_string(format!(
+        "Function {function} requires String keys in a Map of bindings, got {kind}"
+    ))
+}
+
+/// The error for `function` given a value of type `kind` to bind to
+/// `parameter`.
+pub(crate) fn binding_type_error(
+    function: &str,
+    parameter: impl Display,
+    kind: &str,
+) -> FrostError {
+    FrostError::from_string(format!(
+        "Function {function} requires Null, Bool, Int, Float, String, or Bytes for parameter {parameter}, got {kind}"
+    ))
+}
+
+/// The error for `function` given NaN to bind to `parameter`.
+pub(crate) fn nan_binding_error(function: &str, parameter: impl Display) -> FrostError {
+    FrostError::from_string(format!(
+        "Function {function} cannot bind NaN to parameter {parameter}"
+    ))
+}
+
+/// The error for `function` reading TEXT that is not UTF-8 from `column`.
+pub(crate) fn invalid_text_error(function: &str, column: impl Display) -> FrostError {
+    FrostError::from_string(format!(
+        "Function {function} requires TEXT to be UTF-8, but column '{column}' holds TEXT that is not"
+    ))
+}
+
+/// The error for `function` reading a column, at `position` counting from 1,
+/// whose name is not UTF-8.
+pub(crate) fn invalid_column_name_error(function: &str, position: usize) -> FrostError {
+    FrostError::from_string(format!(
+        "Function {function} requires column names to be UTF-8, but column {position} has a name that is not"
     ))
 }
 

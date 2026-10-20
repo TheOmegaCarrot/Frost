@@ -4,7 +4,8 @@ use crate::core::FrostOpaque;
 
 /// A NaN or infinite `f64`, which [`FrostFloat`](crate::FrostFloat) cannot hold.
 ///
-/// Converting into a [`Value`](crate::Value) with [`to_value`](crate::to_value), or
+/// Converting into a [`Value`](crate::Value) with
+/// [`Value::from_f64`](crate::Value::from_f64) or [`to_value`](crate::to_value), or
 /// deserializing one from any format, turns a NaN or infinite float into an Opaque
 /// holding a `SpecialFloat`. It converts back out as the same float, bit for bit, so
 /// data passing through Frost keeps it.

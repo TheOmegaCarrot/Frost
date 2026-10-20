@@ -75,6 +75,8 @@ mod authorizer;
 mod connection;
 mod error;
 mod open;
+mod run;
+mod statement;
 
 pub use authorizer::{Authorizer, REPORTING_PRAGMAS};
 pub use connection::{Method, ScriptConnection, connection_factory};

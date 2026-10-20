@@ -130,6 +130,38 @@ fn run(expression: &str) -> Result<Value, FrostError> {
     run_source(&source, importer())
 }
 
+/// `body`, run with `db` bound to a new in-memory connection.
+pub(crate) fn with_db(body: &str) -> String {
+    format!(
+        r"
+        def db = sqlite.open_memory()
+        {body}
+        "
+    )
+}
+
+/// `body`, run with `db` holding an empty table `t (id INTEGER PRIMARY KEY,
+/// name TEXT)`.
+pub(crate) fn with_table(body: &str) -> String {
+    with_db(&format!(
+        r"
+        db.exec('CREATE TABLE t (id INTEGER PRIMARY KEY, name TEXT)')
+        {body}
+        "
+    ))
+}
+
+/// `body`, run with `db` holding the table `t (id INTEGER PRIMARY KEY, name
+/// TEXT)` of three rows: `(1, 'a')`, `(2, 'b')`, and `(3, 'c')`.
+pub(crate) fn with_rows(body: &str) -> String {
+    with_table(&format!(
+        r#"
+        db.exec("INSERT INTO t VALUES (1, 'a'), (2, 'b'), (3, 'c')")
+        {body}
+        "#
+    ))
+}
+
 /// The value of `expression`, which must run.
 pub(crate) fn value(expression: &str) -> Value {
     run(expression).unwrap_or_else(|error| panic!("{expression:?} should run, but raised: {error}"))

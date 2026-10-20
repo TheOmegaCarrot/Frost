@@ -104,6 +104,23 @@ fn frost_compares_it_with_equals() {
 // -- Into a Value --
 
 #[test]
+fn from_f64_makes_a_non_finite_float_a_special_float() {
+    for f in NON_FINITE {
+        assert_same_bits(held(&Value::from_f64(f)), f);
+    }
+}
+
+#[test]
+fn from_f64_keeps_a_finite_float_a_float() {
+    for f in [0.0, -0.0, 1.5, f64::MAX, f64::MIN, 5e-324] {
+        match Value::from_f64(f) {
+            Value::Float(float) => assert_same_bits(float.get(), f),
+            other => panic!("{f} should be a Float, got {other:?}"),
+        }
+    }
+}
+
+#[test]
 fn to_value_makes_a_non_finite_float_a_special_float() {
     for f in NON_FINITE {
         assert_same_bits(held(&to_value(&f).unwrap()), f);

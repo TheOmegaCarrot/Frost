@@ -11,7 +11,7 @@ frostlang.workspace = true
 # Without `bundled`, so the script chooses the linkage mode.
 frostlang-sqlite = { path = ".." }
 # Only for `rusqlite-bundled`.
-rusqlite = { version = "0.40", default-features = false, optional = true }
+rusqlite = { workspace = true, optional = true }
 
 [features]
 bundled = ["frostlang-sqlite/bundled"]

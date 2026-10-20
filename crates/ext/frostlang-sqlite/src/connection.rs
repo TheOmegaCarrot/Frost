@@ -8,17 +8,19 @@ use std::sync::Arc;
 use std::sync::atomic::{AtomicU64, Ordering};
 
 use enumset::{EnumSet, EnumSetType};
-use frostlang::native::{Bundle, Optional};
-use frostlang::{FrostError, FrostString, NativeCtx, Value, frost_bundle, frost_closure};
+use frostlang::native::{Bundle, Function, Optional, Structured};
+use frostlang::{
+    FrostError, FrostResult, FrostString, NativeCtx, Value, frost_bundle, frost_closure,
+};
 use parking_lot::ReentrantMutex;
-use rusqlite::fallible_iterator::FallibleIterator;
+use rusqlite::Connection;
 use rusqlite::hooks::{AuthContext, Authorization};
-use rusqlite::{Batch, Connection};
 
 use crate::Authorizer;
 use crate::error::{
     closed_error, denied_error, in_use_error, is_function_denial, nul_error, sqlite_error,
 };
+use crate::run::{self, Failure, Run};
 
 /// A method of a connection bundle, the value through which a script uses a
 /// database.
@@ -35,6 +37,62 @@ use crate::error::{
 ///
 /// Each method's documentation describes it as scripts call it, on a bundle
 /// `db`. Any call on a closed connection is an error.
+///
+/// # Statements
+///
+/// `exec`, `query`, and `fold` each run the one statement of their `sql`,
+/// which comments and semicolons may surround. SQL holding no statement, or
+/// more than one, is an error; [`Method::Script`] runs several.
+///
+/// A statement changing rows makes all its changes as it begins, as SQLite
+/// runs it. A call failing later, on a row it cannot read or in a `fold`'s
+/// `function`, leaves those changes made, and outside a transaction,
+/// committed.
+///
+/// # Bindings
+///
+/// The optional `bindings` of `exec`, `query`, and `fold` give the values of
+/// the statement's parameters:
+///
+/// - An Array binds its values to the parameters in order, and must hold one
+///   value for each.
+/// - A Map binds each parameter named with `:`, `@`, or `$` to the value keyed
+///   by that name less its prefix: `:id`, `@id`, and `$id` all take the value
+///   of `id`. Every parameter needs its key and every key its parameter, and
+///   keys are Strings. A Map cannot bind a parameter without such a name, such
+///   as `?` or `?1`.
+///
+/// Leaving `bindings` out binds no values.
+///
+/// | Frost value | SQLite value |
+/// |---|---|
+/// | Null | NULL |
+/// | Bool | INTEGER, `1` or `0` |
+/// | Int | INTEGER |
+/// | Float | REAL |
+/// | String | TEXT |
+/// | Bytes | BLOB |
+///
+/// An infinite [`SpecialFloat`](frostlang::SpecialFloat) binds as REAL too.
+/// Any other value, NaN among them, is an error.
+///
+/// # Rows
+///
+/// A row is a Map from each column's name to its value. Columns sharing a name
+/// leave the last one's value, so a script names columns apart with `AS`.
+///
+/// | SQLite value | Frost value |
+/// |---|---|
+/// | NULL | Null |
+/// | INTEGER | Int |
+/// | REAL | Float, or a [`SpecialFloat`](frostlang::SpecialFloat) if infinite |
+/// | TEXT | String |
+/// | BLOB | Bytes |
+///
+/// TEXT that is not UTF-8 is an error, and so is a column name that is not.
+/// For a column name, the error comes of a panic in `rusqlite` that the
+/// extension catches: the panic hook still runs, by default printing the panic
+/// to stderr, and a build with `panic = "abort"` aborts.
 #[derive(Debug, Hash, PartialOrd, Ord, EnumSetType)]
 #[non_exhaustive]
 pub enum Method {
@@ -44,6 +102,33 @@ pub enum Method {
     /// Outside a transaction, each statement commits on its own, so a
     /// statement failing leaves those before it committed.
     Script,
+    /// `db.exec(sql, bindings?)` runs a statement and returns how many rows
+    /// it changed, as SQLite's
+    /// [`sqlite3_changes`](https://www.sqlite.org/c3ref/changes.html) counts
+    /// them: the rows an INSERT, UPDATE, or DELETE changes itself, not those
+    /// its triggers or foreign key actions change, and `0` for any other
+    /// statement. Dropping a table that other tables' foreign keys reference
+    /// first deletes its rows, which count.
+    Exec,
+    /// `db.query(sql, bindings?)` runs a statement and returns its rows, as
+    /// an Array.
+    Query,
+    /// `db.fold(sql, bindings?, initial, function)` runs a statement and
+    /// folds its rows: it calls `function(accumulator, row)` for each row in
+    /// turn, with `initial` as the first accumulator and each call's result
+    /// as the next, and returns the last result, or `initial` for no rows.
+    ///
+    /// It reads each row only as `function` takes it, so it holds one row at
+    /// a time. `function` may use the connection meanwhile, though not close
+    /// it. Whether a change `function` makes to the rows being read shows in
+    /// the rows still to come is undefined, as SQLite leaves it. An error
+    /// from `function` ends the statement, and is the call's error.
+    Fold,
+    /// `db.last_insert_rowid()` returns the rowid of the row last inserted
+    /// on the connection, as SQLite's
+    /// [`sqlite3_last_insert_rowid`](https://www.sqlite.org/c3ref/last_insert_rowid.html)
+    /// gives it, or `0` if none has been.
+    LastInsertRowid,
     /// `db.close()` closes the connection, as described on
     /// [`ScriptConnection`].
     Close,
@@ -77,7 +162,8 @@ impl ScriptConnection {
     /// Exposes `connection`, taken from a pool.
     ///
     /// A pooled connection keeps the state its earlier users left on it, such
-    /// as pragmas, temporary tables, and attached databases. A factory serving
+    /// as pragmas, temporary tables, attached databases, and the rowid
+    /// [`Method::LastInsertRowid`] gives. A factory serving
     /// scripts it trusts less than those users must reset that state, or not
     /// share the pool. A transaction a script leaves open is rolled back
     /// before the connection returns to its pool.
@@ -86,6 +172,10 @@ impl ScriptConnection {
     }
 
     /// Exposes only `methods`, rather than every [`Method`], the default.
+    ///
+    /// Methods choose how scripts reach the connection, not what their SQL
+    /// may do: `query` and `fold` run any statement, writes included. An
+    /// [`Authorizer`] or a read-only connection limits the SQL itself.
     ///
     /// A set built from `EnumSet::all()`, such as `EnumSet::all() -
     /// Method::Close`, takes in methods that later versions add. A set listing
@@ -189,6 +279,10 @@ impl ScriptConnection {
             .fold(Bundle::new(state), |bundle, method| {
                 bundle.with(match method {
                     Method::Script => Db::script_method,
+                    Method::Exec => Db::exec_method,
+                    Method::Query => Db::query_method,
+                    Method::Fold => Db::fold_method,
+                    Method::LastInsertRowid => Db::last_insert_rowid_method,
                     Method::Close => Db::close_method,
                 })
             })
@@ -321,39 +415,40 @@ struct Db {
 }
 
 impl Db {
-    /// Runs `operation` on the connection with `sql`, for the function `ctx`
-    /// runs, once `sql` passes the extension's checks and the host's filter.
+    /// Runs `operation` for the function `ctx` runs, once `sql` passes the
+    /// extension's checks and the host's filter.
     fn with_sql<T>(
         &self,
-        ctx: &NativeCtx<'_>,
+        ctx: &mut NativeCtx<'_>,
         sql: &str,
-        operation: impl FnOnce(&Connection, &str) -> rusqlite::Result<T>,
+        operation: impl FnOnce(&mut Run<'_, '_>) -> Result<T, Failure>,
     ) -> Result<T, FrostError> {
+        let function = ctx.name();
         if sql.contains('\0') {
-            return Err(nul_error(ctx.name()));
+            return Err(nul_error(function));
         }
-        self.with_connection(ctx, |connection| {
+        self.with_connection(function, |connection| {
             if let Some(filter) = &self.filter {
                 filter(sql)?;
             }
-            let denials = self.denials.load(Ordering::Relaxed);
-            operation(connection, sql).map_err(|err| {
+            let mut run = Run::new(connection, sql, ctx, &self.denials);
+            operation(&mut run).map_err(|failure| match failure {
+                Failure::Frost(err) => err,
                 // SQLite words a denied function under another code than
                 // `SQLITE_AUTH`, naming it. Its wording alone could be any
-                // failure's, so only a denial during this call confirms it.
-                if self.denials.load(Ordering::Relaxed) != denials && is_function_denial(&err) {
-                    denied_error(ctx.name())
-                } else {
-                    sqlite_error(ctx.name(), &err)
+                // failure's, so only a denial while SQLite ran confirms it.
+                Failure::Sqlite(err) if run.denied() && is_function_denial(&err) => {
+                    denied_error(function)
                 }
+                Failure::Sqlite(err) => sqlite_error(function, &err),
             })
         })
     }
 
-    /// Runs `operation` on the connection, for the function `ctx` runs.
+    /// Runs `operation` on the connection, for `function`.
     fn with_connection<T>(
         &self,
-        ctx: &NativeCtx<'_>,
+        function: &str,
         operation: impl FnOnce(&Connection) -> Result<T, FrostError>,
     ) -> Result<T, FrostError> {
         let lock = self.connection.lock();
@@ -364,7 +459,7 @@ impl Db {
         let connection = lock.borrow();
         let connection = connection
             .as_deref()
-            .ok_or_else(|| closed_error(ctx.name()))?;
+            .ok_or_else(|| closed_error(function))?;
         operation(connection)
     }
 }
@@ -376,11 +471,54 @@ impl Db {
         #[frost(ctx)] ctx: &mut NativeCtx<'_>,
         sql: FrostString,
     ) -> Result<i64, FrostError> {
-        self.with_sql(ctx, &sql, |connection, sql| {
-            let before = connection.total_changes();
-            run_to_completion(connection, sql)?;
-            Ok(changes_since(connection, before))
+        self.with_sql(ctx, &sql, run::script)
+    }
+}
+
+#[frost_bundle(prefix = "db", group = exec_method)]
+impl Db {
+    fn exec(
+        &self,
+        #[frost(ctx)] ctx: &mut NativeCtx<'_>,
+        sql: FrostString,
+        bindings: Optional<Structured>,
+    ) -> Result<i64, FrostError> {
+        self.with_sql(ctx, &sql, |run| run::exec(run, bindings.0))
+    }
+}
+
+#[frost_bundle(prefix = "db", group = query_method)]
+impl Db {
+    fn query(
+        &self,
+        #[frost(ctx)] ctx: &mut NativeCtx<'_>,
+        sql: FrostString,
+        bindings: Optional<Structured>,
+    ) -> FrostResult {
+        self.with_sql(ctx, &sql, |run| run::query(run, bindings.0))
+    }
+}
+
+#[frost_bundle(prefix = "db", group = fold_method)]
+impl Db {
+    fn fold(
+        &self,
+        #[frost(ctx)] ctx: &mut NativeCtx<'_>,
+        sql: FrostString,
+        bindings: Optional<Structured>,
+        initial: Value,
+        #[frost(unnamed)] function: Function,
+    ) -> FrostResult {
+        self.with_sql(ctx, &sql, |run| {
+            run::fold(run, bindings.0, initial, &function)
         })
+    }
+}
+
+#[frost_bundle(prefix = "db", group = last_insert_rowid_method)]
+impl Db {
+    fn last_insert_rowid(&self, #[frost(ctx)] ctx: &mut NativeCtx<'_>) -> Result<i64, FrostError> {
+        self.with_connection(ctx.name(), |connection| Ok(connection.last_insert_rowid()))
     }
 }
 
@@ -405,25 +543,4 @@ impl Db {
             None => Err(closed_error(ctx.name())),
         }
     }
-}
-
-/// Runs each statement of `sql` in turn, stepping each through every row it
-/// returns, so that each runs in full.
-fn run_to_completion(connection: &Connection, sql: &str) -> rusqlite::Result<()> {
-    let mut statements = Batch::new(connection, sql);
-    while let Some(mut statement) = statements.next()? {
-        let mut rows = statement.raw_query();
-        while rows.next()?.is_some() {}
-    }
-    Ok(())
-}
-
-/// How many rows `connection` has changed since its count of changes was
-/// `before`.
-fn changes_since(connection: &Connection, before: u64) -> i64 {
-    // The count can be SQLite's 32-bit one, sign-extended, which wraps every
-    // 2^32 changes. No one call changes nearly that many rows, so the low 32
-    // bits of the difference are exact.
-    let changed = (connection.total_changes() as u32).wrapping_sub(before as u32);
-    i64::from(changed)
 }

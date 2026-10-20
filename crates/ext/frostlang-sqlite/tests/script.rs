@@ -1,16 +1,6 @@
 //! `db.script`: running statements without bindings.
 
-use crate::common::{NON_STRINGS, assert_arity, assert_raises, assert_values};
-
-/// `body`, run with `db` bound to a new in-memory connection.
-fn with_db(body: &str) -> String {
-    format!(
-        r"
-        def db = sqlite.open_memory()
-        {body}
-        "
-    )
-}
+use crate::common::{NON_STRINGS, assert_arity, assert_raises, assert_values, with_db};
 
 #[test]
 fn script_returns_the_rows_its_statements_changed() {

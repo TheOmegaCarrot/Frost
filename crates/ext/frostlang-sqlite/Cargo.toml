@@ -15,11 +15,8 @@ bundled = ["rusqlite/bundled"]
 enumset = "1.1"
 frostlang = { path = "../../frostlang", version = "0.0.1", default-features = false }
 parking_lot = "0.12"
-# Without the defaults: a statement cache (`cache`) and a WebAssembly build of
-# SQLite (`ffi-sqlite-wasm-rs`).
-# TODO: Decide on `cache` with the connection API (FROST-10.2).
 # `hooks` for the authorizer.
-rusqlite = { version = "0.40", default-features = false, features = ["hooks"] }
+rusqlite = { workspace = true, features = ["hooks"] }
 
 [dev-dependencies]
 # The tests compile Frost source.
@@ -27,6 +24,8 @@ frostlang.workspace = true
 # The tests always link the bundled SQLite, so they need no SQLite installed.
 # `linkage/` exercises the other modes.
 frostlang-sqlite = { path = ".", features = ["bundled"] }
+# `functions`, for a host SQL function failing with wording a test chooses.
+rusqlite = { workspace = true, features = ["functions"] }
 # Scratch directories for database files.
 tempfile = "3.27"
 

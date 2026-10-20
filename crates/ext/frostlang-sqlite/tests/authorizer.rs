@@ -3,11 +3,12 @@
 use std::sync::{Arc, Mutex};
 
 use frostlang::Value;
-use frostlang_sqlite::rusqlite::Connection;
+use frostlang_sqlite::rusqlite::functions::FunctionFlags;
 use frostlang_sqlite::rusqlite::hooks::{
     AuthAction, AuthContext, Authorization, TransactionOperation,
 };
 use frostlang_sqlite::rusqlite::types::ValueRef;
+use frostlang_sqlite::rusqlite::{self, Connection};
 use frostlang_sqlite::{
     Authorizer, REPORTING_PRAGMAS, ScriptConnection, connection_factory, sqlite_error,
 };
@@ -623,6 +624,97 @@ fn a_failure_after_a_denial_keeps_its_own_wording() {
             "[{}, 'Function db.script failed: no such table: missing (SQLITE_ERROR)']",
             string_literal(DENIED)
         ))
+    );
+}
+
+#[test]
+fn every_method_running_sql_runs_under_the_authorizer() {
+    let authorizer = Authorizer::new().deny_writes().deny_functions(["upper"]);
+    let fixture = Fixture::new();
+    let before = fixture.snapshot();
+    let source = r"
+        def db = import('app').open_db()
+        def insert = 'INSERT INTO t VALUES (?, ?) RETURNING x'
+        [
+            try_call(db.exec, [insert, [2, 'x']]).error,
+            try_call(db.query, [insert, [2, 'x']]).error,
+            try_call(db.fold, [insert, [2, 'x'], null, fn acc, row -> acc]).error,
+            try_call(db.exec, ['SELECT upper(1)']).error,
+            try_call(db.query, ['SELECT upper(1)']).error,
+            try_call(db.fold, ['SELECT upper(1)', null, fn acc, row -> acc]).error,
+            db.query('SELECT x FROM t'),
+            db.fold('SELECT x FROM t', 0, fn total, row -> total + row.x),
+        ]
+    ";
+    let denied = |method: &str| {
+        string_literal(&format!(
+            "Function db.{method} failed: not authorized (SQLITE_AUTH)"
+        ))
+    };
+    assert_eq!(
+        app_value(source, fixture.factory(&authorizer)),
+        frost(&format!(
+            "[{exec}, {query}, {fold}, {exec}, {query}, {fold}, [{{x: 1}}], 1]",
+            exec = denied("exec"),
+            query = denied("query"),
+            fold = denied("fold"),
+        ))
+    );
+    assert_eq!(fixture.snapshot(), before, "the denials changed nothing");
+}
+
+#[test]
+fn a_second_statement_is_one_too_many_though_it_would_be_denied() {
+    let authorizer = Authorizer::new().deny_writes();
+    let fixture = Fixture::new();
+    let before = fixture.snapshot();
+    let source = r"
+        def db = import('app').open_db()
+        [
+            try_call(db.exec, ['SELECT 1; INSERT INTO t VALUES (2, 2)']).error,
+            try_call(db.query, ['SELECT 1 AS a; DELETE FROM t']).error,
+        ]
+    ";
+    assert_eq!(
+        app_value(source, fixture.factory(&authorizer)),
+        frost(
+            "['Function db.exec requires SQL of exactly one statement, but it has more than one', 'Function db.query requires SQL of exactly one statement, but it has more than one']"
+        )
+    );
+    assert_eq!(fixture.snapshot(), before);
+}
+
+#[test]
+fn a_denial_a_callback_catches_colours_no_later_failure() {
+    // The host's function `fail(message)` fails with `message`, here worded
+    // as SQLite words a denied function.
+    let factory = connection_factory("app.open_db", |_| {
+        let connection = memory_connection()?;
+        connection
+            .create_scalar_function("fail", 1, FunctionFlags::SQLITE_UTF8, |ctx| {
+                Err::<i64, _>(rusqlite::Error::UserFunctionError(
+                    ctx.get::<String>(0)?.into(),
+                ))
+            })
+            .map_err(|err| sqlite_error("app.open_db", &err))?;
+        Ok(ScriptConnection::new(connection)
+            .with_authorizer(Authorizer::new().deny_functions(["upper"])))
+    });
+    // The callback's call is denied, and caught, before the statement fails
+    // on its second row.
+    let source = r#"
+        def db = import('app').open_db()
+        def sql = "SELECT CASE WHEN n = 2 THEN fail('not authorized to use function: fail') END FROM (SELECT 1 AS n UNION ALL SELECT 2)"
+        def denied_call = fn acc, row -> try_call(db.query, ['SELECT upper(1)']).error
+        def caught = db.fold('SELECT 1', [], denied_call)
+        def failed = try_call(db.fold, [sql, null, denied_call])
+        [caught, failed.error]
+    "#;
+    assert_eq!(
+        app_value(source, factory),
+        frost(
+            "['Function db.query failed: not authorized (SQLITE_AUTH)', 'Function db.fold failed: not authorized to use function: fail (SQLITE_ERROR)']"
+        )
     );
 }
 

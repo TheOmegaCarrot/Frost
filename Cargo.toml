@@ -35,6 +35,9 @@ frostlang-parse = { path = "crates/frostlang-parse", version = "0.0.1" }
 frostlang-repl = { path = "crates/frostlang-repl", version = "0.0.1" }
 frostlang-sqlite = { path = "crates/ext/frostlang-sqlite", version = "0.0.1" }
 frostlang-uuid = { path = "crates/ext/frostlang-uuid", version = "0.0.1" }
+# Without the defaults: a statement cache (`cache`) and a WebAssembly build of
+# SQLite (`ffi-sqlite-wasm-rs`). Each crate enables the features it uses.
+rusqlite = { version = "0.40", default-features = false }
 
 # Crates opt in with `[lints] workspace = true`.
 [workspace.lints.rust]

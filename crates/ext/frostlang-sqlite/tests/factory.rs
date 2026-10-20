@@ -107,37 +107,63 @@ fn a_factory_can_choose_a_database_by_its_argument() {
     );
 }
 
+/// Every method, with the key a bundle gives it.
+const METHODS: [(Method, &str); 6] = [
+    (Method::Close, "close"),
+    (Method::Exec, "exec"),
+    (Method::Fold, "fold"),
+    (Method::LastInsertRowid, "last_insert_rowid"),
+    (Method::Query, "query"),
+    (Method::Script, "script"),
+];
+
+/// The keys of the bundle a factory exposing `methods` makes, sorted.
+fn bundle_keys(methods: EnumSet<Method>) -> Value {
+    app_value(
+        "sorted(keys(import('app').open_db()))",
+        memory_factory(methods),
+    )
+}
+
 #[test]
 fn a_bundle_offers_every_method_by_default() {
     assert_eq!(
-        app_value(
-            "sorted(keys(import('app').open_db()))",
-            memory_factory(EnumSet::all())
-        ),
-        frost("['close', 'script']")
+        METHODS
+            .iter()
+            .map(|(method, _)| *method)
+            .collect::<EnumSet<_>>(),
+        EnumSet::all(),
+        "METHODS lists every method"
+    );
+    assert_eq!(
+        bundle_keys(EnumSet::all()),
+        METHODS.iter().map(|(_, key)| Value::from(*key)).collect()
     );
 }
 
 #[test]
 fn a_bundle_offers_only_the_methods_chosen() {
-    let cases = [
-        (EnumSet::only(Method::Script), "['script']"),
-        (EnumSet::only(Method::Close), "['close']"),
-        (EnumSet::all() - Method::Script, "['close']"),
-        (EnumSet::all() - Method::Close, "['script']"),
-        (Method::Script | Method::Close, "['close', 'script']"),
-        (EnumSet::empty(), "[]"),
-    ];
-    for (methods, expected) in cases {
+    for (method, key) in METHODS {
         assert_eq!(
-            app_value(
-                "sorted(keys(import('app').open_db()))",
-                memory_factory(methods)
-            ),
-            frost(expected),
-            "{methods:?}"
+            bundle_keys(EnumSet::only(method)),
+            Value::array([Value::from(key)]),
+            "{method:?} alone"
+        );
+        assert_eq!(
+            bundle_keys(EnumSet::all() - method),
+            METHODS
+                .iter()
+                .filter(|(other, _)| *other != method)
+                .map(|(_, key)| Value::from(*key))
+                .collect(),
+            "every method but {method:?}"
         );
     }
+    assert_eq!(
+        bundle_keys(Method::Script | Method::Close),
+        frost("['close', 'script']")
+    );
+    assert_eq!(bundle_keys(EnumSet::empty()), frost("[]"));
 }
 
 #[test]

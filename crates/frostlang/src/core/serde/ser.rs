@@ -3,7 +3,7 @@ use std::fmt;
 
 use serde::ser::{self, Serialize};
 
-use crate::core::serde::{float_value, special_float};
+use crate::core::serde::special_float;
 use crate::core::{FrostArray, MapKey, Value, ValueMap};
 
 thread_local! {
@@ -94,7 +94,7 @@ impl ser::Serializer for ValueSerializer {
     }
 
     fn serialize_f64(self, v: f64) -> Result<Value, SerError> {
-        Ok(float_value(v))
+        Ok(Value::from_f64(v))
     }
 
     fn serialize_char(self, v: char) -> Result<Value, SerError> {
