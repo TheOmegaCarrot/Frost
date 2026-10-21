@@ -2,13 +2,14 @@
 
 use std::mem;
 
-use crate::core::find;
+use crate::core::{could_hold_function, find};
 use crate::native::{MutableBundle, Optional};
 use crate::{FrostError, Value, frost_fn, frost_mutable_bundle};
 
-/// Rejects `value` if it holds, at any depth, what could refer back to the cell.
+/// Rejects `value` if it holds, at any depth, what could refer back to the
+/// cell: what [`Value::may_hold_function`] finds.
 fn forbid_cycle(value: &Value) -> Result<(), FrostError> {
-    match find::find(value, could_refer_back) {
+    match find::find(value, could_hold_function) {
         None => Ok(()),
         Some(Value::NativeFunction(_) | Value::Closure(_)) => Err(FrostError::from_static(
             "A mutable cell may not store a Function value",
@@ -18,19 +19,7 @@ fn forbid_cycle(value: &Value) -> Result<(), FrostError> {
             o.type_name()
         )
         .into()),
-        Some(found) => unreachable!("`could_refer_back` accepts {}", found.type_name()),
-    }
-}
-
-/// Whether `value` itself could refer back to the cell.
-fn could_refer_back(value: &Value) -> bool {
-    match value {
-        Value::NativeFunction(_) | Value::Closure(_) => true,
-        // We cannot see inside an Opaque, so one that might hold a Value (and through
-        // it, this cell) is rejected. One with no drop glue provably holds none: it
-        // cannot own the `Arc` behind a Value.
-        Value::Opaque(o) => o.needs_drop(),
-        _ => false,
+        Some(found) => unreachable!("`could_hold_function` accepts {}", found.type_name()),
     }
 }
 

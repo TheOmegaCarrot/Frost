@@ -4,10 +4,8 @@ use std::sync::Arc;
 
 use crate::bytecode::{Bytecode, CompiledFunction, FormatVersion};
 use crate::core::FrostResult;
-use crate::native::{Function, Optional};
-use crate::{
-    Arity, Closure, FrostArray, FrostType, MapKey, NativeCtx, Param, Params, Value, frost_fn,
-};
+use crate::native::{Function, Optional, caught};
+use crate::{Arity, Closure, FrostArray, FrostType, NativeCtx, Param, Params, Value, frost_fn};
 
 /// `call(f)` / `call(f, args)`: invoke `f`, spreading the elements of `args` (or
 /// no args) as a tail call. A hand-rolled `Between(1, 2)` closure over `DynTailCall`.
@@ -71,9 +69,7 @@ fn call_type_error() -> Value {
 }
 
 /// `try_call(f, args)`: invoke `f` with `args` (an array) and reify the outcome into a result map
-/// rather than letting an error propagate:
-///   success: `{ ok: true,  value: <result> }`
-///   failure: `{ ok: false, error: <error value>, trace: [<frame names>] }`
+/// rather than letting an error propagate, shaped as [`caught`] shapes it.
 ///
 /// The argument array is interpreted the same as `call`, only the result shape differs.
 /// This is Frost's catch primitive, surfaced as a native.
@@ -82,37 +78,9 @@ pub(super) fn try_call(
     #[frost(ctx)] ctx: &mut NativeCtx<'_>,
     #[frost(unnamed)] function: Function,
     args: Optional<FrostArray>,
-) -> FrostResult {
+) -> Value {
     let call_args = args.0.unwrap_or_else(FrostArray::empty);
-
-    match ctx.invoke(&function, call_args.into_vec()) {
-        Ok(value) => Ok(result_map([
-            (string_key("ok"), Value::Bool(true)),
-            (string_key("value"), value),
-        ])),
-        Err(err) => {
-            let trace = err
-                .backtrace
-                .iter()
-                .map(|frame| Value::from(frame.name()))
-                .collect::<Vec<_>>();
-            Ok(result_map([
-                (string_key("ok"), Value::Bool(false)),
-                (string_key("error"), err.into_value()),
-                (string_key("trace"), Value::Array(FrostArray::from(trace))),
-            ]))
-        }
-    }
-}
-
-/// A string `MapKey` from a `&str` literal.
-fn string_key(s: &str) -> MapKey {
-    MapKey::from(s)
-}
-
-/// Build a `Value::Map` from a fixed set of entries.
-fn result_map<const N: usize>(entries: [(MapKey, Value); N]) -> Value {
-    Value::Map(entries.into_iter().collect())
+    caught(ctx.invoke(&function, call_args.into_vec()))
 }
 
 pub(super) fn error_global() -> Value {

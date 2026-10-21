@@ -188,6 +188,17 @@ impl Value {
         }
     }
 
+    /// Whether this value is, or may hold, a Function at any depth.
+    ///
+    /// An Opaque counts unless its payload type has no drop glue, such as one
+    /// holding only numbers: only then can it own no Value. One holding a
+    /// `String`, say, counts. `false` means the value owns no Function, so
+    /// storing or returning it carries none. Searching takes time linear in
+    /// the value's distinct contents.
+    pub fn may_hold_function(&self) -> bool {
+        find::find(self, could_hold_function).is_some()
+    }
+
     /// Wrap host data as an `Opaque` value.
     ///
     /// The usual way to hand a [`FrostOpaque`] instance into Frost; see the
@@ -200,5 +211,18 @@ impl Value {
     /// not `Opaque`, or the payload is some other type.
     pub fn downcast_opaque<T: FrostOpaque>(&self) -> Option<&T> {
         self.as_opaque()?.downcast_ref::<T>()
+    }
+}
+
+/// Whether `value` itself, not looking within it, is or may hold a Function;
+/// see [`Value::may_hold_function`].
+pub(crate) fn could_hold_function(value: &Value) -> bool {
+    match value {
+        Value::NativeFunction(_) | Value::Closure(_) => true,
+        // We cannot see inside an Opaque, so one that might hold a Value (and
+        // through it, a Function) counts. One with no drop glue provably holds
+        // none: it cannot own the `Arc` behind a Value.
+        Value::Opaque(o) => o.needs_drop(),
+        _ => false,
     }
 }

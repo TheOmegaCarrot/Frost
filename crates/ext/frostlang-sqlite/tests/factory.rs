@@ -108,13 +108,14 @@ fn a_factory_can_choose_a_database_by_its_argument() {
 }
 
 /// Every method, with the key a bundle gives it.
-const METHODS: [(Method, &str); 6] = [
+const METHODS: [(Method, &str); 7] = [
     (Method::Close, "close"),
     (Method::Exec, "exec"),
     (Method::Fold, "fold"),
     (Method::LastInsertRowid, "last_insert_rowid"),
     (Method::Query, "query"),
     (Method::Script, "script"),
+    (Method::Transaction, "transaction"),
 ];
 
 /// The keys of the bundle a factory exposing `methods` makes, sorted.
@@ -329,7 +330,12 @@ fn a_pooled_connection_returns_to_its_pool_with_no_transaction_open() {
         let source = format!(
             r"
             def db = import('app').open_db()
-            db.script('CREATE TABLE t (x); BEGIN; INSERT INTO t VALUES (1)')
+            db.script('CREATE TABLE t (x)')
+            try_call(db.script, ['BEGIN; INSERT INTO t VALUES (1)'])
+            db.transaction(fn tx -> {{
+                tx.exec('INSERT INTO t VALUES (1)')
+                assert(false)
+            }})
             {release}
             "
         );
@@ -337,7 +343,7 @@ fn a_pooled_connection_returns_to_its_pool_with_no_transaction_open() {
         assert_eq!(
             releases,
             [true],
-            "after {release:?}, the open transaction was rolled back"
+            "after {release:?}, no transaction was left open"
         );
     }
 }

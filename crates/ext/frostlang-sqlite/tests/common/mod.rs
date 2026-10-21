@@ -252,5 +252,10 @@ impl Scratch {
 
 /// `text` as a Frost String literal.
 pub(crate) fn string_literal(text: &str) -> String {
-    format!("'{}'", text.replace('\\', r"\\").replace('\'', r"\'"))
+    format!(
+        "'{}'",
+        text.replace('\\', r"\\")
+            .replace('\'', r"\'")
+            .replace('\n', r"\n")
+    )
 }

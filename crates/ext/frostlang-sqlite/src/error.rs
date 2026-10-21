@@ -72,6 +72,69 @@ pub(crate) fn nul_path_error(function: &str) -> FrostError {
     ))
 }
 
+/// The error for `function` given a transaction statement, such as `BEGIN`,
+/// ending with `hint`, what to do instead.
+pub(crate) fn transaction_statement_error(function: &str, hint: &str) -> FrostError {
+    FrostError::from_string(format!(
+        "Function {function} cannot run a transaction statement{hint}"
+    ))
+}
+
+/// The error for `function` unable to read a statement's text, which a SQLite
+/// built without it lacks.
+pub(crate) fn statement_text_error(function: &str) -> FrostError {
+    FrostError::from_string(format!(
+        "Function {function} requires each statement's text, which this SQLite does not give"
+    ))
+}
+
+/// The error for `function` used on a connection while a transaction is open
+/// on it.
+pub(crate) fn open_transaction_error(function: &str) -> FrostError {
+    FrostError::from_string(format!(
+        "Function {function} cannot be used while a transaction is open; use the transaction's tx"
+    ))
+}
+
+/// The error for `function` used on a transaction while one within it is
+/// open.
+pub(crate) fn inner_transaction_error(function: &str) -> FrostError {
+    FrostError::from_string(format!(
+        "Function {function} cannot be used while a transaction within it is open; use the inner transaction's tx"
+    ))
+}
+
+/// The error for `function` used on a transaction that has ended.
+pub(crate) fn transaction_ended_error(function: &str) -> FrostError {
+    FrostError::from_string(format!(
+        "Function {function} requires an open transaction, but it has ended"
+    ))
+}
+
+/// The error for `function` used on a transaction that SQLite itself rolled
+/// back.
+pub(crate) fn rolled_back_error(function: &str) -> FrostError {
+    FrostError::from_string(format!(
+        "Function {function} requires an open transaction, but SQLite rolled it back"
+    ))
+}
+
+/// The error for `function` unable to commit a transaction that SQLite
+/// itself rolled back.
+pub(crate) fn uncommittable_error(function: &str) -> FrostError {
+    FrostError::from_string(format!(
+        "Function {function} cannot commit the transaction, as SQLite rolled it back"
+    ))
+}
+
+/// The error for `function` given an error to return, worded `message`, that
+/// holds, or may hold, a Function.
+pub(crate) fn escaping_error(function: &str, message: &str) -> FrostError {
+    FrostError::from_string(format!(
+        "Function {function} cannot return an error that holds, or may hold, a Function: {message}"
+    ))
+}
+
 /// The error for `function` given SQL holding no statement.
 pub(crate) fn no_statement_error(function: &str) -> FrostError {
     FrostError::from_string(format!(

@@ -57,6 +57,10 @@ type Rule = Arc<dyn Fn(AuthContext<'_>) -> Authorization + Send + Sync>;
 /// `Deny` over `Ignore` over `Allow`. A denied action fails its statement as
 /// `not authorized (SQLITE_AUTH)`.
 ///
+/// Beginning, ending, and saving a transaction are always allowed, whatever
+/// the rules: only [`Method::Transaction`](crate::Method::Transaction) does
+/// them, which a connection without transactions leaves out.
+///
 /// ```
 /// use frostlang_sqlite::{Authorizer, REPORTING_PRAGMAS};
 ///
@@ -260,6 +264,11 @@ impl Authorizer {
 
     /// The judgement of `ctx`'s action: the strictest of every rule's.
     pub(crate) fn judge(&self, ctx: AuthContext<'_>) -> Authorization {
+        // Only the extension's own transaction methods begin, end, or save a
+        // transaction, and a denied rollback would leave one open.
+        if let AuthAction::Transaction { .. } | AuthAction::Savepoint { .. } = ctx.action {
+            return Authorization::Allow;
+        }
         let built_in = [
             self.judge_write(ctx),
             self.judge_attach(ctx),

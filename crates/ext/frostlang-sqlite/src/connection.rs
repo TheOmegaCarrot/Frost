@@ -1,26 +1,20 @@
-//! Connections as scripts see them: connection bundles, and the factories that
-//! make them.
+//! How a host exposes connections to scripts: [`ScriptConnection`], its
+//! [`Method`]s, and the factories that make them.
 
-use std::cell::RefCell;
 use std::fmt;
 use std::ops::{Deref, DerefMut};
 use std::sync::Arc;
 use std::sync::atomic::{AtomicU64, Ordering};
 
 use enumset::{EnumSet, EnumSetType};
-use frostlang::native::{Bundle, Function, Optional, Structured};
-use frostlang::{
-    FrostError, FrostResult, FrostString, NativeCtx, Value, frost_bundle, frost_closure,
-};
-use parking_lot::ReentrantMutex;
+use frostlang::native::Optional;
+use frostlang::{FrostError, Value, frost_closure};
 use rusqlite::Connection;
 use rusqlite::hooks::{AuthContext, Authorization};
 
 use crate::Authorizer;
-use crate::error::{
-    closed_error, denied_error, in_use_error, is_function_denial, nul_error, sqlite_error,
-};
-use crate::run::{self, Failure, Run};
+use crate::bundle::{Shared, connection_bundle};
+use crate::error::sqlite_error;
 
 /// A method of a connection bundle, the value through which a script uses a
 /// database.
@@ -43,6 +37,10 @@ use crate::run::{self, Failure, Run};
 /// `exec`, `query`, and `fold` each run the one statement of their `sql`,
 /// which comments and semicolons may surround. SQL holding no statement, or
 /// more than one, is an error; [`Method::Script`] runs several.
+///
+/// Scripts make transactions only with [`Method::Transaction`]: SQL holding a
+/// transaction statement, such as `BEGIN`, `COMMIT`, or `SAVEPOINT`, is an
+/// error in every method.
 ///
 /// A statement changing rows makes all its changes as it begins, as SQLite
 /// runs it. A call failing later, on a row it cannot read or in a `fold`'s
@@ -118,17 +116,56 @@ pub enum Method {
     /// turn, with `initial` as the first accumulator and each call's result
     /// as the next, and returns the last result, or `initial` for no rows.
     ///
-    /// It reads each row only as `function` takes it, so it holds one row at
-    /// a time. `function` may use the connection meanwhile, though not close
-    /// it. Whether a change `function` makes to the rows being read shows in
-    /// the rows still to come is undefined, as SQLite leaves it. An error
-    /// from `function` ends the statement, and is the call's error.
+    /// A statement that only reads is read row by row, as `function` takes
+    /// each, so the fold holds one row at a time. A statement that changes
+    /// rows and returns them, with SQLite's
+    /// [`RETURNING`](https://www.sqlite.org/lang_returning.html) clause, runs
+    /// in full before `function` takes its first row, so that `function` may
+    /// begin a transaction; the fold then holds every row.
+    ///
+    /// `function` may use the connection meanwhile, though not close it.
+    /// Whether a change `function` makes to the rows being read shows in the
+    /// rows still to come is undefined, as SQLite leaves it. A transaction
+    /// `function` rolls back having changed the schema ends the read, and the
+    /// fold fails. An error from `function` ends the statement, and is the
+    /// call's error.
     Fold,
     /// `db.last_insert_rowid()` returns the rowid of the row last inserted
     /// on the connection, as SQLite's
     /// [`sqlite3_last_insert_rowid`](https://www.sqlite.org/c3ref/last_insert_rowid.html)
     /// gives it, or `0` if none has been.
     LastInsertRowid,
+    /// `db.transaction(function)` calls `function(tx)` in a transaction,
+    /// committed once `function` returns, and rolled back if `function` or
+    /// the commit fails. It returns as `try_call` does: `{ok: true, value:
+    /// rows}`, with `rows` how many rows changed meanwhile as `script` counts
+    /// them, rows an inner transaction rolled back included; or `{ok: false,
+    /// error, trace}`. A script ignoring the result ignores a failure too.
+    /// What `function` returns is dropped.
+    ///
+    /// A transaction takes the database's write lock as it begins, so that
+    /// its first write cannot fail to take it. It cannot begin on a
+    /// connection with `PRAGMA query_only` set.
+    ///
+    /// `tx` has the connection's methods but `close`, run within the
+    /// transaction. `tx.transaction(function)` works alike, as a savepoint
+    /// within the open transaction: failing, it rolls back only its own work,
+    /// and the outer transaction goes on.
+    ///
+    /// While a transaction is open, `db` cannot be used, and of the open
+    /// transactions only the innermost one's `tx`. A `tx` whose transaction
+    /// has ended cannot be used either, nor can one SQLite itself rolled back,
+    /// as on an `OR ROLLBACK` conflict, which ends every savepoint within the
+    /// transaction too. A call that cannot be used so fails, as one on a
+    /// closed connection does. And no `tx` leaves its transaction: an error
+    /// that may hold a Function, as [`Value::may_hold_function`] decides, is
+    /// returned as one saying so.
+    ///
+    /// Without this method, a connection's scripts make no transactions:
+    /// each statement commits on its own.
+    ///
+    /// [`Value::may_hold_function`]: frostlang::Value::may_hold_function
+    Transaction,
     /// `db.close()` closes the connection, as described on
     /// [`ScriptConnection`].
     Close,
@@ -143,6 +180,9 @@ pub enum Method {
 /// It is released when a script closes it with `db.close()`, or once no script
 /// holds any of those functions: an owned connection is closed, and a pooled
 /// one returned to its pool.
+///
+/// A connection serves one call at a time. A call from another thread waits
+/// while one runs: a `fold` or `transaction` until its function returns.
 pub struct ScriptConnection {
     connection: Source,
     methods: EnumSet<Method>,
@@ -151,7 +191,7 @@ pub struct ScriptConnection {
 }
 
 /// A host's SQL filter; see [`ScriptConnection::with_sql_filter`].
-type SqlFilter = Box<dyn Fn(&str) -> Result<(), FrostError> + Send + Sync>;
+pub(crate) type SqlFilter = Box<dyn Fn(&str) -> Result<(), FrostError> + Send + Sync>;
 
 impl ScriptConnection {
     /// Exposes `connection`.
@@ -163,10 +203,11 @@ impl ScriptConnection {
     ///
     /// A pooled connection keeps the state its earlier users left on it, such
     /// as pragmas, temporary tables, attached databases, and the rowid
-    /// [`Method::LastInsertRowid`] gives. A factory serving
-    /// scripts it trusts less than those users must reset that state, or not
-    /// share the pool. A transaction a script leaves open is rolled back
-    /// before the connection returns to its pool.
+    /// [`Method::LastInsertRowid`] gives. A factory serving scripts it trusts
+    /// less than those users must reset that state, or not share the pool.
+    /// Scripts leave no transaction open: each ends with its
+    /// [`Method::Transaction`] call, and the connection rolls back any other
+    /// as it returns to its pool.
     pub fn pooled(connection: impl DerefMut<Target = Connection> + Send + 'static) -> Self {
         Self::holding(Source::Pooled(Box::new(connection)))
     }
@@ -191,7 +232,10 @@ impl ScriptConnection {
     /// SQLite gives a connection one authorizer, so this replaces any the
     /// connection had, for good: a pooled connection returns to its pool with
     /// no authorizer at all. Without this, the extension leaves the
-    /// connection's authorizer as it was, in use and after.
+    /// connection's authorizer as it was, in use and after. Such an authorizer
+    /// must allow beginning, ending, and saving transactions, which only
+    /// [`Method::Transaction`] does, as an [`Authorizer`] always does: denied,
+    /// transactions fail, and a rollback denied leaves one open.
     #[must_use]
     pub fn with_authorizer(self, authorizer: Authorizer) -> Self {
         Self {
@@ -204,9 +248,9 @@ impl ScriptConnection {
     /// script gave it, before SQLite sees it, replacing any filter given
     /// before. An error from `filter` is the call's error.
     ///
-    /// A call failing the extension's own checks, as on a closed connection,
-    /// never reaches the filter. Nor does the SQL that SQLite runs for a
-    /// statement, such as a trigger's or a view's, which only an
+    /// A call the extension refuses before reading its SQL, as on a closed
+    /// connection, never reaches the filter. Nor does the SQL that SQLite runs
+    /// for a statement, such as a trigger's or a view's, which only an
     /// [`Authorizer`] judges.
     ///
     /// ```
@@ -265,29 +309,14 @@ impl ScriptConnection {
             }
             None => false,
         };
-        let state = Db {
-            connection: ReentrantMutex::new(RefCell::new(Some(Held {
-                source: self.connection,
-                authorized,
-            }))),
-            filter: self.filter,
+        let shared = Shared::new(
+            self.connection,
+            authorized,
+            self.filter,
             denials,
-        };
-        let bundle = self
-            .methods
-            .iter()
-            .fold(Bundle::new(state), |bundle, method| {
-                bundle.with(match method {
-                    Method::Script => Db::script_method,
-                    Method::Exec => Db::exec_method,
-                    Method::Query => Db::query_method,
-                    Method::Fold => Db::fold_method,
-                    Method::LastInsertRowid => Db::last_insert_rowid_method,
-                    Method::Close => Db::close_method,
-                })
-            })
-            .build();
-        Ok(bundle)
+            self.methods,
+        );
+        Ok(connection_bundle(shared))
     }
 }
 
@@ -351,7 +380,7 @@ where
 }
 
 /// Where a [`ScriptConnection`]'s connection comes from.
-enum Source {
+pub(crate) enum Source {
     Owned(Connection),
     Pooled(Box<dyn DerefMut<Target = Connection> + Send>),
 }
@@ -363,184 +392,6 @@ impl Deref for Source {
         match self {
             Self::Owned(connection) => connection,
             Self::Pooled(connection) => connection,
-        }
-    }
-}
-
-/// A connection as its bundle holds it.
-struct Held {
-    source: Source,
-    /// Whether the extension installed the connection's authorizer.
-    authorized: bool,
-}
-
-impl Deref for Held {
-    type Target = Connection;
-
-    fn deref(&self) -> &Connection {
-        &self.source
-    }
-}
-
-impl Drop for Held {
-    fn drop(&mut self) {
-        // An owned connection closes, and with it go its authorizer and any
-        // open transaction, which SQLite rolls back. A pooled one stays open
-        // for its next user, who must inherit neither. The authorizer goes
-        // first, lest it deny the rollback. A failure leaves nothing better to
-        // do.
-        let Source::Pooled(connection) = &self.source else {
-            return;
-        };
-        if self.authorized {
-            let _ = connection.authorizer(None::<fn(AuthContext<'_>) -> Authorization>);
-        }
-        if !connection.is_autocommit() {
-            let _ = connection.execute_batch("ROLLBACK");
-        }
-    }
-}
-
-/// A connection bundle's state: its connection, until closed, and its SQL
-/// filter.
-struct Db {
-    // Reentrant, since a method running a statement may call back into Frost,
-    // which may use the same connection on the same thread. The `RefCell` lets
-    // `close` take the connection, and tell when a call further up the stack
-    // is still using it.
-    connection: ReentrantMutex<RefCell<Option<Held>>>,
-    filter: Option<SqlFilter>,
-    /// How many actions the connection's authorizer has denied.
-    denials: Arc<AtomicU64>,
-}
-
-impl Db {
-    /// Runs `operation` for the function `ctx` runs, once `sql` passes the
-    /// extension's checks and the host's filter.
-    fn with_sql<T>(
-        &self,
-        ctx: &mut NativeCtx<'_>,
-        sql: &str,
-        operation: impl FnOnce(&mut Run<'_, '_>) -> Result<T, Failure>,
-    ) -> Result<T, FrostError> {
-        let function = ctx.name();
-        if sql.contains('\0') {
-            return Err(nul_error(function));
-        }
-        self.with_connection(function, |connection| {
-            if let Some(filter) = &self.filter {
-                filter(sql)?;
-            }
-            let mut run = Run::new(connection, sql, ctx, &self.denials);
-            operation(&mut run).map_err(|failure| match failure {
-                Failure::Frost(err) => err,
-                // SQLite words a denied function under another code than
-                // `SQLITE_AUTH`, naming it. Its wording alone could be any
-                // failure's, so only a denial while SQLite ran confirms it.
-                Failure::Sqlite(err) if run.denied() && is_function_denial(&err) => {
-                    denied_error(function)
-                }
-                Failure::Sqlite(err) => sqlite_error(function, &err),
-            })
-        })
-    }
-
-    /// Runs `operation` on the connection, for `function`.
-    fn with_connection<T>(
-        &self,
-        function: &str,
-        operation: impl FnOnce(&Connection) -> Result<T, FrostError>,
-    ) -> Result<T, FrostError> {
-        let lock = self.connection.lock();
-        // Only `close` borrows mutably, and only to take the connection out,
-        // so no mutable borrow is live here. Every method must keep it so: a
-        // mutable borrow held across a call back into Frost would make a call
-        // reentering the bundle panic.
-        let connection = lock.borrow();
-        let connection = connection
-            .as_deref()
-            .ok_or_else(|| closed_error(function))?;
-        operation(connection)
-    }
-}
-
-#[frost_bundle(prefix = "db", group = script_method)]
-impl Db {
-    fn script(
-        &self,
-        #[frost(ctx)] ctx: &mut NativeCtx<'_>,
-        sql: FrostString,
-    ) -> Result<i64, FrostError> {
-        self.with_sql(ctx, &sql, run::script)
-    }
-}
-
-#[frost_bundle(prefix = "db", group = exec_method)]
-impl Db {
-    fn exec(
-        &self,
-        #[frost(ctx)] ctx: &mut NativeCtx<'_>,
-        sql: FrostString,
-        bindings: Optional<Structured>,
-    ) -> Result<i64, FrostError> {
-        self.with_sql(ctx, &sql, |run| run::exec(run, bindings.0))
-    }
-}
-
-#[frost_bundle(prefix = "db", group = query_method)]
-impl Db {
-    fn query(
-        &self,
-        #[frost(ctx)] ctx: &mut NativeCtx<'_>,
-        sql: FrostString,
-        bindings: Optional<Structured>,
-    ) -> FrostResult {
-        self.with_sql(ctx, &sql, |run| run::query(run, bindings.0))
-    }
-}
-
-#[frost_bundle(prefix = "db", group = fold_method)]
-impl Db {
-    fn fold(
-        &self,
-        #[frost(ctx)] ctx: &mut NativeCtx<'_>,
-        sql: FrostString,
-        bindings: Optional<Structured>,
-        initial: Value,
-        #[frost(unnamed)] function: Function,
-    ) -> FrostResult {
-        self.with_sql(ctx, &sql, |run| {
-            run::fold(run, bindings.0, initial, &function)
-        })
-    }
-}
-
-#[frost_bundle(prefix = "db", group = last_insert_rowid_method)]
-impl Db {
-    fn last_insert_rowid(&self, #[frost(ctx)] ctx: &mut NativeCtx<'_>) -> Result<i64, FrostError> {
-        self.with_connection(ctx.name(), |connection| Ok(connection.last_insert_rowid()))
-    }
-}
-
-#[frost_bundle(prefix = "db", group = close_method)]
-impl Db {
-    fn close(&self, #[frost(ctx)] ctx: &mut NativeCtx<'_>) -> Result<(), FrostError> {
-        let connection = {
-            let lock = self.connection.lock();
-            let mut connection = lock
-                .try_borrow_mut()
-                .map_err(|_| in_use_error(ctx.name()))?;
-            connection.take()
-        };
-        // Dropped only now the lock and borrow are released: releasing the
-        // connection may run code that reaches this bundle, which then finds
-        // it closed.
-        match connection {
-            Some(connection) => {
-                drop(connection);
-                Ok(())
-            }
-            None => Err(closed_error(ctx.name())),
         }
     }
 }

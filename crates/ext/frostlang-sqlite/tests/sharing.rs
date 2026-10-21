@@ -95,6 +95,54 @@ fn a_bundle_shared_across_threads_counts_each_execs_own_changes() {
 }
 
 #[test]
+fn a_transaction_holds_the_connection_until_it_ends() {
+    let db = value(
+        r"
+        def db = sqlite.open_memory()
+        db.exec('CREATE TABLE t (x)')
+        db
+        ",
+    );
+    // Every thread inserts one row outright, then one in a transaction it
+    // rolls back. Another thread's insert landing inside that transaction
+    // would roll back with it.
+    let source = format!(
+        r"
+        def db = import('shared').db
+        map range({CALLS_PER_THREAD}) with fn i -> {{
+            db.exec('INSERT INTO t VALUES (1)')
+            db.transaction(fn tx -> {{
+                tx.exec('INSERT INTO t VALUES (2)')
+                assert(false)
+            }}).ok
+        }}
+        "
+    );
+    let falses = Value::Array(vec![Value::Bool(false); CALLS_PER_THREAD as usize].into());
+    let importer = host_importer(
+        HostComponent::builder("shared")
+            .value("db", db.clone())
+            .build(),
+    );
+    for outcomes in run_on_threads(db, &source) {
+        assert_eq!(outcomes, falses, "every transaction rolled back");
+    }
+    let counts = run_source(
+        "import('shared').db.query('SELECT x, count(*) AS c FROM t GROUP BY x')",
+        importer,
+    )
+    .expect("the database is still usable");
+    assert_eq!(
+        counts,
+        frost(&format!(
+            "[{{x: 1, c: {}}}]",
+            CALLS_PER_THREAD * THREADS as i64
+        )),
+        "every outright insert stands, and no rolled-back one"
+    );
+}
+
+#[test]
 fn a_fold_shared_across_threads_holds_the_connection_for_its_callbacks() {
     let db = value(
         r"

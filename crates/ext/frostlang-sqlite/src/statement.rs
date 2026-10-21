@@ -36,6 +36,45 @@ pub(crate) fn prepare_one<'c>(
     }
 }
 
+/// The keywords that begin SQLite's transaction statements. No other statement
+/// begins with one.
+const TRANSACTION_KEYWORDS: [&str; 6] =
+    ["BEGIN", "COMMIT", "END", "ROLLBACK", "SAVEPOINT", "RELEASE"];
+
+/// Whether the first statement of `sql` is a transaction statement, which only
+/// the transaction methods may run.
+pub(crate) fn is_transaction_statement(sql: &str) -> bool {
+    let word = first_word(sql);
+    TRANSACTION_KEYWORDS
+        .iter()
+        .any(|keyword| word.eq_ignore_ascii_case(keyword))
+}
+
+/// The first word of `sql`, past what SQLite allows before a statement:
+/// whitespace, comments, and semicolons.
+fn first_word(sql: &str) -> &str {
+    let mut rest = sql;
+    loop {
+        // SQLite also takes a vertical tab as whitespace after other
+        // whitespace. Before any, a statement starting with one fails anyway.
+        rest = rest.trim_start_matches([' ', '\t', '\n', '\x0b', '\x0c', '\r', ';']);
+        if let Some(comment) = rest.strip_prefix("--") {
+            rest = comment.find('\n').map_or("", |end| &comment[end..]);
+        } else if let Some(comment) = rest.strip_prefix("/*") {
+            // An unclosed comment runs to the end.
+            rest = comment.find("*/").map_or("", |end| &comment[end + 2..]);
+        } else {
+            break;
+        }
+    }
+    // As SQLite reads a word: any character but ASCII ones that are not
+    // letters, digits, `_`, or `$`.
+    let end = rest
+        .find(|c: char| c.is_ascii() && !(c.is_ascii_alphanumeric() || c == '_' || c == '$'))
+        .unwrap_or(rest.len());
+    &rest[..end]
+}
+
 /// A parameter of a statement, as errors name it.
 #[derive(Clone, Copy)]
 enum Parameter<'a> {

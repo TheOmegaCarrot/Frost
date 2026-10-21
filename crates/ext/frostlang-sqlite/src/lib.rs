@@ -70,13 +70,18 @@
 //! - SQLite must be built thread-safe (`SQLITE_THREADSAFE` of 1 or 2), and not
 //!   configured single-threaded at run time. Opening a database with such a
 //!   library is an error.
+//! - SQLite must give the text of the statements it prepares, as a build with
+//!   `SQLITE_OMIT_TRACE` does not. With such a library, every `db.script`
+//!   call fails, so a host using one leaves out [`Method::Script`].
 
 mod authorizer;
+mod bundle;
 mod connection;
 mod error;
 mod open;
 mod run;
 mod statement;
+mod transaction;
 
 pub use authorizer::{Authorizer, REPORTING_PRAGMAS};
 pub use connection::{Method, ScriptConnection, connection_factory};

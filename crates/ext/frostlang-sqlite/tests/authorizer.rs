@@ -4,9 +4,7 @@ use std::sync::{Arc, Mutex};
 
 use frostlang::Value;
 use frostlang_sqlite::rusqlite::functions::FunctionFlags;
-use frostlang_sqlite::rusqlite::hooks::{
-    AuthAction, AuthContext, Authorization, TransactionOperation,
-};
+use frostlang_sqlite::rusqlite::hooks::{AuthAction, AuthContext, Authorization};
 use frostlang_sqlite::rusqlite::types::ValueRef;
 use frostlang_sqlite::rusqlite::{self, Connection};
 use frostlang_sqlite::{
@@ -171,8 +169,6 @@ const READS: &[&str] = &[
     "SELECT * FROM v",
     "SELECT name FROM sqlite_schema",
     "WITH RECURSIVE c(n) AS (SELECT 1 UNION ALL SELECT n + 1 FROM c WHERE n < 3) SELECT n FROM c",
-    "BEGIN; SAVEPOINT s; RELEASE s; COMMIT",
-    "BEGIN; ROLLBACK",
 ];
 
 /// Attaching a file named by an expression rather than a string literal,
@@ -267,6 +263,21 @@ fn deny_writes_allows_reading_transactions_and_temporary_tables() {
             "PRAGMA integrity_check",
             "ATTACH '' AS other",
         ],
+    );
+    // Transactions, and savepoints within them.
+    let fixture = Fixture::new();
+    let source = r"
+        def db = import('app').open_db()
+        db.transaction(fn tx -> {
+            tx.exec('CREATE TEMP TABLE scratch (x)')
+            tx.transaction(fn inner -> inner.exec('INSERT INTO scratch VALUES (1)'))
+            def failed = tx.transaction(fn inner -> inner.exec('INSERT INTO t VALUES (2, 2)'))
+            assert(failed.error == 'Function tx.exec failed: not authorized (SQLITE_AUTH)')
+        })
+    ";
+    assert_eq!(
+        app_value(source, fixture.factory(&authorizer)),
+        frost("{ok: true, value: 1}")
     );
 }
 
@@ -863,23 +874,13 @@ fn pooled_factory(
 
 #[test]
 fn a_pooled_connection_returns_to_its_pool_without_the_authorizer() {
-    // The authorizer denies writing, and even rolling back, which the
-    // release must do all the same.
-    let authorizer = Authorizer::new()
-        .deny_writes()
-        .rule(|ctx| match ctx.action {
-            AuthAction::Transaction {
-                operation: TransactionOperation::Rollback,
-            } => Authorization::Deny,
-            _ => Authorization::Allow,
-        });
+    let authorizer = Authorizer::new().deny_writes();
     let released = Released::default();
     let factory = pooled_factory(&released, move |pooled| {
         ScriptConnection::pooled(pooled).with_authorizer(authorizer.clone())
     });
     let source = r"
         def db = import('app').open_db()
-        db.script('BEGIN; CREATE TEMP TABLE scratch (x)')
         [try_call(db.script, ['CREATE TABLE t (x)']).error, db.close()]
     ";
     assert_eq!(
@@ -889,7 +890,46 @@ fn a_pooled_connection_returns_to_its_pool_without_the_authorizer() {
     assert_eq!(
         *released.lock().expect("no test panicked"),
         Some((true, true, true)),
-        "released with no authorizer, the host's own replaced for good, and the transaction rolled back"
+        "released with no authorizer, the host's own replaced for good, and no transaction open"
+    );
+}
+
+#[test]
+fn transactions_are_beyond_an_authorizers_rules() {
+    // A rule denying every transaction action, rolling back included, cannot
+    // keep a transaction from beginning, nor from rolling back.
+    let authorizer = Authorizer::new().rule(|ctx| match ctx.action {
+        AuthAction::Transaction { .. } | AuthAction::Savepoint { .. } => Authorization::Deny,
+        _ => Authorization::Allow,
+    });
+    let released = Released::default();
+    let factory = pooled_factory(&released, move |pooled| {
+        ScriptConnection::pooled(pooled).with_authorizer(authorizer.clone())
+    });
+    let source = r"
+        def db = import('app').open_db()
+        db.exec('CREATE TABLE t (x)')
+        def committed = db.transaction(fn tx -> {
+            tx.exec('INSERT INTO t VALUES (1)')
+            tx.transaction(fn inner -> {
+                inner.exec('INSERT INTO t VALUES (2)')
+                assert(false)
+            })
+        })
+        def rolled_back = db.transaction(fn tx -> {
+            tx.exec('INSERT INTO t VALUES (3)')
+            assert(false)
+        })
+        [committed.ok, rolled_back.ok, db.query('SELECT x FROM t')]
+    ";
+    assert_eq!(app_value(source, factory), frost("[true, false, [{x: 1}]]"));
+    assert_eq!(
+        released
+            .lock()
+            .expect("no test panicked")
+            .map(|(_, _, open)| open),
+        Some(true),
+        "released with no transaction open"
     );
 }
 
@@ -899,14 +939,14 @@ fn a_pooled_connection_keeps_its_own_authorizer_without_one_given() {
     let factory = pooled_factory(&released, ScriptConnection::pooled);
     let source = r"
         def db = import('app').open_db()
-        db.script('BEGIN; CREATE TABLE t (x)')
+        db.script('CREATE TABLE t (x)')
         db.close()
     ";
     app_value(source, factory);
     assert_eq!(
         *released.lock().expect("no test panicked"),
         Some((false, true, true)),
-        "released with the host's own authorizer, still denying deletes, and the transaction rolled back"
+        "released with the host's own authorizer, still denying deletes, and no transaction open"
     );
 }
 

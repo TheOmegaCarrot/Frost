@@ -143,6 +143,27 @@ fn every_method_running_sql_passes_it_through_the_filter() {
 }
 
 #[test]
+fn a_filter_sees_a_transactions_sql_but_not_its_own_statements() {
+    let seen = Seen::default();
+    let source = r"
+        def db = import('app').open_db()
+        db.transaction(fn tx -> {
+            tx.exec('CREATE TABLE t (x)')
+            tx.transaction(fn inner -> inner.query('SELECT x FROM t'))
+        })
+    ";
+    assert_eq!(
+        app_value(source, filtered(&seen, |_| Ok(()))),
+        frost("{ok: true, value: 0}")
+    );
+    assert_eq!(
+        seen_sql(&seen),
+        ["CREATE TABLE t (x)", "SELECT x FROM t"],
+        "the script's SQL, and none of the BEGIN, SAVEPOINT, RELEASE, or COMMIT the transaction ran"
+    );
+}
+
+#[test]
 fn a_filter_refuses_sql_before_it_is_bound_or_run() {
     let seen = Seen::default();
     let refuse_all = |_: &str| Err(FrostError::from_static("refused"));
