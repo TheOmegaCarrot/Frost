@@ -4,7 +4,7 @@
 use std::sync::atomic::{AtomicU64, Ordering};
 
 use frostlang::native::{Function, Structured};
-use frostlang::{FrostError, NativeCtx, Value};
+use frostlang::{FrostError, MapKey, NativeCtx, Value};
 use rusqlite::fallible_iterator::FallibleIterator;
 use rusqlite::{Batch, Connection, Statement};
 
@@ -94,6 +94,40 @@ impl<'r, 'c> Run<'r, 'c> {
         Ok(statement)
     }
 
+    /// Fails once the run is aborting, so that work between rows and
+    /// statements stops there.
+    fn check_abort(&self) -> Result<(), Failure> {
+        Ok(self.ctx.check_abort()?)
+    }
+
+    /// Steps `statement` through every row it returns, so that it runs in
+    /// full, unless the run aborts meanwhile.
+    fn step_to_end(&self, statement: &mut Statement<'_>) -> Result<(), Failure> {
+        let mut rows = statement.raw_query();
+        loop {
+            self.check_abort()?;
+            if rows.next()?.is_none() {
+                return Ok(());
+            }
+        }
+    }
+
+    /// Every row of `statement`, as Maps keyed by `keys`, unless the run
+    /// aborts meanwhile.
+    fn read_all<C: FromIterator<Value>>(
+        &self,
+        statement: &mut Statement<'_>,
+        keys: &[MapKey],
+    ) -> Result<C, Failure> {
+        statement
+            .raw_query()
+            .and_then(|row| {
+                self.check_abort()?;
+                row_value(row, keys, self.name())
+            })
+            .collect()
+    }
+
     /// Calls `function` back with `args`.
     fn invoke(
         &mut self,
@@ -120,7 +154,7 @@ pub(crate) fn script(run: &mut Run<'_, '_>) -> Result<i64, Failure> {
             .expanded_sql()
             .ok_or_else(|| statement_text_error(run.name()))?;
         run.forbid_transaction_statement(&text)?;
-        step_to_end(&mut statement)?;
+        run.step_to_end(&mut statement)?;
     }
     Ok(changes_since(connection, before))
 }
@@ -140,7 +174,7 @@ pub(crate) fn exec(run: &mut Run<'_, '_>, bindings: Option<Structured>) -> Resul
     let connection = run.connection;
     let mut statement = run.prepare(bindings)?;
     let before = connection.total_changes();
-    step_to_end(&mut statement)?;
+    run.step_to_end(&mut statement)?;
     // SQLite's count of changes is the last INSERT's, UPDATE's, or DELETE's,
     // kept through any other statement. Only such a statement changing rows
     // changes the total.
@@ -155,10 +189,7 @@ pub(crate) fn exec(run: &mut Run<'_, '_>, bindings: Option<Structured>) -> Resul
 pub(crate) fn query(run: &mut Run<'_, '_>, bindings: Option<Structured>) -> Result<Value, Failure> {
     let mut statement = run.prepare(bindings)?;
     let keys = column_keys(&statement, run.name())?;
-    statement
-        .raw_query()
-        .and_then(|row| row_value(row, &keys, run.name()))
-        .collect()
+    run.read_all(&mut statement, &keys)
 }
 
 /// `db.fold`: the rows of the call's statement, folded by `function`.
@@ -174,26 +205,21 @@ pub(crate) fn fold(
         // A statement that writes holds its own transaction until it ends, so
         // one `function` began meanwhile could never commit. It runs in full
         // first: SQLite makes its changes before returning any row anyway.
-        let rows: Vec<Value> = statement
-            .raw_query()
-            .and_then(|row| row_value(row, &keys, run.name()))
-            .collect::<Result<_, Failure>>()?;
+        let rows: Vec<Value> = run.read_all(&mut statement, &keys)?;
         return rows.into_iter().try_fold(initial, |accumulator, row| {
             run.invoke(function, [accumulator, row])
         });
     }
     let mut rows = statement.raw_query();
     let mut accumulator = initial;
-    while let Some(row) = rows.next()? {
+    loop {
+        // Calling `function` back stops an aborting run as well; this stops
+        // it before stepping to a row it would not take.
+        run.check_abort()?;
+        let Some(row) = rows.next()? else {
+            return Ok(accumulator);
+        };
         let row = row_value(row, &keys, run.name())?;
         accumulator = run.invoke(function, [accumulator, row])?;
     }
-    Ok(accumulator)
-}
-
-/// Steps `statement` through every row it returns, so that it runs in full.
-fn step_to_end(statement: &mut Statement<'_>) -> rusqlite::Result<()> {
-    let mut rows = statement.raw_query();
-    while rows.next()?.is_some() {}
-    Ok(())
 }

@@ -6,7 +6,7 @@ use std::borrow::Cow;
 use std::sync::Arc;
 
 use crate::native::{ArgSite, Function};
-use crate::{AbortReason, FrostError, FrostResult, Value};
+use crate::{AbortReason, CancelToken, FrostError, FrostResult, Value};
 
 use super::Vm;
 use super::function::Arity;
@@ -146,6 +146,30 @@ impl<'a> NativeCtx<'a> {
     /// and anything the native returns is ignored.
     pub fn abort_reason(&self) -> Option<AbortReason> {
         self.vm.pending_abort_reason()
+    }
+
+    /// Fails, if the [`Vm`] is aborting, with an appropriate error.
+    ///
+    /// A long-running [`NativeFunction`] ought to call this periodically,
+    /// especially if it does not call back into the [`Vm`].
+    pub fn check_abort(&self) -> Result<(), FrostError> {
+        let _ = self.vm.pending_abort_reason();
+        match self.vm.abort_error() {
+            Some(err) => Err(err),
+            None => Ok(()),
+        }
+    }
+
+    /// The run's [`CancelToken`], or `None` if it has none, in which case
+    /// nothing can cancel the run.
+    ///
+    /// For work a native cannot pause to check
+    /// [`abort_reason`](Self::abort_reason), such as a long call into a
+    /// library, the native can hand that work a clone of the token to watch,
+    /// so that it stops once the run is cancelled. Cancelling the token
+    /// cancels the run, and every other run sharing it.
+    pub fn cancel_token(&self) -> Option<&CancelToken> {
+        self.vm.cancel_token.as_ref()
     }
 
     /// Prints `text` as one Frost `print` does: to the run's

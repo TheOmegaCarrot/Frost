@@ -17,8 +17,11 @@ use std::sync::atomic::{AtomicBool, Ordering};
 /// give it a fresh token.
 ///
 /// A Vm notices cancellation when its script makes a function call,
-/// or when a native function checks [`NativeCtx::abort_reason`](super::NativeCtx::abort_reason).
-/// A native that blocks or loops without checking delays it until the native returns.
+/// when a native function returns, whatever it returns,
+/// or when a native checks [`NativeCtx::abort_reason`](super::NativeCtx::abort_reason).
+/// A native that blocks or loops without checking delays it until the native returns;
+/// see [`NativeCtx::cancel_token`](super::NativeCtx::cancel_token) for work a native
+/// cannot check from.
 ///
 /// ```
 /// use frostlang::CancelToken;

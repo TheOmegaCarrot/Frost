@@ -107,7 +107,8 @@ use frostlang::{Extension, Value};
 ///
 /// Each `open` function returns a connection bundle with every [`Method`]. It
 /// fails if the database cannot be opened, or the file is not a database. Its
-/// connection enforces foreign keys, whatever the library's default.
+/// connection enforces foreign keys, whatever the library's default, and is
+/// [cancellable](ScriptConnection::with_cancellation).
 pub fn extension() -> Extension {
     Extension::builder("sqlite")
         .function(open::open_frost())

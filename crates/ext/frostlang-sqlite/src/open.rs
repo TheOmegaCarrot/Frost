@@ -38,8 +38,8 @@ pub(crate) fn open_memory(#[frost(ctx)] ctx: &mut NativeCtx<'_>) -> FrostResult 
     connection_bundle(ctx, ":memory:", READ_WRITE)
 }
 
-/// The bundle over the database at `path`, opened with `flags` and enforcing
-/// foreign keys, for the function `ctx` runs.
+/// The bundle over the database at `path`, opened with `flags`, enforcing
+/// foreign keys, and cancellable, for the function `ctx` runs.
 fn connection_bundle(ctx: &NativeCtx<'_>, path: &str, flags: OpenFlags) -> FrostResult {
     if path.contains('\0') {
         return Err(nul_path_error(ctx.name()));
@@ -56,5 +56,7 @@ fn connection_bundle(ctx: &NativeCtx<'_>, path: &str, flags: OpenFlags) -> Frost
     connection
         .pragma_update(None, "foreign_keys", true)
         .map_err(fail)?;
-    ScriptConnection::new(connection).into_bundle(ctx.name())
+    ScriptConnection::new(connection)
+        .with_cancellation()
+        .into_bundle(ctx.name())
 }

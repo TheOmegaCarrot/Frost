@@ -2,18 +2,20 @@
 //! `db`, and each open transaction's, `tx`.
 
 use std::cell::{Cell, RefCell};
+use std::mem;
 use std::ops::Deref;
 use std::sync::Arc;
-use std::sync::atomic::AtomicU64;
+use std::sync::atomic::{AtomicU64, Ordering};
 
 use enumset::EnumSet;
 use frostlang::native::{Bundle, Function, Optional, Structured};
-use frostlang::{FrostError, FrostResult, FrostString, NativeCtx, Value, frost_bundle};
-use parking_lot::ReentrantMutex;
+use frostlang::{
+    CancelToken, FrostError, FrostResult, FrostString, NativeCtx, Value, frost_bundle,
+};
+use parking_lot::{Mutex, ReentrantMutex};
 use rusqlite::Connection;
 use rusqlite::hooks::{AuthContext, Authorization};
 
-use crate::Method;
 use crate::connection::{Source, SqlFilter};
 use crate::error::{
     closed_error, denied_error, in_use_error, inner_transaction_error, is_function_denial,
@@ -21,6 +23,7 @@ use crate::error::{
 };
 use crate::run::{self, Failure, Run};
 use crate::transaction;
+use crate::{Authorizer, Method};
 
 /// What every bundle over one connection shares: the connection, until
 /// closed, and how scripts may use it.
@@ -46,22 +49,16 @@ pub(crate) enum Owner {
 }
 
 impl Shared {
-    /// The state of a connection bundle over `source`, whose authorizer, if
-    /// the extension installed it (`authorized`), counts its denials in
-    /// `denials`.
+    /// The state of a connection bundle over `held`, whose authorizer, if the
+    /// extension installed it, counts its denials in `denials`.
     pub(crate) fn new(
-        source: Source,
-        authorized: bool,
+        held: Held,
         filter: Option<SqlFilter>,
         denials: Arc<AtomicU64>,
         methods: EnumSet<Method>,
     ) -> Arc<Self> {
         Arc::new(Self {
-            connection: ReentrantMutex::new(RefCell::new(Some(Held {
-                source,
-                authorized,
-                transactions: Transactions::default(),
-            }))),
+            connection: ReentrantMutex::new(RefCell::new(Some(held))),
             filter,
             denials,
             methods,
@@ -81,7 +78,7 @@ impl Shared {
         if sql.contains('\0') {
             return Err(nul_error(function));
         }
-        self.with_connection(function, owner, |connection| {
+        self.with_connection(ctx, owner, |connection, ctx| {
             if let Some(filter) = &self.filter {
                 filter(sql)?;
             }
@@ -119,13 +116,15 @@ impl Shared {
         }
     }
 
-    /// Runs `operation` on the connection, for `function`, through `owner`.
-    pub(crate) fn with_connection<T>(
+    /// Runs `operation` on the connection, for the function `ctx` runs,
+    /// through `owner`.
+    pub(crate) fn with_connection<'c, T>(
         &self,
-        function: &str,
+        ctx: &mut NativeCtx<'c>,
         owner: Owner,
-        operation: impl FnOnce(&Held) -> Result<T, FrostError>,
+        operation: impl FnOnce(&Held, &mut NativeCtx<'c>) -> Result<T, FrostError>,
     ) -> Result<T, FrostError> {
+        let function = ctx.name();
         let lock = self.connection.lock();
         // Only `close` borrows mutably, and only to take the connection out,
         // so no mutable borrow is live here. Every method must keep it so: a
@@ -140,16 +139,114 @@ impl Shared {
         if owner != Owner::Connection && held.is_autocommit() {
             return Err(rolled_back_error(function));
         }
-        operation(held)
+        let _watching = held
+            .watch
+            .as_ref()
+            .map(|watch| watch.watching(ctx.cancel_token().cloned()));
+        operation(held, ctx)
     }
 }
+
+/// About how many SQLite instructions run between checks of the calling run's
+/// token on a cancellable connection: often enough to stop within
+/// milliseconds, rarely enough to cost little.
+const PROGRESS_INTERVAL: i32 = 1000;
 
 /// A connection as its bundles hold it.
 pub(crate) struct Held {
     source: Source,
     /// Whether the extension installed the connection's authorizer.
     authorized: bool,
+    /// What the connection's progress handler checks, if the extension
+    /// installed it.
+    watch: Option<Watch>,
     pub(crate) transactions: Transactions,
+}
+
+impl Held {
+    /// `source`, with none of the extension's handlers installed yet.
+    pub(crate) fn new(source: Source) -> Self {
+        Self {
+            source,
+            authorized: false,
+            watch: None,
+            transactions: Transactions::default(),
+        }
+    }
+
+    /// Installs `authorizer`, counting its denials in `denials`.
+    pub(crate) fn authorize(
+        &mut self,
+        authorizer: Authorizer,
+        denials: &Arc<AtomicU64>,
+    ) -> rusqlite::Result<()> {
+        let counted = Arc::clone(denials);
+        self.source.authorizer(Some(move |ctx: AuthContext<'_>| {
+            let judgement = authorizer.judge(ctx);
+            if judgement == Authorization::Deny {
+                counted.fetch_add(1, Ordering::Relaxed);
+            }
+            judgement
+        }))?;
+        self.authorized = true;
+        Ok(())
+    }
+
+    /// Installs a progress handler interrupting a statement once the calling
+    /// run is cancelled.
+    pub(crate) fn watch_cancellation(&mut self) -> rusqlite::Result<()> {
+        let watch = Watch::default();
+        let watched = watch.clone();
+        self.source
+            .progress_handler(PROGRESS_INTERVAL, Some(move || watched.is_cancelled()))?;
+        self.watch = Some(watch);
+        Ok(())
+    }
+
+    /// Runs `operation` with no run's cancellation interrupting it, as a
+    /// rollback must not be.
+    pub(crate) fn uninterrupted<T>(&self, operation: impl FnOnce(&Connection) -> T) -> T {
+        let _unwatched = self.watch.as_ref().map(|watch| watch.watching(None));
+        operation(self)
+    }
+}
+
+/// The token of the run calling on a cancellable connection, which the
+/// connection's progress handler checks.
+#[derive(Clone, Default)]
+struct Watch(Arc<Mutex<Option<CancelToken>>>);
+
+impl Watch {
+    /// Whether the calling run is cancelled.
+    fn is_cancelled(&self) -> bool {
+        self.0
+            .lock()
+            .as_ref()
+            .is_some_and(CancelToken::is_cancelled)
+    }
+
+    /// Watches `token` until the returned guard is dropped, then the token
+    /// watched before, so that a call within another leaves the outer call
+    /// watched as it returns.
+    fn watching(&self, token: Option<CancelToken>) -> Watching<'_> {
+        let previous = mem::replace(&mut *self.0.lock(), token);
+        Watching {
+            watch: self,
+            previous,
+        }
+    }
+}
+
+/// A token being watched, until this is dropped.
+struct Watching<'w> {
+    watch: &'w Watch,
+    previous: Option<CancelToken>,
+}
+
+impl Drop for Watching<'_> {
+    fn drop(&mut self) {
+        *self.watch.0.lock() = self.previous.take();
+    }
 }
 
 impl Deref for Held {
@@ -162,9 +259,9 @@ impl Deref for Held {
 
 impl Drop for Held {
     fn drop(&mut self) {
-        // An owned connection closes, and with it go its authorizer and any
+        // An owned connection closes, and with it go its handlers and any
         // open transaction, which SQLite rolls back. A pooled one stays open
-        // for its next user, who must inherit neither. A script's transaction
+        // for its next user, who must inherit none. A script's transaction
         // ends within its `transaction` call, so one still open was left by a
         // failed rollback, or by the host. A failure leaves nothing better to
         // do.
@@ -173,6 +270,9 @@ impl Drop for Held {
         };
         if self.authorized {
             let _ = connection.authorizer(None::<fn(AuthContext<'_>) -> Authorization>);
+        }
+        if self.watch.is_some() {
+            let _ = connection.progress_handler(0, None::<fn() -> bool>);
         }
         if !connection.is_autocommit() {
             let _ = connection.execute_batch("ROLLBACK");
@@ -353,11 +453,7 @@ macro_rules! shared_methods {
                 #[frost(ctx)] ctx: &mut NativeCtx<'_>,
             ) -> Result<i64, FrostError> {
                 self.shared
-                    .with_connection(
-                        ctx.name(),
-                        self.owner(),
-                        |held| Ok(held.last_insert_rowid()),
-                    )
+                    .with_connection(ctx, self.owner(), |held, _| Ok(held.last_insert_rowid()))
             }
         }
 

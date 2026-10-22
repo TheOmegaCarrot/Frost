@@ -5,6 +5,7 @@ mod common;
 
 mod authorizer;
 mod bindings;
+mod cancellation;
 mod close;
 mod exec;
 mod extension;

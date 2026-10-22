@@ -7,7 +7,7 @@
 //! modules it imports, and never outlives the Vm being recycled.
 //!
 //! A script cancels its own run by calling the host-supplied `cancel()`, which
-//! makes most tests single-threaded and deterministic; one test cancels from
+//! makes most tests single-threaded and deterministic; a few cancel from
 //! another thread, as a host would. A cancellation that goes unnoticed leaves a
 //! script spinning forever, so runs that rely on it go through [`within_deadline`].
 
@@ -203,8 +203,7 @@ defn add(a, b) -> a + b
 add(1, 2)
 ";
 
-/// A script that cancels its own run, which the call to `print` notices.
-/// A run that makes no call after cancelling finishes normally.
+/// A script that cancels its own run, which `cancel` returning notices.
 const CANCELS: &str = r#"
 cancel()
 print("unreachable")
@@ -548,8 +547,7 @@ fn a_native_sees_no_abort_while_the_run_continues() {
 #[test]
 fn a_native_sees_a_cancellation_before_any_call_notices_it() {
     // The native cancels and checks again with no call in between, and then
-    // returns normally. Seeing the cancellation latches it, so the run is
-    // cancelled however the native returns.
+    // returns normally. The run is cancelled however the native returns.
     let observed = Observed::default();
     let host = Host::new();
     let stop = cancel_and_stop_native(&host.token, &observed);
@@ -606,8 +604,8 @@ fn a_native_waiting_on_cancellation_from_another_thread_stops() {
 
 #[test]
 fn a_native_sees_a_cancellation_made_inside_its_call_back_into_frost() {
-    // The callback cancels and returns without making another call, so its
-    // return to `outer` notices nothing; `outer`'s check sees the cancellation.
+    // The callback cancels, and `cancel` returning latches the cancellation,
+    // so `outer`'s check after the callback sees it.
     let observed = Observed::default();
     let outer = {
         let observed = Arc::clone(&observed);
@@ -656,5 +654,264 @@ fn a_native_nested_in_another_sees_a_cancellation_and_so_does_the_outer() {
             Some(AbortReason::Cancelled)
         ],
         "the inner native before and after cancelling, then the outer"
+    );
+}
+
+// ============================================================
+// A native holding the run's token
+// ============================================================
+
+/// `has_token()`: whether the run has a cancel token, as a native sees it.
+fn has_token_native() -> Value {
+    frost_closure!("has_token", |#[frost(ctx)] ctx| ctx
+        .cancel_token()
+        .is_some())
+}
+
+#[test]
+fn a_native_sees_whether_the_run_has_a_token() {
+    let host = Host::new();
+    let vm = host.vm_with("has_token()", &[("has_token", has_token_native())]);
+    assert_finishes_with(vm.run(), Value::Bool(true));
+
+    let vm = host
+        .factory()
+        .build(host.program("has_token()", &[("has_token", has_token_native())]));
+    assert_finishes_with(vm.run(), Value::Bool(false));
+}
+
+#[test]
+fn a_native_holds_the_runs_own_token() {
+    // Cancelling the native's clone cancels the run, as the host's would.
+    let cancel_own = frost_closure!("cancel_own", |#[frost(ctx)] ctx| {
+        ctx.cancel_token()
+            .expect("the run has a token")
+            .clone()
+            .cancel();
+    });
+    let host = Host::new();
+    let vm = host.vm_with(
+        r#"
+        cancel_own()
+        print("unreachable")
+        "#,
+        &[("cancel_own", cancel_own)],
+    );
+    assert_cancelled(vm.run());
+    assert!(
+        host.token.is_cancelled(),
+        "the host's token is the same token"
+    );
+    assert!(host.printed().is_empty());
+}
+
+#[test]
+fn a_native_can_hand_the_token_to_work_it_cannot_check_from() {
+    // The native waits on a worker of its own, which only the token it was
+    // handed can stop: as a call into a library that runs long might.
+    let host = Host::new();
+    let (started_sender, started) = mpsc::channel();
+    let work = frost_closure!("work", move |#[frost(ctx)] ctx| {
+        let token = ctx.cancel_token().expect("the run has a token").clone();
+        let started_sender = started_sender.clone();
+        let worker = thread::spawn(move || {
+            started_sender.send(()).expect("the test is waiting");
+            while !token.is_cancelled() {
+                thread::sleep(Duration::from_millis(1));
+            }
+        });
+        worker.join().expect("the worker ends");
+    });
+    // The native returning notices the cancellation, with no call after it.
+    let vm = host.vm_with("work()", &[("work", work)]);
+
+    let token = host.token.clone();
+    let canceller = thread::spawn(move || {
+        started.recv().expect("the worker reports that it started");
+        token.cancel();
+    });
+    assert_cancelled(within_deadline(vm));
+    canceller.join().unwrap();
+}
+
+#[test]
+fn a_native_returning_notices_a_cancellation_made_while_it_ran() {
+    // The native cancels and returns without checking, as the script's last
+    // call: its return is where the run notices, whatever it returns.
+    let host = Host::new();
+    let returning_ok = {
+        let token = host.token.clone();
+        frost_closure!("returning_ok", move || {
+            token.cancel();
+            "finished"
+        })
+    };
+    let vm = host.vm_with("returning_ok()", &[("returning_ok", returning_ok)]);
+    assert_cancelled(vm.run());
+
+    let host = Host::new();
+    let returning_error = {
+        let token = host.token.clone();
+        frost_closure!("returning_error", move || -> Result<(), FrostError> {
+            token.cancel();
+            Err(FrostError::from_static("failed as it was interrupted"))
+        })
+    };
+    let vm = host.vm_with(
+        "try_call(returning_error)",
+        &[("returning_error", returning_error)],
+    );
+    // The native's own error is overridden, and try_call cannot catch it.
+    assert_cancelled(vm.run());
+
+    let host = Host::new();
+    let returning_error = {
+        let token = host.token.clone();
+        frost_closure!("returning_error", move || -> Result<(), FrostError> {
+            token.cancel();
+            Err(FrostError::from_static("failed as it was interrupted"))
+        })
+    };
+    let vm = host.vm_with("returning_error()", &[("returning_error", returning_error)]);
+    assert_cancelled(vm.run());
+}
+
+#[test]
+fn a_native_in_an_imported_module_holds_the_importers_token() {
+    // The module's `cancel` cancels through the token its own run holds,
+    // which is the importer's.
+    let cancel_own = frost_closure!("cancel", |#[frost(ctx)] ctx| {
+        ctx.cancel_token()
+            .expect("the module's run has a token")
+            .clone()
+            .cancel();
+    });
+    let mut host = Host::new();
+    host.importer = ImporterBuilder::new()
+        .append_resolver(Arc::new(Module {
+            source: "cancel()",
+            cancel: cancel_own,
+        }))
+        .build();
+    let vm = host.vm("import('module')");
+    assert_cancelled(vm.run());
+    assert!(host.token.is_cancelled());
+}
+
+// ============================================================
+// A native checking for an abort to stop
+// ============================================================
+
+/// `count_until_aborted(n)`: counts up to `n`, checking for an abort after
+/// each count, and returns the count reached; records it in `reached`.
+fn count_until_aborted_native(reached: &Arc<Mutex<Option<i64>>>) -> Value {
+    let reached = Arc::clone(reached);
+    frost_closure!("count_until_aborted", move |#[frost(ctx)] ctx,
+                                                n: i64|
+          -> Result<i64, FrostError> {
+        for count in 1..=n {
+            *reached.lock().unwrap() = Some(count);
+            ctx.check_abort()?;
+        }
+        Ok(n)
+    })
+}
+
+#[test]
+fn check_abort_passes_while_the_run_goes_on() {
+    let reached = Arc::default();
+    let host = Host::new();
+    let vm = host.vm_with(
+        "count_until_aborted(5)",
+        &[("count_until_aborted", count_until_aborted_native(&reached))],
+    );
+    assert_finishes_with(vm.run(), Value::Int(5));
+    assert_eq!(*reached.lock().unwrap(), Some(5));
+}
+
+#[test]
+fn check_abort_fails_once_the_run_is_cancelled() {
+    // The native cancels as it counts 2, and stops at the check right after.
+    let reached = Arc::new(Mutex::new(None));
+    let host = Host::new();
+    let cancel_at_two = {
+        let (token, reached) = (host.token.clone(), Arc::clone(&reached));
+        frost_closure!(
+            "cancel_at_two",
+            move |#[frost(ctx)] ctx| -> Result<i64, FrostError> {
+                for count in 1..=5 {
+                    *reached.lock().unwrap() = Some(count);
+                    if count == 2 {
+                        token.cancel();
+                    }
+                    ctx.check_abort()?;
+                }
+                Ok(5)
+            }
+        )
+    };
+    let vm = host.vm_with("cancel_at_two()", &[("cancel_at_two", cancel_at_two)]);
+    assert_cancelled(vm.run());
+    assert_eq!(
+        *reached.lock().unwrap(),
+        Some(2),
+        "stopped at the check after cancelling"
+    );
+}
+
+#[test]
+fn check_abort_fails_with_the_error_the_run_fails_with() {
+    let seen = Arc::new(Mutex::new(None));
+    let observed = Arc::clone(&seen);
+    let cancel_and_check = frost_closure!("cancel_and_check", move |#[frost(ctx)] ctx| {
+        ctx.cancel_token().expect("the run has a token").cancel();
+        *observed.lock().unwrap() =
+            Some(ctx.check_abort().map_err(|err| err.message().into_owned()));
+    });
+    let host = Host::new();
+    let vm = host.vm_with(
+        "cancel_and_check()",
+        &[("cancel_and_check", cancel_and_check)],
+    );
+    let failure = assert_cancelled(vm.run());
+    assert_eq!(
+        *seen.lock().unwrap(),
+        Some(Err(failure.error().message().into_owned()))
+    );
+}
+
+#[test]
+fn check_abort_fails_with_fuel_exhaustion() {
+    // A run out of fuel aborts at a call; a native it calls back from sees it.
+    let seen = Arc::new(Mutex::new(None));
+    let observed = Arc::clone(&seen);
+    let after_callback = frost_closure!(
+        "after_callback",
+        move |#[frost(ctx)] ctx, callback: Function| {
+            let _ = ctx.invoke(&callback, []);
+            *observed.lock().unwrap() =
+                Some(ctx.check_abort().map_err(|err| err.message().into_owned()));
+        }
+    );
+    let host = Host::new();
+    let program = host.program(
+        r"
+        defn spin(n) -> spin(n + 1)
+        after_callback(fn -> spin(0))
+        ",
+        &[("after_callback", after_callback)],
+    );
+    let vm = Vm::factory()
+        .configuration(VmRuntimeConfiguration::default().with_fuel(std::num::NonZeroU64::new(100)))
+        .build(program);
+    let failure = vm.run().expect_err("the run runs out of fuel");
+    assert_eq!(
+        failure.kind(),
+        RunErrorKind::Aborted(AbortReason::FuelExhausted)
+    );
+    assert_eq!(
+        *seen.lock().unwrap(),
+        Some(Err(failure.error().message().into_owned())),
+        "the native saw the error the run failed with"
     );
 }

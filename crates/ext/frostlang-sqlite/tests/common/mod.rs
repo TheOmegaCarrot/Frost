@@ -13,7 +13,7 @@ use frostlang_sqlite::sqlite_error;
 use tempfile::TempDir;
 
 /// An importer providing only the extension.
-fn importer() -> Arc<Importer> {
+pub(crate) fn importer() -> Arc<Importer> {
     ImporterBuilder::new()
         .with_extension(frostlang_sqlite::extension())
         .expect("a lone extension is accepted")
@@ -28,15 +28,19 @@ pub(crate) fn host_importer(component: HostComponent) -> Arc<Importer> {
         .build()
 }
 
-/// Run `source` with only the host component `app`, holding `entries`.
-pub(crate) fn run_app(source: &str, entries: Vec<(&str, Value)>) -> Result<Value, FrostError> {
-    let app = entries
+/// The host component `app`, holding `entries`.
+pub(crate) fn app_component(entries: Vec<(&str, Value)>) -> HostComponent {
+    entries
         .into_iter()
         .fold(HostComponent::builder("app"), |app, (key, value)| {
             app.value(key, value)
         })
-        .build();
-    run_source(source, host_importer(app))
+        .build()
+}
+
+/// Run `source` with only the host component `app`, holding `entries`.
+pub(crate) fn run_app(source: &str, entries: Vec<(&str, Value)>) -> Result<Value, FrostError> {
+    run_source(source, host_importer(app_component(entries)))
 }
 
 /// The value of `source`, run with `app.open_db` from `factory`, which must

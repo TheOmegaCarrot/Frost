@@ -1558,6 +1558,10 @@ impl Vm {
             "run_native must pop the NativeFrame it pushed"
         );
 
+        // Latch a cancellation made while the native ran, so that the check
+        // below overrides whatever the native returned.
+        let _ = self.check_cancelled();
+
         // Unrecoverable abort (e.g. fuel exhaustion) is uncatchable: even if this native
         // swallowed the error and returned `Ok`, override its result. Append this native's
         // frame to the latched fatal error and re-assert it, so the host still sees the

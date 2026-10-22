@@ -354,16 +354,18 @@ fn a_script_connection_shows_how_it_is_exposed() {
     let cases = [
         (
             ScriptConnection::new(connection()).with_methods(EnumSet::only(Method::Script)),
-            "ScriptConnection { methods: EnumSet(Script), authorizer: None, filters_sql: false, .. }",
+            "ScriptConnection { methods: EnumSet(Script), authorizer: None, filters_sql: false, \
+             cancellable: false, .. }",
         ),
         (
             ScriptConnection::new(connection())
                 .with_methods(EnumSet::empty())
                 .with_authorizer(frostlang_sqlite::Authorizer::new().deny_attach())
-                .with_sql_filter(|_| Ok(())),
+                .with_sql_filter(|_| Ok(()))
+                .with_cancellation(),
             "ScriptConnection { methods: EnumSet(), authorizer: Some(Authorizer { deny_writes: \
              false, deny_attach: true, pragmas: None, allowed_functions: None, denied_functions: \
-             {}, rules: 0 }), filters_sql: true, .. }",
+             {}, rules: 0 }), filters_sql: true, cancellable: true, .. }",
         ),
     ];
     for (connection, expected) in cases {

@@ -24,7 +24,7 @@ pub(crate) fn run(
     function: &Function,
 ) -> FrostResult {
     let name = ctx.name();
-    shared.with_connection(name, owner, |held| {
+    shared.with_connection(ctx, owner, |held, ctx| {
         let outcome = in_transaction(shared, held, ctx, owner, function);
         Ok(caught(outcome.map_err(|err| confined(name, err))))
     })
@@ -113,7 +113,9 @@ impl Drop for Begun<'_> {
         // rollback failing leaves nothing better to do: a pooled connection
         // rolls back any transaction still open as it is released.
         if !self.committed && !self.held.is_autocommit() {
-            let _ = self.held.execute_batch(self.sql.roll_back);
+            let _ = self
+                .held
+                .uninterrupted(|connection| connection.execute_batch(self.sql.roll_back));
         }
     }
 }

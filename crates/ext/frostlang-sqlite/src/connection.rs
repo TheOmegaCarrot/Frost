@@ -4,16 +4,15 @@
 use std::fmt;
 use std::ops::{Deref, DerefMut};
 use std::sync::Arc;
-use std::sync::atomic::{AtomicU64, Ordering};
+use std::sync::atomic::AtomicU64;
 
 use enumset::{EnumSet, EnumSetType};
 use frostlang::native::Optional;
 use frostlang::{FrostError, Value, frost_closure};
 use rusqlite::Connection;
-use rusqlite::hooks::{AuthContext, Authorization};
 
 use crate::Authorizer;
-use crate::bundle::{Shared, connection_bundle};
+use crate::bundle::{Held, Shared, connection_bundle};
 use crate::error::sqlite_error;
 
 /// A method of a connection bundle, the value through which a script uses a
@@ -31,6 +30,10 @@ use crate::error::sqlite_error;
 ///
 /// Each method's documentation describes it as scripts call it, on a bundle
 /// `db`. Any call on a closed connection is an error.
+///
+/// A call running SQL stops between rows, and between statements, once its
+/// run is aborting, as when cancelled; see
+/// [`ScriptConnection::with_cancellation`] to stop it within a statement too.
 ///
 /// # Statements
 ///
@@ -188,6 +191,7 @@ pub struct ScriptConnection {
     methods: EnumSet<Method>,
     authorizer: Option<Authorizer>,
     filter: Option<SqlFilter>,
+    cancellable: bool,
 }
 
 /// A host's SQL filter; see [`ScriptConnection::with_sql_filter`].
@@ -280,42 +284,57 @@ impl ScriptConnection {
         }
     }
 
+    /// Lets a run's cancellation interrupt a statement the run is running on
+    /// the connection.
+    ///
+    /// Without this, a call stops only between rows and statements (see
+    /// [`Method`]), so a cancelled run waits for a long statement, such as an
+    /// accidental cartesian join, to return a row or end. With it, the
+    /// statement stops shortly after the run's
+    /// [`CancelToken`](frostlang::CancelToken) is cancelled, and the run fails
+    /// as cancelled. A statement waiting for another connection's lock still
+    /// waits out SQLite's busy timeout. Fuel bounds no statement either way:
+    /// SQLite's work spends none.
+    ///
+    /// This installs a SQLite progress handler that checks the run's token as
+    /// SQLite works. SQLite gives a connection one progress handler, so this
+    /// replaces any the connection had, for good: a pooled connection returns
+    /// to its pool with none. Without this, the extension leaves the
+    /// connection's progress handler as it was.
+    #[must_use]
+    pub fn with_cancellation(self) -> Self {
+        Self {
+            cancellable: true,
+            ..self
+        }
+    }
+
     fn holding(connection: Source) -> Self {
         Self {
             connection,
             methods: EnumSet::all(),
             authorizer: None,
             filter: None,
+            cancellable: false,
         }
     }
 
     /// The connection bundle, failing as `function` if SQLite refuses to
-    /// install the authorizer.
+    /// install the authorizer or progress handler.
     pub(crate) fn into_bundle(self, function: &str) -> Result<Value, FrostError> {
+        // Held first, so that a failure to install one handler still removes
+        // any installed before it.
+        let mut held = Held::new(self.connection);
         let denials = Arc::new(AtomicU64::new(0));
-        let authorized = match self.authorizer {
-            Some(authorizer) => {
-                let counted = Arc::clone(&denials);
-                self.connection
-                    .authorizer(Some(move |ctx: AuthContext<'_>| {
-                        let judgement = authorizer.judge(ctx);
-                        if judgement == Authorization::Deny {
-                            counted.fetch_add(1, Ordering::Relaxed);
-                        }
-                        judgement
-                    }))
-                    .map_err(|err| sqlite_error(function, &err))?;
-                true
-            }
-            None => false,
-        };
-        let shared = Shared::new(
-            self.connection,
-            authorized,
-            self.filter,
-            denials,
-            self.methods,
-        );
+        if let Some(authorizer) = self.authorizer {
+            held.authorize(authorizer, &denials)
+                .map_err(|err| sqlite_error(function, &err))?;
+        }
+        if self.cancellable {
+            held.watch_cancellation()
+                .map_err(|err| sqlite_error(function, &err))?;
+        }
+        let shared = Shared::new(held, self.filter, denials, self.methods);
         Ok(connection_bundle(shared))
     }
 }
@@ -332,6 +351,7 @@ impl fmt::Debug for ScriptConnection {
             .field("methods", &self.methods)
             .field("authorizer", &self.authorizer)
             .field("filters_sql", &self.filter.is_some())
+            .field("cancellable", &self.cancellable)
             .finish_non_exhaustive()
     }
 }
