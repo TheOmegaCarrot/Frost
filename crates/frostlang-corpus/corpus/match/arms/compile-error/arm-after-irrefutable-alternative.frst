@@ -1,6 +1,6 @@
 # An alternative with a branch that matches everything makes the whole arm
 # irrefutable, so any later arm is dead, which is a compile error.
-#= {rejects: 'unreachable match arm', inputs: {v: [1]}, known_issue: 'FROST-56'}
+#= {rejects: 'unreachable match arm', inputs: {v: [1]}}
 match v {
     [x] | x => x,
     {x} => x,

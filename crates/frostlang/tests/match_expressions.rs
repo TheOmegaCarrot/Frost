@@ -89,7 +89,7 @@ fn the_first_matching_arm_is_taken() {
         (r#"match 1 { 1 => "a", 1 => "b" }"#, r#""a""#),
         (r#"match 2 { 1 => "a", 2 => "b", _ => "c" }"#, r#""b""#),
         (r#"match 3 { 1 => "a", 2 => "b", _ => "c" }"#, r#""c""#),
-        ("match 3 { x => x, _ => 0 }", "3"),
+        ("match 3 { x is Int => x, _ => 0 }", "3"),
     ]);
 }
 
@@ -435,7 +435,10 @@ fn a_value_is_evaluated_only_when_its_pattern_reaches_it() {
             ",
             "[0, 3, 1, 2]",
         ),
-        ("match 1 { 2 => 0, _ => log(), (note(9)) => 0 }", "[]"),
+        (
+            "match 1 { 2 => 0, _ is Int => log(), (note(9)) => 0 }",
+            "[]",
+        ),
         // The length check comes first.
         (
             "match [1] { [(note(1)), (note(2))] => 0, _ => log() }",
@@ -447,7 +450,7 @@ fn a_value_is_evaluated_only_when_its_pattern_reaches_it() {
 #[test]
 fn a_raising_value_raises_only_if_reached() {
     assert_raises(&[("match 1 { (1 / 0) => 0, _ => 1 }", "Division by zero")]);
-    assert_values(&[("match 1 { _ => 1, (1 / 0) => 0 }", "1")]);
+    assert_values(&[("match 1 { _ is Int => 1, (1 / 0) => 0 }", "1")]);
 }
 
 // --- Arrays ---
@@ -924,9 +927,9 @@ fn a_guard_follows_whichever_alternative_matched() {
 #[test]
 fn alternatives_must_bind_the_same_names() {
     for source in [
-        "match 1 { x | _ => 0 }",
-        "match 1 { _ | x => 0 }",
-        "match 1 { 1 | x | 2 => 0 }",
+        "match 1 { x is Int | _ => 0 }",
+        "match 1 { _ is Int | x => 0 }",
+        "match 1 { 1 | x is Int | 2 => 0 }",
         "match 1 { [x, y] | [x] => 0 }",
         "match 1 { [x] | [x, y] => 0 }",
         "match 1 { [x] | [y] => 0 }",
@@ -991,9 +994,9 @@ fn a_name_bound_twice_in_a_pattern_is_a_compile_error() {
         ("match 1 { {a} as a => 0 }", "`a` is already bound"),
         ("match 1 { [x, {x}] => 0 }", "`x` is already bound"),
         ("match 1 { [x, ...x] => 0 }", "`x` is already bound"),
-        ("match 1 { [x, x | x] => 0 }", "`x` is already bound"),
+        ("match 1 { [x, x is Int | x] => 0 }", "`x` is already bound"),
         // Within a later branch of an alternative too.
-        ("match 1 { x | [x, x] => 0 }", "`x` is already bound"),
+        ("match 1 { x is Int | [x, x] => 0 }", "`x` is already bound"),
         ("match 1 { [x, 0] | [x, x] => 0 }", "`x` is already bound"),
     ]);
 }
@@ -1012,7 +1015,7 @@ fn an_unbound_name_is_a_compile_error_even_in_an_arm_never_taken() {
             "match 1 { {[nope]: x} => 0, _ => 1 }",
             "`nope` is not defined",
         ),
-        ("match 1 { _ => 1, 2 => nope }", "`nope` is not defined"),
+        ("match 1 { 1 => 1, 2 => nope }", "`nope` is not defined"),
     ]);
 }
 

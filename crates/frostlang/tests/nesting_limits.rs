@@ -74,23 +74,17 @@ const SHAPES: [(&str, Shape); 27] = [
     ("`match` arm", |n, inner| {
         nest("match 1 { _ => ", inner, " }", n)
     }),
+    // No arm follows the pattern's: at no nesting, the pattern is a bare name,
+    // which would make a later arm unreachable.
     ("Array pattern", |n, inner| {
-        format!(
-            "match xs {{ {} => {inner}, _ => 1 }}",
-            nest("[", "a", "]", n)
-        )
+        format!("match xs {{ {} => {inner} }}", nest("[", "a", "]", n))
     }),
     ("Map pattern", |n, inner| {
-        format!(
-            "match m {{ {} => {inner}, _ => 1 }}",
-            nest("{a: ", "b", "}", n)
-        )
+        format!("match m {{ {} => {inner} }}", nest("{a: ", "b", "}", n))
     }),
+    // Each branch before the last can fail, so none makes a later one unreachable.
     ("alternatives", |n, inner| {
-        format!(
-            "match xs {{ {} => {inner}, _ => 1 }}",
-            nest("[a | ", "a", "]", n)
-        )
+        format!("match xs {{ {} => {inner} }}", nest("[[a] | ", "a", "]", n))
     }),
     ("`def` pattern", |n, inner| {
         format!("do {{\ndef {} = xs\n{inner}\n}}", nest("[", "a", "]", n))

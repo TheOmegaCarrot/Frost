@@ -25,6 +25,7 @@ use crate::compile::{
     lower::{
         ConstKeyOp, FunctionBuilder, Ir, JumpType, Label, LocalId, Op, Position, debug_span,
         fold::constant_key_of,
+        globals::global_slot,
         locals::{LocalInfo, LocalKind},
     },
 };
@@ -324,6 +325,11 @@ impl FunctionBuilder<'_> {
         bound: &mut Vec<Bound>,
         span: Span,
     ) -> Result<PatternFragment, Diagnostics> {
+        let catch_all = branches.iter().position(|branch| cannot_fail(&branch.node));
+        let (reachable, dead) = branches.split_at(catch_all.map_or(branches.len(), |at| at + 1));
+        // Before any branch binds, so that the catch-all's own name is not yet
+        // in view.
+        let help = catch_all.and_then(|at| self.catch_all_help(&branches[at].node));
         let first = branches
             .first()
             .expect("an alternative has at least one branch");
@@ -335,7 +341,7 @@ impl FunctionBuilder<'_> {
         let mut code = Vec::new();
         let mut foldable = true;
 
-        for (index, branch) in branches.iter().enumerate() {
+        for (index, branch) in reachable.iter().enumerate() {
             let enclosing = match mismatch {
                 Mismatch::Jump(fail) if index == last => Some(fail),
                 _ => None,
@@ -381,6 +387,11 @@ impl FunctionBuilder<'_> {
                     Op::Ready(Bytecode::RewindToMark).at(branch_span),
                 ]);
             }
+        }
+        if let (Some(dead), Some(catch_all)) = (dead.first(), reachable.last()) {
+            return Err(self
+                .unreachable(Unreachable::Branch, dead.span, catch_all.span, help)
+                .into());
         }
         if let Mismatch::Raise = mismatch {
             code.extend([
@@ -502,6 +513,98 @@ impl FunctionBuilder<'_> {
         ))
         .code("alternative bindings".into())
         .label_primary(span, label)
+    }
+
+    /// The error for the `kind` of part at `dead`, which no value reaches,
+    /// since the earlier part at `catch_all` matches every value. `help`, from
+    /// [`catch_all_help`](Self::catch_all_help), goes with the catch-all.
+    pub(super) fn unreachable(
+        &self,
+        kind: Unreachable,
+        dead: SourceSpan,
+        catch_all: SourceSpan,
+        help: Option<String>,
+    ) -> Diagnostic {
+        let noun = kind.noun();
+        let mut advice = Diagnostic::advice(format!("an earlier {noun} matches every value"))
+            .label(catch_all, "matches every value".into());
+        if let Some(help) = help {
+            advice = advice.help(help);
+        }
+        self.error(format!("this {noun} is never reached"))
+            .code(kind.code().into())
+            .label_primary(dead, "never tried".into())
+            .related(advice)
+            .help(format!(
+                "remove the {noun}, or move it before the one that matches every value"
+            ))
+    }
+
+    /// Help for a catch-all `pattern` that is a bare name, which binds every
+    /// value but may have been meant as a test: of the type it names, or
+    /// against the name, if one is in view. Ask before the pattern binds
+    /// anything, or its own binding is in view.
+    pub(super) fn catch_all_help(&self, pattern: &Pattern) -> Option<String> {
+        let Pattern::Binding {
+            name:
+                Spanned {
+                    node: Binding::Named(name),
+                    ..
+                },
+            ..
+        } = pattern
+        else {
+            return None;
+        };
+        if TypeConstraint::from_name(name).is_some() {
+            return Some(format!("to test for the type, write `_ is {name}`"));
+        }
+        // TODO: An enclosing scope's name is in view only if this function
+        // reads it, since only names read are captured, and a pattern binding
+        // the name does not read it. So a name bound only in an enclosing
+        // function, or in a `compile_in_scope` caller's scope (such as an
+        // earlier REPL input), gets no hint.
+        (self.locals.resolve(name).is_some() || global_slot(name).is_some())
+            .then(|| format!("to compare against an existing `{name}`, write `({name})`"))
+    }
+}
+
+/// What part of a pattern or `match` is unreachable: one after a part that
+/// matches every value, which no value reaches. It is a compile error,
+/// reported after any error in the parts before it, and is never compiled.
+#[derive(Clone, Copy)]
+pub(super) enum Unreachable {
+    /// A `match` arm after an arm with no guard whose pattern cannot fail.
+    Arm,
+    /// A branch of an alternative after a branch that cannot fail.
+    Branch,
+}
+
+impl Unreachable {
+    fn noun(self) -> &'static str {
+        match self {
+            Self::Arm => "match arm",
+            Self::Branch => "alternative branch",
+        }
+    }
+
+    fn code(self) -> &'static str {
+        match self {
+            Self::Arm => "unreachable match arm",
+            Self::Branch => "unreachable alternative branch",
+        }
+    }
+}
+
+/// Whether `pattern` matches every value: a name or `_` with no type
+/// constraint, or an alternative with such a branch.
+pub(super) fn cannot_fail(pattern: &Pattern) -> bool {
+    match pattern {
+        Pattern::Binding {
+            type_constraint, ..
+        } => type_constraint.is_none(),
+        Pattern::Alternative(branches) => branches.iter().any(|branch| cannot_fail(&branch.node)),
+        Pattern::Value(_) | Pattern::Array { .. } | Pattern::Map { .. } => false,
     }
 }
 

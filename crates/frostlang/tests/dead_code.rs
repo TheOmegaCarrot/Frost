@@ -166,11 +166,11 @@ fn unused_match_bindings_do_not_change_the_result() {
 
 #[test]
 fn a_binding_read_only_in_unreachable_code_compiles_and_runs() {
-    // The arm after `_` is never reached, but its code is still emitted, and
-    // its read of `f` still needs `f`'s slot.
+    // The arm after `_ is Int` is never reached by `1`, but its code is still
+    // emitted, and its read of `f` still needs `f`'s slot.
     let source = r"
         defn f(x) -> x
-        match 1 { 2 => 0, _ => 3, (f(9)) => 0 }
+        match 1 { 2 => 0, _ is Int => 3, (f(9)) => 0 }
     ";
     assert_eq!(run(source), Value::Int(3));
 }

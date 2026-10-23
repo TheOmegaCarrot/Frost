@@ -12,13 +12,13 @@ use std::num::NonZeroU64;
 
 use crate::Value;
 use crate::bytecode::{Bytecode, Span};
-use frostlang_parse::ast::{Expr, MatchArm, Pattern, Spanned};
+use frostlang_parse::ast::{Expr, MatchArm, Spanned};
 
 use crate::compile::{
-    Diagnostic, Diagnostics,
+    Diagnostics,
     lower::{
         ExprFragment, FunctionBuilder, Ir, JumpType, Label, Op, Position, debug_span,
-        pattern::{BindMode, Mismatch, PatternFragment},
+        pattern::{BindMode, Mismatch, PatternFragment, Unreachable, cannot_fail},
     },
 };
 
@@ -96,13 +96,24 @@ impl FunctionBuilder<'_> {
         span: Span,
     ) -> Result<ExprFragment, Diagnostics> {
         let target = self.compile_expression(target, Position::Inner)?;
-        if self.lints_on() {
-            self.lint_unreachable_arms(arms);
-        }
-        let arms = arms
+        let catch_all = arms.iter().position(|arm| matches_everything(&arm.node));
+        let (reachable, dead) = arms.split_at(catch_all.map_or(arms.len(), |at| at + 1));
+        let arms = reachable
             .iter()
             .map(|arm| self.in_scope(|this| this.compile_arm(arm, position)))
             .collect::<Result<Vec<_>, _>>()?;
+        if let (Some(dead), Some(catch_all)) = (dead.first(), reachable.last()) {
+            // Each arm's bindings are out of view again.
+            let help = self.catch_all_help(&catch_all.node.pattern.node);
+            return Err(self
+                .unreachable(
+                    Unreachable::Arm,
+                    dead.node.pattern.span,
+                    catch_all.node.pattern.span,
+                    help,
+                )
+                .into());
+        }
 
         // TODO: with a constant target, branch elimination could pick the arm at
         // compile time.
@@ -147,29 +158,6 @@ impl FunctionBuilder<'_> {
         })
     }
 
-    /// Lint each arm after the first that matches every value, which no value
-    /// can reach.
-    fn lint_unreachable_arms(&mut self, arms: &[Spanned<MatchArm>]) {
-        let Some(catch_all) = arms.iter().position(|arm| matches_everything(&arm.node)) else {
-            return;
-        };
-        let catch_all_span = arms[catch_all].node.pattern.span;
-        for arm in &arms[catch_all + 1..] {
-            let lint = self
-                .warning(
-                    "unreachable match arm",
-                    "this match arm is never reached".to_owned(),
-                )
-                .label_primary(arm.node.pattern.span, "never tried".into())
-                .related(
-                    Diagnostic::advice("an earlier arm matches every value".to_owned())
-                        .label(catch_all_span, "matches every value".into()),
-                )
-                .help("remove the arm, or move it before the one that matches everything".into());
-            self.lint(lint);
-        }
-    }
-
     /// Compile an arm, in its own scope: its bindings are visible to its guard
     /// and result only.
     fn compile_arm(
@@ -211,16 +199,4 @@ impl FunctionBuilder<'_> {
 /// fail.
 fn matches_everything(arm: &MatchArm) -> bool {
     arm.guard.is_none() && cannot_fail(&arm.pattern.node)
-}
-
-/// Whether `pattern` matches every value: it is a name or `_` with no type
-/// constraint, or an alternative with such a branch.
-fn cannot_fail(pattern: &Pattern) -> bool {
-    match pattern {
-        Pattern::Binding {
-            type_constraint, ..
-        } => type_constraint.is_none(),
-        Pattern::Alternative(branches) => branches.iter().any(|branch| cannot_fail(&branch.node)),
-        Pattern::Value(_) | Pattern::Array { .. } | Pattern::Map { .. } => false,
-    }
 }

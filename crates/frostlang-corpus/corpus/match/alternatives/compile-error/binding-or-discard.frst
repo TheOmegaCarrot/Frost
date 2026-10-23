@@ -1,5 +1,5 @@
-# Every alternative must bind the same names: `x | _` binds `x` in only one.
+# Every alternative must bind the same names: `x is Int | _` binds `x` in only one.
 #= {rejects: 'every alternative must bind the same names'}
 match 1 {
-    x | _ => 0,
+    x is Int | _ => 0,
 }

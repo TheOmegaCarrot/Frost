@@ -1,7 +1,7 @@
 # An arm after an unguarded, unconstrained binding arm can never be reached:
 # the bare name binds every value, so the later arm is a compile error. Subtle:
 # `limit` reads as a comparison against the outer `limit`, but binds instead.
-#= {rejects: 'unreachable match arm', inputs: {v: 5}, known_issue: 'FROST-56'}
+#= {rejects: 'unreachable match arm', inputs: {v: 5}}
 def limit = 10
 match v {
     limit => 'at the limit',

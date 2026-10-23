@@ -1,5 +1,5 @@
 # A later alternative cannot bind a name the first does not.
 #= {rejects: 'every alternative must bind the same names'}
 match 1 {
-    _ | x => 0,
+    _ is Int | x => 0,
 }

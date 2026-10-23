@@ -1789,51 +1789,43 @@ fn the_importer_set_last_is_the_one_used() {
 
 // --- Lints ---
 
-const LINT: &str = "unreachable match arm";
+const LINT: &str = "type name binding";
 
-/// A script with two unreachable arms, which prints `a`.
+/// A script with two type names bound as names, which prints `a`.
 const LINTED: &str = r#"
-match 1 {
-    n => print("a"),
-    _ => print("b"),
-    3 => print("c")
-}
+def String = "a"
+def Int = String
+print(Int)
 "#;
 
-/// [`LINTED`] without its unreachable arms, and with no unused binding.
+/// [`LINTED`] without its lints.
 const UNLINTED: &str = r#"
-match 1 {
-    _ => print("a")
-}
+print("a")
 "#;
 
-/// A script that prints `a` and holds one unused binding, which is not an
-/// unreachable arm.
+/// A script that prints `a` and holds one unused binding, which is not a type
+/// name.
 const UNUSED_BINDING: &str = r#"
 def unused = 1
 print("a")
 "#;
 
-/// [`LINTED`] followed by a runtime error.
+/// A script with one lint, followed by a runtime error.
 const LINTED_THEN_RAISES: &str = r#"
-match 1 {
-    n => print("a"),
-    _ => print("b")
-}
+def String = "a"
+print(String)
 print("before")
 1 / 0
 "#;
 
-/// [`LINTED`] followed by a compile error.
+/// A script with one lint, followed by a compile error.
 const LINTED_AND_BROKEN: &str = r#"
-match 1 {
-    n => print("a"),
-    _ => print("b")
-}
+def String = "a"
+print(String)
 nope
 "#;
 
-/// Assert that `ran` warned of exactly `count` unreachable arms in the script
+/// Assert that `ran` warned of exactly `count` type names bound in the script
 /// named `file`.
 fn assert_linted(ran: &Ran, file: &str, count: usize, context: &str) {
     assert_eq!(
@@ -1850,7 +1842,7 @@ fn assert_linted(ran: &Ran, file: &str, count: usize, context: &str) {
 }
 
 #[test]
-fn run_warns_of_an_unreachable_arm_and_runs_the_script() {
+fn run_warns_of_a_lint_and_runs_the_script() {
     let linted = script("lint-run.frst", LINTED);
     let clean = script("lint-run-clean.frst", UNLINTED);
     let ran = run(&["--color", "never", &linted]);
@@ -1900,13 +1892,13 @@ fn run_warns_of_an_unused_binding_and_runs_the_script() {
     );
     assert!(
         !ran.stderr.contains(LINT),
-        "no unreachable arm: {}",
+        "no type name binding: {}",
         ran.stderr
     );
 }
 
 #[test]
-fn stdin_warns_of_an_unreachable_arm_and_runs_the_script() {
+fn stdin_warns_of_a_lint_and_runs_the_script() {
     let ran = run_with_stdin(LINTED, &["--color", "never", "-"]);
     assert_eq!(ran.exit, Exit::Success, "{ran:?}");
     assert_eq!(ran.stdout, run_with_stdin(UNLINTED, &["-"]).stdout);
@@ -1918,7 +1910,7 @@ fn stdin_warns_of_an_unreachable_arm_and_runs_the_script() {
 }
 
 #[test]
-fn eval_warns_of_an_unreachable_arm_and_runs_the_code() {
+fn eval_warns_of_a_lint_and_runs_the_code() {
     let ran = run(&["--color", "never", "-e", LINTED]);
     assert_eq!(ran.exit, Exit::Success, "{ran:?}");
     assert_eq!(ran.stdout, run(&["-e", UNLINTED]).stdout, "{ran:?}");
@@ -1927,7 +1919,7 @@ fn eval_warns_of_an_unreachable_arm_and_runs_the_code() {
 }
 
 #[test]
-fn check_warns_of_an_unreachable_arm_and_succeeds() {
+fn check_warns_of_a_lint_and_succeeds() {
     let linted = script("lint-check.frst", LINTED);
     let clean = script("lint-check-clean.frst", UNLINTED);
     let ran = run(&["check", "--color", "never", &linted]);
@@ -1938,7 +1930,7 @@ fn check_warns_of_an_unreachable_arm_and_succeeds() {
 }
 
 #[test]
-fn compile_warns_of_an_unreachable_arm_and_writes_the_image() {
+fn compile_warns_of_a_lint_and_writes_the_image() {
     let linted = script("lint-compile.frst", LINTED);
     let output = scratch_path("lint-compile-image");
     let ran = run(&["compile", "--color", "never", &linted, "-o", &output]);
@@ -1953,7 +1945,7 @@ fn compile_warns_of_an_unreachable_arm_and_writes_the_image() {
 }
 
 #[test]
-fn list_warns_of_an_unreachable_arm_and_lists_the_bytecode() {
+fn list_warns_of_a_lint_and_lists_the_bytecode() {
     let linted = script("lint-list.frst", LINTED);
     let ran = run(&["list", "--color", "never", &linted]);
     assert_eq!(ran.exit, Exit::Success, "{ran:?}");
@@ -2038,8 +2030,8 @@ fn running_an_image_shows_no_lint() {
 fn a_repl_session_shows_no_lint() {
     let session = run_session(
         &[
-            r#"match 1 { n => "first", _ => "second" }"#,
-            r#"match 2 { n => n + 1, 5 => 0 }"#,
+            r#"do { def String = "first"; String }"#,
+            "do { def Int = 2; Int + 1 }",
         ],
         &["repl"],
     );

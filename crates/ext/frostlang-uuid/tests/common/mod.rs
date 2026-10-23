@@ -106,12 +106,18 @@ pub(crate) fn assert_raises(cases: &[(&str, &str)]) {
 /// its arity error when called with each count in `counts`. `expects` is how
 /// the error states its arity, such as `1`.
 pub(crate) fn assert_arity(function: &str, expects: impl Display, counts: &[usize]) {
+    let expects = expects.to_string();
+    let noun = if matches!(expects.as_str(), "1" | "at least 1") {
+        "argument"
+    } else {
+        "arguments"
+    };
     for &argc in counts {
         let expression = format!("uuid.{function}({})", vec!["null"; argc].join(", "));
         assert_eq!(
             raises(&expression),
             format!(
-                "Function ext.uuid.{function} expects {expects} arguments, but was called with {argc}"
+                "Function ext.uuid.{function} expects {expects} {noun}, but was called with {argc}"
             ),
             "{expression:?}"
         );

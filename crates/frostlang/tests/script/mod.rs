@@ -353,6 +353,40 @@ pub(crate) fn compile_errors(source: &str) -> Diagnostics {
     Script::new(source).compile_errors()
 }
 
+/// The source line of the label `label` in the narrated diagnostic `text`,
+/// which has a line like `label at line 3, columns 5 to 9: never tried`, or
+/// `label starting at line 3, column 5: never tried` when the label spans lines.
+pub(crate) fn label_line(text: &str, label: &str) -> usize {
+    text.lines()
+        .filter(|line| line.trim_end().ends_with(&format!(": {label}")))
+        .find_map(|line| {
+            let line = line.trim();
+            let rest = line
+                .strip_prefix("label at line ")
+                .or_else(|| line.strip_prefix("label starting at line "))?;
+            rest.split(',').next()?.parse().ok()
+        })
+        .unwrap_or_else(|| panic!("no label {label:?} in:\n{text}"))
+}
+
+/// The text a plain diagnostic rendering underlines on the source line `line`:
+/// what sits between the first and last mark of the marker row under it.
+pub(crate) fn underlined(plain: &str, line: &str) -> String {
+    let rows: Vec<&str> = plain.lines().collect();
+    rows.windows(2)
+        .find_map(|pair| {
+            let (_, shown) = pair[0].split_once("| ")?;
+            let (_, marks) = pair[1].split_once(": ")?;
+            if shown != line {
+                return None;
+            }
+            let start = marks.find(|c| c != ' ')?;
+            let end = marks.rfind(|c| c != ' ')?;
+            shown.get(start..=end).map(str::to_owned)
+        })
+        .unwrap_or_else(|| panic!("no underlined {line:?} in:\n{plain}"))
+}
+
 /// A compiled function's code under one optimization permutation. Its `Debug`
 /// form names the permutation, for assertion messages.
 #[derive(Debug)]

@@ -1,7 +1,7 @@
-# An unbound name is a compile error even in a match arm after one that
-# matches every value, which no value can reach.
+# An unbound name is a compile error even in a match arm that the known
+# target `1` can never reach.
 #= {rejects: ['`missing_name`', 'not defined']}
 match 1 {
-    _ => 1,
+    1 => 1,
     2 => missing_name,
 }

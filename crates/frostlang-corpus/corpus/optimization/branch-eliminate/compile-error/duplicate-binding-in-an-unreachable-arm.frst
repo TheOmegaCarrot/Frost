@@ -1,7 +1,7 @@
-# A pattern binding one name twice is a compile error even in a match arm after
-# one that matches every value, which no value can reach.
+# A pattern binding one name twice is a compile error even in a match arm that
+# the known target `1` can never reach.
 #= {rejects: ['`a`', 'already bound']}
 match 1 {
-    _ => 0,
+    0 => 0,
     [a, a] => a,
 }

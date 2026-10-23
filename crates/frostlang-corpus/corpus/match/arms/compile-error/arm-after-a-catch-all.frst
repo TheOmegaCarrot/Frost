@@ -1,0 +1,7 @@
+# An arm after a `_` arm is rejected: `_` matches every value, so the later arm
+# is never reached.
+#= {rejects: 'unreachable match arm', inputs: {v: 1}}
+match v {
+    _ => 'any',
+    1 => 'one',
+}

@@ -1,7 +1,0 @@
-# An arm after one that matches every value is never tried, and is linted as
-# unreachable.
-#= {result: ['any', 'any'], lints: ['unreachable match arm'], inputs: {xs: [1, 2]}}
-transform(xs, fn v -> match v {
-    _ => 'any',
-    1 => 'one',
-})

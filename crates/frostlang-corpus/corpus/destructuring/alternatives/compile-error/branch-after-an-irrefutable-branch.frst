@@ -1,0 +1,5 @@
+# In a `def` pattern too, a branch after one that matches every value is dead:
+# in `x | [x]`, `x` binds the whole value, so `[x]` can never be tried.
+#= {rejects: 'unreachable alternative branch', inputs: {v: [5]}}
+def x | [x] = v
+x

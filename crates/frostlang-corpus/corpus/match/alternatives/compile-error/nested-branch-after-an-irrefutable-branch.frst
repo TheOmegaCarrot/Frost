@@ -1,0 +1,6 @@
+# The unreachable-branch rule applies inside a larger pattern: in the element
+# `x | [x]` of an Array pattern, `x` matches any element, so `[x]` is dead.
+#= {rejects: 'unreachable alternative branch', inputs: {v: [5]}}
+match v {
+    [x | [x]] => x,
+}

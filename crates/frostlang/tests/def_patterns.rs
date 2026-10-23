@@ -1030,9 +1030,9 @@ fn the_binds_nothing_check_looks_at_the_whole_pattern() {
 #[test]
 fn alternatives_must_bind_the_same_names() {
     for source in [
-        "def x | _ = 1",
-        "def _ | x = 1",
-        "def 1 | x | 2 = 1",
+        "def x is Int | _ = 1",
+        "def _ is Int | x = 1",
+        "def 1 | x is Int | 2 = 1",
         "def [x, y] | [x] = [1]",
         "def [x] | [y] = [1]",
         "def {a} | {b} = {a: 1}",
@@ -1059,8 +1059,8 @@ fn a_name_bound_twice_in_a_def_pattern_is_a_compile_error() {
         ("def [x, ...x] = [1, 2]", "`x` is already bound"),
         ("def [x, x is Int] = [1, 2]", "`x` is already bound"),
         ("def [x, [x] | [x]] = [1, [2]]", "`x` is already bound"),
-        ("def [x, x | x] = [1, 2]", "`x` is already bound"),
-        ("def x | [x, x] = 1", "`x` is already bound"),
+        ("def [x, x is Int | x] = [1, 2]", "`x` is already bound"),
+        ("def x is Int | [x, x] = 1", "`x` is already bound"),
         ("def [x, 0] | [x, x] = [1, 0]", "`x` is already bound"),
         (
             r"

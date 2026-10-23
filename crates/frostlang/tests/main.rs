@@ -100,6 +100,7 @@ mod type_name;
 mod type_set;
 mod unary_operations;
 mod unary_operators;
+mod unreachable_patterns;
 mod value_accessors;
 mod value_bytes;
 mod value_conversions;

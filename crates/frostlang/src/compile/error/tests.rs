@@ -33,8 +33,7 @@ export def g = do {
     4
 }
 export def h = match 1 {
-    _ => 1,
-    1 => 2,
+    String => String,
 }
 ";
     let output = compile_program("lints.frst", source, CompilerOptions::default())
