@@ -2,4 +2,4 @@
 # each call in order, and its results become the elements: `print` returns
 # Null.
 #= {result: [null, null], printed: ['a', 'b']}
-map ['a', 'b'] with print
+map(['a', 'b'], print)

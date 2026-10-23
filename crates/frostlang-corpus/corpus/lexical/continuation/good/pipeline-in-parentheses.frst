@@ -3,11 +3,11 @@
 #= {result: [120, 6], inputs: {xs: [10, 20, 30]}}
 def doubled_total = (
     xs
-    @ transform(fn x -> x * 2)
-    @ fold(0, fn (acc, x) -> acc + x)
+    @ map(fn x -> x * 2)
+    @ reduce(0, fn (acc, x) -> acc + x)
 )
 def digits = (xs @
-    transform(to_string) @
-    fold('', fn (acc, s) -> acc + s) @
+    map(to_string) @
+    reduce('', fn (acc, s) -> acc + s) @
     len())
 [doubled_total, digits]

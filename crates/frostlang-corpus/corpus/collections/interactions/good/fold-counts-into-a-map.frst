@@ -1,4 +1,0 @@
-# A fold that merges into a Map accumulator counts occurrences, using a soft
-# index with an `or` default for keys not yet seen.
-#= {result: {a: 2, b: 1, ['é']: 3}, inputs: {words: ['a', 'é', 'b', 'é', 'a', 'é']}}
-fold(words, {}, fn counts, w -> counts + {[w]: (counts[w] or 0) + 1})

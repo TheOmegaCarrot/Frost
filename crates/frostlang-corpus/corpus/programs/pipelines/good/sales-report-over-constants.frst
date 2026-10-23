@@ -21,9 +21,9 @@ defn add_sale(totals, sale) -> {
     totals + {[region]: (totals[region] or 0) + qty * price}
 }
 
-def totals = reduce sales init: {} with add_sale
-def lines = reduce totals init: [] with fn acc, region, total -> acc + [$'${region}: ${total}']
-def best = reduce totals init: null with fn leader, region, total ->
-    if leader == null or total > totals[leader]: region else: leader
-def total = fold(totals, 0, fn sum, region, amount -> sum + amount)
+def totals = reduce(sales, {}, add_sale)
+def lines = reduce(totals, [], fn acc, region, total -> acc + [$'${region}: ${total}'])
+def best = reduce(totals, null, fn leader, region, total ->
+    if leader == null or total > totals[leader]: region else: leader)
+def total = reduce(totals, 0, fn sum, region, amount -> sum + amount)
 {lines, best, total}

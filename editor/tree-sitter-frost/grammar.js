@@ -23,12 +23,6 @@ module.exports = grammar({
       $.kw_defn,
       $.kw_export,
       $.kw_fn,
-      $.kw_reduce,
-      $.kw_map,
-      $.kw_foreach,
-      $.kw_filter,
-      $.kw_with,
-      $.kw_init,
       $.kw_match,
       $.kw_is,
       $.kw_as,
@@ -239,10 +233,6 @@ module.exports = grammar({
       $.lambda_expression,
       $.abbreviated_lambda,
       $.do_block,
-      $.map_expression,
-      $.filter_expression,
-      $.reduce_expression,
-      $.foreach_expression,
       $.match_expression,
     ),
 
@@ -259,10 +249,6 @@ module.exports = grammar({
       $.lambda_expression,
       $.abbreviated_lambda,
       $.do_block,
-      $.map_expression,
-      $.filter_expression,
-      $.reduce_expression,
-      $.foreach_expression,
       $.match_expression,
       $.identifier,
       $.dollar_identifier,
@@ -351,35 +337,6 @@ module.exports = grammar({
       $.kw_do,
       field('body', $.block),
     ),
-
-    map_expression: $ => seq(
-      $.kw_map,
-      field('structure', $.expression),
-      $.kw_with,
-      field('operation', $.expression),
-    ),
-
-    filter_expression: $ => seq(
-      $.kw_filter,
-      field('structure', $.expression),
-      $.kw_with,
-      field('operation', $.expression),
-    ),
-
-    foreach_expression: $ => seq(
-      $.kw_foreach,
-      field('structure', $.expression),
-      $.kw_with,
-      field('operation', $.expression),
-    ),
-
-    reduce_expression: $ => prec.right(seq(
-      $.kw_reduce,
-      field('structure', $.expression),
-      optional(seq($.kw_init, ':', field('init', $.expression))),
-      $.kw_with,
-      field('operation', $.expression),
-    )),
 
     // `match TARGET { PATTERN (if: GUARD)? => RESULT, ... }`
     //
@@ -640,12 +597,6 @@ module.exports = grammar({
     kw_defn: _ => token('defn'),
     kw_export: _ => token('export'),
     kw_fn: _ => token('fn'),
-    kw_reduce: _ => token('reduce'),
-    kw_map: _ => token('map'),
-    kw_foreach: _ => token('foreach'),
-    kw_filter: _ => token('filter'),
-    kw_with: _ => token('with'),
-    kw_init: _ => token('init'),
     kw_match: _ => token('match'),
     kw_is: _ => token('is'),
     kw_as: _ => token('as'),

@@ -1,0 +1,15 @@
+# `map`, `filter`, and `reduce` called across lines, with comments between
+# the arguments and a continuation threading the result.
+#= {result: '3', inputs: {xs: [1, 2, 3, 4]}}
+def evens = filter(
+    xs, # keep
+    # the even ones
+    fn x -> x % 2 == 0,
+)
+def total = reduce(
+    map(evens, fn x -> x / 2),
+    0, # starting from zero
+    fn (acc, x) -> acc + x,
+)
+total
+    @ to_string()

@@ -40,7 +40,7 @@ fn draws(draw: &str, count: usize) -> String {
     format!(
         "do {{
             def r = random.seed(1)
-            map range({count}) with fn _ -> {draw}
+            map(range({count}), fn _ -> {draw})
         }}"
     )
 }
@@ -198,7 +198,7 @@ fn float_draws_within_inclusive_bounds() {
         // The draws spread across the range, not clustering at one point.
         (
             &format!(
-                "[len(select({0}, fn x -> x < 0)) > 100, len(select({0}, fn x -> x > 1)) > 100]",
+                "[len(filter({0}, fn x -> x < 0)) > 100, len(filter({0}, fn x -> x > 1)) > 100]",
                 draws("r.float(-1.5, 2.5)", 1000)
             ),
             "[true, true]",
@@ -261,7 +261,7 @@ fn bool_draws_with_a_probability() {
     // The seeded engine's draws are fixed, so these bands never flake; each is
     // wide around the expected count.
     for (draw, expected) in [("r.bool()", 400..600), ("r.bool(0.2)", 100..300)] {
-        let trues = script(&format!("len(select({}, id))", draws(draw, 1000))).run();
+        let trues = script(&format!("len(filter({}, id))", draws(draw, 1000))).run();
         let Value::Int(trues) = trues else {
             panic!("a count is an Int, got {trues:?}");
         };

@@ -1,5 +1,5 @@
 # A placeholder is bound like a parameter, so a plain lambda inside the
 # abbreviated lambda may capture it.
 #= {result: [11, 12, 13], lints: ['lambda in abbreviated lambda']}
-def add_to_each = $(map $2 with fn x -> x + $1)
+def add_to_each = $(map($2, fn x -> x + $1))
 add_to_each(10, [1, 2, 3])

@@ -1,7 +1,8 @@
-# Literals in any spelling flow through calls and folds as their plain values.
+# Literals in any spelling flow through calls and reductions as their plain
+# values.
 #= {result: [[10, 20, 30, 400], 46, [0.5, 1000.0]]}
 [
-    transform([0x1, 0b10, 0o3, 4_0], fn x -> x * 1_0),
-    fold([0x1, 0b10, 0o3, 4_0], 0, fn acc, x -> acc + x),
-    select([.5, 1e3, 'x'], is_float),
+    map([0x1, 0b10, 0o3, 4_0], fn x -> x * 1_0),
+    reduce([0x1, 0b10, 0o3, 4_0], 0, fn acc, x -> acc + x),
+    filter([.5, 1e3, 'x'], is_float),
 ]

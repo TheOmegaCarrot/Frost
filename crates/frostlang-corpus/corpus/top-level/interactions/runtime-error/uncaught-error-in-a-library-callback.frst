@@ -1,4 +1,4 @@
-# An error raised in a `transform` callback with nothing catching it ends the
+# An error raised in a `map` callback with nothing catching it ends the
 # program with that error.
 #= {raises: 'bad element 2', inputs: {xs: [1, 2, 3]}}
-transform(xs, fn x -> if x == 2: error($'bad element ${x}') else: x)
+map(xs, fn x -> if x == 2: error($'bad element ${x}') else: x)

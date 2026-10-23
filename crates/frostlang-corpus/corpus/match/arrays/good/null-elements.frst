@@ -1,7 +1,7 @@
 # Null elements count toward the length and bind like any value; a `null`
 # element pattern matches only a Null element.
 #= {result: [['null first', 2], ['bound', null]], inputs: {xs: [[null, 2], [1, null]]}}
-transform(xs, fn v -> match v {
+map(xs,fn v -> match v {
     [null, b] => ['null first', b],
     [_, b] => ['bound', b],
 })

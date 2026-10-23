@@ -1,7 +1,7 @@
 # A block body inside a call's arguments keeps its statements apart by line
 # breaks and `;`, while the arguments around it span lines freely.
 #= {result: [3, 5]}
-[1, 2] @ transform(
+[1, 2] @ map(
     fn x -> {
         def doubled = x * 2; def plus = doubled + 1
         plus

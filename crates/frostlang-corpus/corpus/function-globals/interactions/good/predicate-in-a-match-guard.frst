@@ -6,4 +6,4 @@ defn describe(v) -> match v {
     x if: is_nonnull(x) => 'other',
     _ => 'nothing',
 }
-map xs with describe
+map(xs, describe)

@@ -1,5 +1,5 @@
-# A `map` operation's parameter may share a name with an enclosing binding,
-# shadowing it only inside the operation.
+# A lambda's parameter given to `map` may share a name with an enclosing
+# binding, shadowing it only inside the lambda.
 #= {result: [[2, 4], 10]}
 def x = 10
-[map [1, 2] with fn x -> x * 2, x]
+[map([1, 2], fn x -> x * 2), x]

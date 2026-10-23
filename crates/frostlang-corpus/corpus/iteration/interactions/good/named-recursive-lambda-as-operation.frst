@@ -1,6 +1,6 @@
 # A named lambda written in place as the operation can call itself by its
 # name: here computing each element's factorial.
 #= {result: [[1, 2, 24], [1, 2, 24]], inputs: {xs: [1, 2, 4]}}
-def literal = map [1, 2, 4] with fn fact(n) -> if n <= 1: 1 else: n * fact(n - 1)
-def runtime = map xs with fn fact(n) -> if n <= 1: 1 else: n * fact(n - 1)
+def literal = map([1, 2, 4], fn fact(n) -> if n <= 1: 1 else: n * fact(n - 1))
+def runtime = map(xs, fn fact(n) -> if n <= 1: 1 else: n * fact(n - 1))
 [literal, runtime]

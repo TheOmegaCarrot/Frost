@@ -27,10 +27,10 @@ defn union(parents, edge) -> {
 }
 defn same_set(parents, a, b) -> find(parents, a)[0] == find(parents, b)[0]
 
-def singletons = reduce nodes init: {} with fn acc, n -> acc + {[n]: n}
-def joined = reduce edges init: singletons with union
-def groups = reduce nodes init: {} with fn acc, n -> do {
+def singletons = reduce(nodes, {}, fn acc, n -> acc + {[n]: n})
+def joined = reduce(edges, singletons, union)
+def groups = reduce(nodes, {}, fn acc, n -> do {
     def root = find(joined, n)[0]
     acc + {[root]: (acc[root] or []) + [n]}
-}
+})
 [values(groups), [joined[2], joined[5]], same_set(joined, 5, 2), same_set(joined, 4, 6)]

@@ -1,8 +1,0 @@
-# `reduce`'s `init:` may be an `if` expression without parentheses. Subtle:
-# the `else` branch would extend as far as it can, but `with` cannot continue
-# an expression, so it ends the branch and the init with it.
-#= {result: [103, 203], inputs: {xs: [1, 2], small: true, large: false}}
-[
-    reduce xs init: if small: 100 else: 200 with fn acc, x -> acc + x,
-    reduce xs init: if large: 100 else: 200 with fn acc, x -> acc + x,
-]

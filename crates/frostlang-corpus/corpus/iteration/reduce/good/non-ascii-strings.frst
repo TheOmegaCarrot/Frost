@@ -1,3 +1,3 @@
 # `reduce` concatenates non-ASCII Strings intact, in element order.
 #= {result: 'é日本🧊', inputs: {xs: ['é', '日本', '🧊']}}
-reduce xs init: '' with fn acc, s -> acc + s
+reduce(xs, '', fn acc, s -> acc + s)

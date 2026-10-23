@@ -1,3 +1,0 @@
-# A type predicate passed as a value serves as `select`'s test.
-#= {result: [1, 2.5], inputs: {xs: [1, 'a', null, 2.5, [3]]}}
-select(xs, is_numeric)

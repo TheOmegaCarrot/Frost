@@ -1,6 +1,6 @@
 # `map` over an empty Array yields an empty Array without calling the
 # operation: an operation that would raise is never reached.
 #= {result: [[], []], inputs: {empty: []}}
-def literal = map [] with fn x -> error('called')
-def runtime = map empty with fn x -> error('called')
+def literal = map([], fn x -> error('called'))
+def runtime = map(empty, fn x -> error('called'))
 [literal, runtime]

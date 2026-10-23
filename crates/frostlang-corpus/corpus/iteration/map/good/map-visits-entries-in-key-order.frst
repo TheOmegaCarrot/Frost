@@ -5,7 +5,7 @@
 #=     printed: ['a', 'b', 'c'],
 #=     inputs: {m: {c: 3, a: 1, b: 2}},
 #= }
-map m with fn k, v -> {
+map(m, fn k, v -> {
     print(k)
     {}
-}
+})

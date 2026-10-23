@@ -6,4 +6,4 @@
 #=     inputs: {xs: [9223372036854775807, 0, -9223372036854775808]},
 #= }
 def wraps = fn x -> x + 1 < x
-[filter [9223372036854775807, 0, -9223372036854775808] with wraps, filter xs with wraps]
+[filter([9223372036854775807, 0, -9223372036854775808], wraps), filter(xs, wraps)]

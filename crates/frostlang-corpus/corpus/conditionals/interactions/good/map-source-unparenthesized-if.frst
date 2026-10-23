@@ -1,7 +1,7 @@
-# An unparenthesized `if` may be a `map` expression's source; its alternate
-# ends at `with`.
+# An unparenthesized `if` may be a `map` call's first argument; its alternate
+# ends at the comma.
 #= {result: [[10], [20, 30]], inputs: {t: true, f: false}}
 [
-    map if t: [1] else: [2, 3] with fn x -> x * 10,
-    map if f: [1] else: [2, 3] with fn x -> x * 10,
+    map(if t: [1] else: [2, 3], fn x -> x * 10),
+    map(if f: [1] else: [2, 3], fn x -> x * 10),
 ]

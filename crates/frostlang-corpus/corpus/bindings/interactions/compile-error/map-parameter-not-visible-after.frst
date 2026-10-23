@@ -1,0 +1,4 @@
+# A lambda's parameter given to `map` is bound only inside the lambda.
+#= {rejects: ['`item`', 'not defined']}
+def doubled = map([1, 2], fn item -> item * 2)
+item

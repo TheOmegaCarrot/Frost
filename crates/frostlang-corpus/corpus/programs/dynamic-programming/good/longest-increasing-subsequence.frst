@@ -19,13 +19,13 @@ defn upto(n) -> if n == 0: [] else: upto(n - 1) + [n - 1]
 defn larger(a, b) -> if a > b: a else: b
 
 defn longest(xs) -> {
-    def lengths = fold(xs, [], fn found, x -> {
-        def extendable = fold(upto(len(found)), 0, fn best, j ->
+    def lengths = reduce(xs, [], fn found, x -> {
+        def extendable = reduce(upto(len(found)), 0, fn best, j ->
             if xs[j] < x: larger(best, found[j]) else: best
         )
         found + [extendable + 1]
     })
-    fold(lengths, 0, larger)
+    reduce(lengths, 0, larger)
 }
 
-transform(runs, longest)
+map(runs, longest)

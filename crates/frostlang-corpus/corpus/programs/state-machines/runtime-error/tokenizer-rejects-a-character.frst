@@ -11,4 +11,4 @@ defn step(state, c) ->
     elif c == ' ': {tokens: state.tokens + [state.current], current: null}
     else: error($'unexpected character ${c}')
 
-reduce chars init: {tokens: [], current: null} with step
+reduce(chars, {tokens: [], current: null}, step)

@@ -3,4 +3,4 @@
 #= {result: [4, 6, 8], inputs: {xs: [1, 2, 3]}}
 defn inc(x) -> x + 1
 defn double(x) -> x * 2
-map xs with $($ @ inc() @ double())
+map(xs, $($ @ inc() @ double()))

@@ -3,5 +3,5 @@
 #= {result: [true, true, true], inputs: {n: 1}}
 def a = [n] + [2] + [3]
 def b = [n, 2] + [3]
-def c = fold([2, 3], [n], fn acc, x -> acc + [x])
+def c = reduce([2, 3], [n], fn acc, x -> acc + [x])
 [a == b, b == c, a == [1, 2, 3]]

@@ -30,11 +30,11 @@ defn respond(message) -> {
     if has(handlers, opcode): handlers[opcode](payload) else: x'ee' + opcode
 }
 
-def responses = transform(messages, respond)
+def responses = map(messages, respond)
 {
     responses,
-    total: fold(responses, 0, fn n, r -> n + len(r)),
-    stream: reduce responses with fn joined, r -> joined + r,
-    smallest: reduce responses with fn a, b -> if b < a: b else: a,
-    largest: reduce responses with fn a, b -> if b > a: b else: a,
+    total: reduce(responses, 0, fn n, r -> n + len(r)),
+    stream: reduce(responses, fn joined, r -> joined + r),
+    smallest: reduce(responses, fn a, b -> if b < a: b else: a),
+    largest: reduce(responses, fn a, b -> if b > a: b else: a),
 }

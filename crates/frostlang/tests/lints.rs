@@ -342,8 +342,8 @@ fn lambda_parameters_are_never_linted() {
         ("$($2)", &[]),
         ("$($$)", &[]),
         ("fn a -> fn b -> 0", &[]),
-        ("map [1] with fn x -> 0", &[]),
-        ("reduce [1] with fn (acc, x) -> 0", &[]),
+        ("map([1], fn x -> 0)", &[]),
+        ("reduce([1], fn (acc, x) -> 0)", &[]),
     ]);
 }
 
@@ -415,7 +415,7 @@ fn a_read_in_a_nested_lambda_counts() {
         ("def a = 1\ndef f = fn -> a\nf", &[]),
         ("def a = 1\ndef f = fn x -> fn y -> a + x + y\nf", &[]),
         ("def a = 1\ndef f = $($ + a)\nf", &[]),
-        ("def a = 1\nmap [1] with fn x -> x + a", &[]),
+        ("def a = 1\nmap([1], fn x -> x + a)", &[]),
     ]);
 }
 
@@ -441,16 +441,13 @@ fn a_read_in_a_value_pattern_counts() {
 }
 
 #[test]
-fn a_read_in_an_iterative_expression_counts() {
+fn a_read_in_a_collection_call_counts() {
     assert_unused_cases(&[
-        ("def xs = [1, 2]\nmap xs with fn x -> x", &[]),
-        ("def xs = [1, 2]\nfilter xs with fn x -> true", &[]),
-        (
-            "def xs = [1, 2]\nreduce xs with fn (acc, x) -> acc + x",
-            &[],
-        ),
-        ("def n = 2\nmap [1, 2] with $($ * n)", &[]),
-        ("def f = fn x -> x\nmap [1, 2] with f", &[]),
+        ("def xs = [1, 2]\nmap(xs, fn x -> x)", &[]),
+        ("def xs = [1, 2]\nfilter(xs, fn x -> true)", &[]),
+        ("def xs = [1, 2]\nreduce(xs, fn (acc, x) -> acc + x)", &[]),
+        ("def n = 2\nmap([1, 2], $($ * n))", &[]),
+        ("def f = fn x -> x\nmap([1, 2], f)", &[]),
     ]);
 }
 
@@ -855,8 +852,8 @@ fn an_abbreviated_lambda_holding_a_lambda_is_linted() {
         "$(fn -> 0)",
         "$(fn x -> fn y -> y)",
         "def f = $(fn x -> x)\nf",
-        "map [1] with $(fn x -> x)",
-        "$($1 + 1 @ transform(fn x -> x))",
+        "map([1], $(fn x -> x))",
+        "$($1 + 1 @ map(fn x -> x))",
     ] {
         assert_eq!(
             abbreviated_lints(source).len(),
@@ -875,7 +872,7 @@ fn an_abbreviated_lambda_with_no_lambda_is_not_linted() {
         "$($$)",
         "$([$, 1])",
         "def f = fn x -> $(x)\nf",
-        "map [1, 2] with $($ * 2)",
+        "map([1, 2], $($ * 2))",
     ] {
         assert!(
             abbreviated_lints(source).is_empty(),
@@ -1226,8 +1223,8 @@ fn a_type_name_bound_as_a_lambda_parameter_is_linted() {
         ("(fn (Null, x) -> [Null, x])(1, 2)", &["Null"]),
         ("(fn ...Nonnull -> Nonnull)(1)", &["Nonnull"]),
         ("(fn a, Int -> [a, Int])(1, 2)", &["Int"]),
-        ("map [1] with fn Float -> Float", &["Float"]),
-        ("reduce [1, 2] with fn (acc, Map) -> acc + Map", &["Map"]),
+        ("map([1], fn Float -> Float)", &["Float"]),
+        ("reduce([1, 2], fn (acc, Map) -> acc + Map)", &["Map"]),
     ]);
 }
 
@@ -1509,7 +1506,7 @@ fn a_minus_run_is_linted_wherever_an_expression_may_be() {
         "match 1 { (--1) => 'one', _ => 'other' }",
         "{k: --1}",
         "if --1 == 1: 'yes' else: 'no'",
-        "map [1] with fn x -> 1--x",
+        "map([1], fn x -> 1--x)",
     ] {
         assert_eq!(
             consecutive_minus_lints(source).len(),

@@ -3,4 +3,4 @@
 # body instead.
 #= {rejects: 'to destructure an argument'}
 def pairs = [[1, 2]]
-map pairs with fn [a, b] -> a + b
+map(pairs, fn [a, b] -> a + b)

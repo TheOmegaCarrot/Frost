@@ -2,4 +2,4 @@
 # missing count, computes the same tally as at runtime.
 #= {result: {a: 3, b: 2, c: 1, ['é']: 1}}
 def words = ['a', 'b', 'a', 'c', 'b', 'a', 'é']
-reduce words init: {} with fn counts, w -> counts + {[w]: (counts[w] or 0) + 1}
+reduce(words, {}, fn counts, w -> counts + {[w]: (counts[w] or 0) + 1})

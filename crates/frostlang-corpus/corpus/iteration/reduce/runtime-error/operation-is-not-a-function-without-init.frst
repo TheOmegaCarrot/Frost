@@ -1,4 +1,0 @@
-# Without `init:`, the operation is the second argument, and must be a
-# Function.
-#= {raises: ['Function', 'argument 2', 'Int'], inputs: {xs: [1]}}
-reduce xs with 5

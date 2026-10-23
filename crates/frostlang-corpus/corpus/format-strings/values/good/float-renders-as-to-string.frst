@@ -5,4 +5,4 @@
 #=     result: [true, true, true, true, true, true, true],
 #=     inputs: {floats: [1.0, 2.5, -0.75, -0.0, 1.5e-7, 1e20, 1.7976931348623157e308]},
 #= }
-transform(floats, fn f -> $'${f}' == to_string(f))
+map(floats, fn f -> $'${f}' == to_string(f))

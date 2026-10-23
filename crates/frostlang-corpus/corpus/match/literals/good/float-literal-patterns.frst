@@ -7,4 +7,4 @@ defn name(x) -> match x {
     0.001_5 => 'small',
     _ => 'other',
 }
-transform(xs, name)
+map(xs, name)

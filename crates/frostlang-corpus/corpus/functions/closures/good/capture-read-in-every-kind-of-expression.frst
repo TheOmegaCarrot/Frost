@@ -11,7 +11,7 @@
     (fn n -> fn -> $'hi ${n}')('you')(),
     (fn m -> fn -> m.a)({a: 1})(),
     (fn g -> fn -> 2 @ g())(f)(),
-    (fn k -> fn -> map [1, 2] with fn v -> v * k)(3)(),
-    (fn lim -> fn -> filter [1, 2, 3] with fn v -> v > lim)(1)(),
-    (fn k -> fn -> reduce [1, 2] with fn a, b -> a + b + k)(10)(),
+    (fn k -> fn -> map([1, 2], fn v -> v * k))(3)(),
+    (fn lim -> fn -> filter([1, 2, 3], fn v -> v > lim))(1)(),
+    (fn k -> fn -> reduce([1, 2], fn a, b -> a + b + k))(10)(),
 ]

@@ -1,4 +1,0 @@
-# `init` is reserved, so it cannot be bound by an Array pattern element.
-#= {rejects: ['`init`', 'keyword']}
-def [init] = [1]
-1

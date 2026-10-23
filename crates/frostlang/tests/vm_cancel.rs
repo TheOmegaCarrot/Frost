@@ -270,12 +270,12 @@ print("after cancelling")
 
 #[test]
 fn cancellation_stops_frost_code_called_by_a_native() {
-    // `transform` calls back into Frost for each element; the callback cancels
+    // `map` calls back into Frost for each element; the callback cancels
     // and then spins, inside the native's call.
     let host = Host::new();
     let source = format!(
         r#"{SPIN}
-[1, 2] @ transform(fn x -> {{
+[1, 2] @ map(fn x -> {{
     print($'element ${{x}}')
     cancel()
     spin(0)

@@ -4,4 +4,4 @@
 #=     result: {[2]: 'i', [3.5]: 'f'},
 #=     inputs: {m: {[true]: 'b', [2]: 'i', [3.5]: 'f', s: 's', [x'ff']: 'y'}},
 #= }
-filter m with fn k, v -> is_numeric(k)
+filter(m, fn k, v -> is_numeric(k))

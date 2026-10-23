@@ -4,7 +4,7 @@
 #=     lints: [['unused binding', '`a`'], ['unused binding', '`b`']],
 #=     inputs: {xs: [[1, 2], [1, 2.0], [1, null]]},
 #= }
-transform(xs, fn v -> match v {
+map(xs, fn v -> match v {
     [a is Int, b is Int] => 'int pair',
     [_, _] => 'mixed',
 })

@@ -1,8 +1,0 @@
-# A function's parameter count is checked only when it is called, so `fold`
-# accepts a function of any arity when it makes no call: over an empty
-# structure, or over one element without an init.
-#= {
-#=     result: [null, 7, 0, 0],
-#=     inputs: {empty: [], one: [7], m: {}},
-#= }
-[fold(empty, fn -> 1), fold(one, fn a, b, c, d -> 1), fold(empty, 0, fn x -> 1), fold(m, 0, fn acc, x -> 1)]

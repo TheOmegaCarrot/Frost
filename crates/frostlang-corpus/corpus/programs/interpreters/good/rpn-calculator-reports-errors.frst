@@ -43,7 +43,7 @@ defn push_or_apply(stack, token) -> match token {
     },
 }
 
-defn calculate(tokens) -> match reduce tokens init: [] with push_or_apply {
+defn calculate(tokens) -> match reduce(tokens, [], push_or_apply) {
     [value] => value,
     stack => error({message: $'${len(stack)} values left'}),
 }
@@ -55,4 +55,4 @@ defn report(tokens) -> {
     else: 'failed'
 }
 
-transform(cases, report)
+map(cases, report)

@@ -5,7 +5,7 @@
 #=     raises: ['no value at key', 'price'],
 #=     inputs: {sales: [{item: 'apple', qty: 3, price: 2}, {item: 'pear', qty: 1}]},
 #= }
-transform(sales, fn sale -> {
+map(sales, fn sale -> {
     def {item, qty, price} = sale
     $'${item}: ${qty * price}'
 })

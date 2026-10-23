@@ -5,4 +5,4 @@ defn get(v) -> {
     def {n} | [n] | n is Int = v
     n
 }
-transform([{n: 1}, [2], 3, {n: 4}, [5], 6], get)
+map([{n: 1}, [2], 3, {n: 4}, [5], 6], get)

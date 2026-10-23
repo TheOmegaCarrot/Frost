@@ -1,4 +1,0 @@
-# `print` takes one argument, so it cannot be the operation over a Map, which
-# passes two: key and value.
-#= {raises: 'called with 2', inputs: {m: {a: 1}}}
-foreach m with print

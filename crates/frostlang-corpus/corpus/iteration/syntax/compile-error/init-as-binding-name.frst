@@ -1,3 +1,0 @@
-# `init` is a keyword for `reduce`'s seed clause, so it cannot be a name.
-#= {rejects: ['`init` is a keyword', 'cannot be a name']}
-def init = 0

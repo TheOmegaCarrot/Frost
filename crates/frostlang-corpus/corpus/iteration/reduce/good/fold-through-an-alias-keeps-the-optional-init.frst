@@ -1,6 +1,0 @@
-# `fold` bound to another name still takes its init as an optional middle
-# argument: two arguments mean no init, three mean an init.
-#= {result: [6, 16, null, 10], inputs: {xs: [1, 2, 3], empty: []}}
-def combine = fold
-def add = fn acc, x -> acc + x
-[combine(xs, add), combine(xs, 10, add), combine(empty, add), combine(empty, 10, add)]

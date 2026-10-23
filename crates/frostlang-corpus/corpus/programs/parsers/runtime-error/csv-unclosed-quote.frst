@@ -14,5 +14,5 @@ defn step(state, c) -> match state.mode {
     'quoted' => if c == '"': state + {mode: 'plain'} else: state + {field: state.field + c},
 }
 
-def last = reduce chars init: start with step
+def last = reduce(chars, start, step)
 if last.mode == 'quoted': error('unclosed quote') else: push(last).fields

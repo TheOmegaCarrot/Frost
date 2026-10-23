@@ -1,4 +1,4 @@
 # Over a Map, too, the predicate's answer is judged by truthiness: a 0 value
 # returned as the answer keeps its entry, a Null drops it.
 #= {result: {five: 5, zero: 0}, inputs: {m: {zero: 0, nil: null, five: 5, no: false}}}
-filter m with fn k, v -> v
+filter(m, fn k, v -> v)

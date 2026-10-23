@@ -60,7 +60,7 @@ fn v4_makes_canonical_version_4_text() {
 
 #[test]
 fn v4_makes_a_new_uuid_every_time() {
-    assert_true(&["len(unique(map range(1000) with fn i -> uuid.v4())) == 1000"]);
+    assert_true(&["len(unique(map(range(1000), fn i -> uuid.v4()))) == 1000"]);
 }
 
 #[test]
@@ -94,7 +94,7 @@ fn v7_uuids_strictly_increase() {
     // A thousand in a tight loop share milliseconds, so this checks the order
     // within a millisecond too.
     assert_true(&[r"
-        def ids = map range(1000) with fn i -> uuid.v7()
+        def ids = map(range(1000), fn i -> uuid.v7())
         all(range(1, 1000), fn i -> ids[i - 1] < ids[i])
     "]);
 }
@@ -155,7 +155,7 @@ fn to_string_writes_canonical_text() {
 fn to_bytes_and_to_string_round_trip() {
     assert_true(&[
         r"
-        def ids = (map range(100) with fn i -> uuid.v4()) + (map range(100) with fn i -> uuid.v7())
+        def ids = map(range(100), fn i -> uuid.v4()) + map(range(100), fn i -> uuid.v7())
         all(ids, fn id -> uuid.to_string(uuid.to_bytes(id)) == id)
         ",
         r"

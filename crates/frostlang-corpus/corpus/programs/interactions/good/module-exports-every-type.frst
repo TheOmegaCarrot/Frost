@@ -19,7 +19,7 @@
 defn from_to(low, high) -> if low > high: [] else: [low] + from_to(low + 1, high)
 defn sieve(xs) -> match xs {
     [] => [],
-    [p, ...rest] => [p] + sieve(select(rest, fn n -> n % p != 0)),
+    [p, ...rest] => [p] + sieve(filter(rest, fn n -> n % p != 0)),
 }
 
 export def version = $'${major}.${minor}'

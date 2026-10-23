@@ -1,7 +1,0 @@
-# Null elements are passed to the operation, not skipped.
-#= {
-#=     result: [null, 1, null],
-#=     printed: ['Null', 'Int', 'Null'],
-#=     inputs: {xs: [null, 1, null]},
-#= }
-foreach xs with fn x -> print(type(x))

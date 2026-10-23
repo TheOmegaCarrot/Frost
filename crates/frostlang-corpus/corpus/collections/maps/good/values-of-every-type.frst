@@ -23,4 +23,4 @@ def m = {
     m: {},
     g: fn -> 1,
 }
-transform(m, fn k, v -> {[k]: type(v)})
+map(m, fn k, v -> {[k]: type(v)})

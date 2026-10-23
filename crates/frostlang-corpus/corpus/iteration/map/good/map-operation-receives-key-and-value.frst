@@ -1,7 +1,0 @@
-# Over a Map, `map` calls the operation with each entry's key and value, and
-# merges the Maps it returns.
-#= {
-#=     result: {a: ['a', 1], b: ['b', 2]},
-#=     inputs: {m: {a: 1, b: 2}},
-#= }
-map m with fn k, v -> {[k]: [k, v]}

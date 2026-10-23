@@ -4,7 +4,7 @@
 #=     result: ['falsy', 'falsy', 'truthy', 'truthy', 'truthy'],
 #=     inputs: {values: [null, false, 0, '', []]},
 #= }
-transform(values, fn v -> match v {
+map(values, fn v -> match v {
     w if: w => 'truthy',
     _ => 'falsy',
 })

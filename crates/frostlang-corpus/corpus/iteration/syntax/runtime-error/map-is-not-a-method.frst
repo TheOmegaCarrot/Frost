@@ -1,0 +1,6 @@
+# Frost has no methods: `xs.map(f)` reads `map` as a field of the Array, not
+# as the global `map`, so it raises rather than calling `map(xs, f)`.
+#= {raises: ['Cannot index value', 'Array']}
+def xs = [1, 2]
+def f = fn x -> x
+xs.map(f)

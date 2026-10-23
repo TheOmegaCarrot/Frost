@@ -2,4 +2,4 @@
 # `$( ... )`.
 #= {rejects: 'placeholders work only inside'}
 def xs = [1]
-map xs with $ * 2
+map(xs, $ * 2)

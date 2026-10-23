@@ -1,0 +1,13 @@
+# Functions built by globals written in Frost serve as `map`'s
+# function. Over a Map, `rev_args` swaps the key and value it receives, so
+# the function it wraps inverts the Map.
+#= {
+#=     result: [[[1], [2]], [3, 7], [20, 30], {[1]: 'a', [2]: 'b'}],
+#=     inputs: {xs: [1, 2], pairs: [[1, 2], [3, 4]], m: {a: 1, b: 2}},
+#= }
+[
+    map(xs, collect),
+    map(pairs, spread(plus)),
+    map(xs, compose(fn x -> x + 1, fn x -> x * 10)),
+    map(m, rev_args(fn v, k -> {[v]: k})),
+]

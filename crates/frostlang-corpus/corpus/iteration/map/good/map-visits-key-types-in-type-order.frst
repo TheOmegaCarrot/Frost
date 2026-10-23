@@ -18,7 +18,7 @@
 #=         },
 #=     },
 #= }
-map m with fn k, v -> {
+map(m, fn k, v -> {
     print(if is_bytes(k): 'Bytes' else: to_string(k))
     {}
-}
+})

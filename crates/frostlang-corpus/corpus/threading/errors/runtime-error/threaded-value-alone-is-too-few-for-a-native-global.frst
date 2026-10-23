@@ -1,4 +1,4 @@
-# `fold` takes a structure, an optional initial value, and a function; the
+# `reduce` takes a structure, an optional initial value, and a function; the
 # threaded structure alone is too few.
 #= {raises: ['expects between 2 and 3', 'called with 1'], inputs: {xs: [1]}}
-xs @ fold()
+xs @ reduce()

@@ -1,0 +1,6 @@
+# `each` over a Map returns its input as it was, though its callback derives a
+# new entry from each one; merging into that result leaves the input unchanged.
+#= {result: [{a: [1], b: 2}, {a: [1]}], inputs: {n: 1}}
+def m = {a: [n]}
+def same = each(m, fn k, v -> {[k]: v + [0]})
+[same + {b: 2}, m]

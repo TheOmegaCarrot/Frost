@@ -3,5 +3,5 @@
 # build is not the parameter's last read, so it must not update the Array
 # the closure goes on to hold.
 #= {result: [[0, 2, 1], [[0], [0, 2]]], inputs: {start: [0]}}
-defn walk(n, acc, thunks) -> if n == 0: [acc, transform(thunks, fn t -> t())] else: walk(n - 1, acc + [n], thunks + [fn -> acc])
+defn walk(n, acc, thunks) -> if n == 0: [acc, map(thunks, fn t -> t())] else: walk(n - 1, acc + [n], thunks + [fn -> acc])
 walk(2, start, [])

@@ -1,6 +1,6 @@
 # An abbreviated lambda's body may be a match on its placeholder.
 #= {result: [1, 2, 3], inputs: {xs: [1, [2], {v: 3}]}}
-transform(xs, $(match $ {
+map(xs, $(match $ {
     [x] | {v: x} => x,
     x => x,
 }))

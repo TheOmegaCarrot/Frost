@@ -1,0 +1,3 @@
+# `map` called with no arguments is an arity error.
+#= {raises: ['map', 'called with 0']}
+map()

@@ -13,4 +13,4 @@
 #=     ],
 #= }
 def values = [null, false, 0, 0.0, '', x'', [], {}]
-transform(values, fn a -> transform(values, fn b -> a == b))
+map(values, fn a -> map(values, fn b -> a == b))

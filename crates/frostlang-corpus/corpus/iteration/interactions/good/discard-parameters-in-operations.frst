@@ -2,7 +2,7 @@
 # still accepting both.
 #= {result: [{b: 2}, 3, ['a', 'b']], inputs: {m: {a: 1, b: 2}}}
 [
-    filter m with fn _, v -> v > 1,
-    reduce m init: 0 with fn acc, _, v -> acc + v,
-    reduce m init: [] with fn acc, k, _ -> acc + [k],
+    filter(m, fn _, v -> v > 1),
+    reduce(m, 0, fn acc, _, v -> acc + v),
+    reduce(m, [], fn acc, k, _ -> acc + [k]),
 ]

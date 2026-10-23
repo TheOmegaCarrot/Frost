@@ -36,20 +36,20 @@ defn assignments(names) -> match names {
     [] => [{}],
     [name, ...rest] => do {
         def tails = assignments(rest)
-        transform(tails, fn a -> a + {[name]: false}) + transform(tails, fn a -> a + {[name]: true})
+        map(tails, fn a -> a + {[name]: false}) + map(tails, fn a -> a + {[name]: true})
     },
 }
 
 defn solutions(f) -> {
-    def names = reduce variables(f) init: [] with fn acc, name, present -> acc + [name]
-    select(assignments(names), fn env -> holds(f, env))
+    def names = reduce(variables(f), [], fn acc, name, present -> acc + [name])
+    filter(assignments(names), fn env -> holds(f, env))
 }
 
-defn show(env) -> reduce env init: '' with fn text, name, value ->
-    (if text == '': '' else: text + ' ') + name + (if value: '1' else: '0')
+defn show(env) -> reduce(env, '', fn text, name, value ->
+    (if text == '': '' else: text + ' ') + name + (if value: '1' else: '0'))
 
 {
-    satisfying: transform(solutions(formula), show),
+    satisfying: map(solutions(formula), show),
     tautology: len(solutions(excluded_middle)) == 2,
     contradiction: solutions(clash),
 }

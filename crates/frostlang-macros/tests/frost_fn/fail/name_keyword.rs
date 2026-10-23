@@ -4,7 +4,7 @@
 use frostlang::frost_fn;
 
 #[frost_fn]
-fn map() {}
+fn def() {}
 
 #[frost_fn(name = "if")]
 fn condition() {}

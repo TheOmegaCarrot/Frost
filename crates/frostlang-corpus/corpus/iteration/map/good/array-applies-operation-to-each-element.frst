@@ -1,4 +1,4 @@
 # `map` over an Array applies the operation to each element, in order,
 # producing an Array of the same length.
 #= {result: [2, 4, 6]}
-map [1, 2, 3] with fn x -> x * 2
+map([1, 2, 3], fn x -> x * 2)

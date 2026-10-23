@@ -1,7 +1,0 @@
-# `fold` visits a Map's entries in key order, whatever order its literal wrote
-# them in: by type (Bool, Int, Float, String, Bytes), then by value.
-#= {
-#=     result: [true, 1, 1.5, 'a', x'00'],
-#=     inputs: {m: {[x'00']: 0, a: 0, [1.5]: 0, [1]: 0, [true]: 0}},
-#= }
-fold(m, [], fn acc, k, v -> acc + [k])

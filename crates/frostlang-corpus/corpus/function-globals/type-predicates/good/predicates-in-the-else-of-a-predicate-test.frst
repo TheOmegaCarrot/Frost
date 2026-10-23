@@ -4,4 +4,4 @@
 #=     result: ['int', [true, true, false], [false, false, true], [false, false, false]],
 #=     inputs: {samples: [1, 1.5, null, 'a']},
 #= }
-map samples with fn v -> if is_int(v): 'int' else: [is_float(v), is_numeric(v), is_null(v)]
+map(samples, fn v -> if is_int(v): 'int' else: [is_float(v), is_numeric(v), is_null(v)])

@@ -1,5 +1,5 @@
 # A report program written with an imperative `for` loop is rejected:
-# Frost has no loops, and the compiler points to the iteration forms.
+# Frost has no loops, and the compiler points to the iteration functions.
 #= {
 #=     rejects: 'no `for` loop',
 #=     inputs: {records: [{name: 'a', score: 3}, {name: 'b', score: 5}]},

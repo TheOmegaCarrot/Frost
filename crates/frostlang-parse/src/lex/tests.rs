@@ -30,18 +30,25 @@ fn keywords() {
     assert_eq!(lex_one("else"), Token::KwElse);
     assert_eq!(lex_one("export"), Token::KwExport);
     assert_eq!(lex_one("false"), Token::KwFalse);
-    assert_eq!(lex_one("filter"), Token::KwFilter);
     assert_eq!(lex_one("fn"), Token::KwFn);
-    assert_eq!(lex_one("foreach"), Token::KwForeach);
     assert_eq!(lex_one("if"), Token::KwIf);
-    assert_eq!(lex_one("init"), Token::KwInit);
     assert_eq!(lex_one("is"), Token::KwIs);
-    assert_eq!(lex_one("map"), Token::KwMap);
     assert_eq!(lex_one("match"), Token::KwMatch);
     assert_eq!(lex_one("null"), Token::KwNull);
-    assert_eq!(lex_one("reduce"), Token::KwReduce);
     assert_eq!(lex_one("true"), Token::KwTrue);
-    assert_eq!(lex_one("with"), Token::KwWith);
+}
+
+// The names of the iteration functions, and the words that once separated their
+// operands, are ordinary names.
+#[test]
+fn iteration_words_are_identifiers() {
+    for word in ["map", "filter", "reduce", "each", "foreach", "init", "with"] {
+        assert_eq!(
+            lex_one(word),
+            Token::Identifier(word),
+            "{word:?} should lex as an identifier"
+        );
+    }
 }
 
 #[test]
@@ -936,12 +943,12 @@ fn lex_prelude_curry() {
 
 #[test]
 fn lex_prelude_compose_fragment() {
-    // A chunk from compose that exercises format strings, if/else, map iteration
+    // A chunk from compose that exercises format strings, if/else, iteration
     let src = r#"defn require_fn(f) -> {
     assert(is_function(f), $'Compose requires functions, got ${type(f)}')
 }
 
-foreach [f, g] + rest with require_fn
+each([f, g] + rest, require_fn)
 
 if len(rest) == 0: compose2(f, g)
 else: call(compose, [ compose2(f, g) ] + rest )"#;
@@ -950,12 +957,11 @@ else: call(compose, [ compose2(f, g) ] + rest )"#;
 
     // Check key tokens are present without asserting exact sequence
     assert!(tokens.contains(&Token::KwDefn));
-    assert!(tokens.contains(&Token::KwForeach));
+    assert!(tokens.contains(&Token::Identifier("each")));
     assert!(tokens.contains(&Token::KwIf));
     assert!(tokens.contains(&Token::KwElse));
     assert!(tokens.contains(&Token::OpEq));
     assert!(tokens.contains(&Token::Colon));
-    assert!(tokens.contains(&Token::KwWith));
 
     // The format string should be captured as a single token
     assert!(tokens.iter().any(|t| matches!(
@@ -1032,16 +1038,19 @@ fn lex_match_with_patterns() {
 
 #[test]
 fn lex_map_filter_reduce() {
-    let src = "def result = reduce (filter (map [1, 2, 3] with fn x -> x * 2) with fn x -> x > 2) with plus";
+    let src = "def result = reduce(filter(map([1, 2, 3], fn x -> x * 2), fn x -> x > 2), plus)";
     let tokens = lex(src);
 
-    assert!(tokens.contains(&Token::KwMap));
-    assert!(tokens.contains(&Token::KwFilter));
-    assert!(tokens.contains(&Token::KwReduce));
-    assert!(tokens.contains(&Token::KwWith));
+    assert!(tokens.contains(&Token::Identifier("map")));
+    assert!(tokens.contains(&Token::Identifier("filter")));
+    assert!(tokens.contains(&Token::Identifier("reduce")));
     assert!(tokens.contains(&Token::KwFn));
     assert!(tokens.contains(&Token::SlimArrow));
-    assert_eq!(tokens.iter().filter(|t| **t == Token::KwWith).count(), 3);
+    assert_eq!(
+        tokens.iter().filter(|t| **t == Token::OpenParen).count(),
+        3,
+        "each call should open one parenthesis"
+    );
 }
 
 #[test]
@@ -1088,7 +1097,7 @@ fn lex_map_destructure() {
 
 #[test]
 fn lex_threading_pipeline_full() {
-    let src = "data @ transform(fn x -> x * 2) @ select(fn x -> x > 5) @ fold(plus)";
+    let src = "data @ map(fn x -> x * 2) @ filter(fn x -> x > 5) @ reduce(plus)";
     let tokens = lex(src);
 
     let thread_count = tokens.iter().filter(|t| **t == Token::OpThread).count();

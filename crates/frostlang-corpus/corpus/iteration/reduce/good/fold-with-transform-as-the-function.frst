@@ -1,8 +1,0 @@
-# A function form can itself be `fold`'s function: folding a list of
-# functions with `transform`, from the structure as init, applies each in
-# turn to every element.
-#= {
-#=     result: [20, 30],
-#=     inputs: {xs: [1, 2], steps: [fn x -> x + 1, fn x -> x * 10]},
-#= }
-fold(steps, xs, transform)

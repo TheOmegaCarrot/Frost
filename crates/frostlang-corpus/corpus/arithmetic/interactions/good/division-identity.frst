@@ -2,7 +2,7 @@
 # combination of signs. Truncating division and a dividend-signed remainder
 # are what make this hold.
 #= {result: [true, true, true, true, true], inputs: {pairs: [[7, 3], [-7, 3], [7, -3], [-7, -3], [2, 5]]}}
-transform(pairs, fn pair -> {
+map(pairs, fn pair -> {
     def [a, b] = pair
     a / b * b + a % b == a
 })

@@ -358,7 +358,7 @@ fn inv_negates_what_its_function_returns() {
         // Every argument is passed through.
         ("inv(fn a, b -> a == b)(1, 1)", "false"),
         ("inv(fn ...xs -> xs == [])()", "false"),
-        ("filter [1, 2, 3, 4] with inv(fn x -> x > 2)", "[1, 2]"),
+        ("filter([1, 2, 3, 4], inv(fn x -> x > 2))", "[1, 2]"),
     ]);
 }
 
@@ -453,10 +453,7 @@ fn spread_calls_its_function_with_an_arrays_elements() {
         ("spread(minus)([10, 3])", "7"),
         ("spread(collect)([])", "[]"),
         ("spread(collect)([[1], 2])", "[[1], 2]"),
-        (
-            "map [[1, 2], [3, 4]] with spread(fn a, b -> a * b)",
-            "[2, 12]",
-        ),
+        ("map([[1, 2], [3, 4]], spread(fn a, b -> a * b))", "[2, 12]"),
     ]);
 }
 
@@ -574,7 +571,7 @@ fn const_returns_a_function_that_always_returns_its_value() {
         ("const(7)(1, 2, 3)", "7"),
         ("const(null)(1)", "null"),
         ("const([1])('x')", "[1]"),
-        ("map [1, 2, 3] with const(0)", "[0, 0, 0]"),
+        ("map([1, 2, 3], const(0))", "[0, 0, 0]"),
     ]);
 }
 

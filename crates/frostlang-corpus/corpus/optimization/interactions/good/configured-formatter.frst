@@ -4,4 +4,4 @@
 def prefix = '>'
 def verbose = false
 defn render(item) -> if verbose: $'${prefix} ${item} (verbose)' else: $'${prefix} ${item}'
-map ['a', 'b', 'é'] with render
+map(['a', 'b', 'é'], render)

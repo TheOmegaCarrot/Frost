@@ -12,4 +12,4 @@
 #=         ],
 #=     },
 #= }
-transform(cases, fn m -> $'${m}' == to_string(m))
+map(cases, fn m -> $'${m}' == to_string(m))

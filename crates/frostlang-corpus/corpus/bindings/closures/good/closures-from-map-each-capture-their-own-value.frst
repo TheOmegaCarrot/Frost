@@ -1,5 +1,5 @@
-# Closures made on each call of a `map` operation each capture that call's
+# Closures made on each call of a `map` function each capture that call's
 # parameter, not a shared variable.
 #= {result: [10, 20, 30]}
-def makers = map [1, 2, 3] with fn i -> fn -> i * 10
-map makers with fn make -> make()
+def makers = map([1, 2, 3], fn i -> fn -> i * 10)
+map(makers, fn make -> make())

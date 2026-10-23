@@ -15,10 +15,10 @@
 #=         },
 #=     },
 #= }
-defn contains(xs, x) -> fold(xs, false, fn found, y -> found or y == x)
+defn contains(xs, x) -> reduce(xs, false, fn found, y -> found or y == x)
 
 defn visit(node, seen) ->
     if contains(seen, node): seen
-    else: fold(graph[node], seen + [node], fn acc, next -> visit(next, acc))
+    else: reduce(graph[node], seen + [node], fn acc, next -> visit(next, acc))
 
 [visit('a', []), visit('e', []), visit('f', [])]

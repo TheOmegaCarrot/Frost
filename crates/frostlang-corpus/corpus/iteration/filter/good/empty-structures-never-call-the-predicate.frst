@@ -2,4 +2,4 @@
 # calling the predicate.
 #= {result: [[], {}, [], {}], inputs: {xs: [], m: {}}}
 def boom = fn ...args -> error('called')
-[filter [] with boom, filter {} with boom, filter xs with boom, filter m with boom]
+[filter([], boom), filter({}, boom), filter(xs, boom), filter(m, boom)]

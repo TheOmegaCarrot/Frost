@@ -38,4 +38,4 @@ defn by_predicate(v) -> [
     is_structured(v),
     is_flat(v),
 ]
-map samples with fn v -> by_constraint(v) == by_predicate(v)
+map(samples, fn v -> by_constraint(v) == by_predicate(v))

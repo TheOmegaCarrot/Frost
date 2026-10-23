@@ -1,4 +1,0 @@
-# `transform` called directly checks its first argument like the `map` form,
-# naming itself in the error.
-#= {raises: ['transform', 'Structured', 'argument 1', 'String']}
-transform('abc', fn c -> c)

@@ -1,306 +1,300 @@
+//! The iteration functions (`map`, `filter`, `reduce`, `each`) are ordinary names, as
+//! are `foreach`, `init`, and `with`: the grammar gives none of them special meaning.
+
 use crate::helpers;
 
 use frostlang_parse::ast::*;
 use helpers::*;
 
-fn assert_map_iter(expr: &Spanned<Expr>) -> (&Spanned<Expr>, &Spanned<Expr>) {
+/// Every word these tests hold to be an ordinary name.
+const WORDS: [&str; 7] = ["map", "filter", "reduce", "each", "foreach", "init", "with"];
+
+fn is_name(expr: &Spanned<Expr>, name: &str) -> bool {
+    matches!(&expr.node, Expr::NameLookup(n) if n == name)
+}
+
+/// The callee and arguments of `expr`, a call.
+fn assert_call(expr: &Spanned<Expr>) -> (&Spanned<Expr>, &[Spanned<Expr>]) {
     match &expr.node {
-        Expr::MapIter {
-            structure,
-            operation,
-        } => (structure, operation),
-        other => panic!("expected MapIter, got {other:?}"),
+        Expr::Call { callee, args } => (callee, args),
+        other => panic!("expected Call, got {other:?}"),
     }
 }
 
-fn assert_filter(expr: &Spanned<Expr>) -> (&Spanned<Expr>, &Spanned<Expr>) {
-    match &expr.node {
-        Expr::Filter {
-            structure,
-            operation,
-        } => (structure, operation),
-        other => panic!("expected Filter, got {other:?}"),
+/// The single statement of `src`, a `def`, as its pattern and value.
+fn parse_def(src: &str) -> (Pattern, Spanned<Expr>) {
+    let program = parse(src);
+    assert_eq!(
+        program.statements.len(),
+        1,
+        "{src:?} should be one statement"
+    );
+    match program.statements.into_iter().next().unwrap().node {
+        Statement::Def { pattern, expr, .. } => (pattern.node, expr),
+        other => panic!("expected Def from {src:?}, got {other:?}"),
     }
 }
 
-fn assert_foreach(expr: &Spanned<Expr>) -> (&Spanned<Expr>, &Spanned<Expr>) {
-    match &expr.node {
-        Expr::Foreach {
-            structure,
-            operation,
-        } => (structure, operation),
-        other => panic!("expected Foreach, got {other:?}"),
-    }
-}
-
-fn assert_reduce(expr: &Spanned<Expr>) -> (&Spanned<Expr>, &Spanned<Expr>, Option<&Spanned<Expr>>) {
-    match &expr.node {
-        Expr::Reduce {
-            structure,
-            operation,
-            init,
-        } => (structure, operation, init.as_deref()),
-        other => panic!("expected Reduce, got {other:?}"),
-    }
-}
-
-fn is_lambda(expr: &Spanned<Expr>) -> bool {
-    matches!(&expr.node, Expr::Lambda { .. })
-}
-
-fn is_array(expr: &Spanned<Expr>) -> bool {
-    matches!(&expr.node, Expr::Array(_))
+fn is_binding(pattern: &Pattern, name: &str) -> bool {
+    matches!(
+        pattern,
+        Pattern::Binding { name: binding, .. } if binding.node == Binding::Named(name.to_owned())
+    )
 }
 
 // ============================================================
-// map
+// Calls
 // ============================================================
 
-mod map_iter {
+mod calls {
     use super::*;
 
     #[test]
-    fn with_lambda() {
-        let expr = parse_expr("map [1, 2, 3] with fn x -> x * 2");
-        let (structure, operation) = assert_map_iter(&expr);
-        assert!(is_array(structure));
-        assert!(is_lambda(operation));
-    }
-
-    #[test]
-    fn with_name() {
-        let expr = parse_expr("map [1, 2] with double");
-        let (structure, operation) = assert_map_iter(&expr);
-        assert!(is_array(structure));
-        assert!(matches!(&operation.node, Expr::NameLookup(n) if n == "double"));
-    }
-
-    #[test]
-    fn structure_is_expression() {
-        let expr = parse_expr("map a + b with fn x -> x");
-        let (structure, _) = assert_map_iter(&expr);
-        assert!(is_binop(structure).is_some());
-    }
-
-    #[test]
-    fn structure_is_variable() {
-        let expr = parse_expr("map arr with fn x -> x");
-        let (structure, _) = assert_map_iter(&expr);
-        assert!(matches!(&structure.node, Expr::NameLookup(n) if n == "arr"));
-    }
-
-    #[test]
-    fn nested() {
-        let expr = parse_expr("map map [1, 2] with fn x -> x with fn y -> y");
-        let (structure, _) = assert_map_iter(&expr);
-        assert_map_iter(structure);
-    }
-
-    #[test]
-    fn in_def() {
-        let program = parse("def result = map [1, 2] with fn x -> x * 2");
-        assert_eq!(program.statements.len(), 1);
-        match &program.statements[0].node {
-            Statement::Def { expr, .. } => {
-                assert_map_iter(expr);
-            }
-            other => panic!("expected Def, got {other:?}"),
+    fn two_argument_calls() {
+        for word in ["map", "filter", "reduce", "each"] {
+            let src = format!("{word}([1, 2, 3], fn x -> x)");
+            let expr = parse_expr(&src);
+            let (callee, args) = assert_call(&expr);
+            assert!(is_name(callee, word), "{src:?} should call `{word}`");
+            assert_eq!(args.len(), 2, "{src:?} should pass two arguments");
+            assert!(
+                matches!(args[0].node, Expr::Array(_)),
+                "{src:?} should pass the Array first"
+            );
+            assert!(
+                matches!(args[1].node, Expr::Lambda { .. }),
+                "{src:?} should pass the lambda last"
+            );
         }
     }
-}
-
-// ============================================================
-// filter
-// ============================================================
-
-mod filter {
-    use super::*;
 
     #[test]
-    fn with_lambda() {
-        let expr = parse_expr("filter [1, 2, 3] with fn x -> x > 1");
-        let (structure, operation) = assert_filter(&expr);
-        assert!(is_array(structure));
-        assert!(is_lambda(operation));
+    fn seeded_reduce_is_a_three_argument_call() {
+        let expr = parse_expr("reduce(xs, 0, fn acc, x -> acc + x)");
+        let (callee, args) = assert_call(&expr);
+        assert!(is_name(callee, "reduce"));
+        assert_eq!(args.len(), 3);
+        assert!(is_name(&args[0], "xs"));
+        assert!(is_int(&args[1], 0));
+        assert!(matches!(args[2].node, Expr::Lambda { .. }));
     }
 
     #[test]
-    fn with_name() {
-        let expr = parse_expr("filter arr with is_positive");
-        let (_, operation) = assert_filter(&expr);
-        assert!(matches!(&operation.node, Expr::NameLookup(n) if n == "is_positive"));
+    fn threaded_calls() {
+        for word in ["map", "filter", "reduce", "each"] {
+            let src = format!("xs @ {word}(f)");
+            let expr = parse_expr(&src);
+            let (callee, args) = assert_call(&expr);
+            assert!(is_name(callee, word), "{src:?} should call `{word}`");
+            assert_eq!(args.len(), 2, "{src:?} should pass two arguments");
+            assert!(is_name(&args[0], "xs"), "{src:?} should thread `xs` first");
+            assert!(is_name(&args[1], "f"), "{src:?} should pass `f` second");
+        }
+    }
+
+    // A call ends at its `)`, so a following `@` threads the whole result onward.
+    #[test]
+    fn a_thread_after_the_call_takes_its_result() {
+        let expr = parse_expr("map(xs, fn x -> x) @ len()");
+        let (callee, args) = assert_call(&expr);
+        assert!(is_name(callee, "len"), "the outer call should be `len`");
+        assert_eq!(args.len(), 1);
+        let (inner, inner_args) = assert_call(&args[0]);
+        assert!(
+            is_name(inner, "map"),
+            "`len` should take the result of `map`"
+        );
+        assert_eq!(inner_args.len(), 2);
     }
 
     #[test]
-    fn structure_is_expression() {
-        let expr = parse_expr("filter a + b with fn x -> x > 0");
-        let (structure, _) = assert_filter(&expr);
-        assert!(is_binop(structure).is_some());
-    }
-}
-
-// ============================================================
-// foreach
-// ============================================================
-
-mod foreach {
-    use super::*;
-
-    #[test]
-    fn with_lambda() {
-        let expr = parse_expr("foreach [1, 2, 3] with fn x -> print(x)");
-        let (structure, operation) = assert_foreach(&expr);
-        assert!(is_array(structure));
-        assert!(is_lambda(operation));
+    fn nested_calls() {
+        let expr = parse_expr("reduce(filter(map(xs, f), g), plus)");
+        let (callee, args) = assert_call(&expr);
+        assert!(is_name(callee, "reduce"));
+        let (callee, args) = assert_call(&args[0]);
+        assert!(is_name(callee, "filter"));
+        let (callee, _) = assert_call(&args[0]);
+        assert!(is_name(callee, "map"));
     }
 
     #[test]
-    fn with_name() {
-        let expr = parse_expr("foreach items with print");
-        let (_, operation) = assert_foreach(&expr);
-        assert!(matches!(&operation.node, Expr::NameLookup(n) if n == "print"));
-    }
-}
-
-// ============================================================
-// reduce
-// ============================================================
-
-mod reduce {
-    use super::*;
-
-    #[test]
-    fn without_init() {
-        let expr = parse_expr("reduce [1, 2, 3] with fn (acc, x) -> acc + x");
-        let (structure, operation, init) = assert_reduce(&expr);
-        assert!(is_array(structure));
-        assert!(is_lambda(operation));
-        assert!(init.is_none());
+    fn bare_names_are_lookups() {
+        for word in WORDS {
+            assert!(
+                is_name(&parse_expr(word), word),
+                "{word:?} alone should be a name lookup"
+            );
+        }
     }
 
     #[test]
-    fn with_init() {
-        let expr = parse_expr("reduce [1, 2, 3] init: 0 with fn (acc, x) -> acc + x");
-        let (structure, operation, init) = assert_reduce(&expr);
-        assert!(is_array(structure));
-        assert!(is_lambda(operation));
-        assert!(is_int(init.expect("init"), 0));
-    }
-
-    #[test]
-    fn init_is_expression() {
-        let expr = parse_expr("reduce arr init: 1 + 2 with fn (acc, x) -> acc + x");
-        let (_, _, init) = assert_reduce(&expr);
-        assert!(is_binop(init.expect("init")).is_some());
-    }
-
-    #[test]
-    fn with_name_operation() {
-        let expr = parse_expr("reduce [1, 2, 3] with add");
-        let (_, operation, _) = assert_reduce(&expr);
-        assert!(matches!(&operation.node, Expr::NameLookup(n) if n == "add"));
-    }
-
-    #[test]
-    fn structure_is_expression() {
-        let expr = parse_expr("reduce a + b with fn (acc, x) -> acc + x");
-        let (structure, _, _) = assert_reduce(&expr);
-        assert!(is_binop(structure).is_some());
+    fn passed_as_arguments() {
+        let expr = parse_expr("compose(map, filter, with, init)");
+        let (_, args) = assert_call(&expr);
+        let names: Vec<_> = args
+            .iter()
+            .map(|arg| match &arg.node {
+                Expr::NameLookup(n) => n.as_str(),
+                other => panic!("expected a name, got {other:?}"),
+            })
+            .collect();
+        assert_eq!(names, ["map", "filter", "with", "init"]);
     }
 }
 
 // ============================================================
-// Newlines
+// Names
 // ============================================================
 
-mod newlines {
+mod names {
     use super::*;
 
     #[test]
-    fn newline_before_with() {
-        let expr = parse_expr("map [1, 2]\nwith fn x -> x");
-        let (structure, operation) = assert_map_iter(&expr);
-        assert!(is_array(structure));
-        assert!(is_lambda(operation));
+    fn def_binds_each_word() {
+        for word in WORDS {
+            let src = format!("def {word} = 1");
+            let (pattern, expr) = parse_def(&src);
+            assert!(is_binding(&pattern, word), "{src:?} should bind `{word}`");
+            assert!(is_int(&expr, 1), "{src:?} should bind 1");
+        }
     }
 
     #[test]
-    fn newline_after_with() {
-        let expr = parse_expr("map [1, 2] with\nfn x -> x");
-        let (_, operation) = assert_map_iter(&expr);
-        assert!(is_lambda(operation));
+    fn defn_names_each_word() {
+        for word in WORDS {
+            let src = format!("defn {word}(xs, f) -> f(xs)");
+            let (pattern, expr) = parse_def(&src);
+            assert!(is_binding(&pattern, word), "{src:?} should bind `{word}`");
+            match &expr.node {
+                Expr::Lambda { self_name, .. } => assert_eq!(
+                    self_name.as_ref().map(|name| name.node.as_str()),
+                    Some(word),
+                    "{src:?} should name its lambda `{word}`"
+                ),
+                other => panic!("expected Lambda from {src:?}, got {other:?}"),
+            }
+        }
     }
 
     #[test]
-    fn reduce_newline_before_init() {
-        let expr = parse_expr("reduce arr\ninit: 0\nwith fn (acc, x) -> acc + x");
-        let (_, _, init) = assert_reduce(&expr);
-        assert!(is_int(init.expect("init"), 0));
+    fn lambda_parameters() {
+        let expr = parse_expr("fn init, with -> init + with");
+        match &expr.node {
+            Expr::Lambda { params, .. } => {
+                let names: Vec<_> = params.iter().map(|p| &p.node).collect();
+                assert_eq!(
+                    names,
+                    [
+                        &Binding::Named("init".to_owned()),
+                        &Binding::Named("with".to_owned())
+                    ]
+                );
+            }
+            other => panic!("expected Lambda, got {other:?}"),
+        }
     }
 
     #[test]
-    fn reduce_newline_after_init_colon() {
-        let expr = parse_expr("reduce arr init:\n0 with fn (acc, x) -> acc + x");
-        let (_, _, init) = assert_reduce(&expr);
-        assert!(is_int(init.expect("init"), 0));
-    }
-}
-
-// ============================================================
-// Errors
-// ============================================================
-
-mod errors {
-    use super::*;
-
-    #[test]
-    fn missing_with() {
-        assert_eq!(
-            parse_err_message("map [1, 2] fn x -> x"),
-            "expected `with`, but found `fn`"
-        );
+    fn rest_parameter() {
+        let expr = parse_expr("fn ...with -> with");
+        match &expr.node {
+            Expr::Lambda { variadic_param, .. } => assert_eq!(
+                variadic_param.as_ref().map(|p| &p.node),
+                Some(&Binding::Named("with".to_owned()))
+            ),
+            other => panic!("expected Lambda, got {other:?}"),
+        }
     }
 
     #[test]
-    fn missing_operation() {
-        assert_eq!(
-            parse_err_message("map [1, 2] with"),
-            "expected an expression, but found the end of input"
-        );
+    fn map_literal_shorthand_keys() {
+        let expr = parse_expr("{map, with}");
+        let Expr::Map(entries) = &expr.node else {
+            panic!("expected Map, got {:?}", expr.node);
+        };
+        assert_eq!(entries.len(), 2);
+        for (entry, word) in entries.iter().zip(["map", "with"]) {
+            assert!(
+                matches!(&entry.node.key.node, Expr::Literal(Literal::String(k)) if k == word),
+                "the key should be the String {word:?}"
+            );
+            assert!(
+                is_name(&entry.node.value, word),
+                "the value should look up `{word}`"
+            );
+        }
     }
 
     #[test]
-    fn reduce_missing_with() {
-        assert_eq!(
-            parse_err_message("reduce [1, 2] init: 0 fn (a, x) -> a + x"),
-            "expected `with`, but found `fn`"
-        );
+    fn map_literal_explicit_keys() {
+        let expr = parse_expr("{filter: 1, init: 2}");
+        let Expr::Map(entries) = &expr.node else {
+            panic!("expected Map, got {:?}", expr.node);
+        };
+        let keys: Vec<_> = entries
+            .iter()
+            .map(|entry| match &entry.node.key.node {
+                Expr::Literal(Literal::String(k)) => k.as_str(),
+                other => panic!("expected a String key, got {other:?}"),
+            })
+            .collect();
+        assert_eq!(keys, ["filter", "init"]);
     }
 
-    // The seed clause comes before `with`, not after it.
     #[test]
-    fn reduce_init_after_with() {
-        assert_eq!(
-            parse_err_message("reduce xs with f init: 0"),
-            "expected a line break or `;`, but found `init`"
-        );
+    fn map_pattern_shorthand_keys() {
+        let (pattern, _) = parse_def("def {init, with} = m");
+        let Pattern::Map { entries, .. } = pattern else {
+            panic!("expected a Map pattern, got {pattern:?}");
+        };
+        assert_eq!(entries.len(), 2);
+        for (entry, word) in entries.iter().zip(["init", "with"]) {
+            assert!(
+                matches!(&entry.node.key.node, Expr::Literal(Literal::String(k)) if k == word),
+                "the key should be the String {word:?}"
+            );
+            assert!(
+                is_binding(&entry.node.pattern.node, word),
+                "the entry should bind `{word}`"
+            );
+        }
     }
 
-    // `init:` is a reduce-only clause; map has no seed.
     #[test]
-    fn map_rejects_init() {
-        assert_eq!(
-            parse_err_message("map xs init: 0 with f"),
-            "expected `with`, but found `init`"
-        );
+    fn match_binding() {
+        let expr = parse_expr("match x { with => with }");
+        let Expr::Match { arms, .. } = &expr.node else {
+            panic!("expected Match, got {:?}", expr.node);
+        };
+        assert!(is_binding(&arms[0].node.pattern.node, "with"));
+        assert!(is_name(&arms[0].node.result, "with"));
     }
 
-    // The seed clause is `init:`; the colon is required.
     #[test]
-    fn reduce_init_requires_colon() {
-        assert_eq!(
-            parse_err_message("reduce xs init 0 with f"),
-            "expected `:`, but found `0`"
-        );
+    fn after_a_dot() {
+        for word in WORDS {
+            let src = format!("data.{word}");
+            let expr = parse_expr(&src);
+            match &expr.node {
+                Expr::HardIndex { target, key } => {
+                    assert!(is_name(target, "data"), "{src:?} should index `data`");
+                    assert_eq!(key.node, word, "{src:?} should index the key {word:?}");
+                }
+                other => panic!("expected HardIndex from {src:?}, got {other:?}"),
+            }
+        }
+    }
+
+    // A module's entry named for an iteration function is called like any other.
+    #[test]
+    fn method_style_call() {
+        let expr = parse_expr("db.reduce(0, f)");
+        let (callee, args) = assert_call(&expr);
+        assert!(matches!(
+            &callee.node,
+            Expr::HardIndex { key, .. } if key.node == "reduce"
+        ));
+        assert_eq!(args.len(), 2);
     }
 }

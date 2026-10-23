@@ -1,0 +1,11 @@
+# An `each` call that recurses into nested Arrays visits the leaves depth
+# first, left to right.
+#= {
+#=     result: null,
+#=     printed: ['a', 'b', 'c', 'd'],
+#= }
+defn walk(t) -> if is_array(t): do {
+    each(t, walk)
+    null
+} else: print(t)
+walk(['a', [['b'], 'c'], [], 'd'])

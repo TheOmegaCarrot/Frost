@@ -1,5 +1,0 @@
-# `filter` cannot be the target of `@`: it is a keyword. The help names its
-# function form, `select`, which can.
-#= {rejects: '`select(xs, f)`'}
-def f = fn x -> true
-[1, 2] @ filter(f)

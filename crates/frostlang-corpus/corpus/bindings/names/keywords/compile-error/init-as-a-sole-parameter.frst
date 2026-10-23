@@ -1,5 +1,0 @@
-# `init` is reserved, so it cannot be a lambda's single unparenthesized
-# parameter.
-#= {rejects: ['`init`', 'keyword']}
-def f = fn init -> 1
-1

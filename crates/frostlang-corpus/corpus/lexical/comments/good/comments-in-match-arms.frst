@@ -13,4 +13,4 @@ defn classify(v) -> match v {
     n is Int => 'high',
     _ => 'other', # the catch-all
 }
-xs @ transform(classify)
+xs @ map(classify)

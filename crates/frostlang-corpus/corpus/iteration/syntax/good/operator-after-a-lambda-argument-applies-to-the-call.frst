@@ -1,0 +1,5 @@
+# A lambda argument's body extends as far as it can, but not past the call's
+# closing parenthesis: `+ [0]` written inside it appends to each element,
+# while written after the call it joins the mapped Array.
+#= {result: [[[1, 0], [2, 0]], [[1], [2], 0]], inputs: {xs: [[1], [2]]}}
+[map(xs, fn x -> x + [0]), map(xs, fn x -> x) + [0]]

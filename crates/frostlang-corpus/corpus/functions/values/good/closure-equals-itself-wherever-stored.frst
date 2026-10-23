@@ -3,4 +3,4 @@
 #= {result: [true, true, true, true]}
 def f = fn -> 1
 def ident = fn v -> v
-[[f] == [f], {a: f} == {a: f}, ident(f) == f, transform([f], fn g -> g)[0] == f]
+[[f] == [f], {a: f} == {a: f}, ident(f) == f, map([f], fn g -> g)[0] == f]

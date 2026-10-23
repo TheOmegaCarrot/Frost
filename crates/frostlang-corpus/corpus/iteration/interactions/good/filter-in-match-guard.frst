@@ -1,0 +1,8 @@
+# A `filter` may appear in a `match` guard, evaluated against the arm's
+# binding.
+#= {result: ['has negatives', 'all non-negative'], inputs: {a: [1, -2], b: [0, 3]}}
+defn describe(xs) -> match xs {
+    ys if: len(filter(ys, fn y -> y < 0)) > 0 => 'has negatives',
+    _ => 'all non-negative',
+}
+[describe(a), describe(b)]

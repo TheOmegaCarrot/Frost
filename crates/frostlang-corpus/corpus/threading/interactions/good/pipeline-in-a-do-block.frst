@@ -5,6 +5,6 @@ do {
     def threshold = 2
     def factor = 10
     xs
-        @ select(fn x -> x > threshold)
-        @ transform(fn x -> x * factor)
+        @ filter(fn x -> x > threshold)
+        @ map(fn x -> x * factor)
 }

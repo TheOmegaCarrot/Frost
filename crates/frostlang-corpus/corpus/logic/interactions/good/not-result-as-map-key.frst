@@ -4,4 +4,4 @@
 #=     inputs: {values: [null, 0, '']},
 #= }
 def label = {[true]: 'missing', [false]: 'present'}
-transform(values, fn v -> label[not v])
+map(values, fn v -> label[not v])

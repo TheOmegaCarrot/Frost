@@ -1,4 +1,0 @@
-# When neither runtime argument has the right type, `transform` reports the
-# first one, the structure, naming itself.
-#= {raises: ['transform', 'argument 1', 'Int'], inputs: {n: 5, op: 'f'}}
-transform(n, op)

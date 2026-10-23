@@ -1,0 +1,5 @@
+# An `each` over a literal Array runs its effects at runtime like one over a
+# runtime value: an effectful operation is never computed ahead of time.
+#= {result: null, printed: ['a', 'b']}
+each(['a', 'b'], fn x -> print(x))
+null

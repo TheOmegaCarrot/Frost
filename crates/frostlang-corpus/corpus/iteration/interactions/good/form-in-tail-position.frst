@@ -1,6 +1,0 @@
-# A form as a function's result, where it is a tail call, returns its value
-# to the caller like any other call.
-#= {result: [[2, 3], [[2, 3]]], inputs: {xs: [1, 2]}}
-defn bump(ys) -> map ys with fn y -> y + 1
-defn wrapped(ys) -> [map ys with fn y -> y + 1]
-[bump(xs), wrapped(xs)]

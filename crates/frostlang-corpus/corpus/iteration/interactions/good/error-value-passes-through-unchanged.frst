@@ -1,13 +1,13 @@
 # A structured error value raised inside an operation reaches the catcher
-# unchanged, through each form.
+# unchanged, through each iteration function.
 #= {
 #=     result: [{code: 1}, {code: 2}, {code: 3}, {code: 4}],
 #=     inputs: {xs: [1]},
 #= }
 def caught = fn thunk -> try_call(thunk).error
 [
-    caught(fn -> map xs with fn x -> error({code: 1})),
-    caught(fn -> filter xs with fn x -> error({code: 2})),
-    caught(fn -> reduce xs init: 0 with fn acc, x -> error({code: 3})),
-    caught(fn -> foreach xs with fn x -> error({code: 4})),
+    caught(fn -> map(xs, fn x -> error({code: 1}))),
+    caught(fn -> filter(xs, fn x -> error({code: 2}))),
+    caught(fn -> reduce(xs, 0, fn acc, x -> error({code: 3}))),
+    caught(fn -> each(xs, fn x -> error({code: 4}))),
 ]

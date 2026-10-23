@@ -38,8 +38,8 @@ defn step(state, c) -> match state.mode {
 }
 
 defn split(chars) -> {
-    def last = reduce chars init: start with step
+    def last = reduce(chars, start, step)
     if last.mode == 'quoted': error('unclosed quote') else: push(last).fields
 }
 
-transform(rows, split)
+map(rows, split)

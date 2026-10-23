@@ -1,4 +1,4 @@
 # Over a Map the operation receives the accumulator, key, and value, so a
 # two-parameter operation is an arity error.
 #= {raises: 'called with 3', inputs: {m: {a: 1}}}
-reduce m init: 0 with fn acc, v -> acc + v
+reduce(m, 0, fn acc, v -> acc + v)

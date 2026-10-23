@@ -1,0 +1,7 @@
+# `map`, `filter`, and `reduce` take lambdas that capture the enclosing
+# function's parameters.
+#= {result: [[3, 6, 9], [2, 3], 16], inputs: {k: 3, lim: 1, start: 10}}
+def scale = fn xs, by -> map(xs, fn v -> v * by)
+def above = fn xs, floor -> filter(xs, fn v -> v > floor)
+def total = fn xs, first -> reduce(xs, first, fn acc, v -> acc + v)
+[scale([1, 2, 3], k), above([1, 2, 3], lim), total([1, 2, 3], start)]

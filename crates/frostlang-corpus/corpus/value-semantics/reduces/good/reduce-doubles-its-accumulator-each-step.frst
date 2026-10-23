@@ -1,0 +1,9 @@
+# A reduce step that adds its accumulator to itself doubles it each step, and
+# leaves the seed as it was. Subtle because the accumulator is both operands of
+# one `+`, so neither may be extended in place before both are read.
+#= {result: [[1, 1, 1, 1, 1, 1, 1, 1], [1]], inputs: {one: 1, steps: [1, 2, 3]}}
+def seed = [one]
+[
+    reduce(steps, seed, fn acc, _ -> acc + acc),
+    seed,
+]

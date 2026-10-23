@@ -1,5 +1,0 @@
-# With two arguments, `fold` takes a structure and a function, never a
-# structure and an init. Subtle: `fold(xs, 0)` reads as an init missing its
-# function, but it is the function argument that is wrong.
-#= {raises: ['fold', 'Function', 'argument 2', 'Int'], inputs: {xs: [1, 2]}}
-fold(xs, 0)

@@ -1,4 +1,4 @@
 # An Array may hold values of every type side by side, Null included.
 #= {result: ['Null', 'Bool', 'Int', 'Float', 'String', 'Bytes', 'Array', 'Map', 'Function']}
 def xs = [null, true, 1, 2.5, 'text', x'00ff', [1], {a: 1}, fn x -> x]
-transform(xs, type)
+map(xs, type)

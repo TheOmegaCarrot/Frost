@@ -19,5 +19,5 @@ defn step(stack, instruction) -> match instruction {
 
 print('start')
 def program = [{push: 3}, 'print', {push: 4}, 'add', 'print', {push: 3}, 'add', 'print', {push: 3}]
-def final = reduce program init: [] with step
+def final = reduce(program, [], step)
 final

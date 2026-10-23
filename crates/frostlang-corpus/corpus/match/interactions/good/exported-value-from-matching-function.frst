@@ -5,5 +5,5 @@ defn describe(v) -> match v {
     [_] => 'one',
     _ => 'many',
 }
-export def sizes = transform(xs, describe)
+export def sizes = map(xs, describe)
 sizes

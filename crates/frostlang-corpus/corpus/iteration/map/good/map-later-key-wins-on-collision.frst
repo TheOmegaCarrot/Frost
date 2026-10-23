@@ -7,4 +7,4 @@
 #=     inputs: {m: {b: 'from b', a: 'from a'}},
 #= }
 def to_dup = fn k, v -> {dup: v}
-[map {b: 'from b', a: 'from a'} with to_dup, map m with to_dup]
+[map({b: 'from b', a: 'from a'}, to_dup), map(m, to_dup)]

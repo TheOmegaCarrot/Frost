@@ -1,9 +1,0 @@
-# Folding with `+` sums the elements. The accumulator's type carries through:
-# a Float start makes a Float sum, and an empty Array folds to the start.
-#= {result: [10, 10.0, 0, 6], inputs: {xs: [1, 2, 3, 4], empty: []}}
-[
-    fold(xs, 0, fn acc, x -> acc + x),
-    fold(xs, 0.0, fn acc, x -> acc + x),
-    reduce empty init: 0 with fn acc, x -> acc + x,
-    reduce [1, 2, 3] with fn acc, x -> acc + x,
-]

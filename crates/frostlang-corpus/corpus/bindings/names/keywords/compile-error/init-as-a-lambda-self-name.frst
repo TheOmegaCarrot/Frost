@@ -1,4 +1,0 @@
-# `init` is reserved, so it cannot be a named lambda's own name.
-#= {rejects: ['`init`', 'keyword']}
-def f = fn init() -> 1
-1

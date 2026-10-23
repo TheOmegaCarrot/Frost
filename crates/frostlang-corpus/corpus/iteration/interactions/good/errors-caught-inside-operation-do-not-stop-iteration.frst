@@ -1,5 +1,5 @@
 # An error caught inside the operation, by `try_call`, does not reach the
-# form, so iteration carries on past the failing element.
+# `map`, so iteration carries on past the failing element.
 #= {
 #=     result: [[1, null, 3], [1, null, 3]],
 #=     printed: ['1', '2', '3'],
@@ -9,9 +9,9 @@ def guarded = fn x -> {
     def outcome = try_call(fn -> if x == 2: error('skip') else: x)
     if outcome.ok: outcome.value else: null
 }
-def literal = map [1, 2, 3] with guarded
-def runtime = map xs with fn x -> {
+def literal = map([1, 2, 3], guarded)
+def runtime = map(xs, fn x -> {
     print(x)
     guarded(x)
-}
+})
 [literal, runtime]

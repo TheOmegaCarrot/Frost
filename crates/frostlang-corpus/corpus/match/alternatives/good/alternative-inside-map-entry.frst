@@ -1,6 +1,6 @@
 # Alternatives may appear as a Map entry's pattern.
 #= {result: ['a', 'a', 'b'], inputs: {xs: [{a: 1}, {a: 2}, {a: 3}]}}
-transform(xs, fn v -> match v {
+map(xs, fn v -> match v {
     {a: 1 | 2} => 'a',
     _ => 'b',
 })

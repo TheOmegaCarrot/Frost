@@ -5,4 +5,4 @@
 #=     inputs: {m: {a: 1, b: 2, c: 3}},
 #= }
 def big = fn k, v -> v > 1
-[filter {a: 1, b: 2, c: 3} with big, filter m with big]
+[filter({a: 1, b: 2, c: 3}, big), filter(m, big)]

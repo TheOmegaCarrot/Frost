@@ -1,3 +1,0 @@
-# `select` called directly checks its first argument, naming itself.
-#= {raises: ['select', 'Structured', 'argument 1', 'Int']}
-select(42, fn x -> true)

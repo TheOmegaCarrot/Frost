@@ -7,5 +7,5 @@
 #= }
 defn upto(n) -> if n == 0: [] else: upto(n - 1) + [n - 1]
 
-def first_row = transform(upto(width), fn j -> 1)
-fold(upto(rows - 1), first_row, fn prev, i -> transform(upto(width), fn j -> prev[j + 1] + 1))
+def first_row = map(upto(width), fn j -> 1)
+reduce(upto(rows - 1), first_row, fn prev, i -> map(upto(width), fn j -> prev[j + 1] + 1))

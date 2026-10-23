@@ -16,6 +16,6 @@ def zs = [one, two]
     (a + [0])[len(a)],
     (fs + [1])[0](fs),
     {[len(k + [9])]: k},
-    map ys + [0] with fn _ -> ys,
+    map(ys + [0], fn _ -> ys),
     $'${zs + [0]} ${zs}',
 ]

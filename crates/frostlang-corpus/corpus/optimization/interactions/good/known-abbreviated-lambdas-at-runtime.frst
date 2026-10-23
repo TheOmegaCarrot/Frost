@@ -4,4 +4,4 @@
 def double = $($ * 2)
 def add = $($1 + $2)
 def rest = $($$)
-[double(n), add(one, 2), map xs with double, [rest(one + 1, 3)]]
+[double(n), add(one, 2), map(xs, double), [rest(one + 1, 3)]]

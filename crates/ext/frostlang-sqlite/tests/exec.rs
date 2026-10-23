@@ -295,9 +295,9 @@ fn last_insert_rowid_counts_inserts_by_any_method() {
         def by_script = db.last_insert_rowid()
         db.query("INSERT INTO t VALUES (6, 'b') RETURNING id")
         def by_query = db.last_insert_rowid()
-        db.fold("INSERT INTO t VALUES (7, 'c') RETURNING id", null, fn acc, row -> acc)
-        def by_fold = db.last_insert_rowid()
-        [by_script, by_query, by_fold]
+        db.reduce("INSERT INTO t VALUES (7, 'c') RETURNING id", null, fn acc, row -> acc)
+        def by_reduce = db.last_insert_rowid()
+        [by_script, by_query, by_reduce]
         "#,
     );
     assert_values(&[(&source, "[5, 6, 7]")]);

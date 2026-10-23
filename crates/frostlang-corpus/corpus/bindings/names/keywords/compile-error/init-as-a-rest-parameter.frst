@@ -1,4 +1,0 @@
-# `init` is reserved, so it cannot name a rest parameter.
-#= {rejects: ['`init`', 'keyword']}
-def f = fn ...init -> 1
-1

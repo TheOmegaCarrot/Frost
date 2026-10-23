@@ -1,4 +1,4 @@
 # `reduce` passes the accumulator and the element, so a one-placeholder
 # abbreviated lambda raises once there are two elements to combine.
 #= {raises: 'expects 1 argument', inputs: {xs: [1, 2]}}
-reduce xs with $($ * 2)
+reduce(xs, $($ * 2))

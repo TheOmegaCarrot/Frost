@@ -1,0 +1,4 @@
+# An `each` over a Map literal runs its effects at runtime, in ascending key
+# order, whatever order the literal wrote them in.
+#= {result: {a: 1, b: 2}, printed: ['a', 'b']}
+each({b: 2, a: 1}, fn k, v -> print(k))

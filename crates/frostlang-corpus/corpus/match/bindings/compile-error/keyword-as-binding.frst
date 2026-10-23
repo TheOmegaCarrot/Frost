@@ -1,6 +1,6 @@
-# A keyword cannot be a pattern binding. Subtle: `init` reads like an ordinary
-# name but is reserved.
+# A keyword cannot be a pattern binding. Subtle: `export` reads like an
+# ordinary name but is reserved.
 #= {rejects: ['expected a pattern', 'is a keyword']}
 match 1 {
-    init => init,
+    export => export,
 }

@@ -217,32 +217,6 @@ impl Scanner {
                     self.usage(&name);
                 }
             }
-            Expr::Filter {
-                structure,
-                operation,
-            }
-            | Expr::MapIter {
-                structure,
-                operation,
-            }
-            | Expr::Foreach {
-                structure,
-                operation,
-            } => {
-                self.expr(structure);
-                self.expr(operation);
-            }
-            Expr::Reduce {
-                structure,
-                operation,
-                init,
-            } => {
-                self.expr(structure);
-                self.expr(operation);
-                if let Some(init) = init {
-                    self.expr(init);
-                }
-            }
             Expr::Match { target, arms } => {
                 self.expr(target);
                 for arm in arms {

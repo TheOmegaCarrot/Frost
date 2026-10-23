@@ -1,6 +1,0 @@
-# A fold step made by `curry` builds from the fold's accumulator, not from
-# the curried arguments, and the curried tag is unchanged.
-#= {result: [[['t', 1], ['t', 2]], ['t']], inputs: {xs: [1, 2]}}
-def tag = ['t']
-def step = curry(fn label, acc, x -> acc + [label + [x]], tag)
-[fold(xs, [], step), tag]

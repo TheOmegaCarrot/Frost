@@ -1,0 +1,4 @@
+# `with` is an ordinary name, not a keyword, so a `def` may bind it.
+#= {result: 1}
+def with = 1
+with

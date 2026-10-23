@@ -8,4 +8,4 @@ defn depth(v) -> match v {
     [inner, (depth(inner) + 1)] => depth(inner) + 1,
     _ => 'bad',
 }
-transform(xs, depth)
+map(xs, depth)

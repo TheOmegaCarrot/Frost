@@ -1,0 +1,8 @@
+# Without an initial value, `reduce` over an empty Array yields Null and over a single
+# element yields that element, never calling its function either way.
+#= {
+#=     result: [null, null, 'only', 'only', [1]],
+#=     inputs: {empty: [], one: ['only'], nested: [[1]]},
+#= }
+def boom = fn ...args -> error('called')
+[reduce([], boom), reduce(empty, boom), reduce(['only'], boom), reduce(one, boom), reduce(nested, boom)]

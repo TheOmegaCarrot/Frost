@@ -1,5 +1,0 @@
-# A Map key spelled like the keyword `init` is still reachable: a computed key
-# looks it up and binds its value to an ordinary name.
-#= {result: 1, inputs: {m: {['init']: 1}}}
-def {['init']: initial} = m
-initial

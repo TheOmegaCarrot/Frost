@@ -1,0 +1,4 @@
+# A named lambda may be called `init`, and its body can recurse by that name.
+#= {result: 6}
+def f = fn init(n) -> if n <= 1: 1 else: n * init(n - 1)
+f(3)

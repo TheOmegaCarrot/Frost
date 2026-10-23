@@ -86,9 +86,9 @@ fn each_call_to_a_native_function_counts() {
 
 #[test]
 fn each_call_a_native_makes_back_into_frost_counts() {
-    // One call to `transform`, then one for each of its three invocations of
+    // One call to `map`, then one for each of its three invocations of
     // the lambda.
-    assert_eq!(calls("transform([1, 2, 3], fn x -> x)"), 4);
+    assert_eq!(calls("map([1, 2, 3], fn x -> x)"), 4);
 }
 
 #[test]

@@ -1,4 +1,4 @@
 # A function recurses through a library function that calls it back.
 #= {result: 3}
-defn depth(t) -> if is_array(t): 1 + fold(transform(t, depth), 0, fn a, b -> if a > b: a else: b) else: 0
+defn depth(t) -> if is_array(t): 1 + reduce(map(t, depth), 0, fn a, b -> if a > b: a else: b) else: 0
 depth([[1], [[2]]])

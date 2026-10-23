@@ -114,17 +114,12 @@ fn tail_position_propagates_through_nesting() {
 }
 
 #[test]
-fn an_iteration_form_in_tail_position_is_a_tail_call() {
-    // Each form is a call to its global with the structure and operation (and
-    // any `init`) as arguments, which are not in tail position.
-    for form in ["map", "filter", "reduce", "foreach"] {
-        assert_calls(&format!("{form} f(1) with f(3, 3, 3)"), &[1, 3], &[2]);
+fn a_collection_function_call_in_tail_position_is_a_tail_call() {
+    // The arguments are not in tail position.
+    for function in ["map", "filter", "reduce", "each"] {
+        assert_calls(&format!("{function}(f(1), f(3, 3, 3))"), &[1, 3], &[2]);
     }
-    assert_calls(
-        "reduce f(1) init: f(4, 4, 4, 4) with f(3, 3, 3)",
-        &[1, 3, 4],
-        &[3],
-    );
+    assert_calls("reduce(f(1), f(4, 4, 4, 4), f(3, 3, 3))", &[1, 3, 4], &[3]);
 }
 
 #[test]
@@ -170,7 +165,7 @@ fn tail_position_propagates_through_a_lambda_body() {
             f(1)
             x and f(3, 3, 3)
         }
-        else: map x with f
+        else: map(x, f)
     ";
     let body = code(source).nested(0);
     assert_eq!(calls_by_arity(&body), (vec![1], vec![2, 3]), "{body:?}");
@@ -251,7 +246,7 @@ fn a_selection_statement_that_is_not_final_passes_inner_on() {
     ";
     assert_calls(block, &[1], &[]);
     let iteration = r"
-        map x with f
+        map(x, f)
         5
     ";
     assert_calls(iteration, &[2], &[]);
@@ -307,13 +302,9 @@ fn structure_literal_elements_are_not_in_tail_position() {
 }
 
 #[test]
-fn iteration_form_arguments_are_not_in_tail_position() {
-    // Only the form's own call is; each argument runs before it.
-    assert_calls(
-        "map (x and f(1)) with (if x: f(3, 3, 3) else: f)",
-        &[1, 3],
-        &[2],
-    );
+fn collection_function_arguments_are_not_in_tail_position() {
+    // Only the call itself is; each argument runs before it.
+    assert_calls("map(x and f(1), if x: f(3, 3, 3) else: f)", &[1, 3], &[2]);
 }
 
 // --- Interaction with optimization ---

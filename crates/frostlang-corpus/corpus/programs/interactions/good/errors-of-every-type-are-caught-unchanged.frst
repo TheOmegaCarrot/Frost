@@ -30,5 +30,5 @@ defn describe(outcome) -> if outcome.ok: $'ok: ${outcome.value}' else: match out
     {detail} => $'detail: ${detail}',
 }
 
-def jobs = transform(failures, job) + [fn -> 7]
-transform(jobs, fn j -> describe(try_call(j)))
+def jobs = map(failures, job) + [fn -> 7]
+map(jobs, fn j -> describe(try_call(j)))

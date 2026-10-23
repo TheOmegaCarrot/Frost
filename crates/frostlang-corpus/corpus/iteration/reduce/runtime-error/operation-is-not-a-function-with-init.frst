@@ -1,3 +1,4 @@
-# With `init:`, the operation is the third argument, and the error says so.
+# With an initial value, the operation is the third argument, and the error
+# says so.
 #= {raises: ['Function', 'argument 3', 'Int'], inputs: {xs: [1]}}
-reduce xs init: 0 with 5
+reduce(xs, 0, 5)

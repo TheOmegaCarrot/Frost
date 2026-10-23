@@ -24,11 +24,11 @@ defn by_age_then_name(a, b) ->
 defn sort_with(xs, compare) -> match xs {
     [] => [],
     [pivot, ...rest] => do {
-        def before = select(rest, fn x -> compare(x, pivot) < 0)
-        def same = select(rest, fn x -> compare(x, pivot) == 0)
-        def after = select(rest, fn x -> compare(x, pivot) > 0)
+        def before = filter(rest, fn x -> compare(x, pivot) < 0)
+        def same = filter(rest, fn x -> compare(x, pivot) == 0)
+        def after = filter(rest, fn x -> compare(x, pivot) > 0)
         sort_with(before, compare) + [pivot] + same + sort_with(after, compare)
     },
 }
 
-sort_with(people, by_age_then_name) @ transform(fn p -> $'${p.name} ${p.age}')
+sort_with(people, by_age_then_name) @ map(fn p -> $'${p.name} ${p.age}')

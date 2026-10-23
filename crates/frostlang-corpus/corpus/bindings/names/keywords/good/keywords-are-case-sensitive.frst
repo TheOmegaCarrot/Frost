@@ -5,8 +5,8 @@
 #=     lints: [['type name binding', '`Null`'], ['type name binding', '`Map`']],
 #= }
 def If = 1
-def INIT = 2
+def MATCH = 2
 def Null = 3
 def True = 4
 def Map = 5
-[If, INIT, Null, True, Map]
+[If, MATCH, Null, True, Map]

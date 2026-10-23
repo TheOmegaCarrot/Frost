@@ -12,4 +12,4 @@ defn classify(v) -> match v {
     n is Numeric => 'large',
     _ => 'not a number',
 }
-transform(values, classify)
+map(values, classify)

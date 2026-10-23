@@ -15,4 +15,4 @@ def handlers = {
     },
 }
 
-reduce program init: [] with fn stack, instruction -> handlers[instruction.op](stack, instruction['arg'])
+reduce(program, [], fn stack, instruction -> handlers[instruction.op](stack, instruction['arg']))

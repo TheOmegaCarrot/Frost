@@ -1,3 +1,0 @@
-# `select` called with no arguments is an arity error.
-#= {raises: ['select', 'called with 0']}
-select()

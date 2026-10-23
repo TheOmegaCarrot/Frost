@@ -4,4 +4,4 @@
 #=     result: ['T', 'T', 'T', 'T', 'T'],
 #=     inputs: {values: ['false', 'null', '0', ' ', 'nil']},
 #= }
-map values with fn v -> if v: 'T' else: 'F'
+map(values, fn v -> if v: 'T' else: 'F')

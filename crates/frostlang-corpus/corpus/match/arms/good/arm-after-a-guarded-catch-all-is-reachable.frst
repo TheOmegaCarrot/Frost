@@ -1,7 +1,7 @@
 # A catch-all with a guard does not match every value, so a later arm is still
 # reachable, not linted, and taken when the guard fails.
 #= {result: ['two', 'one', 'other'], inputs: {xs: [2, 1, 3]}}
-transform(xs, fn v -> match v {
+map(xs, fn v -> match v {
     _ if: v == 2 => 'two',
     1 => 'one',
     _ => 'other',

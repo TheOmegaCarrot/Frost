@@ -1,7 +1,0 @@
-# `transform` is a value like any other: bound to another name, or fetched
-# from an Array or a Map, it works as when called by its own name.
-#= {result: [[2, 3], [2, 3], [2, 3]], inputs: {xs: [1, 2]}}
-def apply_each = transform
-def ops = {apply: transform}
-def inc = fn x -> x + 1
-[apply_each(xs, inc), [transform][0](xs, inc), ops.apply(xs, inc)]

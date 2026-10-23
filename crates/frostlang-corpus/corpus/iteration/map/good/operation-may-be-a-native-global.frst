@@ -1,3 +1,0 @@
-# A native global is as good an operation as a Frost function.
-#= {result: [[0, 1, 2], ['1', 'a', 'null']]}
-[map [[], [1], [1, 2]] with len, map [1, 'a', null] with to_string]

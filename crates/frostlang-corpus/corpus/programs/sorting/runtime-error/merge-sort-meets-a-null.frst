@@ -18,4 +18,4 @@ defn sort(xs) -> match xs {
     [a, b, ...rest] => merge(merge([a], [b]), sort(rest)),
 }
 
-sort(transform(rows, fn row -> row['rank']))
+sort(map(rows, fn row -> row['rank']))

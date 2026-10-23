@@ -3,4 +3,4 @@
 # frame, so a capture must hold the value, not the parameter's slot.
 #= {result: [3, 2, 1], inputs: {n: 3}}
 defn build(k, acc) -> if k == 0: acc else: build(k - 1, acc + [fn -> k])
-transform(build(n, []), fn f -> f())
+map(build(n, []), fn f -> f())

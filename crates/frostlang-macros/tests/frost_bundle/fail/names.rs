@@ -7,7 +7,7 @@ struct Keyword;
 
 #[frost_bundle(prefix = "match")]
 impl Keyword {
-    fn map(&self) {}
+    fn def(&self) {}
 }
 
 struct Dotted;

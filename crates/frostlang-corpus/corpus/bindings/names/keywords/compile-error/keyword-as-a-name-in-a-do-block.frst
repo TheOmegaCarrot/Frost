@@ -1,6 +1,6 @@
 # A keyword cannot be bound inside a nested `do` block either.
-#= {rejects: ['`with`', 'keyword']}
+#= {rejects: ['`match`', 'keyword']}
 do {
-    def with = 1
-    with
+    def match = 1
+    1
 }

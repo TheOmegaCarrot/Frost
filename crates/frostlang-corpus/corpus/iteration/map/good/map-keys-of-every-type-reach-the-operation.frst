@@ -10,4 +10,4 @@
 #=     },
 #=     inputs: {m: {[true]: 1, [2]: 2, [3.5]: 3, s: 4, [x'ff']: 5}},
 #= }
-map m with fn k, v -> {[k]: type(k)}
+map(m, fn k, v -> {[k]: type(k)})

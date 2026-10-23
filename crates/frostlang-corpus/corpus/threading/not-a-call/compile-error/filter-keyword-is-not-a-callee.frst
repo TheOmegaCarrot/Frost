@@ -1,4 +1,0 @@
-# `filter` is a keyword expression, not a function, so it cannot be threaded
-# into; the help names its function form.
-#= {rejects: ['expected `with`', 'select'], inputs: {xs: [1]}}
-xs @ filter(fn x -> x)

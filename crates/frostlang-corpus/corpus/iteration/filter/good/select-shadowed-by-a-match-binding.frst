@@ -1,9 +1,0 @@
-# A match pattern binding the name `select` replaces the global within its
-# arm, so a call there is to the bound value; outside the arm the global is
-# back.
-#= {result: [[1, 2], [2]], inputs: {xs: [1, 2], picks: [fn s, f -> s]}}
-def keep_big = fn x -> x > 1
-def in_arm = match picks {
-    [select] => select(xs, keep_big),
-}
-[in_arm, select(xs, keep_big)]

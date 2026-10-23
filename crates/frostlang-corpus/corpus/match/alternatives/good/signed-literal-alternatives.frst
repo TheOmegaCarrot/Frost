@@ -1,6 +1,6 @@
 # Negative literals work as alternatives alongside positive ones.
 #= {result: ['unit', 'unit', 'other'], inputs: {xs: [-1, 1, 0]}}
-transform(xs, fn n -> match n {
+map(xs, fn n -> match n {
     -1 | 1 => 'unit',
     _ => 'other',
 })

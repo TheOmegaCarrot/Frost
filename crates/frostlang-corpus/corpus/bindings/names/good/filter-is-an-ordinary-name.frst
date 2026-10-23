@@ -1,0 +1,4 @@
+# `filter` is an ordinary name, not a keyword, so a `def` may bind it.
+#= {result: 1}
+def filter = 1
+filter

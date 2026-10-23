@@ -1,4 +1,4 @@
 # `map` over an Array passes one argument, so an abbreviated lambda that
 # reads `$2` raises rather than seeing Null or an index.
 #= {raises: 'expects 2 argument'}
-map [1, 2] with $($1 + $2)
+map([1, 2], $($1 + $2))

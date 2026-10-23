@@ -3,4 +3,4 @@
 #= {result: [65536, 65536]}
 defn doubled(xs, times) -> if times == 0: xs else: doubled(xs + xs, times - 1)
 def ones = doubled([1], 16)
-[len(ones), reduce ones with fn acc, x -> acc + x]
+[len(ones), reduce(ones, fn acc, x -> acc + x)]

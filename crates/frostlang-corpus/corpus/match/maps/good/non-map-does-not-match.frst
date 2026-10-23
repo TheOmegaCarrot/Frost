@@ -4,7 +4,7 @@
 #=     lints: [['unused binding', '`x`']],
 #=     inputs: {xs: [[1], [], 'a', null, 5]},
 #= }
-transform(xs, fn v -> match v {
+map(xs, fn v -> match v {
     {} => 'any Map',
     {[0]: x} => 'Int key',
     _ => 'other',

@@ -1,4 +1,4 @@
 # `map` over a Map literal with a constant operation, which the optimizer may
 # compute ahead of time, still merges the Maps the operation returns.
 #= {result: {a: 10, b: 20}}
-map {a: 1, b: 2} with fn k, v -> {[k]: v * 10}
+map({a: 1, b: 2}, fn k, v -> {[k]: v * 10})

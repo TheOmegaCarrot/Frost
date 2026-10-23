@@ -11,4 +11,4 @@
 #=         ],
 #=     },
 #= }
-transform(people, fn p -> p['nick'] or p['name'] or 'anonymous')
+map(people, fn p -> p['nick'] or p['name'] or 'anonymous')

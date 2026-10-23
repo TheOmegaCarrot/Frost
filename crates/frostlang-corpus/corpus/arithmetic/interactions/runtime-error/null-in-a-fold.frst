@@ -1,4 +1,0 @@
-# A Null element in a summing fold is a type error when reached; it is not
-# skipped or treated as zero.
-#= {raises: 'Int + Null', inputs: {xs: [1, null, 2]}}
-fold(xs, 0, fn acc, x -> acc + x)

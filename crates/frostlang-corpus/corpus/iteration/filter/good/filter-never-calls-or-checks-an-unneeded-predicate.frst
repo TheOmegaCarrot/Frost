@@ -1,0 +1,8 @@
+# Over an empty structure `filter` never calls its predicate, so neither the
+# predicate's error nor its unfit parameter count surfaces.
+#= {
+#=     result: [[], {}, [], {}],
+#=     inputs: {xs: [], m: {}},
+#= }
+def boom = fn ...args -> error('called')
+[filter(xs, boom), filter(m, boom), filter(xs, fn -> true), filter(m, fn x -> true)]

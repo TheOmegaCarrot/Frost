@@ -1,9 +1,0 @@
-# `select` keeps the Array elements, or the Map entries, its predicate accepts,
-# in order; over a Map it passes each key and value.
-#= {result: [[2, 4], {b: 2}, [], {}], inputs: {xs: [1, 2, 3, 4], m: {a: 1, b: 2}}}
-[
-    select(xs, fn x -> x % 2 == 0),
-    select(m, fn k, v -> v > 1),
-    select([], fn x -> true),
-    select({}, fn k, v -> true),
-]

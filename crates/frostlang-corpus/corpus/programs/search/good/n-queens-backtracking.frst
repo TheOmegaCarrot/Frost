@@ -16,7 +16,7 @@ defn absolute(x) -> if x < 0: -x else: x
 
 defn safe(placed, column) -> {
     def row = len(placed)
-    fold(upto(row), true, fn ok, r ->
+    reduce(upto(row), true, fn ok, r ->
         ok and placed[r] != column and absolute(placed[r] - column) != row - r
     )
 }
@@ -25,14 +25,14 @@ defn solutions(n) -> {
     def columns = upto(n)
     defn extend(placed) ->
         if len(placed) == n: [placed]
-        else: fold(columns, [], fn found, column ->
+        else: reduce(columns, [], fn found, column ->
             if safe(placed, column): found + extend(placed + [column]) else: found
         )
     extend([])
 }
 
 {
-    counts: transform(sizes, fn n -> len(solutions(n))),
+    counts: map(sizes, fn n -> len(solutions(n))),
     four: solutions(4),
     first_of_six: solutions(6)[0],
 }

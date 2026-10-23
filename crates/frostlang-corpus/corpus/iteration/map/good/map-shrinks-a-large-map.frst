@@ -13,4 +13,4 @@
 #=         },
 #=     },
 #= }
-map m with fn k, v -> if k > 18: {[k]: v} else: {}
+map(m, fn k, v -> if k > 18: {[k]: v} else: {})

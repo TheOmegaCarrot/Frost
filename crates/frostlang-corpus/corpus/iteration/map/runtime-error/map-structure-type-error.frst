@@ -1,0 +1,4 @@
+# `map` checks that its first argument is a structure, naming itself in the
+# error.
+#= {raises: ['map', 'Structured', 'argument 1', 'String']}
+map('abc', fn c -> c)

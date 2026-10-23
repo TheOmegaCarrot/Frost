@@ -1,3 +1,0 @@
-# A String is not a structure `foreach` iterates.
-#= {raises: ['Structured', 'argument 1', 'String'], inputs: {s: 'abc'}}
-foreach s with fn c -> c

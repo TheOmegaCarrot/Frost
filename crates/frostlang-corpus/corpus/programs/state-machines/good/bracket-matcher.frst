@@ -29,6 +29,6 @@ defn step(stack, c) ->
     }
     else: stack
 
-defn balanced(chars) -> (reduce chars init: [] with step) == []
+defn balanced(chars) -> reduce(chars, [], step) == []
 
-transform(cases, balanced)
+map(cases, balanced)

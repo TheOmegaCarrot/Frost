@@ -1,6 +1,6 @@
 # An entry's pattern may be a literal, which the key's value must equal.
 #= {result: ['admin', 'user ann', 'unknown'], inputs: {xs: [{role: 'admin', name: 'bo'}, {role: 'user', name: 'ann'}, {role: 'guest'}]}}
-transform(xs, fn v -> match v {
+map(xs, fn v -> match v {
     {role: 'admin'} => 'admin',
     {role: 'user', name} => 'user ' + name,
     _ => 'unknown',

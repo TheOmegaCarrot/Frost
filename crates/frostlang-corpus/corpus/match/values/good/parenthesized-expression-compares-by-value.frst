@@ -1,6 +1,6 @@
 # Any parenthesized expression is evaluated and compared with the target.
 #= {result: ['sum', 'concatenation', 'other'], inputs: {a: 2, s: 'ab', xs: [4, 'ab', 5]}}
-transform(xs, fn v -> match v {
+map(xs, fn v -> match v {
     (a + a) => 'sum',
     (s + '') => 'concatenation',
     _ => 'other',

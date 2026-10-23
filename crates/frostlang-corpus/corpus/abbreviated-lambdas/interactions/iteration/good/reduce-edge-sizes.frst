@@ -1,5 +1,6 @@
-# With an abbreviated lambda as the operation, reducing a single element
-# yields it, and reducing nothing yields the init, or Null without one.
+# With an abbreviated lambda as the function, reducing a single element
+# yields it, and reducing nothing yields the initial value, or Null without
+# one.
 #= {result: [5, 10, null], inputs: {one: [5], none: []}}
 def add = $($1 + $2)
-[reduce one with add, reduce none init: 10 with add, reduce none with add]
+[reduce(one, add), reduce(none, 10, add), reduce(none, add)]

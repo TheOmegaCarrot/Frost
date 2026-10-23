@@ -1,4 +1,0 @@
-# When both operands have the wrong type, the structure, the first argument,
-# is the one reported.
-#= {raises: ['argument 1', 'Int'], inputs: {n: 5, op: 6}}
-map n with op

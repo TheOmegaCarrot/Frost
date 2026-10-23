@@ -1,4 +1,4 @@
-# Without `init:`, the first element seeds the accumulator, and merging Maps
+# Without an initial value, the first element seeds the accumulator, and merging Maps
 # into it leaves that element unchanged in the structure. Subtle: the
 # accumulator starts as the element itself, shared with the structure, so
 # merging into it in place would change the structure's first Map.
@@ -6,5 +6,5 @@
 #=     result: [{a: 1, b: 2, c: 3}, [{a: 1}, {b: 2}, {c: 3}]],
 #=     inputs: {maps: [{a: 1}, {b: 2}, {c: 3}]},
 #= }
-def merged = reduce maps with fn acc, m -> acc + m
+def merged = reduce(maps, fn acc, m -> acc + m)
 [merged, maps]

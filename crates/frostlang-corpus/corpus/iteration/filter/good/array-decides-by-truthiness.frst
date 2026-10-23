@@ -6,4 +6,4 @@
 #=     inputs: {xs: [0, null, false, 1, '', [], {}]},
 #= }
 def identity = fn x -> x
-[filter [0, null, false, 1, '', [], {}] with identity, filter xs with identity]
+[filter([0, null, false, 1, '', [], {}], identity), filter(xs, identity)]

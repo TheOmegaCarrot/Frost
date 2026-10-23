@@ -1,5 +1,0 @@
-# Unlike the forms, the function forms are ordinary globals: a local of the
-# same name replaces one for direct calls.
-#= {result: 'mine', inputs: {xs: [1]}}
-def select = fn s, f -> 'mine'
-select(xs, fn x -> true)

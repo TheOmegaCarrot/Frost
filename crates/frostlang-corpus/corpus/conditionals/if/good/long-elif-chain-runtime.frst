@@ -10,4 +10,4 @@ defn name(n) -> if n == 0: 'zero'
     elif n == 3: 'three'
     elif n == 4: 'four'
     else: 'many'
-map ns with name
+map(ns, name)

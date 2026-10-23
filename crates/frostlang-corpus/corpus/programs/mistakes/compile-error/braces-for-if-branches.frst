@@ -6,4 +6,4 @@
 #=     inputs: {xs: [-1, 0, 1]},
 #= }
 defn sign(n) -> if n > 0 { 1 } elif n < 0 { -1 } else { 0 }
-transform(xs, sign)
+map(xs, sign)

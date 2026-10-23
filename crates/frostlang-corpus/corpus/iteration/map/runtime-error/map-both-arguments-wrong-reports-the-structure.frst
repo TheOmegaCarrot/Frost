@@ -1,0 +1,4 @@
+# When neither runtime argument has the right type, `map` reports the
+# first one, the structure, naming itself.
+#= {raises: ['map', 'argument 1', 'Int'], inputs: {n: 5, op: 'f'}}
+map(n, op)

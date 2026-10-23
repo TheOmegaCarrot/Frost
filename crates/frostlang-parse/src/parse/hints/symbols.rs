@@ -10,7 +10,7 @@ use crate::parse::hints::{
     DEFAULTS_HELP, EQUALITY_HELP, FORMAT_STRING_HELP, INEQUALITY_HELP, LAMBDA_HELP,
     LINE_CONTINUATION_HELP, MAP_ENTRY_HELP, MAP_REST_HELP, NAMED_ARGUMENTS_HELP, POWER_HELP,
     REST_HELP, SLICE_HELP, SPREAD_HELP, Site, define_function_help, destructure_help,
-    float_point_help, is_iterative_keyword, raw_string_help, rebind_help, walrus_help,
+    float_point_help, raw_string_help, rebind_help, walrus_help,
 };
 
 const PATH_HELP: &str = "Frost has no `::`; reach a module's entries with `.`, like `math.sqrt(x)`";
@@ -452,9 +452,7 @@ impl Site<'_, '_> {
             // `xs | f(x)`, a shell's pipe into a call
             _ if self.follows_an_operand(0)
                 && self.holds_expressions()
-                && self.token_at(1).is_some_and(|callee| {
-                    matches!(callee, Token::Identifier(_)) || is_iterative_keyword(callee)
-                })
+                && matches!(self.token_at(1), Some(Token::Identifier(_)))
                 && self.token_at(2) == Some(&Token::OpenParen) =>
             {
                 THREAD_HELP

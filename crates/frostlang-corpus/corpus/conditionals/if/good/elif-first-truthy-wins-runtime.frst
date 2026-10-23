@@ -19,4 +19,4 @@ defn pick(a, b, c) -> if a: 1
     elif b: 2
     elif c: 3
     else: 4
-map cases with fn case -> call(pick, case)
+map(cases, fn case -> call(pick, case))

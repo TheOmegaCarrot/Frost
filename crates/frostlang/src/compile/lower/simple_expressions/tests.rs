@@ -44,8 +44,8 @@ fn builder(options: &CompilerOptions) -> FunctionBuilder<'_> {
 fn a_pure_global_lookup_is_foldable() {
     let options = options();
     let fragment = builder(&options)
-        .compile_name_lookup("transform", SourceSpan::default())
-        .expect("`transform` is a global");
+        .compile_name_lookup("map", SourceSpan::default())
+        .expect("`map` is a global");
     assert!(fragment.foldable, "a pure global is fold-eligible");
 }
 
@@ -68,8 +68,8 @@ fn loading_an_impure_global_makes_the_function_effectful() {
     assert!(!builder.effectful, "a fresh function is not effectful");
 
     builder
-        .compile_name_lookup("transform", SourceSpan::default())
-        .expect("`transform` is a global");
+        .compile_name_lookup("map", SourceSpan::default())
+        .expect("`map` is a global");
     assert!(!builder.effectful, "a pure global adds no effect");
 
     builder
@@ -78,8 +78,8 @@ fn loading_an_impure_global_makes_the_function_effectful() {
     assert!(builder.effectful, "an impure global is an effect");
 
     builder
-        .compile_name_lookup("transform", SourceSpan::default())
-        .expect("`transform` is a global");
+        .compile_name_lookup("map", SourceSpan::default())
+        .expect("`map` is a global");
     assert!(builder.effectful, "once effectful, a function stays so");
 }
 

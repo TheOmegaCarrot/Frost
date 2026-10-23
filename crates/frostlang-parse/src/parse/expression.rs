@@ -334,12 +334,6 @@ impl<'src> ParseCtx<'src> {
             Token::KwFn => self.parse_lambda(),
             Token::DollarParen => self.parse_abbreviated_lambda(),
 
-            // -- Atoms: iterative expressions --
-            Token::KwMap => self.parse_map_iter(),
-            Token::KwFilter => self.parse_filter(),
-            Token::KwForeach => self.parse_foreach(),
-            Token::KwReduce => self.parse_reduce(),
-
             _ => self.parse_leaf(),
         }
     }

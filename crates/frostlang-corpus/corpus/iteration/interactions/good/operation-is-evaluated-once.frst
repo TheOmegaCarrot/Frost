@@ -5,10 +5,10 @@
 #=     printed: ['building', 'call', 'call', 'call'],
 #=     inputs: {xs: [1, 2, 3]},
 #= }
-map xs with do {
+map(xs, do {
     print('building')
     fn x -> {
         print('call')
         x
     }
-}
+})

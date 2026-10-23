@@ -14,17 +14,17 @@ defn find(node, letters) -> match letters {
     [] => node,
     [letter, ...rest] => if has(node, letter): find(node[letter], rest) else: null,
 }
-defn count_words(node) -> reduce node init: 0 with fn total, k, child ->
-    total + (if k == '$end': 1 else: count_words(child))
+defn count_words(node) -> reduce(node, 0, fn total, k, child ->
+    total + (if k == '$end': 1 else: count_words(child)))
 defn chars(word) -> split(word, '')
 
-def trie = reduce words init: {} with fn t, w -> insert(t, chars(w))
+def trie = reduce(words, {}, fn t, w -> insert(t, chars(w)))
 def single = insert({}, chars('to'))
 [
-    map ['t', 'te', 'in', 'x', ''] with fn prefix -> do {
+    map(['t', 'te', 'in', 'x', ''], fn prefix -> do {
         def node = find(trie, chars(prefix))
         if node == null: 0 else: count_words(node)
-    },
+    }),
     has(find(trie, chars('in')), '$end'),
     has(find(trie, chars('te')), '$end'),
     count_words(single),

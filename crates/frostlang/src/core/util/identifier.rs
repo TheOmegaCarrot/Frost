@@ -2,8 +2,8 @@
 /// A reserved word can never serve as an identifier, so a name matching one of
 /// these is rejected wherever Frost source must be able to refer to it.
 pub const KEYWORDS: &[&str] = &[
-    "and", "as", "def", "defn", "do", "elif", "else", "export", "false", "filter", "fn", "foreach",
-    "if", "init", "is", "map", "match", "not", "null", "or", "reduce", "true", "with",
+    "and", "as", "def", "defn", "do", "elif", "else", "export", "false", "fn", "if", "is", "match",
+    "not", "null", "or", "true",
 ];
 
 // These are `const fn`, so that the binding macros can check names at compile

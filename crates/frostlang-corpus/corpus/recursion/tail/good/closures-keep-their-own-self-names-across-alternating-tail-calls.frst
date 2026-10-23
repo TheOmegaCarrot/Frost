@@ -5,4 +5,4 @@
 defn ping(n, made, other) -> if n == 0: made else: other(n - 1, made + [fn -> ping], ping)
 defn pong(n, made, other) -> if n == 0: made else: other(n - 1, made + [fn -> pong], pong)
 def made = ping(4, [], pong)
-transform(made, fn m -> m() == ping)
+map(made, fn m -> m() == ping)

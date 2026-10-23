@@ -1,4 +1,4 @@
 # `@` threads a structure in as the first argument, and its result may be
 # indexed when parenthesized.
 #= {result: [3, 4, [2, 4, 6]], inputs: {xs: [1, 2, 3]}}
-[xs @ len(), (xs @ transform(fn x -> x * 2))[1], xs @ transform(fn x -> x * 2)]
+[xs @ len(), (xs @ map(fn x -> x * 2))[1], xs @ map(fn x -> x * 2)]

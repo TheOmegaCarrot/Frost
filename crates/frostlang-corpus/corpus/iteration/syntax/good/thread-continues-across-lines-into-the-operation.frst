@@ -1,7 +1,0 @@
-# A line starting with `@` continues the expression before it exactly as if
-# the lines were joined. After a `map`, that is the lambda's body, which
-# extends as far as it can, so the threaded call applies to each element,
-# not to the mapped Array.
-#= {result: ['1', '2'], inputs: {xs: [1, 2]}}
-map xs with fn x -> x
-@ to_string()

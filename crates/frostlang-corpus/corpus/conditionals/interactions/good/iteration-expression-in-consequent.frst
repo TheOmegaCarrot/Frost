@@ -1,9 +1,0 @@
-# A `map` or `filter` expression may be a consequent: its lambda's body ends
-# at the `else`, which still belongs to the `if`.
-#= {
-#=     result: [[2, 4], [], [2], [1, 2]],
-#=     inputs: {xs: [1, 2], t: true, f: false},
-#= }
-defn doubled(c) -> if c: map xs with fn x -> x * 2 else: []
-defn large(c) -> if c: filter xs with $($ > 1) else: xs
-[doubled(t), doubled(f), large(t), large(f)]

@@ -1,0 +1,4 @@
+# A Map entry's part may bind to the name `init`.
+#= {result: 1}
+def {a: init} = {a: 1}
+init

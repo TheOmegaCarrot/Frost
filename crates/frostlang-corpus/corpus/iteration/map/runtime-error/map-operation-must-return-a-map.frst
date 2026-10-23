@@ -1,4 +1,4 @@
 # Over a Map, the operation's result is merged into the result, so it must
 # itself be a Map; an Int is an error naming the type it got.
 #= {raises: ['must return a Map', 'Int'], inputs: {m: {a: 1}}}
-map m with fn k, v -> v
+map(m, fn k, v -> v)

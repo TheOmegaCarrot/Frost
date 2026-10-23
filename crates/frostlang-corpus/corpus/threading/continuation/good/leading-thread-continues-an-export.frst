@@ -2,7 +2,7 @@
 # the whole pipeline.
 #= {result: 3, exports: {total: 6, count: 3}, inputs: {xs: [1, 2, 3]}}
 export def total = xs
-    @ fold(0, plus)
+    @ reduce(0, plus)
 export def count = xs
     @ len()
 count

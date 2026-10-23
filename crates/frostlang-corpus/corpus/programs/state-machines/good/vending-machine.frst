@@ -35,4 +35,4 @@ defn handle(state, event) -> match event {
     'refund' => state + {credit: 0, returned: state.returned + state.credit},
 }
 
-reduce events init: {credit: 0, dispensed: [], returned: 0, messages: []} with handle
+reduce(events, {credit: 0, dispensed: [], returned: 0, messages: []}, handle)

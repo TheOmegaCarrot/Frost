@@ -17,5 +17,5 @@ defn drain(heap, out) -> if heap == null: out
     else: drain(merge(heap.left, heap.right), out + [heap.key])
 defn size(heap) -> if heap == null: 0 else: 1 + size(heap.left) + size(heap.right)
 
-def heap = reduce values init: null with push
+def heap = reduce(values, null, push)
 [drain(heap, []), drain(heap, []), size(heap)]

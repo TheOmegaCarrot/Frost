@@ -8,7 +8,7 @@ def by_match = fn x -> match x {
     2 => 'two',
     _ => 'other',
 }
-def by_map = fn xs -> map xs with fn v -> v * 2
+def by_map = fn xs -> map(xs, fn v -> v * 2)
 def by_format = fn x -> $'n=${x}'
 def by_index = fn xs -> xs[1]
 def by_or = fn x -> x or 'or'

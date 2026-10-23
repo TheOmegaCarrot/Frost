@@ -1,8 +1,0 @@
-# A Map destructuring that binds the name `fold` replaces the global for the
-# rest of the scope, even in a three-argument call that matches the global's
-# shape.
-#= {result: ['local', 3], inputs: {xs: [1, 2]}}
-def add = fn acc, x -> acc + x
-def global_result = fold(xs, 0, add)
-def {fold} = {fold: fn s, start, f -> 'local'}
-[fold(xs, 0, add), global_result]

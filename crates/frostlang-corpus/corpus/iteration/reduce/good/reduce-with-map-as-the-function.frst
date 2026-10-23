@@ -1,0 +1,8 @@
+# A global like `map` can itself be `reduce`'s function: reducing a list of
+# functions with `map`, from the structure as initial value, applies each in
+# turn to every element.
+#= {
+#=     result: [20, 30],
+#=     inputs: {xs: [1, 2], steps: [fn x -> x + 1, fn x -> x * 10]},
+#= }
+reduce(steps, xs, map)

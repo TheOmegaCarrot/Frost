@@ -11,4 +11,4 @@ defn transition(s, event) -> match [s.state, event] {
     ['unlocked', 'coin'] => s,
 }
 
-reduce events init: {state: 'locked', passed: 0} with transition
+reduce(events, {state: 'locked', passed: 0}, transition)

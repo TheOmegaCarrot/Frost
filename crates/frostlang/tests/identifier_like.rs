@@ -13,8 +13,9 @@ const _: () = {
     assert!(is_identifier_like("rng"));
     assert!(!is_identifier_like("a.b"));
     assert!(!is_identifier_like(""));
-    assert!(is_reserved_keyword("map"));
-    assert!(!is_reserved_keyword("mapping"));
+    assert!(is_reserved_keyword("match"));
+    assert!(!is_reserved_keyword("matches"));
+    assert!(!is_reserved_keyword("map"));
     assert!(is_identifier_like_and_not_keyword("compiled_regex"));
     assert!(!is_identifier_like_and_not_keyword("match"));
     let mut i = 0;

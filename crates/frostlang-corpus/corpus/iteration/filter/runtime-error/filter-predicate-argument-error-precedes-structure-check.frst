@@ -1,0 +1,5 @@
+# Both arguments are evaluated before `filter` checks either: an error raised
+# while evaluating the predicate argument surfaces, not the type error the
+# wrong structure would cause.
+#= {raises: 'from the predicate argument', inputs: {s: 'text'}}
+filter(s, error('from the predicate argument'))

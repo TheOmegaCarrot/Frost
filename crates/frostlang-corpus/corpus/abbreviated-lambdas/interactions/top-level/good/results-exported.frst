@@ -2,6 +2,6 @@
 # stays private.
 #= {result: 6, exports: {doubled: [2, 4], total: 6}}
 def double = $($ * 2)
-export def doubled = map [1, 2] with double
-export def total = reduce doubled init: 0 with $($1 + $2)
+export def doubled = map([1, 2], double)
+export def total = reduce(doubled, 0, $($1 + $2))
 total

@@ -111,9 +111,9 @@ fn a_factory_can_choose_a_database_by_its_argument() {
 const METHODS: [(Method, &str); 7] = [
     (Method::Close, "close"),
     (Method::Exec, "exec"),
-    (Method::Fold, "fold"),
     (Method::LastInsertRowid, "last_insert_rowid"),
     (Method::Query, "query"),
+    (Method::Reduce, "reduce"),
     (Method::Script, "script"),
     (Method::Transaction, "transaction"),
 ];

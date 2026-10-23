@@ -1,4 +1,4 @@
-# A `reduce` expression whose step function calls a recursive helper.
+# A `reduce` whose step function calls a recursive helper.
 #= {result: 33}
 defn fact(n) -> if n <= 1: 1 else: n * fact(n - 1)
-reduce [1, 2, 3, 4] init: 0 with fn acc, x -> acc + fact(x)
+reduce([1, 2, 3, 4], 0, fn acc, x -> acc + fact(x))

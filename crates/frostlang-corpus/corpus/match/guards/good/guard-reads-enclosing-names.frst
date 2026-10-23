@@ -1,6 +1,6 @@
 # A guard may read names from outside the match as well as the arm's bindings.
 #= {result: ['over', 'under'], inputs: {limit: 10, xs: [11, 10]}}
-transform(xs, fn v -> match v {
+map(xs, fn v -> match v {
     n if: n > limit => 'over',
     _ => 'under',
 })

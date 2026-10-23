@@ -1,12 +1,12 @@
 # A report meant to filter records and then pass them on with a leading `@`
 # stage instead threads into the predicate: the stage line joins the
 # lambda's body, so `r.price < 4 @ names()` calls `names(4)`, and `map` over
-# an Int fails. Parenthesizing the `filter` would thread its result.
+# an Int fails. Closing the `filter` call before the `@` would thread its result.
 #= {
 #=     raises: ['Structured', 'Int'],
 #=     inputs: {items: [{name: 'pen', price: 3}, {name: 'ink', price: 4}]},
 #= }
-defn names(records) -> map records with fn r -> r.name
-def cheap = filter items with fn r -> r.price < 4
-    @ names()
+defn names(records) -> map(records, fn r -> r.name)
+def cheap = filter(items, fn r -> r.price < 4
+    @ names())
 cheap

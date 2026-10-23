@@ -310,9 +310,9 @@ f({a: [1]})
 }
 
 #[test]
-fn an_iteration_form_calls_its_global_as_the_whole_form() {
+fn a_collection_function_call_spans_the_whole_call() {
     let source = r"
-defn f(xs) -> map xs with $($ + 1)
+defn f(xs) -> map(xs, $($ + 1))
 f([1])
 ";
     assert_nested(
@@ -321,7 +321,7 @@ f([1])
         &[
             (DefLocal(0), "xs", Some(2)),
             (DefLocal(1), "f", Some(1)),
-            (load_global("transform"), "map xs with $($ + 1)", Some(0)),
+            (load_global("map"), "map", Some(0)),
             (LoadLocal(0), "xs", Some(1)),
             (
                 CreateClosure {
@@ -331,7 +331,7 @@ f([1])
                 "$($ + 1)",
                 Some(2),
             ),
-            (TailCall(2), "map xs with $($ + 1)", Some(3)),
+            (TailCall(2), "map(xs, $($ + 1))", Some(3)),
         ],
     );
 }
@@ -908,8 +908,8 @@ print(fact(5))
 ",
     r"
 def xs = [1, 2, 3]
-def total = reduce xs with fn acc, x -> acc + x
-def doubled = map xs with $($ * 2)
+def total = reduce(xs, fn acc, x -> acc + x)
+def doubled = map(xs, $($ * 2))
 print($'${total} ${doubled}')
 ",
     r"
@@ -920,7 +920,7 @@ defn classify(v) -> match v {
     s is String => s,
     _ => 'other',
 }
-print(map [0, [2, 1, 9], {name: 'n', age: 3}, 'x', null] with classify)
+print(map([0, [2, 1, 9], {name: 'n', age: 3}, 'x', null], classify))
 ",
     r"
 def {a, b: [c, d]} = {a: 1, b: [2, 3]}
@@ -935,7 +935,7 @@ print(do {
 def n = print(0)
 defn make(x) -> fn y -> x + y + n
 print(make(1)(2))
-print(filter [1, 2, 3] with $($ > 1))
+print(filter([1, 2, 3], $($ > 1)))
 ",
 ];
 

@@ -1,4 +1,4 @@
 # An operation returning Null makes Null the accumulator for the next step;
 # `reduce` keeps folding rather than stopping.
 #= {result: [null, 3], inputs: {xs: [1, 2, 3]}}
-reduce xs with fn acc, x -> if x == 2: null else: [acc, x]
+reduce(xs, fn acc, x -> if x == 2: null else: [acc, x])

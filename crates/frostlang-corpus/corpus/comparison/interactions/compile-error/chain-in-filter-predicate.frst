@@ -1,0 +1,3 @@
+# A chained comparison in an abbreviated-lambda predicate is rejected.
+#= {rejects: 'cannot chain', inputs: {xs: [1, 5, 9]}}
+xs @ filter($(0 < $ < 6))

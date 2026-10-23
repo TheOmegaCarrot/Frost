@@ -22,14 +22,14 @@
 #=         },
 #=     },
 #= }
-defn discover(state, node) -> fold(graph[node], state, fn acc, n -> {
+defn discover(state, node) -> reduce(graph[node], state, fn acc, n -> {
     def {dist, parent, next} = acc
     if has(dist, n): acc
     else: {dist: dist + {[n]: dist[node] + 1}, parent: parent + {[n]: node}, next: next + [n]}
 })
 
 defn search(frontier, dist, parent) -> if frontier == []: {dist, parent} else: do {
-    def level = fold(frontier, {dist, parent, next: []}, discover)
+    def level = reduce(frontier, {dist, parent, next: []}, discover)
     search(level.next, level.dist, level.parent)
 }
 

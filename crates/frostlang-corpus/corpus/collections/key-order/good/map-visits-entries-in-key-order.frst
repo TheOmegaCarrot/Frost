@@ -1,0 +1,10 @@
+# `map` over a Map calls its function in sorted key order. When two
+# entries map to the same new key, the later key's result wins.
+#= {
+#=     result: {same: 'b'},
+#=     printed: ['a', 'b'],
+#= }
+map({b: 2, a: 1}, fn k, v -> {
+    print(k)
+    {same: k}
+})

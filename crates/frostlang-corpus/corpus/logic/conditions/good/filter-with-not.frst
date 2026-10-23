@@ -3,4 +3,4 @@
 #=     result: [null, false, null],
 #=     inputs: {values: [0, null, false, '', null, 1.5]},
 #= }
-filter values with fn x -> not x
+filter(values, fn x -> not x)

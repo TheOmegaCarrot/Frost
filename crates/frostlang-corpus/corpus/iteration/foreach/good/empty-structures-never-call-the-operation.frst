@@ -1,5 +1,0 @@
-# `foreach` over an empty Array or Map yields it without calling the
-# operation.
-#= {result: [[], {}, [], {}], inputs: {xs: [], m: {}}}
-def boom = fn ...args -> error('called')
-[foreach [] with boom, foreach {} with boom, foreach xs with boom, foreach m with boom]

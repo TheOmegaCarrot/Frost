@@ -1,6 +1,6 @@
 # A renamed Map entry may carry a type constraint on its new name.
 #= {result: [3, 'not an Array'], inputs: {xs: [{items: [1, 2, 3]}, {items: 'abc'}]}}
-transform(xs, fn v -> match v {
+map(xs, fn v -> match v {
     {items: list is Array} => len(list),
     _ => 'not an Array',
 })

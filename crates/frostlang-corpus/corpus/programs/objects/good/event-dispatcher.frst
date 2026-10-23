@@ -15,7 +15,7 @@
 #= }
 defn dispatcher(handlers) -> {
     on: fn event, handler -> dispatcher(handlers + {[event]: (handlers[event] or []) + [handler]}),
-    emit: fn event, payload -> transform(handlers[event] or [], fn handler -> handler(payload)),
+    emit: fn event, payload -> map(handlers[event] or [], fn handler -> handler(payload)),
 }
 
 defn prefixed(prefix, result) -> fn payload -> {

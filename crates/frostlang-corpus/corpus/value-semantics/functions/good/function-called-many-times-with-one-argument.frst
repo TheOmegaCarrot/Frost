@@ -3,4 +3,4 @@
 #= {result: [[1, 2], [1, 2], [1, 2], [1, 2]], inputs: {n: 1}}
 defn push2(xs) -> xs + [2]
 def base = [n]
-transform([1, 2, 3, 4], fn _ -> push2(base))
+map([1, 2, 3, 4], fn _ -> push2(base))

@@ -1,3 +1,0 @@
-# A fold's running sum wraps on Int overflow like any other addition.
-#= {result: -9223372036854775808, inputs: {xs: [9223372036854775807, 1]}}
-fold(xs, 0, fn acc, x -> acc + x)

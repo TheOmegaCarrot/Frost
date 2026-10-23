@@ -237,7 +237,7 @@ fn a_name_frost_source_cannot_refer_to_cannot_be_seeded() {
         "if",
         "def",
         "and",
-        "init",
+        "match",
         "$",
         "$1",
         "1x",

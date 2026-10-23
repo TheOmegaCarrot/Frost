@@ -3,7 +3,7 @@
 #= {result: 12, inputs: {xs: [1, 2, 3, 4]}}
 (
     xs
-    @ select($($ % 2 == 0))
-    @ transform($($ * 2))
-    @ fold(0, $($1 + $2))
+    @ filter($($ % 2 == 0))
+    @ map($($ * 2))
+    @ reduce(0, $($1 + $2))
 )

@@ -1,4 +1,4 @@
 # A Map made by merging iterates its keys sorted, interleaving both operands'
 # keys rather than appending the right operand's after the left's.
 #= {result: [1, 2, 3, 4], inputs: {left: {[3]: 'c', [1]: 'a'}, right: {[4]: 'd', [2]: 'b'}}}
-fold(left + right, [], fn acc, k, v -> acc + [k])
+reduce(left + right, [], fn acc, k, v -> acc + [k])

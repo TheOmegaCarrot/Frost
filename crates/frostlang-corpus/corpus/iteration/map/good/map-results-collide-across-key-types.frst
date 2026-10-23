@@ -1,0 +1,6 @@
+# Entries with distinct keys may collide once `map` converts their
+# keys. Subtle: the Int key 1 and the Float key 1.0 are different keys, but
+# both become the Int 1; the Int entry comes first in key order, so the
+# Float entry's value wins.
+#= {result: {[1]: 'from float'}, inputs: {m: {[1.0]: 'from float', [1]: 'from int'}}}
+map(m, fn k, v -> {[to_int(k)]: v})

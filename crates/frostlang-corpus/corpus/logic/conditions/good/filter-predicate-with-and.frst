@@ -1,0 +1,4 @@
+# A `filter` predicate built with `and` guards a comparison against Null: the
+# guard's Null result is falsy, so the element is dropped instead of raising.
+#= {result: [2, 3], inputs: {values: [1, null, 2, false, 3]}}
+values @ filter(fn x -> x and x > 1)

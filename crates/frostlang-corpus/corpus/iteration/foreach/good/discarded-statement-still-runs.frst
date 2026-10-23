@@ -1,6 +1,0 @@
-# A `foreach` whose value goes unused still runs: discarding a statement's
-# value never discards its effects.
-#= {result: 'done', printed: ['1', '2'], inputs: {xs: [1, 2]}}
-foreach xs with fn x -> print(x)
-foreach [1, 2] with fn x -> null
-'done'

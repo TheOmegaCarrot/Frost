@@ -29,6 +29,6 @@ defn normalize(record) -> if not is_string(record['name']): null else: {
     notify: if has(record, 'notify'): record.notify else: true,
 }
 
-def normalized = transform(raw, normalize)
-def kept = select(normalized, is_nonnull)
+def normalized = map(raw, normalize)
+def kept = filter(normalized, is_nonnull)
 {kept, rejected: len(normalized) - len(kept)}

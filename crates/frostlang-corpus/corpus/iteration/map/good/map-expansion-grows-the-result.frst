@@ -7,5 +7,5 @@
 #=     ],
 #=     inputs: {m: {i: 0, h: 0, g: 0, f: 0, e: 0, d: 0, c: 0, b: 0, a: 0}},
 #= }
-def grown = map m with fn k, v -> {[k + '1']: v, [k + '0']: v}
-reduce grown init: [] with fn acc, k, v -> acc + [k]
+def grown = map(m, fn k, v -> {[k + '1']: v, [k + '0']: v})
+reduce(grown, [], fn acc, k, v -> acc + [k])

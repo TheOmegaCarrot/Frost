@@ -36,12 +36,12 @@ defn build(spec) -> match spec {
     {kind: 'triangle', base, height} => triangle(base, height),
 }
 
-def shapes = transform(specs, build)
-def areas = transform(shapes, fn s -> s.area())
-def largest = fold(shapes, fn a, b -> if b.area() > a.area(): b else: a)
+def shapes = map(specs, build)
+def areas = map(shapes, fn s -> s.area())
+def largest = reduce(shapes, fn a, b -> if b.area() > a.area(): b else: a)
 {
-    descriptions: transform(shapes, fn s -> s.describe()),
+    descriptions: map(shapes, fn s -> s.describe()),
     areas,
-    total: fold(areas, 0, fn sum, a -> sum + a),
+    total: reduce(areas, 0, fn sum, a -> sum + a),
     largest: largest.describe(),
 }

@@ -30,12 +30,12 @@ defn cheap(p) -> p.price < 10
 def fallback = const('fallback')
 
 {
-    expensive: products @ select(inv(cheap)) @ transform(index('name')),
-    colors: transform(products, fn p -> dig(p, 'tags', 'color') or 'none'),
-    doubled: transform(products, curry(fn factor, p -> p.price * factor, 2)),
-    total: tap(fold(products, 0, fn sum, p -> sum + p.price), fn t -> print($'total ${t}')),
-    areas: transform(pairs, spread(fn w, h -> w * h)),
+    expensive: products @ filter(inv(cheap)) @ map(index('name')),
+    colors: map(products, fn p -> dig(p, 'tags', 'color') or 'none'),
+    doubled: map(products, curry(fn factor, p -> p.price * factor, 2)),
+    total: tap(reduce(products, 0, fn sum, p -> sum + p.price), fn t -> print($'total ${t}')),
+    areas: map(pairs, spread(fn w, h -> w * h)),
     swapped: rev_args(fn a, b -> a - b)(1, 10),
-    defaults: transform(maybes, fn v -> if v == null: fallback() else: v),
+    defaults: map(maybes, fn v -> if v == null: fallback() else: v),
     gathered: collect('a', 'b'),
 }

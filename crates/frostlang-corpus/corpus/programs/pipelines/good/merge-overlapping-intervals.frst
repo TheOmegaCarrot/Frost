@@ -18,9 +18,9 @@ defn merge_into(merged, span) -> match merged {
 }
 defn merge_all(intervals) -> intervals
     @ sort_by(fn span -> span[0])
-    @ fold([], merge_into)
-defn covered(intervals) -> reduce intervals init: 0 with fn total, span ->
-    total + span[1] - span[0]
+    @ reduce([], merge_into)
+defn covered(intervals) -> reduce(intervals, 0, fn total, span ->
+    total + span[1] - span[0])
 
 def merged = merge_all(spans)
 [merged, covered(merged), merge_all(none)]

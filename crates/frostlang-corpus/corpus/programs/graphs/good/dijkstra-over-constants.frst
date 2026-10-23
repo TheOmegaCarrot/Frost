@@ -10,15 +10,15 @@ def graph = {
     f: {a: 14, c: 2, e: 9},
 }
 
-defn closest(dist, done) -> reduce dist init: null with fn best, node, d ->
+defn closest(dist, done) -> reduce(dist, null, fn best, node, d ->
     if has(done, node): best
     elif best == null or d < dist[best]: node
-    else: best
+    else: best)
 
-defn relax(dist, node) -> reduce graph[node] init: dist with fn acc, next, weight -> {
+defn relax(dist, node) -> reduce(graph[node], dist, fn acc, next, weight -> {
     def candidate = dist[node] + weight
     if has(acc, next) and acc[next] <= candidate: acc else: acc + {[next]: candidate}
-}
+})
 
 defn step(dist, done) -> {
     def node = closest(dist, done)

@@ -15,4 +15,4 @@ defn classify(v) -> match v {
     => 'high',
     _ => 'text',
 }
-xs @ transform(classify)
+xs @ map(classify)

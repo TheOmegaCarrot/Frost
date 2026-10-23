@@ -3,6 +3,6 @@
 #= {raises: ['compare', 'String', 'Int']}
 defn qsort(xs) -> match xs {
     [] => [],
-    [pivot, ...rest] => qsort(select(rest, $($ < pivot))) + [pivot] + qsort(select(rest, $($ >= pivot))),
+    [pivot, ...rest] => qsort(filter(rest, $($ < pivot))) + [pivot] + qsort(filter(rest, $($ >= pivot))),
 }
 qsort([3, 1, 'two'])

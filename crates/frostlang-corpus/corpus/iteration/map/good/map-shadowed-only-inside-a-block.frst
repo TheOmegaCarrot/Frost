@@ -1,0 +1,10 @@
+# A local `map` defined in a `do` block replaces the global only until
+# the block ends, including for a function created inside the block and
+# called after it.
+#= {result: ['local', 'local', [2, 3]], inputs: {xs: [1, 2]}}
+def inc = fn x -> x + 1
+def [inside, later] = do {
+    def map = fn s, f -> 'local'
+    [map(xs, inc), fn -> map(xs, inc)]
+}
+[inside, later(), map(xs, inc)]

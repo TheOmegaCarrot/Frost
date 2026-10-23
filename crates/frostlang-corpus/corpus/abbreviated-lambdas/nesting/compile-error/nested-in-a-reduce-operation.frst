@@ -1,4 +1,0 @@
-# An abbreviated lambda given as the operation of a `reduce` inside another
-# abbreviated lambda is nested; the inner one must be written with `fn`.
-#= {rejects: 'cannot be nested'}
-def sum_all = $(reduce $$ with $($1 + $2))

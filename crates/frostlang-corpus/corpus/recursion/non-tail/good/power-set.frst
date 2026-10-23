@@ -4,7 +4,7 @@ defn subsets(xs) -> match xs {
     [] => [[]],
     [head, ...tail] => do {
         def rest = subsets(tail)
-        rest + transform(rest, fn s -> [head] + s)
+        rest + map(rest, fn s -> [head] + s)
     },
 }
 [subsets([]), subsets([1, 2, 3])]

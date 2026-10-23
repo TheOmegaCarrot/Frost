@@ -29,8 +29,8 @@ defn summarize(rules) -> {
     def {steps, tape} = run(rules, 'A', {}, 0, 0)
     {
         steps,
-        ones: reduce tape init: 0 with fn total, cell, symbol -> total + symbol,
-        cells: reduce tape init: [] with fn found, cell, symbol -> found + [cell],
+        ones: reduce(tape, 0, fn total, cell, symbol -> total + symbol),
+        cells: reduce(tape, [], fn found, cell, symbol -> found + [cell]),
     }
 }
 

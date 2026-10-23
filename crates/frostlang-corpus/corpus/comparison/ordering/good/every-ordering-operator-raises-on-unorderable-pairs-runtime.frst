@@ -10,7 +10,7 @@
 #=     ],
 #=     inputs: {pairs: [[null, null], [true, true], [{a: 1}, {a: 1}], [1, '1'], ['a', x'61']]},
 #= }
-transform(pairs, fn pair -> {
+map(pairs, fn pair -> {
     def [a, b] = pair
     [
         try_call(fn -> a < b).ok,

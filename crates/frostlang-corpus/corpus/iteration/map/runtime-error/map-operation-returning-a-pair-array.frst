@@ -1,4 +1,0 @@
-# Over a Map, a `[key, value]` pair is not an entry: the operation must return
-# a Map.
-#= {raises: ['must return a Map', 'Array'], inputs: {m: {a: 1}}}
-map m with fn k, v -> [k, v]

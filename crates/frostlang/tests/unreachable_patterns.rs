@@ -439,7 +439,7 @@ fn an_unreachable_arm_is_rejected_wherever_its_match_is() {
             f(2)
             ",
             r"
-            transform([1, 2], fn x -> match x {
+            map([1, 2], fn x -> match x {
                 _ => 1,
                 2 => 2,
             })

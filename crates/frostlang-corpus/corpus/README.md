@@ -6,11 +6,12 @@ Library behavior (most globals, `std.*`, `ext.*`) belongs to the stdlib's own
 tests, and the VM's runtime limits and host-facing configuration (fuel, call
 and import depth, cancellation) to the unit tests.
 
-Two kinds of global are in scope all the same:
+Three kinds of global are in scope all the same:
 
-- Those bound up with the compiler, which it may inline or optimize: the
-  function forms `transform`, `select`, `fold`, and `each`, and `call` and the
-  `is_*` type predicates.
+- The iteration functions `map`, `filter`, `reduce`, and `each`: Frost has no
+  loops, so these are how the core language iterates.
+- Those bound up with the compiler, which it may inline or optimize: `call` and
+  the `is_*` type predicates.
 - Those written in Frost itself, in
   [`source.frst`](../../frostlang/src/vm/globals/generated/source.frst): they
   are compiled code like any script.

@@ -1,5 +1,0 @@
-# A Map pattern's shorthand both looks up a key and binds a name, so a key
-# spelled `init` cannot use the shorthand: the name would be the keyword.
-#= {rejects: ['`init`', 'keyword']}
-def {init} = {['init']: 1}
-1

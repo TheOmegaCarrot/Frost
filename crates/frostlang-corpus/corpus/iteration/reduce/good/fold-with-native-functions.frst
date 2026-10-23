@@ -1,8 +1,0 @@
-# A two-parameter native global serves as `fold`'s function, with or without
-# an init, over a literal Array the optimizer may compute ahead of time and
-# over a runtime one alike.
-#= {
-#=     result: [6, 6, 94, 'abc', [1, 2, 3]],
-#=     inputs: {xs: [1, 2, 3], words: ['b', 'c'], rows: [[2], [3]]},
-#= }
-[fold([1, 2, 3], plus), fold(xs, plus), fold(xs, 100, minus), fold(words, 'a', plus), fold(rows, [1], plus)]

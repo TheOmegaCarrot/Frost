@@ -17,7 +17,7 @@ defn step(stack, instruction) -> match instruction {
     'mul' => binary(stack, fn a, b -> a * b),
 }
 
-defn run(program) -> reduce program init: [] with step
+defn run(program) -> reduce(program, [], step)
 [
     run([{push: 2}, {push: 3}, {push: 4}, 'mul', 'add']),
     run([{push: 5}, 'dup', 'mul', {push: 3}, {push: 6}, 'sub']),

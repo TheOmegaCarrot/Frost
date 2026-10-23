@@ -19,4 +19,4 @@ defn describe(v) -> match v {
         ...rest
     ] => do { def total = len(rest) + 1; $'many: ${total}' },
 }
-vs @ transform(describe)
+vs @ map(describe)

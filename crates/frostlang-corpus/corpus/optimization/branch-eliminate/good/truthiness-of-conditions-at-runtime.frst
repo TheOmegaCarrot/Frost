@@ -4,4 +4,4 @@
 #=     result: ['t', 't', 't', 't', 't', 't', 'f', 'f'],
 #=     inputs: {conditions: [0, 0.0, '', x'', [], {}, null, false]},
 #= }
-map conditions with fn c -> if c: 't' else: 'f'
+map(conditions, fn c -> if c: 't' else: 'f')

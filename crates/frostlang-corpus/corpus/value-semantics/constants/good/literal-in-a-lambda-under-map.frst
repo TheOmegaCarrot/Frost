@@ -1,0 +1,4 @@
+# A literal inside a lambda called once per element starts afresh for each
+# element: no call's extension carries into the next.
+#= {result: [[0, 1], [0, 2], [0, 3]], inputs: {xs: [1, 2, 3]}}
+map(xs, fn x -> [0] + [x])

@@ -15,16 +15,16 @@
 #= }
 defn link(adjacency, from, to) -> adjacency + {[from]: (adjacency[from] or []) + [to]}
 
-def adjacency = fold(edges, {}, fn acc, edge -> {
+def adjacency = reduce(edges, {}, fn acc, edge -> {
     def [a, b] = edge
     link(link(acc, a, b), b, a)
 })
 
 defn flood(labels, node, label) ->
     if has(labels, node): labels
-    else: fold(adjacency[node] or [], labels + {[node]: label}, fn acc, next -> flood(acc, next, label))
+    else: reduce(adjacency[node] or [], labels + {[node]: label}, fn acc, next -> flood(acc, next, label))
 
-def result = fold(nodes, {labels: {}, count: 0}, fn state, node ->
+def result = reduce(nodes, {labels: {}, count: 0}, fn state, node ->
     if has(state.labels, node): state
     else: {labels: flood(state.labels, node, state.count), count: state.count + 1}
 )

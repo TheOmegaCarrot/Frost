@@ -1,0 +1,3 @@
+# `map` requires a Function as its second argument.
+#= {raises: ['map', 'Function', 'argument 2', 'Bool']}
+map([1], true)

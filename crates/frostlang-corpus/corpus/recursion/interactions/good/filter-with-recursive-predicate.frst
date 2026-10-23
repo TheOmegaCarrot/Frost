@@ -1,8 +1,8 @@
-# A `filter` expression whose predicate is itself recursive: primality by
+# A `filter` whose predicate is itself recursive: primality by
 # trial division.
 #= {result: [2, 3, 5, 7, 11, 13, 17, 19, 23, 29]}
 defn is_prime(n) -> {
     defn no_divisor_from(d) -> d * d > n or (n % d != 0 and no_divisor_from(d + 1))
     n >= 2 and no_divisor_from(2)
 }
-filter [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29] with is_prime
+filter([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29], is_prime)

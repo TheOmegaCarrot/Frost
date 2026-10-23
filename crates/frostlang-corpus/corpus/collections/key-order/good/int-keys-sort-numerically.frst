@@ -2,4 +2,4 @@
 # decimal text (so 9 precedes 10 and 100).
 #= {result: [-10, -1, 0, 9, 10, 100]}
 def m = {[10]: 'a', [9]: 'b', [-1]: 'c', [100]: 'd', [0]: 'e', [-10]: 'f'}
-fold(m, [], fn acc, k, v -> acc + [k])
+reduce(m, [], fn acc, k, v -> acc + [k])

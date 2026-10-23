@@ -1,0 +1,8 @@
+# Both arguments are evaluated before `map` checks their types: a wrong
+# structure is reported only after the operation expression has run.
+#= {result: false, printed: ['operation'], inputs: {n: 5}}
+def outcome = try_call(fn -> map(n, do {
+    print('operation')
+    fn x -> x
+}))
+outcome.ok

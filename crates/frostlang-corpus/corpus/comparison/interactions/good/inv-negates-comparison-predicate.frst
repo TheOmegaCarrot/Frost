@@ -3,6 +3,6 @@
 def below_limit = fn x -> x < limit
 def at_least_limit = inv(below_limit)
 [
-    xs @ select(at_least_limit),
+    xs @ filter(at_least_limit),
     [at_least_limit(4), at_least_limit(5.0)],
 ]

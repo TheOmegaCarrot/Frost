@@ -1,9 +1,0 @@
-# Quicksort: recursion on both partitions, chosen with `select` and
-# abbreviated lambdas that capture the pivot. Ints and Floats order together;
-# duplicates and negatives keep their place in the order.
-#= {result: [[], [5], [-2, 0, 1.5, 3, 3, 10]]}
-defn qsort(xs) -> match xs {
-    [] => [],
-    [pivot, ...rest] => qsort(select(rest, $($ < pivot))) + [pivot] + qsort(select(rest, $($ >= pivot))),
-}
-[qsort([]), qsort([5]), qsort([3, 10, 1.5, -2, 3, 0])]

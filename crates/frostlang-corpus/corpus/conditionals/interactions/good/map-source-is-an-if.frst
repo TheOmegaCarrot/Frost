@@ -1,3 +1,3 @@
-# A parenthesized `if` may choose the collection a `map` expression walks.
+# An `if` may choose the collection a `map` call walks.
 #= {result: [10, 20], inputs: {f: false, xs: [0], ys: [1, 2]}}
-map (if f: xs else: ys) with fn y -> y * 10
+map((if f: xs else: ys), fn y -> y * 10)

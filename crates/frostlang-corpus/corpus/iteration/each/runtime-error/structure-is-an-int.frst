@@ -1,0 +1,4 @@
+# An Int is not a range: `each` over one is a type error, not a count of
+# repetitions.
+#= {raises: ['Structured', 'argument 1', 'Int'], inputs: {n: 3}}
+each(n, fn x -> x)

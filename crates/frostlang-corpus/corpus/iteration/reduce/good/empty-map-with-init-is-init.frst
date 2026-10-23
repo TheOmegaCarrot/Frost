@@ -1,4 +1,4 @@
-# An empty Map with `init:` yields the init without calling the operation.
+# An empty Map with an initial value yields it without calling the operation.
 #= {result: ['start', 'start'], inputs: {m: {}}}
 def boom = fn acc, k, v -> error('called')
-[reduce {} init: 'start' with boom, reduce m init: 'start' with boom]
+[reduce({}, 'start', boom), reduce(m, 'start', boom)]

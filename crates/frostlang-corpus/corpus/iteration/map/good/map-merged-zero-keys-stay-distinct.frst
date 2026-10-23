@@ -13,8 +13,8 @@
 defn to_negative(k, v) -> {[if is_int(k): -0.0 else: k]: v}
 defn to_positive(k, v) -> {[if is_int(k): 0.0 else: k]: v}
 [
-    to_string(map {[0.0]: 'from 0.0', [1]: 'from 1'} with to_negative),
-    to_string(map {[-0.0]: 'from -0.0', [1]: 'from 1'} with to_positive),
-    to_string(map m with to_negative),
-    to_string(map n with to_positive),
+    to_string(map({[0.0]: 'from 0.0', [1]: 'from 1'}, to_negative)),
+    to_string(map({[-0.0]: 'from -0.0', [1]: 'from 1'}, to_positive)),
+    to_string(map(m, to_negative)),
+    to_string(map(n, to_positive)),
 ]

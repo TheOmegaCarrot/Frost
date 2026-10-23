@@ -1,4 +1,0 @@
-# `init:` belongs to `reduce` alone; `filter` has no seed.
-#= {rejects: ['expected `with`', '`init`']}
-def f = fn x -> true
-filter [1, 2] init: 0 with f

@@ -1,6 +1,6 @@
-# A `filter ... with` predicate destructures each element to decide.
+# A `filter` predicate destructures each element to decide.
 #= {result: [[2, 'b']], inputs: {entries: [[1, 'a'], [2, 'b'], [3, 'c']]}}
-filter entries with fn entry -> {
+filter(entries, fn entry -> {
     def [n, _] = entry
     n == 2
-}
+})

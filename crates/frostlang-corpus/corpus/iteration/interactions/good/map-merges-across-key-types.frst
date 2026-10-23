@@ -3,4 +3,4 @@
 # the Bool and the Int entry map to the key 'k', and the Int entry is visited
 # after the Bool one.
 #= {result: {k: 'from Int', [1.5]: 'Float'}, inputs: {m: {[1]: 'i', [true]: 'b', [1.5]: 'f'}}}
-map m with fn k, v -> if is_float(k): {[k]: 'Float'} else: {k: 'from ' + type(k)}
+map(m, fn k, v -> if is_float(k): {[k]: 'Float'} else: {k: 'from ' + type(k)})

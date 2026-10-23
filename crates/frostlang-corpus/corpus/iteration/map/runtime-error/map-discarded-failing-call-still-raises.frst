@@ -1,0 +1,6 @@
+# A `map` statement over a literal Array whose result is unused still
+# runs, so its function's error still surfaces. Subtle: the function is pure,
+# so only the error makes the call observable.
+#= {raises: 'division by zero'}
+map([1, 0], fn x -> 1 / x)
+'unreachable'

@@ -1,6 +1,0 @@
-# A `foreach` expression evaluates to its input as it was, and a Map input
-# stays unchanged when that result is merged into.
-#= {result: [{a: [1], b: 2}, {a: [1]}], inputs: {n: 1}}
-def m = {a: [n]}
-def same = foreach m with fn k, v -> {[k]: v + [0]}
-[same + {b: 2}, m]

@@ -2,4 +2,4 @@
 # though not name shorthand entries.
 #= {result: [[{v: 1}, {v: 2}], {[1]: 'a', [2]: 'b'}], inputs: {xs: [1, 2]}}
 def pair = $({[$1]: $2})
-[map xs with $({v: $}), pair(1, 'a') + pair(2, 'b')]
+[map(xs, $({v: $})), pair(1, 'a') + pair(2, 'b')]

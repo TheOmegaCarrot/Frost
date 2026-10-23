@@ -1,3 +1,3 @@
-# `reduce` over Null is a type error, not the init.
+# `reduce` over Null is a type error, not the initial value.
 #= {raises: ['Structured', 'argument 1', 'Null'], inputs: {nothing: null}}
-reduce nothing init: 0 with fn acc, x -> acc + x
+reduce(nothing, 0, fn acc, x -> acc + x)

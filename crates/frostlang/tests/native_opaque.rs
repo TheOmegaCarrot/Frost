@@ -130,7 +130,7 @@ fn an_opaque_handle_stays_one_value_however_it_is_reached() {
     let source = r"
         def p = point(1, 2)
         def get = fn -> p
-        def ps = transform([1, 2], fn _ -> p)
+        def ps = map([1, 2], fn _ -> p)
         def q = p
         [p == p, get() == get(), ps[0] == ps[1], q == p, id(p) == p, [p] == [p]]
         ";
@@ -145,7 +145,7 @@ fn an_opaque_handle_stays_one_value_however_it_is_reached() {
 fn opaque_handles_to_equal_payloads_are_never_merged() {
     let source = r"
         def make = fn -> point(1, 2)
-        def ps = transform([1, 2], fn _ -> point(1, 2))
+        def ps = map([1, 2], fn _ -> point(1, 2))
         [point(1, 2) == point(1, 2), make() == make(), ps[0] == ps[1]]
         ";
     assert_eq!(

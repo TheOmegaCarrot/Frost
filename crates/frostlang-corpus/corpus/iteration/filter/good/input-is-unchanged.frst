@@ -3,6 +3,6 @@
 #=     result: [[1, 2, 3], [2], {a: 1, b: 2}, {b: 2}],
 #=     inputs: {xs: [1, 2, 3], m: {a: 1, b: 2}},
 #= }
-def ys = filter xs with fn x -> x == 2
-def n = filter m with fn k, v -> v == 2
+def ys = filter(xs, fn x -> x == 2)
+def n = filter(m, fn k, v -> v == 2)
 [xs, ys, m, n]

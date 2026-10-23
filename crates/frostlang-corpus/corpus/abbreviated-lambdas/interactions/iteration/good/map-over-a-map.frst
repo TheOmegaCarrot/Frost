@@ -1,4 +1,4 @@
-# Mapping over a Map calls the operation with each key and value, as `$1`
+# Mapping over a Map calls the function with each key and value, as `$1`
 # and `$2`, and merges the Maps it returns.
 #= {result: {a: 10, b: 20}, inputs: {m: {a: 1, b: 2}}}
-map m with $({[$1]: $2 * 10})
+map(m, $({[$1]: $2 * 10}))

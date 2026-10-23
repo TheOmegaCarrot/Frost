@@ -1,0 +1,8 @@
+# A reduce that interpolates its growing accumulator into a String at each step
+# records each step's accumulator, not a later one.
+#= {result: ['0:', '1:a', '2:ab'], inputs: {parts: ['a', 'b', 'c']}}
+def step = fn state, p -> {
+    log: state.log + [$'${len(state.log)}:${state.text}'],
+    text: state.text + p,
+}
+reduce(parts, {log: [], text: ''}, step).log

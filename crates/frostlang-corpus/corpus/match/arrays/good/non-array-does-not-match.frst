@@ -9,7 +9,7 @@
 #=     ],
 #=     inputs: {xs: ['ab', x'0000', {a: 1}, null, 5]},
 #= }
-transform(xs, fn v -> match v {
+map(xs, fn v -> match v {
     [] => 'empty',
     [x] => 'one',
     [x, y] => 'two',

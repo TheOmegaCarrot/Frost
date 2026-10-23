@@ -1,0 +1,5 @@
+# An exported Array used as a reduce's initial value is exported as it was,
+# though the reduce extends its accumulator at every step.
+#= {result: [0, 1, 2], exports: {seed: [0]}, inputs: {n: 0, xs: [1, 2]}}
+export def seed = [n]
+reduce(xs, seed, fn acc, x -> acc + [x])

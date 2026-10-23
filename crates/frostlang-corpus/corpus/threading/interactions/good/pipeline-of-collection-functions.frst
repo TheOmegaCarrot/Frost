@@ -1,0 +1,7 @@
+# The collection functions take the structure first, so a pipeline threads
+# through `filter`, `map`, and `reduce` in turn.
+#= {result: 120, inputs: {xs: [1, 2, 3, 4, 5]}}
+(xs
+    @ filter(fn x -> x % 2 == 1)
+    @ map(fn x -> x * 10)
+    @ reduce(30, fn acc, x -> acc + x))

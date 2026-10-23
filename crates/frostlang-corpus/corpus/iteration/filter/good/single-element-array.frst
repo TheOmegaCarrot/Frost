@@ -1,4 +1,4 @@
 # A one-element Array filters to itself or to an empty Array, never to the
 # bare element.
 #= {result: [[5], []], inputs: {one: [5]}}
-[filter one with fn x -> x > 1, filter one with fn x -> x > 9]
+[filter(one, fn x -> x > 1), filter(one, fn x -> x > 9)]

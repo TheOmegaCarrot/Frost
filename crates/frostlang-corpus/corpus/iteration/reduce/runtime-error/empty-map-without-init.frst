@@ -1,4 +1,4 @@
-# Even an empty Map needs `init:`. Subtle: an empty Array without one folds
-# to Null, but a Map's need for an initializer does not depend on its size.
-#= {raises: 'requires an initializer', inputs: {m: {}}}
-reduce m with fn acc, k, v -> acc + v
+# Even an empty Map needs an initial value. Subtle: an empty Array without one
+# reduces to Null, but a Map's need for one does not depend on its size.
+#= {raises: 'requires an initial value', inputs: {m: {}}}
+reduce(m, fn acc, k, v -> acc + v)

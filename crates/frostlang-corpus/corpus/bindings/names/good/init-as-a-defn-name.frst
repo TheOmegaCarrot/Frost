@@ -1,0 +1,4 @@
+# `defn` may name a function `init`, a natural choice for a setup function.
+#= {result: 1}
+defn init() -> 1
+init()

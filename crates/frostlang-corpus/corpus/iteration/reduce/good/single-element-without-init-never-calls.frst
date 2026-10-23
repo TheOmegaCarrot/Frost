@@ -1,5 +1,0 @@
-# A one-element Array with no `init:` reduces to that element: it seeds the
-# accumulator and nothing is left to fold, so the operation is never called.
-#= {result: [7, 7], inputs: {one: [7]}}
-def boom = fn acc, x -> error('called')
-[reduce [7] with boom, reduce one with boom]

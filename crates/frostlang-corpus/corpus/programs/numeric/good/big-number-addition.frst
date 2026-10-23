@@ -33,7 +33,7 @@ defn add(xs, ys, carry) -> match [xs, ys] {
     },
 }
 
-defn show(digits) -> if digits == []: '0' else: fold(digits, '', fn text, d -> to_string(d) + text)
+defn show(digits) -> if digits == []: '0' else: reduce(digits, '', fn text, d -> to_string(d) + text)
 
 defn power_of_two(n) -> if n == 0: [1] else: do {
     def half = power_of_two(n - 1)

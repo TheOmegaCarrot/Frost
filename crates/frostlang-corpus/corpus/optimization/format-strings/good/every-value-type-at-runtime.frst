@@ -15,4 +15,4 @@
 #=     ],
 #=     inputs: {values: [null, true, -9223372036854775808, 1.5, -0.0, 's', x'6162', [1, 'a'], {a: 1}, []]},
 #= }
-map values with fn v -> $'${v}'
+map(values, fn v -> $'${v}')

@@ -44,10 +44,10 @@ const RANGE_HELP: &str =
     "Frost has no range operator; for a range of Ints, use `range(start, stop)`";
 
 const LOOP_HELP_FOR: &str = "Frost has no `for` loop; use `map`, `filter`, `reduce`, or \
-                             `foreach` with a function, like `foreach xs with fn x -> ...`";
+                             `each` with a function, like `each(xs, fn x -> ...)`";
 
 const LOOP_HELP_WHILE: &str = "Frost has no `while` loop; use `map`, `filter`, `reduce`, or \
-                               `foreach` with a function, like `foreach xs with fn x -> ...`";
+                               `each` with a function, like `each(xs, fn x -> ...)`";
 
 const PLACEHOLDER_HELP: &str = "`$` placeholders work only inside `$( ... )`, like `$($ * 2)`";
 
@@ -346,7 +346,7 @@ fn statement_words_where_an_expression_begins() {
         ("f(lambda x: x)", LAMBDA_HELP),
         ("def f = lambda x: x", LAMBDA_HELP),
         ("def f = lambda: 1", LAMBDA_HELP),
-        ("map xs with lambda x: x", LAMBDA_HELP),
+        ("map(xs, lambda x: x)", LAMBDA_HELP),
         (
             "if c: let x = 1",
             "Frost has no `let`; bind a name with `def`: `def x = ...`",
@@ -771,7 +771,7 @@ fn an_operator_used_as_a_function() {
         ("(+ 1)", help),
         ("def inc = (+ 1)", help),
         ("(*)", help),
-        ("xs @ transform(* 2)", help),
+        ("xs @ map(* 2)", help),
     ]);
     // `+1` writes a sign, and `(+ 1 2)` is Lisp's call, not an operator alone.
     assert_help_or_none(&[("(+1)", None), ("(+ 1 2)", None)]);
@@ -779,7 +779,7 @@ fn an_operator_used_as_a_function() {
     let in_abbreviated =
         "Frost cannot use an operator as a function; write a lambda, like `fn x -> x + 1`";
     assert_help(&[
-        ("$(transform($, (+ 1)))", in_abbreviated),
+        ("$(map($, (+ 1)))", in_abbreviated),
         ("$($'${(* 2)}')", in_abbreviated),
     ]);
 }
@@ -831,8 +831,8 @@ fn control_words_from_other_languages() {
         ("switch (x) { case 1: 2 }", switch_help),
         (
             "until x: 1",
-            "Frost has no `until` loop; use `map`, `filter`, `reduce`, or `foreach` with a \
-             function, like `foreach xs with fn x -> ...`",
+            "Frost has no `until` loop; use `map`, `filter`, `reduce`, or `each` with a \
+             function, like `each(xs, fn x -> ...)`",
         ),
         ("fn x -> x end", "Frost has no `end`; delete it"),
         ("if a: 1 else: 2 end", "Frost has no `end`; delete it"),
@@ -919,7 +919,6 @@ fn branches_where_an_expression_begins() {
         ("-else", CONDITIONAL_HELP),
         ("not elif", CONDITIONAL_HELP),
         ("x @ else", CONDITIONAL_HELP),
-        ("map xs with else", CONDITIONAL_HELP),
         // As an argument, element, entry value, index, or group
         ("f(else)", CONDITIONAL_HELP),
         ("f(a, elif)", CONDITIONAL_HELP),
@@ -1445,8 +1444,8 @@ fn curried_lambdas_without_their_inner_fn() {
     assert_help(&[
         ("def f = fn x -> y -> z", help),
         ("defn add(x) -> y -> x + y", help),
-        ("map xs with fn x -> y -> 1", help),
         ("f(fn x -> y -> 1)", help),
+        ("map(xs, fn x -> y -> 1)", help),
     ]);
 }
 
@@ -1567,7 +1566,7 @@ fn arrow_lambdas_with_parameter_lists() {
         ("x, y -> x", LAMBDA_HELP),
         ("x, y => x", LAMBDA_HELP),
         ("def add = (x, y) => x + y", LAMBDA_HELP),
-        ("xs @ transform((a, b) => a)", LAMBDA_HELP),
+        ("xs @ map((a, b) => a)", LAMBDA_HELP),
     ]);
     // In a `match`, parentheses before `=>` hold a pattern.
     assert_help_or_none(&[("()", None), ("match x { () => 1 }", None)]);
@@ -1602,80 +1601,6 @@ fn a_trailing_comma_in_bare_parameters() {
     )]);
 }
 
-#[test]
-fn iterative_expressions_written_as_calls() {
-    let map_help =
-        "`map` is an expression, written `map xs with f`; its function form is `transform(xs, f)`";
-    let threaded_mid_file = r"
-        def a = xs @ map(f)
-        print(a)
-    ";
-    assert_help(&[
-        ("map(xs, f)", map_help),
-        ("xs @ map(f)", map_help),
-        (threaded_mid_file, map_help),
-        (
-            "filter(xs, f)",
-            "`filter` is an expression, written `filter xs with f`; its function form is \
-             `select(xs, f)`",
-        ),
-        (
-            "xs @ reduce(f)",
-            "`reduce` is an expression, written `reduce xs with f`; its function form is \
-             `fold(xs, f)`",
-        ),
-        (
-            "foreach xs",
-            "`foreach` is an expression, written `foreach xs with f`; its function form is \
-             `each(xs, f)`",
-        ),
-    ]);
-}
-
-// `reduce` takes an initial value with `init:`; `fold` takes it before the function.
-#[test]
-fn reduce_with_an_initial_value() {
-    let seeded = "`reduce` is an expression, written `reduce xs init: v with f`; its function \
-                  form is `fold(xs, v, f)`";
-    let before_with = "an initial value goes before `with`: `reduce xs init: v with f`";
-    assert_help(&[
-        ("reduce(xs, 0, fn (a, x) -> a + x)", seeded),
-        ("xs @ reduce(0, f)", seeded),
-        ("reduce xs with f from 0", before_with),
-        ("reduce xs with f init: 0", before_with),
-        // Without the initial value
-        (
-            "reduce(xs, f)",
-            "`reduce` is an expression, written `reduce xs with f`; its function form is \
-             `fold(xs, f)`",
-        ),
-    ]);
-}
-
-// Only commas between arguments count toward an initial value: not those in a lambda's
-// parameters, parenthesized or not, nor those in brackets within an argument.
-#[test]
-fn reduce_with_commas_inside_its_arguments() {
-    let seeded = "`reduce` is an expression, written `reduce xs init: v with f`; its function \
-                  form is `fold(xs, v, f)`";
-    let unseeded = "`reduce` is an expression, written `reduce xs with f`; its function form is \
-                    `fold(xs, f)`";
-    assert_help(&[
-        ("reduce(xs, fn acc, x -> acc + x)", unseeded),
-        ("reduce(xs, fn (acc, x) -> acc + x)", unseeded),
-        ("xs @ reduce(fn acc, x -> acc + x)", unseeded),
-        ("reduce(xs, fn acc, x -> [acc, x])", unseeded),
-        ("reduce([1, 2], f)", unseeded),
-        ("reduce(xs, g(1, 2))", unseeded),
-        ("reduce(xs, 0, fn acc, x -> acc + x)", seeded),
-        ("xs @ reduce(0, fn acc, x -> acc + x)", seeded),
-        ("reduce(xs, {a: 1, b: 2}, fn acc, x -> acc)", seeded),
-        // The lambda's body ends at the comma after it, so a value after it is an
-        // argument of its own.
-        ("reduce(xs, fn acc, x -> acc + x, 0)", seeded),
-    ]);
-}
-
 // -- Collections from other languages --
 
 #[test]
@@ -1686,8 +1611,7 @@ fn slices() {
 
 #[test]
 fn comprehensions() {
-    let help =
-        "Frost has no comprehensions; use `map` and `filter`, like `map xs with fn x -> ...`";
+    let help = "Frost has no comprehensions; use `map` and `filter`, like `map(xs, fn x -> ...)`";
     assert_help(&[
         ("[x for x in xs]", help),
         ("[x * 2 for x in xs]", help),
@@ -1912,7 +1836,7 @@ fn lambdas_from_other_languages() {
         ("def f = x -> x + 1", LAMBDA_HELP),
         ("def f = x => x + 1", LAMBDA_HELP),
         ("def f = (x) => x + 1", LAMBDA_HELP),
-        ("xs @ transform(x => x * 2)", LAMBDA_HELP),
+        ("xs @ map(x => x * 2)", LAMBDA_HELP),
         ("def f = \\x -> x + 1", LAMBDA_HELP),
         ("|x| x + 1", LAMBDA_HELP),
         ("|x, y| x + y", LAMBDA_HELP),
@@ -1920,7 +1844,7 @@ fn lambdas_from_other_languages() {
         // A lambda in braces, as Kotlin, Groovy, and Swift write one
         ("def f = { x -> x + 1 }", LAMBDA_HELP),
         ("def f = { x, y -> x }", LAMBDA_HELP),
-        ("xs @ transform({ x -> x * 2 })", LAMBDA_HELP),
+        ("xs @ map({ x -> x * 2 })", LAMBDA_HELP),
         // Ruby's lambda
         ("def f = ->(x) { x + 1 }", LAMBDA_HELP),
     ]);
@@ -2536,17 +2460,12 @@ fn dots_joining_strings() {
 fn keywords_as_fields() {
     assert_help(&[
         (
-            "xs.map(f)",
-            "`map` is a keyword, not a method; write `map xs with f`, or `xs @ transform(f)`",
+            "x.do",
+            "`do` is a keyword; index with brackets instead: `x[\"do\"]`",
         ),
         (
-            "xs.filter(f)",
-            "`filter` is a keyword, not a method; write `filter xs with f`, or \
-             `xs @ select(f)`",
-        ),
-        (
-            "x.init",
-            "`init` is a keyword; index with brackets instead: `x[\"init\"]`",
+            "xs.match(f)",
+            "`match` is a keyword; index with brackets instead: `x[\"match\"]`",
         ),
     ]);
 }
@@ -2555,8 +2474,8 @@ fn keywords_as_fields() {
 fn keywords_as_map_keys() {
     assert_help(&[
         (
-            "{map: 1}",
-            "`map` is a keyword; write the key in brackets: `[\"map\"]: ...`",
+            "{match: 1}",
+            "`match` is a keyword; write the key in brackets: `[\"match\"]: ...`",
         ),
         (
             "{a: 1, if: 2}",
@@ -2568,8 +2487,8 @@ fn keywords_as_map_keys() {
             "`if` is a keyword; write the key in brackets: `[\"if\"]: ...`",
         ),
         (
-            "def {with: w} = m",
-            "`with` is a keyword; write the key in brackets: `[\"with\"]: ...`",
+            "def {is: w} = m",
+            "`is` is a keyword; write the key in brackets: `[\"is\"]: ...`",
         ),
     ]);
 }
@@ -2578,37 +2497,34 @@ fn keywords_as_map_keys() {
 #[test]
 fn keywords_as_shorthand_map_entries() {
     assert_help(&[
-        ("{map}", "`map` is a keyword, so it cannot be a name"),
-        (
-            "{filter, x}",
-            "`filter` is a keyword, so it cannot be a name",
-        ),
+        ("{match}", "`match` is a keyword, so it cannot be a name"),
+        ("{do, x}", "`do` is a keyword, so it cannot be a name"),
     ]);
 }
 
 #[test]
 fn keywords_as_names() {
     assert_help(&[
-        ("def map = 1", "`map` is a keyword, so it cannot be a name"),
         (
-            "def init = 1",
-            "`init` is a keyword, so it cannot be a name",
+            "def match = 1",
+            "`match` is a keyword, so it cannot be a name",
+        ),
+        ("def is = 1", "`is` is a keyword, so it cannot be a name"),
+        (
+            "defn elif(x) -> x",
+            "`elif` is a keyword, so it cannot be a name",
         ),
         (
-            "defn with(x) -> x",
-            "`with` is a keyword, so it cannot be a name",
-        ),
-        (
-            "defn f(map) -> map",
-            "`map` is a keyword, so it cannot be a name",
+            "defn f(match) -> match",
+            "`match` is a keyword, so it cannot be a name",
         ),
         (
             "defn f(a, do) -> a",
             "`do` is a keyword, so it cannot be a name",
         ),
         (
-            "fn filter -> 1",
-            "`filter` is a keyword, so it cannot be a name",
+            "fn match -> 1",
+            "`match` is a keyword, so it cannot be a name",
         ),
     ]);
 }
@@ -2618,8 +2534,8 @@ fn keywords_as_names_in_patterns_and_parameters() {
     assert_help(&[
         ("def {if} = m", "`if` is a keyword, so it cannot be a name"),
         (
-            "def {a, map} = m",
-            "`map` is a keyword, so it cannot be a name",
+            "def {a, match} = m",
+            "`match` is a keyword, so it cannot be a name",
         ),
         (
             "def {a: if} = m",
@@ -2635,16 +2551,16 @@ fn keywords_as_names_in_patterns_and_parameters() {
             "`if` is a keyword, so it cannot be a name",
         ),
         (
-            "match m { {a: with} => 1 }",
-            "`with` is a keyword, so it cannot be a name",
+            "match m { {a: do} => 1 }",
+            "`do` is a keyword, so it cannot be a name",
         ),
         (
-            "match x { map => 1 }",
-            "`map` is a keyword, so it cannot be a name",
+            "match x { match => 1 }",
+            "`match` is a keyword, so it cannot be a name",
         ),
         (
-            "def f = fn a, with -> 1",
-            "`with` is a keyword, so it cannot be a name",
+            "def f = fn a, elif -> 1",
+            "`elif` is a keyword, so it cannot be a name",
         ),
         (
             "fn a, b, if -> 1",
@@ -2663,16 +2579,16 @@ fn keywords_as_names_after_declaration_words() {
             "Frost has no `var`; bind with `def`, and `if` is a keyword, so it cannot be a name",
         ),
         (
-            "let map = 1",
-            "Frost has no `let`; bind with `def`, and `map` is a keyword, so it cannot be a name",
+            "let match = 1",
+            "Frost has no `let`; bind with `def`, and `match` is a keyword, so it cannot be a name",
         ),
         (
             "const fn = 1",
             "Frost has no `const`; bind with `def`, and `fn` is a keyword, so it cannot be a name",
         ),
         (
-            "function filter(x) {}",
-            "`filter` is a keyword, so it cannot be a name",
+            "function match(x) {}",
+            "`match` is a keyword, so it cannot be a name",
         ),
     ]);
 }

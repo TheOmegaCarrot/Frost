@@ -1,0 +1,8 @@
+# `filter`, `map`, and `reduce` call lambdas that read enclosing bindings,
+# both constant and runtime.
+#= {result: [[30, 40], 70], inputs: {limit: 2, xs: [1, 2, 3, 4]}}
+def scale = 10
+def kept = (xs
+    @ filter(fn x -> x > limit)
+    @ map(fn x -> x * scale))
+[kept, reduce(kept, 0, fn acc, x -> acc + x)]

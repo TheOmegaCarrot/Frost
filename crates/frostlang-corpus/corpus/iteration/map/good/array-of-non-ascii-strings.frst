@@ -3,6 +3,6 @@
 #=     result: [['héllo!', '日本!', '🧊!'], ['héllo!', '日本!', '🧊!']],
 #=     inputs: {xs: ['héllo', '日本', '🧊']},
 #= }
-def literal = map ['héllo', '日本', '🧊'] with fn s -> s + '!'
-def runtime = map xs with fn s -> s + '!'
+def literal = map(['héllo', '日本', '🧊'], fn s -> s + '!')
+def runtime = map(xs, fn s -> s + '!')
 [literal, runtime]

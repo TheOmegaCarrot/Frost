@@ -309,9 +309,9 @@ fn a_name_that_is_not_an_identifier_panics() {
 }
 
 #[test]
-#[should_panic(expected = r#"invalid component name "map""#)]
+#[should_panic(expected = r#"invalid component name "match""#)]
 fn a_keyword_name_panics() {
-    let _ = Extension::builder("map");
+    let _ = Extension::builder("match");
 }
 
 #[test]

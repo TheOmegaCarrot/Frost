@@ -4,7 +4,7 @@
 #=     result: ['Null', 'Bool', 'Int', 'Float', 'String', 'Bytes'],
 #=     inputs: {xs: [null, false, 0, 0.0, '', x'']},
 #= }
-transform(xs, fn v -> match v {
+map(xs, fn v -> match v {
     x'' => 'Bytes',
     '' => 'String',
     0.0 => 'Float',

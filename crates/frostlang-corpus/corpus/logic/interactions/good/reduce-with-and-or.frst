@@ -1,0 +1,15 @@
+# Reducing with `and` finds the first falsy element or else the last element;
+# reducing with `or` finds the first truthy one. An empty collection yields the
+# initial value.
+#= {
+#=     result: [3, null, true, 2, null, false],
+#=     inputs: {truthy: [1, 'a', 3], mixed: [1, null, false], empty: [], late: [null, false, 2, 4]},
+#= }
+[
+    reduce(truthy, true, fn acc, x -> acc and x),
+    reduce(mixed, true, fn acc, x -> acc and x),
+    reduce(empty, true, fn acc, x -> acc and x),
+    reduce(late, false, fn acc, x -> acc or x),
+    reduce(mixed, fn acc, x -> acc and x),
+    reduce(empty, false, fn acc, x -> acc or x),
+]

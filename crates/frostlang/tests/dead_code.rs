@@ -150,7 +150,7 @@ fn unused_match_bindings_do_not_change_the_result() {
             n is Int => 'int',
             _ => 'other'
         }
-        map [[1, 2], [1, 2, 3], {name: 'x'}, 4, null] with classify
+        map([[1, 2], [1, 2, 3], {name: 'x'}, 4, null], classify)
     ";
     assert_eq!(
         run(source),

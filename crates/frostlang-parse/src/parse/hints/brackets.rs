@@ -9,7 +9,7 @@ use crate::parse::hints::site::{
 };
 use crate::parse::hints::{
     BLOCK_HELP, CATCH_ALL_HELP, DEF_GUARD_HELP, LAMBDA_HELP, MAP_ENTRY_HELP, MAP_REST_HELP,
-    REST_HELP, SPREAD_HELP, Site, destructure_help, is_iterative_keyword, iterative_help,
+    REST_HELP, SPREAD_HELP, Site, destructure_help,
 };
 
 const NESTED_GUARD_HELP: &str =
@@ -252,20 +252,6 @@ impl<'src> Site<'_, 'src> {
         let open = self.ctx.innermost_bracket()?;
         if open.kind != Bracket::Group {
             return None;
-        }
-        // `map(xs, f)`: the parenthesized collection is cut off at the comma.
-        if let Some(keyword) = open
-            .pos
-            .checked_sub(1)
-            .and_then(|before| self.ctx.get(before))
-            .map(|t| &t.token)
-            .filter(|token| is_iterative_keyword(token))
-        {
-            // `xs @ reduce(0, f)` passes `xs` as well.
-            let threaded = self.token_before(open.pos - 1) == Some(&Token::OpThread);
-            let arguments =
-                self.commas_inside(open.pos).map_or(0, |commas| commas + 1) + usize::from(threaded);
-            return Some(iterative_help(keyword, arguments >= 3));
         }
         Some(
             if self.holds_parameters(open) {

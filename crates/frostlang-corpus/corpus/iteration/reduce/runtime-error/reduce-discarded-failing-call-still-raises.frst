@@ -1,0 +1,5 @@
+# A `reduce` statement over a literal Array whose result is unused still runs,
+# so its function's error still surfaces, even with no initial value.
+#= {raises: 'division by zero'}
+reduce([1, 0], fn acc, x -> acc / x)
+'unreachable'

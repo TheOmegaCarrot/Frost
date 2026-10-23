@@ -1,0 +1,5 @@
+# A `map` callback that captures and extends the very Array being
+# mapped sees it unchanged for every element.
+#= {result: [[1, 2, 1], [1, 2, 2]], inputs: {n: 1}}
+def xs = [n, 2]
+map(xs, fn x -> xs + [x])

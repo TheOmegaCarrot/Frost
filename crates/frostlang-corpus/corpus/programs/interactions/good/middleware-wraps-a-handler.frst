@@ -39,5 +39,5 @@ def shouting = fn next -> fn request -> do {
 }
 
 def stack = [logging, auth, shouting]
-def app = reduce reverse(stack) init: handler with fn inner, layer -> layer(inner)
-map requests with app
+def app = reduce(reverse(stack), handler, fn inner, layer -> layer(inner))
+map(requests, app)

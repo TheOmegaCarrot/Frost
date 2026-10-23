@@ -3,6 +3,6 @@
 #= {result: [20, 40], inputs: {xs: [1, 2, 3, 4]}}
 xs # the input
     # keep the even ones
-    @ select(fn x -> x % 2 == 0)
+    @ filter(fn x -> x % 2 == 0)
     # then scale them
-    @ transform(fn x -> x * 10) # by ten
+    @ map(fn x -> x * 10) # by ten

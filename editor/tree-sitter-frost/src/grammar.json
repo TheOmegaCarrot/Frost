@@ -852,22 +852,6 @@
         },
         {
           "type": "SYMBOL",
-          "name": "map_expression"
-        },
-        {
-          "type": "SYMBOL",
-          "name": "filter_expression"
-        },
-        {
-          "type": "SYMBOL",
-          "name": "reduce_expression"
-        },
-        {
-          "type": "SYMBOL",
-          "name": "foreach_expression"
-        },
-        {
-          "type": "SYMBOL",
           "name": "match_expression"
         }
       ]
@@ -944,22 +928,6 @@
         {
           "type": "SYMBOL",
           "name": "do_block"
-        },
-        {
-          "type": "SYMBOL",
-          "name": "map_expression"
-        },
-        {
-          "type": "SYMBOL",
-          "name": "filter_expression"
-        },
-        {
-          "type": "SYMBOL",
-          "name": "reduce_expression"
-        },
-        {
-          "type": "SYMBOL",
-          "name": "foreach_expression"
         },
         {
           "type": "SYMBOL",
@@ -1427,155 +1395,6 @@
           }
         }
       ]
-    },
-    "map_expression": {
-      "type": "SEQ",
-      "members": [
-        {
-          "type": "SYMBOL",
-          "name": "kw_map"
-        },
-        {
-          "type": "FIELD",
-          "name": "structure",
-          "content": {
-            "type": "SYMBOL",
-            "name": "expression"
-          }
-        },
-        {
-          "type": "SYMBOL",
-          "name": "kw_with"
-        },
-        {
-          "type": "FIELD",
-          "name": "operation",
-          "content": {
-            "type": "SYMBOL",
-            "name": "expression"
-          }
-        }
-      ]
-    },
-    "filter_expression": {
-      "type": "SEQ",
-      "members": [
-        {
-          "type": "SYMBOL",
-          "name": "kw_filter"
-        },
-        {
-          "type": "FIELD",
-          "name": "structure",
-          "content": {
-            "type": "SYMBOL",
-            "name": "expression"
-          }
-        },
-        {
-          "type": "SYMBOL",
-          "name": "kw_with"
-        },
-        {
-          "type": "FIELD",
-          "name": "operation",
-          "content": {
-            "type": "SYMBOL",
-            "name": "expression"
-          }
-        }
-      ]
-    },
-    "foreach_expression": {
-      "type": "SEQ",
-      "members": [
-        {
-          "type": "SYMBOL",
-          "name": "kw_foreach"
-        },
-        {
-          "type": "FIELD",
-          "name": "structure",
-          "content": {
-            "type": "SYMBOL",
-            "name": "expression"
-          }
-        },
-        {
-          "type": "SYMBOL",
-          "name": "kw_with"
-        },
-        {
-          "type": "FIELD",
-          "name": "operation",
-          "content": {
-            "type": "SYMBOL",
-            "name": "expression"
-          }
-        }
-      ]
-    },
-    "reduce_expression": {
-      "type": "PREC_RIGHT",
-      "value": 0,
-      "content": {
-        "type": "SEQ",
-        "members": [
-          {
-            "type": "SYMBOL",
-            "name": "kw_reduce"
-          },
-          {
-            "type": "FIELD",
-            "name": "structure",
-            "content": {
-              "type": "SYMBOL",
-              "name": "expression"
-            }
-          },
-          {
-            "type": "CHOICE",
-            "members": [
-              {
-                "type": "SEQ",
-                "members": [
-                  {
-                    "type": "SYMBOL",
-                    "name": "kw_init"
-                  },
-                  {
-                    "type": "STRING",
-                    "value": ":"
-                  },
-                  {
-                    "type": "FIELD",
-                    "name": "init",
-                    "content": {
-                      "type": "SYMBOL",
-                      "name": "expression"
-                    }
-                  }
-                ]
-              },
-              {
-                "type": "BLANK"
-              }
-            ]
-          },
-          {
-            "type": "SYMBOL",
-            "name": "kw_with"
-          },
-          {
-            "type": "FIELD",
-            "name": "operation",
-            "content": {
-              "type": "SYMBOL",
-              "name": "expression"
-            }
-          }
-        ]
-      }
     },
     "match_expression": {
       "type": "PREC_RIGHT",
@@ -2876,48 +2695,6 @@
         "value": "fn"
       }
     },
-    "kw_reduce": {
-      "type": "TOKEN",
-      "content": {
-        "type": "STRING",
-        "value": "reduce"
-      }
-    },
-    "kw_map": {
-      "type": "TOKEN",
-      "content": {
-        "type": "STRING",
-        "value": "map"
-      }
-    },
-    "kw_foreach": {
-      "type": "TOKEN",
-      "content": {
-        "type": "STRING",
-        "value": "foreach"
-      }
-    },
-    "kw_filter": {
-      "type": "TOKEN",
-      "content": {
-        "type": "STRING",
-        "value": "filter"
-      }
-    },
-    "kw_with": {
-      "type": "TOKEN",
-      "content": {
-        "type": "STRING",
-        "value": "with"
-      }
-    },
-    "kw_init": {
-      "type": "TOKEN",
-      "content": {
-        "type": "STRING",
-        "value": "init"
-      }
-    },
     "kw_match": {
       "type": "TOKEN",
       "content": {
@@ -3043,30 +2820,6 @@
       {
         "type": "SYMBOL",
         "name": "kw_fn"
-      },
-      {
-        "type": "SYMBOL",
-        "name": "kw_reduce"
-      },
-      {
-        "type": "SYMBOL",
-        "name": "kw_map"
-      },
-      {
-        "type": "SYMBOL",
-        "name": "kw_foreach"
-      },
-      {
-        "type": "SYMBOL",
-        "name": "kw_filter"
-      },
-      {
-        "type": "SYMBOL",
-        "name": "kw_with"
-      },
-      {
-        "type": "SYMBOL",
-        "name": "kw_init"
       },
       {
         "type": "SYMBOL",

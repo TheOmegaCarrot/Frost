@@ -1,7 +1,7 @@
 # A `match` guard may hold an `if`, whose value decides the guard by
 # truthiness.
 #= {result: ['strict', 'loose', 'loose'], inputs: {strict: true, values: [3, -3, 'x']}}
-map values with fn v -> match v {
+map(values, fn v -> match v {
     n if: (if strict: is_int(n) and n > 0 else: true) => 'strict',
     _ => 'loose',
-}
+})

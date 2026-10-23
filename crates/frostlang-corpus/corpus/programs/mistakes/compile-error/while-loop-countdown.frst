@@ -1,5 +1,5 @@
 # A countdown written with a `while` loop is rejected: repetition in Frost
-# is recursion or an iteration form, never a loop statement.
+# is recursion or an iteration function, never a loop statement.
 #= {
 #=     rejects: 'no `while` loop',
 #=     inputs: {start: 3},

@@ -958,7 +958,7 @@ mod abbreviated {
             // Meant as a thunk over the outer argument
             "$(lazy($($ * 2)))",
             // Meant to call the argument with 10
-            "map fns with $($(10))",
+            "map(fns, $($(10)))",
             "$(fn x -> $(x))",
             "$(fn -> fn -> $($))",
             "$($'${$($1)}')",

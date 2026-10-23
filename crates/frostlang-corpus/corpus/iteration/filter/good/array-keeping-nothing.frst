@@ -1,4 +1,4 @@
 # A predicate that accepts nothing leaves an empty Array, not Null.
 #= {result: [[], []], inputs: {xs: [1, 2]}}
 def never = fn x -> false
-[filter [1, 2] with never, filter xs with never]
+[filter([1, 2], never), filter(xs, never)]

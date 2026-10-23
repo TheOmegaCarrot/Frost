@@ -58,42 +58,24 @@ pub enum Token<'src> {
     /// `false`
     #[token("false")]
     KwFalse,
-    /// `filter`
-    #[token("filter")]
-    KwFilter,
     /// `fn`
     #[token("fn")]
     KwFn,
-    /// `foreach`
-    #[token("foreach")]
-    KwForeach,
     /// `if`
     #[token("if")]
     KwIf,
-    /// `init`
-    #[token("init")]
-    KwInit,
     /// `is`
     #[token("is")]
     KwIs,
-    /// `map`
-    #[token("map")]
-    KwMap,
     /// `match`
     #[token("match")]
     KwMatch,
     /// `null`
     #[token("null")]
     KwNull,
-    /// `reduce`
-    #[token("reduce")]
-    KwReduce,
     /// `true`
     #[token("true")]
     KwTrue,
-    /// `with`
-    #[token("with")]
-    KwWith,
 
     // -- Punctuation (excludes operators) --
     /// `:`
@@ -744,18 +726,12 @@ impl<'src> std::fmt::Display for Token<'src> {
             Token::KwElse => write!(f, "else"),
             Token::KwExport => write!(f, "export"),
             Token::KwFalse => write!(f, "false"),
-            Token::KwFilter => write!(f, "filter"),
             Token::KwFn => write!(f, "fn"),
-            Token::KwForeach => write!(f, "foreach"),
             Token::KwIf => write!(f, "if"),
-            Token::KwInit => write!(f, "init"),
             Token::KwIs => write!(f, "is"),
-            Token::KwMap => write!(f, "map"),
             Token::KwMatch => write!(f, "match"),
             Token::KwNull => write!(f, "null"),
-            Token::KwReduce => write!(f, "reduce"),
             Token::KwTrue => write!(f, "true"),
-            Token::KwWith => write!(f, "with"),
             Token::Colon => write!(f, ":"),
             Token::Semicolon => write!(f, ";"),
             Token::Comma => write!(f, ","),

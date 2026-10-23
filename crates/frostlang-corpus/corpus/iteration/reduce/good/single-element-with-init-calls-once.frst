@@ -1,5 +1,5 @@
-# A one-element Array with `init:` calls the operation exactly once, with the
-# init and the element.
+# A one-element Array with an initial value calls the operation exactly once,
+# with the initial value and the element.
 #= {result: [[0, 7], [0, 7]], inputs: {one: [7]}}
 def pair = fn acc, x -> [acc, x]
-[reduce [7] init: 0 with pair, reduce one init: 0 with pair]
+[reduce([7], 0, pair), reduce(one, 0, pair)]

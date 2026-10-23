@@ -6,7 +6,7 @@
 #=     inputs: {xs: [-3, -2, -1, 0, 1, 2, 3]},
 #= }
 [
-    select(xs, fn x -> x % 2 == 1),
-    filter xs with fn x -> x % 2 != 0,
-    xs @ select($($ % 2 == 0)),
+    filter(xs, fn x -> x % 2 == 1),
+    filter(xs, fn x -> x % 2 != 0),
+    xs @ filter($($ % 2 == 0)),
 ]

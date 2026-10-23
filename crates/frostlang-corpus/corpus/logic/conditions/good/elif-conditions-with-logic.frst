@@ -9,4 +9,4 @@ defn classify(x) -> if not x: 'none'
     elif x % 3 == 0 and x % 5 == 0: 'fizzbuzz'
     elif x % 3 == 0 or x % 5 == 0: 'fizz or buzz'
     else: 'other'
-transform(xs, classify)
+map(xs, classify)

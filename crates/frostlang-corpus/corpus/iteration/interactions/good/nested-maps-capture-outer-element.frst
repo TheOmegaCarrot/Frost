@@ -1,0 +1,7 @@
+# An operation nested in another's sees the outer operation's parameter, so
+# nested `map`s build every pairing.
+#= {
+#=     result: [[[1, 'a'], [1, 'b']], [[2, 'a'], [2, 'b']]],
+#=     inputs: {xs: [1, 2], ys: ['a', 'b']},
+#= }
+map(xs, fn x -> map(ys, fn y -> [x, y]))

@@ -36,13 +36,13 @@
 #=     },
 #= }
 def primitives = {
-    ['+']: fn ...xs -> fold(xs, 0, fn a, b -> a + b),
-    ['*']: fn ...xs -> fold(xs, 1, fn a, b -> a * b),
+    ['+']: fn ...xs -> reduce(xs, 0, fn a, b -> a + b),
+    ['*']: fn ...xs -> reduce(xs, 1, fn a, b -> a * b),
     ['-']: fn a, b -> a - b,
     ['==']: fn a, b -> a == b,
 }
 
-defn bind(env, names, values) -> fold(names, {env, i: 0}, fn s, name -> {
+defn bind(env, names, values) -> reduce(names, {env, i: 0}, fn s, name -> {
     env: s.env + {[name]: values[s.i]},
     i: s.i + 1,
 }).env
@@ -50,9 +50,9 @@ defn bind(env, names, values) -> fold(names, {env, i: 0}, fn s, name -> {
 defn evaluate(node, env) -> match node {
     {lit} => lit,
     {var} => env[var],
-    {prim, args} => call(primitives[prim], transform(args, fn a -> evaluate(a, env))),
+    {prim, args} => call(primitives[prim], map(args, fn a -> evaluate(a, env))),
     {cond, yes, no} => if evaluate(cond, env): evaluate(yes, env) else: evaluate(no, env),
-    {app: callee, args} => call(evaluate(callee, env), transform(args, fn a -> evaluate(a, env))),
+    {app: callee, args} => call(evaluate(callee, env), map(args, fn a -> evaluate(a, env))),
     {fix: name, params, body} => fn self(...values) -> evaluate(body, bind(env + {[name]: self}, params, values)),
 }
 

@@ -7,4 +7,4 @@
 defn pick(a, b) -> if a: 1
     elif b == 0: 2
     elif b: 3
-map cases with fn case -> call(pick, case)
+map(cases, fn case -> call(pick, case))

@@ -1,9 +1,9 @@
-# Numbered placeholders give an abbreviated lambda the arity a form needs.
-# Subtle: `$($2 > 1)` uses only `$2`, yet still takes two parameters, so it
-# fits a Map's key and value.
+# Numbered placeholders give an abbreviated lambda the arity an iteration
+# function needs. Subtle: `$($2 > 1)` uses only `$2`, yet still takes two
+# parameters, so it fits a Map's key and value.
 #= {result: [{b: 2}, 6, {a: 'a1'}], inputs: {m: {a: 1, b: 2}, xs: [1, 2, 3]}}
 [
-    filter m with $($2 > 1),
-    reduce xs init: 0 with $($1 + $2),
-    map {a: 1} with $({[$1]: $1 + to_string($2)}),
+    filter(m, $($2 > 1)),
+    reduce(xs, 0, $($1 + $2)),
+    map({a: 1}, $({[$1]: $1 + to_string($2)})),
 ]

@@ -1,0 +1,5 @@
+# A Map pattern's shorthand both looks up a key and binds a name, so a key
+# spelled `init` may use the shorthand, binding `init`.
+#= {result: 1}
+def {init} = {['init']: 1}
+init

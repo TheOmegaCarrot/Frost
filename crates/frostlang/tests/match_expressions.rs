@@ -277,7 +277,7 @@ fn a_type_constraint_admits_only_its_types() {
     ] {
         for pattern in [format!("_ is {constraint}"), format!("v is {constraint}")] {
             let source = format!(
-                r#"transform([null, true, 1, 1.5, "s", x'00', [1], {{a: 1}}, plus], fn v -> match v {{ {pattern} => 1, _ => 0 }})"#
+                r#"map([null, true, 1, 1.5, "s", x'00', [1], {{a: 1}}, plus], fn v -> match v {{ {pattern} => 1, _ => 0 }})"#
             );
             assert_eq!(run(&source), run(admits), "{pattern}");
         }
@@ -1030,17 +1030,17 @@ fn an_arm_may_capture_its_bindings() {
             "3",
         ),
         (
-            "transform([[1, 2], [3, 4]], fn p -> match p { [a, b] => a * b })",
+            "map([[1, 2], [3, 4]], fn p -> match p { [a, b] => a * b })",
             "[2, 12]",
         ),
         ("match 3 { x if: (fn -> x > 2)() => x, _ => 0 }", "3"),
         (
-            "transform([1, [2], {v: 3}], $(match $ { [x] | {v: x} => x, x => x }))",
+            "map([1, [2], {v: 3}], $(match $ { [x] | {v: x} => x, x => x }))",
             "[1, 2, 3]",
         ),
         (
             r"
-            def fs = transform([[1, 0], [0, 2]], fn p -> match p { [x, 0] | [0, x] => fn -> x })
+            def fs = map([[1, 0], [0, 2]], fn p -> match p { [x, 0] | [0, x] => fn -> x })
             [fs[0](), fs[1]()]
             ",
             "[1, 2]",

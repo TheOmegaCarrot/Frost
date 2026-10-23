@@ -136,12 +136,15 @@ fn format_strings() {
 }
 
 #[test]
-fn pipeline_expressions() {
-    assert_free("fn -> filter xs with pred", &["pred", "xs"]);
-    assert_free("fn -> map xs with f", &["f", "xs"]);
-    assert_free("fn -> reduce xs with op", &["op", "xs"]);
-    assert_free("fn -> reduce xs init: seed with op", &["op", "seed", "xs"]);
-    assert_free("fn -> foreach xs with f", &["f", "xs"]);
+fn collection_calls() {
+    assert_free("fn -> filter(xs, pred)", &["filter", "pred", "xs"]);
+    assert_free("fn -> map(xs, f)", &["f", "map", "xs"]);
+    assert_free("fn -> reduce(xs, op)", &["op", "reduce", "xs"]);
+    assert_free(
+        "fn -> reduce(xs, seed, op)",
+        &["op", "reduce", "seed", "xs"],
+    );
+    assert_free("fn -> each(xs, f)", &["each", "f", "xs"]);
 }
 
 // -- do blocks --
@@ -331,10 +334,10 @@ fn a_pattern_element_does_not_see_a_later_binding() {
 #[test]
 fn a_lambda_in_a_match_arm_captures_the_arm_binding() {
     // The inner lambda captures `xs` (the arm binding); only `t` reaches the
-    // outer lambda.
+    // outer lambda (with the global `map`, which the pre-walk does not filter).
     assert_free(
-        "fn -> match t { xs => map xs with fn y -> y + xs, _ => 0 }",
-        &["t"],
+        "fn -> match t { xs => map(xs, fn y -> y + xs), _ => 0 }",
+        &["map", "t"],
     );
 }
 
@@ -438,7 +441,7 @@ fn abbreviated_lambda_parameters() {
 #[test]
 fn abbreviated_lambda_nested_in_a_lambda() {
     // The inner `$($1 + a + w)` has params `$1`; `a` is the outer param, `w` free.
-    assert_free("fn a -> map xs with $($1 + a + w)", &["w", "xs"]);
+    assert_free("fn a -> map(xs, $($1 + a + w))", &["map", "w", "xs"]);
 }
 
 // -- Evaluation order (unsorted) --
@@ -467,10 +470,10 @@ fn evaluation_order_of_compound_forms() {
     assert_eq!(ordered("fn -> if c: t else: e"), ["c", "t", "e"]);
     assert_eq!(ordered("fn -> [a, b, c]"), ["a", "b", "c"]);
     assert_eq!(ordered("fn -> {[k]: v}"), ["k", "v"]);
-    // Reduce: structure, operation, then the optional init seed.
+    // A call: callee, then arguments left to right.
     assert_eq!(
-        ordered("fn -> reduce xs init: seed with op"),
-        ["xs", "op", "seed"]
+        ordered("fn -> reduce(xs, seed, op)"),
+        ["reduce", "xs", "seed", "op"]
     );
     // Match: discriminant, then each arm's pattern, guard, result.
     assert_eq!(

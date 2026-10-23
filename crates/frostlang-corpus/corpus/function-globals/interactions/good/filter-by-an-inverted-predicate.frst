@@ -1,4 +1,4 @@
 # `inv` of a predicate filters out what the predicate would keep, and keeps
 # False, which is falsy but not Null.
 #= {result: [1, false, 2]}
-filter [1, null, false, 2, null] with inv(is_null)
+filter([1, null, false, 2, null], inv(is_null))

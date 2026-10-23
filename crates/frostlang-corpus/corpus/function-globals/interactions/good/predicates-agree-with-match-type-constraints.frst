@@ -35,4 +35,4 @@ defn by_predicate(v) -> [
     is_structured(v),
     is_flat(v),
 ]
-map [null, false, 0, 0.0, '', x'', [], {}, len] with fn v -> by_constraint(v) == by_predicate(v)
+map([null, false, 0, 0.0, '', x'', [], {}, len], fn v -> by_constraint(v) == by_predicate(v))

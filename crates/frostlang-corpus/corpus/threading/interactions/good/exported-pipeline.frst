@@ -1,5 +1,5 @@
 # An exported binding may hold a threaded chain's result.
 #= {result: 6, exports: {total: 6, count: 3}, inputs: {xs: [1, 2, 3]}}
-export def total = xs @ fold(0, plus)
+export def total = xs @ reduce(0, plus)
 export def count = xs @ len()
 total

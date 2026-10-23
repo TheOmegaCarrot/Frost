@@ -1,4 +1,4 @@
 # The Map-result rule holds for a constant `map` the optimizer could try to
 # compute ahead of time: the error still surfaces when the script runs.
 #= {raises: ['must return a Map', 'Int']}
-map {a: 1} with fn k, v -> v
+map({a: 1}, fn k, v -> v)

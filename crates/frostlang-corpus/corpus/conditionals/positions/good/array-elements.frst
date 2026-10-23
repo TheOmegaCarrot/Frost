@@ -1,4 +1,4 @@
 # `if`s as Array elements each yield one element, Null for a falsy `if` with
 # no `else`.
 #= {result: [[1, 2, 4], [null, 3, 4]], inputs: {cases: [true, false]}}
-map cases with fn x -> [if x: 1, if x: 2 elif not x: 3, 4]
+map(cases, fn x -> [if x: 1, if x: 2 elif not x: 3, 4])

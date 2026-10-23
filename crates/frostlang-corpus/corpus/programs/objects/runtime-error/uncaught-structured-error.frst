@@ -8,4 +8,4 @@ defn withdraw(balance, amount) ->
     if amount > balance: error({reason: 'insufficient funds', short: amount - balance})
     else: balance - amount
 
-fold(withdrawals, opening, withdraw)
+reduce(withdrawals, opening, withdraw)

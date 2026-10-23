@@ -6,4 +6,4 @@ defn apply(op, a, b) -> match handlers[op] {
     null => 'unknown',
     f => f(a, b),
 }
-map ops with fn op -> apply(op, 2, 3)
+map(ops, fn op -> apply(op, 2, 3))

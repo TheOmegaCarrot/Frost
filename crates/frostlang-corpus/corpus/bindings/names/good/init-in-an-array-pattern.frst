@@ -1,0 +1,4 @@
+# An Array pattern element may bind the name `init`.
+#= {result: 1}
+def [init] = [1]
+init

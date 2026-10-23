@@ -15,7 +15,7 @@
 #=         },
 #=     },
 #= }
-defn join(parts) -> if parts == []: '' else: reduce parts with fn text, part -> text + ', ' + part
+defn join(parts) -> if parts == []: '' else: reduce(parts, fn text, part -> text + ', ' + part)
 
 defn render(v) -> match v {
     null => 'null',
@@ -24,8 +24,8 @@ defn render(v) -> match v {
     f is Float => to_string(f),
     s is String => $'"${s}"',
     b is Bytes => $'<${len(b)} bytes>',
-    xs is Array => '[' + join(transform(xs, render)) + ']',
-    m is Map => '{' + join(reduce m init: [] with fn acc, k, item -> acc + [$'${render(k)}: ${render(item)}']) + '}',
+    xs is Array => '[' + join(map(xs, render)) + ']',
+    m is Map => '{' + join(reduce(m, [], fn acc, k, item -> acc + [$'${render(k)}: ${render(item)}'])) + '}',
     _ is Function => '<function>',
 }
 

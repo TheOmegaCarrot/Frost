@@ -1,0 +1,3 @@
+# `each` over Null is a type error, not a no-op.
+#= {raises: ['Structured', 'argument 1', 'Null'], inputs: {nothing: null}}
+each(nothing, fn x -> x)

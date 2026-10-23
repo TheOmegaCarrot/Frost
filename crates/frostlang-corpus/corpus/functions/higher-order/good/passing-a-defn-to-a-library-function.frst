@@ -2,4 +2,4 @@
 #= {result: [[1, 4, 9], [2]]}
 defn square(x) -> x * x
 defn is_even(x) -> x % 2 == 0
-[transform([1, 2, 3], square), select([1, 2, 3], is_even)]
+[map([1, 2, 3], square), filter([1, 2, 3], is_even)]

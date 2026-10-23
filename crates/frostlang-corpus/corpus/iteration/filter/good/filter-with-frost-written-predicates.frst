@@ -1,0 +1,19 @@
+# Functions built by globals written in Frost serve as `filter`'s predicate,
+# their answers judged by truthiness. Subtle: `const(0)` keeps everything, as
+# 0 is truthy, and `collect` keeps every Map entry, as its Array answer is
+# truthy too.
+#= {
+#=     result: [[{on: 0}, {on: ''}], [1, 2], [], {a: 'x', b: 'b'}, {a: 'x'}],
+#=     inputs: {
+#=         records: [{on: 0}, {on: null}, {on: ''}, {on: false}],
+#=         xs: [1, 2],
+#=         m: {a: 'x', b: 'b'},
+#=     },
+#= }
+[
+    filter(records, index('on')),
+    filter(xs, const(0)),
+    filter(xs, const(null)),
+    filter(m, collect),
+    filter(m, inv(equal)),
+]

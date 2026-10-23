@@ -4,4 +4,4 @@
 #=     result: [[false, false], [true, true], [true, true], [false, false], [true, true]],
 #=     inputs: {pairs: [[1, 1], [1, 1.0], [null, false], ['é', 'é'], [[], {}]]},
 #= }
-transform(pairs, fn pair -> [not (pair[0] == pair[1]), pair[0] != pair[1]])
+map(pairs, fn pair -> [not (pair[0] == pair[1]), pair[0] != pair[1]])

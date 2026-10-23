@@ -1,4 +1,0 @@
-# `init` is reserved, so it cannot be an Array pattern's rest binding.
-#= {rejects: ['`init`', 'keyword']}
-def [a, ...init] = [1, 2]
-a

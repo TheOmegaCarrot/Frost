@@ -1,6 +1,6 @@
 # An iteration over a constant structure calls its operation once per element,
 # in order: Arrays by position, Maps by sorted key.
 #= {result: 'done', printed: ['1', '2', '3', 'a', 'b', 'c']}
-foreach [1, 2, 3] with fn x -> print(to_string(x))
-foreach {c: 3, a: 1, b: 2} with fn k, v -> print(k)
+each([1, 2, 3], fn x -> print(to_string(x)))
+each({c: 3, a: 1, b: 2}, fn k, v -> print(k))
 'done'

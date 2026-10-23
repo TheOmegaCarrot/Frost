@@ -9,4 +9,4 @@ elif n == 2:
     'two'
 else:
     'many'
-ns @ transform(name)
+ns @ map(name)

@@ -688,86 +688,6 @@
     }
   },
   {
-    "type": "filter_expression",
-    "named": true,
-    "fields": {
-      "operation": {
-        "multiple": false,
-        "required": true,
-        "types": [
-          {
-            "type": "expression",
-            "named": true
-          }
-        ]
-      },
-      "structure": {
-        "multiple": false,
-        "required": true,
-        "types": [
-          {
-            "type": "expression",
-            "named": true
-          }
-        ]
-      }
-    },
-    "children": {
-      "multiple": true,
-      "required": true,
-      "types": [
-        {
-          "type": "kw_filter",
-          "named": true
-        },
-        {
-          "type": "kw_with",
-          "named": true
-        }
-      ]
-    }
-  },
-  {
-    "type": "foreach_expression",
-    "named": true,
-    "fields": {
-      "operation": {
-        "multiple": false,
-        "required": true,
-        "types": [
-          {
-            "type": "expression",
-            "named": true
-          }
-        ]
-      },
-      "structure": {
-        "multiple": false,
-        "required": true,
-        "types": [
-          {
-            "type": "expression",
-            "named": true
-          }
-        ]
-      }
-    },
-    "children": {
-      "multiple": true,
-      "required": true,
-      "types": [
-        {
-          "type": "kw_foreach",
-          "named": true
-        },
-        {
-          "type": "kw_with",
-          "named": true
-        }
-      ]
-    }
-  },
-  {
     "type": "format_invalid_escape_sequence",
     "named": true,
     "fields": {}
@@ -1075,46 +995,6 @@
           }
         ]
       }
-    }
-  },
-  {
-    "type": "map_expression",
-    "named": true,
-    "fields": {
-      "operation": {
-        "multiple": false,
-        "required": true,
-        "types": [
-          {
-            "type": "expression",
-            "named": true
-          }
-        ]
-      },
-      "structure": {
-        "multiple": false,
-        "required": true,
-        "types": [
-          {
-            "type": "expression",
-            "named": true
-          }
-        ]
-      }
-    },
-    "children": {
-      "multiple": true,
-      "required": true,
-      "types": [
-        {
-          "type": "kw_map",
-          "named": true
-        },
-        {
-          "type": "kw_with",
-          "named": true
-        }
-      ]
     }
   },
   {
@@ -1602,14 +1482,6 @@
           "named": true
         },
         {
-          "type": "filter_expression",
-          "named": true
-        },
-        {
-          "type": "foreach_expression",
-          "named": true
-        },
-        {
           "type": "identifier",
           "named": true
         },
@@ -1626,10 +1498,6 @@
           "named": true
         },
         {
-          "type": "map_expression",
-          "named": true
-        },
-        {
           "type": "map_literal",
           "named": true
         },
@@ -1639,10 +1507,6 @@
         },
         {
           "type": "parenthesized_expression",
-          "named": true
-        },
-        {
-          "type": "reduce_expression",
           "named": true
         }
       ]
@@ -1697,60 +1561,6 @@
       "types": [
         {
           "type": "unary_expression",
-          "named": true
-        }
-      ]
-    }
-  },
-  {
-    "type": "reduce_expression",
-    "named": true,
-    "fields": {
-      "init": {
-        "multiple": false,
-        "required": false,
-        "types": [
-          {
-            "type": "expression",
-            "named": true
-          }
-        ]
-      },
-      "operation": {
-        "multiple": false,
-        "required": true,
-        "types": [
-          {
-            "type": "expression",
-            "named": true
-          }
-        ]
-      },
-      "structure": {
-        "multiple": false,
-        "required": true,
-        "types": [
-          {
-            "type": "expression",
-            "named": true
-          }
-        ]
-      }
-    },
-    "children": {
-      "multiple": true,
-      "required": true,
-      "types": [
-        {
-          "type": "kw_init",
-          "named": true
-        },
-        {
-          "type": "kw_reduce",
-          "named": true
-        },
-        {
-          "type": "kw_with",
           "named": true
         }
       ]
@@ -1939,14 +1749,6 @@
           "named": true
         },
         {
-          "type": "filter_expression",
-          "named": true
-        },
-        {
-          "type": "foreach_expression",
-          "named": true
-        },
-        {
           "type": "identifier",
           "named": true
         },
@@ -1963,10 +1765,6 @@
           "named": true
         },
         {
-          "type": "map_expression",
-          "named": true
-        },
-        {
           "type": "map_literal",
           "named": true
         },
@@ -1976,10 +1774,6 @@
         },
         {
           "type": "parenthesized_expression",
-          "named": true
-        },
-        {
-          "type": "reduce_expression",
           "named": true
         }
       ]
@@ -2283,15 +2077,7 @@
     "named": true
   },
   {
-    "type": "kw_filter",
-    "named": true
-  },
-  {
     "type": "kw_fn",
-    "named": true
-  },
-  {
-    "type": "kw_foreach",
     "named": true
   },
   {
@@ -2299,15 +2085,7 @@
     "named": true
   },
   {
-    "type": "kw_init",
-    "named": true
-  },
-  {
     "type": "kw_is",
-    "named": true
-  },
-  {
-    "type": "kw_map",
     "named": true
   },
   {
@@ -2327,15 +2105,7 @@
     "named": true
   },
   {
-    "type": "kw_reduce",
-    "named": true
-  },
-  {
     "type": "kw_true",
-    "named": true
-  },
-  {
-    "type": "kw_with",
     "named": true
   },
   {

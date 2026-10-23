@@ -5,6 +5,6 @@ def add = fn a, b -> a + b
 def double = fn x -> x * 2
 [
     5 @ add(3),
-    [1, 2, 3] @ transform(double),
-    [1, 2, 3] @ transform(double) @ fold(0, add),
+    [1, 2, 3] @ map(double),
+    [1, 2, 3] @ map(double) @ reduce(0, add),
 ]

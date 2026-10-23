@@ -1,10 +1,10 @@
-# An `if` in a `do` block in a lambda in a `map` expression: each layer keeps
-# its own scope and runs per element.
+# An `if` in a `do` block in a lambda given to `map`: each layer keeps its
+# own scope and runs per element.
 #= {result: ['small 1', 'big 20', 'small 3'], inputs: {xs: [1, 20, 3], limit: 10}}
-map xs with fn x -> {
+map(xs, fn x -> {
     def label = do {
         def over = x > limit
         if over: 'big' else: 'small'
     }
     $'${label} ${x}'
-}
+})

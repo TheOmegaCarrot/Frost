@@ -1,9 +1,0 @@
-# A prefix `-` or `not` before a form applies to the form's whole result,
-# though the form extends to the end of the line. Subtle: `not filter xs
-# with ...` is false even when nothing passes, since the empty Array it
-# negates is truthy.
-#= {result: [-6, false], inputs: {xs: [1, 2, 3]}}
-[
-    -reduce xs with fn acc, x -> acc + x,
-    not filter xs with fn x -> false,
-]

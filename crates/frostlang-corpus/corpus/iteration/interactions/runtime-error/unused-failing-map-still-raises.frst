@@ -2,5 +2,5 @@
 # operation's error still surfaces. Subtle: the operation is pure, so only the
 # error makes the computation observable.
 #= {raises: 'division by zero', lints: [['unused binding', '`unused`']]}
-def unused = map [1, 0] with fn x -> 1 / x
+def unused = map([1, 0], fn x -> 1 / x)
 'unreachable'

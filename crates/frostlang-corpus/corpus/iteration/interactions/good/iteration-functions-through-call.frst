@@ -1,0 +1,11 @@
+# The iteration functions are ordinary functions: `call` applies them to an
+# argument Array, including `reduce`'s optional initial value.
+#= {result: [[2, 3], [2], 3, 13], inputs: {xs: [1, 2]}}
+def inc = fn x -> x + 1
+def add = fn acc, x -> acc + x
+[
+    call(map, [xs, inc]),
+    call(filter, [xs, fn x -> x > 1]),
+    call(reduce, [xs, add]),
+    call(reduce, [xs, 10, add]),
+]

@@ -1,5 +1,5 @@
-# A name shadowing a global, passed as a `map` operation, is the binding's
-# function, not the global.
+# A name shadowing a global, passed to `map` as its function, is the
+# binding's function, not the global.
 #= {result: [7, 7], inputs: {xs: [[1, 2], []]}}
 def len = fn v -> 7
-map xs with len
+map(xs, len)

@@ -1,0 +1,12 @@
+# A native global serves as `filter`'s predicate. Over a Map, a two-parameter
+# native receives the key and the value: `equal` keeps entries whose key is
+# its own value, `starts_with` those whose key starts with the value.
+#= {
+#=     result: [[1, 2], {a: 'a'}, {abc: 'ab', b: 'b'}],
+#=     inputs: {
+#=         xs: [1, 'one', 2, null],
+#=         m: {a: 'a', b: 'c'},
+#=         prefixes: {abc: 'ab', b: 'b', cd: 'x'},
+#=     },
+#= }
+[filter(xs, is_int), filter(m, equal), filter(prefixes, starts_with)]

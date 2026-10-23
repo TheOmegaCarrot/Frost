@@ -5,4 +5,4 @@
 #=     raises: 'String + Int',
 #=     inputs: {counts: {apples: 3, pears: 5}},
 #= }
-reduce counts init: [] with fn lines, name, count -> lines + [name + ': ' + count]
+reduce(counts, [], fn lines, name, count -> lines + [name + ': ' + count])

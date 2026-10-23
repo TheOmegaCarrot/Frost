@@ -37,7 +37,7 @@ use crate::error::sqlite_error;
 ///
 /// # Statements
 ///
-/// `exec`, `query`, and `fold` each run the one statement of their `sql`,
+/// `exec`, `query`, and `reduce` each run the one statement of their `sql`,
 /// which comments and semicolons may surround. SQL holding no statement, or
 /// more than one, is an error; [`Method::Script`] runs several.
 ///
@@ -46,13 +46,13 @@ use crate::error::sqlite_error;
 /// error in every method.
 ///
 /// A statement changing rows makes all its changes as it begins, as SQLite
-/// runs it. A call failing later, on a row it cannot read or in a `fold`'s
+/// runs it. A call failing later, on a row it cannot read or in a `reduce`'s
 /// `function`, leaves those changes made, and outside a transaction,
 /// committed.
 ///
 /// # Bindings
 ///
-/// The optional `bindings` of `exec`, `query`, and `fold` give the values of
+/// The optional `bindings` of `exec`, `query`, and `reduce` give the values of
 /// the statement's parameters:
 ///
 /// - An Array binds its values to the parameters in order, and must hold one
@@ -114,25 +114,25 @@ pub enum Method {
     /// `db.query(sql, bindings?)` runs a statement and returns its rows, as
     /// an Array.
     Query,
-    /// `db.fold(sql, bindings?, initial, function)` runs a statement and
-    /// folds its rows: it calls `function(accumulator, row)` for each row in
+    /// `db.reduce(sql, bindings?, initial, function)` runs a statement and
+    /// reduces its rows: it calls `function(accumulator, row)` for each row in
     /// turn, with `initial` as the first accumulator and each call's result
     /// as the next, and returns the last result, or `initial` for no rows.
     ///
     /// A statement that only reads is read row by row, as `function` takes
-    /// each, so the fold holds one row at a time. A statement that changes
+    /// each, so the reduction holds one row at a time. A statement that changes
     /// rows and returns them, with SQLite's
     /// [`RETURNING`](https://www.sqlite.org/lang_returning.html) clause, runs
     /// in full before `function` takes its first row, so that `function` may
-    /// begin a transaction; the fold then holds every row.
+    /// begin a transaction; the reduction then holds every row.
     ///
     /// `function` may use the connection meanwhile, though not close it.
     /// Whether a change `function` makes to the rows being read shows in the
     /// rows still to come is undefined, as SQLite leaves it. A transaction
     /// `function` rolls back having changed the schema ends the read, and the
-    /// fold fails. An error from `function` ends the statement, and is the
+    /// reduction fails. An error from `function` ends the statement, and is the
     /// call's error.
-    Fold,
+    Reduce,
     /// `db.last_insert_rowid()` returns the rowid of the row last inserted
     /// on the connection, as SQLite's
     /// [`sqlite3_last_insert_rowid`](https://www.sqlite.org/c3ref/last_insert_rowid.html)
@@ -185,7 +185,7 @@ pub enum Method {
 /// one returned to its pool.
 ///
 /// A connection serves one call at a time. A call from another thread waits
-/// while one runs: a `fold` or `transaction` until its function returns.
+/// while one runs: a `reduce` or `transaction` until its function returns.
 pub struct ScriptConnection {
     connection: Source,
     methods: EnumSet<Method>,
@@ -219,7 +219,7 @@ impl ScriptConnection {
     /// Exposes only `methods`, rather than every [`Method`], the default.
     ///
     /// Methods choose how scripts reach the connection, not what their SQL
-    /// may do: `query` and `fold` run any statement, writes included. An
+    /// may do: `query` and `reduce` run any statement, writes included. An
     /// [`Authorizer`] or a read-only connection limits the SQL itself.
     ///
     /// A set built from `EnumSet::all()`, such as `EnumSet::all() -

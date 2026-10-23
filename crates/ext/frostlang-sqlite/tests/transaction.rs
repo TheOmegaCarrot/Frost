@@ -553,7 +553,7 @@ fn a_tx_offers_the_connections_methods_but_close() {
             keys_of.get()
             ",
         ),
-        "['exec', 'fold', 'last_insert_rowid', 'query', 'script', 'transaction']",
+        "['exec', 'last_insert_rowid', 'query', 'reduce', 'script', 'transaction']",
     )]);
 }
 
@@ -568,7 +568,7 @@ fn a_tx_sees_its_own_changes() {
             tx.exec('INSERT INTO n (x) VALUES (?)', [3])
             seen.exchange([
                 tx.query('SELECT x FROM n ORDER BY id'),
-                tx.fold('SELECT x FROM n', 0, fn total, row -> total + row.x),
+                tx.reduce('SELECT x FROM n', 0, fn total, row -> total + row.x),
                 tx.last_insert_rowid(),
             ])
         })
@@ -583,7 +583,10 @@ fn the_connection_is_unusable_while_a_transaction_is_open() {
     for (call, name) in [
         ("db.exec('SELECT 1')", "db.exec"),
         ("db.query('SELECT 1')", "db.query"),
-        ("db.fold('SELECT 1', null, fn acc, row -> acc)", "db.fold"),
+        (
+            "db.reduce('SELECT 1', null, fn acc, row -> acc)",
+            "db.reduce",
+        ),
         ("db.script('SELECT 1')", "db.script"),
         ("db.last_insert_rowid()", "db.last_insert_rowid"),
         ("db.transaction(fn other -> null)", "db.transaction"),
@@ -645,7 +648,7 @@ fn an_ended_tx_cannot_be_used() {
         def ended = [
             attempt(fn -> tx.exec('SELECT 1')),
             attempt(fn -> tx.query('SELECT 1')),
-            attempt(fn -> tx.fold('SELECT 1', null, fn acc, row -> acc)),
+            attempt(fn -> tx.reduce('SELECT 1', null, fn acc, row -> acc)),
             attempt(fn -> tx.script('SELECT 1')),
             attempt(fn -> tx.last_insert_rowid()),
             attempt(fn -> tx.transaction(fn inner -> null)),
@@ -662,7 +665,7 @@ fn an_ended_tx_cannot_be_used() {
             Value::array([
                 message("tx.exec"),
                 message("tx.query"),
-                message("tx.fold"),
+                message("tx.reduce"),
                 message("tx.script"),
                 message("tx.last_insert_rowid"),
                 message("tx.transaction"),
@@ -783,7 +786,7 @@ fn the_outer_tx_is_unusable_while_an_inner_transaction_is_open() {
         db.transaction(fn tx -> tx.transaction(fn inner -> attempts.exchange([
             attempt(fn -> tx.exec('SELECT 1')),
             attempt(fn -> tx.query('SELECT 1')),
-            attempt(fn -> tx.fold('SELECT 1', null, fn acc, row -> acc)),
+            attempt(fn -> tx.reduce('SELECT 1', null, fn acc, row -> acc)),
             attempt(fn -> tx.script('SELECT 1')),
             attempt(fn -> tx.last_insert_rowid()),
             attempt(fn -> tx.transaction(fn other -> null)),
@@ -800,7 +803,7 @@ fn the_outer_tx_is_unusable_while_an_inner_transaction_is_open() {
             "[{}, {}, {}, {}, {}, {}, {}, 0]",
             blocked("tx.exec"),
             blocked("tx.query"),
-            blocked("tx.fold"),
+            blocked("tx.reduce"),
             blocked("tx.script"),
             blocked("tx.last_insert_rowid"),
             blocked("tx.transaction"),
@@ -831,12 +834,12 @@ fn an_ended_inner_tx_cannot_be_used_while_the_outer_is_open() {
 // --- Callbacks reentering the connection, and other connections ---
 
 #[test]
-fn a_rollback_undoing_a_schema_change_ends_a_fold_in_progress() {
+fn a_rollback_undoing_a_schema_change_ends_a_reduce_in_progress() {
     // SQLite ends every read in progress as such a rollback undoes the schema
     // they read under. Rolling back data alone ends none.
     let source = with_rows(
         r"
-        def ended = try_call(db.fold, ['SELECT id FROM t', null, fn acc, row -> {
+        def ended = try_call(db.reduce, ['SELECT id FROM t', null, fn acc, row -> {
             db.transaction(fn tx -> {
                 tx.exec('CREATE TABLE u (x)')
                 assert(false)
@@ -847,16 +850,16 @@ fn a_rollback_undoing_a_schema_change_ends_a_fold_in_progress() {
     );
     assert_values(&[(
         &source,
-        "['Function db.fold failed: abort due to ROLLBACK (SQLITE_ABORT)', [{name: 't'}]]",
+        "['Function db.reduce failed: abort due to ROLLBACK (SQLITE_ABORT)', [{name: 't'}]]",
     )]);
 }
 
 #[test]
-fn a_transaction_may_run_within_a_fold() {
+fn a_transaction_may_run_within_a_reduce() {
     let source = with_rows(
         r"
         db.exec('CREATE TABLE log (id)')
-        def outcomes = db.fold('SELECT id FROM t ORDER BY id', [], fn acc, row -> {
+        def outcomes = db.reduce('SELECT id FROM t ORDER BY id', [], fn acc, row -> {
             def outcome = db.transaction(fn tx -> {
                 tx.exec('INSERT INTO log VALUES (?)', [row.id])
                 if row.id == 2: assert(false) else: null
@@ -870,14 +873,14 @@ fn a_transaction_may_run_within_a_fold() {
 }
 
 #[test]
-fn a_transaction_may_run_within_a_fold_over_a_statement_that_writes() {
+fn a_transaction_may_run_within_a_reduce_over_a_statement_that_writes() {
     // The statement runs in full before the first call, so neither loses the
     // other's work.
     let source = with_db(
         r"
         db.exec('CREATE TABLE t (id)')
         db.exec('CREATE TABLE log (id)')
-        def outcomes = db.fold('INSERT INTO t VALUES (1), (2) RETURNING id', [], fn acc, row -> {
+        def outcomes = db.reduce('INSERT INTO t VALUES (1), (2) RETURNING id', [], fn acc, row -> {
             def outcome = db.transaction(fn tx -> tx.exec('INSERT INTO log VALUES (?)', [row.id]))
             acc + [outcome.ok]
         })
@@ -893,7 +896,7 @@ fn a_transaction_may_run_within_a_fold_over_a_statement_that_writes() {
         r"
         db.exec('CREATE TABLE t (id)')
         def outer = db.transaction(fn tx -> {
-            tx.fold('INSERT INTO t VALUES (1), (2) RETURNING id', null, fn acc, row -> {
+            tx.reduce('INSERT INTO t VALUES (1), (2) RETURNING id', null, fn acc, row -> {
                 assert(tx.transaction(fn inner -> inner.exec('INSERT INTO t VALUES (?)', [row.id * 10])).ok)
             })
         })
@@ -907,12 +910,12 @@ fn a_transaction_may_run_within_a_fold_over_a_statement_that_writes() {
 }
 
 #[test]
-fn a_fold_within_a_transaction_may_reenter_it() {
+fn a_reduce_within_a_transaction_may_reenter_it() {
     let source = with_rows(
         r"
         db.exec('CREATE TABLE log (id)')
         def outer = db.transaction(fn tx -> {
-            tx.fold('SELECT id FROM t ORDER BY id', null, fn acc, row -> {
+            tx.reduce('SELECT id FROM t ORDER BY id', null, fn acc, row -> {
                 tx.exec('INSERT INTO log VALUES (?)', [row.id])
                 tx.transaction(fn inner -> {
                     inner.exec('INSERT INTO log VALUES (?)', [row.id * 10])
@@ -1242,8 +1245,8 @@ fn a_tx_method_checks_its_arguments_as_the_connections_does() {
             arity("tx.query", "between 1 and 2", 3),
         ),
         (
-            "tx.fold('SELECT 1', null)",
-            arity("tx.fold", "between 3 and 4", 2),
+            "tx.reduce('SELECT 1', null)",
+            arity("tx.reduce", "between 3 and 4", 2),
         ),
         ("tx.script()", arity("tx.script", "1", 0)),
         ("tx.script('SELECT 1', [])", arity("tx.script", "1", 2)),
@@ -1264,9 +1267,9 @@ fn a_tx_method_checks_its_arguments_as_the_connections_does() {
             );
         }
         assert_eq!(
-            kept_tx_raises(&format!("tx.fold({argument}, null, fn acc, row -> acc)")),
+            kept_tx_raises(&format!("tx.reduce({argument}, null, fn acc, row -> acc)")),
             Value::from(format!(
-                "Function tx.fold requires String as argument 1 (sql), got {kind}"
+                "Function tx.reduce requires String as argument 1 (sql), got {kind}"
             )),
         );
     }
@@ -1280,12 +1283,12 @@ fn a_tx_method_checks_its_arguments_as_the_connections_does() {
             "Function tx.query requires Structured as argument 2 (bindings), got String",
         ),
         (
-            "tx.fold('SELECT 1', null, 1)",
-            "Function tx.fold requires Function as argument 3, got Int",
+            "tx.reduce('SELECT 1', null, 1)",
+            "Function tx.reduce requires Function as argument 3, got Int",
         ),
         (
-            "tx.fold('SELECT 1', [], null, 1)",
-            "Function tx.fold requires Function as argument 4, got Int",
+            "tx.reduce('SELECT 1', [], null, 1)",
+            "Function tx.reduce requires Function as argument 4, got Int",
         ),
     ] {
         assert_eq!(kept_tx_raises(call), Value::from(expected), "{call}");

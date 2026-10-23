@@ -1,9 +1,10 @@
-# Forms reach into nested structures: Arrays of Maps of Arrays.
+# Iteration functions reach into nested structures: Arrays of Maps of
+# Arrays.
 #= {
 #=     result: [{name: 'a', total: 3}, {name: 'b', total: 0}],
 #=     inputs: {rows: [{name: 'a', items: [1, 2]}, {name: 'b', items: []}]},
 #= }
-map rows with fn row -> {
+map(rows, fn row -> {
     name: row.name,
-    total: reduce row.items init: 0 with fn acc, x -> acc + x,
-}
+    total: reduce(row.items, 0, fn acc, x -> acc + x),
+})

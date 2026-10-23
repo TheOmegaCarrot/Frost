@@ -1,5 +1,0 @@
-# `fold` takes its init before the function. Subtle: written the other way
-# round, the function is taken as the init and the init as the function, so
-# the error is about the last argument not being a Function.
-#= {raises: ['fold', 'Function', 'argument 3', 'Int']}
-fold([1, 2], fn acc, x -> acc + x, 0)

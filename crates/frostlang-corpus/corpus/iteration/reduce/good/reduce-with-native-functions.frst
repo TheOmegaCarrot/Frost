@@ -1,0 +1,8 @@
+# A two-parameter native global serves as `reduce`'s function, with or without
+# an initial value, over a literal Array the optimizer may compute ahead of time and
+# over a runtime one alike.
+#= {
+#=     result: [6, 6, 94, 'abc', [1, 2, 3]],
+#=     inputs: {xs: [1, 2, 3], words: ['b', 'c'], rows: [[2], [3]]},
+#= }
+[reduce([1, 2, 3], plus), reduce(xs, plus), reduce(xs, 100, minus), reduce(words, 'a', plus), reduce(rows, [1], plus)]

@@ -1,4 +1,0 @@
-# `with` is a keyword, so it cannot be bound as a name.
-#= {rejects: ['`with`', 'keyword']}
-def with = 1
-1

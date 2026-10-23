@@ -2,5 +2,5 @@
 # being mapped still sees it whole and unchanged.
 #= {result: [[13, 23, 33], [1, 2, 3]]}
 def xs = [1, 2, 3]
-def ys = map xs with fn x -> x * 10 + len(xs)
+def ys = map(xs, fn x -> x * 10 + len(xs))
 [ys, xs]

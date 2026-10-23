@@ -57,4 +57,4 @@ defn report(node) -> match try_call(check, [{}, node]) {
     {error: {where, wanted, found}} => $'${where}: wanted ${wanted}, found ${found}',
 }
 
-map programs with report
+map(programs, report)

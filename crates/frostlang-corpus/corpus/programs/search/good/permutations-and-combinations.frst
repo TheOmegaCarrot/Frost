@@ -22,19 +22,19 @@
 #= }
 defn upto(n) -> if n == 0: [] else: upto(n - 1) + [n - 1]
 
-defn without(xs, index) -> fold(upto(len(xs)), [], fn kept, i -> if i == index: kept else: kept + [xs[i]])
+defn without(xs, index) -> reduce(upto(len(xs)), [], fn kept, i -> if i == index: kept else: kept + [xs[i]])
 
 defn permutations(xs) ->
     if xs == []: [[]]
-    else: fold(upto(len(xs)), [], fn all, i ->
-        all + transform(permutations(without(xs, i)), fn rest -> [xs[i]] + rest)
+    else: reduce(upto(len(xs)), [], fn all, i ->
+        all + map(permutations(without(xs, i)), fn rest -> [xs[i]] + rest)
     )
 
 defn choose(xs, k) ->
     if k == 0: [[]]
     else: match xs {
         [] => [],
-        [first, ...rest] => transform(choose(rest, k - 1), fn c -> [first] + c) + choose(rest, k),
+        [first, ...rest] => map(choose(rest, k - 1), fn c -> [first] + c) + choose(rest, k),
     }
 
 {

@@ -1,0 +1,6 @@
+# `with` is an ordinary name inside a nested `do` block too.
+#= {result: 1}
+do {
+    def with = 1
+    with
+}

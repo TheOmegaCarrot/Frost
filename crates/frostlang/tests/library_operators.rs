@@ -183,10 +183,10 @@ fn comparison_globals_raise_as_their_operators_do() {
 #[test]
 fn operator_globals_work_as_function_values() {
     assert_values(&[
-        ("reduce [1, 2, 3] with plus", "6"),
-        ("reduce [10, 1, 2] with minus", "7"),
-        ("select([1, 5, 3], curry(less_than, 2))", "[5, 3]"),
-        ("map [[1, 2], [3, 3]] with spread(equal)", "[false, true]"),
+        ("reduce([1, 2, 3], plus)", "6"),
+        ("reduce([10, 1, 2], minus)", "7"),
+        ("filter([1, 5, 3], curry(less_than, 2))", "[5, 3]"),
+        ("map([[1, 2], [3, 3]], spread(equal))", "[false, true]"),
     ]);
 }
 

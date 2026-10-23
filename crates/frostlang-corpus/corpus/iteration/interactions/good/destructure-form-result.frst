@@ -1,5 +1,0 @@
-# A form's result can be destructured by `def`, Array and Map alike.
-#= {result: [2, 4, 10], inputs: {xs: [1, 2], m: {a: 1}}}
-def [first, second] = map xs with fn x -> x * 2
-def {a} = map m with fn k, v -> {[k]: v * 10}
-[first, second, a]

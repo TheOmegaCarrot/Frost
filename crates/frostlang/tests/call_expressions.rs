@@ -460,3 +460,54 @@ fn threading_over_pure_globals_folds() {
     assert_eq!(calls(&emitted), 0, "{emitted:?}");
     assert_eq!(emitted.count(&Bytecode::PushInt(3)), 1, "{emitted:?}");
 }
+
+// --- Calls to the collection functions ---
+
+/// The code of `source` under [`FOLD`], with `xs` a runtime-only Array.
+fn collection_code(source: &str) -> Emitted {
+    Script::new(source)
+        .capture("xs", Value::from_iter([Value::Int(1), Value::Int(2)]))
+        .code(FOLD)
+}
+
+#[test]
+fn a_collection_call_over_constants_folds_away() {
+    for source in [
+        "filter([1, 2, 3], fn x -> x > 1)",
+        "map([1, 2, 3], fn x -> x * 2)",
+        "reduce([1, 2, 3], 0, fn a, x -> a + x)",
+        "each([1, 2], fn x -> x)",
+    ] {
+        let emitted = collection_code(source);
+        assert_eq!(calls(&emitted), 0, "{source:?} folds away: {emitted:?}");
+    }
+}
+
+#[test]
+fn a_collection_call_over_a_runtime_structure_is_kept() {
+    for source in [
+        "map(xs, fn x -> x * 2)",
+        "filter(xs, fn x -> x > 1)",
+        "reduce(xs, 0, fn a, x -> a + x)",
+        "each(xs, fn x -> x)",
+    ] {
+        let emitted = collection_code(source);
+        assert_eq!(calls(&emitted), 1, "{source:?}: {emitted:?}");
+    }
+}
+
+#[test]
+fn a_collection_call_with_an_effectful_operation_is_kept() {
+    let emitted = collection_code("map([1, 2], fn x -> if false: print(x) else: x)");
+    assert_eq!(calls(&emitted), 1, "{emitted:?}");
+}
+
+#[test]
+fn a_collection_call_in_tail_position_is_a_tail_call() {
+    let unoptimized = |source: &str| Script::new(source).code(UNOPTIMIZED).nested(0);
+    let body = unoptimized("fn ys -> map(ys, fn x -> x)");
+    assert_eq!(body.count(&Bytecode::TailCall(2)), 1, "{body:?}");
+    let body = unoptimized("fn ys -> [map(ys, fn x -> x)]");
+    assert_eq!(body.count(&Bytecode::Call(2)), 1, "{body:?}");
+    assert_eq!(body.count(&Bytecode::TailCall(2)), 0, "{body:?}");
+}

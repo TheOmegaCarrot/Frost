@@ -215,7 +215,7 @@ fn every_method_running_sql_stops_within_a_step() {
     for call in [
         format!("db.exec('{runaway}')"),
         format!("db.query('{runaway}')"),
-        format!("db.fold('{runaway}', null, fn acc, row -> acc)"),
+        format!("db.reduce('{runaway}', null, fn acc, row -> acc)"),
         format!("db.script('SELECT 1; {runaway}')"),
         format!("db.transaction(fn tx -> tx.exec('{runaway}'))"),
         format!("db.transaction(fn tx -> tx.transaction(fn inner -> inner.query('{runaway}')))"),
@@ -316,14 +316,14 @@ fn the_extensions_own_connections_are_cancellable() {
 
 #[test]
 fn a_nested_call_leaves_the_outer_statement_cancellable() {
-    // The fold's first row comes at once, and its callback makes a call of its
+    // The reduce's first row comes at once, and its callback makes a call of its
     // own on the connection. The second row runs away, cancelling as it
     // begins: only the outer statement's watch, restored after the nested
     // call, can stop it.
     let setup = Setup::cancellable(&CancelToken::new());
     let body = format!(
         r"
-        db.fold('SELECT CASE WHEN n = 2 THEN ({ENDLESS} SELECT count(*) FROM c WHERE cancel_now()) ELSE n END AS v FROM (SELECT 1 AS n UNION ALL SELECT 2)', null, fn acc, row -> {{
+        db.reduce('SELECT CASE WHEN n = 2 THEN ({ENDLESS} SELECT count(*) FROM c WHERE cancel_now()) ELSE n END AS v FROM (SELECT 1 AS n UNION ALL SELECT 2)', null, fn acc, row -> {{
             db.exec('SELECT 1')
         }})
         "
@@ -599,8 +599,8 @@ fn every_method_running_sql_stops_at_the_next_row_once_cancelled() {
     for call in [
         format!("db.exec('{CANCELLING_ROWS}')"),
         format!("db.query('{CANCELLING_ROWS}')"),
-        // The callback's call back stops it as well as the fold's own check.
-        format!("db.fold('{CANCELLING_ROWS}', null, fn acc, row -> acc)"),
+        // The callback's call back stops it as well as the reduce's own check.
+        format!("db.reduce('{CANCELLING_ROWS}', null, fn acc, row -> acc)"),
         format!("db.script('{CANCELLING_ROWS}')"),
     ] {
         let setup = Setup::not_cancellable(&CancelToken::new());

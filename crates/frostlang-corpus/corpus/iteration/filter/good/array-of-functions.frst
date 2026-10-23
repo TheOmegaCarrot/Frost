@@ -1,4 +1,4 @@
 # Functions are elements like any other: `filter` keeps them by the
 # predicate's answer.
 #= {result: 2, inputs: {xs: [len, 1, type, 'f']}}
-len(filter xs with is_function)
+len(filter(xs, is_function))

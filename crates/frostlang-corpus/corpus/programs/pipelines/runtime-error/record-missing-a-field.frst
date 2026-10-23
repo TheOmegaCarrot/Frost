@@ -11,5 +11,5 @@
 #=         ],
 #=     },
 #= }
-def revenue = fold(sales, 0, fn total, sale -> total + sale.qty * sale.price)
+def revenue = reduce(sales, 0, fn total, sale -> total + sale.qty * sale.price)
 $'revenue: ${revenue}'

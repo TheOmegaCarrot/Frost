@@ -1,6 +1,0 @@
-# The forms compose: the result of one is the structure of the next.
-#= {result: [[30, 40], 14, [3, 3]], inputs: {xs: [1, 2, 3, 4], rows: [[1, 2], [3]]}}
-def big = map (filter xs with fn x -> x > 2) with fn x -> x * 10
-def squares = reduce (map [1, 2, 3] with fn x -> x * x) with fn acc, x -> acc + x
-def sums = map rows with fn row -> reduce row init: 0 with fn acc, x -> acc + x
-[big, squares, sums]

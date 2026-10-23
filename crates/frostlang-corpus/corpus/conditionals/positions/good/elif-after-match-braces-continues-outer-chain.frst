@@ -9,4 +9,4 @@
 defn describe(a, v) -> if a: match v {
     n is Int => if n == 1: 'one'
 } elif v == 2: 'two' else: 'other'
-map cases with fn c -> call(describe, c)
+map(cases, fn c -> call(describe, c))

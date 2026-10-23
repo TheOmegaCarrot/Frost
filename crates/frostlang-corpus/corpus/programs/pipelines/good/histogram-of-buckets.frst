@@ -11,12 +11,12 @@
 #= }
 defn bar(n) -> if n == 0: '' else: '#' + bar(n - 1)
 
-def counts = fold(values, {}, fn acc, v -> {
+def counts = reduce(values, {}, fn acc, v -> {
     def bucket = v / width
     acc + {[bucket]: (acc[bucket] or 0) + 1}
 })
 
-reduce counts init: [] with fn lines, bucket, count -> {
+reduce(counts, [], fn lines, bucket, count -> {
     def low = bucket * width
     lines + [$'${low}-${low + width - 1} ${bar(count)}']
-}
+})

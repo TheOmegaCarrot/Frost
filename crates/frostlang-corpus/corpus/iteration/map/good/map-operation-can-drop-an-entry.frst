@@ -3,4 +3,4 @@
 # runtime Map.
 #= {result: [{a: 1, c: 3}, {a: 1, c: 3}], inputs: {m: {a: 1, b: 2, c: 3}}}
 def drop_two = fn k, v -> if v == 2: {} else: {[k]: v}
-[map {a: 1, b: 2, c: 3} with drop_two, map m with drop_two]
+[map({a: 1, b: 2, c: 3}, drop_two), map(m, drop_two)]

@@ -1,0 +1,8 @@
+# With an initial value, `reduce` over an empty Array or an empty Map yields it
+# unchanged, whatever its type, never calling its function.
+#= {
+#=     result: ['init', {a: 1}, null, [0]],
+#=     inputs: {xs: [], m: {}},
+#= }
+def boom = fn ...args -> error('called')
+[reduce(xs, 'init', boom), reduce(m, {a: 1}, boom), reduce(m, null, boom), reduce([], [0], boom)]

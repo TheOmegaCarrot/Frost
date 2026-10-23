@@ -1,0 +1,4 @@
+# A String built up by a reduce from a seed binding leaves the seed unchanged.
+#= {result: ['ñ-a-b-c', 'ñ'], inputs: {seed: 'ñ', parts: ['a', 'b', 'c']}}
+def built = reduce(parts, seed, fn acc, p -> acc + '-' + p)
+[built, seed]

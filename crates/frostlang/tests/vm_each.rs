@@ -1,4 +1,4 @@
-//! Tests for the `each` global: a foreach loop surfaced as a function.
+//! Tests for the `each` global: calls a function on each element for its side effects.
 //!
 //! `each(structure, f)` walks `structure` for side effects and returns it unchanged.
 //! For an Array it calls `f` with each element, in order. For a Map it calls `f`

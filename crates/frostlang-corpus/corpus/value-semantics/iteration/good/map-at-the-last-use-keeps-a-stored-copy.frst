@@ -1,0 +1,6 @@
+# `map` given an Array at its binding's last use leaves a copy stored
+# earlier in another structure unchanged.
+#= {result: [[2, 4], [[1, 2]]], inputs: {n: 1}}
+def xs = [n, 2]
+def kept = [xs]
+[map(xs, fn x -> x * 2), kept]

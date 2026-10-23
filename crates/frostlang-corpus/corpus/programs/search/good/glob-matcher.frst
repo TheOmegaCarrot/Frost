@@ -28,4 +28,4 @@ defn glob(pattern, text) -> match [pattern, text] {
     _ => false,
 }
 
-transform(cases, fn c -> glob(c[0], c[1]))
+map(cases, fn c -> glob(c[0], c[1]))

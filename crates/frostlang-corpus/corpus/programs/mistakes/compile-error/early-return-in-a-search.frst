@@ -1,6 +1,6 @@
 # A linear search that tries to `return` early is rejected: a Frost
 # function's value is its last expression, so the search must recurse or
-# fold instead.
+# reduce instead.
 #= {
 #=     rejects: 'no `return`',
 #=     inputs: {xs: [4, 8, 15]},

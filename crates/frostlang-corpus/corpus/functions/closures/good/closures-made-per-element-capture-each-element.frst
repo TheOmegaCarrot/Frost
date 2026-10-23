@@ -1,5 +1,5 @@
 # Closures made once per element each capture their own element, not a
 # shared or final one.
 #= {result: [10, 20, 30], inputs: {xs: [1, 2, 3]}}
-def makers = transform(xs, fn v -> fn -> v * 10)
-transform(makers, fn f -> f())
+def makers = map(xs, fn v -> fn -> v * 10)
+map(makers, fn f -> f())

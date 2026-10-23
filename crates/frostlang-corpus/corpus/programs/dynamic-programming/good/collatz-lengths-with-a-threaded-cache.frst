@@ -17,7 +17,7 @@ defn length(n, cache) ->
 
 defn from_to(low, high) -> if low > high: [] else: [low] + from_to(low + 1, high)
 
-def final = fold(from_to(1, limit - 1), {best: null, length: 0, cache: {[1]: 1}, lengths: []}, fn s, n -> {
+def final = reduce(from_to(1, limit - 1), {best: null, length: 0, cache: {[1]: 1}, lengths: []}, fn s, n -> {
     def [l, cache] = length(n, s.cache)
     def longer = l > s.length
     {
@@ -32,5 +32,5 @@ def final = fold(from_to(1, limit - 1), {best: null, length: 0, cache: {[1]: 1},
     best: final.best,
     length: final.length,
     cached: len(final.cache),
-    lengths_to_ten: transform(from_to(0, 9), fn i -> final.lengths[i]),
+    lengths_to_ten: map(from_to(0, 9), fn i -> final.lengths[i]),
 }

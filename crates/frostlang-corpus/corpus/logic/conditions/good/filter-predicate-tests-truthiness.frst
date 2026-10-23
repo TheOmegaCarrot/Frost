@@ -5,6 +5,6 @@
 #=     inputs: {values: [0, null, false, '', [], 'a']},
 #= }
 [
-    filter [0, null, false, '', [], 'a'] with fn x -> x,
-    filter values with fn x -> x,
+    filter([0, null, false, '', [], 'a'], fn x -> x),
+    filter(values, fn x -> x),
 ]

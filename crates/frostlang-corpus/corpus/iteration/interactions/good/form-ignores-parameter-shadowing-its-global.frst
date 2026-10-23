@@ -1,5 +1,0 @@
-# A parameter named like a form's global does not change the form either;
-# the parameter is still an ordinary binding inside the operation.
-#= {result: [11, 12], inputs: {xs: [1, 2]}}
-def apply = fn transform -> map xs with fn x -> x + transform
-apply(10)

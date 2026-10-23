@@ -40,11 +40,11 @@ defn run(results, c) -> {
     results + [{name: c.name, passed}]
 }
 
-def results = fold(cases, [], run)
+def results = reduce(cases, [], run)
 export def summary = {
-    passed: len(select(results, fn r -> r.passed)),
-    failed: len(select(results, fn r -> not r.passed)),
+    passed: len(filter(results, fn r -> r.passed)),
+    failed: len(filter(results, fn r -> not r.passed)),
 }
-def failed = filter results with fn r -> not r.passed
-export def failures = transform(failed, fn r -> r.name)
+def failed = filter(results, fn r -> not r.passed)
+export def failures = map(failed, fn r -> r.name)
 $'ran ${len(results)}'

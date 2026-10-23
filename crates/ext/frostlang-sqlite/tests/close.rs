@@ -17,7 +17,10 @@ fn every_call_on_a_closed_connection_is_an_error() {
         ("db.script('SELECT 1')", "db.script"),
         ("db.exec('SELECT 1')", "db.exec"),
         ("db.query('SELECT 1')", "db.query"),
-        ("db.fold('SELECT 1', null, fn acc, row -> acc)", "db.fold"),
+        (
+            "db.reduce('SELECT 1', null, fn acc, row -> acc)",
+            "db.reduce",
+        ),
         ("db.last_insert_rowid()", "db.last_insert_rowid"),
         ("db.close()", "db.close"),
     ] {
@@ -52,8 +55,8 @@ fn a_closed_connection_still_checks_its_arguments_first() {
             "Function db.query requires SQL without NUL characters",
         ),
         (
-            &format!("{closed}\ndb.fold('\\0', null, fn acc, row -> acc)"),
-            "Function db.fold requires SQL without NUL characters",
+            &format!("{closed}\ndb.reduce('\\0', null, fn acc, row -> acc)"),
+            "Function db.reduce requires SQL without NUL characters",
         ),
         (
             &format!("{closed}\ndb.query(1)"),
@@ -68,8 +71,8 @@ fn a_closed_connection_still_checks_its_arguments_first() {
             "Function db.exec requires Structured as argument 2 (bindings), got Int",
         ),
         (
-            &format!("{closed}\ndb.fold('SELECT 1', null, 1)"),
-            "Function db.fold requires Function as argument 3, got Int",
+            &format!("{closed}\ndb.reduce('SELECT 1', null, 1)"),
+            "Function db.reduce requires Function as argument 3, got Int",
         ),
     ]);
 }

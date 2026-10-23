@@ -1,3 +1,3 @@
 # Null elements are passed to the predicate, and kept if it accepts them.
 #= {result: [null, null], inputs: {xs: [null, 1, null, 2]}}
-filter xs with is_null
+filter(xs, is_null)

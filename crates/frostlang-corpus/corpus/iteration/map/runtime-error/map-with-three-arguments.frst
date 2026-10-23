@@ -1,0 +1,4 @@
+# `map` takes exactly two arguments; a third is an arity error, not an
+# ignored extra.
+#= {raises: ['map', 'called with 3']}
+map([1], fn x -> x, 0)

@@ -1,8 +1,0 @@
-# Outside brackets, the structure must start on the keyword's line: a line
-# break right after `map` ends the expression there, as one after `if` or
-# `=` would. Subtle: a line break is allowed after `with` and `init:`, but
-# not after the keyword itself.
-#= {rejects: 'found a line break', inputs: {xs: [1, 2]}}
-def doubled = map
-    xs with fn x -> x * 2
-doubled

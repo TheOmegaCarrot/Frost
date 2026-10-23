@@ -3,4 +3,4 @@
 #=     result: ['missing', 'missing', 'present', 'present'],
 #=     inputs: {values: [null, false, 0, '']},
 #= }
-transform(values, fn v -> if not v: 'missing' else: 'present')
+map(values, fn v -> if not v: 'missing' else: 'present')

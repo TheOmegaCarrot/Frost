@@ -10,12 +10,12 @@
 #=     inputs: {numbers: [1, 1.5, 'a'], texts: ['a', x'00', 1]},
 #= }
 [
-    map numbers with fn v -> match v {
+    map(numbers, fn v -> match v {
         n is Numeric => [is_int(n), is_float(n)],
         _ => 'other',
-    },
-    map texts with fn v -> match v {
+    }),
+    map(texts, fn v -> match v {
         s is Flat => [is_string(s), is_bytes(s)],
         _ => 'other',
-    },
+    }),
 ]

@@ -1,0 +1,13 @@
+# The calls of map-filter-and-reduce, over structures only known at runtime,
+# give exactly the values the folder computes.
+#= {
+#=     result: [[2, 4, 6], [20, 40], [2, 3], 6, 16],
+#=     inputs: {xs: [1, 2, 3], tens: [10, 20]},
+#= }
+[
+    map(xs, $($ * 2)),
+    map(tens, fn x -> x * 2),
+    filter(xs, fn x -> x > 1),
+    reduce(xs, fn acc, x -> acc + x),
+    reduce(xs, 10, fn acc, x -> acc + x),
+]

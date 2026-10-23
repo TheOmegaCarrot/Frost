@@ -4,7 +4,7 @@
 #=     result: ['pass', 'pass', 'pass', 'pass', 'pass', 'pass', 'fail', 'fail'],
 #=     inputs: {xs: [true, 0, 0.0, '', [], {}, null, false]},
 #= }
-transform(xs, fn g -> match 1 {
+map(xs, fn g -> match 1 {
     _ if: g => 'pass',
     _ => 'fail',
 })

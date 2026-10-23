@@ -1,0 +1,4 @@
+# A predicate answering with a Function keeps the element: a Function is
+# truthy like any value but Null and false.
+#= {result: [2, 3], inputs: {xs: [1, 2, 3]}}
+filter(xs, fn x -> if x > 1: is_int else: null)

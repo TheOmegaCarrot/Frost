@@ -1,6 +1,6 @@
 # `map` over a one-element Array yields a one-element Array, not the bare
 # result of the operation.
 #= {result: [[10], [10]], inputs: {one: [1]}}
-def literal = map [1] with fn x -> x * 10
-def runtime = map one with fn x -> x * 10
+def literal = map([1], fn x -> x * 10)
+def runtime = map(one, fn x -> x * 10)
 [literal, runtime]

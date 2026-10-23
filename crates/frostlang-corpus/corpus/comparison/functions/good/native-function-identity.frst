@@ -7,5 +7,5 @@ def measure = len
     measure == len,
     len == type,
     print == to_string,
-    [transform, select] == [transform, select],
+    [map, filter] == [map, filter],
 ]

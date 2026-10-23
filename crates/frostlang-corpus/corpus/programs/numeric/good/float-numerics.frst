@@ -17,7 +17,7 @@ defn from_to(low, high) -> if low > high: [] else: [low] + from_to(low + 1, high
 
 defn trapezoid(f, a, b, n) -> {
     def h = (b - a) / n
-    def inner = fold(from_to(1, n - 1), 0.0, fn sum, i -> sum + f(a + i * h))
+    def inner = reduce(from_to(1, n - 1), 0.0, fn sum, i -> sum + f(a + i * h))
     h * ((f(a) + f(b)) / 2 + inner)
 }
 

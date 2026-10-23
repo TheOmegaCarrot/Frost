@@ -15,4 +15,4 @@
 #=     ],
 #=     inputs: {values: [null, true, 1, 1.0, '1', x'31', [1], {['1']: 1}, fn -> 1]},
 #= }
-transform(values, fn a -> transform(values, fn b -> a == b))
+map(values, fn a -> map(values, fn b -> a == b))

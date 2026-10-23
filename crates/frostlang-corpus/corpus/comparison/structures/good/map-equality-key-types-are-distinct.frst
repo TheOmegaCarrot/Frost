@@ -11,4 +11,4 @@
 #=     ],
 #= }
 def maps = [{[1]: 'v'}, {[1.0]: 'v'}, {['1']: 'v'}, {[true]: 'v'}, {[x'31']: 'v'}]
-transform(maps, fn a -> transform(maps, fn b -> a == b))
+map(maps, fn a -> map(maps, fn b -> a == b))

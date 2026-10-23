@@ -23,7 +23,7 @@ def symbols = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 
 
 defn upto(n) -> if n == 0: [] else: upto(n - 1) + [n - 1]
 
-def values = fold(upto(len(symbols)), {}, fn acc, i -> acc + {[symbols[i]]: i})
+def values = reduce(upto(len(symbols)), {}, fn acc, i -> acc + {[symbols[i]]: i})
 
 defn digits_of(n, base) -> if n == 0: '' else: digits_of(n / base, base) + symbols[n % base]
 
@@ -34,10 +34,10 @@ defn to_base(n, base) ->
 
 defn from_base(chars, base) -> match chars {
     ['-', ...rest] => -from_base(rest, base),
-    _ => fold(chars, 0, fn acc, c -> acc * base + values[c]),
+    _ => reduce(chars, 0, fn acc, c -> acc * base + values[c]),
 }
 
 {
-    rendered: transform(numbers, fn pair -> to_base(pair[0], pair[1])),
-    parsed: transform(texts, fn pair -> from_base(pair[0], pair[1])),
+    rendered: map(numbers, fn pair -> to_base(pair[0], pair[1])),
+    parsed: map(texts, fn pair -> from_base(pair[0], pair[1])),
 }

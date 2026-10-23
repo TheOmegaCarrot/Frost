@@ -501,7 +501,7 @@
 //        2  Pop
 //        3  CreateClosure  0   ; step, 0 captures
 //        4  DefLocal       2   ; step
-//        5  LoadGlobal     80  ; fold
+//        5  LoadGlobal     80  ; reduce
 //        6  ConsumeLocal   0   ; keys
 //        7  ConsumeLocal   1   ; structure
 //        8  ConsumeLocal   2   ; step

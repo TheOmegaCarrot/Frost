@@ -6,4 +6,4 @@ defn name(n) -> match n {
     -1 => 'minus one',
     _ => 'other',
 }
-transform(xs, name)
+map(xs, name)

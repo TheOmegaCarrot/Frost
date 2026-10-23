@@ -29,8 +29,8 @@ defn evaluate(expr, env) -> match expr {
     ['let', name, value, body] => evaluate(body, env + {[name]: evaluate(value, env)}),
     [op, ...args] => do {
         def operation = builtins[op] or error($'unknown operator ${op}')
-        fold(transform(args, fn arg -> evaluate(arg, env)), operation)
+        reduce(map(args, fn arg -> evaluate(arg, env)), operation)
     },
 }
 
-transform(programs, fn program -> evaluate(program, {label: 'small', other: 'large'}))
+map(programs, fn program -> evaluate(program, {label: 'small', other: 'large'}))

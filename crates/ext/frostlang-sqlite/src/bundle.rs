@@ -369,7 +369,7 @@ pub(crate) fn connection_bundle(state: Arc<ConnectionState>) -> Value {
             Method::Script => bundle.with(Db::script_method),
             Method::Exec => bundle.with(Db::exec_method),
             Method::Query => bundle.with(Db::query_method),
-            Method::Fold => bundle.with(Db::fold_method),
+            Method::Reduce => bundle.with(Db::reduce_method),
             Method::LastInsertRowid => bundle.with(Db::last_insert_rowid_method),
             Method::Transaction => bundle.with(Db::transaction_method),
             Method::Close => bundle.with(Db::close_method),
@@ -391,7 +391,7 @@ pub(crate) fn transaction_bundle(state: &Arc<ConnectionState>, id: TransactionId
             Method::Script => bundle.with(Tx::script_method),
             Method::Exec => bundle.with(Tx::exec_method),
             Method::Query => bundle.with(Tx::query_method),
-            Method::Fold => bundle.with(Tx::fold_method),
+            Method::Reduce => bundle.with(Tx::reduce_method),
             Method::LastInsertRowid => bundle.with(Tx::last_insert_rowid_method),
             Method::Transaction => bundle.with(Tx::transaction_method),
             Method::Close => bundle,
@@ -440,9 +440,9 @@ macro_rules! shared_methods {
             }
         }
 
-        #[frost_bundle(prefix = $prefix, group = fold_method)]
+        #[frost_bundle(prefix = $prefix, group = reduce_method)]
         impl $state {
-            fn fold(
+            fn reduce(
                 &self,
                 #[frost(ctx)] ctx: &mut NativeCtx<'_>,
                 sql: FrostString,
@@ -451,7 +451,7 @@ macro_rules! shared_methods {
                 #[frost(unnamed)] function: Function,
             ) -> FrostResult {
                 self.state.with_sql(ctx, self.scope(), &sql, |call| {
-                    run::fold(call, bindings.0, initial, &function)
+                    run::reduce(call, bindings.0, initial, &function)
                 })
             }
         }

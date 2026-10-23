@@ -6,4 +6,4 @@ defn grow(k, xs, snapshots) -> if k == stop: [xs, snapshots] else: do {
     grow(k + 1, xs + [k], kept)
 }
 def [full, snapshots] = grow(0, [], [])
-[len(full), transform(snapshots, $(len($))), [snapshots[1][-1], snapshots[2][-1], snapshots[0][0]]]
+[len(full), map(snapshots, $(len($))), [snapshots[1][-1], snapshots[2][-1], snapshots[0][0]]]

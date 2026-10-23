@@ -1,4 +1,4 @@
 # The operation's result may key the entry by a different type than the
 # input did: here inverting a Map from String keys to Int keys.
 #= {result: {[1]: 'a', [2]: 'b'}, inputs: {m: {a: 1, b: 2}}}
-map m with fn k, v -> {[v]: k}
+map(m, fn k, v -> {[v]: k})

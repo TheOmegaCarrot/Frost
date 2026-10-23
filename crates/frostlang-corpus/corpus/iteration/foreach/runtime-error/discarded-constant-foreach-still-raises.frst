@@ -1,6 +1,0 @@
-# A `foreach` over constants whose value is discarded still runs, so an error
-# in its operation still surfaces. Subtle: the operation is pure and its
-# result unused, so only the error makes the call observable.
-#= {raises: 'division by zero'}
-foreach [1, 0] with fn x -> 1 / x
-'unreachable'

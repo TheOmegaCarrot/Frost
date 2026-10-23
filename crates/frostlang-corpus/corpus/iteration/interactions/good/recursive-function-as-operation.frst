@@ -1,5 +1,5 @@
 # A recursive function may itself be the operation, mapping a nested
 # structure to the same shape.
 #= {result: [2, [4, [6]], []], inputs: {tree: [1, [2, [3]], []]}}
-defn doubled(t) -> if is_array(t): map t with doubled else: t * 2
+defn doubled(t) -> if is_array(t): map(t, doubled) else: t * 2
 doubled(tree)

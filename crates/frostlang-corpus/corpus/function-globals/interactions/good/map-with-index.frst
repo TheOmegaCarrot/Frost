@@ -2,4 +2,4 @@
 # field reads as Null.
 #= {result: [[1, 2, null], [1, 2, null]]}
 def records = [{n: 1}, {n: 2}, {m: 3}]
-[map records with index('n'), transform(records, index('n'))]
+[map(records, index('n')), records @ map(index('n'))]

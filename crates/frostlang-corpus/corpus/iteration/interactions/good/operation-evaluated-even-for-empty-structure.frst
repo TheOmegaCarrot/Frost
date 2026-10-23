@@ -1,7 +1,7 @@
 # The operation expression is evaluated even when the structure is empty and
 # the resulting function is never called.
 #= {result: [], printed: ['operation'], inputs: {xs: []}}
-filter xs with do {
+filter(xs, do {
     print('operation')
     fn x -> true
-}
+})

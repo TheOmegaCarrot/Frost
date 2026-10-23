@@ -45,8 +45,8 @@ fn transaction_statements_are_errors_through_the_connection() {
             (format!("db.exec({sql})"), "db.exec"),
             (format!("db.query({sql})"), "db.query"),
             (
-                format!("db.fold({sql}, null, fn acc, row -> acc)"),
-                "db.fold",
+                format!("db.reduce({sql}, null, fn acc, row -> acc)"),
+                "db.reduce",
             ),
             (format!("db.script({sql})"), "db.script"),
         ] {
@@ -66,8 +66,8 @@ fn transaction_statements_are_errors_through_a_tx() {
             (format!("tx.exec({sql})"), "tx.exec"),
             (format!("tx.query({sql})"), "tx.query"),
             (
-                format!("tx.fold({sql}, null, fn acc, row -> acc)"),
-                "tx.fold",
+                format!("tx.reduce({sql}, null, fn acc, row -> acc)"),
+                "tx.reduce",
             ),
             (format!("tx.script({sql})"), "tx.script"),
             (format!("tx.script('SELECT 1; ' + {sql})"), "tx.script"),

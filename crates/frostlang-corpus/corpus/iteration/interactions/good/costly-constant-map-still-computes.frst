@@ -1,0 +1,6 @@
+# A constant `map` too costly for the optimizer to compute ahead of time
+# still computes its result when the script runs. Subtle: an ahead-of-time
+# evaluation that gives up must leave the original computation in place.
+#= {result: [0]}
+defn spin(n) -> if n == 0: 0 else: spin(n - 1)
+map([50000], spin)

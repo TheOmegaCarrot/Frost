@@ -1,4 +1,0 @@
-# A `map` expression's collection may be a threaded call: `map xs @ f() with
-# g` maps over `f(xs)`.
-#= {result: [20, 30], inputs: {xs: [1, 2, 3]}}
-map xs @ select(fn x -> x > 1) with fn x -> x * 10

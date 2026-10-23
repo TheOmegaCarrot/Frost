@@ -12,4 +12,4 @@
 #=         },
 #=     },
 #= }
-filter m with fn k, v -> k % 7 == 0
+filter(m, fn k, v -> k % 7 == 0)

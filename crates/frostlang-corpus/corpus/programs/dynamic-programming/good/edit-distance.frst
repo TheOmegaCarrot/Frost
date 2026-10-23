@@ -21,8 +21,8 @@ defn smallest(a, b, c) -> {
 }
 
 defn distance(xs, ys) -> {
-    def first_row = fold(ys, [0], fn row, y -> row + [len(row)])
-    def last = fold(xs, first_row, fn prev, x -> fold(ys, [prev[0] + 1], fn row, y -> {
+    def first_row = reduce(ys, [0], fn row, y -> row + [len(row)])
+    def last = reduce(xs, first_row, fn prev, x -> reduce(ys, [prev[0] + 1], fn row, y -> {
         def j = len(row) - 1
         def cost = if x == y: 0 else: 1
         row + [smallest(prev[j + 1] + 1, row[j] + 1, prev[j] + cost)]
@@ -30,4 +30,4 @@ defn distance(xs, ys) -> {
     last[-1]
 }
 
-transform(pairs, fn pair -> distance(pair[0], pair[1]))
+map(pairs, fn pair -> distance(pair[0], pair[1]))

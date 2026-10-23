@@ -1,14 +1,14 @@
-# Matches drive the dedicated `map`, `filter`, and `reduce` expressions.
+# Matches drive the callbacks of `map`, `filter`, and `reduce`.
 #= {result: [[1, 2, 0], [[1], [2]], 3], inputs: {xs: [[1], [2], 'x']}}
-def heads = map xs with fn v -> match v {
+def heads = map(xs, fn v -> match v {
     [h] => h,
     _ => 0,
-}
-def arrays = filter xs with fn v -> match v {
+})
+def arrays = filter(xs, fn v -> match v {
     _ is Array => true,
     _ => false,
-}
-def total = reduce heads with fn (acc, h) -> match h {
+})
+def total = reduce(heads, fn (acc, h) -> match h {
     n is Int => acc + n,
-}
+})
 [heads, arrays, total]

@@ -1,0 +1,3 @@
+# `filter` takes exactly two arguments; a third is an arity error.
+#= {raises: ['filter', 'called with 3']}
+filter([1], fn x -> true, 0)

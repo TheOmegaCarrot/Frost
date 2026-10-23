@@ -686,7 +686,7 @@ fn arity_is_checked_when_a_higher_order_function_calls_a_lambda() {
             "call(fn a, ...rest -> rest, [])",
             "expects at least 1 argument,",
         ),
-        ("transform([1], fn a, b -> a)", "expects 2 arguments"),
+        ("map([1], fn a, b -> a)", "expects 2 arguments"),
         ("and_then(1, fn -> 1)", "expects 0 arguments"),
     ]);
     assert_values(&[
@@ -819,7 +819,7 @@ fn an_abbreviated_lambda_body_may_be_any_expression() {
         ("$($1.a)({a: 5})", "5"),
         ("$($1[$2])([10, 20], 1)", "20"),
         ("$($1 @ $2())(3, fn v -> v * 2)", "6"),
-        ("$(map $1 with $2)([1, 2], fn v -> v + 1)", "[2, 3]"),
+        ("$(map($1, $2))([1, 2], fn v -> v + 1)", "[2, 3]"),
         ("$($1 and $2)(1, 2)", "2"),
         ("$($1 or $2)(null, 2)", "2"),
     ]);
@@ -1462,16 +1462,13 @@ fn a_capture_is_read_in_every_kind_of_expression() {
         ("(fn m -> fn -> m.a)({a: 1})()", "1"),
         ("(fn f -> fn -> f(1))(fn v -> v + 1)()", "2"),
         ("(fn f -> fn -> 2 @ f())(fn v -> v * 5)()", "10"),
+        ("(fn k -> fn -> map([1, 2], fn v -> v * k))(3)()", "[3, 6]"),
         (
-            "(fn k -> fn -> map [1, 2] with fn v -> v * k)(3)()",
-            "[3, 6]",
-        ),
-        (
-            "(fn lim -> fn -> filter [1, 2, 3] with fn v -> v > lim)(1)()",
+            "(fn lim -> fn -> filter([1, 2, 3], fn v -> v > lim))(1)()",
             "[2, 3]",
         ),
         (
-            "(fn k -> fn -> reduce [1, 2] with fn a, b -> a + b + k)(10)()",
+            "(fn k -> fn -> reduce([1, 2], fn a, b -> a + b + k))(10)()",
             "13",
         ),
         (
@@ -1855,7 +1852,7 @@ fn defn_works_in_every_scope() {
         ),
         (
             r"
-            transform([1, 2], do {
+            map([1, 2], do {
                 defn dbl(v) -> v * 2
                 dbl
             })
@@ -2298,13 +2295,13 @@ fn a_named_lambda_recurses_through_a_higher_order_function() {
     assert_values(&[
         (
             r"
-            defn sum(n) -> if n == 0: 0 else: n + transform([n - 1], sum)[0]
+            defn sum(n) -> if n == 0: 0 else: n + map([n - 1], sum)[0]
             sum(4)
             ",
             "10",
         ),
         (
-            r"defn depth(t) -> if is_array(t): 1 + fold(transform(t, depth), 0, fn a, b -> if a > b: a else: b) else: 0
+            r"defn depth(t) -> if is_array(t): 1 + reduce(map(t, depth), 0, fn a, b -> if a > b: a else: b) else: 0
             depth([[1], [[2]]])",
             "3",
         ),
@@ -2354,16 +2351,16 @@ fn anonymous_lambdas_may_recurse_by_self_application() {
 #[test]
 fn a_lambda_is_a_callback() {
     assert_values(&[
-        ("transform([1, 2, 3], fn x -> x * 2)", "[2, 4, 6]"),
-        ("transform([1, 2, 3], $($ * 2))", "[2, 4, 6]"),
-        ("select([1, 2, 3, 4], fn x -> x > 2)", "[3, 4]"),
-        ("fold([1, 2, 3], 0, fn acc, x -> acc + x)", "6"),
+        ("map([1, 2, 3], fn x -> x * 2)", "[2, 4, 6]"),
+        ("map([1, 2, 3], $($ * 2))", "[2, 4, 6]"),
+        ("filter([1, 2, 3, 4], fn x -> x > 2)", "[3, 4]"),
+        ("reduce([1, 2, 3], 0, fn acc, x -> acc + x)", "6"),
         ("and_then(5, fn x -> x + 1)", "6"),
         ("and_then(null, fn x -> x + 1)", "null"),
         ("or_else(5, fn -> 99)", "5"),
         ("or_else(null, fn -> 99)", "99"),
     ]);
-    assert_raises(&[("fold([1, 2, 3], fn acc, x -> acc + x, 0)", "argument 3")]);
+    assert_raises(&[("reduce([1, 2, 3], fn acc, x -> acc + x, 0)", "argument 3")]);
 }
 
 #[test]
@@ -2552,7 +2549,7 @@ fn each_evaluation_of_a_lambda_makes_a_distinct_closure() {
         ),
         (
             r"
-            def fs = transform([1, 2], fn _ -> fn -> 1)
+            def fs = map([1, 2], fn _ -> fn -> 1)
             fs[0] == fs[1]
             ",
             "false",
@@ -2566,7 +2563,7 @@ fn a_closure_equals_itself_wherever_it_is_stored() {
     assert_values(&[(
         r"
         def f = fn -> 1
-        [[f] == [f], {a: f} == {a: f}, id(f) == f, transform([f], fn g -> g)[0] == f]
+        [[f] == [f], {a: f} == {a: f}, id(f) == f, map([f], fn g -> g)[0] == f]
         ",
         "[true, true, true, true]",
     )]);
@@ -2591,7 +2588,7 @@ fn a_closure_stays_one_value_however_it_is_reached() {
         (
             r"
             def f = fn -> 1
-            def fs = transform([1, 2, 3], fn _ -> f)
+            def fs = map([1, 2, 3], fn _ -> f)
             [fs[0] == fs[1], fs[2] == f]
             ",
             "[true, true]",
@@ -2658,7 +2655,7 @@ fn closures_alike_are_never_merged() {
         (
             r"
             def make = fn -> $(1)
-            def fs = transform([1, 2], fn _ -> make())
+            def fs = map([1, 2], fn _ -> make())
             fs[0] == fs[1]
             ",
             "false",
@@ -2668,7 +2665,7 @@ fn closures_alike_are_never_merged() {
             r"
             def k = 1
             def make = fn -> fn -> k
-            def fs = transform([1, 2], fn _ -> make())
+            def fs = map([1, 2], fn _ -> make())
             [fs[0] == fs[1], fs[0]() == fs[1]()]
             ",
             "[false, true]",
@@ -2742,7 +2739,7 @@ fn an_error_propagates_out_of_nested_lambdas() {
             ",
             "Division by zero",
         ),
-        ("transform([1, 0], fn v -> 1 / v)", "Division by zero"),
+        ("map([1, 0], fn v -> 1 / v)", "Division by zero"),
         (
             r"
             defn f(n) -> if n == 0: 1 / 0 else: f(n - 1)

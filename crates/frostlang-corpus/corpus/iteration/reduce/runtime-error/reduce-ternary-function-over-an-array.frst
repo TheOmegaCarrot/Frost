@@ -1,0 +1,4 @@
+# Over an Array, `reduce` calls its function with the accumulator and the
+# element, so a three-parameter function is an arity error.
+#= {raises: 'called with 2', inputs: {xs: [1, 2]}}
+reduce(xs, fn acc, x, i -> acc + x)

@@ -1,0 +1,7 @@
+# `reduce` from a constant initial value leaves that value unchanged, and a
+# second reduce from it starts afresh.
+#= {result: [[0, 1, 2], [0, 3], [0]]}
+def seed = [0]
+def first = reduce([1, 2], seed, fn acc, x -> acc + [x])
+def second = reduce([3], seed, fn acc, x -> acc + [x])
+[first, second, seed]

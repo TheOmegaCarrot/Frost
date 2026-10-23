@@ -4,8 +4,8 @@
 #=     result: ['positive', 'non-positive', 'text', 'other'],
 #=     inputs: {values: [5, -2, 'a', null]},
 #= }
-map values with fn v -> match v {
+map(values, fn v -> match v {
     n is Int => if n > 0: 'positive' else: 'non-positive',
     s is String => if s: 'text',
     _ => 'other',
-}
+})

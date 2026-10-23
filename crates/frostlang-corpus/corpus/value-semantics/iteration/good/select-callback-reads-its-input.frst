@@ -1,6 +1,0 @@
-# A `select` predicate that reads the Array being selected from sees all of
-# it, unchanged, for every element.
-#= {result: [[2, 3], [1, 2, 3]], inputs: {n: 1}}
-def xs = [n, 2, 3]
-def above_first = select(xs, fn x -> x > xs[0])
-[above_first, xs]

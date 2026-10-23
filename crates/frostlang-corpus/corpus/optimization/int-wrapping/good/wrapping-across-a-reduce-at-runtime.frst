@@ -8,6 +8,6 @@
 #=     },
 #= }
 [
-    reduce big with fn acc, x -> acc + x,
-    reduce steps init: 0 with fn acc, i -> acc * 31 + i,
+    reduce(big, fn acc, x -> acc + x),
+    reduce(steps, 0, fn acc, i -> acc * 31 + i),
 ]

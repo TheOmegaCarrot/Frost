@@ -1,4 +1,4 @@
 # `and` and `or` bind looser than comparison: `x == 1 or x == 2` is
 # `(x == 1) or (x == 2)`.
 #= {result: [false, true, true, false], inputs: {values: [0, 1, 2, 3]}}
-transform(values, fn x -> x == 1 or x == 2)
+map(values, fn x -> x == 1 or x == 2)

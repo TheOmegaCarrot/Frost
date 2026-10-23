@@ -1,6 +1,6 @@
 # `[] | {}` matches exactly the empty Array and every Map, as an element.
 #= {result: [1, 1, 1, 0], inputs: {xs: [[[]], [{}], [{a: 1}], [[1]]]}}
-transform(xs, fn v -> match v {
+map(xs, fn v -> match v {
     [[] | {}] => 1,
     _ => 0,
 })

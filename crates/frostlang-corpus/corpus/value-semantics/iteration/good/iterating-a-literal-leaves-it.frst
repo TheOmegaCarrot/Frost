@@ -2,4 +2,4 @@
 # leaves the binding unchanged.
 #= {result: [[1, 2, 3], [2, 4, 6], [2], 6]}
 def xs = [1, 2, 3]
-[xs, map xs with fn x -> x * 2, filter xs with fn x -> x == 2, reduce xs with fn (a, x) -> a + x]
+[xs, map(xs, fn x -> x * 2), filter(xs, fn x -> x == 2), reduce(xs, fn (a, x) -> a + x)]

@@ -1,5 +1,0 @@
-# A form can be the structure of another without parentheses: the inner
-# lambda's body stops at the outer `with`. Subtle: read
-# `map (map xs with f) with g`, so the inner map runs first.
-#= {result: [20, 30], inputs: {xs: [1, 2]}}
-map map xs with fn x -> x + 1 with fn y -> y * 10

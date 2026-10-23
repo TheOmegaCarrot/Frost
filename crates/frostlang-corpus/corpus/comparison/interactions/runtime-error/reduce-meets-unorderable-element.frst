@@ -1,0 +1,5 @@
+# A reduce comparing its accumulator with each element raises at the first
+# element it cannot order against the accumulator.
+#= {raises: ['incompatible types', 'Int', 'Bytes'], inputs: {xs: [3, 1, x'02']}}
+defn greater(a, b) -> if b > a: b else: a
+reduce(xs, greater)

@@ -4,7 +4,7 @@
 #=     result: [[3, [1, 2], 0], [3, 3, 2]],
 #=     inputs: {rows: [[plus, 1, 2], [collect, 1, 2], [len, []]]},
 #= }
-def results = map rows with fn row -> match row {
+def results = map(rows, fn row -> match row {
     [f, ...args] => call(f, args),
-}
-[results, map rows with len]
+})
+[results, map(rows, len)]

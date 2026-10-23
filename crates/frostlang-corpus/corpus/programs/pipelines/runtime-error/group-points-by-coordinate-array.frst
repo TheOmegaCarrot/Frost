@@ -4,4 +4,4 @@
 #=     raises: ['not a valid Map key', 'Array'],
 #=     inputs: {points: [{at: [0, 1], name: 'a'}, {at: [0, 1], name: 'b'}]},
 #= }
-fold(points, {}, fn acc, p -> acc + {[p.at]: (acc[p.at] or []) + [p.name]})
+reduce(points, {}, fn acc, p -> acc + {[p.at]: (acc[p.at] or []) + [p.name]})

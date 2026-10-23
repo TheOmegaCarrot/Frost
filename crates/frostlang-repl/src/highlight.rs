@@ -99,18 +99,12 @@ fn is_keyword(token: &Token<'_>) -> bool {
             | Token::KwElse
             | Token::KwExport
             | Token::KwFalse
-            | Token::KwFilter
             | Token::KwFn
-            | Token::KwForeach
             | Token::KwIf
-            | Token::KwInit
             | Token::KwIs
-            | Token::KwMap
             | Token::KwMatch
             | Token::KwNull
-            | Token::KwReduce
             | Token::KwTrue
-            | Token::KwWith
             | Token::OpAnd
             | Token::OpOr
             | Token::OpNot

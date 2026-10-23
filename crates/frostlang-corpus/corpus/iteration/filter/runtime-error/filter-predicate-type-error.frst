@@ -1,0 +1,3 @@
+# `filter` requires a Function as its second argument.
+#= {raises: ['filter', 'Function', 'argument 2', 'String']}
+filter([1], 'x')

@@ -10,4 +10,4 @@ defn bucket(x) -> {
     elif x <= 10: 'mid'
     else: 'high'
 }
-transform(values, bucket)
+map(values, bucket)

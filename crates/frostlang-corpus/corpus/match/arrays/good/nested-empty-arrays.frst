@@ -1,7 +1,7 @@
 # Empty Array patterns nest: each level requires exactly one element, down to
 # an empty innermost Array.
 #= {result: ['deep', 'other', 'other'], inputs: {xs: [[[[[]]]], [[[[1]]]], [[[]], []]]}}
-transform(xs, fn v -> match v {
+map(xs, fn v -> match v {
     [[[[]]]] => 'deep',
     _ => 'other',
 })

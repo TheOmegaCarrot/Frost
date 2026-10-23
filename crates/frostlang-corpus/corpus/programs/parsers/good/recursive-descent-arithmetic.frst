@@ -22,7 +22,7 @@ def digits = {
     ['5']: 5, ['6']: 6, ['7']: 7, ['8']: 8, ['9']: 9,
 }
 
-defn contains(xs, x) -> fold(xs, false, fn found, y -> found or y == x)
+defn contains(xs, x) -> reduce(xs, false, fn found, y -> found or y == x)
 
 defn apply(op, a, b) -> match op {
     '+' => a + b,
@@ -68,4 +68,4 @@ defn calculate(chars) -> match parse('expr', chars) {
     [_, [next, ..._]] => error($'unexpected ${next}'),
 }
 
-transform(sources, calculate)
+map(sources, calculate)

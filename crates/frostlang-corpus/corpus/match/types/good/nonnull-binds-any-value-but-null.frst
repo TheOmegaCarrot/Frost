@@ -1,6 +1,6 @@
 # `is Nonnull` is the way to bind any value but Null; Null falls to the next arm.
 #= {result: ['has 0', 'has false', 'missing'], inputs: {xs: [0, false, null]}}
-transform(xs, fn v -> match v {
+map(xs, fn v -> match v {
     x is Nonnull => 'has ' + to_string(x),
     _ => 'missing',
 })

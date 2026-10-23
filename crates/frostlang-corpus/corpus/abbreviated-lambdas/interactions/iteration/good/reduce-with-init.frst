@@ -1,4 +1,4 @@
-# With an init, `reduce` starts its accumulator there; the abbreviated
-# lambda builds an Array from it.
+# With an initial value, `reduce` starts its accumulator there; the
+# abbreviated lambda builds an Array from it.
 #= {result: [3, 2, 1], inputs: {xs: [1, 2, 3]}}
-reduce xs init: [] with $([$2] + $1)
+reduce(xs, [], $([$2] + $1))

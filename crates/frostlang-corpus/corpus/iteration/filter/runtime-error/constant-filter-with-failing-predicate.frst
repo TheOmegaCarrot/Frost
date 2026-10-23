@@ -1,4 +1,4 @@
 # A constant `filter` whose predicate fails still raises when the script
 # runs; the optimizer does not hide the error.
 #= {raises: 'division by zero'}
-filter [1, 0] with fn x -> 1 / x > 0
+filter([1, 0], fn x -> 1 / x > 0)

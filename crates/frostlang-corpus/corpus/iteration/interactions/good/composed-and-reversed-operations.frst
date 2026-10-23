@@ -2,6 +2,6 @@
 # element step for `map`, and a flipped step for `reduce`.
 #= {result: [['2', '3'], [3, 2, 1]], inputs: {xs: [1, 2], ys: [1, 2, 3]}}
 [
-    map xs with compose(fn x -> x + 1, to_string),
-    reduce ys init: [] with rev_args(fn x, acc -> [x] + acc),
+    map(xs, compose(fn x -> x + 1, to_string)),
+    reduce(ys, [], rev_args(fn x, acc -> [x] + acc)),
 ]

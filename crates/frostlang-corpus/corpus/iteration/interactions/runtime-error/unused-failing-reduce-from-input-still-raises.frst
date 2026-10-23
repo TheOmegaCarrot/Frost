@@ -5,5 +5,5 @@
 #=     lints: [['unused binding', '`unused`']],
 #=     inputs: {xs: [1, 0]},
 #= }
-def unused = reduce xs init: 1 with fn acc, x -> acc / x
+def unused = reduce(xs, 1, fn acc, x -> acc / x)
 'unreachable'

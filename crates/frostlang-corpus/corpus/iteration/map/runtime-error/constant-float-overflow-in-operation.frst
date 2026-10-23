@@ -1,4 +1,4 @@
 # A constant `map` whose Float arithmetic overflows raises when the script
 # runs; the optimizer neither hides the error nor produces an infinity.
 #= {raises: 'NaN or Infinity'}
-map [1.0, 1.0e308] with fn x -> x * 10.0
+map([1.0, 1.0e308], fn x -> x * 10.0)

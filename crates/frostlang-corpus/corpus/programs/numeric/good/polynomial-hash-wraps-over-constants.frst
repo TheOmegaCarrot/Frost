@@ -1,7 +1,7 @@
 # The wrapping polynomial hash over constant inputs, which the optimizer may
 # compute ahead of time: its wrapping must match the runtime's exactly.
 #= {result: [-5405162754168362655, 7000167000914001536, 7, 7000021, -9223365036813775749]}
-defn hash(codes) -> fold(codes, 7, fn h, code -> h * 1000003 + code)
+defn hash(codes) -> reduce(codes, 7, fn h, code -> h * 1000003 + code)
 
 [
     hash([104, 101, 108, 108, 111, 32, 119, 111, 114, 108, 100]),

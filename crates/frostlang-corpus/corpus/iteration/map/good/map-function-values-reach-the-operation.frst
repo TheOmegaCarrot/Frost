@@ -2,4 +2,4 @@
 # the results, not the Functions, end up in the result.
 #= {result: {f: 6, g: 15}}
 def table = {f: fn x -> x + 1, g: fn x -> x * 3}
-map table with fn k, f -> {[k]: f(5)}
+map(table, fn k, f -> {[k]: f(5)})

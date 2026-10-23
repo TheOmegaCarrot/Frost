@@ -40,7 +40,7 @@ defn contains(tree, key) ->
 defn leftmost(tree) -> if tree.left == null: tree.key else: leftmost(tree.left)
 defn rightmost(tree) -> if tree.right == null: tree.key else: rightmost(tree.right)
 
-defn build(xs) -> reduce xs init: null with insert
+defn build(xs) -> reduce(xs, null, insert)
 
 def tree = build(keys)
 def base = build(small)

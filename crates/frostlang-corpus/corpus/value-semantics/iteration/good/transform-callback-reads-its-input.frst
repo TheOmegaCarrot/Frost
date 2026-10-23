@@ -1,5 +1,0 @@
-# A `transform` callback that captures and extends the very Array being
-# transformed sees it unchanged for every element.
-#= {result: [[1, 2, 1], [1, 2, 2]], inputs: {n: 1}}
-def xs = [n, 2]
-transform(xs, fn x -> xs + [x])

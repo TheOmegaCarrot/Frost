@@ -1,4 +1,0 @@
-# `select` requires a Function predicate even over an empty Map, where it
-# would never be called.
-#= {raises: ['select', 'argument 2', 'Null'], inputs: {m: {}, pred: null}}
-select(m, pred)

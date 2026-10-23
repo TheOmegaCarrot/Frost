@@ -1,0 +1,13 @@
+# The operation may be any expression yielding a function, including a member
+# path into a Map of functions and an indexed Array element.
+#= {result: [[2, 3], [1], [0, 1]], inputs: {xs: [1, 2]}}
+def ops = {
+    inc: fn x -> x + 1,
+    checks: {odd: fn x -> x % 2 == 1},
+}
+def steps = [fn acc, x -> acc + x, fn acc, x -> acc + [x - 1]]
+[
+    map(xs, ops.inc),
+    filter(xs, ops.checks['odd']),
+    reduce(xs, [], steps[1]),
+]

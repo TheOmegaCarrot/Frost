@@ -1,0 +1,3 @@
+# A String is not a structure `each` iterates.
+#= {raises: ['Structured', 'argument 1', 'String'], inputs: {s: 'abc'}}
+each(s, fn c -> c)

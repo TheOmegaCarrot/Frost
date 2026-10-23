@@ -295,23 +295,6 @@ impl<'a> Walker<'a> {
                     vec![inner],
                 )
             }
-            Expr::Filter {
-                structure,
-                operation,
-            } => self.iter_expr("Filter", span, structure, operation, None),
-            Expr::MapIter {
-                structure,
-                operation,
-            } => self.iter_expr("MapIter", span, structure, operation, None),
-            Expr::Foreach {
-                structure,
-                operation,
-            } => self.iter_expr("Foreach", span, structure, operation, None),
-            Expr::Reduce {
-                structure,
-                operation,
-                init,
-            } => self.iter_expr("Reduce", span, structure, operation, init.as_deref()),
             Expr::Match { target, arms } => {
                 let t = self.expr(target);
                 let mut children = vec![self.wrap("target", vec![t])];
@@ -328,25 +311,6 @@ impl<'a> Walker<'a> {
                 self.ranged("Match".to_string(), span, children)
             }
         }
-    }
-
-    fn iter_expr(
-        &mut self,
-        label: &str,
-        span: SourceSpan,
-        structure: &Spanned<Expr>,
-        operation: &Spanned<Expr>,
-        init: Option<&Spanned<Expr>>,
-    ) -> Node {
-        let s = self.expr(structure);
-        let mut children = vec![self.wrap("structure", vec![s])];
-        if let Some(init) = init {
-            let i = self.expr(init);
-            children.push(self.wrap("init", vec![i]));
-        }
-        let o = self.expr(operation);
-        children.push(self.wrap("operation", vec![o]));
-        self.ranged(label.to_string(), span, children)
     }
 
     // -- Patterns --

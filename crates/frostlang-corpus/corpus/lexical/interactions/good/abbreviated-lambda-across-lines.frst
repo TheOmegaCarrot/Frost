@@ -1,7 +1,7 @@
 # An abbreviated lambda's parentheses make line breaks inside it
 # insignificant, so its body may span lines.
 #= {result: [11, 22], inputs: {xs: [1, 2]}}
-xs @ transform($(
+xs @ map($(
     $ * 10
     +
     $

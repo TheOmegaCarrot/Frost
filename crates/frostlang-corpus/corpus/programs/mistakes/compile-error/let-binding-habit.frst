@@ -5,7 +5,7 @@
 #=     inputs: {xs: [1, 2, 3]},
 #= }
 defn average(items) -> {
-    let total = fold(items, 0, fn acc, x -> acc + x)
+    let total = reduce(items, 0, fn acc, x -> acc + x)
     total / len(items)
 }
 average(xs)

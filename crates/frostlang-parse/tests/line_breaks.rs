@@ -186,7 +186,7 @@ mod arrow_continuation {
 
     #[test]
     fn as_an_argument() {
-        assert_arrow_continues(|lambda| format!("xs @ transform({lambda})"));
+        assert_arrow_continues(|lambda| format!("xs @ map({lambda})"));
     }
 
     #[test]
@@ -483,20 +483,6 @@ mod colon_on_a_later_line {
     }
 
     #[test]
-    fn after_init() {
-        let at_top_level = r"
-            reduce xs init
-                : 0 with f
-        ";
-        let in_parentheses = r"
-            (reduce xs init
-                : 0 with f)
-        ";
-        assert_rejected(at_top_level, "init");
-        assert_rejected(in_parentheses, "init");
-    }
-
-    #[test]
     fn after_a_map_literal_key() {
         let named = r"
             def m = {
@@ -594,8 +580,6 @@ mod colon_on_a_later_line {
                 2
                 else:
                 3)
-            def t = reduce xs init:
-                0 with f
             def m = {
                 k:
                     1,
@@ -617,7 +601,6 @@ mod colon_on_a_later_line {
         let one_line = r"
             def a = if c: 1 elif d: 2 else: 3
             def b = (if c: 1 elif d: 2 else: 3)
-            def t = reduce xs init: 0 with f
             def m = {k: 1, [k]: 2}
             def {p: q, [k]: r} = m
             match x { n if: n > 0 => n, _ => 0 }
@@ -626,7 +609,7 @@ mod colon_on_a_later_line {
     }
 
     #[test]
-    fn a_line_break_before_elif_else_or_init_is_still_accepted() {
+    fn a_line_break_before_elif_or_else_is_still_accepted() {
         let multiline = r"
             def a = if c: 1
             elif d: 2
@@ -634,18 +617,10 @@ mod colon_on_a_later_line {
             def b = (if c: 1
                 elif d: 2
                 else: 3)
-            def t = reduce xs
-                init: 0
-                with f
-            def u = (reduce xs
-                init: 0
-                with f)
         ";
         let one_line = r"
             def a = if c: 1 elif d: 2 else: 3
             def b = (if c: 1 elif d: 2 else: 3)
-            def t = reduce xs init: 0 with f
-            def u = (reduce xs init: 0 with f)
         ";
         assert_same_as_one_line(multiline, one_line);
     }

@@ -9,7 +9,7 @@ use crate::parse::hints::site::{
 };
 use crate::parse::hints::{
     CALL_HELP, CATCH_ALL_HELP, CONDITIONAL_HELP, ELIF_HELP, LAMBDA_HELP, RETURN_TYPE_HELP, Site,
-    bare_name_help, define_function_help, function_form, is_iterative_keyword,
+    bare_name_help, define_function_help,
 };
 
 /// Words other languages use to declare a variable.
@@ -79,8 +79,8 @@ impl<'src> Site<'_, 'src> {
     pub(super) fn header_word_help(&self) -> Option<String> {
         if let Some(word) = self.header_word(LOOP_WORDS) {
             return Some(format!(
-                "Frost has no `{word}` loop; use `map`, `filter`, `reduce`, or `foreach` \
-                 with a function, like `foreach xs with fn x -> ...`"
+                "Frost has no `{word}` loop; use `map`, `filter`, `reduce`, or `each` \
+                 with a function, like `each(xs, fn x -> ...)`"
             ));
         }
         let help = match self.header_word(&["switch", "unless"])? {
@@ -236,15 +236,9 @@ impl<'src> Site<'_, 'src> {
         let previous = self.token_at(-1);
         let next = self.token_at(1);
         if previous == Some(&Token::OpDot) {
-            return Some(if is_iterative_keyword(found) {
-                format!(
-                    "`{found}` is a keyword, not a method; write `{found} xs with f`, \
-                     or `xs @ {}(f)`",
-                    function_form(found)
-                )
-            } else {
-                format!("`{found}` is a keyword; index with brackets instead: `x[\"{found}\"]`")
-            });
+            return Some(format!(
+                "`{found}` is a keyword; index with brackets instead: `x[\"{found}\"]`"
+            ));
         }
         let kind = self.innermost_kind();
         let is_map = matches!(kind, Some(Bracket::MapLiteral | Bracket::MapPattern));
@@ -354,15 +348,7 @@ impl<'src> Site<'_, 'src> {
                 ) =>
             {
                 "Frost has no comprehensions; use `map` and `filter`, like \
-                 `map xs with fn x -> ...`"
-            }
-            // `reduce xs with f from 0`
-            Token::Identifier("from") | Token::KwInit
-                if self
-                    .nearest_on_line(|token| *token == Token::KwReduce)
-                    .is_some() =>
-            {
-                "an initial value goes before `with`: `reduce xs init: v with f`"
+                 `map(xs, fn x -> ...)`"
             }
             _ => return None,
         };

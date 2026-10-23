@@ -1,6 +1,6 @@
-# An audit pass that prints as it goes: `each` and `foreach` run their
-# operation for its effect, in Array order and in Map key order, and yield
-# the structure itself, so the pipeline can keep using it. Only the totals
+# An audit pass that prints as it goes: `each` runs its operation for its
+# effect, over an Array in order and over a Map in key order, and yields the
+# structure itself, so the pipeline can keep using it. Only the totals
 # computed afterward differ from the input.
 #= {
 #=     result: {
@@ -33,11 +33,11 @@ defn describe(entry) -> {
 }
 
 def logged = each(entries, fn entry -> print(describe(entry)))
-def accounts = fold(logged, {}, fn acc, e -> acc + {[e.who]: (acc[e.who] or 0) + e.amount})
-def reported = foreach accounts with fn who, balance ->
-    print(if balance < 0: $'${who}: ${balance} (overdrawn)' else: $'${who}: ${balance}')
+def accounts = reduce(logged, {}, fn acc, e -> acc + {[e.who]: (acc[e.who] or 0) + e.amount})
+def reported = each(accounts, fn who, balance ->
+    print(if balance < 0: $'${who}: ${balance} (overdrawn)' else: $'${who}: ${balance}'))
 {
     accounts: reported,
-    overdrawn: reduce reported init: [] with fn acc, who, balance -> if balance < 0: acc + [who] else: acc,
-    total: reduce reported init: 0 with fn acc, who, balance -> acc + balance,
+    overdrawn: reduce(reported, [], fn acc, who, balance -> if balance < 0: acc + [who] else: acc),
+    total: reduce(reported, 0, fn acc, who, balance -> acc + balance),
 }

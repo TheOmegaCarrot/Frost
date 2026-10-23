@@ -1,7 +1,0 @@
-# The function forms take the structure first, so a pipeline threads through
-# `select`, `transform`, and `fold` in turn.
-#= {result: 120, inputs: {xs: [1, 2, 3, 4, 5]}}
-(xs
-    @ select(fn x -> x % 2 == 1)
-    @ transform(fn x -> x * 10)
-    @ fold(30, fn acc, x -> acc + x))

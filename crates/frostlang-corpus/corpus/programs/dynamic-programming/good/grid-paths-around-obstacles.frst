@@ -14,7 +14,7 @@
 #=     },
 #= }
 defn paths(grid) -> {
-    def last = fold(grid, null, fn prev, cells -> fold(cells, [], fn row, cell -> {
+    def last = reduce(grid, null, fn prev, cells -> reduce(cells, [], fn row, cell -> {
         def j = len(row)
         def from_above = if prev == null: (if j == 0: 1 else: 0) else: prev[j]
         def from_left = if j == 0: 0 else: row[j - 1]
@@ -23,4 +23,4 @@ defn paths(grid) -> {
     last[-1]
 }
 
-transform(grids, paths)
+map(grids, paths)

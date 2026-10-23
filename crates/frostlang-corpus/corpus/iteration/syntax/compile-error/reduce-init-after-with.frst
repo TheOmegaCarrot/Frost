@@ -1,4 +1,0 @@
-# The `init:` clause comes before `with`, not after the operation.
-#= {rejects: 'an initial value goes before `with`'}
-def f = fn acc, x -> acc + x
-reduce [1, 2] with f init: 0

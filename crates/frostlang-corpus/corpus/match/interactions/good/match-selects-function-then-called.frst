@@ -1,7 +1,7 @@
 # A match may choose a Function, which is then called directly on the match's
 # value.
 #= {result: [3, -2], inputs: {ops: ['inc', 'neg'], n: 2}}
-transform(ops, fn op -> (match op {
+map(ops, fn op -> (match op {
     'inc' => fn x -> x + 1,
     'neg' => fn x -> -x,
 })(n))

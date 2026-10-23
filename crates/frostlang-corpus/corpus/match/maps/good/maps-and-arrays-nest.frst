@@ -1,6 +1,6 @@
 # Map and Array patterns nest inside each other in any combination.
 #= {result: [3, 4, 1], inputs: {xs: [{a: [1, {b: 2}]}, [{a: 1}, {a: 2, b: 3}], {a: [1]}]}}
-transform(xs, fn v -> match v {
+map(xs, fn v -> match v {
     {a: [x, {b}]} => x + b,
     [{a}, {b}] => a + b,
     {a: [x]} => x,

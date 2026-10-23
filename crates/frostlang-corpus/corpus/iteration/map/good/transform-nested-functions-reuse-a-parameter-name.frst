@@ -1,5 +1,0 @@
-# A `transform` nested in another's function may reuse the outer parameter's
-# name: the inner one shadows it only inside the inner function, so the
-# outer `x` is still the row after the inner call.
-#= {result: [[2, [2, 4], 2], [1, [6], 1]], inputs: {rows: [[1, 2], [3]]}}
-transform(rows, fn x -> [len(x), transform(x, fn x -> x * 2), len(x)])

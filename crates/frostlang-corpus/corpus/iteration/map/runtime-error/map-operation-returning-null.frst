@@ -1,4 +1,4 @@
 # Over a Map, an operation returning Null is an error, not a dropped entry:
 # only an empty Map drops one.
 #= {raises: ['must return a Map', 'Null'], inputs: {m: {a: 1}}}
-map m with fn k, v -> null
+map(m, fn k, v -> null)

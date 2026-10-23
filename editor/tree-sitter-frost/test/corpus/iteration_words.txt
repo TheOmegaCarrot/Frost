@@ -1,0 +1,179 @@
+==================
+iteration and clause words are identifiers
+==================
+
+def map = 1
+def with = map
+def init = with
+filter + reduce + foreach
+
+---
+
+(source_file
+  (definition
+    (kw_def)
+    (pattern
+      (pattern_atom
+        (binding_pattern
+          (identifier))))
+    (or_expression
+      (and_expression
+        (equality_expression
+          (comparison_expression
+            (sum_expression
+              (product_expression
+                (unary_expression
+                  (postfix_expression
+                    (primary_expression
+                      (integer)))))))))))
+  (definition
+    (kw_def)
+    (pattern
+      (pattern_atom
+        (binding_pattern
+          (identifier))))
+    (or_expression
+      (and_expression
+        (equality_expression
+          (comparison_expression
+            (sum_expression
+              (product_expression
+                (unary_expression
+                  (postfix_expression
+                    (primary_expression
+                      (identifier)))))))))))
+  (definition
+    (kw_def)
+    (pattern
+      (pattern_atom
+        (binding_pattern
+          (identifier))))
+    (or_expression
+      (and_expression
+        (equality_expression
+          (comparison_expression
+            (sum_expression
+              (product_expression
+                (unary_expression
+                  (postfix_expression
+                    (primary_expression
+                      (identifier)))))))))))
+  (expression_statement
+    (or_expression
+      (and_expression
+        (equality_expression
+          (comparison_expression
+            (sum_expression
+              (sum_expression
+                (sum_expression
+                  (product_expression
+                    (unary_expression
+                      (postfix_expression
+                        (primary_expression
+                          (identifier))))))
+                (product_expression
+                  (unary_expression
+                    (postfix_expression
+                      (primary_expression
+                        (identifier))))))
+              (product_expression
+                (unary_expression
+                  (postfix_expression
+                    (primary_expression
+                      (identifier))))))))))))
+
+==================
+iteration and clause words as calls, properties, and map keys
+==================
+
+map(xs, f)
+data.map
+{with: 1, init: 2}
+
+---
+
+(source_file
+  (expression_statement
+    (or_expression
+      (and_expression
+        (equality_expression
+          (comparison_expression
+            (sum_expression
+              (product_expression
+                (unary_expression
+                  (postfix_expression
+                    (postfix_expression
+                      (primary_expression
+                        (identifier)))
+                    (no_nl_arguments
+                      (no_nl_call_open)
+                      (argument_list
+                        (or_expression
+                          (and_expression
+                            (equality_expression
+                              (comparison_expression
+                                (sum_expression
+                                  (product_expression
+                                    (unary_expression
+                                      (postfix_expression
+                                        (primary_expression
+                                          (identifier))))))))))
+                        (or_expression
+                          (and_expression
+                            (equality_expression
+                              (comparison_expression
+                                (sum_expression
+                                  (product_expression
+                                    (unary_expression
+                                      (postfix_expression
+                                        (primary_expression
+                                          (identifier)))))))))))))))))))))
+  (expression_statement
+    (or_expression
+      (and_expression
+        (equality_expression
+          (comparison_expression
+            (sum_expression
+              (product_expression
+                (unary_expression
+                  (postfix_expression
+                    (postfix_expression
+                      (primary_expression
+                        (identifier)))
+                    (identifier))))))))))
+  (expression_statement
+    (or_expression
+      (and_expression
+        (equality_expression
+          (comparison_expression
+            (sum_expression
+              (product_expression
+                (unary_expression
+                  (postfix_expression
+                    (primary_expression
+                      (map_literal
+                        (map_entries
+                          (map_entry
+                            (identifier)
+                            (or_expression
+                              (and_expression
+                                (equality_expression
+                                  (comparison_expression
+                                    (sum_expression
+                                      (product_expression
+                                        (unary_expression
+                                          (postfix_expression
+                                            (primary_expression
+                                              (integer)))))))))))
+                          (map_entry
+                            (identifier)
+                            (or_expression
+                              (and_expression
+                                (equality_expression
+                                  (comparison_expression
+                                    (sum_expression
+                                      (product_expression
+                                        (unary_expression
+                                          (postfix_expression
+                                            (primary_expression
+                                              (integer))))))))))))))))))))))))

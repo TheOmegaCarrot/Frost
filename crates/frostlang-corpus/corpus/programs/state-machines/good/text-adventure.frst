@@ -39,8 +39,8 @@ def world = {
     vault: {exits: {west: 'cellar'}, items: ['gold']},
 }
 
-defn without(xs, x) -> select(xs, fn y -> y != x)
-defn contains(xs, x) -> fold(xs, false, fn found, y -> found or y == x)
+defn without(xs, x) -> filter(xs, fn y -> y != x)
+defn contains(xs, x) -> reduce(xs, false, fn found, y -> found or y == x)
 
 defn say(state, text) -> {
     print(text)
@@ -68,7 +68,7 @@ defn step(state, command) -> {
     }
 }
 
-def final = fold(commands, {room: 'hall', inventory: [], world, moves: 0}, step)
+def final = reduce(commands, {room: 'hall', inventory: [], world, moves: 0}, step)
 {
     room: final.room,
     inventory: final.inventory,

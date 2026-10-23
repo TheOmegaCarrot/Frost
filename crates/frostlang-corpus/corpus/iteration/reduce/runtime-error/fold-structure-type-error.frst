@@ -1,3 +1,0 @@
-# `fold` called directly checks its first argument, naming itself.
-#= {raises: ['fold', 'Structured', 'argument 1', 'Int']}
-fold(5, 0, fn acc, x -> acc)

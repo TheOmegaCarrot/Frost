@@ -1,9 +1,0 @@
-# `reduce` may put its `init:` and `with` clauses on lines of their own, and
-# break after `init:`.
-#= {result: [16, 16], inputs: {xs: [1, 2, 3]}}
-def a = reduce xs
-init: 10
-with fn acc, x -> acc + x
-def b = reduce xs init:
-10 with fn acc, x -> acc + x
-[a, b]

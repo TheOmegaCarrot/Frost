@@ -4,4 +4,4 @@
 #=     result: [false, null, 2],
 #=     inputs: {maps: [{}, {k: null}, {k: 2}]},
 #= }
-transform(maps, fn m -> has(m, 'k') and m.k)
+map(maps, fn m -> has(m, 'k') and m.k)

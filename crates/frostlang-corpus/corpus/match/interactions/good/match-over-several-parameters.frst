@@ -7,4 +7,4 @@ defn which(a, b) -> match [a, b] {
     [null, _] => 'right',
     [_, _] => 'both',
 }
-transform(cases, fn c -> call(which, c))
+map(cases, fn c -> call(which, c))

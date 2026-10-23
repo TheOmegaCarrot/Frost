@@ -1,7 +1,7 @@
 # Arithmetic in a guard wraps on Int overflow like any other: the largest Int
 # plus one is less than it, which the guard can detect.
 #= {result: ['at the top', 'below the top'], inputs: {xs: [9223372036854775807, 1]}}
-transform(xs, fn v -> match v {
+map(xs, fn v -> match v {
     n if: n + 1 < n => 'at the top',
     _ => 'below the top',
 })

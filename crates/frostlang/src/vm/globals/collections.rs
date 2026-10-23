@@ -732,7 +732,7 @@ pub(super) fn xprod_with(
 // --- Transforming ---
 
 #[frost_fn]
-pub(super) fn transform(
+pub(super) fn map(
     #[frost(ctx)] ctx: &mut NativeCtx<'_>,
     #[frost(unnamed)] structure: Structured,
     #[frost(unnamed)] function: Function,
@@ -752,7 +752,7 @@ pub(super) fn transform(
                     Value::Map(m) => result.extend(m.into_map()),
                     other => {
                         return Err(FrostError::from_string(format!(
-                            "When transforming a Map, the function must return a Map, got {}",
+                            "When mapping a Map, the function must return a Map, got {}",
                             other.type_name()
                         )));
                     }
@@ -780,7 +780,7 @@ pub(super) fn flat_map(
 }
 
 /// The elements of an Array, or the entries of a Map, whose `predicate` answer
-/// has the truthiness `keep`: the body of both `select` and `reject`.
+/// has the truthiness `keep`: the body of both `filter` and `reject`.
 fn filter_structure(
     ctx: &mut NativeCtx<'_>,
     structure: Structured,
@@ -812,7 +812,7 @@ fn filter_structure(
 }
 
 #[frost_fn]
-pub(super) fn select(
+pub(super) fn filter(
     #[frost(ctx)] ctx: &mut NativeCtx<'_>,
     #[frost(unnamed)] structure: Structured,
     predicate: Function,
@@ -830,7 +830,7 @@ pub(super) fn reject(
 }
 
 #[frost_fn]
-pub(super) fn fold(
+pub(super) fn reduce(
     #[frost(ctx)] ctx: &mut NativeCtx<'_>,
     #[frost(unnamed)] structure: Structured,
     initial: Optional<Value>,
@@ -849,7 +849,7 @@ pub(super) fn fold(
         Structured::Map(map) => {
             let Some(initial) = initial.0 else {
                 return Err(FrostError::from_static(
-                    "Fold over a Map requires an initializer",
+                    "Reducing a Map requires an initial value",
                 ));
             };
             map.into_map().into_iter().try_fold(initial, |acc, (k, v)| {
@@ -1121,7 +1121,7 @@ pub(super) fn scan(
     initial: Optional<Value>,
     #[frost(unnamed)] function: Function,
 ) -> FrostResult {
-    // Each result is what `fold` gives over the elements so far:
+    // Each result is what `reduce` gives over the elements so far:
     // the initializer is not itself a result, but the first element is when it seeds.
     let mut elements = array.into_vec().into_iter();
     let mut running = Vec::with_capacity(elements.len());

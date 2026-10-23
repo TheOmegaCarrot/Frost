@@ -1,4 +1,0 @@
-# `foreach` is a keyword, so it cannot be bound as a name.
-#= {rejects: ['`foreach`', 'keyword']}
-def foreach = 1
-1

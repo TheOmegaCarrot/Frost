@@ -1,0 +1,5 @@
+# `map` builds a new Array and leaves its input unchanged, whether the
+# input is read again before or after it.
+#= {result: [[1, 2], [2, 4], [1, 2]], inputs: {n: 1}}
+def xs = [n, 2]
+[xs, map(xs, fn x -> x * 2), xs]

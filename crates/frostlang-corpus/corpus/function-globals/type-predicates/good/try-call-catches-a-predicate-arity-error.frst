@@ -24,6 +24,6 @@ def predicates = [
     is_flat,
 ]
 [
-    map predicates with fn p -> try_call(p, []).ok,
-    map predicates with fn p -> try_call(p, [1, 2]).ok,
+    map(predicates, fn p -> try_call(p, []).ok),
+    map(predicates, fn p -> try_call(p, [1, 2]).ok),
 ]

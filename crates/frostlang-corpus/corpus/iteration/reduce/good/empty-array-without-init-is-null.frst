@@ -1,5 +1,0 @@
-# An empty Array with no `init:` has nothing to seed the accumulator, so
-# `reduce` yields Null without calling the operation.
-#= {result: [null, null], inputs: {empty: []}}
-def boom = fn acc, x -> error('called')
-[reduce [] with boom, reduce empty with boom]

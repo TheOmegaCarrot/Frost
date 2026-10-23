@@ -1,0 +1,5 @@
+# A Map threads through the collection functions, which hand each entry's key and
+# value to the function.
+#= {result: [{b: 20, c: 30}, 50], inputs: {m: {a: 1, b: 2, c: 3}}}
+def kept = m @ filter(fn k, v -> v > 1) @ map(fn k, v -> {[k]: v * 10})
+[kept, kept @ reduce(0, fn acc, k, v -> acc + v)]

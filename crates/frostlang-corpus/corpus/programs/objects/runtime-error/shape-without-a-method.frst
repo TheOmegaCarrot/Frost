@@ -8,5 +8,5 @@
 defn square(side) -> {area: fn -> side * side, name: fn -> 'square'}
 defn point() -> {name: fn -> 'point'}
 
-def shapes = transform(sides, square) + [point()]
-fold(shapes, 0, fn total, shape -> total + shape.area())
+def shapes = map(sides, square) + [point()]
+reduce(shapes, 0, fn total, shape -> total + shape.area())

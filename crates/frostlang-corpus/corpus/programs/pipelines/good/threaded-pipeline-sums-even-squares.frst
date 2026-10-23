@@ -1,6 +1,6 @@
 # A pipeline threaded with `@`: keep the even numbers, square them, and sum.
 # Subtle: -2 is even (its remainder is 0), and the empty input reaches the
-# fold's initial value without any stage calling its function.
+# reduce's initial value without any stage calling its function.
 #= {
 #=     result: [56, 0, 4, 0],
 #=     inputs: {
@@ -9,9 +9,9 @@
 #= }
 defn sum_of_even_squares(xs) -> (
     xs
-    @ select(fn x -> x % 2 == 0)
-    @ transform(fn x -> x * x)
-    @ fold(0, fn total, x -> total + x)
+    @ filter(fn x -> x % 2 == 0)
+    @ map(fn x -> x * x)
+    @ reduce(0, fn total, x -> total + x)
 )
 
-transform(runs, sum_of_even_squares)
+map(runs, sum_of_even_squares)

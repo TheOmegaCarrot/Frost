@@ -1,4 +1,0 @@
-# An unbound name as a form's structure is rejected at compile time, not
-# raised when the form runs.
-#= {rejects: ['`nowhere`', 'not defined']}
-filter nowhere with fn x -> true

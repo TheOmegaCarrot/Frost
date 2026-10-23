@@ -20,4 +20,4 @@ def classify = fn value -> match value {
     n is Int => 'int',
     _ => 'other',
 }
-[first(1, 2), head(3, 4, 5), constant(6), map values with classify]
+[first(1, 2), head(3, 4, 5), constant(6), map(values, classify)]

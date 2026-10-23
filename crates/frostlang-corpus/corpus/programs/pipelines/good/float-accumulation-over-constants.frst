@@ -1,5 +1,5 @@
 # The Float accumulation pipeline over literal readings, which the
-# optimizer may compute ahead of time: its rounding, in fold order, must
+# optimizer may compute ahead of time: its rounding, in reduce order, must
 # match the runtime's bit for bit.
 #= {
 #=     result: {
@@ -11,8 +11,8 @@
 #=         mixed_mean: 1.5,
 #=     },
 #= }
-defn total(xs) -> fold(xs, 0, fn sum, x -> sum + x)
-defn reversed(xs) -> fold(xs, [], fn acc, x -> [x] + acc)
+defn total(xs) -> reduce(xs, 0, fn sum, x -> sum + x)
+defn reversed(xs) -> reduce(xs, [], fn acc, x -> [x] + acc)
 defn mean(xs) -> total(xs) / len(xs)
 
 {

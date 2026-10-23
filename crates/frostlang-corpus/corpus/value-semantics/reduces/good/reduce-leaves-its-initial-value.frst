@@ -1,0 +1,6 @@
+# `reduce` builds its result from the initial value without changing the
+# binding that supplied it.
+#= {result: [[1, 2, 3], [1]], inputs: {n: 1}}
+def seed = [n]
+def built = reduce([2, 3], seed, fn acc, x -> acc + [x])
+[built, seed]

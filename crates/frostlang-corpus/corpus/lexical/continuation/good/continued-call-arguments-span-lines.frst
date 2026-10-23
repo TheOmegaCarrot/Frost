@@ -2,6 +2,6 @@
 # with a trailing comma.
 #= {result: [3, 4, 5]}
 [1, 2, 3]
-    @ transform(
+    @ map(
         fn x -> x + 2,
     )

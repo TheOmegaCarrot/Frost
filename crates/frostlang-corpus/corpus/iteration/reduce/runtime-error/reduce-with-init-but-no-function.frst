@@ -1,0 +1,5 @@
+# With two arguments, `reduce` takes a structure and a function, never a
+# structure and an initial value. Subtle: `reduce(xs, 0)` reads as an initial
+# value missing its function, but it is the function argument that is wrong.
+#= {raises: ['reduce', 'Function', 'argument 2', 'Int'], inputs: {xs: [1, 2]}}
+reduce(xs, 0)

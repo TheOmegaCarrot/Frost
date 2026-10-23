@@ -1,4 +1,0 @@
-# `reduce` called like a function with an initial value is pointed to the
-# form with `init:` and to `fold(xs, v, f)`.
-#= {rejects: '`fold(xs, v, f)`'}
-reduce([1, 2], 0, fn acc, x -> acc + x)

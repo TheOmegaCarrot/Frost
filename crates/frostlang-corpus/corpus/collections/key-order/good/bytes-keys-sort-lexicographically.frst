@@ -9,4 +9,4 @@ def m = {
     [x'7f']: 5,
     [x'00']: 6,
 }
-fold(m, [], fn acc, k, v -> acc + [k])
+reduce(m, [], fn acc, k, v -> acc + [k])

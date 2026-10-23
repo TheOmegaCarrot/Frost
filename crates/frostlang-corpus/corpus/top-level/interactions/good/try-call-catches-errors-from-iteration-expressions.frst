@@ -1,8 +1,0 @@
-# An error raised in the function of a `map`, `filter`, or `reduce`
-# expression propagates out of it and is caught intact.
-#= {result: ['m1', 'f1', 'r2']}
-[
-    try_call(fn -> map [1, 2] with fn x -> error($'m${x}')).error,
-    try_call(fn -> filter [1, 2] with fn x -> error($'f${x}')).error,
-    try_call(fn -> reduce [1, 2] with fn acc, x -> error($'r${x}')).error,
-]

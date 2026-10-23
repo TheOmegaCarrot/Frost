@@ -413,7 +413,7 @@ fn each_call_has_its_own_fuel() {
     // Each call spends a fair share of the limit; together, many times over it.
     let mut settings = load_clean(
         r"
-        defn prompt(c) -> to_string(fold(range(2000), 0, fn acc, x -> acc + x))
+        defn prompt(c) -> to_string(reduce(range(2000), 0, fn acc, x -> acc + x))
         export def terminal = {prompt}
         ",
     );

@@ -21,4 +21,4 @@ defn score(rolls, frame) -> if frame == 10: 0 else: match rolls {
     [x, y, ...rest] => x + y + score(rest, frame + 1),
 }
 
-transform(games, fn rolls -> score(rolls, 0))
+map(games, fn rolls -> score(rolls, 0))

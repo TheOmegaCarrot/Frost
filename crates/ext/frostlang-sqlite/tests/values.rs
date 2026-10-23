@@ -24,8 +24,8 @@ fn round_trip(column_type: &str, values: &str) -> String {
         r"
         db.exec('CREATE TABLE t (id INTEGER PRIMARY KEY, v {column_type})')
         def values = {values}
-        map values with fn v -> db.exec('INSERT INTO t (v) VALUES (?)', [v])
-        map db.query('SELECT v FROM t ORDER BY id') with fn row -> row.v
+        map(values, fn v -> db.exec('INSERT INTO t (v) VALUES (?)', [v]))
+        map(db.query('SELECT v FROM t ORDER BY id'), fn row -> row.v)
         "
     ))
 }
@@ -151,8 +151,8 @@ fn text_that_is_not_utf8_is_an_error() {
             &format!("Function db.query {message}"),
         ),
         (
-            &with_db(r#"db.fold("SELECT CAST(x'61ff' AS TEXT) AS t", null, fn acc, row -> acc)"#),
-            &format!("Function db.fold {message}"),
+            &with_db(r#"db.reduce("SELECT CAST(x'61ff' AS TEXT) AS t", null, fn acc, row -> acc)"#),
+            &format!("Function db.reduce {message}"),
         ),
     ]);
     // Read as a BLOB, the same bytes are fine.
@@ -176,7 +176,7 @@ fn a_column_name_that_is_not_utf8_is_an_error() {
         def db = sqlite.open({path})
         [
             try_call(db.query, ['SELECT * FROM t']).error,
-            try_call(db.fold, ['SELECT * FROM t', null, fn acc, row -> acc]).error,
+            try_call(db.reduce, ['SELECT * FROM t', null, fn acc, row -> acc]).error,
             db.query('SELECT count(*) AS c FROM t'),
         ]
         "#
@@ -184,19 +184,19 @@ fn a_column_name_that_is_not_utf8_is_an_error() {
     let message = "requires column names to be UTF-8, but column 1 has a name that is not";
     assert_values(&[(
         &source,
-        &format!("['Function db.query {message}', 'Function db.fold {message}', [{{c: 1}}]]"),
+        &format!("['Function db.query {message}', 'Function db.reduce {message}', [{{c: 1}}]]"),
     )]);
 }
 
 #[test]
-fn a_fold_stops_at_the_first_row_it_cannot_read() {
+fn a_reduce_stops_at_the_first_row_it_cannot_read() {
     let source = with_db(
         r#"
         db.exec('CREATE TABLE t (id INTEGER PRIMARY KEY, v)')
         db.exec("INSERT INTO t (v) VALUES ('a'), (CAST(x'ff' AS TEXT)), ('c')")
         db.exec('CREATE TABLE log (id)')
-        def folded = try_call(db.fold, ['SELECT id, v FROM t ORDER BY id', null, fn acc, row -> db.exec('INSERT INTO log VALUES (?)', [row.id])])
-        [folded.ok, db.query('SELECT id FROM log')]
+        def reduced = try_call(db.reduce, ['SELECT id, v FROM t ORDER BY id', null, fn acc, row -> db.exec('INSERT INTO log VALUES (?)', [row.id])])
+        [reduced.ok, db.query('SELECT id FROM log')]
         "#,
     );
     // The first row reached the callback, and no row after the second.

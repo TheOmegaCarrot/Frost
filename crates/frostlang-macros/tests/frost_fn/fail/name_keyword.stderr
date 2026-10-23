@@ -1,8 +1,8 @@
-error[E0080]: evaluation panicked: a base name must be a Frost identifier, not a keyword: give another with `name = "..."`, not `map`
+error[E0080]: evaluation panicked: a base name must be a Frost identifier, not a keyword: give another with `name = "..."`, not `def`
  --> tests/frost_fn/fail/name_keyword.rs:7:4
   |
-7 | fn map() {}
-  |    ^^^ evaluation of `map_frost::_` failed here
+7 | fn def() {}
+  |    ^^^ evaluation of `def_frost::_` failed here
 
 error[E0080]: evaluation panicked: a base name must be a Frost identifier, not a keyword: give another with `name = "..."`, not `if`
  --> tests/frost_fn/fail/name_keyword.rs:9:19

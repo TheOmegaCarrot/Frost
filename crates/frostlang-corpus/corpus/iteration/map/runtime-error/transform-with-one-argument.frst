@@ -1,3 +1,0 @@
-# `transform` takes exactly two arguments; one is an arity error.
-#= {raises: ['transform', 'called with 1']}
-transform([1])

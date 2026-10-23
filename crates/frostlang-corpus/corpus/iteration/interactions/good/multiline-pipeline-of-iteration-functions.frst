@@ -1,0 +1,12 @@
+# A parenthesized pipeline may put each threaded iteration function on its
+# own line.
+#= {
+#=     result: [2, 4],
+#=     printed: ['2', '4'],
+#=     inputs: {xs: [1, 2, 3, 4]},
+#= }
+(
+    xs
+    @ filter(fn x -> x % 2 == 0)
+    @ each(fn x -> print(x))
+)

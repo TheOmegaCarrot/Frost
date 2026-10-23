@@ -1,0 +1,7 @@
+# A pipeline of collection functions over a literal Array, which the optimizer may
+# compute ahead of time, gives the same result as at runtime.
+#= {result: 120}
+([1, 2, 3, 4, 5]
+    @ filter(fn x -> x % 2 == 1)
+    @ map(fn x -> x * 10)
+    @ reduce(30, fn acc, x -> acc + x))

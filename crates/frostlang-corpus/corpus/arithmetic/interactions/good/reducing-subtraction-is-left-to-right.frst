@@ -1,0 +1,7 @@
+# Reducing with `-` threads the accumulator as the left operand, element by
+# element from the left: 100 - 1 - 2 - 3, not some other grouping.
+#= {result: [94, -4], inputs: {xs: [1, 2, 3]}}
+[
+    reduce(xs, 100, fn acc, x -> acc - x),
+    reduce(xs, fn acc, x -> acc - x),
+]

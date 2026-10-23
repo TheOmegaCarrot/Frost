@@ -18,13 +18,13 @@
 #=         ],
 #=     },
 #= }
-def all = fold(posts, [], fn acc, post -> acc + post.tags)
-def set = fold(all, {}, fn acc, tag -> acc + {[tag]: true})
-def unique = reduce set init: [] with fn acc, tag, present -> acc + [tag]
+def all = reduce(posts, [], fn acc, post -> acc + post.tags)
+def set = reduce(all, {}, fn acc, tag -> acc + {[tag]: true})
+def unique = reduce(set, [], fn acc, tag, present -> acc + [tag])
 
 defn add_post(index, post) -> {
-    def post_tags = fold(post.tags, {}, fn acc, tag -> acc + {[tag]: true})
-    reduce post_tags init: index with fn acc, tag, present -> acc + {[tag]: (acc[tag] or []) + [post.id]}
+    def post_tags = reduce(post.tags, {}, fn acc, tag -> acc + {[tag]: true})
+    reduce(post_tags, index, fn acc, tag, present -> acc + {[tag]: (acc[tag] or []) + [post.id]})
 }
 
-{all, unique, index: fold(posts, {}, add_post)}
+{all, unique, index: reduce(posts, {}, add_post)}

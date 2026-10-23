@@ -5,4 +5,4 @@
 #=     result: [[2], [0, null]],
 #=     inputs: {xs: [null, 1, 2], ys: [0, null, false]},
 #= }
-[filter xs with fn x -> x and x > 1, filter ys with fn y -> y or is_null(y)]
+[filter(xs, fn x -> x and x > 1), filter(ys, fn y -> y or is_null(y))]

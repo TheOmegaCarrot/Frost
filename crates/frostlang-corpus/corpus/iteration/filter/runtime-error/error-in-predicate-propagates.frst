@@ -1,3 +1,3 @@
 # An error the predicate raises propagates out of `filter`.
 #= {raises: 'bad element', inputs: {xs: [1, 2, 3]}}
-filter xs with fn x -> if x == 3: error('bad element') else: true
+filter(xs, fn x -> if x == 3: error('bad element') else: true)

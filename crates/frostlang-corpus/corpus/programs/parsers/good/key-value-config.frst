@@ -30,6 +30,6 @@ defn step(state, c) ->
     elif c == '=': state + {in_value: true}
     else: state + {key: state.key + c}
 
-defn parse(chars) -> commit(reduce chars init: fresh + {result: {}} with step)
+defn parse(chars) -> commit(reduce(chars, fresh + {result: {}}, step))
 
-transform(sources, parse)
+map(sources, parse)

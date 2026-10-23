@@ -1,6 +1,6 @@
 # Each arm is its own scope, so different arms may bind the same names.
 #= {result: [1, 3, 5], inputs: {xs: [[1], [1, 2], {x: 5}]}}
-transform(xs, fn v -> match v {
+map(xs, fn v -> match v {
     [x] => x,
     [x, y] => x + y,
     {x} => x,

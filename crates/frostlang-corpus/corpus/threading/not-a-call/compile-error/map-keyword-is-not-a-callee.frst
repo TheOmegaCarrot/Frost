@@ -1,4 +1,0 @@
-# `map` is a keyword expression, not a function, so it cannot be threaded
-# into; the help names its function form.
-#= {rejects: ['expected `with`', 'transform'], inputs: {xs: [1]}}
-xs @ map(fn x -> x)

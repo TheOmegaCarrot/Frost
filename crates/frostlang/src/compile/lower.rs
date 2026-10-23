@@ -8,7 +8,6 @@ mod format_string;
 mod globals;
 mod if_expression;
 mod index_expressions;
-mod iterative_expressions;
 mod lambda_expression;
 mod locals;
 mod match_expression;
@@ -34,7 +33,6 @@ use frostlang_parse::{
 };
 
 use fold::FoldVm;
-use iterative_expressions::Iteration;
 use locals::Locals;
 
 /// A name as scope resolution sees it. `$` is shorthand for `$1`, so every use
@@ -559,44 +557,6 @@ impl FunctionBuilder<'_> {
             Expr::Map(entries) => self.compile_map_literal(entries, span),
             Expr::FormatString(segments) => self.compile_format_string(segments, span),
             Expr::Lambda { .. } | Expr::AbbreviatedLambda { .. } => self.compile_lambda(expr, None),
-            Expr::Filter {
-                structure,
-                operation,
-            } => self.compile_iteration(
-                Iteration::Filter,
-                structure,
-                operation,
-                None,
-                position,
-                span,
-            ),
-            Expr::MapIter {
-                structure,
-                operation,
-            } => self.compile_iteration(Iteration::Map, structure, operation, None, position, span),
-            Expr::Reduce {
-                structure,
-                operation,
-                init,
-            } => self.compile_iteration(
-                Iteration::Reduce,
-                structure,
-                operation,
-                init.as_deref(),
-                position,
-                span,
-            ),
-            Expr::Foreach {
-                structure,
-                operation,
-            } => self.compile_iteration(
-                Iteration::Foreach,
-                structure,
-                operation,
-                None,
-                position,
-                span,
-            ),
             Expr::Match { target, arms } => {
                 self.compile_match_expression(target, arms, position, span)
             }

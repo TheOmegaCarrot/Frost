@@ -13,4 +13,4 @@ defn attempt(d) -> do {
     def outcome = try_call(checked_div, [10, d])
     if outcome.ok: outcome else: {ok: false, error: outcome.error}
 }
-transform(divisors, attempt)
+map(divisors, attempt)

@@ -3,6 +3,6 @@
 # shows. Merging look-alike constants must not conflate them.
 #= {result: [['Int', 'Float', 'Int', 'Float'], ['0.0', '-0.0', '0.0']]}
 [
-    map [1, 1.0, 1, 1.0] with fn x -> type(x),
-    map [0.0, -0.0, 0.0] with fn x -> to_string(x),
+    map([1, 1.0, 1, 1.0], fn x -> type(x)),
+    map([0.0, -0.0, 0.0], fn x -> to_string(x)),
 ]

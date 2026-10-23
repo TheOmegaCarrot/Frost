@@ -33,7 +33,7 @@ def users = {['1']: 'ada', ['2']: 'bo'}
 
 defn route(request) -> match request {
     {method: 'GET', path: []} => {status: 200, body: 'home'},
-    {method: 'GET', path: ['users']} => {status: 200, body: reduce users init: [] with fn acc, id, name -> acc + [name]},
+    {method: 'GET', path: ['users']} => {status: 200, body: reduce(users, [], fn acc, id, name -> acc + [name])},
     {method: 'GET', path: ['users', id]} if: has(users, id) => {status: 200, body: users[id]},
     {method: 'GET', path: ['users', _]} => {status: 404, body: 'no such user'},
     {method: 'POST' | 'PUT', path: ['users'], body: {name} as data} => {status: 201, body: $'created ${name} (${len(data)} fields)'},
@@ -42,4 +42,4 @@ defn route(request) -> match request {
     {path: [first, ...rest]} => {status: 404, body: $'unknown /${first} (+${len(rest)})'},
 }
 
-transform(requests, route)
+map(requests, route)

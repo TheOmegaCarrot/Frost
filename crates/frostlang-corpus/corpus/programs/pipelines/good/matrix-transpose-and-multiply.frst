@@ -16,13 +16,13 @@
 #= }
 defn upto(n) -> if n == 0: [] else: upto(n - 1) + [n - 1]
 
-defn transpose(m) -> transform(upto(len(m[0])), fn j -> transform(m, fn row -> row[j]))
+defn transpose(m) -> map(upto(len(m[0])), fn j -> map(m, fn row -> row[j]))
 
-defn dot(xs, ys) -> fold(upto(len(xs)), 0, fn total, i -> total + xs[i] * ys[i])
+defn dot(xs, ys) -> reduce(upto(len(xs)), 0, fn total, i -> total + xs[i] * ys[i])
 
 defn multiply(m, n) -> {
     def columns = transpose(n)
-    transform(m, fn row -> transform(columns, fn column -> dot(row, column)))
+    map(m, fn row -> map(columns, fn column -> dot(row, column)))
 }
 
 {

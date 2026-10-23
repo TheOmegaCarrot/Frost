@@ -1,7 +1,7 @@
 # A parenthesized `match` may be a condition; the value of its matching arm
 # decides the branch.
 #= {result: ['empty', 'some', 'some'], inputs: {lists: [[], [1], [1, 2]]}}
-map lists with fn xs -> if (match xs {
+map(lists, fn xs -> if (match xs {
     [] => true,
     _ => false,
-}): 'empty' else: 'some'
+}): 'empty' else: 'some')

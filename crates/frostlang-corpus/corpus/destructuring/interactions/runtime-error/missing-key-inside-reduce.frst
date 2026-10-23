@@ -1,0 +1,9 @@
+# A missing key in a `reduce` step raises out of the reduce.
+#= {
+#=     raises: 'no value at key "v"',
+#=     inputs: {points: [{v: 1}, {w: 2}]},
+#= }
+reduce(points, 0, fn acc, point -> {
+    def {v} = point
+    acc + v
+})

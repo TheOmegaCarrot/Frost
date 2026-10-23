@@ -5,4 +5,4 @@
 #=     inputs: {xs: [9223372036854775807, 1]},
 #= }
 def add = fn acc, x -> acc + x
-[reduce [9223372036854775807, 1] with add, reduce xs with add]
+[reduce([9223372036854775807, 1], add), reduce(xs, add)]

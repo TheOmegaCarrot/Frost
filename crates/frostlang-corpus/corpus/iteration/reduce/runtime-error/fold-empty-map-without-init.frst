@@ -1,5 +1,0 @@
-# `fold` over a Map needs an init even when the Map is empty. Subtle: an empty
-# Array without an init folds to Null, but a Map's need for an init does not
-# depend on its size.
-#= {raises: 'requires an initializer', inputs: {m: {}}}
-fold(m, fn acc, k, v -> acc)

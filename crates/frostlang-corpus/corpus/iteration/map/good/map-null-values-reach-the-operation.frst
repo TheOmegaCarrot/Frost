@@ -1,4 +1,4 @@
 # A Null value in a Map entry reaches the operation like any other value, and
 # may be stored in the result.
 #= {result: {a: [null], b: [1]}, inputs: {m: {a: null, b: 1}}}
-map m with fn k, v -> {[k]: [v]}
+map(m, fn k, v -> {[k]: [v]})

@@ -17,7 +17,7 @@
 #=         repeated: ['z', 'z', 'z'],
 #=     },
 #= }
-defn count(symbols) -> fold(symbols, {}, fn acc, s -> acc + {[s]: (acc[s] or 0) + 1})
+defn count(symbols) -> reduce(symbols, {}, fn acc, s -> acc + {[s]: (acc[s] or 0) + 1})
 
 defn lighter(a, b) -> a.weight < b.weight or (a.weight == b.weight and a.id < b.id)
 
@@ -35,7 +35,7 @@ defn codes(tree, prefix) ->
     if has(tree, 'symbol'): {[tree.symbol]: if prefix == []: ['0'] else: prefix}
     else: codes(tree.left, prefix + ['0']) + codes(tree.right, prefix + ['1'])
 
-defn encode(table, symbols) -> fold(symbols, [], fn bits, s -> bits + table[s])
+defn encode(table, symbols) -> reduce(symbols, [], fn bits, s -> bits + table[s])
 
 defn decode(tree, bits) -> {
     defn walk(node, rest, out) ->
@@ -47,10 +47,10 @@ defn decode(tree, bits) -> {
     walk(tree, bits, [])
 }
 
-defn leaves(counts) -> reduce counts init: {queue: [], id: 0} with fn s, symbol, weight -> {
+defn leaves(counts) -> reduce(counts, {queue: [], id: 0}, fn s, symbol, weight -> {
     queue: enqueue(s.queue, {weight, id: s.id, symbol}),
     id: s.id + 1,
-}
+})
 
 defn huffman(symbols) -> {
     def counts = count(symbols)
@@ -59,8 +59,8 @@ defn huffman(symbols) -> {
     {counts, tree, table: codes(tree, [])}
 }
 
-defn join(parts) -> fold(parts, '', fn text, p -> text + p)
-defn rendered(table) -> map table with fn symbol, bits -> {[symbol]: join(bits)}
+defn join(parts) -> reduce(parts, '', fn text, p -> text + p)
+defn rendered(table) -> map(table, fn symbol, bits -> {[symbol]: join(bits)})
 
 def main = huffman(message)
 def bits = encode(main.table, message)

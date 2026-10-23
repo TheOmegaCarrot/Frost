@@ -1,0 +1,4 @@
+# A Map pattern's `as` name may be `init`.
+#= {result: [1, {a: 1}]}
+def {a} as init = {a: 1}
+[a, init]

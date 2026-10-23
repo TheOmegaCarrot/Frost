@@ -1,0 +1,4 @@
+# `reduce` from a starting function composes each further one after it.
+#= {result: 11}
+def pipeline = reduce([fn x -> x * 2, fn x -> x - 1], fn x -> x + 1, compose)
+pipeline(5)

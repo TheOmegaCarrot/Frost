@@ -1,7 +1,7 @@
 # A `match` guard may be an unparenthesized `if`; its alternate ends at the
 # arm's `=>`.
 #= {result: ['pos', 'no'], inputs: {values: [5, -5]}}
-map values with fn v -> match v {
+map(values, fn v -> match v {
     n if: if n > 0: true else: false => 'pos',
     _ => 'no',
-}
+})

@@ -14,7 +14,7 @@ defn stack(xs) -> {
     },
 }
 
-def full = fold(items, stack([]), fn s, x -> s.push(x))
+def full = reduce(items, stack([]), fn s, x -> s.push(x))
 def [first, rest] = full.pop()
 def [second, empty] = rest.pop()
 [first, second]

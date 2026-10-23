@@ -11,4 +11,4 @@ def attempts = [
     [tap, [1, 1]],
     [compose, [1, 1]],
 ]
-map attempts with fn attempt -> try_call(attempt[0], attempt[1]).ok
+map(attempts, fn attempt -> try_call(attempt[0], attempt[1]).ok)

@@ -38,18 +38,18 @@ defn render(n) -> {
 }
 
 defn parse(chars) -> {
-    def values = transform(chars, fn c -> letters[c])
-    def paired = fold(values, {total: 0, previous: null}, fn s, v ->
+    def values = map(chars, fn c -> letters[c])
+    def paired = reduce(values, {total: 0, previous: null}, fn s, v ->
         if s.previous != null and s.previous < v: {total: s.total - 2 * s.previous + v, previous: v}
         else: {total: s.total + v, previous: v}
     )
     paired.total
 }
 
-defn joined(chars) -> fold(chars, '', fn text, c -> text + c)
+defn joined(chars) -> reduce(chars, '', fn text, c -> text + c)
 
 {
-    rendered: transform(numbers, fn n -> joined(render(n))),
-    parsed: transform(numerals, parse),
-    round_trips: transform(numbers, fn n -> parse(render(n))) == numbers,
+    rendered: map(numbers, fn n -> joined(render(n))),
+    parsed: map(numerals, parse),
+    round_trips: map(numbers, fn n -> parse(render(n))) == numbers,
 }

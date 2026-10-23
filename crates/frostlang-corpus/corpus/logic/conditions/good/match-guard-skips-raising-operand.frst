@@ -1,7 +1,7 @@
 # A guard's `and` stops at its first falsy operand, and its `or` at its first
 # truthy one, so an operand that would raise is never evaluated.
 #= {result: ['zero', 'big'], inputs: {xs: [0, 5]}}
-transform(xs, fn x -> match x {
+map(xs, fn x -> match x {
     n if: n != 0 and 10 / n > 5 => 'small',
     n if: n == 0 => 'zero',
     n if: n > 1 or error('reached') => 'big',

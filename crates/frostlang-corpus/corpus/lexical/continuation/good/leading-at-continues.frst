@@ -3,6 +3,6 @@
 #= {result: [4, 8]}
 def xs = [1, 2, 3, 4]
 def r = xs
-    @ select(fn x -> x % 2 == 0)
-    @ transform(fn x -> x * 2)
+    @ filter(fn x -> x % 2 == 0)
+    @ map(fn x -> x * 2)
 r

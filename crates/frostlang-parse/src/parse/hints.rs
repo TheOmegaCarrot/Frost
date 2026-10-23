@@ -224,35 +224,3 @@ fn float_point_help(example: &str) -> String {
 fn raw_string_help(quote: char) -> String {
     format!("a raw String is written `R{quote}(...){quote}`")
 }
-
-fn is_iterative_keyword(token: &Token) -> bool {
-    matches!(
-        token,
-        Token::KwMap | Token::KwFilter | Token::KwReduce | Token::KwForeach
-    )
-}
-
-/// Help for `map`, `filter`, `reduce`, or `foreach` written as a function call;
-/// `seeded` when that call passes `reduce` an initial value.
-fn iterative_help(keyword: &Token, seeded: bool) -> String {
-    if seeded && *keyword == Token::KwReduce {
-        return "`reduce` is an expression, written `reduce xs init: v with f`; \
-                its function form is `fold(xs, v, f)`"
-            .to_owned();
-    }
-    format!(
-        "`{keyword}` is an expression, written `{keyword} xs with f`; \
-         its function form is `{}(xs, f)`",
-        function_form(keyword)
-    )
-}
-
-/// The function that does what the iterative expression `keyword` does.
-fn function_form(keyword: &Token) -> &'static str {
-    match keyword {
-        Token::KwMap => "transform",
-        Token::KwFilter => "select",
-        Token::KwReduce => "fold",
-        _ => "each",
-    }
-}

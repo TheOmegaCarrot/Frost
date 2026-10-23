@@ -1,0 +1,5 @@
+# The iteration functions are ordinary globals: a local of the same name
+# replaces one for calls.
+#= {result: 'mine', inputs: {xs: [1]}}
+def filter = fn s, f -> 'mine'
+filter(xs, fn x -> true)

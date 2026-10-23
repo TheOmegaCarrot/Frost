@@ -1,4 +1,0 @@
-# The structure is a whole expression, extending up to `with`: here the
-# concatenation of two Arrays.
-#= {result: [2, 4, 6], inputs: {xs: [1, 2], ys: [3]}}
-map xs + ys with fn x -> x * 2

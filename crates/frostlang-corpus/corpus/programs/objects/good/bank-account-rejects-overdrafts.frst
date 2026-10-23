@@ -34,5 +34,5 @@ defn apply(state, transaction) -> {
     else: state + {log: state.log + [$'rejected: ${outcome.error.reason}']}
 }
 
-def final = fold(transactions, {account: account(0), log: []}, apply)
+def final = reduce(transactions, {account: account(0), log: []}, apply)
 {balance: final.account.balance(), log: final.log}

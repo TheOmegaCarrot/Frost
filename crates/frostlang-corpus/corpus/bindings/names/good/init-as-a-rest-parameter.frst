@@ -1,0 +1,4 @@
+# A rest parameter may be named `init`.
+#= {result: [1, 2]}
+def f = fn ...init -> init
+f(1, 2)

@@ -14,4 +14,4 @@ defn step(stack, instruction) -> match instruction {
     'add' => binary(stack, fn a, b -> a + b),
 }
 
-reduce program init: [] with step
+reduce(program, [], step)

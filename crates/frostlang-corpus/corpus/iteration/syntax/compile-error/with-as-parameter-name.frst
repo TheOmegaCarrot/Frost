@@ -1,3 +1,0 @@
-# `with` is a keyword, so it cannot name a parameter.
-#= {rejects: ['`with` is a keyword', 'cannot be a name']}
-defn f(with) -> with

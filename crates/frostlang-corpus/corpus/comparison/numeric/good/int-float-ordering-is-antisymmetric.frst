@@ -8,5 +8,5 @@
 #=     },
 #= }
 def agree = fn i, f -> [i < f, i <= f, i > f, i >= f] == [f > i, f >= i, f < i, f <= i]
-def results = transform(ints, fn i -> transform(floats, fn f -> agree(i, f)))
-results == transform(ints, fn _ -> transform(floats, fn _ -> true))
+def results = map(ints, fn i -> map(floats, fn f -> agree(i, f)))
+results == map(ints, fn _ -> map(floats, fn _ -> true))

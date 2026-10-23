@@ -1,6 +1,0 @@
-# `transform` over a Map builds a new Map and leaves the input, and the Arrays
-# it holds, unchanged.
-#= {result: [{a: [1], b: [2]}, {a: [1, 0], b: [2, 0]}], inputs: {n: 1}}
-def m = {a: [n], b: [2]}
-def grown = transform(m, fn k, v -> {[k]: v + [0]})
-[m, grown]

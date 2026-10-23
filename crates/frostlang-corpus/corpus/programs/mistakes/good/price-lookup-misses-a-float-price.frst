@@ -11,8 +11,8 @@
 #=         ],
 #=     },
 #= }
-defn names(records) -> map records with fn r -> r.name
+defn names(records) -> map(records, fn r -> r.name)
 [
-    names(filter items with fn r -> r.price == 3),
-    names(filter items with fn r -> r.price >= 3 and r.price <= 3),
+    names(filter(items, fn r -> r.price == 3)),
+    names(filter(items, fn r -> r.price >= 3 and r.price <= 3)),
 ]

@@ -1,0 +1,5 @@
+# `each` fetched from an Array and called by index works as when called by
+# its own name, effects and result alike.
+#= {result: {a: 1}, printed: ['a'], inputs: {m: {a: 1}}}
+def functions = [map, filter, reduce, each]
+functions[3](m, fn k, v -> print(k))

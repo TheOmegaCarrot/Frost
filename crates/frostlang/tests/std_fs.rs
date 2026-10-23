@@ -201,7 +201,7 @@ fn type_tests_describe_what_is_at_a_path() {
             def path = fs.concat(dir, name)
             [fs.exists(path), fs.is_file(path), fs.is_directory(path), fs.is_symlink(path)]
         }
-        map ['file', 'dir', 'to_file', 'dangling', 'missing'] with kinds
+        map(['file', 'dir', 'to_file', 'dangling', 'missing'], kinds)
     ";
     assert_eq!(
         scratch.run(table),
@@ -233,7 +233,7 @@ fn special_file_tests() {
 
     let tests = r"
         defn special(path) -> [fs.is_block(path), fs.is_character(path), fs.is_fifo(path), fs.is_socket(path)]
-        map ['/dev/null', fs.concat(dir, 'fifo'), fs.concat(dir, 'socket'), fs.concat(dir, 'file'), fs.concat(dir, 'missing')] with special
+        map(['/dev/null', fs.concat(dir, 'fifo'), fs.concat(dir, 'socket'), fs.concat(dir, 'file'), fs.concat(dir, 'missing')], special)
     ";
     assert_eq!(
         scratch.run(tests),
@@ -250,7 +250,7 @@ fn special_file_tests() {
     assert_eq!(
         scratch.run(
             r"
-            map [fs.concat(dir, 'fifo'), fs.concat(dir, 'socket')] with fn path -> fs.stat(path).type
+            map([fs.concat(dir, 'fifo'), fs.concat(dir, 'socket')], fn path -> fs.stat(path).type)
             "
         ),
         frost("['fifo', 'socket']")
@@ -300,7 +300,7 @@ fn stat_describes_a_file_without_following_a_link() {
         )
     );
     let types = r"
-        map [fs.concat(dir, 'dir'), fs.concat(dir, 'link'), '/dev/null'] with fn path -> fs.stat(path).type
+        map([fs.concat(dir, 'dir'), fs.concat(dir, 'link'), '/dev/null'], fn path -> fs.stat(path).type)
     ";
     assert_eq!(
         scratch.run(types),
@@ -847,7 +847,7 @@ fn copy_copies_a_tree_keeping_links_as_links() {
     let source = r"
         def from = fs.concat(dir, 'tree')
         def to = fs.concat(dir, 'copy')
-        defn names(root) -> map fs.list_recursively(root) with fn path -> slice(path, len(root))
+        defn names(root) -> map(fs.list_recursively(root), fn path -> slice(path, len(root)))
         fs.copy(from, to)
         def result = [
             names(to) == names(from),
@@ -887,7 +887,7 @@ fn copy_merges_a_tree_into_an_existing_directory() {
         def to = fs.concat(dir, 'copy')
         fs.copy(fs.concat(dir, 'tree'), to)
         def result = [
-            map fs.list(to) with fs.filename,
+            map(fs.list(to), fs.filename),
             fs.read(fs.concat(to, 'sub/b')),
             fs.read(fs.concat(to, 'keep')),
         ]

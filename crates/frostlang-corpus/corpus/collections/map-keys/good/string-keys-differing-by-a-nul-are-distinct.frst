@@ -6,4 +6,4 @@
 #=     inputs: {k: 'a\0'},
 #= }
 def m = {['a\0b']: 'nul b', ['a\0']: 'nul', ['a']: 'plain'}
-[len(m), fold(m, [], fn acc, key, v -> acc + [key]), m[k], m['a\0c']]
+[len(m), reduce(m, [], fn acc, key, v -> acc + [key]), m[k], m['a\0c']]

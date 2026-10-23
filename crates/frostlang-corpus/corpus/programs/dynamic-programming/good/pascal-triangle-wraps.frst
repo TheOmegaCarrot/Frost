@@ -11,7 +11,7 @@
 #=     inputs: {small_count: 6, last: 67},
 #= }
 defn next_row(row) -> {
-    def middle = fold(row, {previous: null, sums: []}, fn s, x ->
+    def middle = reduce(row, {previous: null, sums: []}, fn s, x ->
         if s.previous == null: {previous: x, sums: []}
         else: {previous: x, sums: s.sums + [s.previous + x]}
     )

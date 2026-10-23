@@ -3,4 +3,4 @@
 # (leading surrogate U+D83D) before U+E000 and U+FFFF.
 #= {result: ['z', '\u{e000}', '\u{ffff}', '\u{1f600}'], inputs: {emoji: '😀'}}
 def m = {[emoji]: 1, ['\u{ffff}']: 2, ['\u{e000}']: 3, ['z']: 4}
-fold(m, [], fn acc, k, v -> acc + [k])
+reduce(m, [], fn acc, k, v -> acc + [k])

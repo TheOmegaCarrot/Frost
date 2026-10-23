@@ -15,10 +15,10 @@
 #=         chars: ['é', '日', 'x'],
 #=     },
 #= }
-def prefixes = fold(xs, [[]], fn acc, x -> acc + [acc[-1] + [x]])
-def stock = fold(deliveries, [{}], fn acc, d -> {
+def prefixes = reduce(xs, [[]], fn acc, x -> acc + [acc[-1] + [x]])
+def stock = reduce(deliveries, [{}], fn acc, d -> {
     def last = acc[-1]
     acc + [last + {[d.item]: (last[d.item] or 0) + d.n}]
 })
-def words = fold(chars, [''], fn acc, c -> acc + [acc[-1] + c])
+def words = reduce(chars, [''], fn acc, c -> acc + [acc[-1] + c])
 {prefixes, stock, words, untouched: xs}

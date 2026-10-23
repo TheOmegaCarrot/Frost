@@ -5,5 +5,5 @@
 #=     raises: ['must return a Map', 'Int'],
 #=     inputs: {prices: {apple: 2, pear: 5}, rate: 2},
 #= }
-def raised = map prices with fn item, price -> price * rate
-reduce raised init: 0 with fn total, item, price -> total + price
+def raised = map(prices, fn item, price -> price * rate)
+reduce(raised, 0, fn total, item, price -> total + price)

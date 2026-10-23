@@ -421,7 +421,7 @@ fn repeat_makes_an_array_of_copies() {
 
 #[test]
 fn repeat_copies_a_function() {
-    assert_values(&[("map repeat(id, 2) with fn f -> f(5)", "[5, 5]")]);
+    assert_values(&[("map(repeat(id, 2), fn f -> f(5))", "[5, 5]")]);
 }
 
 #[test]
@@ -590,7 +590,7 @@ fn index_makes_a_function_that_indexes() {
         ("index(-1)([5, 6])", "6"),
         ("index('b')({a: 1})", "null"),
         ("index(9)([5, 6])", "null"),
-        ("map [{n: 1}, {n: 2}] with index('n')", "[1, 2]"),
+        ("map([{n: 1}, {n: 2}], index('n'))", "[1, 2]"),
     ]);
     assert_raises_as(&[("index('a')([1])", "[1]['a']"), ("index(0)(5)", "5[0]")]);
     assert_arity("index", "1", &[0, 2]);
@@ -1273,7 +1273,7 @@ fn reject_keeps_what_its_predicate_rejects() {
 #[test]
 fn reject_is_the_complement_of_select() {
     assert_values(&[(
-        "select([1, 2, 3, 4, 5], fn x -> x > 2) + reject([1, 2, 3, 4, 5], fn x -> x > 2)",
+        "filter([1, 2, 3, 4, 5], fn x -> x > 2) + reject([1, 2, 3, 4, 5], fn x -> x > 2)",
         "[3, 4, 5, 1, 2]",
     )]);
 }
@@ -1370,7 +1370,7 @@ fn sorted_orders_a_long_array() {
         ("sorted(reverse(range(1000)))", "range(1000)"),
         // A permutation of 0 to 199, as 73 and 200 are coprime.
         (
-            "sorted(map range(200) with fn i -> i * 73 % 200)",
+            "sorted(map(range(200), fn i -> i * 73 % 200))",
             "range(200)",
         ),
     ]);
@@ -1593,8 +1593,8 @@ fn minimum_and_maximum_compare_ints_and_floats_exactly() {
 fn minimum_and_maximum_search_a_long_array() {
     assert_values(&[
         // A permutation of 0 to 199, as 73 and 200 are coprime.
-        ("minimum(map range(200) with fn i -> i * 73 % 200)", "0"),
-        ("maximum(map range(200) with fn i -> i * 73 % 200)", "199"),
+        ("minimum(map(range(200), fn i -> i * 73 % 200))", "0"),
+        ("maximum(map(range(200), fn i -> i * 73 % 200))", "199"),
         ("minimum(reverse(range(1000)))", "0"),
         ("maximum(range(1000))", "999"),
     ]);
@@ -1854,7 +1854,7 @@ fn unique_keeps_the_first_of_each_value_in_order() {
         ("unique(['b', 'a', 'b'])", "['b', 'a']"),
         ("unique([true, false, true])", "[true, false]"),
         ("unique([x'01', x'01', x'02'])", "[x'01', x'02']"),
-        ("unique(map range(1000) with fn i -> i % 7)", "range(7)"),
+        ("unique(map(range(1000), fn i -> i % 7))", "range(7)"),
     ]);
 }
 
@@ -1890,7 +1890,7 @@ fn unique_compares_values_that_cannot_be_map_keys() {
 #[test]
 fn unique_uses_an_opaque_types_own_equality() {
     let tag = |key, id| Value::opaque(Tag { key, id });
-    let rendered = Script::new("map unique([a, b, c, d]) with to_string")
+    let rendered = Script::new("map(unique([a, b, c, d]), to_string)")
         .capture("a", tag(1, 1))
         .capture("b", tag(2, 2))
         .capture("c", tag(1, 3))
@@ -2083,7 +2083,7 @@ fn scan_returns_each_running_result() {
 
 #[test]
 fn scan_starts_from_an_initializer() {
-    // Each result is what `fold` gives over the elements so far, so the
+    // Each result is what `reduce` gives over the elements so far, so the
     // initializer is not itself a result, and every element gets one.
     assert_values(&[
         ("scan([1, 2, 3], 10, plus)", "[11, 13, 16]"),
@@ -2097,9 +2097,9 @@ fn scan_starts_from_an_initializer() {
         // the second is always the initializer.
         ("scan([1], plus, fn acc, x -> acc)", "[plus]"),
         ("[1, 2, 3] @ scan(0, plus)", "[1, 3, 6]"),
-        // Each result agrees with `fold` over the elements so far.
+        // Each result agrees with `reduce` over the elements so far.
         (
-            "transform(range(1, 4), fn n -> fold(take([4, 5, 6], n), 1, times))",
+            "map(range(1, 4), fn n -> reduce(take([4, 5, 6], n), 1, times))",
             "scan([4, 5, 6], 1, times)",
         ),
     ]);
@@ -2449,180 +2449,294 @@ fn id_returns_its_argument() {
         ("id(x'ff')", "x'ff'"),
         ("is_function(id(id))", "true"),
         ("id(id)(7)", "7"),
-        ("map [1, 2] with id", "[1, 2]"),
+        ("map([1, 2], id)", "[1, 2]"),
     ]);
     assert_arity("id", 1, &[0, 2]);
 }
 
-// --- transform, select, fold, each ---
+// --- map, filter, reduce, each ---
 
 #[test]
-fn transform_maps_an_array() {
+fn map_maps_an_array() {
     assert_values(&[
-        ("transform([1, 2, 3], fn x -> x * 2)", "[2, 4, 6]"),
-        ("transform([], fn x -> x)", "[]"),
-        ("[1, 2] @ transform(fn x -> [x])", "[[1], [2]]"),
+        ("map([1, 2, 3], fn x -> x * 2)", "[2, 4, 6]"),
+        ("map([], fn x -> x)", "[]"),
+        ("[1, 2] @ map(fn x -> [x])", "[[1], [2]]"),
     ]);
 }
 
 #[test]
-fn transform_maps_a_map_through_the_maps_its_function_returns() {
+fn map_maps_a_map_through_the_maps_its_function_returns() {
     assert_values(&[
-        ("transform({a: 1}, fn k, v -> {[k]: v + 1})", "{a: 2}"),
+        ("map({a: 1}, fn k, v -> {[k]: v + 1})", "{a: 2}"),
         (
-            "transform({a: 1, b: 2}, fn k, v -> {[v]: k})",
+            "map({a: 1, b: 2}, fn k, v -> {[v]: k})",
             "{[1]: 'a', [2]: 'b'}",
         ),
-        ("transform({}, fn k, v -> {x: 1})", "{}"),
+        ("map({}, fn k, v -> {x: 1})", "{}"),
         // Several entries come from one, and colliding keys leave one entry.
-        ("transform({a: 1}, fn k, v -> {x: v, y: v})", "{x: 1, y: 1}"),
-        ("len(transform({a: 1, b: 2}, fn k, v -> {same: v}))", "1"),
-        ("transform({a: 1}, fn k, v -> {})", "{}"),
+        ("map({a: 1}, fn k, v -> {x: v, y: v})", "{x: 1, y: 1}"),
+        ("len(map({a: 1, b: 2}, fn k, v -> {same: v}))", "1"),
+        ("map({a: 1}, fn k, v -> {})", "{}"),
     ]);
 }
 
 #[test]
-fn transform_requires_a_map_from_a_function_over_a_map() {
+fn map_requires_a_map_from_a_function_over_a_map() {
     assert_raises(&[
         (
-            "transform({a: 1}, fn k, v -> 1)",
-            "When transforming a Map, the function must return a Map, got Int",
+            "map({a: 1}, fn k, v -> 1)",
+            "When mapping a Map, the function must return a Map, got Int",
         ),
         (
-            "transform({a: 1}, fn k, v -> [k])",
-            "When transforming a Map, the function must return a Map, got Array",
+            "map({a: 1}, fn k, v -> [k])",
+            "When mapping a Map, the function must return a Map, got Array",
         ),
     ]);
 }
 
 #[test]
-fn transform_raises_what_its_function_raises() {
-    let script = script("transform([1, 2], fn x -> { print(x); error('boom') })");
+fn map_raises_what_its_function_raises() {
+    let script = script("map([1, 2], fn x -> { print(x); error('boom') })");
     assert_eq!(script.raises(), "boom");
     assert_eq!(script.printed(), ["1"], "the first error ends the loop");
-    assert_raises(&[("transform({a: 1}, fn k, v -> error('boom'))", "boom")]);
+    assert_raises(&[("map({a: 1}, fn k, v -> error('boom'))", "boom")]);
 }
 
 #[test]
-fn transform_checks_its_arguments() {
+fn map_checks_its_arguments() {
     assert_type_errors(
-        "transform",
+        "map",
         &[
-            ("transform(5, id)", "Structured", "argument 1", "Int"),
-            ("transform('ab', id)", "Structured", "argument 1", "String"),
-            ("transform([1], 1)", "Function", "argument 2", "Int"),
+            ("map(5, id)", "Structured", "argument 1", "Int"),
+            ("map('ab', id)", "Structured", "argument 1", "String"),
+            ("map([1], 1)", "Function", "argument 2", "Int"),
         ],
     );
-    assert_arity("transform", "2", &[0, 1, 3]);
+    assert_arity("map", "2", &[0, 1, 3]);
 }
 
 #[test]
-fn select_keeps_what_its_predicate_accepts() {
+fn filter_keeps_what_its_predicate_accepts() {
     assert_values(&[
-        ("select([1, 2, 3, 4], fn x -> x % 2 == 0)", "[2, 4]"),
-        ("select([], fn x -> true)", "[]"),
+        ("filter([1, 2, 3, 4], fn x -> x % 2 == 0)", "[2, 4]"),
+        ("filter([], fn x -> true)", "[]"),
         // Only Null and False are falsy.
-        ("select([0, null, false, ''], id)", "[0, '']"),
-        ("select({a: 1, b: 2}, fn k, v -> v > 1)", "{b: 2}"),
-        ("select({a: 1}, fn k, v -> false)", "{}"),
-        ("[1, 2, 3] @ select(fn x -> x > 1)", "[2, 3]"),
+        ("filter([0, null, false, ''], id)", "[0, '']"),
+        ("filter({a: 1, b: 2}, fn k, v -> v > 1)", "{b: 2}"),
+        ("filter({a: 1}, fn k, v -> false)", "{}"),
+        ("[1, 2, 3] @ filter(fn x -> x > 1)", "[2, 3]"),
     ]);
 }
 
 #[test]
-fn select_raises_what_its_predicate_raises() {
-    assert_raises(&[("select({a: 1}, fn k, v -> error('boom'))", "boom")]);
-    let script = script("select([1, 2], fn x -> { print(x); error('boom') })");
+fn filter_raises_what_its_predicate_raises() {
+    assert_raises(&[("filter({a: 1}, fn k, v -> error('boom'))", "boom")]);
+    let script = script("filter([1, 2], fn x -> { print(x); error('boom') })");
     assert_eq!(script.raises(), "boom");
     assert_eq!(script.printed(), ["1"], "the first error ends the loop");
 }
 
 #[test]
-fn select_checks_its_arguments() {
+fn filter_checks_its_arguments() {
     assert_type_errors(
-        "select",
+        "filter",
         &[
-            ("select(5, id)", "Structured", "argument 1", "Int"),
+            ("filter(5, id)", "Structured", "argument 1", "Int"),
             (
-                "select([1], 1)",
+                "filter([1], 1)",
                 "Function",
                 "argument 2 (predicate)",
                 "Int",
             ),
         ],
     );
-    assert_arity("select", "2", &[0, 1, 3]);
+    assert_arity("filter", "2", &[0, 1, 3]);
 }
 
 #[test]
-fn fold_combines_an_array() {
+fn reduce_combines_an_array() {
     assert_values(&[
-        ("fold([1, 2, 3, 4], plus)", "10"),
-        // The initializer starts the fold, and the accumulator comes first.
-        ("fold([1, 2, 3], 10, plus)", "16"),
-        ("fold([1, 2, 3], 10, minus)", "4"),
-        ("fold(['a', 'b'], '', plus)", "'ab'"),
-        // Without an initializer, the first element starts the fold.
-        ("fold([10, 1, 2], minus)", "7"),
-        ("fold([5], minus)", "5"),
-        ("fold([], plus)", "null"),
-        ("fold([], 0, plus)", "0"),
-        // A Null initializer is an initializer.
-        ("fold([1], null, fn acc, x -> [acc, x])", "[null, 1]"),
-        // A Function initializer is an initializer: with three arguments,
-        // the second is always the initializer.
-        ("fold([1], plus, fn acc, x -> acc)", "plus"),
-        ("[1, 2, 3] @ fold(0, plus)", "6"),
+        ("reduce([1, 2, 3, 4], plus)", "10"),
+        // The initial value starts the reduction, and the accumulator comes first.
+        ("reduce([1, 2, 3], 10, plus)", "16"),
+        ("reduce([1, 2, 3], 10, minus)", "4"),
+        ("reduce(['a', 'b'], '', plus)", "'ab'"),
+        // Without an initial value, the first element starts the reduction.
+        ("reduce([10, 1, 2], minus)", "7"),
+        ("reduce([5], minus)", "5"),
+        ("reduce([], plus)", "null"),
+        ("reduce([], 0, plus)", "0"),
+        // A Null initial value is an initial value.
+        ("reduce([1], null, fn acc, x -> [acc, x])", "[null, 1]"),
+        // A Function initial value is an initial value: with three arguments,
+        // the second is always the initial value.
+        ("reduce([1], plus, fn acc, x -> acc)", "plus"),
+        ("[1, 2, 3] @ reduce(0, plus)", "6"),
     ]);
 }
 
 #[test]
-fn fold_combines_a_map_from_an_initializer() {
+fn reduce_combines_a_map_from_an_initial_value() {
     assert_values(&[
-        ("fold({a: 1, b: 2}, 0, fn acc, k, v -> acc + v)", "3"),
-        ("fold({}, 0, fn acc, k, v -> acc + v)", "0"),
+        ("reduce({a: 1, b: 2}, 0, fn acc, k, v -> acc + v)", "3"),
+        ("reduce({}, 0, fn acc, k, v -> acc + v)", "0"),
         (
-            "fold({a: 1}, null, fn acc, k, v -> [acc, k, v])",
+            "reduce({a: 1}, null, fn acc, k, v -> [acc, k, v])",
             "[null, 'a', 1]",
         ),
     ]);
     assert_raises(&[
         (
-            "fold({a: 1}, fn acc, k, v -> acc)",
-            "Fold over a Map requires an initializer",
+            "reduce({a: 1}, fn acc, k, v -> acc)",
+            "Reducing a Map requires an initial value",
         ),
         (
-            "fold({}, fn acc, k, v -> acc)",
-            "Fold over a Map requires an initializer",
+            "reduce({}, fn acc, k, v -> acc)",
+            "Reducing a Map requires an initial value",
         ),
     ]);
 }
 
 #[test]
-fn fold_raises_what_its_function_raises() {
-    let script = script("fold([1, 2, 3], fn acc, x -> { print(x); error('boom') })");
+fn reduce_raises_what_its_function_raises() {
+    let script = script("reduce([1, 2, 3], fn acc, x -> { print(x); error('boom') })");
     assert_eq!(script.raises(), "boom");
-    assert_eq!(script.printed(), ["2"], "the first error ends the fold");
-    assert_raises(&[("fold({a: 1}, 0, fn acc, k, v -> error('boom'))", "boom")]);
-    // A single element with no initializer is never combined.
-    assert_values(&[("fold([1], fn acc, x -> error('boom'))", "1")]);
+    assert_eq!(
+        script.printed(),
+        ["2"],
+        "the first error ends the reduction"
+    );
+    assert_raises(&[("reduce({a: 1}, 0, fn acc, k, v -> error('boom'))", "boom")]);
+    // A single element with no initial value is never combined.
+    assert_values(&[("reduce([1], fn acc, x -> error('boom'))", "1")]);
 }
 
 #[test]
-fn fold_checks_its_arguments() {
+fn reduce_checks_its_arguments() {
     assert_type_errors(
-        "fold",
+        "reduce",
         &[
-            ("fold(5, plus)", "Structured", "argument 1", "Int"),
-            ("fold(5, 0, plus)", "Structured", "argument 1", "Int"),
-            // With two arguments, the second is the function, never an initializer.
-            ("fold([1], 1)", "Function", "argument 2", "Int"),
+            ("reduce(5, plus)", "Structured", "argument 1", "Int"),
+            ("reduce(5, 0, plus)", "Structured", "argument 1", "Int"),
+            // With two arguments, the second is the function, never an initial value.
+            ("reduce([1], 1)", "Function", "argument 2", "Int"),
             // With three, the function is the third.
-            ("fold([1], 0, 1)", "Function", "argument 3", "Int"),
-            ("fold([1], plus, 0)", "Function", "argument 3", "Int"),
+            ("reduce([1], 0, 1)", "Function", "argument 3", "Int"),
+            ("reduce([1], plus, 0)", "Function", "argument 3", "Int"),
         ],
     );
-    assert_arity("fold", "between 2 and 3", &[0, 1, 4]);
+    assert_arity("reduce", "between 2 and 3", &[0, 1, 4]);
+}
+
+// --- The former iteration words are ordinary names ---
+
+#[test]
+fn iteration_words_are_ordinary_names() {
+    assert_values(&[
+        ("(fn map -> map + 1)(1)", "2"),
+        ("(fn filter, reduce -> [filter, reduce])(1, 2)", "[1, 2]"),
+        (
+            "(fn foreach, init, with -> [foreach, init, with])(1, 2, 3)",
+            "[1, 2, 3]",
+        ),
+        (
+            r"
+            def init = 4
+            def with = 5
+            [init, with]
+            ",
+            "[4, 5]",
+        ),
+        (
+            r"
+            def foreach = 7
+            foreach
+            ",
+            "7",
+        ),
+        (
+            r"
+            def map = 1
+            def filter = 2
+            def reduce = 3
+            [map, filter, reduce]
+            ",
+            "[1, 2, 3]",
+        ),
+        (
+            "{map: 1, filter: 2, reduce: 3, foreach: 4, init: 5, with: 6}.with",
+            "6",
+        ),
+        ("{map: 1, init: 5}.map", "1"),
+        ("{init: 5}.init", "5"),
+    ]);
+}
+
+#[test]
+fn a_binding_named_like_a_global_shadows_it() {
+    assert_values(&[
+        (
+            r"
+            def map = fn xs, f -> 'mine'
+            map([1], id)
+            ",
+            "'mine'",
+        ),
+        ("(fn reduce -> reduce)(10)", "10"),
+    ]);
+}
+
+// --- Evaluating and applying the calls ---
+
+#[test]
+fn collection_function_arguments_are_evaluated_in_the_order_written() {
+    assert_raises(&[
+        ("map(1 / 0, 1 % 0)", "Division by zero"),
+        ("filter(1 / 0, 1 % 0)", "Division by zero"),
+        ("each(1 / 0, 1 % 0)", "Division by zero"),
+        ("reduce(1 / 0, null + true, 1 % 0)", "Division by zero"),
+        (
+            "reduce([1], null + true, 1 % 0)",
+            "Cannot add incompatible types: Null + Bool",
+        ),
+    ]);
+}
+
+#[test]
+fn the_operation_may_be_any_function() {
+    assert_values(&[
+        ("map([1, 2], $($ + 1))", "[2, 3]"),
+        ("map([1, 2], to_string)", r#"["1", "2"]"#),
+        ("reduce([1, 2, 3], plus)", "6"),
+        ("filter([1, null, 2], is_int)", "[1, 2]"),
+        (
+            r"
+            def k = 3
+            map([1, 2], fn x -> x * k)
+            ",
+            "[3, 6]",
+        ),
+    ]);
+}
+
+#[test]
+fn collection_functions_compose() {
+    assert_values(&[
+        (
+            "map(filter([1, 2, 3, 4], fn x -> x > 2), fn x -> x * 10)",
+            "[30, 40]",
+        ),
+        ("reduce(map([1, 2, 3], fn x -> x * x), plus)", "14"),
+        (
+            "map([[1, 2], [3]], fn row -> reduce(row, 0, plus))",
+            "[3, 3]",
+        ),
+        (
+            "[1, 2, 3, 4] @ filter(fn x -> x > 2) @ map(fn x -> x * 10)",
+            "[30, 40]",
+        ),
+    ]);
 }
 
 #[test]
@@ -2683,13 +2797,13 @@ fn array_globals_leave_a_shared_input_unchanged() {
             flatten(a),
             flat_map(a, fn x -> [x, x]),
             find(a, is_array),
-            transform(a, fn x -> [x]),
-            select(a, is_int),
+            map(a, fn x -> [x]),
+            filter(a, is_int),
             reject(a, is_int),
             scan([a[0], a[1]], plus),
             each(a, id),
-            sorted(select(a, is_int)),
-            fold(a, 0, fn acc, x -> acc),
+            sorted(filter(a, is_int)),
+            reduce(a, 0, fn acc, x -> acc),
         ]
         [a, len(results)]
     ";
@@ -2736,9 +2850,9 @@ fn map_globals_leave_a_shared_input_unchanged() {
             map_values(m, fn v -> v * 10),
             map_keys(m, to_upper),
             dissoc(m, 'a'),
-            select(m, fn k, v -> v > 1),
+            filter(m, fn k, v -> v > 1),
             reject(m, fn k, v -> v > 1),
-            transform(m, fn k, v -> {[k]: v}),
+            map(m, fn k, v -> {[k]: v}),
             each(m, fn k, v -> v),
             m,
         ]
@@ -2762,7 +2876,7 @@ fn map_globals_leave_a_shared_input_unchanged() {
 
 #[test]
 fn large_maps_work_in_every_map_global() {
-    let ordered_values = "map range(40) with fn n -> n * 2";
+    let ordered_values = "map(range(40), fn n -> n * 2)";
     for (expression, expected) in [
         ("len(m)", "40"),
         ("sorted(keys(m))", "range(40)"),
@@ -2788,7 +2902,7 @@ fn large_maps_work_in_every_map_global() {
         ("dissoc(m, 100)", LARGE_MAP),
         (
             "sorted(values(map_values(m, fn v -> v + 1)))",
-            "map range(40) with fn n -> n * 2 + 1",
+            "map(range(40), fn n -> n * 2 + 1)",
         ),
         (
             "sorted(keys(map_keys(m, fn k -> k + 100)))",
@@ -2798,10 +2912,10 @@ fn large_maps_work_in_every_map_global() {
         ("map_keys(m, id)", LARGE_MAP),
         ("len(to_entries(m))", "40"),
         ("from_entries(to_entries(m))", LARGE_MAP),
-        ("select(m, fn k, v -> k < 20) @ len()", "20"),
+        ("filter(m, fn k, v -> k < 20) @ len()", "20"),
         ("reject(m, fn k, v -> k < 20) @ len()", "20"),
-        ("transform(m, fn k, v -> {[k]: v})", LARGE_MAP),
-        ("fold(m, 0, fn acc, k, v -> acc + v)", "1560"),
+        ("map(m, fn k, v -> {[k]: v})", LARGE_MAP),
+        ("reduce(m, 0, fn acc, k, v -> acc + v)", "1560"),
         ("each(m, fn k, v -> v)", LARGE_MAP),
         ("len(group_by(range(40), id))", "40"),
         ("count_by(range(40), id) @ values() @ sum()", "40"),

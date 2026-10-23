@@ -1,0 +1,10 @@
+# `map`, threaded or called directly, can produce comparison results, which
+# are Bools in an Array.
+#= {
+#=     result: [[false, true, false], [true, false, true]],
+#=     inputs: {xs: [1, 2, 3]},
+#= }
+[
+    xs @ map(fn x -> x == 2),
+    map(xs, fn x -> x != 2),
+]

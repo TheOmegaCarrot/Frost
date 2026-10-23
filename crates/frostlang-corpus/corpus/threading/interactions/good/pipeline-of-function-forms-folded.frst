@@ -1,7 +1,0 @@
-# A pipeline of function forms over a literal Array, which the optimizer may
-# compute ahead of time, gives the same result as at runtime.
-#= {result: 120}
-([1, 2, 3, 4, 5]
-    @ select(fn x -> x % 2 == 1)
-    @ transform(fn x -> x * 10)
-    @ fold(30, fn acc, x -> acc + x))

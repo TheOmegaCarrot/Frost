@@ -1,0 +1,11 @@
+# A reduce whose step concatenates onto its accumulator never alters the
+# initial value it was given: values are immutable, even when reused in place.
+#= {
+#=     result: [[0], [0, 1, 2], {z: 0}, {z: 0, [1]: 1, [2]: 2}],
+#=     inputs: {xs: [1, 2]},
+#= }
+def start = [0]
+def grown = reduce(xs, start, fn acc, x -> acc + [x])
+def base = {z: 0}
+def merged = reduce(xs, base, fn acc, x -> acc + {[x]: x})
+[start, grown, base, merged]

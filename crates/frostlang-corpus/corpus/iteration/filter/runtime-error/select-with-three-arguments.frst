@@ -1,3 +1,0 @@
-# `select` takes exactly two arguments; a third is an arity error.
-#= {raises: ['select', 'called with 3']}
-select([1], fn x -> true, 0)

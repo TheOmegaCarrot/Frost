@@ -1,4 +1,0 @@
-# A native global is as good an operation as a Frost function: `print`
-# itself can be the operation over an Array.
-#= {result: ['a', 'b'], printed: ['a', 'b'], inputs: {xs: ['a', 'b']}}
-foreach xs with print

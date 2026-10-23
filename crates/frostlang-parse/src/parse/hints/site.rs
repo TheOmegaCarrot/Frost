@@ -47,8 +47,8 @@ impl<'src> Site<'_, 'src> {
     }
 
     /// The word before the error, when it alone was read as a whole expression where
-    /// one begins: it starts a statement, or follows `->`, `=>`, `:`, `(`, `,`, `=`,
-    /// or `with`, as `return` does in `fn x -> return x`.
+    /// one begins: it starts a statement, or follows `->`, `=>`, `:`, `(`, `,`, or
+    /// `=`, as `return` does in `fn x -> return x`.
     pub(super) fn expression_word(&self) -> Option<&'src str> {
         let Token::Identifier(word) = self.at(-1)?.token else {
             return None;
@@ -63,7 +63,6 @@ impl<'src> Site<'_, 'src> {
                         | Token::OpenParen
                         | Token::Comma
                         | Token::Assign
-                        | Token::KwWith
                 )
             );
         begins_expression.then_some(word)
@@ -582,10 +581,6 @@ pub(super) fn starts_an_expression_not_a_key(token: &Token) -> bool {
                 | Token::KwDo
                 | Token::KwMatch
                 | Token::KwFn
-                | Token::KwMap
-                | Token::KwFilter
-                | Token::KwReduce
-                | Token::KwForeach
                 | Token::KwDef
                 | Token::KwDefn
         )
@@ -654,18 +649,12 @@ pub(super) fn is_word_keyword(token: &Token) -> bool {
             | Token::KwElse
             | Token::KwExport
             | Token::KwFalse
-            | Token::KwFilter
             | Token::KwFn
-            | Token::KwForeach
             | Token::KwIf
-            | Token::KwInit
             | Token::KwIs
-            | Token::KwMap
             | Token::KwMatch
             | Token::KwNull
-            | Token::KwReduce
             | Token::KwTrue
-            | Token::KwWith
             | Token::OpAnd
             | Token::OpOr
             | Token::OpNot

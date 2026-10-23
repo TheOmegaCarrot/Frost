@@ -1,0 +1,10 @@
+# An iteration function's result can be exported like any other value.
+#= {
+#=     result: null,
+#=     exports: {doubled: [2, 4], total: 3, kept: {b: 2}},
+#=     inputs: {xs: [1, 2], m: {a: 1, b: 2}},
+#= }
+export def doubled = map(xs, fn x -> x * 2)
+export def total = reduce(xs, fn acc, x -> acc + x)
+export def kept = filter(m, fn k, v -> v > 1)
+null

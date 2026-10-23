@@ -827,7 +827,7 @@ fn the_value_may_be_any_expression() {
         ),
         (
             r"
-            def [a] = [1, 2] @ select(fn x -> x > 1)
+            def [a] = [1, 2] @ filter(fn x -> x > 1)
             a
             ",
             "2",

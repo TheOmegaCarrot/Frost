@@ -1,0 +1,5 @@
+# An error raised by a recursive callback deep inside nested `map` calls
+# propagates out through each of them.
+#= {raises: 'bad leaf'}
+defn check(t) -> if is_array(t): map(t, check) elif t == null: error('bad leaf') else: t
+check([1, [2, [3, [null]]]])

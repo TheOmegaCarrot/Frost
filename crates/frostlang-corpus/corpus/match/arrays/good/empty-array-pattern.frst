@@ -1,6 +1,6 @@
 # `[]` matches only the empty Array.
 #= {result: ['empty', 'not empty', 'not empty'], inputs: {xs: [[], [null], {}]}}
-transform(xs, fn v -> match v {
+map(xs, fn v -> match v {
     [] => 'empty',
     _ => 'not empty',
 })

@@ -1,4 +1,4 @@
-# A lambda passed to `transform` is called with one argument per element; a
+# A lambda passed to `map` is called with one argument per element; a
 # two-parameter lambda fails there.
 #= {raises: ['expects 2 argument', 'called with 1']}
-transform([1, 2], fn a, b -> a)
+map([1, 2], fn a, b -> a)

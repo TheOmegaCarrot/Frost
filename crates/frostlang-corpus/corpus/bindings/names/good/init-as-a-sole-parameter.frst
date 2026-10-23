@@ -1,0 +1,4 @@
+# A lambda's single unparenthesized parameter may be named `init`.
+#= {result: 2}
+def f = fn init -> init + 1
+f(1)

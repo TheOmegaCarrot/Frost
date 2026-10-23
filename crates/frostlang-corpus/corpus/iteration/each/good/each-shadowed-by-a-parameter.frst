@@ -1,0 +1,5 @@
+# A parameter named `each` replaces the global within its function, so a
+# call there is to whatever was passed, here `map`.
+#= {result: [[2, 3], [1, 2]], printed: ['1', '2'], inputs: {xs: [1, 2]}}
+def apply = fn each -> each(xs, fn x -> x + 1)
+[apply(map), each(xs, fn x -> print(to_string(x)))]

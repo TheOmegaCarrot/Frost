@@ -1,0 +1,3 @@
+# Non-ASCII Strings reach the operation intact.
+#= {result: ['é', '日本', '🧊'], printed: ['é', '日本', '🧊'], inputs: {xs: ['é', '日本', '🧊']}}
+each(xs, print)

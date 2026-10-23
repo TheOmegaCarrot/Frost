@@ -45,11 +45,11 @@ defn expand(text, chunk) -> match split_once(chunk, '}}') {
 
 defn render(template) -> {
     def [head, ...chunks] = split(template, '{{')
-    match try_call(fn -> reduce chunks init: head with expand, []) {
+    match try_call(fn -> reduce(chunks, head, expand), []) {
         {ok: true, value} => value,
         {error: {problem, detail: null}} => $'error: ${problem}',
         {error: {problem, detail}} => $'error: ${problem}: ${detail}',
     }
 }
 
-map templates with render
+map(templates, render)

@@ -1,0 +1,7 @@
+# A native global serves as `map`'s function, over a literal Array the
+# optimizer may compute ahead of time and over a runtime one alike.
+#= {
+#=     result: [['1', 'null'], ['1', 'null'], [false, true], [1, null]],
+#=     inputs: {xs: [1, null]},
+#= }
+[map([1, null], to_string), map(xs, to_string), map(xs, is_null), map(xs, id)]

@@ -9,8 +9,8 @@
 def rows = [[one], [two]]
 def first = rows[0]
 def peek = fn -> rows
-def grown = map rows with fn row -> row + [0]
+def grown = map(rows, fn row -> row + [0])
 def cols = [[one], [two]]
 def head = cols[0]
-def extended = transform(cols, fn col -> col + [9])
+def extended = map(cols, fn col -> col + [9])
 [grown, first, peek(), extended, head]

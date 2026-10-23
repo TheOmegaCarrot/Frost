@@ -198,8 +198,8 @@ pub(crate) fn query(
     call.read_all(&mut statement, &keys)
 }
 
-/// `db.fold`: the rows of the call's statement, folded by `function`.
-pub(crate) fn fold(
+/// `db.reduce`: the rows of the call's statement, reduced by `function`.
+pub(crate) fn reduce(
     call: &mut SqlCall<'_, '_>,
     bindings: Option<Structured>,
     initial: Value,

@@ -1,4 +1,0 @@
-# `init:` belongs to `reduce` alone; `map` has no seed.
-#= {rejects: ['expected `with`', '`init`']}
-def f = fn x -> x
-map [1, 2] init: 0 with f

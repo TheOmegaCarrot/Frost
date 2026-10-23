@@ -20,6 +20,6 @@ defn transition(s, event) -> match [s.state, event] {
     ['unlocked', 'coin'] => s + {refunds: s.refunds + 1},
 }
 
-defn run(events) -> reduce events init: {state: 'locked', passed: 0, blocked: 0, refunds: 0} with transition
+defn run(events) -> reduce(events, {state: 'locked', passed: 0, blocked: 0, refunds: 0}, transition)
 
 [run(busy), run(idle), run(stubborn)]

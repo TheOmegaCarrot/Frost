@@ -19,11 +19,11 @@
 #=     },
 #= }
 defn wrap(words, width) -> {
-    def newest_first = fold(words, [], fn lines, word -> match lines {
+    def newest_first = reduce(words, [], fn lines, word -> match lines {
         [current, ...earlier] if: len(current + ' ' + word) <= width => [current + ' ' + word] + earlier,
         _ => [word] + lines,
     })
-    fold(newest_first, [], fn oldest_first, line -> [line] + oldest_first)
+    reduce(newest_first, [], fn oldest_first, line -> [line] + oldest_first)
 }
 
 defn pad(text, width) -> if len(text) >= width: text else: pad(text + '.', width)
@@ -31,7 +31,7 @@ defn pad(text, width) -> if len(text) >= width: text else: pad(text + '.', width
 {
     plain: wrap(sentence, 10),
     wide: wrap(foreign, 8),
-    padded: transform(wrap(foreign, 8), fn line -> pad(line, 8)),
+    padded: map(wrap(foreign, 8), fn line -> pad(line, 8)),
     long_word: wrap(overlong, 5),
     nothing: wrap([], 10),
 }

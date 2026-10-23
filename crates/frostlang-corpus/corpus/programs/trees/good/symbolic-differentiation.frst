@@ -65,7 +65,7 @@ defn evaluate(e, x) -> match e {
     ['*', a, b] => evaluate(a, x) * evaluate(b, x),
 }
 
-transform(expressions, fn e -> {
+map(expressions, fn e -> {
     def d = simplify(derive(e))
     [show(d), evaluate(d, at)]
 })

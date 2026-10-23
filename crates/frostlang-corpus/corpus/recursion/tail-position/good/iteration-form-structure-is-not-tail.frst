@@ -1,6 +1,0 @@
-# A call producing the structure a `map` expression walks is not in tail
-# position, even though the `map` itself is.
-#= {result: 495}
-defn down(n) -> if n == 0: error('bottom') else: map down(n - 1) with fn x -> x
-defn frames(n) -> len(try_call(down, [n]).trace)
-frames(500) - frames(5)

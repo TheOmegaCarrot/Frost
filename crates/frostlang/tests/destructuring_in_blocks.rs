@@ -577,7 +577,7 @@ fn a_destructured_binding_may_be_captured() {
                 def {k} = m
                 fn x -> x * k
             }
-            transform([1, 2], make({k: 10}))
+            map([1, 2], make({k: 10}))
             ",
             "[10, 20]",
         ),
@@ -722,11 +722,11 @@ fn tail_recursion_through_map_destructuring_runs_in_bounded_depth() {
 fn a_lambda_passed_to_a_higher_order_function_may_destructure() {
     assert_values(&[
         (
-            "select([{n: 1}, {n: 5}, {n: 3}], fn m -> { def {n} = m; n > 2 })",
+            "filter([{n: 1},{n: 5}, {n: 3}], fn m -> { def {n} = m; n > 2 })",
             "[{n: 5}, {n: 3}]",
         ),
         (
-            "fold([[1, 2], [3, 4]], 0, fn acc, p -> { def [a, b] = p; acc + a * b })",
+            "reduce([[1, 2], [3, 4]], 0, fn acc, p -> { def [a, b] = p; acc + a * b })",
             "14",
         ),
         (
@@ -745,25 +745,25 @@ fn a_lambda_passed_to_a_higher_order_function_may_destructure() {
             "[1, [2]]",
         ),
         (
-            "map {a: [1, 2], b: [3, 4]} with fn k, v -> { def [x, y] = v; {[k]: x + y} }",
+            "map({a: [1, 2], b: [3, 4]}, fn k, v -> { def [x, y] = v; {[k]: x + y} })",
             "{a: 3, b: 7}",
         ),
         (
-            "filter [[1, 2], [3, 1]] with fn p -> { def [a, b] = p; a < b }",
+            "filter([[1, 2], [3, 1]], fn p -> { def [a, b] = p; a < b })",
             "[[1, 2]]",
         ),
         (
-            "reduce [{x: 1}, {x: 2}] init: 10 with fn acc, m -> { def {x} as _ = m; acc + x }",
+            "reduce([{x: 1}, {x: 2}], 10, fn acc, m -> { def {x} as _ = m; acc + x })",
             "13",
         ),
         (
-            "[[1, 2], [3, 4]] @ transform(fn p -> { def [a, b] = p; [b, a] })",
+            "[[1, 2], [3, 4]] @ map(fn p -> { def [a, b] = p; [b, a] })",
             "[[2, 1], [4, 3]]",
         ),
     ]);
     // A mismatch inside the operation raises out of the iteration.
     assert_raises(&[(
-        "transform([[1, 2], [3]], fn p -> { def [a, b] = p; a })",
+        "map([[1, 2], [3]], fn p -> { def [a, b] = p; a })",
         "exactly 2 elements",
     )]);
 }
@@ -771,7 +771,7 @@ fn a_lambda_passed_to_a_higher_order_function_may_destructure() {
 #[test]
 fn an_abbreviated_lambda_may_destructure_in_a_do_block() {
     assert_values(&[(
-        "transform([[1, 2], [3, 4]], $(do { def [a, b] = $; a * b }))",
+        "map([[1, 2], [3, 4]], $(do { def [a, b] = $; a * b }))",
         "[2, 12]",
     )]);
 }
@@ -831,7 +831,7 @@ fn a_nested_block_in_a_lambda_may_rebind_a_parameter() {
 #[test]
 fn a_pure_lambda_that_destructures_is_usable_in_a_fold() {
     let source = r"
-        transform([[1, 2], [3, 4]], fn p -> {
+        map([[1, 2], [3, 4]], fn p -> {
             def [a, b] = p
             a * b
         })

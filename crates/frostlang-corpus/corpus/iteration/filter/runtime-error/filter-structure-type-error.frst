@@ -1,0 +1,3 @@
+# `filter` checks its first argument, naming itself.
+#= {raises: ['filter', 'Structured', 'argument 1', 'Int']}
+filter(42, fn x -> true)

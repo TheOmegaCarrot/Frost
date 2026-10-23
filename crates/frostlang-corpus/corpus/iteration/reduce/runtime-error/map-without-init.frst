@@ -1,4 +1,4 @@
 # A Map has no first element to seed the accumulator with, so `reduce` over
-# one without `init:` is an error.
-#= {raises: 'requires an initializer', inputs: {m: {a: 1}}}
-reduce m with fn acc, k, v -> acc + v
+# one without an initial value is an error.
+#= {raises: 'requires an initial value', inputs: {m: {a: 1}}}
+reduce(m, fn acc, k, v -> acc + v)

@@ -1,8 +1,0 @@
-# Without an init, `fold` over an empty Array yields Null and over a single
-# element yields that element, never calling its function either way.
-#= {
-#=     result: [null, null, 'only', 'only', [1]],
-#=     inputs: {empty: [], one: ['only'], nested: [[1]]},
-#= }
-def boom = fn ...args -> error('called')
-[fold([], boom), fold(empty, boom), fold(['only'], boom), fold(one, boom), fold(nested, boom)]

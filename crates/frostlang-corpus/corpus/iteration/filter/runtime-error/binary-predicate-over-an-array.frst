@@ -1,4 +1,0 @@
-# Over an Array the predicate is called with one argument, so a
-# two-parameter predicate is an arity error.
-#= {raises: 'called with 1', inputs: {xs: [1]}}
-filter xs with fn i, x -> true

@@ -1,6 +1,0 @@
-# `transform` can be partially applied like any function: `curry` fixes the
-# structure in front, `bcurry` fixes the function behind.
-#= {result: [[2, 3], [10, 20]], inputs: {xs: [1, 2]}}
-def over_xs = curry(transform, xs)
-def times_ten = bcurry(transform, fn x -> x * 10)
-[over_xs(fn x -> x + 1), times_ten(xs)]

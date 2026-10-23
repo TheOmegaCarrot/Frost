@@ -3,4 +3,4 @@
 # other way, comparing across Int and Float by value.
 #= {result: [-5, 100, -7.5, 0.5]}
 def m = {[0.5]: 'a', [100]: 'b', [-7.5]: 'c', [-5]: 'd'}
-fold(m, [], fn acc, k, v -> acc + [k])
+reduce(m, [], fn acc, k, v -> acc + [k])

@@ -1,6 +1,6 @@
 # A match may choose the function and arguments for `call`.
 #= {result: [3, 1], inputs: {ops: [['add', [1, 2]], ['first', [1, 2]]]}}
-transform(ops, fn op -> match op {
+map(ops, fn op -> match op {
     ['add', args] => call(fn a, b -> a + b, args),
     ['first', args] => call(fn a, ..._ -> a, args),
 })

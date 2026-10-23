@@ -13,4 +13,4 @@ defn probe(n) -> if n > 0:
         else: 'level 3'
     else: 'level 2'
 else: 'level 1'
-map ns with probe
+map(ns, probe)

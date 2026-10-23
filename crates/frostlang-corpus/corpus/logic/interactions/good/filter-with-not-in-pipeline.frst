@@ -1,0 +1,4 @@
+# A `not` predicate in a `@` pipeline keeps the elements the inner test
+# rejects, including falsy ones that are not Null.
+#= {result: [0, '', false], inputs: {values: [null, 0, null, '', false]}}
+values @ filter(fn x -> not is_null(x))

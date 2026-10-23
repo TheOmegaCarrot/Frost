@@ -1,3 +1,0 @@
-# `fold` takes two or three arguments; one is an arity error.
-#= {raises: ['fold', 'called with 1']}
-fold([1])

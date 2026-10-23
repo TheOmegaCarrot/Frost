@@ -14,4 +14,4 @@
 #=     inputs: {values: [null, 1, 1.5, true, 's', x'00', [], {}]},
 #= }
 def check = fn v -> [is_null(v), is_numeric(v), is_primitive(v), is_structured(v), is_flat(v), is_nonnull(v)]
-map values with check
+map(values, check)

@@ -1,5 +1,0 @@
-# A form may break its line after `with`: the operation follows on the next
-# line.
-#= {result: [2], inputs: {xs: [1, 2]}}
-filter xs with
-fn x -> x > 1

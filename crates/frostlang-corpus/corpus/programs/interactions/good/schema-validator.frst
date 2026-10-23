@@ -31,12 +31,12 @@ def schema = {record: {
 
 defn check(value, expected, path) -> match [expected, value] {
     ['String', _ is String] | ['Numeric', _ is Numeric] | ['Flat', _ is Flat] => [],
-    [{record: fields}, m is Map] => reduce fields init: [] with fn problems, key, field_schema -> {
+    [{record: fields}, m is Map] => reduce(fields, [], fn problems, key, field_schema -> {
         def child = if path == '': key else: $'${path}.${key}'
         if has(m, key): problems + check(m[key], field_schema, child)
         else: problems + [$'${child}: missing']
-    },
-    [{list: element_schema}, xs is Array] => fold(xs, {i: 0, problems: []}, fn s, x -> {
+    }),
+    [{list: element_schema}, xs is Array] => reduce(xs, {i: 0, problems: []}, fn s, x -> {
         i: s.i + 1,
         problems: s.problems + check(x, element_schema, $'${path}[${s.i}]'),
     }).problems,
@@ -45,4 +45,4 @@ defn check(value, expected, path) -> match [expected, value] {
     [type_name, other] => [$'${path}: expected ${type_name}, got ${type(other)}'],
 }
 
-transform(people, fn person -> check(person, schema, ''))
+map(people, fn person -> check(person, schema, ''))

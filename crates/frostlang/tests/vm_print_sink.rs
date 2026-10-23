@@ -179,8 +179,8 @@ fn a_native_print_reaches_the_sink_as_one_verbatim_text() {
 
 #[test]
 fn a_native_called_back_from_frost_prints_to_the_sink() {
-    // `say` runs inside a callback that the native `transform` invokes.
-    let printed = Script::new(r"transform(['a', 'b'], fn text -> say(text))")
+    // `say` runs inside a callback that the native `map` invokes.
+    let printed = Script::new(r"map(['a', 'b'], fn text -> say(text))")
         .capture("say", say_frost().build())
         .printed();
     assert_eq!(printed, ["a", "b"]);

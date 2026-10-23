@@ -1,7 +1,0 @@
-# Folding an empty Array returns the initial value itself, equal to the
-# binding that supplied it, which stays unchanged when the result is
-# extended.
-#= {result: [[1, 2], [1]], inputs: {n: 1, none: []}}
-def seed = [n]
-def same = fold(none, seed, fn acc, x -> acc + [x])
-[same + [2], seed]

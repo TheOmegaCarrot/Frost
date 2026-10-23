@@ -135,8 +135,8 @@ fn a_chain_of_tail_calls_releases_every_replaced_frames_locals() {
 
 #[test]
 fn a_call_returning_through_a_native_releases_its_locals() {
-    // `transform` calls back into `hold`; the lambda, and its capture of `xs`,
-    // are gone once `transform` returns.
+    // `map` calls back into `hold`; the lambda, and its capture of `xs`,
+    // are gone once `map` returns.
     assert_released(
         r"
         defn hold(v) -> {
@@ -145,7 +145,7 @@ fn a_call_returning_through_a_native_releases_its_locals() {
         }
 
         def xs = [1, 2]
-        transform([1, 2, 3], fn _ -> hold(xs))
+        map([1, 2, 3], fn _ -> hold(xs))
         unshared(xs)
         ",
     );
@@ -198,7 +198,7 @@ fn a_caught_error_through_a_native_releases_the_locals_above_it() {
         }
 
         def xs = [1, 2]
-        try_call(fn -> transform([1], fn _ -> fail(xs)))
+        try_call(fn -> map([1], fn _ -> fail(xs)))
         unshared(xs)
         "#,
     );

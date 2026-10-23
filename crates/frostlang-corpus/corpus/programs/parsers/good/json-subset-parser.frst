@@ -115,7 +115,7 @@ defn parse(chars) -> match parse_value(chars) {
     _ => error('trailing input'),
 }
 
-transform(sources, fn chars -> {
+map(sources, fn chars -> {
     def outcome = try_call(parse, [chars])
     if outcome.ok: outcome.value else: outcome.error
 })

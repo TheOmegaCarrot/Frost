@@ -1,0 +1,3 @@
+# The function given to `map` is resolved like any name.
+#= {rejects: ['`missing`', 'not defined']}
+map([1, 2], missing)

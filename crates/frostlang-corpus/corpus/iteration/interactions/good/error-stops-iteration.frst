@@ -6,8 +6,8 @@
 #=     printed: ['1', '2'],
 #=     inputs: {xs: [1, 2, 3]},
 #= }
-def outcome = try_call(fn -> map xs with fn x -> {
+def outcome = try_call(fn -> map(xs, fn x -> {
     print(x)
     if x == 2: error('stop') else: x
-})
+}))
 {ok: outcome.ok, error: outcome.error}

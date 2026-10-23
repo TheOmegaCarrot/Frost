@@ -6,4 +6,4 @@ defn describe(outcome) -> match outcome {
     {ok: false, error} => $'error ${error}',
 }
 defn attempt(d) -> try_call(fn -> if d == 0: error('zero') else: 10 / d)
-transform(divisors, fn d -> describe(attempt(d)))
+map(divisors, fn d -> describe(attempt(d)))

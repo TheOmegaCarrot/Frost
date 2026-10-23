@@ -1,6 +1,0 @@
-# `map` is a keyword, not a method, so `xs.map(f)` is rejected; the help
-# points to the form and to threading its function form, `transform`.
-#= {rejects: ['not a method', '`xs @ transform(f)`']}
-def xs = [1, 2]
-def f = fn x -> x
-xs.map(f)

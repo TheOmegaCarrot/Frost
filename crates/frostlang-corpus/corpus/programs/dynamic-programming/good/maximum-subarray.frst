@@ -18,10 +18,10 @@ defn larger(a, b) -> if a > b: a else: b
 
 defn best_sum(xs) -> match xs {
     [] => null,
-    [first, ...rest] => fold(rest, {here: first, best: first}, fn s, x -> {
+    [first, ...rest] => reduce(rest, {here: first, best: first}, fn s, x -> {
         def here = larger(x, s.here + x)
         {here, best: larger(s.best, here)}
     }).best,
 }
 
-transform(runs, best_sum)
+map(runs, best_sum)

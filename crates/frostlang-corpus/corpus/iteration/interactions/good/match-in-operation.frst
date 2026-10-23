@@ -1,6 +1,6 @@
 # A `match` inside the operation destructures each element.
 #= {result: [3, 'none', 7], inputs: {pairs: [[1, 2], [], [3, 4]]}}
-map pairs with fn pair -> match pair {
+map(pairs, fn pair -> match pair {
     [a, b] => a + b,
     [] => 'none',
-}
+})

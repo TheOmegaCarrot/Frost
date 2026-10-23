@@ -14,6 +14,6 @@
 #=         ],
 #=     },
 #= }
-defn hash(codes) -> fold(codes, 7, fn h, code -> h * 1000003 + code)
+defn hash(codes) -> reduce(codes, 7, fn h, code -> h * 1000003 + code)
 
-transform(inputs_to_hash, hash)
+map(inputs_to_hash, hash)

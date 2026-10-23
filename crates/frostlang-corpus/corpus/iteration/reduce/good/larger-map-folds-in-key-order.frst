@@ -10,4 +10,4 @@
 #=         },
 #=     },
 #= }
-reduce m init: [] with fn acc, k, v -> acc + [k]
+reduce(m, [], fn acc, k, v -> acc + [k])

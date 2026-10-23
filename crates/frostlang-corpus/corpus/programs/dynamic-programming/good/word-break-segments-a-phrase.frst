@@ -14,13 +14,13 @@
 #= }
 defn segment(phrase) -> {
     def n = len(phrase)
-    def table = reduce range(1, n + 1) init: {[0]: []} with fn found, stop ->
-        found + {[stop]: reduce range(0, stop) init: null with fn best, start -> do {
+    def table = reduce(range(1, n + 1), {[0]: []}, fn found, stop ->
+        found + {[stop]: reduce(range(0, stop), null, fn best, start -> do {
             def word = slice(phrase, start, stop)
             if best == null and found[start] != null and has(dictionary, word):
                 found[start] + [word]
             else: best
-        }}
+        })})
     table[n]
 }
-map phrases with segment
+map(phrases, segment)

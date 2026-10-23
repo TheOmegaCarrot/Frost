@@ -3,4 +3,4 @@
 #= {result: [2, 4, 6], printed: ['saw 1', 'saw 2', 'saw 3'], inputs: {xs: [1, 2, 3]}}
 (xs
     @ each(fn x -> print($'saw ${x}'))
-    @ transform(fn x -> x * 2))
+    @ map(fn x -> x * 2))

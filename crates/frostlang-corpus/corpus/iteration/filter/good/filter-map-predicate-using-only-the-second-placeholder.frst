@@ -1,0 +1,4 @@
+# An abbreviated lambda naming only `$2` still takes two parameters, so it
+# fits `filter` over a Map and judges each entry by its value alone.
+#= {result: {a: 0, c: 'x'}, inputs: {m: {a: 0, b: null, c: 'x'}}}
+filter(m, $($2))

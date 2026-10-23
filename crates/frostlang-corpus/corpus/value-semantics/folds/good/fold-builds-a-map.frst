@@ -1,6 +1,0 @@
-# A Map accumulated by `fold` holds every entry, with a later value winning
-# for a repeated key, and the initial Map is unchanged.
-#= {result: [{[0]: 3, [1]: 4, [2]: 5, k: 'v'}, {k: 'v'}], inputs: {xs: [1, 2, 3, 4, 5]}}
-def seed = {k: 'v'}
-def built = fold(xs, seed, fn m, x -> m + {[x % 3]: x})
-[built, seed]

@@ -1,4 +1,4 @@
-//! Bindings: the values `exec`, `query`, and `fold` give a statement's
+//! Bindings: the values `exec`, `query`, and `reduce` give a statement's
 //! parameters.
 
 use frostlang::{FrostOpaque, SpecialFloat, Value};
@@ -224,8 +224,8 @@ fn every_method_taking_bindings_binds_alike() {
         [
             db.query('SELECT b FROM t WHERE a = ?', [1]),
             db.query('SELECT b FROM t WHERE a = :a', {a: 2}),
-            db.fold('SELECT b FROM t WHERE a = ?', [1], [], fn acc, row -> acc + [row.b]),
-            db.fold('SELECT b FROM t WHERE a = :a', {a: 2}, [], fn acc, row -> acc + [row.b]),
+            db.reduce('SELECT b FROM t WHERE a = ?', [1], [], fn acc, row -> acc + [row.b]),
+            db.reduce('SELECT b FROM t WHERE a = :a', {a: 2}, [], fn acc, row -> acc + [row.b]),
         ]
         ",
     );
@@ -237,8 +237,8 @@ fn every_method_taking_bindings_binds_alike() {
         )]);
     }
     assert_raises(&[(
-        &with_db("db.fold('SELECT ?', [], null, fn acc, row -> acc)"),
-        "Function db.fold requires 1 binding, but got 0",
+        &with_db("db.reduce('SELECT ?', [], null, fn acc, row -> acc)"),
+        "Function db.reduce requires 1 binding, but got 0",
     )]);
 }
 
@@ -340,7 +340,7 @@ fn a_failed_binding_runs_nothing() {
         db.exec('CREATE TABLE t (a, b)')
         try_call(db.exec, ['INSERT INTO t VALUES (?, ?)', [1, [2]]])
         try_call(db.exec, ['INSERT INTO t VALUES (:a, :b)', {a: 1}])
-        try_call(db.fold, ['INSERT INTO t VALUES (?, ?) RETURNING a', [1], null, fn acc, row -> acc])
+        try_call(db.reduce, ['INSERT INTO t VALUES (?, ?) RETURNING a', [1], null, fn acc, row -> acc])
         db.query('SELECT count(*) AS c FROM t')
         ",
     );
@@ -368,9 +368,9 @@ fn bindings_are_an_array_or_a_map() {
         }
         assert_raises(&[(
             &with_db(&format!(
-                "db.fold('SELECT 1', {argument}, null, fn acc, row -> acc)"
+                "db.reduce('SELECT 1', {argument}, null, fn acc, row -> acc)"
             )),
-            &format!("Function db.fold requires Structured as argument 2 (bindings), got {kind}"),
+            &format!("Function db.reduce requires Structured as argument 2 (bindings), got {kind}"),
         )]);
     }
     assert_eq!(

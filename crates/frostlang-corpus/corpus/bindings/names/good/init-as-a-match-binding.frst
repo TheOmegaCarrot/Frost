@@ -1,0 +1,5 @@
+# A match arm may bind the name `init`.
+#= {result: 1}
+match 1 {
+    init => init,
+}

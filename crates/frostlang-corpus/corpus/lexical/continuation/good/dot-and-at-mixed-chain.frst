@@ -4,5 +4,5 @@
 m
     .items
     .xs
-    @ transform(fn x -> {v: x})
+    @ map(fn x -> {v: x})
     @ len()

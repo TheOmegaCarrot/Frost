@@ -25,7 +25,7 @@ fn a_bundle_shared_across_threads_counts_each_calls_own_changes() {
     let source = format!(
         r"
         def db = import('shared').db
-        map range({CALLS_PER_THREAD}) with fn i -> db.script('INSERT INTO t VALUES (1); INSERT INTO t VALUES (2)')
+        map(range({CALLS_PER_THREAD}), fn i -> db.script('INSERT INTO t VALUES (1); INSERT INTO t VALUES (2)'))
         "
     );
     let counts = thread::scope(|scope| {
@@ -85,7 +85,7 @@ fn a_bundle_shared_across_threads_counts_each_execs_own_changes() {
     let source = format!(
         r"
         def db = import('shared').db
-        map range({CALLS_PER_THREAD}) with fn i -> db.exec('INSERT INTO t VALUES (?)', [i])
+        map(range({CALLS_PER_THREAD}), fn i -> db.exec('INSERT INTO t VALUES (?)', [i]))
         "
     );
     let ones = Value::Array(vec![Value::Int(1); CALLS_PER_THREAD as usize].into());
@@ -109,13 +109,13 @@ fn a_transaction_holds_the_connection_until_it_ends() {
     let source = format!(
         r"
         def db = import('shared').db
-        map range({CALLS_PER_THREAD}) with fn i -> {{
+        map(range({CALLS_PER_THREAD}), fn i -> {{
             db.exec('INSERT INTO t VALUES (1)')
             db.transaction(fn tx -> {{
                 tx.exec('INSERT INTO t VALUES (2)')
                 assert(false)
             }}).ok
-        }}
+        }})
         "
     );
     let falses = Value::Array(vec![Value::Bool(false); CALLS_PER_THREAD as usize].into());
@@ -143,7 +143,7 @@ fn a_transaction_holds_the_connection_until_it_ends() {
 }
 
 #[test]
-fn a_fold_shared_across_threads_holds_the_connection_for_its_callbacks() {
+fn a_reduce_shared_across_threads_holds_the_connection_for_its_callbacks() {
     let db = value(
         r"
         def db = sqlite.open_memory()
@@ -153,33 +153,33 @@ fn a_fold_shared_across_threads_holds_the_connection_for_its_callbacks() {
         db
         ",
     );
-    // Each callback counts the log, from the count the fold's first one
+    // Each callback counts the log, from the count the reduce's first one
     // found, then logs a row: no other thread's call runs on the connection
-    // between a fold's own.
+    // between a reduce's own.
     let source = format!(
         r"
         def db = import('shared').db
-        map range({CALLS_PER_THREAD}) with fn i -> {{
-            def folded = db.fold('SELECT x FROM t', {{start: null, seen: []}}, fn acc, row -> {{
+        map(range({CALLS_PER_THREAD}), fn i -> {{
+            def reduced = db.reduce('SELECT x FROM t', {{start: null, seen: []}}, fn acc, row -> {{
                 def [count] = db.query('SELECT count(*) AS c FROM log')
                 def start = acc.start or count.c
                 db.exec('INSERT INTO log VALUES (?)', [row.x])
                 {{start: start, seen: acc.seen + [count.c - start]}}
             }})
-            folded.seen
-        }}
+            reduced.seen
+        }})
         "
     );
     let runs = run_on_threads(db, &source);
     for run in runs {
-        let Value::Array(folds) = run else {
+        let Value::Array(reductions) = run else {
             panic!("each script returns an Array, not {run:?}");
         };
-        for fold in &folds {
+        for reduced in &reductions {
             assert_eq!(
-                fold,
+                reduced,
                 &frost("[0, 1, 2]"),
-                "only the fold's own rows were logged meanwhile"
+                "only the reduce's own rows were logged meanwhile"
             );
         }
     }

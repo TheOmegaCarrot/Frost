@@ -1,0 +1,11 @@
+# Fibonacci numbers by reducing a pair over a counted Array: F(92) is the last
+# that fits in an Int, and F(93) wraps in two's complement to a negative.
+#= {
+#=     result: [0, 1, 55, 7540113804746346429, -6246583658587674878],
+#=     inputs: {ns: [0, 1, 10, 92, 93]},
+#= }
+defn upto(n) -> if n == 0: [] else: upto(n - 1) + [n - 1]
+
+defn fib(n) -> reduce(upto(n), [0, 1], fn pair, i -> [pair[1], pair[0] + pair[1]])[0]
+
+map(ns, fib)

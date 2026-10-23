@@ -10,22 +10,22 @@ def offsets = [[-1, -1], [0, -1], [1, -1], [-1, 0], [1, 0], [-1, 1], [0, 1], [1,
 
 defn key(x, y) -> $'${x},${y}'
 
-defn board(cells) -> fold(cells, {}, fn live, cell -> live + {[key(cell[0], cell[1])]: cell})
+defn board(cells) -> reduce(cells, {}, fn live, cell -> live + {[key(cell[0], cell[1])]: cell})
 
 defn generation(live) -> {
-    def counts = reduce live init: {} with fn acc, k, cell -> fold(offsets, acc, fn inner, offset -> {
+    def counts = reduce(live, {}, fn acc, k, cell -> reduce(offsets, acc, fn inner, offset -> {
         def x = cell[0] + offset[0]
         def y = cell[1] + offset[1]
         def nk = key(x, y)
         inner + {[nk]: {cell: [x, y], n: (if has(inner, nk): inner[nk].n else: 0) + 1}}
-    })
-    def born = filter counts with fn k, c -> c.n == 3 or (c.n == 2 and has(live, k))
-    map born with fn k, c -> {[k]: c.cell}
+    }))
+    def born = filter(counts, fn k, c -> c.n == 3 or (c.n == 2 and has(live, k)))
+    map(born, fn k, c -> {[k]: c.cell})
 }
 
 defn run(live, n) -> if n == 0: live else: run(generation(live), n - 1)
 
-defn keys(live) -> reduce live init: [] with fn acc, k, cell -> acc + [k]
+defn keys(live) -> reduce(live, [], fn acc, k, cell -> acc + [k])
 
 {
     blinker: keys(run(board([[0, 1], [1, 1], [2, 1]]), 1)),

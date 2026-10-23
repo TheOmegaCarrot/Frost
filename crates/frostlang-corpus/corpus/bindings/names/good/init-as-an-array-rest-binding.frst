@@ -1,0 +1,4 @@
+# An Array pattern's rest binding may be named `init`.
+#= {result: [1, [2]]}
+def [a, ...init] = [1, 2]
+[a, init]

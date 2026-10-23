@@ -1,0 +1,5 @@
+# The iteration functions are values: they can be passed to and called from
+# other functions.
+#= {result: [[2, 3], [1, 2]], inputs: {xs: [1, 2]}}
+def apply = fn g -> g(xs, fn x -> x + 1)
+[apply(map), apply(each)]

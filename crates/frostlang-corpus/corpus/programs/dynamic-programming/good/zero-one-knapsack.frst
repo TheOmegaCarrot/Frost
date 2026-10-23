@@ -13,8 +13,8 @@ defn upto(n) -> if n == 0: [] else: upto(n - 1) + [n - 1]
 
 defn best(things, capacity) -> {
     def capacities = upto(capacity + 1)
-    def empty_row = transform(capacities, fn c -> 0)
-    def last = fold(things, empty_row, fn prev, item -> transform(capacities, fn c ->
+    def empty_row = map(capacities, fn c -> 0)
+    def last = reduce(things, empty_row, fn prev, item -> map(capacities, fn c ->
         if c < item.w: prev[c]
         else: do {
             def taken = prev[c - item.w] + item.v

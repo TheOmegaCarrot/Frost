@@ -1,4 +1,4 @@
 # A reducer that is an `if` keeps the larger of the accumulator and each
 # element.
 #= {result: 9, inputs: {xs: [3, 9, -1, 9, 4]}}
-reduce xs with fn (best, x) -> if x > best: x else: best
+reduce(xs, fn (best, x) -> if x > best: x else: best)

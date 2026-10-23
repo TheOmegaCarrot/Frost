@@ -1,0 +1,4 @@
+# A lambda parameter may be named `init`.
+#= {result: 3}
+def f = fn a, init -> a + init
+f(1, 2)

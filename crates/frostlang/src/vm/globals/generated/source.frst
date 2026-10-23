@@ -46,10 +46,10 @@ defn const(v) -> fn const_fn(..._) -> v
 
 defn compose(f, g, ...rest) -> {
     def functions = [f, g] + rest
-    foreach range(len(functions)) with fn i -> {
+    each(range(len(functions)), fn i -> {
         def h = functions[i]
         if not is_function(h): error($'Function compose requires Function as argument ${i + 1}, got ${type(h)}')
-    }
+    })
 
     defn compose2(f1, f2) -> fn compose_fn(...args) -> f2(call(f1, args))
 
@@ -64,5 +64,5 @@ defn index(key) -> fn index_fn(structure) -> structure[key]
 # Each step indexes as `structure[key]` does, but a Null stays Null.
 defn dig(structure, ...keys) -> {
     defn step(found, key) -> if is_null(found): null else: found[key]
-    reduce keys init: structure with step
+    reduce(keys, structure, step)
 }

@@ -5,4 +5,4 @@
 #=     inputs: {cases: [[true, true], [true, false], [false, true], [false, false]]},
 #= }
 defn pick(a, b) -> if a: (if b: 1 else: 2) else: (if b: 3 else: 4)
-map cases with fn case -> call(pick, case)
+map(cases, fn case -> call(pick, case))

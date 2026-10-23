@@ -54,11 +54,11 @@ defn apply(state, command) -> match command {
 }
 
 def start = {lines: [], title: 'untitled'}
-def result = fold(commands, {doc: start, history: [], snapshots: [fn -> start.lines]}, apply)
+def result = reduce(commands, {doc: start, history: [], snapshots: [fn -> start.lines]}, apply)
 {
     final: result.doc,
     versions: len(result.history),
-    snapshots: transform(result.snapshots, fn view -> view()),
+    snapshots: map(result.snapshots, fn view -> view()),
     latest_saved: result.history[0],
     first: result.history[-1],
 }

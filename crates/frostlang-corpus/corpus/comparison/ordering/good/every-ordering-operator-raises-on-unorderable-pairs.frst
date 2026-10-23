@@ -27,7 +27,7 @@ def pairs = [
     ['', []],
     [x'', 0],
 ]
-transform(pairs, fn pair -> {
+map(pairs, fn pair -> {
     def [a, b] = pair
     [
         try_call(fn -> a < b).ok,

@@ -1,6 +1,6 @@
-# A placeholder can be the operation of `map` and `filter` inside an
+# A placeholder can be the function given to `map` and `filter` inside an
 # abbreviated lambda, applying a Function the caller passes in.
 #= {result: [[2, 3], [2]], inputs: {xs: [1, 2]}}
-def map_with = $(map $2 with $1)
-def filter_with = $(filter $2 with $1)
+def map_with = $(map($2, $1))
+def filter_with = $(filter($2, $1))
 [map_with(fn x -> x + 1, xs), filter_with(fn x -> x > 1, xs)]

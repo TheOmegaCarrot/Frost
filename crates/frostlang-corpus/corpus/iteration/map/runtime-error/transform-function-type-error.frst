@@ -1,3 +1,0 @@
-# `transform` called directly requires a Function as its second argument.
-#= {raises: ['transform', 'Function', 'argument 2', 'Bool']}
-transform([1], true)

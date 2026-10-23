@@ -1,4 +1,4 @@
 # A `map` whose operation is itself a `map` transforms a nested Array row by
 # row, empty rows included.
 #= {result: [[10, 20], [], [30]], inputs: {rows: [[1, 2], [], [3]]}}
-map rows with fn row -> map row with fn x -> x * 10
+map(rows, fn row -> map(row, fn x -> x * 10))

@@ -1,0 +1,11 @@
+# With an initial value, `reduce` starts the accumulator from it and calls its
+# function once for every element, in order, the first included.
+#= {
+#=     result: 16,
+#=     printed: ['10 + 1', '11 + 2', '13 + 3'],
+#=     inputs: {xs: [1, 2, 3]},
+#= }
+reduce(xs, 10, fn acc, x -> {
+    print($'${acc} + ${x}')
+    acc + x
+})

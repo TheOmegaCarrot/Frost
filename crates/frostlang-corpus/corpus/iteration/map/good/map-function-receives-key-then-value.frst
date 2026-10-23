@@ -1,0 +1,8 @@
+# Over a Map, `map` calls its function with exactly two arguments: the
+# key, then the value. A variadic function shows both the count and the order,
+# for keys and values of differing types.
+#= {
+#=     result: {[1]: [1, 'one'], b: ['b', null], [x'00']: [x'00', [2]]},
+#=     inputs: {m: {[1]: 'one', b: null, [x'00']: [2]}},
+#= }
+map(m, fn ...args -> {[args[0]]: args})

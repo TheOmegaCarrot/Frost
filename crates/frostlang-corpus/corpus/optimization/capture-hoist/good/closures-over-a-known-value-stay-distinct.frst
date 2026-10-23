@@ -7,5 +7,5 @@ def k = 10
 defn make() -> fn x -> x + k
 def a = make()
 def b = make()
-def made = map [1, 2] with fn _ -> fn x -> x + k
+def made = map([1, 2], fn _ -> fn x -> x + k)
 [a == a, a == b, made[0] == made[1], [a(1), made[1](2)]]

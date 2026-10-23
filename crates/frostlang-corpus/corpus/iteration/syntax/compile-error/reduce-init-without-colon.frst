@@ -1,4 +1,0 @@
-# The seed clause is `init:`; the colon is required.
-#= {rejects: 'expected `:`'}
-def f = fn acc, x -> acc + x
-reduce [1, 2] init 0 with f

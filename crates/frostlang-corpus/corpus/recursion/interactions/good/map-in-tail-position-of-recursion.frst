@@ -1,0 +1,5 @@
+# A `map` call that recurses into each element, as the recursive function's
+# result: the tree keeps its shape and only its leaves change.
+#= {result: [2, [], [2, [4, [6]], []]]}
+defn double(t) -> if is_array(t): map(t, double) else: t * 2
+[double(1), double([]), double([1, [2, [3]], []])]

@@ -13,4 +13,4 @@ defn classify(v) -> if is_null(v): 'Null'
     elif is_map(v): 'Map'
     elif is_function(v): 'Function'
     else: 'unknown'
-map values with classify
+map(values, classify)

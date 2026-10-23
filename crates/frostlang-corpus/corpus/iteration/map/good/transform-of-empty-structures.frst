@@ -1,5 +1,0 @@
-# `transform` over an empty Array or Map yields the same empty structure
-# without calling the function.
-#= {result: [[], {}], inputs: {xs: [], m: {}}}
-def boom = fn ...args -> error('called')
-[transform(xs, boom), transform(m, boom)]

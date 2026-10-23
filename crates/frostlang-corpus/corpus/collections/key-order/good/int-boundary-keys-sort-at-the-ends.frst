@@ -6,4 +6,4 @@ def m = {
     [-1]: 'minus one',
     [-9223372036854775807 - 1]: 'min',
 }
-fold(m, [], fn acc, k, v -> acc + [k])
+reduce(m, [], fn acc, k, v -> acc + [k])

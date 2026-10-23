@@ -5,4 +5,4 @@ defn parity(n) -> do {
     print('checked')
     if n % 2 == 0: 'even' else: 'odd'
 }
-[map none with parity, map one with parity]
+[map(none, parity), map(one, parity)]

@@ -15,6 +15,6 @@
 #=     inputs: {numbers: [1, 1.5], values: ['a', x'01', [1], {k: 1}]},
 #= }
 [
-    map numbers with fn x -> [is_int(x + 1), is_float(x + 1)],
-    map values with fn a -> [is_string(a + a), is_bytes(a + a), is_array(a + a), is_map(a + a)],
+    map(numbers, fn x -> [is_int(x + 1), is_float(x + 1)]),
+    map(values, fn a -> [is_string(a + a), is_bytes(a + a), is_array(a + a), is_map(a + a)]),
 ]

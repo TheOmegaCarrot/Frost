@@ -1,8 +1,0 @@
-# With an init, `fold` over an empty Array or an empty Map yields the init
-# itself, whatever its type, never calling its function.
-#= {
-#=     result: ['init', {a: 1}, null, [0]],
-#=     inputs: {xs: [], m: {}},
-#= }
-def boom = fn ...args -> error('called')
-[fold(xs, 'init', boom), fold(m, {a: 1}, boom), fold(m, null, boom), fold([], [0], boom)]

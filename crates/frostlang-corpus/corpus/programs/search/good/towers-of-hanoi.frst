@@ -22,12 +22,12 @@ defn replay(pegs, move) -> {
     def disk = pegs[from][-1]
     def target = pegs[to]
     def legal = pegs.legal and (target == [] or target[-1] > disk)
-    def remaining = fold(pegs[from], [], fn kept, d -> if d == disk: kept else: kept + [d])
+    def remaining = reduce(pegs[from], [], fn kept, d -> if d == disk: kept else: kept + [d])
     pegs + {[from]: remaining, [to]: target + [disk], legal}
 }
 
 def plan = moves(large, 'a', 'c', 'b')
-def finished = fold(plan, {a: from_to(large, 1), b: [], c: [], legal: true}, replay)
+def finished = reduce(plan, {a: from_to(large, 1), b: [], c: [], legal: true}, replay)
 {
     three: moves(small, 'a', 'c', 'b'),
     final: {a: finished.a, b: finished.b, c: finished.c},

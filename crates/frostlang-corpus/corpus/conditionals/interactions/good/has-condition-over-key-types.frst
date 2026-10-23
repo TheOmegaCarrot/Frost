@@ -7,4 +7,4 @@
 #=         keys: ['s', 2, 0.5, true, x'ff', 'absent'],
 #=     },
 #= }
-map keys with fn k -> if has(m, k): 'yes' else: 'no'
+map(keys, fn k -> if has(m, k): 'yes' else: 'no')

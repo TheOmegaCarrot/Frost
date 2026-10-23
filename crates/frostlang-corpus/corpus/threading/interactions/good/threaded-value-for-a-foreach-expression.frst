@@ -1,4 +1,0 @@
-# A `foreach` expression's collection may be a threaded call; its function
-# runs on each element of the call's result.
-#= {result: [2, 3], printed: ['2', '3'], inputs: {xs: [1, 2, 3]}}
-foreach xs @ select(fn x -> x > 1) with fn x -> print(to_string(x))

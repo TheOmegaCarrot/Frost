@@ -1,0 +1,9 @@
+# A `map` call can be a `match` arm's body. Its lambda argument's body ends at
+# the call's closing parenthesis, so the comma after it separates the arms and
+# the next arm is not swallowed into the lambda.
+#= {result: [[10, 20], 'none'], inputs: {xs: [1, 2], empty: []}}
+defn scaled(ys) -> match ys {
+    [_, ..._] => map(ys, fn y -> y * 10),
+    _ => 'none',
+}
+[scaled(xs), scaled(empty)]

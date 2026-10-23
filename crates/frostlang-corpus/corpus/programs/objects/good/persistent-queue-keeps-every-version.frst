@@ -20,7 +20,7 @@ defn drain(q) -> if q.front == [] and q.back == []: []
         [x] + drain(rest)
     }
 
-def q1 = reduce first init: empty with push
+def q1 = reduce(first, empty, push)
 def [one, q2] = pop(q1)
 def q3 = push(q2, 4)
 def [again, _] = pop(q1)

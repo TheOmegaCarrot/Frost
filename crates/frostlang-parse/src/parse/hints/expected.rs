@@ -7,7 +7,7 @@ use crate::parse::hints::words::{is_type_like, type_named};
 use crate::parse::hints::{
     ALTERNATIVES_HELP, ANNOTATION_HELP, DEF_GUARD_HELP, DEFAULTS_HELP, ELIF_HELP, EQUALITY_HELP,
     GUARD_HELP, LAMBDA_HELP, MAP_ENTRY_HELP, RETURN_TYPE_HELP, SLICE_HELP, Site, destructure_help,
-    is_iterative_keyword, iterative_help, walrus_help,
+    walrus_help,
 };
 
 const ARM_HELP: &str = "a `match` arm is written `pattern => result`";
@@ -141,10 +141,6 @@ impl Site<'_, '_> {
             },
             Token::KwDef if previous == Some(&Token::KwExport) => {
                 "`export` takes a definition: `export def x = ...` or `export defn f(...) -> ...`"
-            }
-            Token::KwWith => {
-                let (_, keyword) = self.nearest_on_line(is_iterative_keyword)?;
-                return Some(iterative_help(keyword, false));
             }
             // `map(xs, f)` or `(a, b)`
             Token::CloseParen if found == Some(&Token::Comma) => return self.group_comma_help(),

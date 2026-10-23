@@ -3,5 +3,5 @@
 # update a uniquely-held value in place, and an inner Array handed to the
 # operation is still shared with the outer one.
 #= {result: [[[1], [2]], [[1, 0], [2, 0]]], inputs: {xs: [[1], [2]]}}
-def ys = map xs with fn row -> row + [0]
+def ys = map(xs, fn row -> row + [0])
 [xs, ys]

@@ -4,4 +4,4 @@
 defn adder(n) -> curry(plus, n)
 def add3 = adder(3)
 def add10 = adder(10)
-[map [1, 2] with add3, map [1, 2] with add10]
+[map([1, 2], add3), map([1, 2], add10)]

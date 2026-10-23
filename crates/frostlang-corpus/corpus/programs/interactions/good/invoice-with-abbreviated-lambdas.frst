@@ -20,11 +20,11 @@
 #=         ],
 #=     },
 #= }
-def amounts = transform(lines, $($.qty * $.price))
-def total = fold(amounts, 0, $($1 + $2))
-def rendered = transform(lines, $($'${$.name} x${$.qty} @ $${$.price} = $${$.qty * $.price}${if $.qty >= 10: ' (bulk)' else: ''}'))
+def amounts = map(lines, $($.qty * $.price))
+def total = reduce(amounts, 0, $($1 + $2))
+def rendered = map(lines, $($'${$.name} x${$.qty} @ $${$.price} = $${$.qty * $.price}${if $.qty >= 10: ' (bulk)' else: ''}'))
 def gather = $($$)
 rendered + [
     $'total: $${total} for ${len(lines)} lines; template \${total}',
-    call(gather, transform(lines, $($.qty))),
+    call(gather, map(lines, $($.qty))),
 ]

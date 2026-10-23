@@ -1,3 +1,0 @@
-# A chained comparison in a `filter` expression's function is rejected.
-#= {rejects: 'cannot chain', inputs: {xs: [1, 2]}}
-filter xs with fn x -> x == 1 == true

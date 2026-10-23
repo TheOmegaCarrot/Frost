@@ -121,7 +121,7 @@ fn every_method_running_sql_passes_it_through_the_filter() {
         db.script('CREATE TABLE t (x)')
         db.exec('INSERT INTO t VALUES (?)', [1])
         db.query('SELECT x FROM t WHERE x = :x', {x: 1})
-        db.fold('SELECT x FROM t', null, fn acc, row -> db.query('SELECT 2'))
+        db.reduce('SELECT x FROM t', null, fn acc, row -> db.query('SELECT 2'))
         db.last_insert_rowid()
     ";
     assert_eq!(
@@ -172,7 +172,7 @@ fn a_filter_refuses_sql_before_it_is_bound_or_run() {
         [
             try_call(db.exec, ['INSERT INTO missing VALUES (?)', [[1]]]).error,
             try_call(db.query, ['SELECT :x', {y: 1}]).error,
-            try_call(db.fold, ['NOT VALID SQL', null, fn acc, row -> acc]).error,
+            try_call(db.reduce, ['NOT VALID SQL', null, fn acc, row -> acc]).error,
         ]
     ";
     assert_eq!(
@@ -197,15 +197,15 @@ fn a_filter_sees_no_call_that_fails_first() {
             fails(db.query, [1]),
             fails(db.query, ['SELECT 1', 1]),
             fails(db.query, ['SELECT 1;\0']),
-            fails(db.fold, [1, null, fn acc, row -> acc]),
-            fails(db.fold, ['SELECT 1', 1, null, fn acc, row -> acc]),
-            fails(db.fold, ['SELECT 1', null, 1]),
-            fails(db.fold, ['SELECT 1;\0', null, fn acc, row -> acc]),
+            fails(db.reduce, [1, null, fn acc, row -> acc]),
+            fails(db.reduce, ['SELECT 1', 1, null, fn acc, row -> acc]),
+            fails(db.reduce, ['SELECT 1', null, 1]),
+            fails(db.reduce, ['SELECT 1;\0', null, fn acc, row -> acc]),
             db.close(),
             fails(db.script, ['SELECT 1']),
             fails(db.exec, ['SELECT 1']),
             fails(db.query, ['SELECT 1']),
-            fails(db.fold, ['SELECT 1', null, fn acc, row -> acc]),
+            fails(db.reduce, ['SELECT 1', null, fn acc, row -> acc]),
         ]
     ";
     assert_eq!(

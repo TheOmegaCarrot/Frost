@@ -10,9 +10,9 @@
 #=     },
 #=     inputs: {measurements: [1, 1.0, 2, 2.5, 1]},
 #= }
-def counts = fold(measurements, {}, fn acc, m -> acc + {[m]: (acc[m] or 0) + 1})
+def counts = reduce(measurements, {}, fn acc, m -> acc + {[m]: (acc[m] or 0) + 1})
 {
     counts,
-    labels: reduce counts init: [] with fn acc, value, n -> acc + [$'${value} x${n}'],
+    labels: reduce(counts, [], fn acc, value, n -> acc + [$'${value} x${n}']),
     distinct: len(counts),
 }

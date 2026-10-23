@@ -1,3 +1,0 @@
-# `transform` called with no arguments is an arity error.
-#= {raises: ['transform', 'called with 0']}
-transform()

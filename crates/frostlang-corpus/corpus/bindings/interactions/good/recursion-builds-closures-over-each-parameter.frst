@@ -2,4 +2,4 @@
 # call captures that call's value.
 #= {result: [3, 2, 1]}
 defn build(n, acc) -> if n == 0: acc else: build(n - 1, acc + [fn -> n])
-map build(3, []) with fn f -> f()
+map(build(3, []), fn f -> f())

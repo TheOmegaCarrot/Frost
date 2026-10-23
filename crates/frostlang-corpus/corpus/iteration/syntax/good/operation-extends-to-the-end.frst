@@ -1,5 +1,0 @@
-# The operation is a whole expression, so a lambda operation's body extends
-# as far as it can. Subtle: `+ [0]` belongs to the lambda body, appending to
-# each element, not to the result of `map`.
-#= {result: [[1, 0], [2, 0]], inputs: {xs: [[1], [2]]}}
-map xs with fn x -> x + [0]

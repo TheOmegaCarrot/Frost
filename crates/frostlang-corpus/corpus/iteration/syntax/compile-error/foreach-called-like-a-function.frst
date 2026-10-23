@@ -1,5 +1,0 @@
-# `foreach` called like a function is pointed to the form and to its function
-# form, `each`.
-#= {rejects: '`each(xs, f)`'}
-def xs = [1]
-foreach(xs, print)

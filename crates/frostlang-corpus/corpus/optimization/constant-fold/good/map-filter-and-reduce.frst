@@ -1,0 +1,10 @@
+# `map`, `filter`, and `reduce` fold over a constant structure and a pure
+# operation to what they compute at runtime.
+#= {result: [[2, 4, 6], [20, 40], [2, 3], 6, 16]}
+[
+    map([1, 2, 3], $($ * 2)),
+    map([10, 20], fn x -> x * 2),
+    filter([1, 2, 3], fn x -> x > 1),
+    reduce([1, 2, 3], fn acc, x -> acc + x),
+    reduce([1, 2, 3], 10, fn acc, x -> acc + x),
+]

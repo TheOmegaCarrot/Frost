@@ -3,4 +3,4 @@
 #= {result: [5, [0, [1, 2]], [2, 4]], inputs: {n: 2}}
 defn adder(k) -> $($ + k)
 def pair_with = fn ...rest -> $([$, rest])
-[adder(n)(3), pair_with(1, 2)(0), transform([1, 2], $($ * n))]
+[adder(n)(3), pair_with(1, 2)(0), map([1, 2], $($ * n))]

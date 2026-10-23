@@ -1,4 +1,0 @@
-# Over a Map the operation is called with key and value, so a one-parameter
-# operation is an arity error.
-#= {raises: 'called with 2', inputs: {m: {a: 1}}}
-foreach m with fn x -> x

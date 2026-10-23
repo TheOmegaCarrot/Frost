@@ -28,7 +28,7 @@ defn contains(tree, key) ->
     elif key < tree.key: contains(tree.left, key)
     else: contains(tree.right, key)
 
-def tree = reduce [50, 30, 70, 20, 40, 60, 80, 30] init: null with insert
+def tree = reduce([50, 30, 70, 20, 40, 60, 80, 30], null, insert)
 {
     in_order: in_order(tree),
     height: height(tree),

@@ -228,36 +228,6 @@ pub enum Expr {
         /// This is the only place dollar identifiers are legal (parser-enforced).
         body: Box<Spanned<Expr>>,
     },
-    /// `filter structure with operation`
-    Filter {
-        /// The collection before `with`.
-        structure: Box<Spanned<Expr>>,
-        /// The function after `with`.
-        operation: Box<Spanned<Expr>>,
-    },
-    /// `map structure with operation`
-    MapIter {
-        /// The collection before `with`.
-        structure: Box<Spanned<Expr>>,
-        /// The function after `with`.
-        operation: Box<Spanned<Expr>>,
-    },
-    /// `reduce structure [init: init_expr] with operation`
-    Reduce {
-        /// The collection before `with`.
-        structure: Box<Spanned<Expr>>,
-        /// The function after `with`.
-        operation: Box<Spanned<Expr>>,
-        /// The `init:` value; `None` when omitted.
-        init: Option<Box<Spanned<Expr>>>,
-    },
-    /// `foreach structure with operation`
-    Foreach {
-        /// The collection before `with`.
-        structure: Box<Spanned<Expr>>,
-        /// The function after `with`.
-        operation: Box<Spanned<Expr>>,
-    },
     /// `match target { pattern => result, ... }`
     Match {
         /// The value being matched.

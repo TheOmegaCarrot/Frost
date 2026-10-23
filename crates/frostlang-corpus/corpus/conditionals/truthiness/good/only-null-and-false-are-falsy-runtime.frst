@@ -6,4 +6,4 @@
 #=         values: [null, false, true, 0, 0.0, -0.0, -1, '', x'', [], {}, [false], {[1]: null}],
 #=     },
 #= }
-map values with fn v -> if v: 'T' else: 'F'
+map(values, fn v -> if v: 'T' else: 'F')

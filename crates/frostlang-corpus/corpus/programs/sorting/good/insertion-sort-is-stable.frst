@@ -26,13 +26,13 @@ defn sort_by(xs, key) -> {
         [] => [x],
         [first, ...rest] => if key(x) < key(first): [x] + sorted else: [first] + insert(rest, x),
     }
-    reduce xs init: [] with insert
+    reduce(xs, [], insert)
 }
 
 defn identity(x) -> x
 
 [
-    sort_by(people, fn person -> person.age) @ transform(fn person -> person.name),
+    sort_by(people, fn person -> person.age) @ map(fn person -> person.name),
     sort_by(numbers, identity),
     sort_by(flipped, identity),
 ]

@@ -9,4 +9,4 @@ defn is_ten(x) -> {
     print($'checked ${x}')
     x == 10
 }
-transform(xs, fn x -> if x == 0 or is_ten(x): 'edge' else: 'inside')
+map(xs, fn x -> if x == 0 or is_ten(x): 'edge' else: 'inside')

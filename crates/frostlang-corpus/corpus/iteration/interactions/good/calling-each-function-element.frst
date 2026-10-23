@@ -2,4 +2,4 @@
 # placeholder, `$1(...)`.
 #= {result: [11, 20]}
 def fns = [fn x -> x + 1, fn x -> x * 2]
-map fns with $($1(10))
+map(fns, $($1(10)))

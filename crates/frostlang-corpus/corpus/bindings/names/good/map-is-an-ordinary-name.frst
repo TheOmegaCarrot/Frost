@@ -1,0 +1,4 @@
+# `map` is an ordinary name, not a keyword, so a `def` may bind it.
+#= {result: 1}
+def map = 1
+map

@@ -4,6 +4,6 @@
     data
     @ dig('a', 'b')
     @ tap(fn xs -> print(len(xs)))
-    @ select(is_int)
+    @ filter(is_int)
     @ len()
 )

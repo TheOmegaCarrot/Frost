@@ -649,12 +649,12 @@ fn every_method_running_sql_runs_under_the_authorizer() {
         [
             try_call(db.exec, [insert, [2, 'x']]).error,
             try_call(db.query, [insert, [2, 'x']]).error,
-            try_call(db.fold, [insert, [2, 'x'], null, fn acc, row -> acc]).error,
+            try_call(db.reduce, [insert, [2, 'x'], null, fn acc, row -> acc]).error,
             try_call(db.exec, ['SELECT upper(1)']).error,
             try_call(db.query, ['SELECT upper(1)']).error,
-            try_call(db.fold, ['SELECT upper(1)', null, fn acc, row -> acc]).error,
+            try_call(db.reduce, ['SELECT upper(1)', null, fn acc, row -> acc]).error,
             db.query('SELECT x FROM t'),
-            db.fold('SELECT x FROM t', 0, fn total, row -> total + row.x),
+            db.reduce('SELECT x FROM t', 0, fn total, row -> total + row.x),
         ]
     ";
     let denied = |method: &str| {
@@ -665,10 +665,10 @@ fn every_method_running_sql_runs_under_the_authorizer() {
     assert_eq!(
         app_value(source, fixture.factory(&authorizer)),
         frost(&format!(
-            "[{exec}, {query}, {fold}, {exec}, {query}, {fold}, [{{x: 1}}], 1]",
+            "[{exec}, {query}, {reduce}, {exec}, {query}, {reduce}, [{{x: 1}}], 1]",
             exec = denied("exec"),
             query = denied("query"),
-            fold = denied("fold"),
+            reduce = denied("reduce"),
         ))
     );
     assert_eq!(fixture.snapshot(), before, "the denials changed nothing");
@@ -717,14 +717,14 @@ fn a_denial_a_callback_catches_colours_no_later_failure() {
         def db = import('app').open_db()
         def sql = "SELECT CASE WHEN n = 2 THEN fail('not authorized to use function: fail') END FROM (SELECT 1 AS n UNION ALL SELECT 2)"
         def denied_call = fn acc, row -> try_call(db.query, ['SELECT upper(1)']).error
-        def caught = db.fold('SELECT 1', [], denied_call)
-        def failed = try_call(db.fold, [sql, null, denied_call])
+        def caught = db.reduce('SELECT 1', [], denied_call)
+        def failed = try_call(db.reduce, [sql, null, denied_call])
         [caught, failed.error]
     "#;
     assert_eq!(
         app_value(source, factory),
         frost(
-            "['Function db.query failed: not authorized (SQLITE_AUTH)', 'Function db.fold failed: not authorized to use function: fail (SQLITE_ERROR)']"
+            "['Function db.query failed: not authorized (SQLITE_AUTH)', 'Function db.reduce failed: not authorized to use function: fail (SQLITE_ERROR)']"
         )
     );
 }
@@ -956,7 +956,7 @@ fn one_authorizer_serves_many_connections() {
     let fixture = Fixture::new();
     let source = r"
         def app = import('app')
-        map range(3) with fn i -> try_call(app.open_db().script, ['DELETE FROM t']).error
+        map(range(3), fn i -> try_call(app.open_db().script, ['DELETE FROM t']).error)
     ";
     assert_eq!(
         app_value(source, fixture.factory(&authorizer)),

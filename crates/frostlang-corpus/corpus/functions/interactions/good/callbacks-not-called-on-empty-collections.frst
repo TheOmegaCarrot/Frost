@@ -3,9 +3,9 @@
 #= {result: [[], [], 0, [], {}]}
 def boom = fn ...args -> error('called')
 [
-    transform([], boom),
-    select([], boom),
-    fold([], 0, boom),
+    map([], boom),
+    filter([], boom),
+    reduce([], 0, boom),
     each([], boom),
     each({}, boom),
 ]

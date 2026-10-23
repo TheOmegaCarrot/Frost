@@ -77,8 +77,8 @@ const MULTILINE_PROGRAMS: &[&str] = &[
             {k} as m => m,
             _ => null,
         }
-        map xs with fn x ->
-            x * 2
+        map(xs, fn x ->
+            x * 2)
     ",
     // Multiline Strings: indentation, a blank line, escapes, and the empty String.
     r#"

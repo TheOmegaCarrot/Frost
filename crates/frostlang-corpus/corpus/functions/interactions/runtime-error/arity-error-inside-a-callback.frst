@@ -1,4 +1,4 @@
-# `fold` calls its lambda with two arguments; a one-parameter lambda raises
+# `reduce` calls its lambda with two arguments; a one-parameter lambda raises
 # an arity error from inside it.
 #= {raises: ['expects 1 argument', 'called with 2']}
-fold([1, 2], 0, fn x -> x)
+reduce([1, 2], 0, fn x -> x)

@@ -1,6 +1,6 @@
 # Matching on `type(v)` dispatches on capitalized type names.
 #= {result: ['map', 'array', 'other'], inputs: {xs: [{}, [], 1.5]}}
-transform(xs, fn v -> match type(v) {
+map(xs, fn v -> match type(v) {
     'Map' => 'map',
     'Array' => 'array',
     _ => 'other',

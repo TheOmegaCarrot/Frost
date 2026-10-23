@@ -1,8 +1,0 @@
-# Over a Map, `each` calls its function with exactly two arguments: the key,
-# then the value, as a variadic function's printed trace shows.
-#= {
-#=     result: {[1]: 'one', b: null},
-#=     printed: ['2: 1 one', '2: b null'],
-#=     inputs: {m: {b: null, [1]: 'one'}},
-#= }
-each(m, fn ...args -> print($'${len(args)}: ${args[0]} ${args[1]}'))

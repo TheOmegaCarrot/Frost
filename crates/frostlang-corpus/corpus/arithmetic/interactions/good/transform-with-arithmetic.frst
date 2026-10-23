@@ -1,9 +1,0 @@
-# Arithmetic inside a callback applies per element, through `transform`, the
-# `map` expression, and an abbreviated lambda alike.
-#= {result: [[1, 4, 9], [2, 4, 6], [0.5, 1.0, 1.5], []], inputs: {xs: [1, 2, 3], empty: []}}
-[
-    transform(xs, fn x -> x * x),
-    map xs with $($ * 2),
-    xs @ transform(fn x -> x / 2.0),
-    transform(empty, fn x -> x / 0),
-]

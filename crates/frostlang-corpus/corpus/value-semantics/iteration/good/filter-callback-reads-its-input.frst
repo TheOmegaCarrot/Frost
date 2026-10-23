@@ -1,0 +1,6 @@
+# A `filter` predicate that reads the Array being filtered sees all of
+# it, unchanged, for every element.
+#= {result: [[2, 3], [1, 2, 3]], inputs: {n: 1}}
+def xs = [n, 2, 3]
+def above_first = filter(xs, fn x -> x > xs[0])
+[above_first, xs]

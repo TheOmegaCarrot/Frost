@@ -7,9 +7,9 @@
 #=     result: [[1, 2, 3, 10, 20, 30], [1, 2, 3], {a: 1, b: 1}],
 #=     inputs: {xs: [1, 2, 3], m: {a: 1}},
 #= }
-defn extended(ys) -> reduce ys init: ys with fn acc, y -> acc + [y * 10]
+defn extended(ys) -> reduce(ys, ys, fn acc, y -> acc + [y * 10])
 [
     extended(xs),
     xs,
-    reduce m init: m with fn acc, k, v -> acc + {b: v},
+    reduce(m, m, fn acc, k, v -> acc + {b: v}),
 ]

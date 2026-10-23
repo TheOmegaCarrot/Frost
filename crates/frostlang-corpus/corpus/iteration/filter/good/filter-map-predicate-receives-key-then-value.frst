@@ -1,0 +1,5 @@
+# Over a Map, `filter` calls its predicate with exactly two arguments: the
+# key, then the value. Subtle: the key `keep` holds 'drop' and the key
+# `other` holds 'keep', so swapping the arguments would keep the wrong entry.
+#= {result: {other: 'keep'}, inputs: {m: {keep: 'drop', other: 'keep'}}}
+filter(m, fn ...args -> len(args) == 2 and args[1] == 'keep')

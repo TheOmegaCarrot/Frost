@@ -1,0 +1,7 @@
+# A predicate with a rest parameter after its required ones takes whatever
+# `filter` passes beyond them: nothing over an Array, the value over a Map.
+#= {
+#=     result: [[1, 2], {b: 2}],
+#=     inputs: {xs: [1, 2], m: {a: 1, b: 2}},
+#= }
+[filter(xs, fn x, ...rest -> rest == []), filter(m, fn k, ...rest -> rest == [2])]

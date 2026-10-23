@@ -1,0 +1,9 @@
+# A `map` or `filter` call may be a consequent, and the `else` after it
+# still belongs to the `if`.
+#= {
+#=     result: [[2, 4], [], [2], [1, 2]],
+#=     inputs: {xs: [1, 2], t: true, f: false},
+#= }
+defn doubled(c) -> if c: map(xs, fn x -> x * 2) else: []
+defn large(c) -> if c: filter(xs, $($ > 1)) else: xs
+[doubled(t), doubled(f), large(t), large(f)]

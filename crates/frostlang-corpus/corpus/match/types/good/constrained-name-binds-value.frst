@@ -1,7 +1,7 @@
 # A type-constrained name binds the value when its type is admitted; a value
 # of another type moves on to the next arm.
 #= {result: [['Int', 1], ['Float', 1.5], ['other', 's']], inputs: {xs: [1, 1.5, 's']}}
-transform(xs, fn v -> match v {
+map(xs, fn v -> match v {
     n is Int => ['Int', n],
     n is Float => ['Float', n],
     n => ['other', n],

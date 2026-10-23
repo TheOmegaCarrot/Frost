@@ -1,0 +1,3 @@
+# `filter` takes exactly two arguments; one is an arity error.
+#= {raises: ['filter', 'called with 1']}
+filter([1])

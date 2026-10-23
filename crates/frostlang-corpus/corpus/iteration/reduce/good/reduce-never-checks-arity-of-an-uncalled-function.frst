@@ -1,0 +1,8 @@
+# A function's parameter count is checked only when it is called, so `reduce`
+# accepts a function of any arity when it makes no call: over an empty
+# structure, or over one element without an initial value.
+#= {
+#=     result: [null, 7, 0, 0],
+#=     inputs: {empty: [], one: [7], m: {}},
+#= }
+[reduce(empty, fn -> 1), reduce(one, fn a, b, c, d -> 1), reduce(empty, 0, fn x -> 1), reduce(m, 0, fn acc, x -> 1)]

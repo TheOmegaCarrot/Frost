@@ -13,7 +13,7 @@ defn evaluate(expr) -> match expr {
     n is Int => n,
     [op, ...args] => do {
         def operation = builtins[op] or error($'unknown operator ${op}')
-        fold(transform(args, evaluate), operation)
+        reduce(map(args, evaluate), operation)
     },
 }
 

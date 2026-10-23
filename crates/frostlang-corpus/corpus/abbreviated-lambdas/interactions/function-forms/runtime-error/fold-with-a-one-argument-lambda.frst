@@ -1,4 +1,0 @@
-# `fold` passes the accumulator and element, so a one-placeholder abbreviated
-# lambda raises.
-#= {raises: 'expects 1 argument', inputs: {xs: [1]}}
-fold(xs, 0, $($ + 1))

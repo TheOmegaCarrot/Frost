@@ -20,20 +20,20 @@
 #=         ],
 #=     },
 #= }
-defn reversed(xs) -> fold(xs, [], fn acc, x -> [x] + acc)
+defn reversed(xs) -> reduce(xs, [], fn acc, x -> [x] + acc)
 
-defn encode(chars) -> reversed(reduce chars init: [] with fn runs, c -> match runs {
+defn encode(chars) -> reversed(reduce(chars, [], fn runs, c -> match runs {
     [[last, n], ...earlier] if: last == c => [[c, n + 1]] + earlier,
     _ => [[c, 1]] + runs,
-})
+}))
 
-defn render(runs) -> fold(runs, '', fn text, run -> text + $'${run[0]}${run[1]}')
+defn render(runs) -> reduce(runs, '', fn text, run -> text + $'${run[0]}${run[1]}')
 
 defn expand(c, n) -> if n == 0: [] else: [c] + expand(c, n - 1)
 
-defn decode(runs) -> fold(runs, [], fn chars, run -> chars + expand(run[0], run[1]))
+defn decode(runs) -> reduce(runs, [], fn chars, run -> chars + expand(run[0], run[1]))
 
-transform(sources, fn chars -> {
+map(sources, fn chars -> {
     def runs = encode(chars)
     [runs, render(runs), decode(runs) == chars]
 })

@@ -1,5 +1,0 @@
-# A Map threads through the function forms, which hand each entry's key and
-# value to the function.
-#= {result: [{b: 20, c: 30}, 50], inputs: {m: {a: 1, b: 2, c: 3}}}
-def kept = m @ select(fn k, v -> v > 1) @ transform(fn k, v -> {[k]: v * 10})
-[kept, kept @ fold(0, fn acc, k, v -> acc + v)]

@@ -1,3 +1,0 @@
-# A Null predicate is a type error, even over an empty structure.
-#= {raises: ['Function', 'argument 2', 'Null'], inputs: {xs: []}}
-filter xs with null

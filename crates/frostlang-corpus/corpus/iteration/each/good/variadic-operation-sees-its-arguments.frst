@@ -1,0 +1,11 @@
+# A variadic operation shows what `each` passes it: one argument, the
+# element, per Array element, and two, key then value, per Map entry.
+#= {
+#=     result: null,
+#=     printed: ['Int', 'Null', 'String Int'],
+#=     inputs: {xs: [7, null], m: {a: 1}},
+#= }
+def show = fn ...args -> print(reduce(map(args, type), fn acc, t -> acc + ' ' + t))
+each(xs, show)
+each(m, show)
+null

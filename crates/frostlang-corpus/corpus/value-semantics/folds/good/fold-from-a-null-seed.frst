@@ -1,4 +1,0 @@
-# A fold from a Null seed that nests each accumulator inside the next keeps
-# every earlier accumulator whole inside the result.
-#= {result: [[[null, 1], 2], 3], inputs: {xs: [1, 2, 3], nothing: null}}
-fold(xs, nothing, fn acc, x -> [acc, x])

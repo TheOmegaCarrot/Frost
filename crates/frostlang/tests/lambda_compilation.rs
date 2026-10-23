@@ -79,10 +79,7 @@ fn an_immediately_called_pure_lambda_folds() {
 
 #[test]
 fn a_higher_order_call_over_a_pure_lambda_folds() {
-    for source in [
-        "transform([1, 2, 3], fn v -> v * 2)",
-        "transform([1, 2, 3], $($ * 2))",
-    ] {
+    for source in ["map([1, 2, 3], fn v -> v * 2)", "map([1, 2, 3], $($ * 2))"] {
         assert_eq!(run(source), ints(&[2, 4, 6]), "{source:?}");
         assert_folds(source, FOLD);
     }
@@ -92,7 +89,7 @@ fn a_higher_order_call_over_a_pure_lambda_folds() {
 fn a_curried_pure_function_folds_through_its_returned_closure() {
     // The outer lambda returns a closure over its parameters; the result is
     // never a constant itself, but it is usable within the enclosing fold.
-    let source = "transform([1, 2, 3], (fn f, a -> fn b -> f(a, b))(plus, 2))";
+    let source = "map([1, 2, 3], (fn f, a -> fn b -> f(a, b))(plus, 2))";
     assert_eq!(run(source), ints(&[3, 4, 5]));
     assert_folds(source, FOLD);
 }
@@ -107,17 +104,17 @@ fn a_recursive_pure_function_folds() {
 #[test]
 fn a_pure_lambda_folds_in_every_higher_order_global() {
     for (source, expected) in [
-        ("select([1, 2, 3], fn v -> v > 1)", "[2, 3]"),
-        ("fold([1, 2, 3], 0, fn a, b -> a + b)", "6"),
+        ("filter([1, 2, 3], fn v -> v > 1)", "[2, 3]"),
+        ("reduce([1, 2, 3], 0, fn a, b -> a + b)", "6"),
         ("each([1, 2], fn v -> v * 2)", "[1, 2]"),
         ("call(fn a, b -> a * b, [3, 4])", "12"),
         ("and_then(1, fn v -> v + 1)", "2"),
         ("or_else(null, fn -> 3)", "3"),
         // The lambda raises, but `try_call` turns that into a value.
         ("try_call(fn -> 1 / 0).error", r#""Division by zero""#),
-        ("map [1, 2] with $($ + 1)", "[2, 3]"),
-        ("filter [1, 2, 3] with fn v -> v != 2", "[1, 3]"),
-        ("reduce [1, 2, 3] with fn a, b -> a * b", "6"),
+        ("map([1, 2], $($ + 1))", "[2, 3]"),
+        ("filter([1, 2, 3], fn v -> v != 2)", "[1, 3]"),
+        ("reduce([1, 2, 3], fn a, b -> a * b)", "6"),
     ] {
         assert_eq!(run(source), run(expected), "{source:?} is {expected}");
         assert_folds(source, FOLD);
@@ -141,7 +138,7 @@ fn a_pure_lambda_passed_to_or_stored_in_another_expression_folds() {
 
 #[test]
 fn a_pure_lambda_that_raises_is_left_for_runtime() {
-    let source = "transform([1, 0], fn v -> 1 / v)";
+    let source = "map([1, 0], fn v -> 1 / v)";
     let message = Script::new(source).raises();
     assert!(message.contains("Division by zero"), "{message}");
     assert_does_not_fold(source, FOLD);
@@ -173,7 +170,7 @@ fn a_lambda_is_never_itself_a_constant() {
 fn a_lambda_mentioning_an_impure_global_does_not_fold() {
     // `print` is never called here, but mentioning it is enough: the check is
     // conservative, and never runs an effect at compile time.
-    let source = "transform([1, 2], fn v -> if false: print(v) else: v)";
+    let source = "map([1, 2], fn v -> if false: print(v) else: v)";
     assert_eq!(run(source), ints(&[1, 2]));
     assert_does_not_fold(source, FOLD);
 }
@@ -182,7 +179,7 @@ fn a_lambda_mentioning_an_impure_global_does_not_fold() {
 fn an_effect_in_a_nested_lambda_stops_the_outer_one_folding() {
     // The outer lambda only creates the effectful one, but the closure it returns
     // would run the effect when called within the fold.
-    let source = "transform([1, 2], (fn -> fn v -> if false: print(v) else: v)())";
+    let source = "map([1, 2], (fn -> fn v -> if false: print(v) else: v)())";
     assert_eq!(run(source), ints(&[1, 2]));
     assert_does_not_fold(source, FOLD);
 }
@@ -191,19 +188,19 @@ fn an_effect_in_a_nested_lambda_stops_the_outer_one_folding() {
 fn an_effect_anywhere_in_a_lambda_stops_it_folding() {
     for source in [
         // However deeply the effectful lambda is nested.
-        "transform([1], (fn -> fn -> fn -> fn v -> if false: print(v) else: v)()()())",
+        "map([1], (fn -> fn -> fn -> fn v -> if false: print(v) else: v)()()())",
         // In a lambda the body creates but never calls.
         r"
-        transform([1], fn v -> {
+        map([1], fn v -> {
             def unused = fn -> print(v)
             v
         })
         ",
         // In a callback the body passes on.
-        "transform([1], fn v -> transform([v], fn w -> if false: print(w) else: w)[0])",
+        "map([1], fn v -> map([v], fn w -> if false: print(w) else: w)[0])",
         // Creating mutable state is an effect too.
-        "transform([1], fn v -> mutable_cell(v).get())",
-        "transform([1], $(if false: print($) else: $))",
+        "map([1], fn v -> mutable_cell(v).get())",
+        "map([1], $(if false: print($) else: $))",
     ] {
         assert_eq!(run(source), ints(&[1]), "{source:?}");
         assert_does_not_fold(source, FOLD);
@@ -212,13 +209,13 @@ fn an_effect_anywhere_in_a_lambda_stops_it_folding() {
 
 #[test]
 fn a_name_shadowing_an_impure_global_is_not_an_effect() {
-    let source = "transform([1, 2], (fn print -> fn v -> print(v))(fn v -> v * 2))";
+    let source = "map([1, 2], (fn print -> fn v -> print(v))(fn v -> v * 2))";
     assert_eq!(run(source), ints(&[2, 4]));
     assert_folds(source, FOLD);
 
     let source = r"
         def print = 3
-        transform([1], fn v -> v + print)
+        map([1], fn v -> v + print)
         ";
     assert_eq!(run(source), ints(&[4]));
     assert_folds(source, FOLD_AND_PROPAGATE);
@@ -232,7 +229,7 @@ fn an_effect_runs_exactly_once_per_call() {
         (
             r"
             def c = mutable_cell(0)
-            transform([1, 2, 3], fn v -> c.exchange(c.get() + v))
+            map([1, 2, 3], fn v -> c.exchange(c.get() + v))
             c.get()
             ",
             6,
@@ -271,7 +268,7 @@ fn an_effect_runs_exactly_once_per_call() {
 #[test]
 fn a_lambda_mentioning_only_pure_globals_folds() {
     assert_folds(
-        "transform([1, -2], fn v -> type(v) == \"Int\" and to_string(v))",
+        "map([1, -2], fn v -> type(v) == \"Int\" and to_string(v))",
         FOLD,
     );
 }
@@ -280,7 +277,7 @@ fn a_lambda_mentioning_only_pure_globals_folds() {
 
 #[test]
 fn a_lambda_capturing_a_runtime_value_does_not_fold() {
-    let source = "transform([1, 2], fn v -> v + x)";
+    let source = "map([1, 2], fn v -> v + x)";
     let tail = Script::new(source).capture("x", Value::Int(10)).run();
     assert_eq!(tail, ints(&[11, 12]));
     assert_does_not_fold(source, FOLD);
@@ -290,7 +287,7 @@ fn a_lambda_capturing_a_runtime_value_does_not_fold() {
 fn a_lambda_capturing_a_propagated_constant_folds() {
     let source = r"
         def k = 10
-        transform([1, 2], fn v -> v * k)
+        map([1, 2], fn v -> v * k)
         ";
     assert_eq!(run(source), ints(&[10, 20]));
     assert_folds(source, FOLD_AND_PROPAGATE);
@@ -900,7 +897,7 @@ fn tail_position_in_a_lambda_passes_through_every_construct() {
             1,
         ),
         ("fn n -> n @ x()", 0, 1),
-        ("fn n -> map n with x", 0, 1),
+        ("fn n -> map(n, x)", 0, 1),
         ("$(x($))", 0, 1),
         // The callee is called in tail position; the call producing it is not.
         ("fn n -> x(n)(n)", 1, 1),

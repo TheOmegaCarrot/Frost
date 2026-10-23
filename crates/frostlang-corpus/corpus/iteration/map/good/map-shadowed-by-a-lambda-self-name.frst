@@ -1,0 +1,6 @@
+# A named lambda called `map` refers to itself by that name in its
+# body, not to the global. Subtle: `map(n - 1, ...)` reads as a call to
+# the global, but here it recurses with two Ints that the global would reject.
+#= {result: [3, [2, 3]], inputs: {xs: [1, 2]}}
+def count_up = fn map(n, acc) -> if n == 0: acc else: map(n - 1, acc + 1)
+[count_up(3, 0), map(xs, fn x -> x + 1)]

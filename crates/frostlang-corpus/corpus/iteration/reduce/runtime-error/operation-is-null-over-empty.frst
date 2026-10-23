@@ -1,4 +1,4 @@
 # A Null operation is a type error even over an empty Array, where it would
 # never be called.
 #= {raises: ['Function', 'argument 2', 'Null'], inputs: {xs: []}}
-reduce xs with null
+reduce(xs, null)

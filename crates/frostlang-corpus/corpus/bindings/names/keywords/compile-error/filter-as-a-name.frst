@@ -1,5 +1,0 @@
-# `filter` is a keyword (the `filter ... with` expression), so it cannot be
-# bound as a name.
-#= {rejects: ['`filter`', 'keyword']}
-def filter = 1
-1

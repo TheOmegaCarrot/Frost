@@ -12,4 +12,4 @@ defn name(x) -> match x {
     .1 | -.1 => 'tenth',
     _ => 'other',
 }
-transform(xs, name)
+map(xs, name)

@@ -1,0 +1,9 @@
+# `each` over a Map calls the operation with each key and value, in ascending
+# key order.
+#= {
+#=     result: null,
+#=     printed: ['a=1', 'b=2', 'c=3'],
+#=     inputs: {m: {c: 3, a: 1, b: 2}},
+#= }
+each(m, fn k, v -> print($'${k}=${v}'))
+null

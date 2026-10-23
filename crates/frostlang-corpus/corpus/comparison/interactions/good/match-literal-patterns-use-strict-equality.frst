@@ -13,4 +13,4 @@ defn kind(v) -> match v {
     x'61' => 'octets',
     _ => 'other',
 }
-transform(values, kind)
+map(values, kind)

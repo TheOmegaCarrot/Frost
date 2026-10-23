@@ -100,7 +100,7 @@ else: 0
 first argument. Parens are always required.
 
 ```frost
-[1, 2, 3] @ transform(fn x -> x * 2)   # transform([1, 2, 3], fn x -> x * 2)
+[1, 2, 3] @ map(fn x -> x * 2)   # map([1, 2, 3], fn x -> x * 2)
 ```
 
 ### Format strings
@@ -138,7 +138,7 @@ export defn greet(name) -> $'hello, ${name}'
 Abbreviated lambdas: `$(expr)` with `$` / `$1` to `$9` placeholders, `$$` for rest args.
 
 ```frost
-map [1, 2, 3] with $($ * 2)      # [2, 4, 6]
+map([1, 2, 3], $($ * 2))         # [2, 4, 6]
 $($1 + $2)                       # fn $1, $2 -> $1 + $2
 ```
 
@@ -187,17 +187,19 @@ match value {
 - Type constraints: `Null`, `Int`, `Float`, `Bool`, `String`, `Bytes`, `Array`, `Map`,
   `Function`, `Opaque`, `Primitive`, `Numeric`, `Structured`, `Flat`, `Nonnull`.
 
-### Map / filter / reduce expressions
+### `map` / `filter` / `reduce` / `each`
 
-Dedicated `with` syntax, not function calls:
+Ordinary functions, not syntax: the collection comes first and the function last, so they
+thread with `@`.
 
 ```frost
-map [1, 2, 3] with fn x -> x * 2
-filter [1, 2, 3] with fn x -> x > 1
-reduce [1, 2, 3] with fn (acc, x) -> acc + x
+map([1, 2, 3], fn x -> x * 2)                  # [2, 4, 6]
+filter([1, 2, 3], fn x -> x > 1)               # [2, 3]
+reduce([1, 2, 3], fn acc, x -> acc + x)        # 6: the first element seeds it
+reduce([1, 2, 3], 10, fn acc, x -> acc + x)    # 16: an explicit initial value
+each([1, 2, 3], fn x -> print(x))              # for effects
+[1, 2, 3] @ filter(fn x -> x > 1) @ map(fn x -> x * 2)   # [4, 6]
 ```
-
-The pipeline-friendly function forms are `transform`, `select`, and `fold`.
 
 ## Principles
 

@@ -9,4 +9,4 @@ defn fizz(n) -> match n % 3 {
     _ if: n % 5 == 0 => 'Buzz',
     _ => 'other',
 }
-transform(ns, fizz)
+map(ns, fizz)

@@ -39,7 +39,7 @@ defn step(state, c) -> {
     else: error($'unexpected character ${c}')
 }
 
-defn tokenize(chars) -> flush(reduce chars init: {tokens: [], current: null} with step)
+defn tokenize(chars) -> flush(reduce(chars, {tokens: [], current: null}, step))
 
 [
     tokenize(['x', '1', ' ', '=', ' ', '4', '2', '+', 'y']),

@@ -8,6 +8,6 @@
 #=     ],
 #= }
 [
-    map [0, 0.0, false, null, '', x'', 0, false, 'hi', x'6869'] with fn x -> type(x),
+    map([0, 0.0, false, null, '', x'', 0, false, 'hi', x'6869'], fn x -> type(x)),
     [0 == false, '' == x'', 0 == null, 'hi' == x'6869'],
 ]

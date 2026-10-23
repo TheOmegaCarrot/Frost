@@ -382,7 +382,7 @@ fn a_script_that_runs_away_is_a_run_failure() {
     // The call depth runs out.
     let deep = "defn deep(n) -> 1 + deep(n)\nexport def x = to_string(deep(0))";
     // Fuel runs out in a loop of folds.
-    let long = "export def x = fold(range(1000000), 0, fn acc, x -> acc + x)";
+    let long = "export def x = reduce(range(1000000), 0, fn acc, x -> acc + x)";
     for source in [forever, deep, long] {
         assert!(
             matches!(failure(&mut runner, source), ScriptFailure::Run(_)),
@@ -411,7 +411,7 @@ fn the_runner_stays_usable_after_each_kind_of_failure() {
 fn each_script_has_its_own_fuel() {
     // Each run spends a fair share of the limit; together, many times over it.
     let mut runner = ConfigRunner::new(false);
-    let source = "export def x = fold(range(2000), 0, fn acc, x -> acc + x)";
+    let source = "export def x = reduce(range(2000), 0, fn acc, x -> acc + x)";
     for _ in 0..200 {
         assert_eq!(export(&mut runner, source, "x").as_int(), Some(1_999_000));
     }
@@ -466,7 +466,7 @@ mod calling {
         let mut runner = ConfigRunner::new(false);
         let Value::Closure(function) = export(
             &mut runner,
-            "export defn f(c) -> fold(range(2000), 0, fn acc, x -> acc + x)",
+            "export defn f(c) -> reduce(range(2000), 0, fn acc, x -> acc + x)",
             "f",
         ) else {
             panic!("an exported function is a closure");

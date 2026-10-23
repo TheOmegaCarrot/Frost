@@ -1,4 +1,0 @@
-# An explicit Null passed to `fold` as its init is an init: three arguments
-# mean structure, init, function, whatever the init's value.
-#= {result: [[null, 1], 2], inputs: {xs: [1, 2]}}
-fold(xs, null, fn acc, x -> [acc, x])

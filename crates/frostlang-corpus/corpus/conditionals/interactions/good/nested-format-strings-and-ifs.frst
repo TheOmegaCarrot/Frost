@@ -1,4 +1,4 @@
 # A format String inside an `if` inside another format String's
 # interpolation.
 #= {result: ['[n=3]', '[none]'], inputs: {values: [3, null]}}
-map values with fn n -> $'[${if n: $'n=${n}' else: 'none'}]'
+map(values, fn n -> $'[${if n: $'n=${n}' else: 'none'}]')

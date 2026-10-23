@@ -1,0 +1,6 @@
+# The iteration functions take the structure first, so `@` threads a
+# pipeline through them; `reduce`'s initial value follows the threaded
+# structure.
+#= {result: [[10, 30], 40, 46], inputs: {xs: [1, 2, 3]}}
+def picked = xs @ filter(fn x -> x != 2) @ map(fn x -> x * 10)
+[picked, picked @ reduce(fn acc, x -> acc + x), picked @ reduce(6, fn acc, x -> acc + x)]

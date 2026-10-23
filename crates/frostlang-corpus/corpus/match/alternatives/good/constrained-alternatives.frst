@@ -1,6 +1,6 @@
 # Type-constrained alternatives give a union of types: here Int or Float.
 #= {result: [1, 1.5, 'other'], inputs: {xs: [1, 1.5, '1']}}
-transform(xs, fn v -> match v {
+map(xs, fn v -> match v {
     n is Int | n is Float => n,
     _ => 'other',
 })

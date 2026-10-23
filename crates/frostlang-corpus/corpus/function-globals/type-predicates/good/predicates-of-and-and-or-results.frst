@@ -11,9 +11,9 @@
 #=     ],
 #=     inputs: {samples: [null, false, true, 0]},
 #= }
-map samples with fn x -> [
+map(samples, fn x -> [
     is_null(x and 1),
     is_bool(x and 1),
     is_int(x and 1),
     is_int(x or 1),
-]
+])

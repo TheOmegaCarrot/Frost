@@ -2,7 +2,7 @@
 # branch matched. Subtle: for the second target the first branch binds `x` to
 # 0 before failing, and the pin must see the second branch's 7 instead.
 #= {result: [5, 7, 'none'], inputs: {xs: [[[5, 0], 5], [[0, 7], 7], [[0, 7], 0]]}}
-transform(xs, fn v -> match v {
+map(xs, fn v -> match v {
     [[x, 0] | [0, x], (x)] => x,
     _ => 'none',
 })

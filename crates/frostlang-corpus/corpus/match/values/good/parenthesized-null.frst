@@ -1,6 +1,6 @@
 # A parenthesized name holding Null matches only Null.
 #= {result: ['null', 'other', 'other'], inputs: {nothing: null, xs: [null, false, 0]}}
-transform(xs, fn v -> match v {
+map(xs, fn v -> match v {
     (nothing) => 'null',
     _ => 'other',
 })

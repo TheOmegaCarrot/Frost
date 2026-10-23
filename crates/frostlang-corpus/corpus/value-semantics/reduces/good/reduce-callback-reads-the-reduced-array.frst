@@ -1,0 +1,5 @@
+# A reduce callback that captures and extends the very Array being reduced sees
+# it unchanged at every step.
+#= {result: [[1, 2, 1], [1, 2, 2]], inputs: {n: 1}}
+def xs = [n, 2]
+reduce(xs, [], fn acc, x -> acc + [xs + [x]])

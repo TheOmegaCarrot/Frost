@@ -1,0 +1,7 @@
+# A line starting with `@` continues the expression before it as if the lines
+# were joined. After a call whose last argument is a lambda, that is the call:
+# its closing parenthesis ended the lambda's body, so the mapped Array is
+# threaded, not each element.
+#= {result: 2, inputs: {xs: [[1, 2, 3], [4]]}}
+map(xs, fn x -> x)
+@ len()

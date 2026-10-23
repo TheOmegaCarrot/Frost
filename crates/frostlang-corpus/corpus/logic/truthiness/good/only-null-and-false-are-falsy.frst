@@ -7,4 +7,4 @@
 #=     ],
 #= }
 def values = [null, false, true, 0, 0.0, '', x'', [], {}, len]
-transform(values, fn v -> if v: 'truthy' else: 'falsy')
+map(values, fn v -> if v: 'truthy' else: 'falsy')

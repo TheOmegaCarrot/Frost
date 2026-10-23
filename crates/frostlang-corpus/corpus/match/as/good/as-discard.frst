@@ -1,6 +1,6 @@
 # `as _` binds nothing, matching exactly as the Map pattern alone does.
 #= {result: [1, 'other'], inputs: {xs: [{a: 1}, {b: 1}]}}
-transform(xs, fn v -> match v {
+map(xs, fn v -> match v {
     {a} as _ => a,
     _ => 'other',
 })

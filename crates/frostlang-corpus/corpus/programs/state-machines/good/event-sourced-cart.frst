@@ -32,9 +32,9 @@ defn apply(cart, event) -> match event {
         items: cart.items + {[item]: holding(cart, item) - count},
     },
     {type: 'remove', item, count} => reject(cart, $'remove ${count} ${item}'),
-    {type: 'discard', item} => cart + {items: filter cart.items with fn k, v -> k != item},
+    {type: 'discard', item} => cart + {items: filter(cart.items, fn k, v -> k != item)},
     {type} => reject(cart, type),
 }
 
-export def cart = reduce events init: {items: {}, rejected: 0} with apply
-reduce cart.items init: 0 with fn total, _, count -> total + count
+export def cart = reduce(events, {items: {}, rejected: 0}, apply)
+reduce(cart.items, 0, fn total, _, count -> total + count)

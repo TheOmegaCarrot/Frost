@@ -1,4 +1,4 @@
 # Filtering a Map passes a key and a value, so an abbreviated lambda reading
 # only `$` takes too few parameters.
 #= {raises: 'expects 1 argument'}
-filter {a: 1} with $($ != null)
+filter({a: 1}, $($ != null))

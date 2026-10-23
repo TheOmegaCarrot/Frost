@@ -1,3 +1,0 @@
-# An unbound name in `reduce`'s `init:` clause is rejected at compile time.
-#= {rejects: ['`start`', 'not defined']}
-reduce [1] init: start with fn acc, x -> acc + x

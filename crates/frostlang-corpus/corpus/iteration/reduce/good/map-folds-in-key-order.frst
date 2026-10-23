@@ -2,4 +2,4 @@
 # the literal wrote them in.
 #= {result: ['abc', 'abc'], inputs: {m: {c: 3, a: 1, b: 2}}}
 def keys = fn acc, k, v -> acc + k
-[reduce {c: 3, a: 1, b: 2} init: '' with keys, reduce m init: '' with keys]
+[reduce({c: 3, a: 1, b: 2}, '', keys), reduce(m, '', keys)]

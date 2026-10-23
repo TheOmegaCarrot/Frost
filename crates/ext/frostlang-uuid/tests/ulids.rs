@@ -69,7 +69,7 @@ fn new_ulids_strictly_increase() {
     // A thousand in a tight loop share milliseconds, so this checks the order
     // within a millisecond too.
     assert_true(&[r"
-        def ids = map range(1000) with fn i -> uuid.ulid.new()
+        def ids = map(range(1000), fn i -> uuid.ulid.new())
         all(range(1, 1000), fn i -> ids[i - 1] < ids[i])
     "]);
 }
@@ -133,7 +133,7 @@ fn to_string_writes_canonical_text() {
 fn to_bytes_and_to_string_round_trip() {
     assert_true(&[
         r"
-        def ids = map range(100) with fn i -> uuid.ulid.new()
+        def ids = map(range(100), fn i -> uuid.ulid.new())
         all(ids, fn id -> uuid.ulid.to_string(uuid.ulid.to_bytes(id)) == id)
         ",
         r"

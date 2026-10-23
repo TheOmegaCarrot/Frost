@@ -7,9 +7,9 @@
 #=     inputs: {flag: false},
 #= }
 defn spin(n) -> if n == 0: 0 else: spin(n - 1)
-def long = transform([1, 2], fn x -> select([x], fn _ -> spin(60000) == 0))
-def after_long = transform([1, 2], fn x -> fold([x, x], 0, fn acc, y -> acc + y))
-def raising = if flag: transform([1, 0], fn x -> select([1], fn _ -> 1 / x)) else: 'skipped'
-def after_raising = select([1, 2, 3], fn x -> transform([x], $($ * 2)) == [4])
-def after_both = [fold([1, 2], [], fn acc, y -> acc + [y * 10]), 1 + 1]
+def long = map([1, 2], fn x -> filter([x], fn _ -> spin(60000) == 0))
+def after_long = map([1, 2], fn x -> reduce([x, x], 0, fn acc, y -> acc + y))
+def raising = if flag: map([1, 0], fn x -> filter([1], fn _ -> 1 / x)) else: 'skipped'
+def after_raising = filter([1, 2, 3], fn x -> map([x], $($ * 2)) == [4])
+def after_both = [reduce([1, 2], [], fn acc, y -> acc + [y * 10]), 1 + 1]
 [long, after_long, raising, after_raising, after_both]

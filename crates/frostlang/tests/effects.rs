@@ -25,7 +25,7 @@ fn prints_happen_in_evaluation_order() {
     assert_eq!(printed("[print(1), print(2)]"), ["1", "2"]);
     assert_eq!(printed("plus(print(1) or 1, print(2) or 2)"), ["1", "2"]);
     let in_transform = r"
-        transform([1, 2, 3], fn x -> {
+        map([1, 2, 3], fn x -> {
             print(x)
             x
         })

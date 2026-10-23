@@ -9,7 +9,7 @@
 #=     ],
 #=     inputs: {xs: [[], [1], [1, 2]]},
 #= }
-transform(xs, fn v -> match v {
+map(xs, fn v -> match v {
     [a, b, ...others] => 'long enough',
     _ => 'short',
 })

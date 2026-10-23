@@ -9,6 +9,6 @@ def show = fn ...args -> {
     print(len(args))
     true
 }
-def ys = filter xs with show
-def n = filter m with show
+def ys = filter(xs, show)
+def n = filter(m, show)
 [ys, n]
