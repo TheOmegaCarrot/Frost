@@ -642,7 +642,7 @@ fn args_takes_each_argument_leaving_null() {
 }
 
 #[test]
-#[should_panic(expected = "Function f has 1 parameters, all taken already")]
+#[should_panic(expected = "Function f has 1 parameter, all taken already")]
 fn taking_past_the_last_parameter_panics() {
     let mut values = vec![Value::Int(1)];
     let mut args = Args::new("f", params::<u8>(), &mut values);

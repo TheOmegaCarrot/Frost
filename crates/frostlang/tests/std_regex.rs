@@ -428,7 +428,7 @@ fn compiled_functions_check_their_arguments() {
             (
                 &format!("re.compile('a').{function}()"),
                 &format!(
-                    "Function compiled_regex.{function} expects 1 arguments, \
+                    "Function compiled_regex.{function} expects 1 argument, \
                      but was called with 0"
                 ),
             ),

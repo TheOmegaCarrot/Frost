@@ -133,7 +133,7 @@ fn bundles_do_not_share_state_with_each_other() {
 fn arguments_are_checked_by_params_and_taken_by_args() {
     assert_eq!(
         raises("t.get()"),
-        "Function table.get expects 1 arguments, but was called with 0"
+        "Function table.get expects 1 argument, but was called with 0"
     );
     assert_eq!(
         raises("t.len(1)"),

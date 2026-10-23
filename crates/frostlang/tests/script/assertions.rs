@@ -124,13 +124,17 @@ impl Library {
         expects: impl Display,
         counts: &[usize],
     ) {
+        let expects = expects.to_string();
+        let noun = if matches!(expects.as_str(), "1" | "at least 1") {
+            "argument"
+        } else {
+            "arguments"
+        };
         for &argc in counts {
             let expression = format!("{call}({})", vec!["null"; argc].join(", "));
             assert_eq!(
                 self.script(&expression).raises(),
-                format!(
-                    "Function {function} expects {expects} arguments, but was called with {argc}"
-                ),
+                format!("Function {function} expects {expects} {noun}, but was called with {argc}"),
                 "{expression:?}"
             );
         }

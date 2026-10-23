@@ -195,7 +195,7 @@ fn debug_dump_takes_exactly_one_argument() {
     for (source, argc) in [("debug_dump()", 0), ("debug_dump(1, 2)", 2)] {
         assert_eq!(
             raises(source),
-            format!("Function debug_dump expects 1 arguments, but was called with {argc}"),
+            format!("Function debug_dump expects 1 argument, but was called with {argc}"),
             "{source:?}"
         );
     }

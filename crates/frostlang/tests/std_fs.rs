@@ -1488,7 +1488,7 @@ fn every_function_checks_its_arguments() {
             assert_eq!(
                 scratch.raises(&format!("fs.{function}({args})")),
                 format!(
-                    "Function std.fs.{function} expects 1 arguments, but was called with {argc}"
+                    "Function std.fs.{function} expects 1 argument, but was called with {argc}"
                 )
             );
         }

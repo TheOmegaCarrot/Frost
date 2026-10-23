@@ -314,7 +314,7 @@ fn a_callbacks_error_is_the_calls_error_unchanged() {
         // A callback taking the wrong number of arguments.
         (
             &with_rows("db.fold('SELECT id FROM t', null, fn row -> row)"),
-            "Function <lambda> expects 1 arguments, but was called with 2",
+            "Function <lambda> expects 1 argument, but was called with 2",
         ),
     ]);
     // A thrown value arrives as that value.

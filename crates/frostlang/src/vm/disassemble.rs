@@ -6,6 +6,7 @@ use std::fmt::{self, Display, Formatter};
 use crate::bytecode::{
     Bytecode, CompiledFunction, ListedFunction, ListedInstruction, Listing, Reference,
 };
+use crate::core::util::count::counted;
 use crate::core::util::identifier::is_identifier_like_and_not_keyword;
 use crate::{Arity, MapKey, Value};
 
@@ -89,10 +90,9 @@ fn list(f: &mut Formatter<'_>, function: &ListedFunction, paint: Paint) -> fmt::
     }
     writeln!(
         f,
-        "  arity {}, {} {}",
+        "  arity {}, {}",
         arity(function.arity),
-        function.num_captures,
-        plural(function.num_captures, "capture", "captures"),
+        counted(function.num_captures, "capture"),
     )?;
 
     if !function.slots.is_empty() {
@@ -258,11 +258,9 @@ fn reference_comment(reference: Reference) -> String {
         }
         Reference::Constant { value, .. } => value.map_or_else(|| "?".to_string(), inline_constant),
         Reference::Key { key, .. } => key.map_or_else(|| "?".to_string(), key_access),
-        Reference::Child { name, captures, .. } => format!(
-            "{}, {captures} {}",
-            name.unwrap_or("?"),
-            plural(captures, "capture", "captures")
-        ),
+        Reference::Child { name, captures, .. } => {
+            format!("{}, {}", name.unwrap_or("?"), counted(captures, "capture"))
+        }
         Reference::Jump { offset, target } => match target {
             Some(_) => format!("+{offset}"),
             None => format!("+{offset}, past the end"),
@@ -433,10 +431,6 @@ fn arity(arity: Arity) -> String {
         Arity::AtLeast(n) => format!("{n} or more"),
         Arity::Between(low, high) => format!("{low} to {high}"),
     }
-}
-
-fn plural<N: PartialEq + From<u8>>(n: N, one: &'static str, many: &'static str) -> &'static str {
-    if n == N::from(1) { one } else { many }
 }
 
 /// Coloring with ANSI escape codes, when on.

@@ -14,8 +14,9 @@ use frostlang_sqlite::rusqlite::hooks::{AuthAction, AuthContext, Authorization};
 use frostlang_sqlite::{EnumSet, Method, ScriptConnection, connection_factory, sqlite_error};
 
 use crate::common::{
-    NON_STRINGS, Pooled, Scratch, assert_arity, assert_raises, assert_values, frost, host_importer,
-    memory_connection, run_app, string_literal, value, with_db, with_rows, with_table,
+    NON_STRINGS, Pooled, Scratch, arity_error, assert_arity, assert_raises, assert_values, frost,
+    host_importer, memory_connection, run_app, string_literal, value, with_db, with_rows,
+    with_table,
 };
 
 /// How a call fails, as `try_call` would report it, without its trace.
@@ -1173,7 +1174,7 @@ fn transaction_checks_its_arity() {
         assert_values(&[(
             &source,
             &string_literal(&format!(
-                "Function tx.transaction expects 1 arguments, but was called with {argc}"
+                "Function tx.transaction expects 1 argument, but was called with {argc}"
             )),
         )]);
     }
@@ -1227,11 +1228,8 @@ fn kept_tx_raises(call: &str) -> Value {
 
 #[test]
 fn a_tx_method_checks_its_arguments_as_the_connections_does() {
-    let arity = |name: &str, expects: &str, argc: usize| {
-        Value::from(format!(
-            "Function {name} expects {expects} arguments, but was called with {argc}"
-        ))
-    };
+    let arity =
+        |name: &str, expects: &str, argc: usize| Value::from(arity_error(name, expects, argc));
     for (call, expected) in [
         ("tx.exec()", arity("tx.exec", "between 1 and 2", 0)),
         (

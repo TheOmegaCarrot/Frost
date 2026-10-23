@@ -13,6 +13,7 @@
 //! reads them alike whichever branch matched.
 
 use crate::bytecode::{Bytecode, Span};
+use crate::core::util::count::counted;
 use crate::vm::to_operand;
 use crate::{FrostType, TypeSet, Value};
 use frostlang_parse::ast::{
@@ -213,9 +214,8 @@ impl FunctionBuilder<'_> {
         } else {
             (Bytecode::TestArrayLenExact(operand), "exactly")
         };
-        let noun = if count == 1 { "element" } else { "elements" };
         self.check([Op::Ready(test).at(span)], mismatch, span, || {
-            format!("expected an Array of {bound} {count} {noun}")
+            format!("expected an Array of {bound} {}", counted(count, "element"))
         })
         .into_iter()
         .chain(rest.then_some(Op::Ready(Bytecode::SplitArray(operand)).at(span)))

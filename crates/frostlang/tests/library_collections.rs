@@ -596,7 +596,7 @@ fn index_makes_a_function_that_indexes() {
     assert_arity("index", "1", &[0, 2]);
     assert_raises(&[(
         "index('a')()",
-        "Function index_fn expects 1 arguments, but was called with 0",
+        "Function index_fn expects 1 argument, but was called with 0",
     )]);
 }
 

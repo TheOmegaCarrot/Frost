@@ -48,6 +48,7 @@ use std::{
 
 use itertools::Itertools;
 
+use crate::core::util::count::counted;
 use crate::{
     BacktraceFrame, FrostArray, FrostError, FrostMap, FrostResult, MapKey, Value, ValueMap,
 };
@@ -485,9 +486,9 @@ impl Vm {
         let frame = self.this_frame();
         debug_assert!(
             idx < frame.this_fn.name_table.len(),
-            "local {idx} is outside `{}`'s {} slots",
+            "local {idx} is outside `{}`'s {}",
             frame.this_fn.name,
-            frame.this_fn.name_table.len()
+            counted(frame.this_fn.name_table.len(), "slot")
         );
         frame.slot_base + idx
     }
@@ -1279,21 +1280,15 @@ impl Vm {
         if ok {
             return Ok(());
         }
-        Err(FrostError::from_string(match arity {
-            Arity::Exact(n) => {
-                format!("Function {name} expects {n} arguments, but was called with {argc}")
-            }
-            Arity::Between(lo, hi) => {
-                format!(
-                    "Function {name} expects between {lo} and {hi} arguments, but was called with {argc}"
-                )
-            }
-            Arity::AtLeast(n) => {
-                format!(
-                    "Function {name} expects at least {n} arguments, but was called with {argc}"
-                )
-            }
-        }))
+        let expected = match arity {
+            Arity::Exact(n) => counted(n, "argument"),
+            // The upper bound always exceeds the lower, so is never one.
+            Arity::Between(lo, hi) => format!("between {lo} and {hi} arguments"),
+            Arity::AtLeast(n) => format!("at least {}", counted(n, "argument")),
+        };
+        Err(FrostError::from_string(format!(
+            "Function {name} expects {expected}, but was called with {argc}"
+        )))
     }
 
     /// The error produced when a non-callable value is called.
@@ -1382,7 +1377,8 @@ impl Vm {
 
     fn fuel_exhausted(limit: u64) -> FrostError {
         FrostError::from_string(format!(
-            "Execution exceeded its fuel limit of {limit} function calls"
+            "Execution exceeded its fuel limit of {}",
+            counted(limit, "function call")
         ))
     }
 

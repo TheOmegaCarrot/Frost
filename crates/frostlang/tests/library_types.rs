@@ -523,11 +523,11 @@ fn to_bytes_takes_exactly_one_argument() {
     assert_raises(&[
         (
             "to_bytes()",
-            "Function to_bytes expects 1 arguments, but was called with 0",
+            "Function to_bytes expects 1 argument, but was called with 0",
         ),
         (
             "to_bytes('a', 'b')",
-            "Function to_bytes expects 1 arguments, but was called with 2",
+            "Function to_bytes expects 1 argument, but was called with 2",
         ),
     ]);
 }
@@ -616,11 +616,11 @@ fn from_utf8_takes_exactly_one_argument() {
     assert_raises(&[
         (
             "from_utf8()",
-            "Function from_utf8 expects 1 arguments, but was called with 0",
+            "Function from_utf8 expects 1 argument, but was called with 0",
         ),
         (
             "from_utf8(x'68', x'69')",
-            "Function from_utf8 expects 1 arguments, but was called with 2",
+            "Function from_utf8 expects 1 argument, but was called with 2",
         ),
     ]);
 }

@@ -247,7 +247,7 @@ fn a_parameter_without_a_type_accepts_any_value() {
     assert_eq!(run(describe.clone(), "f(null)"), Value::from("Null"));
     assert_eq!(
         raises(describe, "f()"),
-        "Function describe expects 1 arguments, but was called with 0"
+        "Function describe expects 1 argument, but was called with 0"
     );
 }
 

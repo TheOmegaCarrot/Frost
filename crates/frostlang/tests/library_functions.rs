@@ -663,7 +663,7 @@ fn a_returned_function_is_named_for_its_global() {
     // Most returned functions take any arguments, but `spread_fn` takes one.
     assert_eq!(
         raises("spread(minus)()"),
-        "Function spread_fn expects 1 arguments, but was called with 0"
+        "Function spread_fn expects 1 argument, but was called with 0"
     );
     // A returned function shows in a backtrace while it awaits a call it makes.
     for (source, name) in [

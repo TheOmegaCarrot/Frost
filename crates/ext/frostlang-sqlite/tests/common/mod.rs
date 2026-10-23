@@ -198,15 +198,27 @@ pub(crate) fn assert_raises(cases: &[(&str, &str)]) {
     }
 }
 
+/// The arity error of a function named `name`, called with `argc` arguments.
+/// `expects` is how the error states its arity, such as `1` or `between 1 and 2`.
+pub(crate) fn arity_error(name: &str, expects: impl Display, argc: usize) -> String {
+    let expects = expects.to_string();
+    let noun = if matches!(expects.as_str(), "1" | "at least 1") {
+        "argument"
+    } else {
+        "arguments"
+    };
+    format!("Function {name} expects {expects} {noun}, but was called with {argc}")
+}
+
 /// Assert the Frost expression `callee`, a function named `name`, raises its
-/// arity error when called with each count in `counts`. `expects` is how the
-/// error states its arity, such as `1`.
+/// arity error when called with each count in `counts`. `expects` is as for
+/// [`arity_error`].
 pub(crate) fn assert_arity(callee: &str, name: &str, expects: impl Display, counts: &[usize]) {
     for &argc in counts {
         let expression = format!("{callee}({})", vec!["null"; argc].join(", "));
         assert_eq!(
             raises(&expression),
-            format!("Function {name} expects {expects} arguments, but was called with {argc}"),
+            arity_error(name, &expects, argc),
             "{expression:?}"
         );
     }

@@ -182,6 +182,22 @@ fn close_reports_every_missing_capture_in_slot_order() {
 }
 
 #[test]
+fn missing_captures_are_listed_in_a_message_agreeing_in_number() {
+    let message = |names: &[&str]| {
+        MissingCaptures {
+            names: names.iter().map(ToString::to_string).collect(),
+        }
+        .to_string()
+    };
+    assert_eq!(message(&["x"]), "missing capture: x", "one is singular");
+    assert_eq!(
+        message(&["z", "y"]),
+        "missing captures: z, y",
+        "more are plural, listed in order"
+    );
+}
+
+#[test]
 fn close_seats_each_capture_in_its_own_slot() {
     // Two captures read back with a non-commutative op: slot 0 is `b` (100),
     // slot 1 is `a` (1), so the body computes 100 - 1 = 99. The pairs come in the
@@ -476,7 +492,7 @@ fn run_with_args_too_many_is_arity_error() {
         .unwrap_err()
         .into_error();
     assert!(
-        err.message().contains("expects 1 arguments"),
+        err.message().contains("expects 1 argument,"),
         "got: {}",
         err.message()
     );
@@ -528,7 +544,7 @@ fn run_no_args_on_parameterized_is_arity_error() {
         .unwrap_err()
         .into_error();
     assert!(
-        err.message().contains("expects 1 arguments"),
+        err.message().contains("expects 1 argument,"),
         "got: {}",
         err.message()
     );

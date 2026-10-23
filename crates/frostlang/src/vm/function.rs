@@ -232,7 +232,11 @@ impl WellFormedProgram {
 /// One or more of a program's captures were given no value by [`WellFormedProgram::close`]
 /// or [`WellFormedProgram::close_with`]; reports every missing name, not just the first.
 #[derive(Debug, Clone, PartialEq, Eq, thiserror::Error)]
-#[error("missing capture(s): {}", .names.join(", "))]
+#[error(
+    "{}: {}",
+    if .names.len() == 1 { "missing capture" } else { "missing captures" },
+    .names.join(", ")
+)]
 pub struct MissingCaptures {
     /// The missing capture names, in capture order.
     pub names: Vec<String>,

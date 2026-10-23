@@ -144,6 +144,26 @@ fn a_budget_admits_exactly_that_many_calls() {
 }
 
 #[test]
+fn the_exhaustion_error_states_the_budget_in_calls() {
+    let message = |budget: u64| {
+        run(vec![("f", noop())], call_n_times(4), with_fuel(budget))
+            .unwrap_err()
+            .message()
+            .to_string()
+    };
+    assert_eq!(
+        message(1),
+        "Execution exceeded its fuel limit of 1 function call",
+        "a budget of one is singular"
+    );
+    assert_eq!(
+        message(3),
+        "Execution exceeded its fuel limit of 3 function calls",
+        "any other budget is plural"
+    );
+}
+
+#[test]
 fn the_call_past_the_budget_fails() {
     assert!(run(vec![("f", noop())], call_n_times(4), with_fuel(3)).is_err());
 }

@@ -9,6 +9,7 @@
 //! out and none of these would panic.
 #![cfg(debug_assertions)]
 
+use std::panic::AssertUnwindSafe;
 use std::sync::Arc;
 
 use crate::common;
@@ -274,6 +275,30 @@ fn closing_with_fewer_captures_than_the_child_has_is_caught() {
 #[should_panic(expected = "capture count must be its child's")]
 fn closing_with_more_captures_than_the_child_has_is_caught() {
     run_fn(closing_program(2, 2));
+}
+
+// ============================================================
+// Local slots
+// ============================================================
+
+#[test]
+fn a_local_past_the_slots_is_caught() {
+    let program = func(
+        vec![PushNull, DefLocal(0), LoadLocal(1)],
+        Arity::Exact(0),
+        vec![common::entry("x", false)],
+        vec![],
+    );
+    // The program is not used after the panic, so nothing observes a broken state.
+    let panic =
+        std::panic::catch_unwind(AssertUnwindSafe(|| run_fn(program))).expect_err("the run panics");
+    // Compared whole: `should_panic` matches a substring, and the singular is a
+    // prefix of the plural.
+    assert_eq!(
+        panic.downcast_ref::<String>().map(String::as_str),
+        Some("local 1 is outside `<test>`'s 1 slot"),
+        "a function with one slot names it in the singular"
+    );
 }
 
 // ============================================================

@@ -6,6 +6,7 @@ use std::ops::Range;
 use serde::de::DeserializeOwned;
 
 use crate::core::accepted_types;
+use crate::core::util::count::counted;
 use crate::vm::{Binder, expected_types};
 use crate::{
     FrostArray, FrostBytes, FrostError, FrostFloat, FrostMap, FrostString, FrostType, MapKey,
@@ -211,9 +212,9 @@ impl<'a> Args<'a> {
         let params = self.params.as_slice();
         let param = params.get(self.taken).unwrap_or_else(|| {
             panic!(
-                "Function {} has {} parameters, all taken already",
+                "Function {} has {}, all taken already",
                 self.function,
-                params.len()
+                counted(params.len(), "parameter")
             )
         });
         self.taken += 1;

@@ -351,7 +351,7 @@ fn a_call_must_supply_exactly_the_parameters() {
             def f = fn x -> x + 1
             f(1, 2)
             ",
-            "expects 1 arguments",
+            "expects 1 argument,",
         ),
         (
             r"
@@ -374,7 +374,7 @@ fn arity_is_checked_before_the_body_runs() {
         }
         f(1, 2)
         ",
-        "expects 1 arguments",
+        "expects 1 argument,",
     )]);
     assert_raises(&[(
         r"
@@ -462,7 +462,7 @@ fn a_variadic_lambda_still_requires_its_fixed_parameters() {
             def f = fn a, ...rest -> rest
             f()
             ",
-            "expects at least 1 arguments",
+            "expects at least 1 argument,",
         ),
         (
             r"
@@ -479,7 +479,7 @@ fn a_discarded_parameter_still_counts_toward_arity() {
     assert_raises(&[
         ("(fn _, _ -> 1)(1)", "expects 2 arguments"),
         ("(fn f(_, _) -> 1)(1, 2, 3)", "expects 2 arguments"),
-        ("(fn _, ..._ -> 1)()", "expects at least 1 arguments"),
+        ("(fn _, ..._ -> 1)()", "expects at least 1 argument,"),
         ("$($3)(1, 2)", "expects 3 arguments"),
     ]);
 }
@@ -650,7 +650,7 @@ fn a_named_lambda_is_checked_for_arity_like_any_other() {
             defn f(a, ...rest) -> rest
             f()
             ",
-            "expects at least 1 arguments",
+            "expects at least 1 argument,",
         ),
         (
             r"
@@ -665,14 +665,14 @@ fn a_named_lambda_is_checked_for_arity_like_any_other() {
             defn f(n) -> f()
             f(1)
             ",
-            "expects 1 arguments",
+            "expects 1 argument,",
         ),
         (
             r"
             defn f(n) -> if n == 0: 0 else: f(n - 1, 0)
             f(2)
             ",
-            "expects 1 arguments",
+            "expects 1 argument,",
         ),
     ]);
 }
@@ -680,11 +680,11 @@ fn a_named_lambda_is_checked_for_arity_like_any_other() {
 #[test]
 fn arity_is_checked_when_a_higher_order_function_calls_a_lambda() {
     assert_raises(&[
-        ("call(fn x -> x, [])", "expects 1 arguments"),
+        ("call(fn x -> x, [])", "expects 1 argument,"),
         ("call($($2), [1])", "expects 2 arguments"),
         (
             "call(fn a, ...rest -> rest, [])",
-            "expects at least 1 arguments",
+            "expects at least 1 argument,",
         ),
         ("transform([1], fn a, b -> a)", "expects 2 arguments"),
         ("and_then(1, fn -> 1)", "expects 0 arguments"),
@@ -729,7 +729,7 @@ fn an_abbreviated_lambda_takes_as_many_arguments_as_its_highest_placeholder() {
             def f = $($1)
             f(1, 2, 3)
             ",
-            "expects 1 arguments",
+            "expects 1 argument,",
         ),
         (
             r"
@@ -795,7 +795,7 @@ fn every_placeholder_combination_binds_by_position() {
         ("$($1 + $3)(1, 2)", "expects 3 arguments"),
         ("$($9)(1, 2, 3, 4, 5, 6, 7, 8)", "expects 9 arguments"),
         ("$([$2, $$])(1)", "expects at least 2 arguments"),
-        ("$([$, $$])()", "expects at least 1 arguments"),
+        ("$([$, $$])()", "expects at least 1 argument,"),
     ]);
 }
 
