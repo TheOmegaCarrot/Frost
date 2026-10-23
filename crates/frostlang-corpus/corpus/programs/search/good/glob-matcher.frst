@@ -19,6 +19,7 @@
 #=         ],
 #=     },
 #= }
+def {cases} = import('inputs')
 defn glob(pattern, text) -> match [pattern, text] {
     [[], []] => true,
     [['*', ...rest], []] => glob(rest, []),

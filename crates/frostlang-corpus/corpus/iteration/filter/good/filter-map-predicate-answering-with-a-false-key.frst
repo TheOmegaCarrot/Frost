@@ -2,4 +2,5 @@
 # truthiness. Subtle: a Map key may be `false`, which drops its entry, while
 # the key 0 is truthy and keeps its own.
 #= {result: {[true]: 'b', [0]: 'c'}, inputs: {m: {[false]: 'a', [true]: 'b', [0]: 'c'}}}
+def {m} = import('inputs')
 filter(m, fn k, v -> k)

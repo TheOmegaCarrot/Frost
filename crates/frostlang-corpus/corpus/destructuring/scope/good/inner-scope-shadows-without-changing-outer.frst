@@ -1,6 +1,7 @@
 # A pattern in an inner scope may shadow outer names; the outer bindings are
 # unchanged once that scope ends.
 #= {result: [[3, 4], [1, 2]], inputs: {pair: [3, 4]}}
+def {pair} = import('inputs')
 def [a, b] = [1, 2]
 def inner = do {
     def [a, b] = pair

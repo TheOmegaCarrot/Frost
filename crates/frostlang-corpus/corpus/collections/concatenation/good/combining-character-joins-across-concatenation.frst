@@ -1,5 +1,6 @@
 # Concatenation joins code points as they are: `e` followed by a String that
 # starts with combining U+0301 is two code points, not the precomposed U+00E9.
 #= {result: [2, false], inputs: {base: 'e', accent: '\u{301}'}}
+def {base, accent} = import('inputs')
 def joined = base + accent
 [len(joined), joined == '\u{e9}']

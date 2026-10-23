@@ -1,3 +1,4 @@
 # `const` replaces every element, ignoring each.
 #= {result: [0, 0, 0], inputs: {xs: ['a', null, [1]]}}
+def {xs} = import('inputs')
 map(xs, const(0))

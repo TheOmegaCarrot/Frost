@@ -5,6 +5,7 @@
 #=     rejects: ['`format`', 'already bound'],
 #=     inputs: {n: 3},
 #= }
+def {n} = import('inputs')
 defn format(x) -> $'<${x}>'
 def first = format(n)
 defn format(x) -> $'[${x}]'

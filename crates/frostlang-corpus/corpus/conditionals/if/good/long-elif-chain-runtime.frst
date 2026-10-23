@@ -4,6 +4,7 @@
 #=     result: ['zero', 'one', 'two', 'three', 'four', 'many', 'many'],
 #=     inputs: {ns: [0, 1, 2, 3, 4, 5, -1]},
 #= }
+def {ns} = import('inputs')
 defn name(n) -> if n == 0: 'zero'
     elif n == 1: 'one'
     elif n == 2: 'two'

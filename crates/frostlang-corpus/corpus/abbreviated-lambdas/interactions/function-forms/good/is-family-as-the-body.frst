@@ -1,4 +1,5 @@
 # An `is_*` check applied to a placeholder makes a type predicate for
 # `filter`.
 #= {result: [1, 2], inputs: {mixed: [1, 'a', 2, null, 2.5]}}
+def {mixed} = import('inputs')
 filter(mixed, $(is_int($)))

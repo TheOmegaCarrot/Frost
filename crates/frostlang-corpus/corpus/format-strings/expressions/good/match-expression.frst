@@ -1,3 +1,4 @@
 # A `match` expression, braces and all, written on one line in an interpolation.
 #= {result: 'seven or other', inputs: {x: 7}}
+def {x} = import('inputs')
 $'${match x { 7 => "seven", _ => "other" }} or ${match x + 1 { 7 => "seven", _ => "other" }}'

@@ -1,4 +1,5 @@
 # Neither the function nor its arguments are known to the compiler, so the
 # call happens only at run time.
 #= {result: 6, inputs: {f: fn a, b -> a - b, args: [10, 4]}}
+def {f, args} = import('inputs')
 call(f, args)

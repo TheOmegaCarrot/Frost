@@ -1,5 +1,0 @@
-# Fibonacci accumulators wrap past the Int range at runtime: the 93rd
-# Fibonacci number exceeds it.
-#= {result: -6246583658587674878, inputs: {n: 93}}
-defn fib(k, a, b) -> if k == 0: a else: fib(k - 1, b, a + b)
-fib(n, 0, 1)

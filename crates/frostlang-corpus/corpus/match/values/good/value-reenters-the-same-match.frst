@@ -3,6 +3,7 @@
 # carries on. Here each pair's second element must be its first's depth plus
 # one.
 #= {result: [0, 1, 2, 'bad'], inputs: {xs: [null, [null, 1], [[null, 1], 2], [[null, 1], 3]]}}
+def {xs} = import('inputs')
 defn depth(v) -> match v {
     null => 0,
     [inner, (depth(inner) + 1)] => depth(inner) + 1,

@@ -2,5 +2,6 @@
 # binary expression on the line before: `1 + xs` then `@ len()` is
 # `1 + len(xs)`.
 #= {result: 4, inputs: {xs: [1, 2, 3]}}
+def {xs} = import('inputs')
 1 + xs
     @ len()

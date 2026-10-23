@@ -4,4 +4,5 @@
 #=     result: [false, null, 2],
 #=     inputs: {maps: [{}, {k: null}, {k: 2}]},
 #= }
+def {maps} = import('inputs')
 map(maps, fn m -> has(m, 'k') and m.k)

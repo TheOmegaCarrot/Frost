@@ -1,6 +1,7 @@
 # An `if` used as a statement runs its taken branch, but its value is dropped:
 # the script's value is that of its last statement.
 #= {result: 5, printed: ['ran'], inputs: {c: true}}
+def {c} = import('inputs')
 if c: print('ran') else: 'unused'
 if c: 1 elif c: 2 else: 3
 if c: [1, 2]

@@ -1,5 +1,6 @@
 # Concatenation is same-type: a String built at runtime plus Bytes raises a
 # type error rather than picking a side.
 #= {raises: ['cannot add', 'String + Bytes'], inputs: {s: 'a'}}
+def {s} = import('inputs')
 def t = s + 'b'
 t + x'00'

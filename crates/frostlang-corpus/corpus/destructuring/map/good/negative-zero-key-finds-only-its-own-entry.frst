@@ -5,6 +5,7 @@
 #=     result: ['neg', 'zero', 'neg', 'zero', 'missing', 'missing'],
 #=     inputs: {m: {[-0.0]: 'neg', [0.0]: 'zero'}, only_negative: {[-0.0]: 'neg'}, z: 0.0},
 #= }
+def {m, only_negative, z} = import('inputs')
 def {[-0.0]: a, [0.0]: b} = {[0.0]: 'zero', [-0.0]: 'neg'}
 def {[-0.0]: c, [z]: d} = m
 [

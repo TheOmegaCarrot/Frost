@@ -4,6 +4,7 @@
 #=     result: ['ab', 3, 2, 3],
 #=     inputs: {t: true, f: false},
 #= }
+def {t, f} = import('inputs')
 [
     if t: 'ab' else: 'abc' @ len(),
     if f: 'ab' else: 'abc' @ len(),

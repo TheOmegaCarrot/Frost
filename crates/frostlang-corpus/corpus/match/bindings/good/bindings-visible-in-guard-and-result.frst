@@ -4,6 +4,7 @@
 #=     lints: [['unused binding', '`a`'], ['unused binding', '`b`']],
 #=     inputs: {v: [3, 1]},
 #= }
+def {v} = import('inputs')
 match v {
     [a, b] if: a > b => 'descending',
     [a, b] => 'ascending',

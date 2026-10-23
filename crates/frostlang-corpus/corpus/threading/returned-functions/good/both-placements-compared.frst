@@ -1,6 +1,7 @@
 # `a @ f(b)()` and `a @ (f(b))()` differ only in which call takes `a`: the
 # first is `f(a, b)()`, the second `f(b)(a)`.
 #= {result: [[1, 2], [2, 1]], inputs: {one: 1, two: 2}}
+def {one, two} = import('inputs')
 defn pairing(a, b) -> fn -> [a, b]
 defn pair_with(b) -> fn a -> [b, a]
 [one @ pairing(two)(), one @ (pair_with(two))()]

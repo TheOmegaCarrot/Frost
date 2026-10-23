@@ -1,5 +1,6 @@
 # A computed key after an alternative reads the name whichever branch bound.
 #= {result: [1, 2], inputs: {wrapped: {k: ['z'], z: 1}, bare: {k: 'y', y: 2}}}
+def {wrapped, bare} = import('inputs')
 defn lookup(m) -> {
     def {k: [a] | a, [a]: v} = m
     v

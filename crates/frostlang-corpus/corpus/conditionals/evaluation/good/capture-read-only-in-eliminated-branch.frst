@@ -1,6 +1,7 @@
 # A lambda that reads a runtime binding only in a branch a constant condition
 # discards still compiles and runs, yielding the taken branch.
 #= {result: 1, inputs: {x: 'secret'}}
+def {x} = import('inputs')
 def secret = x
 def f = fn -> if false: secret else: 1
 f()

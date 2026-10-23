@@ -1,5 +1,6 @@
 # `call` in tail position is a tail call, so recursing through it runs to a
 # large depth.
 #= {result: 'done', inputs: {n: 100000}}
+def {n} = import('inputs')
 defn down(k) -> if k == 0: 'done' else: call(down, [k - 1])
 down(n)

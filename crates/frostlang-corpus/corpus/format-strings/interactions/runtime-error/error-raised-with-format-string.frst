@@ -1,3 +1,4 @@
 # `error` raises a message built by a format String, interpolations and all.
 #= {raises: 'value 7 is out of range', inputs: {x: 7}}
+def {x} = import('inputs')
 error($'value ${x} is out of range')

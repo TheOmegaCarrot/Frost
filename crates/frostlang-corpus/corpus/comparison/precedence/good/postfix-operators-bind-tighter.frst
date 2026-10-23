@@ -4,6 +4,7 @@
 #=     result: [true, true, true, true],
 #=     inputs: {xs: [1, 2, 3], m: {a: 1, b: 2}},
 #= }
+def {xs, m} = import('inputs')
 [
     xs @ len() == 3,
     xs[0] < xs[1],

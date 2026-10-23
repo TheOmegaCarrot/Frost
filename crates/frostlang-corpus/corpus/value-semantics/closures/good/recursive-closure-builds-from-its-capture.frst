@@ -1,6 +1,7 @@
 # A recursive function that builds on a captured base starts from the
 # original base at every call, however deep.
 #= {result: [[0, 1, 2], [0, 1], [0]], inputs: {n: 0}}
+def {n} = import('inputs')
 def base = [n]
 defn grow(k) -> if k == 0: base else: grow(k - 1) + [k]
 [grow(2), grow(1), grow(0)]

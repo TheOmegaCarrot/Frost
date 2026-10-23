@@ -5,4 +5,5 @@
 #=     result: [5, 5, 0, -1, 2.5],
 #=     inputs: {pairs: [[5, 3], [3, 5], [0, -2], [-1, -1], [2.5, 2]]},
 #= }
+def {pairs} = import('inputs')
 map(pairs, fn pair -> pair[0] > pair[1] and pair[0] or pair[1])

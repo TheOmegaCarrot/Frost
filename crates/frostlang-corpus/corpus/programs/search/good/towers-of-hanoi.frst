@@ -11,6 +11,7 @@
 #=     },
 #=     inputs: {small: 3, large: 6},
 #= }
+def {small, large} = import('inputs')
 defn moves(n, from, to, via) ->
     if n == 0: []
     else: moves(n - 1, from, via, to) + [[from, to]] + moves(n - 1, via, to, from)

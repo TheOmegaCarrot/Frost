@@ -1,6 +1,7 @@
 # An index, field access, or call written after a threaded call applies to
 # its result: `xs @ f()[0]` is `f(xs)[0]`.
 #= {result: [20, 'b', 7], inputs: {xs: [1, 2], m: {k: 'b'}}}
+def {xs, m} = import('inputs')
 defn tens(ys) -> map(ys, fn y -> y * 10)
 defn same(v) -> v
 defn adder(n) -> fn x -> x + n

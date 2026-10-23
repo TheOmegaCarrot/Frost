@@ -1,0 +1,7 @@
+# Int overflow raises for a runtime value threaded through a runtime function.
+#= {
+#=     raises: ['Int overflow', '9223372036854775807 + 1'],
+#=     inputs: {max: 9223372036854775807, inc: fn x -> x + 1},
+#= }
+def {max, inc} = import('inputs')
+max @ inc()

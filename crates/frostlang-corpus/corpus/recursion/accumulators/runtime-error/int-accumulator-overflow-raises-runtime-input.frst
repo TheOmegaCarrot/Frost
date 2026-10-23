@@ -1,0 +1,6 @@
+# Fibonacci accumulators raise past the Int range at runtime: the 93rd
+# Fibonacci number exceeds it.
+#= {raises: 'Int overflow', inputs: {n: 93}}
+def {n} = import('inputs')
+defn fib(k, a, b) -> if k == 0: a else: fib(k - 1, b, a + b)
+fib(n, 0, 1)

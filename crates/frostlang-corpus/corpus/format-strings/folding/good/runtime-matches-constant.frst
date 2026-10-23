@@ -4,6 +4,7 @@
 #=     result: [true, true, true, true, true, true, true, true],
 #=     inputs: {values: [null, true, -7, 2.5, 'é', x'00ff', [1, ['a']], {[1]: {b: 2.5}}]},
 #= }
+def {values} = import('inputs')
 def constants = [null, true, -7, 2.5, 'é', x'00ff', [1, ['a']], {[1]: {b: 2.5}}]
 [
     $'<${null}>' == $'<${values[0]}>',

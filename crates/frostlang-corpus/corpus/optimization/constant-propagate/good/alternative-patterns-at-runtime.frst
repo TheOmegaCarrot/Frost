@@ -4,6 +4,7 @@
 #=     result: [2, 3, 5, [1, 3]],
 #=     inputs: {one_two: [1, 2], three_one: [3, 1], single: [5], nested: [1, [3, 2]]},
 #= }
+def {one_two, three_one, single, nested} = import('inputs')
 def [a, 1] | [1, a] = one_two
 def [b, 1] | [1, b] = three_one
 def {c} | [c] = single

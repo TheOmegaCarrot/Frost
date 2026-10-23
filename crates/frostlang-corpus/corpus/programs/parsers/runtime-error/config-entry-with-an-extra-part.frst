@@ -5,6 +5,7 @@
 #=     raises: 'exactly 2 elements',
 #=     inputs: {entries: [['host', 'local'], ['port', 80, 'tcp'], ['debug', true]]},
 #= }
+def {entries} = import('inputs')
 reduce(entries, {}, fn config, entry -> {
     def [key, value] = entry
     config + {[key]: value}

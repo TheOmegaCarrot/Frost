@@ -35,6 +35,7 @@
 #=         big: 1000,
 #=     },
 #= }
+def {count_up, factorial, sum_to, big} = import('inputs')
 def primitives = {
     ['+']: fn ...xs -> reduce(xs, 0, fn a, b -> a + b),
     ['*']: fn ...xs -> reduce(xs, 1, fn a, b -> a * b),

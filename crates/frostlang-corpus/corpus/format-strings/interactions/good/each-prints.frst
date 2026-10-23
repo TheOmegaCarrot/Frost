@@ -1,4 +1,5 @@
 # `each` calls a function that prints a format String for each element, in
 # order, and returns the structure unchanged.
 #= {result: [1, 2], printed: ['item 1', 'item 2'], inputs: {xs: [1, 2]}}
+def {xs} = import('inputs')
 each(xs, fn x -> print($'item ${x}'))

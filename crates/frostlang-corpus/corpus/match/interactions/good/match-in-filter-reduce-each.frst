@@ -5,6 +5,7 @@
 #=     lints: [['unused binding', '`ok`'], ['unused binding', '`err`']],
 #=     inputs: {rs: [{ok: 1}, {err: 'bad'}, {ok: 3}]},
 #= }
+def {rs} = import('inputs')
 def oks = rs @ filter(fn r -> match r { {ok} => true, _ => false })
 def sum = rs @ reduce(0, fn acc, r -> match r { {ok} => acc + ok, {err} => acc })
 rs @ each(fn r -> match r {

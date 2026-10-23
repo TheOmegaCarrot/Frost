@@ -4,6 +4,7 @@
 #=     result: [10.0, -0.75, 0.25, 0.0, 0.30000000000000004],
 #=     inputs: {a: 2.5, b: 4.0, c: 1.5, half: 0.5, zero: 0.0, d: 3.5, tenth: 0.1, three: 3.0},
 #= }
+def {a, b, c, half, zero, d, tenth, three} = import('inputs')
 [
     a * b,
     c * -half,

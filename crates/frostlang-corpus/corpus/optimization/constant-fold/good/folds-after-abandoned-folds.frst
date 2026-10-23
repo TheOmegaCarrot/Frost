@@ -4,6 +4,7 @@
 #=     result: [[false, 3], 0, [1, 2, 3], 'b', 0, {k: 6}],
 #=     inputs: {flag: false},
 #= }
+def {flag} = import('inputs')
 defn count_down(n) -> if n == 0: 0 else: count_down(n - 1)
 def caught = try_call(fn -> 1 / 0)
 def first = [caught.ok, 1 + 2]

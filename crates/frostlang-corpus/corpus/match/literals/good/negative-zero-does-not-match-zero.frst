@@ -4,6 +4,7 @@
 #=     result: ['zero', 'other', 'minus zero', 'other'],
 #=     inputs: {pos: 0.0, neg: -0.0},
 #= }
+def {pos, neg} = import('inputs')
 [
     match pos { 0.0 => 'zero', _ => 'other' },
     match pos { -0.0 => 'minus zero', _ => 'other' },

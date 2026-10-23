@@ -1,7 +1,0 @@
-# Once a Float is involved, arithmetic is Float arithmetic: the greatest Int
-# plus 1.0 is a Float past the Int range, not a wrapped Int.
-#= {result: [9223372036854775808.0, true], inputs: {greatest: 9223372036854775807}}
-[
-    greatest + 1.0,
-    greatest + 1.0 > 0,
-]

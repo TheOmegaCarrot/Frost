@@ -1,0 +1,18 @@
+# Int multiplication of operands only known at runtime succeeds when the
+# product lands exactly on a bound, as a folded product does.
+#= {
+#=     result: [9223372036854775806, -9223372036854775808, -9223372036854775807],
+#=     inputs: {
+#=         half_greatest: 4611686018427387903,
+#=         half_least: -4611686018427387904,
+#=         two: 2,
+#=         greatest: 9223372036854775807,
+#=         minus_one: -1,
+#=     },
+#= }
+def {half_greatest, half_least, two, greatest, minus_one} = import('inputs')
+[
+    half_greatest * two,
+    half_least * two,
+    greatest * minus_one,
+]

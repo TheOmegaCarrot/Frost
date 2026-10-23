@@ -1,4 +1,5 @@
 # `each` over an empty Array or Map yields it without calling the operation.
 #= {result: [[], {}, [], {}], inputs: {xs: [], m: {}}}
+def {xs, m} = import('inputs')
 def boom = fn ...args -> error('called')
 [each([], boom), each({}, boom), each(xs, boom), each(m, boom)]

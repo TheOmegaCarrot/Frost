@@ -1,6 +1,7 @@
 # A line starting with `.` after a threaded call continues with an access on
 # the call's result.
 #= {result: 7, inputs: {m: {k: 7}}}
+def {m} = import('inputs')
 defn same(v) -> v
 m @ same()
     .k

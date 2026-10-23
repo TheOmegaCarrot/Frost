@@ -2,6 +2,7 @@
 # previous statement even at the left margin. Subtle because it looks like a
 # statement of its own.
 #= {result: 2, inputs: {one: 1}}
+def {one} = import('inputs')
 defn inc(x) -> x + 1
 def x = one
 @ inc()

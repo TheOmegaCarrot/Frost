@@ -1,4 +1,5 @@
 # A format String's result is an ordinary String: equal to the plain String with
 # the same text, and not equal to the value it interpolated.
 #= {result: [true, false, true], inputs: {n: 3}}
+def {n} = import('inputs')
 [$'${n}' == '3', $'${n}' == 3, $'a${n}' == "a3"]

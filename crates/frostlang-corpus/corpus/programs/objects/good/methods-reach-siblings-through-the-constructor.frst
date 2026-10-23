@@ -11,6 +11,7 @@
 #=     },
 #=     inputs: {ax: 1, ay: 2, bx: 3, by: 4},
 #= }
+def {ax, ay, bx, by} = import('inputs')
 defn vector(x, y) -> {
     coords: fn -> [x, y],
     plus: fn other -> {

@@ -15,6 +15,7 @@
 #=         chars: ['é', '日', 'x'],
 #=     },
 #= }
+def {xs, deliveries, chars} = import('inputs')
 def prefixes = reduce(xs, [[]], fn acc, x -> acc + [acc[-1] + [x]])
 def stock = reduce(deliveries, [{}], fn acc, d -> {
     def last = acc[-1]

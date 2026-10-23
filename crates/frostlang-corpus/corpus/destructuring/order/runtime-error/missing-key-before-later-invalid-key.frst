@@ -3,5 +3,6 @@
 #=     raises: 'no value at key "missing"',
 #=     inputs: {m: {}},
 #= }
+def {m} = import('inputs')
 def {missing, [null]: x} = m
 [x, missing]

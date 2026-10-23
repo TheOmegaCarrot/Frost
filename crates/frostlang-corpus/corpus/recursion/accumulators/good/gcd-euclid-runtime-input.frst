@@ -1,4 +1,5 @@
 # Euclid's algorithm on arguments known only at runtime.
 #= {result: [21, 0], inputs: {a: 1071, b: 462, zero: 0}}
+def {a, b, zero} = import('inputs')
 defn gcd(x, y) -> if y == 0: x else: gcd(y, x % y)
 [gcd(a, b), gcd(zero, zero)]

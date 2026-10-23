@@ -1,3 +1,4 @@
 # An Int interpolates as its decimal digits, with a sign when negative.
 #= {result: ['0', '42', '-5', '1000000'], inputs: {zero: 0, n: 42, neg: -5, big: 1000000}}
+def {zero, n, neg, big} = import('inputs')
 [$'${zero}', $'${n}', $'${neg}', $'${big}']

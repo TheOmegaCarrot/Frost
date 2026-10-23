@@ -1,9 +1,0 @@
-# Int arithmetic in a predicate wraps rather than raising, so `x + 1 < x`
-# holds for the largest Int alone, whether the optimizer computes the
-# `filter` ahead of time or it runs on runtime values.
-#= {
-#=     result: [[9223372036854775807], [9223372036854775807]],
-#=     inputs: {xs: [9223372036854775807, 0, -9223372036854775808]},
-#= }
-def wraps = fn x -> x + 1 < x
-[filter([9223372036854775807, 0, -9223372036854775808], wraps), filter(xs, wraps)]

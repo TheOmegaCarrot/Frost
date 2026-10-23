@@ -1,5 +1,6 @@
-# A block binding shadows an input inside the block only.
+# A block binding shadows an imported runtime binding inside the block only.
 #= {result: ['inner', 'outer'], inputs: {s: 'outer'}}
+def {s} = import('inputs')
 def inner = do {
     def s = 'inner'
     s

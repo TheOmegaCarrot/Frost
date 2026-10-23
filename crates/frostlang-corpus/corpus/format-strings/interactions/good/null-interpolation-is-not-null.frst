@@ -1,4 +1,5 @@
 # Interpolating Null gives the String `null`, which is truthy and not Null.
 # Subtle: `or` does not fall back past it.
 #= {result: ['null', false, 'String'], inputs: {v: null}}
+def {v} = import('inputs')
 [$'${v}' or 'fallback', $'${v}' == null, type($'${v}')]

@@ -13,6 +13,7 @@
 #=         stubborn: ['push', 'push', 'push', 'coin'],
 #=     },
 #= }
+def {busy, idle, stubborn} = import('inputs')
 defn transition(s, event) -> match [s.state, event] {
     ['locked', 'coin'] => s + {state: 'unlocked'},
     ['locked', 'push'] => s + {blocked: s.blocked + 1},

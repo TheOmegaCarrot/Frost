@@ -1,6 +1,7 @@
 # A `not` may begin the right operand of a comparison: `1 == not 2` is
 # `1 == (not 2)`, comparing `1` with `false`.
 #= {result: [false, true, true], inputs: {yes: true}}
+def {yes} = import('inputs')
 [
     1 == not 2,
     false == not yes,

@@ -1,6 +1,7 @@
 # A pipeline wrapped in parentheses may span lines, with each step on its own
 # line; inside the parentheses even an `@` ending a line continues.
 #= {result: [120, 6], inputs: {xs: [10, 20, 30]}}
+def {xs} = import('inputs')
 def doubled_total = (
     xs
     @ map(fn x -> x * 2)

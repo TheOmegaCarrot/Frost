@@ -1,5 +1,6 @@
 # Empty collections thread like any value: the functions see them empty.
 #= {result: [0, 0, 0, [], [], null, 0, {}], inputs: {none: [], nothing: {}, blank: ''}}
+def {none, nothing, blank} = import('inputs')
 [
     none @ len(),
     nothing @ len(),

@@ -1,3 +1,4 @@
 # The function check happens at run time on a value the compiler cannot see.
 #= {raises: ['call', 'Function as argument 1', 'got Float'], inputs: {f: 1.5}}
+def {f} = import('inputs')
 call(f, [1])

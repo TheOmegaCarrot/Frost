@@ -1,4 +1,5 @@
 # A placeholder is a callee only inside an abbreviated lambda; outside one,
 # `x @ $1()` is rejected.
 #= {rejects: 'placeholders work only inside', inputs: {n: 1}}
+def {n} = import('inputs')
 n @ $1()

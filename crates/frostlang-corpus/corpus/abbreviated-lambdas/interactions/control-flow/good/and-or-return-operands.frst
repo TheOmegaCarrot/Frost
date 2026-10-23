@@ -1,6 +1,7 @@
 # `and` and `or` on placeholders short-circuit and return an operand, not a
 # Bool.
 #= {result: [2, 'default', 0, null], inputs: {nothing: null}}
+def {nothing} = import('inputs')
 def both = $($1 and $2)
 def either = $($1 or $2)
 [both(1, 2), either(nothing, 'default'), either(0, 'default'), both(nothing, 2)]

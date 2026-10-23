@@ -5,6 +5,7 @@
 #=     result: [true, false, false, true, false],
 #=     inputs: {a: [null, [null], {k: null}], b: [null, [null], {k: null}], nothing: null},
 #= }
+def {a, b, nothing} = import('inputs')
 [
     a == b,
     a == [null, [null], {k: false}],

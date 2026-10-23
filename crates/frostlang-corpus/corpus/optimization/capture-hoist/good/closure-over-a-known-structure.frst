@@ -5,6 +5,7 @@
 #=     result: [[1, 2, 3], [1, 2, 4], [1, 2], {a: 1, b: 3}, {a: 1, b: 4}, {a: 1}],
 #=     inputs: {three: 3, four: 4},
 #= }
+def {three, four} = import('inputs')
 def base = [1, 2]
 def grow = fn x -> base + [x]
 def m = {a: 1}

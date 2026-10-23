@@ -1,6 +1,7 @@
 # Discard parameters let a Map operation ignore the key or the value while
 # still accepting both.
 #= {result: [{b: 2}, 3, ['a', 'b']], inputs: {m: {a: 1, b: 2}}}
+def {m} = import('inputs')
 [
     filter(m, fn _, v -> v > 1),
     reduce(m, 0, fn acc, _, v -> acc + v),

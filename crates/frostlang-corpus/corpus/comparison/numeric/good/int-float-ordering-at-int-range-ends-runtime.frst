@@ -10,6 +10,7 @@
 #=         below_two_pow_63: 9223372036854774784.0,
 #=     },
 #= }
+def {max, min, two_pow_63, below_two_pow_63} = import('inputs')
 [
     max < two_pow_63,
     max > below_two_pow_63,

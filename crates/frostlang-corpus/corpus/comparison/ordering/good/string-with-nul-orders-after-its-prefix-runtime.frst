@@ -6,6 +6,7 @@
 #=     result: [true, true, true, false],
 #=     inputs: {a: 'a', a_nul: 'a\u{0}', a_one: 'a\u{1}', a_nul_b: 'a\u{0}b'},
 #= }
+def {a, a_nul, a_one, a_nul_b} = import('inputs')
 [
     a < a_nul,
     a_nul < a_one,

@@ -1,3 +1,4 @@
 # Frost has no `for` loop.
 #= {rejects: 'no `for` loop', inputs: {xs: [1]}}
+def {xs} = import('inputs')
 for x in xs: print(x)

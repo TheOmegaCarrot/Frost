@@ -1,4 +1,5 @@
 # A `#` in a format String's text is text, not the start of a comment, even
 # between interpolations.
 #= {result: 'a # b 1 # 2', inputs: {x: 1}}
+def {x} = import('inputs')
 $'a # b ${x} # ${x + 1}'

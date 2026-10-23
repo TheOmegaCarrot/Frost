@@ -1,6 +1,7 @@
 # The Frost-written `dig` yields Null for a missing path, which a `null`
 # pattern then catches.
 #= {result: ['found 3', 'missing'], inputs: {data: {a: {b: 3}}}}
+def {data} = import('inputs')
 defn lookup(key) -> match dig(data, 'a', key) {
     null => 'missing',
     v => $'found ${v}',

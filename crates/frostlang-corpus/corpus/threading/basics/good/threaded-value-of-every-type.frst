@@ -3,6 +3,7 @@
 #=     result: ['Null', 'Int', 'Float', 'Bool', 'String', 'Bytes', 'Array', 'Map', 'Function'],
 #=     inputs: {f: fn x -> x},
 #= }
+def {f} = import('inputs')
 [
     null @ type(),
     1 @ type(),

@@ -1,5 +1,6 @@
 # A known Map value destructured with a key known only at runtime: the whole
 # pattern cannot be matched ahead of time, yet every part binds correctly.
 #= {result: [1, 42], inputs: {rt: 'k'}}
+def {rt} = import('inputs')
 def {[rt]: x, a} = {k: 1, a: 2}
 [x, a + 40]

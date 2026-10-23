@@ -9,6 +9,7 @@
 #=         records: [{item: {price: 3}}, {item: {price: 4}}, {item: null}, {}],
 #=     },
 #= }
+def {runs, records} = import('inputs')
 defn sum(xs) -> reduce(xs, 0, fn total, x -> total + x)
 
 def stages = [

@@ -1,5 +1,6 @@
 # A `Null` type constraint accepts Null, and the name is bound to it.
 #= {result: [null, null], inputs: {n: null}}
+def {n} = import('inputs')
 def x is Null = null
 def y is Null = n
 [x, y]

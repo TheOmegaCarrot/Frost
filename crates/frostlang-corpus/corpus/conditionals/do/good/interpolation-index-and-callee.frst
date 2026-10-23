@@ -1,6 +1,7 @@
 # A block may be a format String's interpolation, an index, and, in
 # parentheses, a callee.
 #= {result: ['<2>', 'b', 6], inputs: {xs: ['a', 'b']}}
+def {xs} = import('inputs')
 [
     $'<${do { def n = 1; n + 1 }}>',
     xs[do { def i = 1; i }],

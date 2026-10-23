@@ -1,6 +1,7 @@
 # A key that is not a valid identifier, such as one with a dash, is matched
 # with a computed String key.
 #= {result: 'dashed', inputs: {v: {['my-key']: 'dashed'}}}
+def {v} = import('inputs')
 match v {
     {['my-key']: x} => x,
 }

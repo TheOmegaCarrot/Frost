@@ -1,5 +1,6 @@
 # An untaken branch's side effects never happen: only the taken branch prints.
 #= {result: null, printed: ['taken', 'also taken'], inputs: {c: false}}
+def {c} = import('inputs')
 if c: print('skipped') else: print('taken')
 if true: print('also taken') else: print('skipped too')
 if c: print('never')

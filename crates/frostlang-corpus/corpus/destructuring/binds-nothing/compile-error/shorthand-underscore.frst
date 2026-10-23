@@ -1,4 +1,5 @@
 # A shorthand `{_}` takes the key "_" but binds no name.
 #= {rejects: 'binds no name', inputs: {m: {['_']: 1}}}
+def {m} = import('inputs')
 def {_} = m
 0

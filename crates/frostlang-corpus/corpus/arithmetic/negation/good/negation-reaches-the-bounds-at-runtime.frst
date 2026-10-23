@@ -1,0 +1,11 @@
+# Negating an Int only known at runtime succeeds when the negation is a bound,
+# as a folded negation does.
+#= {
+#=     result: [-9223372036854775807, 9223372036854775807],
+#=     inputs: {greatest: 9223372036854775807, above_least: -9223372036854775807},
+#= }
+def {greatest, above_least} = import('inputs')
+[
+    -greatest,
+    -above_least,
+]

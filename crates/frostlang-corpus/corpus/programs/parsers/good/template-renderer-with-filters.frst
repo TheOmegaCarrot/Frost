@@ -24,6 +24,7 @@
 #=         ],
 #=     },
 #= }
+def {values, templates} = import('inputs')
 def filters = {upper: to_upper, lower: to_lower}
 
 defn fill(slot) -> {

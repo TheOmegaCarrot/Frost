@@ -1,3 +1,4 @@
 # A Null index into an Array raises rather than yielding Null.
 #= {raises: ['Cannot index Array', 'Null'], inputs: {xs: [10], i: null}}
+def {xs, i} = import('inputs')
 xs[i]

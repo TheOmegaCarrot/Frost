@@ -3,5 +3,6 @@
 #=     result: [{full: 'ada lovelace', tags: ['x']}, {first: 'ada', last: 'lovelace', tags: ['x']}],
 #=     inputs: {p: {first: 'ada', last: 'lovelace', tags: ['x']}},
 #= }
+def {p} = import('inputs')
 def {first, last, tags} = p
 [{full: first + ' ' + last, tags}, p]

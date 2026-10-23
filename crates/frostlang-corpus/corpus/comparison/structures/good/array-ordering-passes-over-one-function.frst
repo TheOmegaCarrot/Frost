@@ -3,6 +3,7 @@
 # Subtle because a Function is not orderable, and only its identity makes the
 # pair equal.
 #= {result: [true, false, true], inputs: {one: 1, two: 2}}
+def {one, two} = import('inputs')
 def handler = fn x -> x
 [
     [handler, one] < [handler, two],

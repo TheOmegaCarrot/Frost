@@ -4,6 +4,7 @@
 #=     result: ['bool', 'int', 'float', 'string', 'bytes', 5],
 #=     inputs: {b: true, i: 1, f: 1.5, s: 's', y: x'00'},
 #= }
+def {b, i, f, s, y} = import('inputs')
 def m = {
     [b]: 'bool',
     [i]: 'int',

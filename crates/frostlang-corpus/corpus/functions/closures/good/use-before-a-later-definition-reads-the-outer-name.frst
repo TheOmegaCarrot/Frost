@@ -1,6 +1,7 @@
 # In a body, a name read before a definition of it reads the outer binding;
 # the definition shadows only the uses after it.
 #= {result: [12, 4], inputs: {outer: 10}}
+def {outer} = import('inputs')
 def x = outer
 def f = fn -> {
     def before = x + 2

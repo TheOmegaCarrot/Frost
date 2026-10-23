@@ -1,5 +1,6 @@
 # A `fn` inside an abbreviated lambda binds its own named parameters and
 # reads the enclosing placeholders beside them.
 #= {result: 3, lints: ['lambda in abbreviated lambda'], inputs: {one: 1, two: 2}}
+def {one, two} = import('inputs')
 def f = $(fn v -> v + $1)
 f(one)(two)

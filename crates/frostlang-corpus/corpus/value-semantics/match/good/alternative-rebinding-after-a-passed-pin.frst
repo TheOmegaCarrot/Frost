@@ -3,6 +3,7 @@
 # binds `x` afresh, and the arm sees that value unchanged, though the first
 # alternative's comparison read it.
 #= {result: [[1], [1, 0]], inputs: {n: 1}}
+def {n} = import('inputs')
 match [[n], [n], 5] {
     [x, (x), 2] | [x, _, _] => [x, x + [0]],
 }

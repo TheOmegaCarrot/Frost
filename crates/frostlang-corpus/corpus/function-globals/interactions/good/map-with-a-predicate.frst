@@ -1,4 +1,5 @@
 # A predicate maps each element to its answer, both called directly and
 # threaded.
 #= {result: [[false, true, false], [false, true, false]], inputs: {xs: [1, 'a', null]}}
+def {xs} = import('inputs')
 [map(xs, is_string), xs @ map(is_string)]

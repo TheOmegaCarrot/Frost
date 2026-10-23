@@ -1,4 +1,5 @@
 # A line starting with `==` does not continue the line before.
 #= {rejects: 'a line continues only when', inputs: {x: 1}}
+def {x} = import('inputs')
 def ok = x
     == 1

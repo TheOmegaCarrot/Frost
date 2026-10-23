@@ -2,6 +2,7 @@
 # may read a name bound earlier in the same pattern, both over a literal the
 # optimizer may match ahead of time and at runtime.
 #= {result: [1, 2], inputs: {xs: [2, 'v2']}}
+def {xs} = import('inputs')
 def [a, $'v${a}'] = [1, 'v1']
 def [b, $'v${b}'] = xs
 [a, b]

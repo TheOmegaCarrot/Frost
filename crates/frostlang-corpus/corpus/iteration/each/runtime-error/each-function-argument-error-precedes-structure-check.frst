@@ -2,4 +2,5 @@
 # while evaluating the function argument surfaces, not the type error the
 # wrong structure would cause.
 #= {raises: 'from the function argument', inputs: {nothing: null}}
+def {nothing} = import('inputs')
 each(nothing, error('from the function argument'))

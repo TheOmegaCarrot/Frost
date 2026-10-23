@@ -1,5 +1,6 @@
 # Literal branches accept any of several values for a part.
 #= {result: [7, 'b'], inputs: {xs: [7, 3], m: {k: 2, v: 'b'}}}
+def {xs, m} = import('inputs')
 def [a, 1 | 2 | 3] = xs
 def {k: 1 | 2, v} = m
 [a, v]

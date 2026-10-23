@@ -1,6 +1,7 @@
 # `filter` keeps the Array elements, or the Map entries, its predicate accepts,
 # in order; over a Map it passes each key and value.
 #= {result: [[2, 4], {b: 2}, [], {}], inputs: {xs: [1, 2, 3, 4], m: {a: 1, b: 2}}}
+def {xs, m} = import('inputs')
 [
     filter(xs, fn x -> x % 2 == 0),
     filter(m, fn k, v -> v > 1),

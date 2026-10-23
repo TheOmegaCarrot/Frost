@@ -1,5 +1,6 @@
 # Unary `-` negates a Float only known at runtime.
 #= {result: [-3.14, 3.14, 2.5], inputs: {pi: 3.14, minus_pi: -3.14, x: -2.5}}
+def {pi, minus_pi, x} = import('inputs')
 [
     -pi,
     -minus_pi,

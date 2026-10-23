@@ -1,4 +1,5 @@
 # A Function is not a valid Map key.
 #= {raises: 'not a valid Map key', inputs: {m: {a: 1}}}
+def {m} = import('inputs')
 def {[fn -> 1]: x} = m
 x

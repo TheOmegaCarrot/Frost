@@ -3,6 +3,7 @@
 # under `==`, so they are different constants. Subtle: the captured value may
 # be built into the function as a constant alongside the literal.
 #= {result: ['-0.0', '0.0', '0.0', '-0.0', false], inputs: {tag: 'runtime'}}
+def {tag} = import('inputs')
 def neg = [-0.0]
 def pos = {z: 0.0}
 def build = fn t -> [t, neg, [0.0], pos, {z: -0.0}]

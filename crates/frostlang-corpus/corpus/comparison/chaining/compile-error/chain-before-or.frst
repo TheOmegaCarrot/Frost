@@ -1,3 +1,4 @@
 # A chain as the left operand of `or` is rejected.
 #= {rejects: 'cannot chain', inputs: {x: 5}}
+def {x} = import('inputs')
 0 <= x <= 10 or x == 20

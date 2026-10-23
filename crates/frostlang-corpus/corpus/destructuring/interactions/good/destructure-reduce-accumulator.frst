@@ -1,5 +1,6 @@
 # A `reduce` step destructures its accumulator to carry several values at once.
 #= {result: [10, 4], inputs: {xs: [1, 2, 3, 4]}}
+def {xs} = import('inputs')
 reduce(xs, [0, 0], fn acc, x -> {
     def [sum, count] = acc
     [sum + x, count + 1]

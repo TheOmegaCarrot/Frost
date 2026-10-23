@@ -1,3 +1,4 @@
 # Frost's `match` arms take no `case`.
 #= {rejects: 'no `case`', inputs: {x: 1}}
+def {x} = import('inputs')
 match x { case 1: 2 }

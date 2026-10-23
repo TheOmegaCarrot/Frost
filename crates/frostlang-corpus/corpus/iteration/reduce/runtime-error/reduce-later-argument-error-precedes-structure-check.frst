@@ -2,4 +2,5 @@
 # evaluating the function argument surfaces, not the type error the wrong
 # structure would cause.
 #= {raises: 'from the function argument', inputs: {n: 5}}
+def {n} = import('inputs')
 reduce(n, 0, error('from the function argument'))

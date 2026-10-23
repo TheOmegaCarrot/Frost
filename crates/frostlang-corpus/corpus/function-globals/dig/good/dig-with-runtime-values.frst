@@ -3,4 +3,5 @@
 #=     result: ['ada', null],
 #=     inputs: {data: {users: [{name: 'ada'}]}, i: 0, missing: 3},
 #= }
+def {data, i, missing} = import('inputs')
 [dig(data, 'users', i, 'name'), dig(data, 'users', missing, 'name')]

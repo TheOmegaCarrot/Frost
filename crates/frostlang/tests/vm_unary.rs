@@ -159,10 +159,10 @@ fn negate_zero_int() {
 }
 
 #[test]
-fn negate_int_min_wraps_to_itself() {
-    // -i64::MIN overflows; the wrapping policy yields i64::MIN unchanged (matches
-    // the wrapping_* integer ops).
-    assert_eq!(val(vec![PushInt(i64::MIN), Negate]), Value::Int(i64::MIN));
+fn negate_int_min_raises() {
+    // -i64::MIN is outside the Int range.
+    let err = eval(vec![], vec![PushInt(i64::MIN), Negate]).unwrap_err();
+    assert_eq!(err.message(), "Int overflow: -(-9223372036854775808)");
 }
 
 #[test]

@@ -4,6 +4,7 @@
 #=     result: [['z', 1], ['q', 2], 'none'],
 #=     inputs: {xs: [{k: 'z', z: 1}, ['q', 2], {k: 'z'}]},
 #= }
+def {xs} = import('inputs')
 map(xs, fn v -> match v {
     {k, [k]: x} | [k, x] => [k, x],
     _ => 'none',

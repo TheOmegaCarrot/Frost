@@ -1,4 +1,5 @@
 # A `}` right after an interpolation's closing `}` is literal text.
 # Subtle: the first `}` closes the interpolation, the second is text.
 #= {result: '7}', inputs: {x: 7}}
+def {x} = import('inputs')
 $'${x}}'

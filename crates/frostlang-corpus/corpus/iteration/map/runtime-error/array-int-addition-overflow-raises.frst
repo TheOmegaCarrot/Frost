@@ -1,0 +1,4 @@
+# Int addition in a `map` operation raises on overflow rather than wrapping,
+# here over a literal the optimizer may compute ahead of time.
+#= {raises: 'Int overflow: 9223372036854775807 + 1'}
+map([1, 9223372036854775807], fn x -> x + 1)

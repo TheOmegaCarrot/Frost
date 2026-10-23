@@ -3,6 +3,7 @@
 #=     result: [true, true, true, true],
 #=     inputs: {max: 9223372036854775807, min: -9223372036854775808},
 #= }
+def {max, min} = import('inputs')
 [
     0x7fff_ffff_ffff_ffff == max,
     9223372036854775807 == max,

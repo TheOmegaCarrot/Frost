@@ -1,6 +1,7 @@
 # A Map pattern's computed key may itself be a match, evaluated when the
 # pattern reaches that entry.
 #= {result: [1, 2], inputs: {xs: ['short', 'long'], v: {s: 1, l: 2}}}
+def {xs, v} = import('inputs')
 map(xs, fn kind -> match v {
     {[match kind { 'short' => 's', _ => 'l' }]: found} => found,
 })

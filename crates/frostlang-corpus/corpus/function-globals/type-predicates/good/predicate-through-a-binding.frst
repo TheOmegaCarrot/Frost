@@ -1,4 +1,5 @@
 # A predicate bound to another name tests as it does under its own.
 #= {result: [true, false], inputs: {v: 'text'}}
+def {v} = import('inputs')
 def check = is_string
 [check(v), check(1)]

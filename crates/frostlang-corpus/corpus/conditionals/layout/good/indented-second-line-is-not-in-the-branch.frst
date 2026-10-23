@@ -3,6 +3,7 @@
 # Subtle: this reads like a two-statement branch in an indentation-based
 # language.
 #= {result: null, printed: ['second'], inputs: {c: false}}
+def {c} = import('inputs')
 if c:
     print('first')
     print('second')

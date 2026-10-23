@@ -1,4 +1,5 @@
 # A failing operation inside a format string interpolation raises; the
 # string is never built.
 #= {raises: 'modulus by zero', inputs: {n: 7, zero: 0}}
+def {n, zero} = import('inputs')
 $'remainder: ${n % zero}'

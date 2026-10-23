@@ -5,6 +5,7 @@
 #=     printed: ['3', '6'],
 #=     inputs: {xs: [1, 2, 3, 4]},
 #= }
+def {xs} = import('inputs')
 def outcome = try_call(fn -> reduce(xs, fn acc, x -> {
     def total = acc + x
     print(to_string(total))

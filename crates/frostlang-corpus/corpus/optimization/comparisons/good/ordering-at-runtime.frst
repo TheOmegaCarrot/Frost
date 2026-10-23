@@ -13,6 +13,7 @@
 #=         least: -9223372036854775808,
 #=     },
 #= }
+def {one, two, three, half, a, low, greatest, least} = import('inputs')
 [
     one < 2,
     two <= 2,

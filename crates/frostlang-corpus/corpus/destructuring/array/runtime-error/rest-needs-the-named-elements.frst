@@ -1,4 +1,5 @@
 # A pattern with a rest still requires every element named before it.
 #= {raises: 'at least 2 elements', inputs: {xs: [1]}}
+def {xs} = import('inputs')
 def [a, b, ...rest] = xs
 [a, b, rest]

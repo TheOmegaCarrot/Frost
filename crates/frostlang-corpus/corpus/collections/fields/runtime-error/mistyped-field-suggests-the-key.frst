@@ -3,4 +3,5 @@
 #=     raises: 'did you mean "name"?',
 #=     inputs: {m: {name: 'ada', age: 36}},
 #= }
+def {m} = import('inputs')
 m.nmae

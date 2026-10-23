@@ -1,4 +1,5 @@
 # A Map merged with itself is equal to itself, and is unchanged.
 #= {result: [{a: 1, b: 2}, {a: 1, b: 2}], inputs: {v: 1}}
+def {v} = import('inputs')
 def m = {a: v, b: 2}
 [m + m, m]

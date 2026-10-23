@@ -5,6 +5,7 @@
 #=     printed: ['right of null', 'right of 1'],
 #=     inputs: {n: null, one: 1},
 #= }
+def {n, one} = import('inputs')
 def z = 'outer'
 def a = do {
     def y = n

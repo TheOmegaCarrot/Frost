@@ -1,6 +1,7 @@
 # A Map pattern checks that the target is a Map before evaluating any computed
 # key.
 #= {result: 'not a Map', printed: [], inputs: {v: [1]}}
+def {v} = import('inputs')
 defn key(k) -> {
     print(k)
     k

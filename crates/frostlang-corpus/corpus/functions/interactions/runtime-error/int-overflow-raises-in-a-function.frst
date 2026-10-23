@@ -1,0 +1,9 @@
+# Int arithmetic in a function body raises on overflow past the greatest Int,
+# with an argument known only at runtime.
+#= {
+#=     raises: 'Int overflow: 9223372036854775807 + 1',
+#=     inputs: {max: 9223372036854775807},
+#= }
+def {max} = import('inputs')
+def inc = fn x -> x + 1
+inc(max)

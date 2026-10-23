@@ -1,3 +1,0 @@
-# Negating the least Int known only at runtime wraps back to it.
-#= {result: true, inputs: {min: -9223372036854775808}}
--min == -9223372036854775808

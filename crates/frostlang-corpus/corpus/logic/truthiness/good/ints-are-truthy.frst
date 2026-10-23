@@ -7,6 +7,7 @@
 #=     ],
 #=     inputs: {zero: 0, one: 1, negative: -1, max: 9223372036854775807, min: -9223372036854775808},
 #= }
+def {zero, one, negative, max, min} = import('inputs')
 [
     [
         not not 0,

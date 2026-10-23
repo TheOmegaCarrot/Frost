@@ -17,6 +17,7 @@
 #=         glider_cells: [[1, 0], [2, 1], [0, 2], [1, 2], [2, 2]],
 #=     },
 #= }
+def {blinker_cells, block_cells, glider_cells} = import('inputs')
 def offsets = [[-1, -1], [0, -1], [1, -1], [-1, 0], [1, 0], [-1, 1], [0, 1], [1, 1]]
 
 defn key(x, y) -> $'${x},${y}'

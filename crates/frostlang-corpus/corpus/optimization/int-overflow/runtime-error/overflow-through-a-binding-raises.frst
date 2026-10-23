@@ -1,0 +1,6 @@
+# Int arithmetic on a known binding that passes the end of the range raises,
+# exactly as at runtime.
+#= {raises: 'Int overflow'}
+def greatest = 9223372036854775807
+def next = greatest + 1
+next

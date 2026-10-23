@@ -1,4 +1,5 @@
 # The `is_*` functions see a destructured part's real type.
 #= {result: [true, true, true, true], inputs: {xs: [1, 'a', null, [2]]}}
+def {xs} = import('inputs')
 def [i, s, n, a] = xs
 [is_int(i), is_string(s), is_null(n), is_array(a)]

@@ -1,0 +1,9 @@
+# A counter stepped one at a time past the top of the Int range, from a start
+# known only at runtime, raises rather than wrapping.
+#= {
+#=     raises: 'Int overflow: 9223372036854775807 + 1',
+#=     inputs: {near_max: 9223372036854775805},
+#= }
+def {near_max} = import('inputs')
+defn step(n, by, times) -> if times == 0: n else: step(n + by, by, times - 1)
+step(near_max, 1, 4)

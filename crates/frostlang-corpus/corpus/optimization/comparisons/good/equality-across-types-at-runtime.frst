@@ -13,6 +13,7 @@
 #=         single: [1],
 #=     },
 #= }
+def {three, one, nothing, a, nested, m, zero, single} = import('inputs')
 [
     three == 3.0,
     one == '1',

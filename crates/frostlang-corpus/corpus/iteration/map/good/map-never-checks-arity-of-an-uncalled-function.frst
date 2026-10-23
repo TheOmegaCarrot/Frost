@@ -5,6 +5,7 @@
 #=     result: [[], {}, [], {}],
 #=     inputs: {xs: [], m: {}},
 #= }
+def {xs, m} = import('inputs')
 [
     map([], fn a, b, c -> a),
     map({}, fn x -> {}),

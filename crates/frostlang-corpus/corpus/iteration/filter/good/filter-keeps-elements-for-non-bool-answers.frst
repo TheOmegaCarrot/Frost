@@ -18,4 +18,5 @@
 #=         order: ['zero', 'nothing', 'float', 'text', 'no', 'bytes', 'array', 'table'],
 #=     },
 #= }
+def {answers, order} = import('inputs')
 filter(order, fn name -> answers[name])

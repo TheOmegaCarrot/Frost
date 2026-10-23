@@ -4,4 +4,5 @@
 #=     result: [false, true, true, true, false],
 #=     inputs: {low: 0, high: 10},
 #= }
+def {low, high} = import('inputs')
 map([-1, 0, 5, 10, 11], fn x -> low <= x and x <= high)

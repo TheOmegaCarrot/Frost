@@ -5,6 +5,7 @@
 #=     printed: ['structure', 'function', '1', '2'],
 #=     inputs: {xs: [1, 2]},
 #= }
+def {xs} = import('inputs')
 each(
     do {
         print('structure')

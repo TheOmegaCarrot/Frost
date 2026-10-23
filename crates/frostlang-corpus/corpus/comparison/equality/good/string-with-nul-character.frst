@@ -1,6 +1,7 @@
 # A NUL character is ordinary text, not a terminator: a String with a trailing
 # NUL is unequal to, and orders after, the same String without it.
 #= {result: [false, true, true], inputs: {plain: 'a', with_nul: 'a\0'}}
+def {plain, with_nul} = import('inputs')
 [
     plain == with_nul,
     plain < with_nul,

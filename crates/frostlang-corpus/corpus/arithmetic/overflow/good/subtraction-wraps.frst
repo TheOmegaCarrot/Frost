@@ -1,9 +1,0 @@
-# Int subtraction past either end of the Int range wraps in two's complement
-# instead of raising: one below the least Int is the greatest Int.
-#= {result: [9223372036854775807, -9223372036854775808, 1, -1]}
-[
-    -9223372036854775808 - 1,
-    9223372036854775807 - -1,
-    -9223372036854775808 - 9223372036854775807,
-    9223372036854775807 - -9223372036854775808,
-]

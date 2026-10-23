@@ -10,6 +10,7 @@
 #=     ],
 #=     inputs: {m: {[0.0]: 'from 0.0', [1]: 'from 1'}, n: {[-0.0]: 'from -0.0', [1]: 'from 1'}},
 #= }
+def {m, n} = import('inputs')
 defn to_negative(k, v) -> {[if is_int(k): -0.0 else: k]: v}
 defn to_positive(k, v) -> {[if is_int(k): 0.0 else: k]: v}
 [

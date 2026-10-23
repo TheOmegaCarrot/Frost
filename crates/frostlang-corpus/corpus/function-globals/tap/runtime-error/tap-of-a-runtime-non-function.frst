@@ -1,3 +1,4 @@
 # The Function check happens at run time on a value the compiler cannot see.
 #= {raises: ['tap', 'Function as argument 2', 'got Null'], inputs: {f: null}}
+def {f} = import('inputs')
 tap(1, f)

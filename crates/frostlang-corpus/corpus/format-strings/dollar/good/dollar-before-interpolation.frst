@@ -1,4 +1,5 @@
 # In `$${x}`, the first `$` is literal and the second opens the interpolation;
 # likewise a `$` right after an interpolation is literal.
 #= {result: ['$7', '7$', '$$7$$'], inputs: {x: 7}}
+def {x} = import('inputs')
 [$'$${x}', $'${x}$', $'$$${x}$$']

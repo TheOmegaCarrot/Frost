@@ -3,6 +3,7 @@
 #=     result: ['bool', 'int', 'float', 'string', 'bytes'],
 #=     inputs: {runtime: {[true]: 'bool', [1]: 'int', [1.5]: 'float', s: 'string', [x'00']: 'bytes'}},
 #= }
+def {runtime} = import('inputs')
 def constant = {[true]: 'bool', [1]: 'int', [1.5]: 'float', s: 'string', [x'00']: 'bytes'}
 def read = fn m -> [m[true], m[1], m[1.5], m['s'], m[x'00']]
 def from_constant = fn -> read(constant)

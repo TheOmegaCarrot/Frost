@@ -1,5 +1,6 @@
 # A guard may follow a discard, testing something other than the target.
 #= {result: ['on', 'off'], inputs: {flags: [true, false]}}
+def {flags} = import('inputs')
 map(flags, fn flag -> match 'anything' {
     _ if: flag => 'on',
     _ => 'off',

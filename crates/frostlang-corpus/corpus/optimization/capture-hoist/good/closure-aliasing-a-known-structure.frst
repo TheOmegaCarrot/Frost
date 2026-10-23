@@ -2,6 +2,7 @@
 # that local returns a fresh result on every call, and the capture stays
 # unchanged.
 #= {result: [[1, 2, 3], [1, 2, 4], [1, 2]], inputs: {three: 3, four: 4}}
+def {three, four} = import('inputs')
 def base = [1, 2]
 def grow = fn x -> {
     def b = base

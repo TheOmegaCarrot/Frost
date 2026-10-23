@@ -1,6 +1,7 @@
 # Array and Map destructuring patterns may end with a trailing comma, where
 # another element or entry could follow.
 #= {result: [1, 2, 3, 4], inputs: {xs: [1, 2], m: {c: 3, d: 4}}}
+def {xs, m} = import('inputs')
 def [a, b,] = xs
 def {c, d: e,} = m
 [a, b, c, e]

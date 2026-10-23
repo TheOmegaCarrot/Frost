@@ -2,4 +2,5 @@
 # Subtle: the text `${` is followed by the interpolation `${x}`, and the last
 # `}` is text again.
 #= {result: '${7}', inputs: {x: 7}}
+def {x} = import('inputs')
 $'\${${x}}'

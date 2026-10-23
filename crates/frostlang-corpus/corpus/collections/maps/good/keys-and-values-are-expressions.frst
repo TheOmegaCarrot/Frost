@@ -1,5 +1,6 @@
 # Computed keys and values are arbitrary expressions over runtime values.
 #= {result: {[3]: 'three', [7]: 14, ab: true}, inputs: {x: 7, s: 'a'}}
+def {x, s} = import('inputs')
 {
     [1 + 2]: 'three',
     [x]: x * 2,

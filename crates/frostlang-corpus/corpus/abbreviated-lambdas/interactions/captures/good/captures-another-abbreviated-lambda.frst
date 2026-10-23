@@ -1,6 +1,7 @@
 # An abbreviated lambda may call another bound beside it; the outer one
 # captures the inner as an ordinary value, which is not nesting.
 #= {result: [7, 3], inputs: {five: 5}}
+def {five} = import('inputs')
 def inc = $($ + 1)
 def twice = $(inc(inc($)))
 [twice(five), twice(1)]

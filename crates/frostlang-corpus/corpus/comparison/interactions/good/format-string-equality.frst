@@ -1,6 +1,7 @@
 # A format string yields a String, which compares with `==` like any other:
 # the interpolated Int `1` and the Float `1.0` render differently.
 #= {result: [true, false, true], inputs: {i: 1, f: 1.0}}
+def {i, f} = import('inputs')
 [
     $'n=${i}' == 'n=1',
     $'${i}' == $'${f}',

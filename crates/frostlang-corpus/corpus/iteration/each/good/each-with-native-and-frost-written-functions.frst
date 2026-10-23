@@ -6,6 +6,7 @@
 #=     printed: ['a', 'b', 'v=k', 'a', 'b'],
 #=     inputs: {xs: ['a', 'b'], m: {k: 'v'}},
 #= }
+def {xs, m} = import('inputs')
 [
     each(xs, print),
     each(m, rev_args(fn v, k -> print($'${v}=${k}'))),

@@ -29,6 +29,7 @@
 #=         ],
 #=     },
 #= }
+def {programs} = import('inputs')
 defn expect(wanted, found, where) -> if wanted == found: found
     else: error({where, wanted, found})
 

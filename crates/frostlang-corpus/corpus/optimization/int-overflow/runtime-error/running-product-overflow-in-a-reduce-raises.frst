@@ -1,0 +1,5 @@
+# A running product that overflows partway through a reduce over constants
+# raises at the step that overflows, here the multiply of the fourteenth
+# element: computing the reduce ahead of time leaves the error to the run.
+#= {raises: 'Int overflow: 841048816911995911 * 31'}
+reduce([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20], 0, fn acc, i -> acc * 31 + i)

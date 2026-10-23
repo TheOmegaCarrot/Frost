@@ -1,6 +1,7 @@
 # A placeholder can supply the computed key of a Map pattern, looking up
 # the entry named by another argument.
 #= {result: [1, 'none'], inputs: {m: {a: 1}}}
+def {m} = import('inputs')
 def lookup = $(match $2 {
     {[$1]: v} => v,
     _ => 'none',

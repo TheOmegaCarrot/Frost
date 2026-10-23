@@ -1,6 +1,7 @@
 # A literal pattern compares with `==`, so a quotient matches by type as well
 # as value: 6 / 2 matches the Int pattern 3, but 6 / 2.0 matches only 3.0.
 #= {result: ['Int three', 'Float three'], inputs: {six: 6}}
+def {six} = import('inputs')
 defn classify(n) -> match n {
     3 => 'Int three',
     3.0 => 'Float three',

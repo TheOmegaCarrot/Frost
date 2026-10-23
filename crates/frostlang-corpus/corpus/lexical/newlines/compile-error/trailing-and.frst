@@ -1,4 +1,5 @@
 # A line ending in `and` does not continue onto the next line.
 #= {rejects: 'a line continues only when', inputs: {a: true, b: true}}
+def {a, b} = import('inputs')
 def x = a and
     b

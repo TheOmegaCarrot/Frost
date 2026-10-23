@@ -1,4 +1,5 @@
 # A negated type test outside a pattern is rejected, and the help names the
 # predicate with `not`.
 #= {rejects: ['`is` works only in a pattern', 'not is_null(v)'], inputs: {v: 1}}
+def {v} = import('inputs')
 if v is not Null: 1 else: 0

@@ -1,0 +1,5 @@
+# A known function whose arithmetic overflows, called over constants, raises
+# when called: computing the call ahead of time leaves the error to the run.
+#= {raises: 'Int overflow'}
+defn square(n) -> n * n
+square(3037000500)

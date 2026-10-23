@@ -1,0 +1,8 @@
+# The reduce of overflow-in-a-reduce-raises, over values only known at runtime,
+# raises the same error.
+#= {
+#=     raises: 'Int overflow',
+#=     inputs: {big: [9223372036854775807, 9223372036854775807, -9223372036854775807]},
+#= }
+def {big} = import('inputs')
+reduce(big, fn acc, x -> acc + x)

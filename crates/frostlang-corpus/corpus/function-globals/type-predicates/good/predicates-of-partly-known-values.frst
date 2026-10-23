@@ -2,6 +2,7 @@
 # the parts it is built from are known only at run time. Subtle because the
 # type is plain from the expression's shape while its value is not.
 #= {result: [true, true, true, true, true, false], inputs: {n: 1}}
+def {n} = import('inputs')
 [
     is_function(fn -> n),
     is_array([n]),

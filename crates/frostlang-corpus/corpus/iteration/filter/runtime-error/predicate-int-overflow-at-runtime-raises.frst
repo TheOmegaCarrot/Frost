@@ -1,0 +1,9 @@
+# Int overflow in a predicate raises rather than wrapping, so `x + 1 < x`
+# raises for the largest Int, here from a `filter` over runtime values.
+#= {
+#=     raises: 'Int overflow: 9223372036854775807 + 1',
+#=     inputs: {xs: [0, 9223372036854775807]},
+#= }
+def {xs} = import('inputs')
+def overflows = fn x -> x + 1 < x
+filter(xs, overflows)

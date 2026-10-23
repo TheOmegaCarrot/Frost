@@ -1,5 +1,6 @@
 # `inv` wraps a comparison predicate so it answers the opposite.
 #= {result: [[5, 10], [false, true]], inputs: {xs: [1, 5, 10], limit: 5}}
+def {xs, limit} = import('inputs')
 def below_limit = fn x -> x < limit
 def at_least_limit = inv(below_limit)
 [

@@ -1,0 +1,10 @@
+# A constant whose arithmetic lands exactly on the least Int drives later
+# folding as that value, with no overflow where none is due: it decides a
+# branch and serves as a Map key.
+#= {result: ['negative', 'least']}
+def least = -9223372036854775807 - 1
+def names = {[-9223372036854775808]: 'least'}
+[
+    if least < 0: 'negative' else: error('not negative'),
+    names[least],
+]

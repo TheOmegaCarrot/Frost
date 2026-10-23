@@ -1,6 +1,7 @@
 # `try_call` spreads its argument Array into the call without changing it,
 # whether the call succeeds or raises.
 #= {result: [[1, 2], [[1]], false, [[1]]], inputs: {n: 1}}
+def {n} = import('inputs')
 def args = [[n]]
 def ok = try_call(fn v -> v + [2], args)
 def failed = try_call(fn v -> v + 2, args)

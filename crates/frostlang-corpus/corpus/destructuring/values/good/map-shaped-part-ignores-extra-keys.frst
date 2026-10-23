@@ -2,5 +2,6 @@
 # only its own keys, so a Map with more keys still matches. Compare the pin
 # `({k: 'v'})`, which requires an equal Map.
 #= {result: 1, inputs: {xs: [1, {k: 'v', z: 2}]}}
+def {xs} = import('inputs')
 def [a, {k: 'v'}] = xs
 a

@@ -10,6 +10,7 @@
 #=     },
 #=     inputs: {words: ['the', 'cat', 'saw', 'the', 'café', 'the', 'cat', '日本']},
 #= }
+def {words} = import('inputs')
 def counts = reduce(words, {}, fn acc, word -> acc + {[word]: (acc[word] or 0) + 1})
 
 defn before(a, b) -> a.count > b.count or (a.count == b.count and a.word < b.word)

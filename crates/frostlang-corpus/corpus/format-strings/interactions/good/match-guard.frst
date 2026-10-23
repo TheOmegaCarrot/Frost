@@ -1,5 +1,6 @@
 # A format String inside a match guard, interpolating the arm's binding.
 #= {result: ['seven', 'other'], inputs: {subjects: [7, 8]}}
+def {subjects} = import('inputs')
 map(subjects, fn v -> match v {
     n if: $'${n}' == '7' => 'seven',
     _ => 'other',

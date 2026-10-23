@@ -4,6 +4,7 @@
 #=     result: [2, 0, [1, [2, 3]]],
 #=     inputs: {pair: [5, 3], none: [], three: [1, 2, 3]},
 #= }
+def {pair, none, three} = import('inputs')
 [
     call(fn a, b -> a - b, pair),
     call(fn -> 0, none),

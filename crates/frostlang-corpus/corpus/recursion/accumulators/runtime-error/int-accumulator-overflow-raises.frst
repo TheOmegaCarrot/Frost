@@ -1,0 +1,5 @@
+# An Int accumulator that overflows raises rather than wrapping: 21! does not
+# fit in the Int range.
+#= {raises: 'Int overflow'}
+defn fact(n, acc) -> if n <= 1: acc else: fact(n - 1, acc * n)
+fact(21, 1)

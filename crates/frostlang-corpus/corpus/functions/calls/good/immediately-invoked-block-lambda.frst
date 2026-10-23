@@ -1,6 +1,7 @@
 # An immediately-invoked lambda with a block body scopes its definitions to
 # that call, like a `do` block that takes arguments.
 #= {result: [30, 1], inputs: {n: 5}}
+def {n} = import('inputs')
 def x = 1
 def r = (fn base -> {
     def x = base * 2

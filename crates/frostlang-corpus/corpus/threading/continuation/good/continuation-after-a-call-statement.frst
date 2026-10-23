@@ -1,6 +1,7 @@
 # A leading `@` continues the line before even when that line is already a
 # complete call, so the call's result is threaded rather than discarded.
 #= {result: 'end', printed: ['label: 1'], inputs: {one: 1}}
+def {one} = import('inputs')
 defn label(n) -> $'label: ${n}'
 label(one)
 @ print()

@@ -1,3 +1,4 @@
 # A `.` access to a missing member raises before any call is attempted.
 #= {raises: 'no value at key "g"', inputs: {n: 1, m: {f: fn x -> x}}}
+def {n, m} = import('inputs')
 n @ m.g()

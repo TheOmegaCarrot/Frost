@@ -1,0 +1,4 @@
+# Negating the least Int raises: its positive counterpart is past the greatest
+# Int, so no Int holds the result.
+#= {raises: 'Int overflow: -(-9223372036854775808)'}
+- -9223372036854775808

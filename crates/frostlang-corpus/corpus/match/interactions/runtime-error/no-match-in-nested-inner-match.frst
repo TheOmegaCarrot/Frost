@@ -1,6 +1,7 @@
 # An inner match with no matching arm raises, even when the outer arm matched;
 # the outer match does not fall through to its next arm.
 #= {raises: 'no match arm', inputs: {v: [5]}}
+def {v} = import('inputs')
 match v {
     [x] => match x {
         1 => 'one',

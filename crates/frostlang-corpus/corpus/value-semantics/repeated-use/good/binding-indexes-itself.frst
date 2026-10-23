@@ -1,5 +1,6 @@
 # A binding read as both the target and the index of one index expression
 # gives the element the original value selects.
 #= {result: [2, [1, 2, 3]], inputs: {n: 1}}
+def {n} = import('inputs')
 def xs = [n, 2, 3]
 [xs[xs[0]], xs]

@@ -1,6 +1,7 @@
 # A nested `as` name is bound once its Map pattern ends, so a later pin may
 # read it, over a literal the optimizer may match and at runtime.
 #= {result: [1, 2], inputs: {xs: [{a: 2}, {a: 2}]}}
+def {xs} = import('inputs')
 def [{a} as m, (m)] = [{a: 1}, {a: 1}]
 def [{a: b} as n, (n)] = xs
 [a, b]

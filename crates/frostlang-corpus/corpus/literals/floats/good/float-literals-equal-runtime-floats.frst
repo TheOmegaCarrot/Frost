@@ -1,3 +1,4 @@
 # Every spelling of a Float literal equals the same Float known only at runtime.
 #= {result: [true, true, true, true, true, true], inputs: {half: 0.5, big: 10000000000.0}}
+def {half, big} = import('inputs')
 [.5 == half, 5e-1 == half, 0.5_0 == half, 50E-2 == half, 1e1_0 == big, 10_000_000_000.0 == big]

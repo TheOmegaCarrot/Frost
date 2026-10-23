@@ -1,6 +1,7 @@
 # An empty Array and an empty Map are different types, so they are unequal,
 # as are an Array and a Map holding the same values.
 #= {result: [false, false, true], inputs: {empty_array: [], empty_map: {}}}
+def {empty_array, empty_map} = import('inputs')
 [
     [] == {},
     empty_array == empty_map,

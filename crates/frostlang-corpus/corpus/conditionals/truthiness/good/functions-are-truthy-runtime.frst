@@ -1,3 +1,4 @@
 # A Function known only at runtime is a truthy condition.
 #= {result: 'T', inputs: {f: fn x -> x}}
+def {f} = import('inputs')
 if f: 'T' else: 'F'

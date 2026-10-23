@@ -4,6 +4,7 @@
 #=     result: [1, 1, null, 20, 30, null, 'deep'],
 #=     inputs: {m: {a: 1}, xs: [10, 20, 30], nested: {outer: [{inner: 'deep'}]}},
 #= }
+def {m, xs, nested} = import('inputs')
 [
     m.a,
     m['a'],

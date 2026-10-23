@@ -1,4 +1,5 @@
 # A native global's type error for the threaded value names it argument 1,
 # since it is the call's first argument.
 #= {raises: ['argument 1', 'got Int'], inputs: {n: 5}}
+def {n} = import('inputs')
 n @ len()

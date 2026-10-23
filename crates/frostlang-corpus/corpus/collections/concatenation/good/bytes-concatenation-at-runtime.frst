@@ -1,5 +1,6 @@
 # `+` joins runtime Bytes, and the result is Bytes even when its content is
 # valid text.
 #= {result: [x'6869', 'Bytes', 2], inputs: {a: x'68', b: x'69'}}
+def {a, b} = import('inputs')
 def joined = a + b
 [joined, type(joined), len(joined)]

@@ -3,4 +3,5 @@
 # is rejected only because two operands cannot stand side by side, while a
 # based Int such as `0xff` runs to the end of its word.
 #= {result: [2, 1, 3, 2.5, 2], inputs: {c: false}}
+def {c} = import('inputs')
 [1and 2, 1or 2, 1e5and 3, 2.5or 1, if c: 1else: 2]

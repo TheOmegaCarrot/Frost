@@ -2,5 +2,6 @@
 # evaluating a branch's computed key propagates instead of falling through to
 # the next branch.
 #= {raises: 'division by zero', inputs: {n: 0, v: {x: 1}}}
+def {n, v} = import('inputs')
 def {[1 / n]: a} | {x: a} = v
 a

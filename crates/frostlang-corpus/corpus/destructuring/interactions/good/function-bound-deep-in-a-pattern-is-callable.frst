@@ -1,6 +1,7 @@
 # A Function bound deep inside a pattern is callable like any other, whether
 # the optimizer knows it ahead of time or it arrives at runtime.
 #= {result: [1764, 30], inputs: {ops: {fs: [{triple: fn x -> x * 3}]}}}
+def {ops} = import('inputs')
 def {fs: [{square}]} = {fs: [{square: fn x -> x * x}]}
 def {fs: [{triple}]} = ops
 [square(42), triple(10)]

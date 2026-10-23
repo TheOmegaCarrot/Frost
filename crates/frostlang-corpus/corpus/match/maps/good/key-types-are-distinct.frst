@@ -4,6 +4,7 @@
 #=     result: ['no Float key', 'no Int key', 'no Bool key', 'no String key', 'no Bytes key'],
 #=     inputs: {i: {[1]: 0}, f: {[1.0]: 0}, b: {[x'31']: 0}, s: {['1']: 0}},
 #= }
+def {i, f, b, s} = import('inputs')
 [
     match i { {[1.0]: _} => 'Float key', _ => 'no Float key' },
     match f { {[1]: _} => 'Int key', _ => 'no Int key' },

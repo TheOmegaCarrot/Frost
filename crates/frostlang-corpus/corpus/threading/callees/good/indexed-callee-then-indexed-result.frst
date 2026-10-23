@@ -1,5 +1,6 @@
 # An index before the call's parentheses selects the callee; an index after
 # them applies to the result: `n @ fns[0]()[1]` is `fns[0](n)[1]`.
 #= {result: 6, inputs: {n: 3}}
+def {n} = import('inputs')
 def fns = [fn x -> [x, x * 2]]
 n @ fns[0]()[1]

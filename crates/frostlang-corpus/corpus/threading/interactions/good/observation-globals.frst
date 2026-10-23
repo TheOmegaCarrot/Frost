@@ -1,3 +1,4 @@
 # The observation globals thread like any function.
 #= {result: ['3', true, 'Array', 2], inputs: {n: 3, m: {k: 1}, xs: [1, 2]}}
+def {n, m, xs} = import('inputs')
 [n @ to_string(), m @ has('k'), xs @ type(), xs @ len()]

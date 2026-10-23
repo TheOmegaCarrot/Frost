@@ -1,0 +1,16 @@
+# Int overflow is an error like any other, so `try_call` catches it and
+# reports failure with the overflow's message, whether the operands are
+# constants or only known at runtime.
+#= {
+#=     result: [
+#=         [false, 'Int overflow: 9223372036854775807 + 1'],
+#=         [false, 'Int overflow: -9223372036854775808 - 1'],
+#=     ],
+#=     inputs: {min: -9223372036854775808, one: 1},
+#= }
+def {min, one} = import('inputs')
+defn outcome(result) -> [result.ok, result.error]
+[
+    outcome(try_call(fn -> 9223372036854775807 + 1)),
+    outcome(try_call(fn -> min - one)),
+]

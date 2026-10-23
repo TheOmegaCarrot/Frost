@@ -1,3 +1,4 @@
 # A bad index inside a callback raises out of the higher-order call.
 #= {raises: ['Cannot index value', 'Int'], inputs: {rows: [[1], 2]}}
+def {rows} = import('inputs')
 map(rows, fn r -> r[0])

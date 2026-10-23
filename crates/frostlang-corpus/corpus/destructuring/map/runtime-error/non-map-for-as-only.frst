@@ -1,4 +1,5 @@
 # `{} as m` names no key, yet still requires a Map.
 #= {raises: 'expected a Map', inputs: {v: [1]}}
+def {v} = import('inputs')
 def {} as m = v
 m

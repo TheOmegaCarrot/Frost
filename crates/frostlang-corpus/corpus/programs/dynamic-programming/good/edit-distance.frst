@@ -15,6 +15,7 @@
 #=         ],
 #=     },
 #= }
+def {pairs} = import('inputs')
 defn smallest(a, b, c) -> {
     def ab = if a < b: a else: b
     if ab < c: ab else: c

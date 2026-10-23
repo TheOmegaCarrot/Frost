@@ -1,0 +1,4 @@
+# An index computed with Int overflow over constants raises instead of
+# wrapping to the smallest Int.
+#= {raises: 'Int overflow: 9223372036854775807 + 1'}
+[1, 2, 3][9223372036854775807 + 1]

@@ -5,6 +5,7 @@
 #=     exports: {mode: 'fast', level: null},
 #=     inputs: {fast: true},
 #= }
+def {fast} = import('inputs')
 export def mode = if fast: 'fast' else: 'safe'
 export def level = if not fast: 3
 null

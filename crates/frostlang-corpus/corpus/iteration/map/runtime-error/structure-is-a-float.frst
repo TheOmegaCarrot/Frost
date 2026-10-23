@@ -1,3 +1,4 @@
 # A Float is not a structure `map` iterates.
 #= {raises: ['Structured', 'argument 1', 'Float'], inputs: {n: 1.5}}
+def {n} = import('inputs')
 map(n, fn x -> x)

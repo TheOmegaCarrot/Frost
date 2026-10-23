@@ -18,6 +18,7 @@
 #=         },
 #=     },
 #= }
+def {m} = import('inputs')
 map(m, fn k, v -> {
     print(if is_bytes(k): 'Bytes' else: to_string(k))
     {}

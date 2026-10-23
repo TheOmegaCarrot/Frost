@@ -1,6 +1,7 @@
 # A destructuring `def` inside a function that does not fit raises, and
 # `try_call` around the call catches it; a fitting value succeeds.
 #= {result: [{ok: true, value: 3}, false], inputs: {good: [1, 2], bad: [1]}}
+def {good, bad} = import('inputs')
 defn sum_pair(pair) -> {
     def [a, b] = pair
     a + b

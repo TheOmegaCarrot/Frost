@@ -1,5 +1,6 @@
 # A literal part `-0.0` does not match a runtime `0.0`: a Float literal part
 # matches only the zero of its own sign.
 #= {raises: 'expected `-0.0`', inputs: {xs: [7, 0.0]}}
+def {xs} = import('inputs')
 def [a, -0.0] = xs
 a

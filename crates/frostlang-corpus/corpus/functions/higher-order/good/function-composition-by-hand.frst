@@ -1,6 +1,7 @@
 # A function built from two others applies them in turn, the right one
 # first.
 #= {result: [21, 30], inputs: {n: 10}}
+def {n} = import('inputs')
 def compose2 = fn f, g -> fn x -> f(g(x))
 def inc = fn x -> x + 1
 def double = fn x -> x * 2

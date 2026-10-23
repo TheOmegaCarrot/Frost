@@ -1,4 +1,5 @@
 # A Float operand of `%` only known at runtime is a type error, as a constant
 # one is.
 #= {raises: 'Float % Int', inputs: {x: 7.5, n: 2}}
+def {x, n} = import('inputs')
 x % n

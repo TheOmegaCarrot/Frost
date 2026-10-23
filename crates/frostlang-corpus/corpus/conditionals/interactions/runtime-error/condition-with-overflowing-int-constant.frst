@@ -1,0 +1,4 @@
+# A constant condition that overflows is not folded: the error is left to the
+# run, which raises before either branch is chosen.
+#= {raises: 'Int overflow'}
+if 9223372036854775807 + 1 < 0: 'wrapped' else: 'grew'

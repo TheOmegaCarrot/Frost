@@ -1,4 +1,5 @@
 # A reduce building a Map with computed Int keys: each step's merge replaces
 # the entry for that key, so the last value per key wins.
 #= {result: {[0]: 14, [1]: 8, [2]: 9}, inputs: {xs: [7, 8, 9, 14]}}
+def {xs} = import('inputs')
 reduce(xs, {}, fn m, x -> m + {[x % 7]: x})

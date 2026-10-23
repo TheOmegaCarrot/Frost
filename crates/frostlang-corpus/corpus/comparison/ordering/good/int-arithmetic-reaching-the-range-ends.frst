@@ -1,0 +1,9 @@
+# Int arithmetic that lands exactly on an end of the range orders as that
+# end: the greatest Int stays above zero and above the Int it was reached
+# from, and the least Int below zero.
+#= {result: [true, true, true]}
+[
+    9223372036854775806 + 1 > 0,
+    -9223372036854775807 - 1 < 0,
+    9223372036854775806 + 1 > 9223372036854775806,
+]

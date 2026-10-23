@@ -5,6 +5,7 @@
 #=     result: [null, 0, 'x'],
 #=     inputs: {nothing: [null, null], zero_first: [null, 0, 3], false_first: [false, null, 'x']},
 #= }
+def {nothing, zero_first, false_first} = import('inputs')
 defn first_present(xs, acc) -> match xs {
     [] => acc,
     [x, ...rest] => first_present(rest, acc or x),

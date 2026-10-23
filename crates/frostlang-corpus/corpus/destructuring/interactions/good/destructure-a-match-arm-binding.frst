@@ -1,5 +1,6 @@
 # A def in a `match` arm's body destructures a name the arm bound.
 #= {result: 6, inputs: {v: [1, [2, 3]]}}
+def {v} = import('inputs')
 match v {
     [a, pair] => do {
         def [b, c] = pair

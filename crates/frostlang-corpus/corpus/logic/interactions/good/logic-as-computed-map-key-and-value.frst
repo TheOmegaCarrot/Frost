@@ -3,6 +3,7 @@
 #=     result: [{no: 0}, {yes: 5}],
 #=     inputs: {n: null, five: 5},
 #= }
+def {n, five} = import('inputs')
 [
     {[n and 'yes' or 'no']: n or 0},
     {[five and 'yes' or 'no']: five or 0},

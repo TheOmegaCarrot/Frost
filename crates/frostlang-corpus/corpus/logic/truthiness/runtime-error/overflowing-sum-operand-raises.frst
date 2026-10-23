@@ -1,0 +1,4 @@
+# An Int sum past the greatest Int raises even as the left operand of `or`:
+# no wrapped least Int reaches the truthiness test.
+#= {raises: ['Int overflow', '9223372036854775807 + 1']}
+(9223372036854775807 + 1) or 'falsy'

@@ -6,6 +6,7 @@
 #=     lints: [['unused binding', '`x`']],
 #=     inputs: {v: 3},
 #= }
+def {v} = import('inputs')
 defn check(label, ok) -> {
     print(label)
     ok

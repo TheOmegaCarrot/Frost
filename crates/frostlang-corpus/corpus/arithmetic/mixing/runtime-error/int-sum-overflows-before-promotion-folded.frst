@@ -1,0 +1,6 @@
+# Constant chains are typed operation by operation exactly as runtime ones
+# are: the folder adds `9223372036854775807 + 1` as an Int before the Float
+# joins, so the Int sum overflows, rather than regrouping the chain into a
+# Float sum.
+#= {raises: 'Int overflow: 9223372036854775807 + 1'}
+9223372036854775807 + 1 + 0.5

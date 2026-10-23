@@ -1,4 +1,5 @@
 # Null is not an empty structure: `map` over Null is a type error, not an
 # empty result.
 #= {raises: ['Structured', 'argument 1', 'Null'], inputs: {nothing: null}}
+def {nothing} = import('inputs')
 map(nothing, fn x -> x)

@@ -1,3 +1,4 @@
 # A threaded call's argument list must be closed.
 #= {rejects: 'not closed', inputs: {xs: [1]}}
+def {xs} = import('inputs')
 xs @ collect(1

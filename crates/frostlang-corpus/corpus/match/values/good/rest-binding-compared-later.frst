@@ -1,6 +1,7 @@
 # A rest bound in one Map entry may be compared against in a later entry of the
 # same pattern.
 #= {result: ['same tail', 'different'], inputs: {a: {xs: [0, 1, 2], ys: [1, 2]}, b: {xs: [0, 1, 2], ys: [2]}}}
+def {a, b} = import('inputs')
 defn check(v) -> match v {
     {xs: [_, ...t], ys: (t)} => 'same tail',
     _ => 'different',

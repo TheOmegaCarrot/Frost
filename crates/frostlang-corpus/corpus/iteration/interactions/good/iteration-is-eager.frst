@@ -5,6 +5,7 @@
 #=     printed: ['map 1', 'map 2', 'after', 'filter 1', 'filter 2'],
 #=     inputs: {xs: [1, 2]},
 #= }
+def {xs} = import('inputs')
 def ys = map(xs, fn x -> {
     print($'map ${x}')
     x

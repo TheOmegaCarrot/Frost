@@ -1,6 +1,7 @@
 # A single-element Array is unchanged by a value derived from it, whichever
 # side of `+` it is on.
 #= {result: [[1], [1, 2], [0, 1]], inputs: {n: 1}}
+def {n} = import('inputs')
 def one = [n]
 def after = one + [2]
 def before = [0] + one

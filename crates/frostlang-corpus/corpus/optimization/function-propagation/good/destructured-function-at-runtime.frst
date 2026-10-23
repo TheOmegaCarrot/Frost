@@ -9,6 +9,7 @@
 #=         boxed: [fn x -> x + 10],
 #=     },
 #= }
+def {pair, ops, nested, boxed} = import('inputs')
 def [inc, n] = pair
 def {add} = ops
 def {g: [sq]} = nested

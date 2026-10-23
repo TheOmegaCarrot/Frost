@@ -11,6 +11,7 @@
 #=     },
 #=     inputs: {start: 0, step: 10},
 #= }
+def {start, step} = import('inputs')
 defn counter(n, history) -> {
     value: fn -> n,
     history: fn -> history + [n],

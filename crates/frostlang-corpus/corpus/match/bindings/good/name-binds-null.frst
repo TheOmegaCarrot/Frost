@@ -1,5 +1,6 @@
 # A name pattern matches Null too, binding it like any other value.
 #= {result: [null, 'bound'], inputs: {v: null}}
+def {v} = import('inputs')
 match v {
     n => [n, 'bound'],
 }

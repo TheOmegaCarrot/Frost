@@ -1,4 +1,5 @@
 # An error while evaluating the value raises before any destructuring.
 #= {raises: 'division by zero', inputs: {n: 0}}
+def {n} = import('inputs')
 def [a, b] = [1 / n, 2]
 [a, b]

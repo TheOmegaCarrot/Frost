@@ -1,6 +1,7 @@
 # A `reduce` without an initial value starts from the first element; building from it
 # leaves the reduced Array, first element included, unchanged.
 #= {result: [[1, 2, 3], [[1], [2], [3]]], inputs: {n: 1}}
+def {n} = import('inputs')
 def xs = [[n], [2], [3]]
 def joined = reduce(xs, fn (acc, x) -> acc + x)
 [joined, xs]

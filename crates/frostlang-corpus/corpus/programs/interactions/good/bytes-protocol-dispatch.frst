@@ -20,6 +20,7 @@
 #=         ],
 #=     },
 #= }
+def {messages} = import('inputs')
 def handlers = {
     [x'01']: fn payload -> x'81' + payload,
     [x'02']: fn payload -> x'82',

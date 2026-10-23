@@ -6,6 +6,7 @@
 #=     printed: ['right of a falsy chain'],
 #=     inputs: {one: 1, n: null, f: false},
 #= }
+def {one, n, f} = import('inputs')
 [
     null or one or 3,
     n or false or 0 or print('past a constant 0'),

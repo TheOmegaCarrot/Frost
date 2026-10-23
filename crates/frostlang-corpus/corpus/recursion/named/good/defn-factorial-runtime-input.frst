@@ -1,5 +1,6 @@
 # A `defn` function recurses on an argument known only at runtime, so the
 # whole recursion runs in the VM rather than in the constant folder.
 #= {result: 3628800, inputs: {n: 10}}
+def {n} = import('inputs')
 defn fact(k) -> if k <= 1: 1 else: k * fact(k - 1)
 fact(n)

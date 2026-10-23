@@ -1,6 +1,7 @@
 # The matches of error-in-an-unreached-arm-never-raises, on targets only known
 # at runtime, never run the arm that would raise.
 #= {result: ['first', 'safe'], inputs: {one: 1, k: 'k'}}
+def {one, k} = import('inputs')
 [
     match one {
         1 => 'first',

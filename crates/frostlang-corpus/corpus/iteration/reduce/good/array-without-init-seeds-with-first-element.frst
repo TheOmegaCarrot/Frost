@@ -2,5 +2,6 @@
 # element and folds the rest left to right, accumulator first. Subtraction pins
 # both the argument order and the direction: (1 - 2) - 3.
 #= {result: [-4, -4], inputs: {xs: [1, 2, 3]}}
+def {xs} = import('inputs')
 def minus = fn acc, x -> acc - x
 [reduce([1, 2, 3], minus), reduce(xs, minus)]

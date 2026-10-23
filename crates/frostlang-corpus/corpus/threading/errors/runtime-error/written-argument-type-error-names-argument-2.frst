@@ -1,4 +1,5 @@
 # The first written argument of a threaded call is the call's second
 # argument, and a native global's type error names it so.
 #= {raises: ['argument 2', 'got Int'], inputs: {xs: [1], five: 5}}
+def {xs, five} = import('inputs')
 xs @ map(five)

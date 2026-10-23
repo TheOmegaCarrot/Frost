@@ -1,6 +1,7 @@
 # An Int never equals a Float of the same value, here with both known only at
 # runtime.
 #= {result: [false, false, false, true], inputs: {i: 3, f: 3.0, zero: 0, fzero: 0.0}}
+def {i, f, zero, fzero} = import('inputs')
 [
     i == f,
     f == i,

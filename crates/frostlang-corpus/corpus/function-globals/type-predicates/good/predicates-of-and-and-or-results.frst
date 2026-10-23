@@ -11,6 +11,7 @@
 #=     ],
 #=     inputs: {samples: [null, false, true, 0]},
 #= }
+def {samples} = import('inputs')
 map(samples, fn x -> [
     is_null(x and 1),
     is_bool(x and 1),

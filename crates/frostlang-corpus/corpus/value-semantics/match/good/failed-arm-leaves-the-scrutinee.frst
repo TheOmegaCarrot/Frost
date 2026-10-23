@@ -5,6 +5,7 @@
 #=     lints: [['unused binding', '`a`'], ['unused binding', '`b`']],
 #=     inputs: {n: 1},
 #= }
+def {n} = import('inputs')
 def xs = [n]
 match xs {
     [a, b] => 'two',

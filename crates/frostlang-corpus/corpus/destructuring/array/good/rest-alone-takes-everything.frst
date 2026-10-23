@@ -1,5 +1,6 @@
 # A pattern of only a rest binds the whole Array, empty or not.
 #= {result: [[1, 2], [], [7]], inputs: {empty: [], one: [7]}}
+def {empty, one} = import('inputs')
 def [...all] = [1, 2]
 def [...none] = empty
 def [...single] = one

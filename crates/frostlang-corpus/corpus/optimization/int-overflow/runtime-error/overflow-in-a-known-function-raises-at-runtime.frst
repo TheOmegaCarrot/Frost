@@ -1,0 +1,6 @@
+# The function of overflow-in-a-known-function-raises, called over a value only
+# known at runtime, raises the same error.
+#= {raises: 'Int overflow', inputs: {root: 3037000500}}
+def {root} = import('inputs')
+defn square(n) -> n * n
+square(root)

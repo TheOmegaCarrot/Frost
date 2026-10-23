@@ -1,5 +1,6 @@
 # Each parameter binds the argument in the same position, whatever the
 # argument values; the arguments here are known only at runtime.
 #= {result: ['c', 'a', 'b'], inputs: {p: 'a', q: 'b', r: 'c'}}
+def {p, q, r} = import('inputs')
 def rotate = fn x, y, z -> [z, x, y]
 rotate(p, q, r)

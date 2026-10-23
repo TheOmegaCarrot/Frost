@@ -1,5 +1,0 @@
-# A known Int that wraps around to zero divides as zero: dividing by it raises
-# when the program reaches the division, though no operand is written as 0.
-#= {raises: 'division by zero'}
-def wrapped = 9223372036854775807 * 2 + 2
-100 / wrapped

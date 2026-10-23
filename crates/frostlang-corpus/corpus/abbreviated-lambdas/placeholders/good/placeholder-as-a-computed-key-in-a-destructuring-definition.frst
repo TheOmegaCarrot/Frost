@@ -1,6 +1,7 @@
 # In a destructuring `def` inside an abbreviated lambda, `[$1]` is a computed
 # key read from the first argument, whatever its type.
 #= {result: [1, 'two'], inputs: {name: 'a', number: 2}}
+def {name, number} = import('inputs')
 def get = $(do {
     def {[$1]: value} = $2
     value

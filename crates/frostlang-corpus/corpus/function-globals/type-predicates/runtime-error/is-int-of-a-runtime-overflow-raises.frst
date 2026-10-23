@@ -1,0 +1,4 @@
+# Overflow at run time raises, so no predicate sees a wrapped Int or a Float.
+#= {raises: ['Int overflow', '9223372036854775807 + 1'], inputs: {max: 9223372036854775807}}
+def {max} = import('inputs')
+is_int(max + 1)

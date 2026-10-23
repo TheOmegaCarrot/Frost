@@ -1,4 +1,5 @@
 # A filter predicate whose `if` has no `else` and whose condition never
 # holds yields Null for every element, so nothing is kept.
 #= {result: [], inputs: {xs: [1, 2], c: false}}
+def {xs, c} = import('inputs')
 filter(xs, fn x -> if c: true)

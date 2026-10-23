@@ -4,5 +4,6 @@
 #=     result: [2, 'int', 'string', null, 'int', 'string'],
 #=     inputs: {i: 1, s: '1', m: {[1]: 'int'}},
 #= }
+def {i, s, m} = import('inputs')
 def both = {[1]: 'int', ['1']: 'string'}
 [len(both), both[1], both['1'], m['1'], m[i], {[s]: 'string'}['1']]

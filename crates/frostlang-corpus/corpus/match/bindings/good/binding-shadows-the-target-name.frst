@@ -1,6 +1,7 @@
 # A pattern may bind the very name the target was read from; inside the arm,
 # the name means the matched part.
 #= {result: [1, [1]], inputs: {v: [1]}}
+def {v} = import('inputs')
 def x = v
 def r = match x {
     [x] => x,

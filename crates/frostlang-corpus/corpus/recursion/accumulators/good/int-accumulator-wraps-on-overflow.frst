@@ -1,5 +1,0 @@
-# An Int accumulator that overflows wraps in two's complement and carries on;
-# it never raises. 21! and 25! both exceed the Int range.
-#= {result: [2432902008176640000, -4249290049419214848, 7034535277573963776]}
-defn fact(n, acc) -> if n <= 1: acc else: fact(n - 1, acc * n)
-[fact(20, 1), fact(21, 1), fact(25, 1)]

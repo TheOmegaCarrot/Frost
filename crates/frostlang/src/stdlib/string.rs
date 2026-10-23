@@ -254,11 +254,14 @@ fn padder(name: &'static str, side: Side) -> Value {
     frost_closure!(
         name,
         move |#[frost(unnamed)] text: FrostString, width: i64, fill: Optional<FrostString>| {
-            let Ok(width) = usize::try_from(width) else {
+            if width < 0 {
                 return Err(FrostError::from_string(format!(
                     "Function {name} requires argument 2 (width) to be at least 0, got {width}"
                 )));
-            };
+            }
+            // A width past `usize::MAX`, possible where `usize` is narrower than
+            // an Int, is too long to make, as `usize::MAX` itself is.
+            let width = usize::try_from(width).unwrap_or(usize::MAX);
             let fill = match fill {
                 Optional(None) => ' ',
                 Optional(Some(fill)) => {

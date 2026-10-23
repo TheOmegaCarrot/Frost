@@ -1,4 +1,5 @@
 # An abbreviated lambda over runtime values receives the threaded value as
 # `$1`.
 #= {result: [10, 2, 2], inputs: {five: 5, three: 3, seven: 7}}
+def {five, three, seven} = import('inputs')
 [five @ $($ * 2)(), five @ $($1 - $2)(three), five @ $($2 - $1)(seven)]

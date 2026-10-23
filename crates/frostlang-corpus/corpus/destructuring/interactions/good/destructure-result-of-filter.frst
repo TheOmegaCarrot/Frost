@@ -1,4 +1,5 @@
 # The value of a def may be a pipeline; its result destructures like any Array.
 #= {result: [2, [3]], inputs: {xs: [1, 2, 3]}}
+def {xs} = import('inputs')
 def [first, ...others] = xs @ filter(fn x -> x > 1)
 [first, others]

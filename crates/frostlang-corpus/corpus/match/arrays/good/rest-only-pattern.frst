@@ -1,5 +1,6 @@
 # `[...all]` matches any Array, empty included, binding all of its elements.
 #= {result: [[], [1, 2], 'not an Array'], inputs: {xs: [[], [1, 2], 'ab']}}
+def {xs} = import('inputs')
 map(xs, fn v -> match v {
     [...all] => all,
     _ => 'not an Array',

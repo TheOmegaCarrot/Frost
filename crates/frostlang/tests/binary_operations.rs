@@ -457,6 +457,9 @@ fn a_failing_fold_is_left_for_runtime() {
     for (source, op) in [
         ("1 / 0", Bytecode::Divide),
         ("1 % 0", Bytecode::Modulus),
+        ("9223372036854775807 + 1", Bytecode::Add),
+        ("-9223372036854775807 - 2", Bytecode::Subtract),
+        ("4611686018427387904 * 2", Bytecode::Multiply),
         (r#"1 + "a""#, Bytecode::Add),
         ("len + 1", Bytecode::Add),
         ("true < false", Bytecode::CompareLessThan),
@@ -480,4 +483,23 @@ fn a_failing_constant_operand_is_left_for_runtime() {
         .capture("x", Value::Int(1))
         .raises();
     assert!(message.contains("Division by zero"), "{message}");
+}
+
+#[test]
+fn an_overflowing_constant_raises_as_it_would_unfolded() {
+    // Under every optimization permutation: the fold is abandoned, and the run
+    // raises the same error an operand known only at runtime does.
+    assert_eq!(
+        raises("9223372036854775807 + 1"),
+        "Int overflow: 9223372036854775807 + 1"
+    );
+    let unfolded = Script::new("x + 1")
+        .capture("x", Value::Int(i64::MAX))
+        .raises();
+    assert_eq!(unfolded, "Int overflow: 9223372036854775807 + 1");
+    // An untaken branch never runs its overflow.
+    assert_eq!(
+        run("if false: 9223372036854775807 + 1 else: 'untaken'"),
+        Value::from("untaken")
+    );
 }

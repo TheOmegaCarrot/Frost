@@ -1,6 +1,7 @@
 # A function made by `compose` derives a new value through each step, and
 # leaves the argument it was called with unchanged across calls.
 #= {result: [[1, 2, 3], [1], [1, 2, 3]], inputs: {n: 1}}
+def {n} = import('inputs')
 def grow = compose(fn v -> v + [2], fn v -> v + [3])
 def xs = [n]
 [grow(xs), xs, grow(xs)]

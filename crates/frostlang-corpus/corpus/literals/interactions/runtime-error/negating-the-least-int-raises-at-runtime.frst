@@ -1,0 +1,4 @@
+# Negating the least Int known only at runtime raises.
+#= {raises: ['Int overflow', '-(-9223372036854775808)'], inputs: {min: -9223372036854775808}}
+def {min} = import('inputs')
+-min

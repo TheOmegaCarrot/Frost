@@ -1,6 +1,7 @@
 # An abbreviated lambda's body may thread its placeholder: `$($ @ f())` is
 # `fn $1 -> f($1)`.
 #= {result: [4, 6, 8], inputs: {xs: [1, 2, 3]}}
+def {xs} = import('inputs')
 defn inc(x) -> x + 1
 defn double(x) -> x * 2
 map(xs, $($ @ inc() @ double()))

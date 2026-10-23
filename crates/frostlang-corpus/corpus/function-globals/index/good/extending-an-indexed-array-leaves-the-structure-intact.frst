@@ -1,6 +1,7 @@
 # Extending an Array that an `index` function read builds a new Array: the
 # structure read from still holds the original, and a second read sees it.
 #= {result: [[1, 2], [1], [[1]]], inputs: {data: [[1]]}}
+def {data} = import('inputs')
 def first = index(0)
 def extended = first(data) + [2]
 [extended, first(data), data]

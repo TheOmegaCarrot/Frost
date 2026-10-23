@@ -1,4 +1,5 @@
 # `is Flat` rejects an Array.
 #= {raises: 'expected a Flat', inputs: {v: [1]}}
+def {v} = import('inputs')
 def x is Flat = v
 x

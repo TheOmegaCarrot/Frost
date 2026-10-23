@@ -5,6 +5,7 @@
 #=     lints: [['unused binding', '`rest`']],
 #=     inputs: {xs: [1, 3, 5], ys: [1]},
 #= }
+def {xs, ys} = import('inputs')
 defn first_big(zs) -> match filter(zs, fn z -> z > 2) {
     [] => 'nothing',
     [first, ...rest] => $'first: ${first}',

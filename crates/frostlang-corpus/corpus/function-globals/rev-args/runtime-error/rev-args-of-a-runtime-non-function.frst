@@ -1,3 +1,4 @@
 # The Function check happens at run time on a value the compiler cannot see.
 #= {raises: ['rev_args', 'Function as argument 1', 'got Bytes'], inputs: {f: x'00'}}
+def {f} = import('inputs')
 rev_args(f)

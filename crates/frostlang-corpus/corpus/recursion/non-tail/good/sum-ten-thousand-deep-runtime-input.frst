@@ -1,5 +1,6 @@
 # Non-tail recursion ten thousand calls deep, on a count known only at
 # runtime, so the VM runs every call and every pending addition.
 #= {result: 50005000, inputs: {n: 10000}}
+def {n} = import('inputs')
 defn sum(k) -> if k == 0: 0 else: k + sum(k - 1)
 sum(n)

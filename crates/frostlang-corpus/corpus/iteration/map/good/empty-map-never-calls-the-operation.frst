@@ -1,6 +1,7 @@
 # `map` over an empty Map yields an empty Map, not an Array, without calling
 # the operation.
 #= {result: [{}, {}], inputs: {empty: {}}}
+def {empty} = import('inputs')
 def literal = map({}, fn k, v -> error('called'))
 def runtime = map(empty, fn k, v -> error('called'))
 [literal, runtime]

@@ -6,6 +6,7 @@
 #=     raises: ['Structured', 'Int'],
 #=     inputs: {items: [{name: 'pen', price: 3}, {name: 'ink', price: 4}]},
 #= }
+def {items} = import('inputs')
 defn names(records) -> map(records, fn r -> r.name)
 def cheap = filter(items, fn r -> r.price < 4
     @ names())

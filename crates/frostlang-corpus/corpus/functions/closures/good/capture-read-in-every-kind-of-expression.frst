@@ -3,6 +3,7 @@
 #=     result: [true, -2, 2, 2, 'hi you', 1, 10, [3, 6], [2, 3], 13],
 #=     inputs: {f: fn v -> v * 5},
 #= }
+def {f} = import('inputs')
 [
     (fn p -> fn -> not p)(false)(),
     (fn p -> fn -> -p)(2)(),

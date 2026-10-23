@@ -1,6 +1,7 @@
 # Blank lines between a branch and the next `elif` or `else` do not end the
 # `if`.
 #= {result: 3, inputs: {c: false}}
+def {c} = import('inputs')
 if c: 1
 
 

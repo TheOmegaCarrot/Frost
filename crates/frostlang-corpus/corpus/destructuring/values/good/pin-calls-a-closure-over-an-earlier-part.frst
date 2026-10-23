@@ -2,6 +2,7 @@
 # pattern. Subtle when folded: the name is still pending while the pattern
 # compiles.
 #= {result: [1, 1], inputs: {xs: [1, 2]}}
+def {xs} = import('inputs')
 def [a, ((fn -> a + 1)())] = [1, 2]
 def [b, ((fn -> b + 1)())] = xs
 [a, b]

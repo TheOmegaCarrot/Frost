@@ -1,0 +1,6 @@
+# A closure's arithmetic on a captured Int boundary raises on overflow, for a
+# runtime capture.
+#= {raises: 'Int overflow: 9223372036854775807 + 1', inputs: {max: 9223372036854775807}}
+def {max} = import('inputs')
+def runtime = fn -> max + 1
+runtime()

@@ -1,5 +1,6 @@
 # An `elif` condition that raises does so once the conditions before it fail.
 #= {raises: 'division by zero', inputs: {zero: 0}}
+def {zero} = import('inputs')
 if false: 1
 elif 1 / zero: 2
 else: 3

@@ -3,5 +3,6 @@
 #=     raises: ['no value at key "nmae"', '"name"'],
 #=     inputs: {m: {name: 1}},
 #= }
+def {m} = import('inputs')
 def {nmae} = m
 nmae

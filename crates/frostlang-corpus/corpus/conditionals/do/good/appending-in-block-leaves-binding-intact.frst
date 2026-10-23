@@ -2,6 +2,7 @@
 # keeps its own value. Subtle: an optimizer reusing a uniquely-owned Array in
 # place must see the binding's later use.
 #= {result: [[0, 1], [0, 1, 2]], inputs: {xs: [0]}}
+def {xs} = import('inputs')
 defn grow(start) -> {
     def a = start + [1]
     def b = do {

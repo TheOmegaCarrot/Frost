@@ -7,4 +7,5 @@
 #=         keys_in: [1, 1.5, true, 's', x'01', false, 1.0, '1'],
 #=     },
 #= }
+def {m, keys_in} = import('inputs')
 map(keys_in, fn k -> m[k])

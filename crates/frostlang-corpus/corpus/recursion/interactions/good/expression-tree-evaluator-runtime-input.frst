@@ -7,6 +7,7 @@
 #=         program: {op: 'let', name: 'x', value: 5, body: {op: '*', l: 'x', r: {op: 'plus', l: 'x', r: -1}}},
 #=     },
 #= }
+def {program} = import('inputs')
 defn eval(e, env) -> match e {
     n is Int => n,
     v is String => env[v],

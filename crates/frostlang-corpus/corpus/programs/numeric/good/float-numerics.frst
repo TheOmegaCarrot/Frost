@@ -13,6 +13,7 @@
 #=     },
 #=     inputs: {strips: 4, target: 2},
 #= }
+def {strips, target} = import('inputs')
 defn from_to(low, high) -> if low > high: [] else: [low] + from_to(low + 1, high)
 
 defn trapezoid(f, a, b, n) -> {

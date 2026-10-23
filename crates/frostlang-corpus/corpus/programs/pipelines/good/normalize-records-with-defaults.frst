@@ -22,6 +22,7 @@
 #=         ],
 #=     },
 #= }
+def {raw} = import('inputs')
 defn normalize(record) -> if not is_string(record['name']): null else: {
     name: record.name,
     age: record['age'] or 0,

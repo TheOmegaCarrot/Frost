@@ -1,5 +1,6 @@
 # An element's type constraint is checked before a later pin is evaluated, so
 # its mismatch is reported rather than the pin's error.
 #= {raises: 'expected a String', inputs: {n: 0, xs: [1, 2]}}
+def {n, xs} = import('inputs')
 def [s is String, (1 % n)] = xs
 s

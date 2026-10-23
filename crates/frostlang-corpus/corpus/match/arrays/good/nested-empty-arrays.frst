@@ -1,6 +1,7 @@
 # Empty Array patterns nest: each level requires exactly one element, down to
 # an empty innermost Array.
 #= {result: ['deep', 'other', 'other'], inputs: {xs: [[[[[]]]], [[[[1]]]], [[[]], []]]}}
+def {xs} = import('inputs')
 map(xs, fn v -> match v {
     [[[[]]]] => 'deep',
     _ => 'other',

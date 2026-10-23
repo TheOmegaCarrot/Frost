@@ -1,4 +1,5 @@
 # `[a, ...rest]` needs at least one element, so an empty Array raises.
 #= {raises: 'at least 1 element', inputs: {xs: []}}
+def {xs} = import('inputs')
 def [a, ...rest] = xs
 [a, rest]

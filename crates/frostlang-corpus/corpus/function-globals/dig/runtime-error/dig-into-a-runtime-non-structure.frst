@@ -1,3 +1,4 @@
 # A runtime value found along the way that cannot be indexed.
 #= {raises: ['Cannot index', 'Float'], inputs: {data: {a: {b: 1.5}}}}
+def {data} = import('inputs')
 dig(data, 'a', 'b', 'c')

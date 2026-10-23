@@ -1,4 +1,5 @@
 # A function may recur through `call`, passing its next arguments as an Array.
 #= {result: 55, inputs: {n: 10}}
+def {n} = import('inputs')
 defn sum_to(k, total) -> if k == 0: total else: call(sum_to, [k - 1, total + k])
 sum_to(n, 0)

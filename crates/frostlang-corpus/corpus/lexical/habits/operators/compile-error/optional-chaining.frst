@@ -1,3 +1,4 @@
 # Frost has no optional chaining `?.`.
 #= {rejects: 'no optional chaining', inputs: {p: null}}
+def {p} = import('inputs')
 p?.a

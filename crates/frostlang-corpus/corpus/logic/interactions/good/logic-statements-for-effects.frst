@@ -5,6 +5,7 @@
 #=     printed: ['x is set', 'y is missing'],
 #=     inputs: {x: 0, y: null},
 #= }
+def {x, y} = import('inputs')
 x and print('x is set')
 y and print('y is set')
 x or print('x is missing')

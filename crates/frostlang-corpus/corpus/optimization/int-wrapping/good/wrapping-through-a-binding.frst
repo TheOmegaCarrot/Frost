@@ -1,8 +1,0 @@
-# Int arithmetic on known bindings wraps in two's complement past either end
-# of the range, never raising, exactly as at runtime.
-#= {result: [-9223372036854775808, 9223372036854775807, -9223372036854775808, -2]}
-def greatest = 9223372036854775807
-def least = -9223372036854775808
-def next = greatest + 1
-def previous = least - 1
-[next, previous, -least, greatest * 2]

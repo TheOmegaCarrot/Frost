@@ -1,6 +1,7 @@
 # Values built by different routes to the same contents are equal, whatever
 # storage each route reused along the way.
 #= {result: [true, true, true], inputs: {n: 1}}
+def {n} = import('inputs')
 def a = [n] + [2] + [3]
 def b = [n, 2] + [3]
 def c = reduce([2, 3], [n], fn acc, x -> acc + [x])

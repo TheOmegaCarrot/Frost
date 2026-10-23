@@ -1,4 +1,5 @@
 # An `error` call in the taken branch raises its message; the same call in
 # the untaken branch would not have.
 #= {raises: 'negative input', inputs: {n: -3}}
+def {n} = import('inputs')
 if n >= 0: n else: error('negative input')

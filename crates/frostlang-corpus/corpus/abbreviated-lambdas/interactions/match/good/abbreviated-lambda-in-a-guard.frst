@@ -1,5 +1,6 @@
 # An abbreviated lambda may be written and called in a match guard.
 #= {result: ['big', 'small'], inputs: {three: 3, zero: 0}}
+def {three, zero} = import('inputs')
 defn size(x) -> match x {
     n if: $($ > 1)(n) => 'big',
     _ => 'small',

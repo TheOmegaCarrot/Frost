@@ -1,5 +1,6 @@
 # `key: name` takes a key and binds its value to a different name; it does not
 # bind the key's own name.
 #= {result: ['h', 80], inputs: {m: {host: 'h', port: 80}}}
+def {m} = import('inputs')
 def {host: h, port: p} = m
 [h, p]

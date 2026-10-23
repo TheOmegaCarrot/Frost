@@ -1,6 +1,7 @@
 # A value found with `dig` and then extended leaves the structure it came
 # from unchanged.
 #= {result: [[1, 2], {a: {b: [1]}}], inputs: {n: 1}}
+def {n} = import('inputs')
 def m = {a: {b: [n]}}
 def found = dig(m, 'a', 'b') + [2]
 [found, m]

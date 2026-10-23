@@ -3,6 +3,7 @@
 #=     result: [true, false, true, false, true],
 #=     inputs: {a: 2.5, b: 2.6, big: 1.7976931348623157e308, tiny: 5e-324},
 #= }
+def {a, b, big, tiny} = import('inputs')
 [
     a == 2.5,
     a == b,

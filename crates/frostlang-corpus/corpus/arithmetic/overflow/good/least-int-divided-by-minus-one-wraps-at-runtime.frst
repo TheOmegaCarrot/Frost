@@ -1,4 +1,0 @@
-# The least Int divided by -1, with both only known at runtime, wraps to the
-# least Int instead of raising, as the folded division does.
-#= {result: -9223372036854775808, inputs: {least: -9223372036854775808, minus_one: -1}}
-least / minus_one

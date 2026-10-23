@@ -1,4 +1,5 @@
 # A parenthesized `if` binds as one operand under a higher-precedence
 # operator: `10 + (if c: 1 else: 2) * 3` multiplies the `if`'s value.
 #= {result: [13, 16], inputs: {t: true, f: false}}
+def {t, f} = import('inputs')
 [10 + (if t: 1 else: 2) * 3, 10 + (if f: 1 else: 2) * 3]

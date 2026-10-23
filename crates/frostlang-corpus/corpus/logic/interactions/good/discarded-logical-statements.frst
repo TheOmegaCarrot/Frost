@@ -1,6 +1,7 @@
 # Logical expressions as discarded statements, deciding either way and over
 # constants or runtime values, leave nothing behind to disturb the tail value.
 #= {result: [5, 5], inputs: {n: null, zero: 0}}
+def {n, zero} = import('inputs')
 defn run(x) -> {
     x and 1
     x or 1

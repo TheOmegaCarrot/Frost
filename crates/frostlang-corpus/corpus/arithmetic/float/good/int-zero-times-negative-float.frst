@@ -1,6 +1,7 @@
 # An Int zero times a negative Float is -0.0 in either order: the Int becomes
 # the Float 0.0 first, and IEEE signs the zero product.
 #= {result: ['-0.0', '-0.0', '0.0'], inputs: {zero: 0, minus_half: -0.5, half: 0.5}}
+def {zero, minus_half, half} = import('inputs')
 [
     to_string(zero * minus_half),
     to_string(minus_half * zero),

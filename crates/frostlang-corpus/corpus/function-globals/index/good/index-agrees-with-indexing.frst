@@ -1,5 +1,6 @@
 # `index(key)(s)` reads exactly what `s[key]` reads, present or missing.
 #= {result: [true, true, true, true], inputs: {m: {a: [10, 20]}, xs: [1, 2, 3]}}
+def {m, xs} = import('inputs')
 [
     index('a')(m) == m['a'],
     index('zz')(m) == m['zz'],

@@ -1,5 +1,6 @@
 # `reduce` over a Map folds the entries in ascending key order, whatever order
 # the literal wrote them in.
 #= {result: ['abc', 'abc'], inputs: {m: {c: 3, a: 1, b: 2}}}
+def {m} = import('inputs')
 def keys = fn acc, k, v -> acc + k
 [reduce({c: 3, a: 1, b: 2}, '', keys), reduce(m, '', keys)]

@@ -3,6 +3,7 @@
 # local of the same name. Subtle: the middle lambda holds both an `x` it
 # passes along and an `x` of its own.
 #= {result: ['outer', 'middle'], inputs: {outer: 'outer'}}
+def {outer} = import('inputs')
 def x = outer
 def middle = fn -> {
     def inner = fn -> fn -> x

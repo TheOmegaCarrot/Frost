@@ -4,6 +4,7 @@
 #=     result: [{[true]: 'less', [false]: 'greater'}, 'less', 'greater'],
 #=     inputs: {a: 1, b: 2.5},
 #= }
+def {a, b} = import('inputs')
 def by_outcome = {[a < b]: 'less', [a > b]: 'greater'}
 [
     by_outcome,

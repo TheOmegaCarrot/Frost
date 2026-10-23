@@ -33,6 +33,7 @@
 #=         ],
 #=     },
 #= }
+def {commands} = import('inputs')
 def world = {
     hall: {exits: {down: 'cellar'}, items: ['key']},
     cellar: {exits: {up: 'hall', east: 'vault'}, items: []},

@@ -1,0 +1,5 @@
+# A recursive factorial multiplies exactly up to 20!, the largest that fits an
+# Int; 21! raises instead of wrapping, unwinding through the recursion.
+#= {raises: 'Int overflow'}
+defn fact(n) -> if n <= 1: 1 else: n * fact(n - 1)
+fact(21)

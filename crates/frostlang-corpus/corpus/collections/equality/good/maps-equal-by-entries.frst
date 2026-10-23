@@ -2,6 +2,7 @@
 # were built; a differing value, an extra key, or a key of another type makes
 # them unequal.
 #= {result: [true, true, false, false, false], inputs: {m: {a: 1, b: [2]}}}
+def {m} = import('inputs')
 [
     {} == {},
     m == {b: [2]} + {a: 1},

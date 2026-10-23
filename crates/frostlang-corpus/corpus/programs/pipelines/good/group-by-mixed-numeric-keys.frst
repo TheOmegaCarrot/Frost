@@ -10,6 +10,7 @@
 #=     },
 #=     inputs: {measurements: [1, 1.0, 2, 2.5, 1]},
 #= }
+def {measurements} = import('inputs')
 def counts = reduce(measurements, {}, fn acc, m -> acc + {[m]: (acc[m] or 0) + 1})
 {
     counts,

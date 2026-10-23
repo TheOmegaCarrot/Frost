@@ -3,5 +3,6 @@
 # before the later part binds. Subtle beside pin-reads-a-later-part, which is
 # an unbound-name error.
 #= {result: [2, 4], inputs: {xs: [1, 2, 3, 4]}}
+def {xs} = import('inputs')
 def [(match 1 { a => a }), a, ((fn b -> b * 3)(1)), b] = xs
 [a, b]

@@ -1,6 +1,7 @@
 # `call` applies a function bound to a name, which reads its own captures, to
 # arguments held in another binding.
 #= {result: 111, inputs: {args: [1, 10]}}
+def {args} = import('inputs')
 def base = 100
 defn add(a, b) -> a + b + base
 call(add, args)

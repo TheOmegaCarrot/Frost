@@ -1,4 +1,5 @@
 # Map patterns nest, each level requiring its own keys.
 #= {result: 7, inputs: {m: {a: {b: {c: 7}}}}}
+def {m} = import('inputs')
 def {a: {b: {c}}} = m
 c

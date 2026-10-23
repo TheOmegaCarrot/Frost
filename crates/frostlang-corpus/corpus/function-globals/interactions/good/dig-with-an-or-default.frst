@@ -1,6 +1,7 @@
 # A dig that finds nothing gives Null, which `or` replaces with a default;
 # a found False, though, is replaced too, being falsy.
 #= {result: ['default', 'ada', 'default'], inputs: {m: {user: {name: 'ada', admin: false}}}}
+def {m} = import('inputs')
 [
     dig(m, 'user', 'email') or 'default',
     dig(m, 'user', 'name') or 'default',

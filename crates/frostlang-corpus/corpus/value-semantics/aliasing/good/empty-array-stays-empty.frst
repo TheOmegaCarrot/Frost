@@ -1,6 +1,7 @@
 # An empty Array stays empty after a value is derived from it, whether it is
 # a literal or supplied at runtime.
 #= {result: [[], [1], [], [2]], inputs: {runtime: []}}
+def {runtime} = import('inputs')
 def literal = []
 def from_literal = literal + [1]
 def from_runtime = runtime + [2]

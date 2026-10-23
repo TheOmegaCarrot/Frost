@@ -2,6 +2,7 @@
 # only results too large to be finite are errors. The smallest subnormal
 # halved is 0.0.
 #= {result: [0.0, 0.0, 5e-324], inputs: {tiny: 5e-324, small: 1e-300}}
+def {tiny, small} = import('inputs')
 [
     tiny / 2.0,
     small * small,

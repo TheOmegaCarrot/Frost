@@ -1,5 +1,0 @@
-# An index computed with Int overflow wraps, and the wrapped Int is used as
-# is: the largest Int plus one is the smallest Int, out of range, not a
-# small index.
-#= {result: [null, null], inputs: {xs: [1, 2, 3], max: 9223372036854775807}}
-[xs[max + 1], [1, 2, 3][9223372036854775807 + 1]]

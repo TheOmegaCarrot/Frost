@@ -14,6 +14,7 @@
 #=         ],
 #=     },
 #= }
+def {runs} = import('inputs')
 defn upto(n) -> if n == 0: [] else: upto(n - 1) + [n - 1]
 
 defn larger(a, b) -> if a > b: a else: b

@@ -5,6 +5,7 @@
 #=     raises: 'no match arm',
 #=     inputs: {program: [{push: 1}, {push: 2}, 'add', 'add', {push: 3}]},
 #= }
+def {program} = import('inputs')
 defn binary(stack, operation) -> match stack {
     [b, a, ...rest] => [operation(a, b)] + rest,
 }

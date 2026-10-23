@@ -1,6 +1,7 @@
 # An Array pattern may span lines and end with a trailing comma when it has no
 # rest.
 #= {result: [1, 2], inputs: {v: [1, 2]}}
+def {v} = import('inputs')
 match v {
     [
         a,

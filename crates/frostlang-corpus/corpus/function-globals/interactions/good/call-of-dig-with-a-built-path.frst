@@ -1,3 +1,4 @@
 # `call` spreads a path built at runtime into `dig`'s keys.
 #= {result: ['deep', {b: 'deep'}], inputs: {data: {a: {b: 'deep'}}, path: ['a', 'b']}}
+def {data, path} = import('inputs')
 [call(dig, [data] + path), call(dig, [data, path[0]])]

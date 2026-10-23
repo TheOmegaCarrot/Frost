@@ -1,6 +1,7 @@
 # An `if` callback runs once per element: never for an empty Array, once for
 # a single element.
 #= {result: [[], ['odd']], printed: ['checked'], inputs: {none: [], one: [1]}}
+def {none, one} = import('inputs')
 defn parity(n) -> do {
     print('checked')
     if n % 2 == 0: 'even' else: 'odd'

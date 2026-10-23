@@ -1,4 +1,5 @@
 # Elements are evaluated left to right, so of two raising elements the
 # first one's error surfaces.
 #= {raises: 'Division by zero', inputs: {zero: 0}}
+def {zero} = import('inputs')
 [1, 1 / zero, 1 % zero]

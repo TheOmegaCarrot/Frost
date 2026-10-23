@@ -1,6 +1,7 @@
 # A lambda inside an arm may run its own match comparing against the outer
 # arm's binding, which it captures.
 #= {result: ['k', 'no', 'k'], inputs: {v: [2], xs: [2, 3, 2]}}
+def {v, xs} = import('inputs')
 match v {
     [k] => map(xs, fn y -> match y {
         (k) => 'k',

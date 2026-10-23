@@ -1,3 +1,4 @@
 # Ordering a String against a Float, both known only at runtime, raises.
 #= {raises: ['incompatible types', 'String', 'Float'], inputs: {s: '2.5', f: 2.5}}
+def {s, f} = import('inputs')
 s >= f

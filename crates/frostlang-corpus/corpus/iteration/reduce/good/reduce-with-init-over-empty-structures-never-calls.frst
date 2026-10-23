@@ -4,5 +4,6 @@
 #=     result: ['init', {a: 1}, null, [0]],
 #=     inputs: {xs: [], m: {}},
 #= }
+def {xs, m} = import('inputs')
 def boom = fn ...args -> error('called')
 [reduce(xs, 'init', boom), reduce(m, {a: 1}, boom), reduce(m, null, boom), reduce([], [0], boom)]

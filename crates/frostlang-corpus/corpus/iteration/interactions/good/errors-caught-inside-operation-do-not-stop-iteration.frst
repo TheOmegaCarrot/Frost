@@ -5,6 +5,7 @@
 #=     printed: ['1', '2', '3'],
 #=     inputs: {xs: [1, 2, 3]},
 #= }
+def {xs} = import('inputs')
 def guarded = fn x -> {
     def outcome = try_call(fn -> if x == 2: error('skip') else: x)
     if outcome.ok: outcome.value else: null

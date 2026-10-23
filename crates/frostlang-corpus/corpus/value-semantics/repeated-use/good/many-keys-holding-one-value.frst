@@ -4,6 +4,7 @@
 #=     result: [[1], [1], [1], [1], [1, 2], 20],
 #=     inputs: {n: 1},
 #= }
+def {n} = import('inputs')
 def v = [n]
 def m = {
     a: v, b: v, c: v, d: v, e: v, f: v, g: v, h: v, i: v, j: v,

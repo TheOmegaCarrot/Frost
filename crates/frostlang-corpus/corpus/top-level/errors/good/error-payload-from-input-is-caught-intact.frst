@@ -3,6 +3,7 @@
 #=     result: [{code: 7, items: [1, 'x']}, 'text', 3],
 #=     inputs: {record: {code: 7, items: [1, 'x']}, text: 'text', n: 3},
 #= }
+def {record, text, n} = import('inputs')
 [
     try_call(fn -> error(record)).error,
     try_call(fn -> error(text)).error,

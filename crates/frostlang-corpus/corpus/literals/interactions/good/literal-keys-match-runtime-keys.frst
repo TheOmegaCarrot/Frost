@@ -3,5 +3,6 @@
 #=     result: ['int', 'float', 'string', 'bytes', 'bool'],
 #=     inputs: {i: 16, f: 0.5, s: 'caf\u{e9}', b: x'00ff', t: true},
 #= }
+def {i, f, s, b, t} = import('inputs')
 def m = {[0x10]: 'int', [.5]: 'float', ['café']: 'string', [x'00FF']: 'bytes', [true]: 'bool'}
 [m[i], m[f], m[s], m[b], m[t]]

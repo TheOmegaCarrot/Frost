@@ -10,6 +10,7 @@
 #=     ],
 #=     inputs: {pairs: [[null, null], [true, true], [{a: 1}, {a: 1}], [1, '1'], ['a', x'61']]},
 #= }
+def {pairs} = import('inputs')
 map(pairs, fn pair -> {
     def [a, b] = pair
     [

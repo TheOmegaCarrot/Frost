@@ -1,5 +1,6 @@
 # The value is checked to be a Map before any computed key is evaluated.
 #= {result: false, printed: [], inputs: {v: 5}}
+def {v} = import('inputs')
 defn note(k) -> {
     print(k)
     k

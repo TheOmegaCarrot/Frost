@@ -1,4 +1,5 @@
 # Frost has no spread syntax in a call: passing an Array's elements as
 # arguments is what `call` is for, and the help says so.
 #= {rejects: ['no spread', 'call(f, args)'], inputs: {args: [1]}}
+def {args} = import('inputs')
 collect(...args)

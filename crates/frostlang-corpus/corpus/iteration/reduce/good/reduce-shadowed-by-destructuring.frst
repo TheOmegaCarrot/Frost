@@ -2,6 +2,7 @@
 # rest of the scope, even in a three-argument call that matches the global's
 # shape.
 #= {result: ['local', 3], inputs: {xs: [1, 2]}}
+def {xs} = import('inputs')
 def add = fn acc, x -> acc + x
 def global_result = reduce(xs, 0, add)
 def {reduce} = {reduce: fn s, start, f -> 'local'}

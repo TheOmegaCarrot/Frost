@@ -15,6 +15,7 @@
 #=         },
 #=     },
 #= }
+def {graph} = import('inputs')
 defn contains(xs, x) -> reduce(xs, false, fn found, y -> found or y == x)
 
 defn visit(node, seen) ->

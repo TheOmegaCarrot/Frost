@@ -1,6 +1,7 @@
 # The threaded value may be any operand: a literal, a structure, a call, an
 # index, a block, or a parenthesized expression.
 #= {result: [4, 2, 3, 6, 4, 4], inputs: {xs: [1, 5]}}
+def {xs} = import('inputs')
 defn inc(x) -> x + 1
 [
     3 @ inc(),

@@ -1,6 +1,7 @@
 # Destructuring reads a Map built by merging and an Array built by
 # concatenation, seeing the right operand's value for a shared key.
 #= {result: [2, 3, 1, [2, 3]], inputs: {base: {a: 1, b: 1}, xs: [1]}}
+def {base, xs} = import('inputs')
 def {a, b} = base + {a: 2, b: 3}
 def [first, ...rest] = xs + [2, 3]
 [a, b, first, rest]

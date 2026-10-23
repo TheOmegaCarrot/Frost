@@ -1,4 +1,5 @@
 # Every format String is a String, so even an empty one is truthy: `or` keeps
 # it and `if` takes its branch.
 #= {result: ['', 'yes', ''], inputs: {e: ''}}
+def {e} = import('inputs')
 [$'' or 'fallback', if $'${e}': 'yes' else: 'no', $'${e}' or 'fallback']

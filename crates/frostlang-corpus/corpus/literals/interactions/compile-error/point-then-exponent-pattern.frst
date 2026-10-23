@@ -1,5 +1,6 @@
 # A malformed Float literal is rejected in a pattern as in an expression.
 #= {rejects: 'invalid number', inputs: {x: 1000.0}}
+def {x} = import('inputs')
 match x {
     1.e3 => 'thousand',
     _ => 'other',

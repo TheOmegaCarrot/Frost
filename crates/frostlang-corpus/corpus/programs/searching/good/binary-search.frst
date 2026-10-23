@@ -10,6 +10,7 @@
 #=         words: ['ant', 'bee', 'cat', 'dog'],
 #=     },
 #= }
+def {sorted, empty, words} = import('inputs')
 defn search(xs, target) -> {
     defn between(low, high) -> if low > high: null else: do {
         def middle = low + (high - low) / 2

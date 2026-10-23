@@ -1,6 +1,7 @@
 # Inside parentheses, a prefix `-` or `not` may end its line, its operand on
 # the next.
 #= {result: [-1, false], inputs: {n: 1}}
+def {n} = import('inputs')
 [
     (-
         n),

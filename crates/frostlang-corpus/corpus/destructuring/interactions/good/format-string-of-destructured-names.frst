@@ -1,4 +1,5 @@
 # Destructured names interpolate into a format String like any other names.
 #= {result: 'ada (36): [1, 2]', inputs: {person: {name: 'ada', age: 36, tags: [1, 2]}}}
+def {person} = import('inputs')
 def {name, age, tags: [t1, t2]} = person
 $'${name} (${age}): [${t1}, ${t2}]'

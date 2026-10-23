@@ -1,5 +1,6 @@
 # An error the VM raises itself, such as division by zero, comes from no
 # `error` call, so its trace starts at the function that divided.
 #= {result: ['ratio'], inputs: {zero: 0}}
+def {zero} = import('inputs')
 defn ratio(n) -> [n / zero]
 try_call(ratio, [1]).trace

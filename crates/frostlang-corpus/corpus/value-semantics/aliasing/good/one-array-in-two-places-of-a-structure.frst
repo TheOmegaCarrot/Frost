@@ -2,6 +2,7 @@
 # as any program can tell: extending what one position holds changes neither
 # position nor the original binding.
 #= {result: [[[1], [1]], [1, 2], [1]], inputs: {n: 1}}
+def {n} = import('inputs')
 def inner = [n]
 def outer = [inner, inner]
 def grown = outer[0] + [2]

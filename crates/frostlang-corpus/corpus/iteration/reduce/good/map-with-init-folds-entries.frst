@@ -1,5 +1,6 @@
 # Over a Map, `reduce` calls the operation with the accumulator, the key, and
 # the value of each entry.
 #= {result: [3, 3], inputs: {m: {a: 1, b: 2}}}
+def {m} = import('inputs')
 def sum_values = fn acc, k, v -> acc + v
 [reduce({a: 1, b: 2}, 0, sum_values), reduce(m, 0, sum_values)]

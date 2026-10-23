@@ -1,6 +1,7 @@
 # An `if` expression in an interpolation, with `else`, with `elif`, and without
 # `else`; an untaken `if` with no `else` interpolates Null.
 #= {result: ['<big>', '<small>', '<null>'], inputs: {x: 7}}
+def {x} = import('inputs')
 [
     $'<${if x > 5: "big" else: "small"}>',
     $'<${if x > 50: "huge" elif x > 5: "small" else: "tiny"}>',

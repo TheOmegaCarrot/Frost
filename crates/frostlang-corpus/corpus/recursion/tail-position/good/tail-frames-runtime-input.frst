@@ -1,6 +1,7 @@
 # A tail call replaces its caller's frame for depths known only at runtime:
 # the backtrace from the bottom does not grow with the depth.
 #= {result: 0, inputs: {deep: 500, shallow: 5}}
+def {deep, shallow} = import('inputs')
 defn down(n) -> if n == 0: error('bottom') else: down(n - 1)
 defn frames(n) -> len(try_call(down, [n]).trace)
 frames(deep) - frames(shallow)

@@ -1,4 +1,5 @@
 # A key is evaluated before its value, so of a raising key and a raising
 # value the key's error surfaces.
 #= {raises: 'Division by zero', inputs: {zero: 0}}
+def {zero} = import('inputs')
 {[1 / zero]: 1 % zero}

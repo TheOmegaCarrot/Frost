@@ -1,0 +1,5 @@
+# A pin's expression follows ordinary arithmetic, so Int overflow raises there
+# too, when folded.
+#= {raises: 'Int overflow'}
+def [f, (9223372036854775807 + 1)] = ['folded', -9223372036854775807 - 1]
+f

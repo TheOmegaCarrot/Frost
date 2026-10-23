@@ -1,5 +1,6 @@
 # `each` yields a structure equal to its input, and the input binding is
 # unchanged after it.
 #= {result: [[1, 2], [1, 2]], inputs: {xs: [1, 2]}}
+def {xs} = import('inputs')
 def ys = each(xs, fn x -> x + 1)
 [xs, ys]

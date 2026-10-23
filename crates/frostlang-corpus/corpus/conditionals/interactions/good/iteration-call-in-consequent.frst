@@ -4,6 +4,7 @@
 #=     result: [[2, 4], [], [2], [1, 2]],
 #=     inputs: {xs: [1, 2], t: true, f: false},
 #= }
+def {xs, t, f} = import('inputs')
 defn doubled(c) -> if c: map(xs, fn x -> x * 2) else: []
 defn large(c) -> if c: filter(xs, $($ > 1)) else: xs
 [doubled(t), doubled(f), large(t), large(f)]

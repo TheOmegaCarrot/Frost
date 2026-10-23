@@ -1,4 +1,5 @@
 # The threaded value alone does not satisfy a two-parameter function.
 #= {raises: ['expects 2', 'called with 1'], inputs: {n: 5}}
+def {n} = import('inputs')
 defn add(a, b) -> a + b
 n @ add()

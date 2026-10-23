@@ -1,6 +1,7 @@
 # An unparenthesized `if` may be a `map` call's first argument; its alternate
 # ends at the comma.
 #= {result: [[10], [20, 30]], inputs: {t: true, f: false}}
+def {t, f} = import('inputs')
 [
     map(if t: [1] else: [2, 3], fn x -> x * 10),
     map(if f: [1] else: [2, 3], fn x -> x * 10),

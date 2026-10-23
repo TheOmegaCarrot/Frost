@@ -1,0 +1,7 @@
+# A constant computation too long for the compiler to evaluate ahead of time
+# still raises at runtime when it overflows, here only on its last step.
+# Subtle because every argument is constant, yet the work and its error must
+# be left for runtime.
+#= {raises: 'Int overflow: 9223279803134431452 + 92233720368548'}
+defn add_large(n, acc) -> if n == 0: acc else: add_large(n - 1, acc + 92233720368548)
+add_large(100000, 0)

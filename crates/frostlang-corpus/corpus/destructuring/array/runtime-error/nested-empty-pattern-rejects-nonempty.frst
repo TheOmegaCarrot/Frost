@@ -1,4 +1,5 @@
 # A nested `[]` rejects a non-empty Array.
 #= {raises: 'exactly 0 elements', inputs: {xs: [[1], 0]}}
+def {xs} = import('inputs')
 def [[], a] = xs
 a

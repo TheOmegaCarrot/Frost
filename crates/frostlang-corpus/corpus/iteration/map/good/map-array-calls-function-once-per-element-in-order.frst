@@ -5,6 +5,7 @@
 #=     printed: ['3', 'null', '3'],
 #=     inputs: {xs: [3, null, 3]},
 #= }
+def {xs} = import('inputs')
 map(xs, fn x -> {
     print(to_string(x))
     if is_null(x): null else: x * 10

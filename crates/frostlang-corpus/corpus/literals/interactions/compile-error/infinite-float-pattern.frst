@@ -1,6 +1,7 @@
 # A Float pattern too large to be finite is rejected, as the same literal is in an
 # expression.
 #= {rejects: 'NaN or Infinity', inputs: {x: 1.0}}
+def {x} = import('inputs')
 match x {
     1e400 => 'huge',
     _ => 'other',

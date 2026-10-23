@@ -1,5 +1,6 @@
 # A fixed-length destructure of an Array that nothing else holds binds each
 # element in place, and extending one leaves the other alone.
 #= {result: [[1, 0], [2]], inputs: {n: 1}}
+def {n} = import('inputs')
 def [a, b] = [[n], [2]]
 [a + [0], b]

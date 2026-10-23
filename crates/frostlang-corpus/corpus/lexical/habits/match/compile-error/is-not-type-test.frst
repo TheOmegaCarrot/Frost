@@ -1,4 +1,5 @@
 # A pattern's type test cannot be negated with `is not`; a guard excludes a
 # type.
 #= {rejects: 'to exclude a type, use a guard', inputs: {x: 1}}
+def {x} = import('inputs')
 match x { n is not Int => 1, _ => 2 }

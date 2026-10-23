@@ -1,3 +1,4 @@
 # Bytes elements reach the operation as Bytes, the empty value included.
 #= {result: [[0, 1, 2], [0, 1, 2]], inputs: {bs: [x'', x'01', x'ff00']}}
+def {bs} = import('inputs')
 [map([x'', x'01', x'ff00'], len), map(bs, len)]

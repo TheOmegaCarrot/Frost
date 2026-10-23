@@ -5,6 +5,7 @@
 #=     printed: ['left', 'right'],
 #=     inputs: {nothing: null, one: 1},
 #= }
+def {nothing, one} = import('inputs')
 defn noisy(label, value) -> {
     print(label)
     value

@@ -2,6 +2,7 @@
 # a name the pattern is about to bind, since the value is evaluated before
 # the pattern binds anything.
 #= {result: [2, 1], inputs: {one: 1, two: 2}}
+def {one, two} = import('inputs')
 def x = one
 def pair = do {
     def [x, read] = [two, fn -> x]

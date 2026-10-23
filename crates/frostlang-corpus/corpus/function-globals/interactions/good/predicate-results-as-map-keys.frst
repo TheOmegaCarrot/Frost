@@ -1,3 +1,4 @@
 # A predicate's Bool is a valid Map key.
 #= {result: {[true]: 'int', [false]: 'not int'}, inputs: {a: 1, b: 'b'}}
+def {a, b} = import('inputs')
 {[is_int(a)]: 'int', [is_int(b)]: 'not int'}

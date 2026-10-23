@@ -3,4 +3,5 @@
 #=     result: [true, false, false],
 #=     inputs: {a: [1, [2, {k: [3]}]], b: [1, [2, {k: [3]}]], c: [1, [2, {k: [4]}]], d: [1, [2]]},
 #= }
+def {a, b, c, d} = import('inputs')
 [a == b, a == c, a == d]

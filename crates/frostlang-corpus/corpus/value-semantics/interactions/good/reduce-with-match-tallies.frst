@@ -4,6 +4,7 @@
 #=     result: [{ints: [1, 3], strs: ['a'], other: 1}, {ints: [], strs: [], other: 0}],
 #=     inputs: {items: [1, 'a', 3, null]},
 #= }
+def {items} = import('inputs')
 def empty = {ints: [], strs: [], other: 0}
 defn step(tally, item) -> match item {
     i is Int => tally + {ints: tally.ints + [i]},

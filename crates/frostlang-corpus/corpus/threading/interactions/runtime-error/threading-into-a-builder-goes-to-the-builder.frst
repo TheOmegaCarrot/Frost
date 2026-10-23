@@ -1,4 +1,5 @@
 # Without parentheses, `1 @ curry(plus)(2)` is `curry(1, plus)(2)`: the value
 # goes to the builder, which requires a function first.
 #= {raises: ['curry', 'Function', 'Int'], inputs: {one: 1}}
+def {one} = import('inputs')
 one @ curry(plus)(2)

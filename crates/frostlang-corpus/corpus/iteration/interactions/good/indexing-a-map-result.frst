@@ -1,3 +1,4 @@
 # A `map`'s result can be indexed and its fields accessed directly.
 #= {result: [4, 20], inputs: {xs: [1, 2], m: {a: 1, b: 2}}}
+def {xs, m} = import('inputs')
 [map(xs, fn x -> x * 2)[1], map(m, fn k, v -> {[k]: v * 10}).b]

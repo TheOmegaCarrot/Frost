@@ -1,3 +1,4 @@
 # A range in an index is a slice, which Frost writes with `slice`.
 #= {rejects: 'no slice syntax', inputs: {xs: [1, 2, 3]}}
+def {xs} = import('inputs')
 xs[1..2]

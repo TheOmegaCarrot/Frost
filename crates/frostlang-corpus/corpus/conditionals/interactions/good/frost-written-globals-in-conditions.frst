@@ -5,6 +5,7 @@
 #=     result: ['not empty', 'missing', 7],
 #=     inputs: {xs: [1], m: {a: {}}, f: false},
 #= }
+def {xs, m, f} = import('inputs')
 def is_empty = fn v -> len(v) == 0
 [
     if inv(is_empty)(xs): 'not empty' else: 'empty',

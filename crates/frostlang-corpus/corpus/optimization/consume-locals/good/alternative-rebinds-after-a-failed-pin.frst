@@ -3,6 +3,7 @@
 # alternative bound; when the first alternative matches, the arm sees its
 # value.
 #= {result: [[1, 0], [2, 0]], inputs: {same: [[1], [1]], different: [[1], [2]]}}
+def {same, different} = import('inputs')
 defn pick(target) -> match target {
     [a, (a)] | [_, a] => a + [0],
 }

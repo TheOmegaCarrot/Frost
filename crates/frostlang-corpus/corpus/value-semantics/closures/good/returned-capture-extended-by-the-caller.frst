@@ -1,6 +1,7 @@
 # A closure returning its capture hands the caller a value the caller can
 # extend without affecting the capture: the next call returns the original.
 #= {result: [[1, 2], [1], [1, 3]], inputs: {n: 1}}
+def {n} = import('inputs')
 def peek = do {
     def base = [n]
     fn -> base

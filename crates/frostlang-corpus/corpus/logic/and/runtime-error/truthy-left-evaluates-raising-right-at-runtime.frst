@@ -1,4 +1,5 @@
 # Zero is truthy, so a runtime `and` with it on the left evaluates its right
 # operand, which raises.
 #= {raises: 'the right operand ran', inputs: {zero: 0}}
+def {zero} = import('inputs')
 zero and error('the right operand ran')

@@ -1,3 +1,4 @@
 # `@` at the end of the input has no call to thread into.
 #= {rejects: 'expected an expression', inputs: {xs: [1]}}
+def {xs} = import('inputs')
 xs @

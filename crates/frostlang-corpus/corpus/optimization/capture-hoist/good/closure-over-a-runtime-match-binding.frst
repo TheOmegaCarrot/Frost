@@ -1,6 +1,7 @@
 # The function of closure-over-a-known-match-binding, capturing parts of a
 # target only known at runtime, computes the same results.
 #= {result: [13, 23], inputs: {pair: [1, 2], ten: 10, twenty: 20}}
+def {pair, ten, twenty} = import('inputs')
 def add_pair = match pair {
     [a, b] => fn x -> x + a + b,
 }

@@ -1,6 +1,0 @@
-# Int overflow wraps for runtime values threaded through a call and a chain.
-#= {
-#=     result: [-9223372036854775808, 9223372036854775807, -2],
-#=     inputs: {max: 9223372036854775807, min: -9223372036854775808, inc: fn x -> x + 1},
-#= }
-[max @ inc(), min @ minus(1), max @ times(2)]

@@ -1,5 +1,6 @@
 # A self-call as the right operand of `and` in a function body's tail completes
 # even many levels deep, and yields the falsy operand that ends the recursion.
 #= {result: false, inputs: {depth: 100000}}
+def {depth} = import('inputs')
 defn walk(n) -> n > 0 and walk(n - 1)
 walk(depth)

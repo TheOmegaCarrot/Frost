@@ -13,6 +13,7 @@
 #=     },
 #=     inputs: {items: ['a', 'b', 'c']},
 #= }
+def {items} = import('inputs')
 defn stack(items) -> {
     push: fn x -> stack([x] + items),
     pop: fn -> match items {

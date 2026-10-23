@@ -6,6 +6,7 @@
 #=     raises: ['expects 2 argument', 'called with 3'],
 #=     inputs: {list: [1, 2], table: {a: 1, b: 2}},
 #= }
+def {list, table} = import('inputs')
 defn add(acc, x) -> acc + x
 def from_list = reduce(list, 0, add)
 def from_table = reduce(table, 0, add)

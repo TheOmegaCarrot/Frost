@@ -1,6 +1,7 @@
 # A truthy left operand leaves `and` undecided, so the right operand runs and
 # its value is the result: here, the Null that `print` returns.
 #= {result: [null, null], printed: ['literal left', 'runtime left'], inputs: {zero: 0}}
+def {zero} = import('inputs')
 [
     true and print('literal left'),
     zero and print('runtime left'),

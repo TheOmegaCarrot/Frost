@@ -4,6 +4,7 @@
 #=     result: [5, true, null, false, null, false, 'yes', [1, 2]],
 #=     inputs: {t: true, f: false, n: null, five: 5, one: 1, yes: 'yes', pair: [1, 2]},
 #= }
+def {t, f, n, five, one, yes, pair} = import('inputs')
 [
     t and five,
     five and t,

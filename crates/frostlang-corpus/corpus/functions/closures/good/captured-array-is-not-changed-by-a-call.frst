@@ -3,5 +3,6 @@
 # value. Subtle: the VM may reuse a uniquely owned buffer in place, which
 # must never be observable.
 #= {result: [[1, 2, 3], [1, 2, 3], [1, 2]], inputs: {xs: [1, 2]}}
+def {xs} = import('inputs')
 def extend = fn -> xs + [3]
 [extend(), extend(), xs]

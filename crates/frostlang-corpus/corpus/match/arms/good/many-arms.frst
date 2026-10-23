@@ -1,5 +1,6 @@
 # A match with many arms tries each in turn; values near the end are reached.
 #= {result: ['a', 'f', 'l', 'other'], inputs: {xs: [1, 6, 12, 13]}}
+def {xs} = import('inputs')
 map(xs, fn n -> match n {
     1 => 'a',
     2 => 'b',

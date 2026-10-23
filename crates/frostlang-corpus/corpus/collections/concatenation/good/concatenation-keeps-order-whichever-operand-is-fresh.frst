@@ -5,4 +5,5 @@
 #=     result: [[1, 9], [9, 1], [9, 9], [9]],
 #=     inputs: {x: 1, shared: [9]},
 #= }
+def {x, shared} = import('inputs')
 [[x] + shared, shared + [x], shared + shared, shared]

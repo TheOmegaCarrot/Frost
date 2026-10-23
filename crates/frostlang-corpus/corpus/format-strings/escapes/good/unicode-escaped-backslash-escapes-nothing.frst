@@ -3,4 +3,5 @@
 # closes the String. Subtle: `\\` and `\u{5c}` yield the same character, but
 # escapes decode once, never forming new ones.
 #= {result: ['\\7', '\\', '\\$7'], inputs: {x: 7}}
+def {x} = import('inputs')
 [$'\u{5c}${x}', $'\u{5c}', $'\u{5c}$${x}']

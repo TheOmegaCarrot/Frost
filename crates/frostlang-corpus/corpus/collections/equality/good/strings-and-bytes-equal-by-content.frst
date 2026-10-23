@@ -1,4 +1,5 @@
 # Strings compare by their exact text and Bytes by their exact bytes, case
 # and normalization included.
 #= {result: [true, false, false, true, false], inputs: {s: 'abc', y: x'00ff'}}
+def {s, y} = import('inputs')
 [s == 'abc', s == 'ABC', '\u{e9}' == 'e\u{301}', y == x'00ff', y == x'00fe']

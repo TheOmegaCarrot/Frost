@@ -2,4 +2,5 @@
 # are passed over without being ordered, so `<=` and `>=` are true and `<` is
 # false. Subtle: Null and Map are not orderable themselves.
 #= {result: [true, true, false, true], inputs: {a: [null], b: [null], m: [{}]}}
+def {a, b, m} = import('inputs')
 [a <= b, a >= b, a < b, m <= [{}]]

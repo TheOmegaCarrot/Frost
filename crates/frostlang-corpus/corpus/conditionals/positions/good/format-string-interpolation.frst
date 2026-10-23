@@ -1,5 +1,6 @@
 # An `if` may be a format String's interpolation.
 #= {result: ['<yes>', '<no>', '<>'], inputs: {t: true, f: false}}
+def {t, f} = import('inputs')
 [
     $'<${if t: 'yes' else: 'no'}>',
     $'<${if f: 'yes' else: 'no'}>',

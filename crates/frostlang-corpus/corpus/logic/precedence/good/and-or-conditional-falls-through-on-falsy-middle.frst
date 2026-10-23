@@ -4,6 +4,7 @@
 #=     result: ['fallback', 'fallback', 'fallback', 'fallback'],
 #=     inputs: {t: true, f: false, n: null},
 #= }
+def {t, f, n} = import('inputs')
 [
     true and false or 'fallback',
     true and null or 'fallback',

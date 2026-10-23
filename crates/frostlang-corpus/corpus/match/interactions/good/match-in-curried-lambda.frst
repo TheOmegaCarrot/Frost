@@ -1,6 +1,7 @@
 # A match in an inner curried lambda can compare against the outer
 # parameter.
 #= {result: [true, false], inputs: {a: 3, b: 4}}
+def {a, b} = import('inputs')
 def equals = fn expected -> fn v -> match v {
     (expected) => true,
     _ => false,

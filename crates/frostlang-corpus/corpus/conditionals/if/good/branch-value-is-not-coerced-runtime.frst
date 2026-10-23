@@ -4,6 +4,7 @@
 #=     result: [null, false, 0, ''],
 #=     inputs: {t: true, f: false, values: [null, false, 0, '']},
 #= }
+def {t, f, values} = import('inputs')
 [
     if t: values[0] else: 'other',
     if f: 'other' else: values[1],

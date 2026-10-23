@@ -1,9 +1,10 @@
-# Int boundary literals and wrapping arithmetic split across lines inside
-# parentheses compute as on one line: overflow wraps.
-#= {result: [-9223372036854775808, 9223372036854775807], inputs: {one: 1}}
+# Int boundary literals and arithmetic reaching them, split across lines inside
+# parentheses, compute as on one line.
+#= {result: [9223372036854775807, -9223372036854775808], inputs: {one: 1}}
+def {one} = import('inputs')
 [
-    (9223372036854775807
+    (9223372036854775806
         + one),
-    (-9223372036854775808
+    (-9223372036854775807
         - one),
 ]

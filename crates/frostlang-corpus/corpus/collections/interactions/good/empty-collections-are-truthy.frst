@@ -1,6 +1,7 @@
 # Only Null and false are falsy: empty Arrays, Maps, Strings, and Bytes are
 # all truthy.
 #= {result: ['yes', 'yes', 'yes', 'yes'], inputs: {xs: [], m: {}, s: '', y: x''}}
+def {xs, m, s, y} = import('inputs')
 [
     if xs: 'yes' else: 'no',
     if m: 'yes' else: 'no',

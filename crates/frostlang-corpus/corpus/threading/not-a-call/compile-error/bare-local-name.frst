@@ -1,5 +1,6 @@
 # A bare name on the right of `@` is rejected even when it names a local
 # function rather than a global.
 #= {rejects: ['right side of `@` must be a call', 'try `inc()`'], inputs: {n: 1}}
+def {n} = import('inputs')
 defn inc(x) -> x + 1
 n @ inc

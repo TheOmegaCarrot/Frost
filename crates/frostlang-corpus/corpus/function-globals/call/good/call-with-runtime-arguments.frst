@@ -1,3 +1,4 @@
 # A runtime Array is spread element by element, Null included.
 #= {result: [1, 'two', null], inputs: {args: [1, 'two', null]}}
+def {args} = import('inputs')
 call(collect, args)

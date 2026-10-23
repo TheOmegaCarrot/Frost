@@ -3,6 +3,7 @@
 # lambda's parameter. Each inner use reads that inner binding. Subtle because
 # reading the name directly in the value is an unbound-name error.
 #= {result: [5, 2, 7], inputs: {n: 1}}
+def {n} = import('inputs')
 def block = do {
     def block = 5
     block

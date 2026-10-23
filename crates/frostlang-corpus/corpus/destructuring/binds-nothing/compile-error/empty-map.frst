@@ -1,4 +1,5 @@
 # An empty Map pattern without `as` binds no name.
 #= {rejects: 'binds no name', inputs: {m: {}}}
+def {m} = import('inputs')
 def {} = m
 0

@@ -1,3 +1,4 @@
 # An abbreviated lambda on the right of `@` must be called with `()`.
 #= {rejects: ['right side of `@` must be a call', 'not a call'], inputs: {n: 1}}
+def {n} = import('inputs')
 n @ $($ * 2)

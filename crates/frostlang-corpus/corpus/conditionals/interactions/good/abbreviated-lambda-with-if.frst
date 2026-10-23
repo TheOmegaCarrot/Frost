@@ -1,4 +1,5 @@
 # An abbreviated lambda's body may be an `if` over its placeholders.
 #= {result: [5, 7, 2], inputs: {pairs: [[5, 1], [3, 7], [2, 2]]}}
+def {pairs} = import('inputs')
 def bigger = $(if $1 > $2: $1 else: $2)
 map(pairs, fn p -> call(bigger, p))

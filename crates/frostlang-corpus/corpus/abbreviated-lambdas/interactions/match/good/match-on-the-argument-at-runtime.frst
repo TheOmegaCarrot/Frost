@@ -1,6 +1,7 @@
 # Matching on a placeholder works when the argument is known only at
 # runtime, including a Map pattern with a whole-Map binding.
 #= {result: ['Ada', {name: 'Ada'}], inputs: {person: {name: 'Ada'}}}
+def {person} = import('inputs')
 def unpack = $(match $ {
     {name} as whole => [name, whole],
 })

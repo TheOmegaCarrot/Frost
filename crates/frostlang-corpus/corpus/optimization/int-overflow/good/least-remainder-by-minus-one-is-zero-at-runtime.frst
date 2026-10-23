@@ -1,0 +1,8 @@
+# The remainder of least-remainder-by-minus-one-is-zero, over values only known
+# at runtime, is the same 0.
+#= {
+#=     result: 0,
+#=     inputs: {least: -9223372036854775808, minus_one: -1},
+#= }
+def {least, minus_one} = import('inputs')
+least % minus_one

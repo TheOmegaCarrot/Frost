@@ -1,5 +1,6 @@
 # `filter` over an empty Array or Map yields the same empty structure without
 # calling the predicate.
 #= {result: [[], {}, [], {}], inputs: {xs: [], m: {}}}
+def {xs, m} = import('inputs')
 def boom = fn ...args -> error('called')
 [filter([], boom), filter({}, boom), filter(xs, boom), filter(m, boom)]

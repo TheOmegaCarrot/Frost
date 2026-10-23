@@ -1,3 +1,4 @@
 # An expression as a key is a computed key, which goes in brackets.
 #= {rejects: 'a computed key goes in brackets', inputs: {x: 'a', y: 'b'}}
+def {x, y} = import('inputs')
 {x + y: 1}

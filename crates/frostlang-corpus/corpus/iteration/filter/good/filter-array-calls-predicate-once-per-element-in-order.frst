@@ -5,6 +5,7 @@
 #=     printed: ['1', '2', '3', '2'],
 #=     inputs: {xs: [1, 2, 3, 2]},
 #= }
+def {xs} = import('inputs')
 filter(xs, fn x -> {
     print(to_string(x))
     x == 2

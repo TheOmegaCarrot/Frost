@@ -1,5 +1,6 @@
 # `has` on a Map before, during, and after a merge is derived from it sees the
 # Map without the merged key each time it reads the binding itself.
 #= {result: [false, true, false], inputs: {v: 1}}
+def {v} = import('inputs')
 def m = {k: v}
 [has(m, 'j'), has(m + {j: 2}, 'j'), has(m, 'j')]

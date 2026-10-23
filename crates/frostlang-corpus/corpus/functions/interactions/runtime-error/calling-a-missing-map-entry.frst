@@ -1,5 +1,6 @@
 # Indexing a Map under a key it lacks gives Null, which is not callable, so
 # calling a missing dispatch-table entry raises at the call.
 #= {raises: ['non-function', 'Null'], inputs: {k: 'missing'}}
+def {k} = import('inputs')
 def table = {present: fn -> 1}
 table[k]()

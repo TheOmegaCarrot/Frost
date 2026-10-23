@@ -1,5 +1,6 @@
 # A multiline String literal is a valid pattern, matching the text it denotes.
 #= {result: 'matched', inputs: {s: 'hello'}}
+def {s} = import('inputs')
 match s {
     '''
     hello

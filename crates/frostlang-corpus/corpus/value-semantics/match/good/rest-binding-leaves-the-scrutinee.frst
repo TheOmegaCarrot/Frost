@@ -1,6 +1,7 @@
 # A rest binding split off a matched Array, then extended, leaves the
 # scrutinee's binding unchanged.
 #= {result: [[2, 3, 1], [1, 2, 3]], inputs: {n: 1}}
+def {n} = import('inputs')
 def xs = [n, 2, 3]
 def rotated = match xs {
     [first, ...rest] => rest + [first],

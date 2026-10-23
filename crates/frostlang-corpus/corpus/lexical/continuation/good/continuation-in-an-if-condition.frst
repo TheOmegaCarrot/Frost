@@ -1,6 +1,7 @@
 # A continuation line may extend an `if`'s condition; the comparison and the
 # colon then follow on the continued line.
 #= {result: ['long', 'short'], inputs: {xs: [1, 2, 3], ys: [1]}}
+def {xs, ys} = import('inputs')
 defn size(v) -> if v
     @ len() > 2: 'long'
 else: 'short'

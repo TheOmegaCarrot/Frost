@@ -12,6 +12,7 @@
 #=         phrases: ['pineapplepenapple', 'applepie', '', 'aaa'],
 #=     },
 #= }
+def {dictionary, phrases} = import('inputs')
 defn segment(phrase) -> {
     def n = len(phrase)
     def table = reduce(range(1, n + 1), {[0]: []}, fn found, stop ->

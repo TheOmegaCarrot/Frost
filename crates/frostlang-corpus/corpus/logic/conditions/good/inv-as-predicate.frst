@@ -4,6 +4,7 @@
 #=     result: [[1, 'a', 0], [[1, 2], [5, 3]]],
 #=     inputs: {values: [null, 1, 'a', null, 0], pairs: [[1, 2], [4, 4], [5, 3]]},
 #= }
+def {values, pairs} = import('inputs')
 defn same(pair) -> pair[0] == pair[1]
 [
     values @ filter(inv(is_null)),

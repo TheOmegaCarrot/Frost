@@ -1,5 +1,0 @@
-# A top-level binding may shadow a value supplied from the enclosing scope:
-# its own value reads the supplied one, and later reads see the binding.
-#= {result: [2, 3], inputs: {x: 1}}
-def x = x + 1
-[x, x + 1]

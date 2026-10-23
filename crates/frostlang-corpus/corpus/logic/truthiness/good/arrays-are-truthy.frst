@@ -4,6 +4,7 @@
 #=     result: [[true, true, true, true], [true, true, true, true]],
 #=     inputs: {empty: [], one_null: [null], one_false: [false], nested: [[]]},
 #= }
+def {empty, one_null, one_false, nested} = import('inputs')
 [
     [
         not not [],

@@ -1,3 +1,4 @@
 # A Map and an Array do not combine with `+`.
 #= {raises: ['Cannot add', 'Map + Array'], inputs: {m: {a: 1}, xs: [['b', 2]]}}
+def {m, xs} = import('inputs')
 m + xs

@@ -1,6 +1,7 @@
 # String patterns in either quote style match equal Strings; the empty String
 # is a pattern too. Matching is exact: case and surrounding space matter.
 #= {result: ['single', 'double', 'empty', 'other', 'other'], inputs: {xs: ['abc', 'def', '', 'ABC', ' abc']}}
+def {xs} = import('inputs')
 map(xs, fn s -> match s {
     'abc' => 'single',
     "def" => 'double',

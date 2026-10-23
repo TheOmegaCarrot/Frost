@@ -1,3 +1,4 @@
 # `/` is numeric only: it does not split an Array.
 #= {raises: ['Cannot divide', 'Array / Int'], inputs: {xs: [1, 2, 3, 4]}}
+def {xs} = import('inputs')
 xs / 2

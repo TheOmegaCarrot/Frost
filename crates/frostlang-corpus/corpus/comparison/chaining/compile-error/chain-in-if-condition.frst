@@ -1,3 +1,4 @@
 # A chained comparison as an `if` condition is rejected.
 #= {rejects: 'cannot chain', inputs: {x: 5}}
+def {x} = import('inputs')
 if 0 < x < 10: 'in range' else: 'out of range'

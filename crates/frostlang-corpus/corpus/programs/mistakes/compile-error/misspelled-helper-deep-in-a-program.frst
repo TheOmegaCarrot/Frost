@@ -4,6 +4,7 @@
 #=     rejects: ['`totl`', 'not defined'],
 #=     inputs: {xs: [1, 2, 3]},
 #= }
+def {xs} = import('inputs')
 defn total(items) -> reduce(items, 0, fn acc, x -> acc + x)
 defn mean(items) -> totl(items) / len(items)
 defn report(items) -> {

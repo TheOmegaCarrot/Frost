@@ -1,4 +1,5 @@
 # A Float literal part does not match the equal Int.
 #= {raises: 'expected `3.0`', inputs: {xs: [7, 3]}}
+def {xs} = import('inputs')
 def [a, 3.0] = xs
 a

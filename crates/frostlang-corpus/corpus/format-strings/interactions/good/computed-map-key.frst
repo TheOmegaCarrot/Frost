@@ -1,4 +1,5 @@
 # A format String as a computed Map key, both building the Map and indexing it.
 #= {result: [{k1: 1, k2: 2}, 2, true], inputs: {n: 1}}
+def {n} = import('inputs')
 def m = {[$'k${n}']: n, [$'k${n + 1}']: n + 1}
 [m, m[$'k${n + 1}'], has(m, $'k${n}')]

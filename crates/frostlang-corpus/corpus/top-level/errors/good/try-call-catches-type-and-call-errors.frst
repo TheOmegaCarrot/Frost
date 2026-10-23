@@ -9,6 +9,7 @@
 #=     ],
 #=     inputs: {one: 1, a: 'a'},
 #= }
+def {one, a} = import('inputs')
 defn summary(outcome) -> [outcome.ok, is_string(outcome.error)]
 [
     summary(try_call(fn -> one + a)),

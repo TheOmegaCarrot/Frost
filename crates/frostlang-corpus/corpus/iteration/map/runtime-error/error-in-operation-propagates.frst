@@ -1,3 +1,4 @@
 # An error the operation raises propagates out of `map`.
 #= {raises: 'boom at 2', inputs: {xs: [1, 2, 3]}}
+def {xs} = import('inputs')
 map(xs, fn x -> if x == 2: error('boom at 2') else: x)

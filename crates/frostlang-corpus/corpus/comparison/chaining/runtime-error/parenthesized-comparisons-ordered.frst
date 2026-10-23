@@ -1,3 +1,4 @@
 # Ordering two parenthesized comparisons orders two Bools, which raises.
 #= {raises: ['Bool', 'not orderable'], inputs: {a: 1, b: 2}}
+def {a, b} = import('inputs')
 (a < b) <= (b < a)

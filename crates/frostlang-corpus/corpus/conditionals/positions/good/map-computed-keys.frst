@@ -4,6 +4,7 @@
 #=     result: {b: 1, [2]: 2, [1.5]: 3, [false]: 4, [x'ff']: 5},
 #=     inputs: {f: false},
 #= }
+def {f} = import('inputs')
 {
     [if f: 'a' else: 'b']: 1,
     [if f: 1 else: 2]: 2,

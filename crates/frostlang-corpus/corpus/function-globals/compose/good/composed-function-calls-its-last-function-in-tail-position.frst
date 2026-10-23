@@ -3,6 +3,7 @@
 # the bottom does not grow with the depth. Subtle because the earlier
 # functions' calls are not in tail position: their results are passed on.
 #= {result: 0, inputs: {deep: 500, shallow: 5}}
+def {deep, shallow} = import('inputs')
 defn down(n) -> if n == 0: error('bottom') else: compose(fn k -> k - 1, down)(n)
 defn frames(n) -> len(try_call(down, [n]).trace)
 frames(deep) - frames(shallow)

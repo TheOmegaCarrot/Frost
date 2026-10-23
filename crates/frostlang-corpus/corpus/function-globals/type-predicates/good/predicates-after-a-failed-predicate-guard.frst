@@ -2,6 +2,7 @@
 # failed for that value, so its predicates still answer by the value's own
 # type.
 #= {result: ['int', [false, true], [false, false]], inputs: {samples: [1, 2.0, 'a']}}
+def {samples} = import('inputs')
 map(samples, fn v -> match v {
     n if: is_int(n) => 'int',
     n => [is_int(n), is_float(n)],

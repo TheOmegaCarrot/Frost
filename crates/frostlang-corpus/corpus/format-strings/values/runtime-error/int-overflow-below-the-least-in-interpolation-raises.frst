@@ -1,0 +1,8 @@
+# Int arithmetic in an interpolation raises on overflow past the least Int, as
+# it does anywhere.
+#= {
+#=     raises: ['Int overflow', '-9223372036854775808 - 1'],
+#=     inputs: {min: -9223372036854775808},
+#= }
+def {min} = import('inputs')
+$'${min - 1}'

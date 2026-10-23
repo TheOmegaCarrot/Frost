@@ -1,6 +1,7 @@
 # A linked list of Maps ending in Null, known only at runtime, consumed by a
 # recursion that matches Null as the end and a Map pattern for each cell.
 #= {result: 6, inputs: {list: {head: 1, tail: {head: 2, tail: {head: 3, tail: null}}}}}
+def {list} = import('inputs')
 defn sum(cell, acc) -> match cell {
     null => acc,
     {head, tail} => sum(tail, acc + head),

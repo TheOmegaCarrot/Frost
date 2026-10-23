@@ -1,4 +1,5 @@
 # `is Map` rejects an Array.
 #= {raises: 'expected a Map', inputs: {v: []}}
+def {v} = import('inputs')
 def x is Map = v
 x

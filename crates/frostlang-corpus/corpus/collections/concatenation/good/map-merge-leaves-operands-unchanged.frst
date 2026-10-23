@@ -1,6 +1,7 @@
 # Merging builds a new Map and leaves both operands as they were, even when
 # the left operand is merged twice.
 #= {result: [{a: 1}, {a: 2}, {a: 1, b: 3}], inputs: {m: {a: 1}}}
+def {m} = import('inputs')
 def changed = m + {a: 2}
 def extended = m + {b: 3}
 [m, changed, extended]

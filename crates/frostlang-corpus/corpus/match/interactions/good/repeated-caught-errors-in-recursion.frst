@@ -1,6 +1,7 @@
 # Errors caught in a guard, over and over in recursion, leave no residue from
 # the abandoned matches.
 #= {result: 'done', lints: [['unused binding', '`i`']], inputs: {n: 50}}
+def {n} = import('inputs')
 defn f(k) -> if k == 0: 'done' else: match [k] {
     [j] if: try_call(fn -> match j { i if: error('boom') => 0 }).ok => 0,
     [j] => f(j - 1),

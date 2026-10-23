@@ -1,6 +1,7 @@
 # A comparison inside a closure uses the captured threshold of the closure that
 # runs it.
 #= {result: [[false, true, true], [false, false, true]], inputs: {xs: [1, 5, 9]}}
+def {xs} = import('inputs')
 defn above(limit) -> fn x -> x > limit
 [
     xs @ map(above(2)),

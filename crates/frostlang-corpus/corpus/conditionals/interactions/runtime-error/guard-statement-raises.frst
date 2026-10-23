@@ -1,5 +1,6 @@
 # A guard `if` statement raises for bad input before the body after it runs.
 #= {raises: 'needs an Int', inputs: {bad: 'x'}}
+def {bad} = import('inputs')
 defn double(n) -> {
     if not is_int(n): error('needs an Int')
     print('unreached')

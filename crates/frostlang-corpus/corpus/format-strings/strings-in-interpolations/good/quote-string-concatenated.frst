@@ -1,4 +1,5 @@
 # Strings in an interpolation combine with the interpolation's other operands:
 # here a quote-holding String is concatenated with a runtime value.
 #= {result: "<'7'>", inputs: {x: 7}}
+def {x} = import('inputs')
 $'<${"'" + to_string(x) + "'"}>'

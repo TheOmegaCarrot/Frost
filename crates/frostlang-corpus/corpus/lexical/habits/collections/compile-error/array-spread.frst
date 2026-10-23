@@ -1,3 +1,4 @@
 # Frost has no spread; `+` combines Arrays and Maps.
 #= {rejects: 'no spread', inputs: {xs: [1]}}
+def {xs} = import('inputs')
 [...xs, 4]

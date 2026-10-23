@@ -1,4 +1,5 @@
 # A format String mixing runtime and constant interpolations joins all its
 # segments in order, however much of it the optimizer folds.
 #= {result: 'a7b3c7d', inputs: {x: 7}}
+def {x} = import('inputs')
 $'a${x}b${1 + 2}c${x}d'

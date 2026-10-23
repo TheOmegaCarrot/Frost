@@ -1,5 +1,6 @@
 # A threaded recursive call that is not in tail position returns its value
 # into the surrounding expression.
 #= {result: [1, 2, 3, 4], inputs: {n: 4}}
+def {n} = import('inputs')
 defn upto(k) -> if k == 0: [] else: (k - 1) @ upto() @ collect(k) @ (fn pair -> pair[0] + [pair[1]])()
 n @ upto()

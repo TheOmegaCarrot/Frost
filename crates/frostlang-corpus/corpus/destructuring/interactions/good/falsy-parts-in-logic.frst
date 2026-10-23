@@ -1,5 +1,6 @@
 # Destructured `false` and Null keep their identity, so `or` falls through
 # them while `0` and the empty String stay truthy.
 #= {result: ['d1', 'd2', 0, ''], inputs: {xs: [false, null, 0, '']}}
+def {xs} = import('inputs')
 def [f, n, z, e] = xs
 [f or 'd1', n or 'd2', z or 'd3', e or 'd4']

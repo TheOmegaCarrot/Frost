@@ -6,5 +6,6 @@
 #=     result: [{a: 1, b: 2, c: 3}, [{a: 1}, {b: 2}, {c: 3}]],
 #=     inputs: {maps: [{a: 1}, {b: 2}, {c: 3}]},
 #= }
+def {maps} = import('inputs')
 def merged = reduce(maps, fn acc, m -> acc + m)
 [merged, maps]

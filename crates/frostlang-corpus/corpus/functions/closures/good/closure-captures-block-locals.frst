@@ -1,6 +1,7 @@
 # A lambda made in a `do` block captures the block's locals, which outlive
 # the block through the closure.
 #= {result: 15, inputs: {base: 10}}
+def {base} = import('inputs')
 def f = do {
     def extra = 5
     fn -> base + extra

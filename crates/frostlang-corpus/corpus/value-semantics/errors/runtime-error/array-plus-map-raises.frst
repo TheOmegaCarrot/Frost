@@ -2,5 +2,6 @@
 # with any other Array: reusing the operand's storage never turns a
 # mismatched `+` into a result.
 #= {raises: ['cannot add', 'Array + Map'], inputs: {n: 1}}
+def {n} = import('inputs')
 def xs = [n]
 xs + {k: 1}

@@ -2,6 +2,7 @@
 # when inexact, and a Float operand makes a Float even when the result is
 # whole.
 #= {result: [[true, false], [false, true]], inputs: {seven: 7, two: 2}}
+def {seven, two} = import('inputs')
 [
     [is_int(seven / two), is_float(seven / two)],
     [is_int(two * 1.0), is_float(two * 1.0)],

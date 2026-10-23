@@ -1,6 +1,7 @@
 # A function recursing from an arm's result many thousands of times completes:
 # an arm's result is in tail position.
 #= {result: 'done', inputs: {n: 100000}}
+def {n} = import('inputs')
 defn count(k) -> match k {
     0 => 'done',
     m is Int if: m > 0 => count(m - 1),

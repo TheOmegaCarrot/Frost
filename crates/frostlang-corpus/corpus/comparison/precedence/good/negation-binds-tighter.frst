@@ -1,5 +1,6 @@
 # Unary `-` binds tighter than comparison, on either operand.
 #= {result: [true, true, true, false], inputs: {x: 3}}
+def {x} = import('inputs')
 [
     -1 < 0,
     -x < -2,

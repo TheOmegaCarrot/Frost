@@ -1,5 +1,6 @@
 # A self-call in a `match` arm in tail position runs to a large depth.
 #= {result: 'done', inputs: {n: 100000}}
+def {n} = import('inputs')
 defn down(k) -> match k {
     0 => 'done',
     _ => down(k - 1),

@@ -1,4 +1,5 @@
 # A discarded element accepts any value at all: its shape is never checked.
 #= {result: 9, inputs: {xs: [null, {k: 1}, 'text', 9]}}
+def {xs} = import('inputs')
 def [_, _, _, last] = xs
 last

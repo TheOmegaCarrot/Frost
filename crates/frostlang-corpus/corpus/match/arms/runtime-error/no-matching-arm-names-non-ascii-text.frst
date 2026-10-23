@@ -1,5 +1,6 @@
 # The no-match error names a String target, non-ASCII text intact.
 #= {raises: ['no match arm', 'żółw'], inputs: {v: 'żółw'}}
+def {v} = import('inputs')
 match v {
     'turtle' => 1,
 }

@@ -1,4 +1,5 @@
 # A tail self-call rotating three parameters reads each old value once.
 #= {result: [[3, 1, 2], [2, 3, 1], [1, 2, 3]], inputs: {n: 1}}
+def {n} = import('inputs')
 defn rot(a, b, c, k) -> if k == 0: [a, b, c] else: rot(c, a, b, k - 1)
 [rot(1, 2, 3, n), rot(1, 2, 3, n + 1), rot(1, 2, 3, n + 2)]

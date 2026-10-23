@@ -7,6 +7,7 @@
 #=     printed: ['right of null', 'right of a String', 'left of an Array'],
 #=     inputs: {one: 1},
 #= }
+def {one} = import('inputs')
 defn noisy(label, value) -> {
     print(label)
     value

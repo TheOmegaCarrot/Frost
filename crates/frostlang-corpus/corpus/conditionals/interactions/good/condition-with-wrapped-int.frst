@@ -1,4 +1,0 @@
-# A condition may detect Int overflow by its wrapping: the largest Int plus
-# one wraps to the smallest, which is less than zero.
-#= {result: 'wrapped', inputs: {max: 9223372036854775807}}
-if max + 1 < 0: 'wrapped' else: 'grew'

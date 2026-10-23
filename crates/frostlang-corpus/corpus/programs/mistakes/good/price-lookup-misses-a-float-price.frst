@@ -11,6 +11,7 @@
 #=         ],
 #=     },
 #= }
+def {items} = import('inputs')
 defn names(records) -> map(records, fn r -> r.name)
 [
     names(filter(items, fn r -> r.price == 3)),

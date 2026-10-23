@@ -5,6 +5,7 @@
 #=     result: [['0.0', '-0.0'], ['0.0', '-0.0'], ['0.0', '-0.0'], false],
 #=     inputs: {tag: 'runtime'},
 #= }
+def {tag} = import('inputs')
 defn build(t) -> [
     t,
     [[0.0]],

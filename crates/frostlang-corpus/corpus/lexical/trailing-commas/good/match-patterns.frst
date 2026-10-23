@@ -1,6 +1,7 @@
 # Array and Map patterns in a `match` may end with a trailing comma, and an
 # `as` may follow a Map pattern's trailing comma and closing brace.
 #= {result: [1, {k: 2}], inputs: {xs: [1], m: {k: 2}}}
+def {xs, m} = import('inputs')
 def first = match xs { [x,] => x, }
 def whole = match m { {k,} as all => if k == 2: all else: null, }
 [first, whole]

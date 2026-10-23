@@ -3,4 +3,5 @@
 #=     result: [3, 'xy', null, {k: [1]}],
 #=     inputs: {n: 3, s: 'x', nothing: null, m: {k: [1]}},
 #= }
+def {n, s, nothing, m} = import('inputs')
 [n, s + 'y', nothing, m]

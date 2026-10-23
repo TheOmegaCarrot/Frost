@@ -4,6 +4,7 @@
 #=     result: ['missing', 'missing', 3, 0],
 #=     inputs: {n: null, f: false, three: 3, zero: 0},
 #= }
+def {n, f, three, zero} = import('inputs')
 [
     not n and 'missing' or n,
     not f and 'missing' or f,

@@ -5,6 +5,7 @@
 #=     lints: [['unused binding', '`a`']],
 #=     inputs: {xs: [{a: null}, {b: 1}]},
 #= }
+def {xs} = import('inputs')
 map(xs, fn m -> [
     has(m, 'a'),
     match m { {a} => true, _ => false },

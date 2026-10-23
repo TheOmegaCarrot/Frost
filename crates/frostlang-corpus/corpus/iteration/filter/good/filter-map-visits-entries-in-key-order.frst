@@ -5,6 +5,7 @@
 #=     printed: ['false', '-1', '0.5', 'a'],
 #=     inputs: {m: {a: 'd', [0.5]: 'c', [-1]: 'b', [false]: 'a'}},
 #= }
+def {m} = import('inputs')
 filter(m, fn k, v -> {
     print(to_string(k))
     v == 'b' or v == 'd'

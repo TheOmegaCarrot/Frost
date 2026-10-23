@@ -1,5 +1,6 @@
 # A parenthesized name holding Null matches only Null.
 #= {result: ['null', 'other', 'other'], inputs: {nothing: null, xs: [null, false, 0]}}
+def {nothing, xs} = import('inputs')
 map(xs, fn v -> match v {
     (nothing) => 'null',
     _ => 'other',

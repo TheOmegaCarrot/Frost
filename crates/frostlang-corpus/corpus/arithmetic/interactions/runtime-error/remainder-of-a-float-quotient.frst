@@ -1,4 +1,5 @@
 # A quotient with a Float operand is a Float, so taking its remainder is a type
 # error. Subtle because `seven / 2 % 2` works: the Int quotient is an Int.
 #= {raises: 'Float % Int', inputs: {seven: 7}}
+def {seven} = import('inputs')
 seven / 2.0 % 2

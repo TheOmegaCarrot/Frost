@@ -1,4 +1,5 @@
 # `is Null` checks the type, not falsiness: `false` is a Bool, not Null.
 #= {raises: 'expected Null', inputs: {v: false}}
+def {v} = import('inputs')
 def x is Null = v
 x

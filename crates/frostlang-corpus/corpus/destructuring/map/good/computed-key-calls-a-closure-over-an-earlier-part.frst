@@ -1,6 +1,7 @@
 # A computed key may call a lambda capturing an earlier part of the pattern,
 # both over a literal the optimizer may match and at runtime.
 #= {result: [2, 3], inputs: {m: {a: 'c', c: 3}}}
+def {m} = import('inputs')
 def {a, [(fn -> a)()]: v} = {a: 'b', b: 2}
 def {a: k, [(fn -> k)()]: w} = m
 [v, w]

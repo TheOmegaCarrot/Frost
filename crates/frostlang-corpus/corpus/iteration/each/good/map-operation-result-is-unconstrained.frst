@@ -1,4 +1,5 @@
 # Unlike `map`, `each` over a Map places no constraint on what the operation
 # returns: its result is discarded.
 #= {result: {a: 1, b: 2}, inputs: {m: {a: 1, b: 2}}}
+def {m} = import('inputs')
 each(m, fn k, v -> 5)

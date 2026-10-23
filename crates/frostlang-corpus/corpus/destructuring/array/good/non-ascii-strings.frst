@@ -1,4 +1,5 @@
 # String elements with non-ASCII text bind intact.
 #= {result: ['日本語', 'héllo', [':)']], inputs: {xs: ['héllo', '日本語', ':)']}}
+def {xs} = import('inputs')
 def [latin, cjk, ...rest] = xs
 [cjk, latin, rest]

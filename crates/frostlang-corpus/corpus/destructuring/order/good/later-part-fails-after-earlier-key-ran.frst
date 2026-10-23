@@ -1,5 +1,6 @@
 # A later part's shape check fails only after an earlier part's key ran.
 #= {result: false, printed: ['a'], inputs: {xs: [{a: 1}, 5]}}
+def {xs} = import('inputs')
 defn note(k) -> {
     print(k)
     k

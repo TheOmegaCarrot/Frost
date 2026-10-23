@@ -4,6 +4,7 @@
 #=     result: [5, 5, 5, false, null, 0, 'default', 2.5],
 #=     inputs: {t: true, f: false, n: null, five: 5, zero: 0, fallback: 'default', half: 2.5, one: 1},
 #= }
+def {t, f, n, five, zero, fallback, half, one} = import('inputs')
 [
     five or t,
     n or five,

@@ -1,5 +1,6 @@
 # `call` in tail position still requires its arguments as an Array, and
 # raises its own type error naming it.
 #= {raises: ['call', 'Array', 'Int'], inputs: {args: 5}}
+def {args} = import('inputs')
 defn spread_into(g, list) -> call(g, list)
 spread_into(fn x -> x, args)

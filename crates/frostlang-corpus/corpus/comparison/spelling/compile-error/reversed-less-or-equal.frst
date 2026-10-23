@@ -1,4 +1,5 @@
 # `=<` is not an operator: its spelling is `<=`. The rejection should point
 # there, as the `===`, `!==`, and `<>` rejections point to the real operator.
 #= {rejects: '`<=`', inputs: {a: 1, b: 2}}
+def {a, b} = import('inputs')
 a =< b

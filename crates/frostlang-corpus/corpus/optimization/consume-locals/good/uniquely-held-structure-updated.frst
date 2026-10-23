@@ -4,6 +4,7 @@
 #=     result: [[1, 1, 3], {k: 1, z: 2}, 'aa!', x'0101ff'],
 #=     inputs: {n: 1, s: 'a', bytes: x'01'},
 #= }
+def {n, s, bytes} = import('inputs')
 def xs = [n, n]
 def m = {k: n}
 def text = s + s

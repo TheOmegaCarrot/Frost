@@ -1,4 +1,5 @@
 # A Null element is an ordinary element: it binds, and counts toward the length.
 #= {result: [null, null, [null]], inputs: {xs: [null, null, null]}}
+def {xs} = import('inputs')
 def [a, b, ...rest] = xs
 [a, b, rest]

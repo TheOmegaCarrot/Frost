@@ -1,5 +1,6 @@
 # `not` binds tighter than `==` with operands known only at runtime.
 #= {result: [false, true], inputs: {a: 1, b: 2}}
+def {a, b} = import('inputs')
 [
     not a == b,
     not (a == b),

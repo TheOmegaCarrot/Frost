@@ -1,6 +1,7 @@
 # The iterations of iteration-over-a-map, over a Map only known at runtime,
 # visit its entries in the same sorted key order the folder does.
 #= {result: [{a: 10, b: 20, c: 30}, 'abc'], inputs: {m: {c: 3, a: 1, b: 2}}}
+def {m} = import('inputs')
 [
     map(m, fn k, v -> {[k]: v * 10}),
     reduce(m, '', fn acc, k, v -> acc + k),

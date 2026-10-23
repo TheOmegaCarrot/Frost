@@ -1,0 +1,4 @@
+# Negating the least Int literal again raises: the inner `-` is part of the
+# literal, the outer one is arithmetic.
+#= {raises: ['Int overflow', '-(-9223372036854775808)']}
+-(-9223372036854775808)

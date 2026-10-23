@@ -5,4 +5,5 @@
 #=     raises: 'String + Int',
 #=     inputs: {counts: {apples: 3, pears: 5}},
 #= }
+def {counts} = import('inputs')
 reduce(counts, [], fn lines, name, count -> lines + [name + ': ' + count])

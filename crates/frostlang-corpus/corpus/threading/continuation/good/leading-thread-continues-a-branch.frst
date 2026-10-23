@@ -3,6 +3,7 @@
 # without calling anything. Subtle because the `if` otherwise ends at its
 # line break.
 #= {result: [2, null], printed: ['called'], inputs: {yes: true, no: false}}
+def {yes, no} = import('inputs')
 defn inc(x) -> {
     print('called')
     x + 1

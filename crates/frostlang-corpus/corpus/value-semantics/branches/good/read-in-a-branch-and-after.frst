@@ -1,6 +1,7 @@
 # A binding extended inside a taken branch and read after the conditional is
 # the original afterward.
 #= {result: [[1, 0], [1]], inputs: {n: 1, c: true}}
+def {n, c} = import('inputs')
 def xs = [n]
 def r = if c: xs + [0] else: null
 [r, xs]

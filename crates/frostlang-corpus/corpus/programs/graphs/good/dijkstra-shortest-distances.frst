@@ -20,6 +20,7 @@
 #=         },
 #=     },
 #= }
+def {graph} = import('inputs')
 defn shortest(source) -> {
     defn closest(dist, done) -> reduce(dist, null, fn best, node, d ->
         if has(done, node): best

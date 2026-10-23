@@ -1,6 +1,7 @@
 # A truthy left operand known only at runtime short-circuits `or` in the VM:
 # the right operand's `print` never runs.
 #= {result: [true, 0, ''], inputs: {t: true, zero: 0, empty: ''}}
+def {t, zero, empty} = import('inputs')
 [
     t or print('right of true'),
     zero or print('right of 0'),

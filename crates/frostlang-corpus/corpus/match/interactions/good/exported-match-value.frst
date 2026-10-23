@@ -1,5 +1,6 @@
 # A match's value may be exported; its arm bindings are not exported.
 #= {result: 4, exports: {e: 4}, inputs: {v: {a: 4}}}
+def {v} = import('inputs')
 export def e = match v {
     {a} => a,
 }

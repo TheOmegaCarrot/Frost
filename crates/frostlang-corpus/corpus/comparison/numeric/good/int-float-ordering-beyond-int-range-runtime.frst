@@ -9,6 +9,7 @@
 #=         big: 1e19,
 #=     },
 #= }
+def {max, min, huge, big} = import('inputs')
 [
     max < big,
     min > -big,

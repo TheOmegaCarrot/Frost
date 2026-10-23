@@ -1,6 +1,7 @@
 # A `match` expression ends at its closing brace, so an `@` after it threads
 # the whole match's value, whichever arm produced it.
 #= {result: ['ONE', 'other!'], inputs: {one: 1, two: 2}}
+def {one, two} = import('inputs')
 defn shout(s, suffix) -> s + suffix
 def first = match one {
     1 => 'ONE',

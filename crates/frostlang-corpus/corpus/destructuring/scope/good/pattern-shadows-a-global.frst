@@ -1,5 +1,6 @@
 # A pattern may bind the name of a global, shadowing it from then on.
 #= {result: [1, [2], 3], inputs: {m: {len: 3}}}
+def {m} = import('inputs')
 def [type, ...print] = [1, 2]
 def {len} = m
 [type, print, len]

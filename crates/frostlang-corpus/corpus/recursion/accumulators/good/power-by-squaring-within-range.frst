@@ -1,0 +1,7 @@
+# Exponentiation by squaring, mixing tail and non-tail recursion, is exact
+# within the Int range: 2 to the 62nd is the largest power of two that fits.
+#= {result: [1, 1024, 4611686018427387904]}
+defn pow(base, exp) -> if exp == 0: 1
+    elif exp % 2 == 0: pow(base * base, exp / 2)
+    else: base * pow(base, exp - 1)
+[pow(7, 0), pow(2, 10), pow(2, 62)]

@@ -1,5 +1,6 @@
 # A Map pattern may span lines and end with a trailing comma.
 #= {result: ['ada', 36], inputs: {v: {name: 'ada', age: 36}}}
+def {v} = import('inputs')
 match v {
     {
         name: n,

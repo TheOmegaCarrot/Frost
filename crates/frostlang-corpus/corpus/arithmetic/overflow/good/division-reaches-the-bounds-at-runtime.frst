@@ -1,0 +1,12 @@
+# Int division of operands only known at runtime succeeds when the quotient
+# is a bound, as a folded quotient does.
+#= {
+#=     result: [9223372036854775807, -9223372036854775808, -9223372036854775807],
+#=     inputs: {greatest: 9223372036854775807, least: -9223372036854775808, one: 1},
+#= }
+def {greatest, least, one} = import('inputs')
+[
+    -greatest / -one,
+    least / one,
+    greatest / -one,
+]

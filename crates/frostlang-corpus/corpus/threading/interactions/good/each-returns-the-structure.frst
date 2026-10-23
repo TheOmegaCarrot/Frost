@@ -1,6 +1,7 @@
 # `each` runs its function for effect and returns the structure, so a
 # pipeline continues past it with the original value.
 #= {result: [2, 4, 6], printed: ['saw 1', 'saw 2', 'saw 3'], inputs: {xs: [1, 2, 3]}}
+def {xs} = import('inputs')
 (xs
     @ each(fn x -> print($'saw ${x}'))
     @ map(fn x -> x * 2))

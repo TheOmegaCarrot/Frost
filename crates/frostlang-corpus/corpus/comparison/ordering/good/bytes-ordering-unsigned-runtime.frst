@@ -4,6 +4,7 @@
 #=     result: [true, true, true, false],
 #=     inputs: {low: x'7f', high: x'80', empty: x'', hi: x'6869'},
 #= }
+def {low, high, empty, hi} = import('inputs')
 [
     low < high,
     empty < low,

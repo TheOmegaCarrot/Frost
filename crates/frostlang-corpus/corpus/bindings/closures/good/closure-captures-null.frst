@@ -1,6 +1,7 @@
 # A captured Null is a captured value like any other: the closure reads Null,
 # not an unbound name or some other default.
 #= {result: [null, null, true], inputs: {nothing: null}}
+def {nothing} = import('inputs')
 def x = null
 def f = fn -> x
 def g = fn -> nothing

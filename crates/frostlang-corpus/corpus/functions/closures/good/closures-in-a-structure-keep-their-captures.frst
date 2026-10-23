@@ -1,5 +1,6 @@
 # Closures stored together in a structure each keep their own captures.
 #= {result: [1, 3, 2], inputs: {x: 1, y: 2}}
+def {x, y} = import('inputs')
 def make = fn -> [fn -> x, fn -> x + y, fn -> y]
 def fs = make()
 [fs[0](), fs[1](), fs[2]()]

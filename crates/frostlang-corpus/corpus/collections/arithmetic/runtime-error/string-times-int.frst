@@ -1,3 +1,4 @@
 # `*` is numeric only: it does not repeat a String.
 #= {raises: ['Cannot multiply', 'String * Int'], inputs: {s: 'ab', n: 3}}
+def {s, n} = import('inputs')
 s * n

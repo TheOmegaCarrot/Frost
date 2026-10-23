@@ -4,6 +4,7 @@
 #=     result: ['safe', false, true, null],
 #=     inputs: {no: false, yes: true, nothing: null},
 #= }
+def {no, yes, nothing} = import('inputs')
 [
     if no: error('if') else: 'safe',
     no and error('and'),

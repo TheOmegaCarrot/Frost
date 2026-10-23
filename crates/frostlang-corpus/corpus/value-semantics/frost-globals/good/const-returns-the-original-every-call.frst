@@ -1,6 +1,7 @@
 # A function made by `const` returns the same value on every call, even after
 # a caller derives a value from what an earlier call returned.
 #= {result: [[1, 2], [1], [1]], inputs: {n: 1}}
+def {n} = import('inputs')
 def always = const([n])
 def grown = always() + [2]
 [grown, always(), always(9)]

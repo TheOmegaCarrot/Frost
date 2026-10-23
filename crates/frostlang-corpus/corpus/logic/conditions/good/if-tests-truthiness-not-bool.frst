@@ -4,6 +4,7 @@
 #=     result: ['else', 'else', 'then', 'then', 'then', 'then', 'then'],
 #=     inputs: {n: null, f: false, zero: 0, empty: '', a: [], m: {}, b: x''},
 #= }
+def {n, f, zero, empty, a, m, b} = import('inputs')
 [
     if n: 'then' else: 'else',
     if f: 'then' else: 'else',

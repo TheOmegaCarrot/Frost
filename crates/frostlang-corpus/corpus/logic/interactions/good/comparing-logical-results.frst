@@ -1,6 +1,7 @@
 # The results of `not` and of comparisons are Bools that compare equal by
 # value, so they can be compared with each other inside parentheses.
 #= {result: [true, false, true], inputs: {one: 1, two: 2}}
+def {one, two} = import('inputs')
 [
     (one < two) == (not false),
     (not one) == (not null),

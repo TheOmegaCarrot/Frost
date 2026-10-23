@@ -5,4 +5,5 @@
 #=     result: {[1]: [1, 'one'], b: ['b', null], [x'00']: [x'00', [2]]},
 #=     inputs: {m: {[1]: 'one', b: null, [x'00']: [2]}},
 #= }
+def {m} = import('inputs')
 map(m, fn ...args -> {[args[0]]: args})

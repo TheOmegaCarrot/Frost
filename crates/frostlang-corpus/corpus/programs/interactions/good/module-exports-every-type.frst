@@ -16,6 +16,7 @@
 #=     },
 #=     inputs: {limit: 20, major: 1, minor: 2},
 #= }
+def {limit, major, minor} = import('inputs')
 defn from_to(low, high) -> if low > high: [] else: [low] + from_to(low + 1, high)
 defn sieve(xs) -> match xs {
     [] => [],

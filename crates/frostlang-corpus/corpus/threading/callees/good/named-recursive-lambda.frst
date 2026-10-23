@@ -1,4 +1,5 @@
 # A named lambda written in place can be threaded into, and its name is in
 # scope for its own recursion.
 #= {result: 120, inputs: {n: 5}}
+def {n} = import('inputs')
 n @ (fn fact(k) -> if k <= 1: 1 else: k * fact(k - 1))()

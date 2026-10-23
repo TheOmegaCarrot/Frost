@@ -1,0 +1,8 @@
+# The division of least-divided-by-minus-one, over values only known at
+# runtime, raises the same error.
+#= {
+#=     raises: 'Int overflow',
+#=     inputs: {least: -9223372036854775808, minus_one: -1},
+#= }
+def {least, minus_one} = import('inputs')
+least / minus_one

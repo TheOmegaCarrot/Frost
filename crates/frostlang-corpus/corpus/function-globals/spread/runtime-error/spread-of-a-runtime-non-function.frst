@@ -1,3 +1,4 @@
 # The Function check happens at run time on a value the compiler cannot see.
 #= {raises: ['spread', 'Function as argument 1', 'got Array'], inputs: {f: [collect]}}
+def {f} = import('inputs')
 spread(f)

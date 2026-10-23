@@ -1,4 +1,5 @@
 # A threaded chain can be interpolated in a format String.
 #= {result: 'count: 2, last: 30', inputs: {xs: [1, 2, 3]}}
+def {xs} = import('inputs')
 defn last(ys) -> ys[len(ys) - 1]
 $'count: ${xs @ filter(fn x -> x > 1) @ len()}, last: ${xs @ map(fn x -> x * 10) @ last()}'

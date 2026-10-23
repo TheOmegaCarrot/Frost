@@ -1,5 +1,6 @@
 # A pin of a Map compares with `==`, so a Map with an extra key does not
 # match, unlike the Map pattern `{k: 'v'}`.
 #= {raises: "expected the value of `({k: 'v'})`", inputs: {xs: [1, {k: 'v', z: 2}]}}
+def {xs} = import('inputs')
 def [a, ({k: 'v'})] = xs
 a

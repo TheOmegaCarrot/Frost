@@ -1,4 +1,5 @@
 # A Float minus a String, both only known at runtime, is a type error naming
 # both operand types; the String is not parsed as a number.
 #= {raises: 'Float - String', inputs: {x: 2.5, s: '1.5'}}
+def {x, s} = import('inputs')
 x - s

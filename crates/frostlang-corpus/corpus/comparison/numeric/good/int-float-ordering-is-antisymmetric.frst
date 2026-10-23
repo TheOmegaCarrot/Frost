@@ -7,6 +7,7 @@
 #=         floats: [-0.0, 2.5, -3.5, 9007199254740992.0, 9223372036854775808.0, 5e-324],
 #=     },
 #= }
+def {ints, floats} = import('inputs')
 def agree = fn i, f -> [i < f, i <= f, i > f, i >= f] == [f > i, f >= i, f < i, f <= i]
 def results = map(ints, fn i -> map(floats, fn f -> agree(i, f)))
 results == map(ints, fn _ -> map(floats, fn _ -> true))

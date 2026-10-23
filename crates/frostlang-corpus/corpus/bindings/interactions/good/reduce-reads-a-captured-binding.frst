@@ -1,4 +1,5 @@
 # A `reduce` function reads an enclosing binding on every step.
 #= {result: 36, inputs: {xs: [1, 2, 3]}}
+def {xs} = import('inputs')
 def bonus = 10
 reduce(xs, 0, fn (acc, x) -> acc + x + bonus)

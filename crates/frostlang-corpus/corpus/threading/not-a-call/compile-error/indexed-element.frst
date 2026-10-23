@@ -1,4 +1,5 @@
 # An indexed element on the right of `@` is not a call.
 #= {rejects: ['right side of `@` must be a call', 'try `fns[0]()`'], inputs: {n: 1}}
+def {n} = import('inputs')
 def fns = [fn x -> x]
 n @ fns[0]

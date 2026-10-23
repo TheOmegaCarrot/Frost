@@ -2,4 +2,5 @@
 # a closing brace. Subtle because that brace sits inside a quoted String and
 # must not end the interpolation.
 #= {result: 'got 1 and 2', inputs: {m: {['}']: 2}}}
+def {m} = import('inputs')
 $'got ${ {['}']: 1}['}'] } and ${m['}']}'

@@ -7,7 +7,7 @@ impl Value {
     /// or Map merge (the right operand wins on a key collision).
     pub fn add(&self, rhs: &Value) -> Result<Value, FrostError> {
         match (self, rhs) {
-            (Value::Int(l), Value::Int(r)) => Ok(Value::from(l.wrapping_add(*r))),
+            (Value::Int(l), Value::Int(r)) => int_result(l.checked_add(*r), l, "+", r),
 
             (Value::Float(l), Value::Float(r)) => {
                 Ok(Value::from(FrostFloat::try_from(l.get() + r.get())?))
@@ -67,7 +67,7 @@ impl Value {
     /// Frost `-` operator: numeric subtraction.
     pub fn subtract(&self, rhs: &Value) -> Result<Value, FrostError> {
         match (self, rhs) {
-            (Value::Int(l), Value::Int(r)) => Ok(Value::from(l.wrapping_sub(*r))),
+            (Value::Int(l), Value::Int(r)) => int_result(l.checked_sub(*r), l, "-", r),
 
             (Value::Float(l), Value::Float(r)) => {
                 Ok(Value::from(FrostFloat::try_from(l.get() - r.get())?))
@@ -88,7 +88,7 @@ impl Value {
     /// Frost `*` operator: numeric multiplication.
     pub fn multiply(&self, rhs: &Value) -> Result<Value, FrostError> {
         match (self, rhs) {
-            (Value::Int(l), Value::Int(r)) => Ok(Value::from(l.wrapping_mul(*r))),
+            (Value::Int(l), Value::Int(r)) => int_result(l.checked_mul(*r), l, "*", r),
 
             (Value::Float(l), Value::Float(r)) => {
                 Ok(Value::from(FrostFloat::try_from(l.get() * r.get())?))
@@ -115,7 +115,8 @@ impl Value {
                 Err("Division by zero".into())
             }
 
-            (Value::Int(l), Value::Int(r)) => Ok(Value::from(l.wrapping_div(*r))),
+            // Only `Int::MIN / -1` overflows; division by zero is handled above.
+            (Value::Int(l), Value::Int(r)) => int_result(l.checked_div(*r), l, "/", r),
 
             (Value::Float(l), Value::Float(r)) => {
                 Ok(Value::from(FrostFloat::try_from(l.get() / r.get())?))
@@ -138,6 +139,8 @@ impl Value {
         match (self, rhs) {
             (Value::Int(_), Value::Int(0)) => Err("Modulus by zero".into()),
 
+            // The true remainder always fits, so this never overflows:
+            // `Int::MIN % -1` is 0, which `wrapping_rem` gives exactly.
             (Value::Int(l), Value::Int(r)) => Ok(Value::from(l.wrapping_rem(*r))),
 
             _ => Err(binop_type_error("modulus", "%", self, rhs)),
@@ -147,7 +150,10 @@ impl Value {
     /// Frost unary `-`: numeric negation. A non-numeric operand is a type error.
     pub fn negate(&self) -> Result<Value, FrostError> {
         match self {
-            Value::Int(i) => Ok(Value::from(i.wrapping_neg())),
+            Value::Int(i) => i
+                .checked_neg()
+                .map(Value::from)
+                .ok_or_else(|| FrostError::from_string(format!("Int overflow: -({i})"))),
             // Negating a float that is already non-NaN and finite cannot produce
             // NaN or Infinity, so the unwrap cannot fail.
             Value::Float(f) => Ok(Value::Float(FrostFloat::new(-f.get()).unwrap())),
@@ -157,6 +163,19 @@ impl Value {
             ))),
         }
     }
+}
+
+/// The Int result of `lhs glyph rhs`, `checked` by the matching `checked_*`
+/// operation: an overflow error when the true result is outside the Int range.
+fn int_result(
+    checked: Option<i64>,
+    lhs: &i64,
+    glyph: &str,
+    rhs: &i64,
+) -> Result<Value, FrostError> {
+    checked
+        .map(Value::from)
+        .ok_or_else(|| FrostError::from_string(format!("Int overflow: {lhs} {glyph} {rhs}")))
 }
 
 fn binop_type_error(verb: &str, glyph: &str, lhs: &Value, rhs: &Value) -> FrostError {

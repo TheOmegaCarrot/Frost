@@ -4,6 +4,7 @@
 #=     result: ['low', 'mid', 'mid', 'high', 'exact'],
 #=     inputs: {values: [1, 5, 5.5, 11, 42]},
 #= }
+def {values} = import('inputs')
 defn bucket(x) -> {
     if x == 42: 'exact'
     elif x < 5: 'low'

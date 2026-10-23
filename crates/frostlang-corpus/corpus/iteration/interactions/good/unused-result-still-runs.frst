@@ -6,5 +6,6 @@
 #=     lints: [['unused binding', '`unused`']],
 #=     inputs: {xs: [1, 2]},
 #= }
+def {xs} = import('inputs')
 def unused = map(xs, fn x -> print(x))
 'end'

@@ -1,6 +1,7 @@
 # A top-level export may take its value from a `do` block holding an `if`;
 # only the exported name is exported, not the block's bindings.
 #= {result: 'debug', exports: {level: 'debug'}, inputs: {verbose: true}}
+def {verbose} = import('inputs')
 export def level = do {
     def chosen = if verbose: 'debug' else: 'info'
     chosen

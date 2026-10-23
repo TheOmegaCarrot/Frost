@@ -1,3 +1,4 @@
 # Tapping with a function known only at run time still calls it.
 #= {result: 'v', printed: ['v'], inputs: {observe: print}}
+def {observe} = import('inputs')
 tap('v', observe)

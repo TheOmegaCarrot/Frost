@@ -1,0 +1,5 @@
+# Subtracting below the smallest Int in a `reduce` raises rather than wrapping
+# to the largest, here over a literal the optimizer may compute ahead of time.
+#= {raises: 'Int overflow: -9223372036854775808 - 1'}
+def minus = fn acc, x -> acc - x
+reduce([-9223372036854775808, 1], minus)

@@ -1,6 +1,7 @@
 # A lambda that reads a constant capture, then shadows it in a nested block
 # with its argument, sees the capture before the block and the argument inside.
 #= {result: [10, 3, 10], inputs: {n: 3}}
+def {n} = import('inputs')
 def k = 10
 def f = fn v -> {
     def before = k

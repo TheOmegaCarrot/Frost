@@ -1,6 +1,7 @@
 # `call` spreads an Array as a function's arguments, and an Array built by
 # concatenation works the same.
 #= {result: [3, 6], inputs: {args: [1, 2]}}
+def {args} = import('inputs')
 def add = fn a, b -> a + b
 def add3 = fn a, b, c -> a + b + c
 [call(add, args), call(add3, args + [3])]

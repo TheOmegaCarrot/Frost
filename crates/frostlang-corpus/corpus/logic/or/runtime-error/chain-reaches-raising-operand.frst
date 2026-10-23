@@ -1,4 +1,5 @@
 # An `or` chain whose earlier operands are all falsy reaches a later operand
 # that raises.
 #= {raises: 'division by zero', inputs: {a: null, b: false}}
+def {a, b} = import('inputs')
 a or b or 1 / 0 or 1

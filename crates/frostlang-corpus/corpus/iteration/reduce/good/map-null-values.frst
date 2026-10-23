@@ -1,3 +1,4 @@
 # Null values in a Map reach the operation like any other value.
 #= {result: ['a', 'c'], inputs: {m: {a: null, b: 1, c: null}}}
+def {m} = import('inputs')
 reduce(m, [], fn acc, k, v -> if is_null(v): acc + [k] else: acc)

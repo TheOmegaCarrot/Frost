@@ -1,6 +1,7 @@
 # A tail-recursive loop destructures its state each step; many steps run
 # without exhausting the stack.
 #= {result: 50005000, inputs: {n: 10000}}
+def {n} = import('inputs')
 defn loop(state) -> {
     def [i, acc] = state
     if i == 0: acc else: loop([i - 1, acc + i])

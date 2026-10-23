@@ -1,5 +1,6 @@
 # A function capturing a known scalar computes with that value on every call.
 #= {result: [6, 7], inputs: {one: 1, two: 2}}
+def {one, two} = import('inputs')
 def n = 5
 def add = fn x -> x + n
 [add(one), add(two)]

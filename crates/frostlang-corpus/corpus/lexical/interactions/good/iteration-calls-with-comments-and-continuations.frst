@@ -1,6 +1,7 @@
 # `map`, `filter`, and `reduce` called across lines, with comments between
 # the arguments and a continuation threading the result.
 #= {result: '3', inputs: {xs: [1, 2, 3, 4]}}
+def {xs} = import('inputs')
 def evens = filter(
     xs, # keep
     # the even ones

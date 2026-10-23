@@ -2,6 +2,7 @@
 # along the way at the size it had then, whatever form the Map takes as it
 # grows.
 #= {result: [100, 8, 16, 7, null, 15, null], inputs: {stop: 100}}
+def {stop} = import('inputs')
 defn grow(k, m, snapshots) -> if k == stop: [m, snapshots] else: do {
     def kept = if k == 8 or k == 16: snapshots + [m] else: snapshots
     grow(k + 1, m + {[k]: k}, kept)

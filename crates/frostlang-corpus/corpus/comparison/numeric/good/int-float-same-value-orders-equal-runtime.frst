@@ -4,6 +4,7 @@
 #=     result: [false, true, true, false, true, true],
 #=     inputs: {i: 3, f: 3.0, zero: 0, negative_zero: -0.0},
 #= }
+def {i, f, zero, negative_zero} = import('inputs')
 [
     i < f,
     i <= f,

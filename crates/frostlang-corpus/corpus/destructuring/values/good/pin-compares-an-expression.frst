@@ -1,4 +1,5 @@
 # A pin `(expr)` compares the value with the expression's value.
 #= {result: 7, inputs: {xs: [7, 2]}}
+def {xs} = import('inputs')
 def [a, (1 + 1)] = xs
 a

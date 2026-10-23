@@ -1,6 +1,7 @@
 # A parenthesized comparison of values known only at runtime may be compared
 # again: here, whether two pairs are ordered the same way.
 #= {result: [true, false], inputs: {a: 1, b: 2, c: 5, d: 3}}
+def {a, b, c, d} = import('inputs')
 [
     (a < b) == (d < c),
     (a < b) == (c < d),

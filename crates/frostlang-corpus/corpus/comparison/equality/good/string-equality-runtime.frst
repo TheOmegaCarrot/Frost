@@ -4,6 +4,7 @@
 #=     result: [true, false, true, true, false],
 #=     inputs: {greeting: 'hello', other: 'Hello', empty: '', omega: 'Ω'},
 #= }
+def {greeting, other, empty, omega} = import('inputs')
 [
     greeting == 'hello',
     greeting == other,

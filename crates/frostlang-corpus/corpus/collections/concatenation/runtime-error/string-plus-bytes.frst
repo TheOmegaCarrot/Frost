@@ -1,3 +1,4 @@
 # `+` never mixes String and Bytes: neither side is converted to the other.
 #= {raises: 'String + Bytes', inputs: {s: 'a', b: x'61'}}
+def {s, b} = import('inputs')
 s + b

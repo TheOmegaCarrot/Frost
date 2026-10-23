@@ -2,5 +2,6 @@
 # the lambda, so the recursion calls itself, while outside the global is
 # unchanged.
 #= {result: ['done', 2], inputs: {n: 3}}
+def {n} = import('inputs')
 def countdown = fn len(k) -> if k == 0: 'done' else: len(k - 1)
 [countdown(n), len([1, 2])]

@@ -1,5 +1,6 @@
 # In `a @ f(x)(y)`, the threaded value goes into the first call only: it is
 # `f(a, x)(y)`. Subtle because `a` might seem to reach the final call.
 #= {result: 15, inputs: {n: 5}}
+def {n} = import('inputs')
 defn adder(k) -> fn x -> x + k
 n @ adder()(10)

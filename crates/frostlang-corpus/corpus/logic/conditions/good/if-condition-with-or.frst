@@ -5,6 +5,7 @@
 #=     printed: ['checked 10', 'checked 5'],
 #=     inputs: {xs: [0, 10, 5]},
 #= }
+def {xs} = import('inputs')
 defn is_ten(x) -> {
     print($'checked ${x}')
     x == 10

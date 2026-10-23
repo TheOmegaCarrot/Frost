@@ -25,6 +25,7 @@
 #=         leaf: {label: 'only', children: []},
 #=     },
 #= }
+def {tree, leaf} = import('inputs')
 defn fold_tree(node, combine) -> combine(node.label, map(node.children, fn child -> fold_tree(child, combine)))
 
 defn size(label, sizes) -> reduce(sizes, 1, fn total, n -> total + n)

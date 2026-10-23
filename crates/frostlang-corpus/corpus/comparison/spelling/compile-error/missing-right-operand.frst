@@ -1,4 +1,5 @@
 # A comparison operator at the end of a line, with nothing after it, is
 # missing its right operand.
 #= {rejects: 'expected an expression', inputs: {a: 1}}
+def {a} = import('inputs')
 a <

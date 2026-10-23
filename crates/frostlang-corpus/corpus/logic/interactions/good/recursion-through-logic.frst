@@ -4,6 +4,7 @@
 #=     result: [true, false, false],
 #=     inputs: {with_negative: [3, 1, -2, 5], all_positive: [1, 2], empty: []},
 #= }
+def {with_negative, all_positive, empty} = import('inputs')
 defn any_negative(xs, i) -> i < len(xs) and (xs[i] < 0 or any_negative(xs, i + 1))
 [
     any_negative(with_negative, 0),

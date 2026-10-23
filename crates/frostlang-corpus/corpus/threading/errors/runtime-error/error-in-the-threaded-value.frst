@@ -1,5 +1,6 @@
 # An error while evaluating the threaded value propagates, and the call is
 # never made.
 #= {raises: 'division by zero', inputs: {zero: 0}}
+def {zero} = import('inputs')
 defn inc(x) -> x + 1
 (1 / zero) @ inc()

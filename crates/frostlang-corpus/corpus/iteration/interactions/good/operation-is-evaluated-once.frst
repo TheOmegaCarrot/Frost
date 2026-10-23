@@ -5,6 +5,7 @@
 #=     printed: ['building', 'call', 'call', 'call'],
 #=     inputs: {xs: [1, 2, 3]},
 #= }
+def {xs} = import('inputs')
 map(xs, do {
     print('building')
     fn x -> {

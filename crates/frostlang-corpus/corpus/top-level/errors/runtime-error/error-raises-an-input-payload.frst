@@ -1,3 +1,4 @@
 # A message only known at runtime is raised as given.
 #= {raises: 'from the host', inputs: {msg: 'from the host'}}
+def {msg} = import('inputs')
 error(msg)

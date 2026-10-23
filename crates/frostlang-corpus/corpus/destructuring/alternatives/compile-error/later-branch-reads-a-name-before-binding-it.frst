@@ -2,5 +2,6 @@
 # has bound itself. Subtle because the first branch already bound `a`, yet the
 # second branch's pin reads `a` before that branch binds it.
 #= {rejects: '`a` is not defined', inputs: {v: [1, 1]}}
+def {v} = import('inputs')
 def [a, 1] | [(a), a] = v
 a

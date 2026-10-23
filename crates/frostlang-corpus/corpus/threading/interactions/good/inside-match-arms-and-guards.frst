@@ -1,5 +1,6 @@
 # A threaded call can appear in a match guard and in an arm's body.
 #= {result: ['long: 3', 'short: 1', 'none'], inputs: {a: [1, 2, 3], b: [4], c: []}}
+def {a, b, c} = import('inputs')
 defn describe(xs) -> match xs {
     [] => 'none',
     ys if: ys @ len() > 2 => $'long: ${ys @ len()}',

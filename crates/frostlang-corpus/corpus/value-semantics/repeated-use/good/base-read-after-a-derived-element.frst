@@ -1,5 +1,6 @@
 # In one Array literal, an element derived from a binding comes first and the
 # binding itself is read after it: the later read still sees the original.
 #= {result: [[1, 2], [1]], inputs: {n: 1}}
+def {n} = import('inputs')
 def xs = [n]
 [xs + [2], xs]

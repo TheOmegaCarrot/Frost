@@ -1,3 +1,4 @@
 # Frost has no spread; `call(f, args)` passes an Array's elements.
 #= {rejects: 'no spread', inputs: {args: [1]}}
+def {args} = import('inputs')
 len(...args)

@@ -3,6 +3,7 @@
 #=     result: ['Null', 'Bool', 'Int', 'Float', 'String', 'Bytes', 'Array', 'Map', 'Function'],
 #=     inputs: {values: [null, false, 0, 0.5, 'é', x'00', [], {}, fn -> 1]},
 #= }
+def {values} = import('inputs')
 defn classify(v) -> if is_null(v): 'Null'
     elif is_bool(v): 'Bool'
     elif is_int(v): 'Int'

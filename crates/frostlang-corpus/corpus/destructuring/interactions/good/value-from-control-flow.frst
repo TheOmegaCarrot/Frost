@@ -1,5 +1,6 @@
 # The value may come from `if`, `match`, `or`, or a call.
 #= {result: [1, 2, 3, 4], inputs: {flag: true, n: 0, missing: null}}
+def {flag, n, missing} = import('inputs')
 def [a] = if flag: [1] else: [0]
 def [b] = match n {
     0 => [2],

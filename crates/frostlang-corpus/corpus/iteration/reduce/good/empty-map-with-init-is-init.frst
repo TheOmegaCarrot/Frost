@@ -1,4 +1,5 @@
 # An empty Map with an initial value yields it without calling the operation.
 #= {result: ['start', 'start'], inputs: {m: {}}}
+def {m} = import('inputs')
 def boom = fn acc, k, v -> error('called')
 [reduce({}, 'start', boom), reduce(m, 'start', boom)]

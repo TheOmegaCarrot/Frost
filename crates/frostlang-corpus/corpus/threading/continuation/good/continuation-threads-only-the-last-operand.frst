@@ -3,6 +3,7 @@
 # out like a pipeline stage over the whole body, it computes `x * inc(2)`,
 # not `inc(x * 2)`.
 #= {result: [15, 11], inputs: {n: 5}}
+def {n} = import('inputs')
 defn inc(x) -> x + 1
 defn scaled(x) -> x * 2
     @ inc()

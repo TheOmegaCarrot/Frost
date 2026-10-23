@@ -1,8 +1,0 @@
-# A curried addition past the largest Int wraps in two's complement, as the
-# addition itself does, with constants and with values known only at run
-# time.
-#= {
-#=     result: [-9223372036854775808, -9223372036854775808],
-#=     inputs: {max: 9223372036854775807, one: 1},
-#= }
-[curry(plus, 9223372036854775807)(1), bcurry(plus, one)(max)]

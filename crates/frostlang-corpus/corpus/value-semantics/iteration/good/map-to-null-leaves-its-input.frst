@@ -1,5 +1,6 @@
 # A `map` whose function returns Null for every element gives an Array
 # of Nulls, and the input keeps its elements.
 #= {result: [[null, null], [[1], [2]]], inputs: {n: 1}}
+def {n} = import('inputs')
 def xs = [[n], [2]]
 [map(xs, fn _ -> null), xs]

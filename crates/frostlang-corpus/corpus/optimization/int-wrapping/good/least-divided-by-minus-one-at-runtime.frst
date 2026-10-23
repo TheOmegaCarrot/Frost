@@ -1,7 +1,0 @@
-# The operations of least-divided-by-minus-one, over values only known at
-# runtime, wrap to the same values.
-#= {
-#=     result: [-9223372036854775808, 0, -9223372036854775808],
-#=     inputs: {least: -9223372036854775808, minus_one: -1},
-#= }
-[least / minus_one, least % minus_one, least * minus_one]

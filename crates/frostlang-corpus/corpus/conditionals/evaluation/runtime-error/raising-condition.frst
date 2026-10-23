@@ -1,3 +1,4 @@
 # A condition that raises raises from the `if`; neither branch runs.
 #= {raises: 'division by zero', inputs: {zero: 0}}
+def {zero} = import('inputs')
 if 1 / zero: print('then') else: print('else')

@@ -1,0 +1,9 @@
+# An overflow past the least Int raises where it happens, even when a later
+# step would bring the value back into range: `least - 1 + 1` never reaches
+# `+ 1`. Subtle because the exact value of the whole expression is in range.
+#= {
+#=     raises: 'Int overflow: -9223372036854775808 - 1',
+#=     inputs: {least: -9223372036854775808},
+#= }
+def {least} = import('inputs')
+least - 1 + 1

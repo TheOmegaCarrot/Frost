@@ -1,5 +1,6 @@
 # A guard may itself be a match, reading the outer arm's bindings.
 #= {result: ['one', 'other'], inputs: {xs: [1, 2]}}
+def {xs} = import('inputs')
 map(xs, fn v -> match v {
     x if: match x { 1 => true, _ => false } => 'one',
     _ => 'other',

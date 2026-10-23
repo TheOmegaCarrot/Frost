@@ -1,5 +1,6 @@
 # One Array passed through two `map` calls in a single expression gives each
 # the original.
 #= {result: [[2, 4, 6], [3, 4, 5], [1, 2, 3]], inputs: {n: 1}}
+def {n} = import('inputs')
 def xs = [n, 2, 3]
 [map(xs, fn x -> x * 2), map(xs, fn x -> x + 2), xs]

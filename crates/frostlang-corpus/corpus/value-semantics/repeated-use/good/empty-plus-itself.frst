@@ -1,6 +1,7 @@
 # An empty Array or Map added to itself is empty, and so is the binding
 # afterward.
 #= {result: [[], [], {}, {}], inputs: {xs: [], m: {}}}
+def {xs, m} = import('inputs')
 def ys = xs + []
 def n = m + {}
 [ys + ys, ys, n + n, n]

@@ -4,6 +4,7 @@
 #=     result: [false, null, false, 4],
 #=     inputs: {t: 1, f: false, n: null, last: 4},
 #= }
+def {t, f, n, last} = import('inputs')
 [
     f and t and t and t,
     t and n and t and t,

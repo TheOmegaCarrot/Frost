@@ -6,6 +6,7 @@
 #=     printed: ['row', '1', '2', 'row', 'row', '3'],
 #=     inputs: {rows: [[1, 2], [], [3]]},
 #= }
+def {rows} = import('inputs')
 each(rows, fn row -> {
     print('row')
     each(row, fn x -> print(to_string(x)))

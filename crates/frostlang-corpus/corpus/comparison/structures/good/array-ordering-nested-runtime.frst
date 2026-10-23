@@ -4,6 +4,7 @@
 #=     result: [true, true, false, true],
 #=     inputs: {a: [[1, 2], 0], b: [[1, 3], 0], ints: [[1], [2]], floats: [[1.0], [2.0]]},
 #= }
+def {a, b, ints, floats} = import('inputs')
 [
     a < b,
     ints <= floats,

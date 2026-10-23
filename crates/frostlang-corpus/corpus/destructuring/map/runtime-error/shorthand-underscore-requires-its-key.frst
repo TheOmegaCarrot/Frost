@@ -4,5 +4,6 @@
 #=     raises: 'no value at key "_"',
 #=     inputs: {m: {a: 1}},
 #= }
+def {m} = import('inputs')
 def {_, a} = m
 a

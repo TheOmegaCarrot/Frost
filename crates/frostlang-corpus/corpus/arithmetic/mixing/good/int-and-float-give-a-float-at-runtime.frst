@@ -4,6 +4,7 @@
 #=     result: [1.5, 1.5, 1.5, -1.5, 1.0, 1.0, 0.25, 0.25],
 #=     inputs: {one: 1, two: 2, half: 0.5, four_float: 4.0, one_float: 1.0, four: 4},
 #= }
+def {one, two, half, four_float, one_float, four} = import('inputs')
 [
     one + half,
     half + one,

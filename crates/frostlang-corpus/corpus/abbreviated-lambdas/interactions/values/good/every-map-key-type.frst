@@ -4,5 +4,6 @@
 #=     result: [{[true]: 1}, {[-1]: 2}, {[0.5]: 3}, {['é']: 4}, {[x'00ff']: 5}],
 #=     inputs: {bytes: x'00ff'},
 #= }
+def {bytes} = import('inputs')
 def entry = $({[$1]: $2})
 [entry(true, 1), entry(-1, 2), entry(0.5, 3), entry('é', 4), entry(bytes, 5)]

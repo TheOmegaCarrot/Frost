@@ -4,6 +4,7 @@
 #=     raises: ['insufficient funds', '30'],
 #=     inputs: {withdrawals: [10, 50, 5], opening: 30},
 #= }
+def {withdrawals, opening} = import('inputs')
 defn withdraw(balance, amount) ->
     if amount > balance: error({reason: 'insufficient funds', short: amount - balance})
     else: balance - amount

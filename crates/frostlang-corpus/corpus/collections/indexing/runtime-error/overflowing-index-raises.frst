@@ -1,0 +1,5 @@
+# An index computed with Int overflow raises instead of wrapping to the
+# smallest Int, so the lookup never happens.
+#= {raises: 'Int overflow: 9223372036854775807 + 1', inputs: {xs: [1, 2, 3], max: 9223372036854775807}}
+def {xs, max} = import('inputs')
+xs[max + 1]

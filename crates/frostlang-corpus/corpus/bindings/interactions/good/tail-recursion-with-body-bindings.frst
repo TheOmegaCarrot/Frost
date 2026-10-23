@@ -1,5 +1,6 @@
 # A recursive function with block-body bindings binds them afresh on each call.
 #= {result: 500500, inputs: {n: 1000}}
+def {n} = import('inputs')
 defn total(i, acc) -> {
     def next = acc + i
     if i == 0: next else: total(i - 1, next)

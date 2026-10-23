@@ -4,5 +4,6 @@
 #=     raises: 'no value at key "z"',
 #=     inputs: {m: {k: 1}},
 #= }
+def {m} = import('inputs')
 def {k: [a] | a, z} = m
 [a, z]

@@ -1,4 +1,5 @@
 # A nested `{}` binds nothing, yet still requires a Map there.
 #= {raises: 'expected a Map', inputs: {m: {k: null, a: 0}}}
+def {m} = import('inputs')
 def {k: {}, a} = m
 a

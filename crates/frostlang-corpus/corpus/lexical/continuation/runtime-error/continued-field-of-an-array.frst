@@ -1,5 +1,6 @@
 # A continued `.` is an ordinary field access, so reading a field of an Array
 # raises just as it does on one line.
 #= {raises: ['cannot index', 'Array'],inputs: {xs: [1, 2]}}
+def {xs} = import('inputs')
 xs
     .len

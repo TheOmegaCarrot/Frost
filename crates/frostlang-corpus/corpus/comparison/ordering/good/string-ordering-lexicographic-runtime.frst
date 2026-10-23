@@ -3,6 +3,7 @@
 #=     result: [true, true, false, true, true],
 #=     inputs: {abc: 'abc', ab: 'ab', empty: '', b: 'b'},
 #= }
+def {abc, ab, empty, b} = import('inputs')
 [
     abc < 'abd',
     ab < abc,

@@ -1,6 +1,7 @@
 # Arithmetic binds tighter than comparison, with operands known only at
 # runtime.
 #= {result: [true, true, false], inputs: {a: 1, b: 2, c: 3}}
+def {a, b, c} = import('inputs')
 [
     a + b == c,
     c - a > a,

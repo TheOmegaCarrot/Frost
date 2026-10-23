@@ -4,6 +4,7 @@
 #=     result: [[0, 1, 2], [0, 1, 2], [0, 1], [0, 1]],
 #=     inputs: {xs: [0], t: true, f: false},
 #= }
+def {xs, t, f} = import('inputs')
 def a = xs + [1]
 def extend = fn c -> if c: a + [2] else: a
 [extend(t), extend(t), extend(f), a]

@@ -4,6 +4,7 @@
 #=     result: [7, 7, 7, 7],
 #=     inputs: {n: null, f: false, seven: 7},
 #= }
+def {n, f, seven} = import('inputs')
 [
     seven or n or f or n,
     n or seven or f or n,

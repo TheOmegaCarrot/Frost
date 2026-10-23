@@ -4,4 +4,5 @@
 #=     result: [[1, 2, 1, 2], 'abab', x'0101', {a: 1}],
 #=     inputs: {xs: [1, 2], s: 'ab', y: x'01', m: {a: 1}},
 #= }
+def {xs, s, y, m} = import('inputs')
 [xs + xs, s + s, y + y, m + m]

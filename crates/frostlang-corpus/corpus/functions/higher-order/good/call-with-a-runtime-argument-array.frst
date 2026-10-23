@@ -1,5 +1,6 @@
 # `call` spreads an argument Array known only at runtime, including an empty
 # one into a rest parameter.
 #= {result: [[1, 2, 3], []], inputs: {args: [1, 2, 3], none: []}}
+def {args, none} = import('inputs')
 def collect_all = fn ...rest -> rest
 [call(collect_all, args), call(collect_all, none)]

@@ -6,6 +6,7 @@
 #=     lints: [['unused binding', '`t`']],
 #=     inputs: {x: null, one: 1},
 #= }
+def {x, one} = import('inputs')
 def t = true
 def inner = do {
     def t = x

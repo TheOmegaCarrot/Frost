@@ -3,5 +3,6 @@
 # still holds the same value, so neither operand may be changed in place
 # before both are read.
 #= {result: [1, 2, 1, 2], inputs: {n: 1}}
+def {n} = import('inputs')
 def xs = [n, 2]
 xs + xs

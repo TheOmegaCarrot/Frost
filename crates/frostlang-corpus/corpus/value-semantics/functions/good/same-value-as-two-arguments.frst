@@ -2,6 +2,7 @@
 # affect each other: extending one leaves the other, and the caller's
 # binding, as they were.
 #= {result: [[1, 0], [1, 9], [1], [1]], inputs: {n: 1}}
+def {n} = import('inputs')
 defn pair(a, b) -> [a + [0], b + [9], a, b]
 def xs = [n]
 pair(xs, xs)

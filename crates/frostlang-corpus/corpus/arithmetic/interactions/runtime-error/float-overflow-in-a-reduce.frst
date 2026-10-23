@@ -1,4 +1,5 @@
-# A Float sum that overflows partway through a reduce raises; unlike an Int
-# sum, it does not wrap.
+# A Float sum that overflows partway through a reduce raises, though the
+# final total would be finite.
 #= {raises: 'infinity', inputs: {xs: [1e308, 1e308, -1e308]}}
+def {xs} = import('inputs')
 reduce(xs, 0.0, fn acc, x -> acc + x)

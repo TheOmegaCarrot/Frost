@@ -5,6 +5,7 @@
 #=     printed: ['1 below', '5 at', '9 above'],
 #=     inputs: {xs: [1, 5, 9], threshold: 5.0},
 #= }
+def {xs, threshold} = import('inputs')
 defn describe(x) -> {
     if x < threshold: 'below'
     elif x > threshold: 'above'

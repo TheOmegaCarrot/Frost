@@ -1,5 +1,6 @@
 # Blank lines and a comment may follow a branch's colon before its expression.
 #= {result: 2, inputs: {c: false}}
+def {c} = import('inputs')
 if c: # the usual case
 
     1

@@ -5,6 +5,7 @@
 #=     result: [null, 2, 1, 1],
 #=     inputs: {t: true, f: false},
 #= }
+def {t, f} = import('inputs')
 [
     if t: null else: 1 or 2,
     (if t: null else: 1) or 2,

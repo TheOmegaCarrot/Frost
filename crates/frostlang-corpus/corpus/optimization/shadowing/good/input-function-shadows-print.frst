@@ -1,4 +1,5 @@
 # A function only known at runtime, named `print`, shadows the global: calling
 # it prints nothing and returns what the supplied function returns.
 #= {result: 'captured x', inputs: {print: fn v -> 'captured ' + v}}
+def {print} = import('inputs')
 print('x')

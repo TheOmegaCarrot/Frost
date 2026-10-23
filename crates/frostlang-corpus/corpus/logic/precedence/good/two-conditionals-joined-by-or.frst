@@ -3,6 +3,7 @@
 #=     result: [2, 4, false],
 #=     inputs: {one: 1, two: 2, three: 3, four: 4, f: false},
 #= }
+def {one, two, three, four, f} = import('inputs')
 [
     one and two or three and four,
     f and two or three and four,

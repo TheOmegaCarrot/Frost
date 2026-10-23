@@ -1,6 +1,7 @@
 # Each step of a chain of derived Arrays keeps its own value: extending a
 # step does not reach back into the step it came from.
 #= {result: [[1], [1, 2], [1, 2, 3], [1, 2, 3, 4]], inputs: {n: 1}}
+def {n} = import('inputs')
 def a = [n]
 def b = a + [2]
 def c = b + [3]

@@ -1,4 +1,5 @@
 # A pin compares against an existing name, rather than binding it.
 #= {result: 7, inputs: {n: 5, xs: [7, 5]}}
+def {n, xs} = import('inputs')
 def [a, (n)] = xs
 a

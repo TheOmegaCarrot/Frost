@@ -1,6 +1,7 @@
 # A format String pattern may read only names bound before it in the pattern,
 # not one bound by a later part.
 #= {rejects: '`p` is not defined', inputs: {xs: ['a1', 'a']}}
+def {xs} = import('inputs')
 match xs {
     [$'${p}1', p] => p,
     _ => 'no',

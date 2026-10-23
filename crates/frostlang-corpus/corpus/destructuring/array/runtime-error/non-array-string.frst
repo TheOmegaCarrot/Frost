@@ -1,5 +1,6 @@
 # A String is not an Array: an Array pattern does not split it into
 # characters, even when its length would fit.
 #= {raises: 'expected an Array', inputs: {v: 'ab'}}
+def {v} = import('inputs')
 def [a, b] = v
 [a, b]

@@ -5,6 +5,7 @@
 #=     lints: [['unused binding', '`n`']],
 #=     inputs: {xs: [4, 3, 40, 'x']},
 #= }
+def {xs} = import('inputs')
 map(xs, fn x -> match x {
     n is Int if: n > 0 and n < 10 and n % 2 == 0 => 'small even',
     n is Int if: not (n >= 10 or n < 0) => 'small odd',

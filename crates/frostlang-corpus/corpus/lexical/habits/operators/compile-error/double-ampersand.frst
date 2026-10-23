@@ -1,3 +1,4 @@
 # Frost's logical "and" is the word `and`, not `&&`.
 #= {rejects: 'is `and`', inputs: {a: true, b: true}}
+def {a, b} = import('inputs')
 a && b

@@ -1,6 +1,7 @@
 # A branch on the line after its colon still ends at its own line break: the
 # line after the `else` branch is the next statement.
 #= {result: ['b', 'b'], inputs: {c: false}}
+def {c} = import('inputs')
 def v = if c:
     'a'
 else:

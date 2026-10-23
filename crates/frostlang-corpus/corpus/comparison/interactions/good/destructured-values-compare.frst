@@ -3,6 +3,7 @@
 #=     result: [true, true, true],
 #=     inputs: {pair: [2, 2.0], record: {name: 'ann', tags: ['x']}},
 #= }
+def {pair, record} = import('inputs')
 def [i, f] = pair
 def {name, tags} = record
 [

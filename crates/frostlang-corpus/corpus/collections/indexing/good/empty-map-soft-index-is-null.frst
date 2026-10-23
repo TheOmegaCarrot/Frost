@@ -1,3 +1,4 @@
 # Every valid key is missing from an empty Map.
 #= {result: [null, null, null, null, null], inputs: {m: {}}}
+def {m} = import('inputs')
 [{}['a'], m['a'], m[0], m[false], m[0.5]]

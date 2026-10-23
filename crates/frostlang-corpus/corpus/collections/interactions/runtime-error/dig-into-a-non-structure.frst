@@ -1,4 +1,5 @@
 # `dig` keeps a Null found partway as Null, but indexing a non-Null value
 # that is not a structure raises, as a soft index does.
 #= {raises: ['Cannot index value', 'Int'], inputs: {data: {a: 5}}}
+def {data} = import('inputs')
 dig(data, 'a', 'b')

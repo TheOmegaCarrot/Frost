@@ -1,0 +1,8 @@
+# Int multiplication of operands only known at runtime raises past the Int
+# range, exactly as a folded product does.
+#= {
+#=     raises: 'Int overflow: 9223372036854775807 * 2',
+#=     inputs: {greatest: 9223372036854775807, two: 2},
+#= }
+def {greatest, two} = import('inputs')
+greatest * two

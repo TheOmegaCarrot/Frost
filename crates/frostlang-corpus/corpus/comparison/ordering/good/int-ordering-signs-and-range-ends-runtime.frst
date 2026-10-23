@@ -4,6 +4,7 @@
 #=     result: [true, true, false, true, true],
 #=     inputs: {min: -9223372036854775808, max: 9223372036854775807, minus_one: -1},
 #= }
+def {min, max, minus_one} = import('inputs')
 [
     min < max,
     minus_one < 0,

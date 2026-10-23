@@ -2,5 +2,6 @@
 # lambda's own name inside it, and the `def` outside. The lambda recurses
 # through its own name, so this is the explicit form of `defn`.
 #= {result: 'done', inputs: {n: 3}}
+def {n} = import('inputs')
 def f = fn f(k) -> if k == 0: 'done' else: f(k - 1)
 f(n)

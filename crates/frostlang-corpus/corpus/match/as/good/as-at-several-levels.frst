@@ -1,5 +1,6 @@
 # Nested Map patterns may each bind their own whole Map with `as`.
 #= {result: [{inner: {x: 1}}, {x: 1}, 1], inputs: {v: {inner: {x: 1}}}}
+def {v} = import('inputs')
 match v {
     {inner: {x} as i} as o => [o, i, x],
 }

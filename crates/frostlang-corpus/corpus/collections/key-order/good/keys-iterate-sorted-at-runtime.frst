@@ -4,5 +4,6 @@
 #=     result: [false, true, -3, 2, 1.5, 'a', 'b', x'00'],
 #=     inputs: {keys: ['b', x'00', 2, 1.5, true, false, 'a', -3]},
 #= }
+def {keys} = import('inputs')
 def m = reduce(keys, {}, fn acc, k -> acc + {[k]: null})
 reduce(m, [], fn acc, k, v -> acc + [k])

@@ -1,3 +1,4 @@
 # An out-of-range Array index yields Null, and indexing that Null raises.
 #= {raises: ['Cannot index', 'Null'], inputs: {grid: [[1]]}}
+def {grid} = import('inputs')
 grid[1][0]

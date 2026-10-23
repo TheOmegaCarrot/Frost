@@ -1,6 +1,7 @@
 # A leading `@` continues a destructuring `def`'s value, so the pattern
 # destructures the pipeline's result, not the value on the first line.
 #= {result: [[1, 2], 9], inputs: {xs: [1, 2]}}
+def {xs} = import('inputs')
 defn pair(a, b) -> [a, b]
 def [first, second] = xs
     @ pair(9)

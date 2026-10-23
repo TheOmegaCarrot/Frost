@@ -2,6 +2,7 @@
 # no-match error. Subtle: the error names the value, which cannot be shown as
 # text directly.
 #= {raises: 'no match arm', inputs: {v: x'ff'}}
+def {v} = import('inputs')
 match v {
     x'00' => 'zero',
 }

@@ -6,6 +6,7 @@
 #=     lints: [['unused binding', '`a`'], ['unused binding', '`a`']],
 #=     inputs: {v: [1, 2]},
 #= }
+def {v} = import('inputs')
 match v {
     [a, b] => print($'matched ${b}'),
 }

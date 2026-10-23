@@ -1,3 +1,4 @@
 # Spreading a function known only at run time.
 #= {result: ['b', 'a'], inputs: {swap: fn a, b -> [b, a]}}
+def {swap} = import('inputs')
 spread(swap)(['a', 'b'])

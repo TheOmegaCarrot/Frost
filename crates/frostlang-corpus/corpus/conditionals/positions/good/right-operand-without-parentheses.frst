@@ -1,4 +1,5 @@
 # An `if` may be a right operand without parentheses; it then extends to the
 # end of the expression, so `1 + if c: 2 else: 3 + 4` is `1 + (if c: 2 else: 7)`.
 #= {result: [3, 8], inputs: {t: true, f: false}}
+def {t, f} = import('inputs')
 [1 + if t: 2 else: 3 + 4, 1 + if f: 2 else: 3 + 4]

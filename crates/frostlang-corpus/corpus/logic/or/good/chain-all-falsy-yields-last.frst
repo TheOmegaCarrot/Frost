@@ -4,6 +4,7 @@
 #=     result: [false, null, false, null],
 #=     inputs: {n: null, f: false},
 #= }
+def {n, f} = import('inputs')
 [
     null or null or false,
     false or false or null,

@@ -1,5 +1,6 @@
 # A mismatch reached deep in a recursion raises out of every level.
 #= {raises: 'exactly 2 elements', inputs: {pairs: [[1, 2], [3, 4], [5]]}}
+def {pairs} = import('inputs')
 defn total(items) -> if len(items) == 0: 0 else: do {
     def [[a, b], ...rest] = items
     a + b + total(rest)

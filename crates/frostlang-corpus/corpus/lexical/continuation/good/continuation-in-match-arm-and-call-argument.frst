@@ -1,6 +1,7 @@
 # Continuation lines work inside brackets too: in a call's argument and in a
 # `match` arm's result.
 #= {result: [2, 7], inputs: {m: {xs: [1, 2], k: 7}}}
+def {m} = import('inputs')
 [
     len(m
         .xs),

@@ -1,5 +1,6 @@
 # A `;` ends its statement explicitly, so an `@` on the next line has nothing
 # to continue.
 #= {rejects: ['expected an expression', '`@`'], inputs: {xs: [1]}}
+def {xs} = import('inputs')
 xs;
 @ len()

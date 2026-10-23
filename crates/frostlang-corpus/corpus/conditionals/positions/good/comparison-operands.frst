@@ -1,6 +1,7 @@
 # An `if` may be either operand of a comparison: parenthesized on the left,
 # and on the right extending to the end.
 #= {result: [true, false, true], inputs: {t: true, f: false}}
+def {t, f} = import('inputs')
 [
     (if t: 1 else: 2) == 1,
     (if f: 1 else: 2) == 1,

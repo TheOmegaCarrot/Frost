@@ -1,6 +1,7 @@
 # A value bound from a Map pattern, then extended, leaves the matched Map
 # unchanged.
 #= {result: [[1, 2], {items: [1]}], inputs: {n: 1}}
+def {n} = import('inputs')
 def m = {items: [n]}
 match m {
     {items} => [items + [2], m],

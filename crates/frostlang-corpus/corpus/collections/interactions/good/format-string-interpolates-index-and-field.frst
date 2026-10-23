@@ -1,4 +1,5 @@
 # Index and field reads, Map literals included, work inside format-string
 # interpolation.
 #= {result: 'first: 10, name: ada, lit: 1', inputs: {xs: [10, 20], m: {name: 'ada'}}}
+def {xs, m} = import('inputs')
 $'first: ${xs[0]}, name: ${m.name}, lit: ${ {a: 1}.a }'

@@ -1,5 +1,6 @@
 # A match may be the operand of a prefix operator, `not` or unary minus.
 #= {result: [true, -5], inputs: {v: 1}}
+def {v} = import('inputs')
 [
     not match v { 1 => false },
     -match v { 1 => 5 },

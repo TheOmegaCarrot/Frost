@@ -1,6 +1,7 @@
 # A recursive function may match on its argument's shape, with an empty-Array
 # base case and a head-and-rest step.
 #= {result: [10, 0], inputs: {a: [1, 2, 3, 4], b: []}}
+def {a, b} = import('inputs')
 defn sum(xs) -> match xs {
     [] => 0,
     [h, ...t] => h + sum(t),

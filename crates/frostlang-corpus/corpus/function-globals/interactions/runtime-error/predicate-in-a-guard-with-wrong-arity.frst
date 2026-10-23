@@ -1,5 +1,6 @@
 # A guard's predicate call is checked like any call when the guard runs.
 #= {raises: ['is_int', 'expects 1', 'called with 2'], inputs: {v: 1}}
+def {v} = import('inputs')
 match v {
     x if: is_int(x, x) => 'int',
     _ => 'other',

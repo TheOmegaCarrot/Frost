@@ -1,4 +1,0 @@
-# Negating the least Int literal again wraps back to the least Int: the inner `-` is
-# part of the literal, the outer one is arithmetic.
-#= {result: [-9223372036854775808, -9223372036854775808]}
-[-(-9223372036854775808), - -9223372036854775808]

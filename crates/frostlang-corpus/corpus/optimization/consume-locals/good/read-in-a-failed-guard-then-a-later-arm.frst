@@ -1,6 +1,7 @@
 # A binding read in a guard that fails, and again in a later arm, has its value
 # in the later arm: the guard's read is not its last.
 #= {result: [1, 2], inputs: {xs: [1, 2]}}
+def {xs} = import('inputs')
 def v = xs
 match 0 {
     _ if: len(v + [0]) > 10 => 'long',

@@ -1,0 +1,4 @@
+# The least Int times -1 has no Int value: its positive counterpart is past
+# the greatest Int.
+#= {raises: 'Int overflow: -9223372036854775808 * -1'}
+-9223372036854775808 * -1

@@ -1,4 +1,5 @@
 # Over an Array, `filter` calls its predicate with the element alone, so a
 # two-parameter predicate is an arity error.
 #= {raises: 'called with 1', inputs: {xs: [1]}}
+def {xs} = import('inputs')
 filter(xs, fn x, i -> true)

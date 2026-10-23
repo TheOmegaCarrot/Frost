@@ -1,0 +1,4 @@
+# Int arithmetic overflow raises instead of wrapping, so one past the greatest
+# Int is an error rather than the least Int.
+#= {raises: ['Int overflow', '9223372036854775807 + 1']}
+9223372036854775807 + 1 < 0

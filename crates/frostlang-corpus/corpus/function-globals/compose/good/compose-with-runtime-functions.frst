@@ -1,3 +1,4 @@
 # Composing functions known only at run time, applied to a runtime value.
 #= {result: [9, 7], inputs: {f: fn x -> x + 1, g: fn x -> x * 3, n: 2}}
+def {f, g, n} = import('inputs')
 [compose(f, g)(n), compose(g, f)(n)]

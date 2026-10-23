@@ -3,5 +3,6 @@
 #=     result: ['missing', 'present', 'present'],
 #=     inputs: {values: [null, 0, '']},
 #= }
+def {values} = import('inputs')
 def label = {[true]: 'missing', [false]: 'present'}
 map(values, fn v -> label[not v])

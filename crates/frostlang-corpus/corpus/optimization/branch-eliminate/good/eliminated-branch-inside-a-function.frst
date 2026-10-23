@@ -1,5 +1,6 @@
 # An `if` with a constant condition inside a function picks its branch on every
 # call, while the branch computes over each call's argument.
 #= {result: [2, 4], inputs: {one: 1, two: 2}}
+def {one, two} = import('inputs')
 defn double(x) -> if true: x * 2 else: error('never')
 [double(one), double(two)]

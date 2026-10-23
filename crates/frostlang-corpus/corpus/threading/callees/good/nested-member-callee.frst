@@ -1,5 +1,6 @@
 # A callee may be reached through several `.` accesses; the threaded value
 # goes to the function at the end of the path, not to any Map along it.
 #= {result: 10, inputs: {n: 5}}
+def {n} = import('inputs')
 def lib = {math: {double: fn x -> x * 2}}
 n @ lib.math.double()

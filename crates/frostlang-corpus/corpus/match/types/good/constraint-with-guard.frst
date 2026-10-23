@@ -1,6 +1,7 @@
 # The type constraint is checked before the guard, so the guard can rely on the
 # type: here `n > 0` is never tried on a String.
 #= {result: ['positive', 'not positive', 'not positive'], inputs: {xs: [5, -5, 'five']}}
+def {xs} = import('inputs')
 map(xs, fn v -> match v {
     n is Numeric if: n > 0 => 'positive',
     _ => 'not positive',

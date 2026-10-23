@@ -2,6 +2,7 @@
 # next alternative binds the name afresh. Subtle: the first branch binds `x`
 # to 3 before its `2` fails.
 #= {result: 5, inputs: {v: [3, 5]}}
+def {v} = import('inputs')
 match v {
     [x, 2] | [3, x] => x,
 }

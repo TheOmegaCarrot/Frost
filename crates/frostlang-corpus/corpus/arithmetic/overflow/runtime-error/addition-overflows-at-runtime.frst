@@ -1,0 +1,8 @@
+# Int addition of operands only known at runtime raises past the greatest Int,
+# exactly as a folded sum does.
+#= {
+#=     raises: 'Int overflow: 9223372036854775807 + 1',
+#=     inputs: {greatest: 9223372036854775807, one: 1},
+#= }
+def {greatest, one} = import('inputs')
+greatest + one

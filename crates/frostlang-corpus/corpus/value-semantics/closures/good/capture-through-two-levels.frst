@@ -1,6 +1,7 @@
 # A value captured through two levels of nested lambdas is the original at
 # every call of either level.
 #= {result: [[1, 2], [1, 3], [1, 4]], inputs: {n: 1}}
+def {n} = import('inputs')
 def xs = [n]
 def outer = fn -> fn y -> xs + [y]
 def inner = outer()

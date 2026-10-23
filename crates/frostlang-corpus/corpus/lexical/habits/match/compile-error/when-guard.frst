@@ -1,3 +1,4 @@
 # Elixir's and F#'s `when` guard is Frost's `if:`.
 #= {rejects: 'a guard is written `if:`', inputs: {x: 1}}
+def {x} = import('inputs')
 match x { n when n > 0 => n }

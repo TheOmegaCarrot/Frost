@@ -4,5 +4,6 @@
 #=     result: {ok: false, error: {code: 7}, trace: ['error', 'raise']},
 #=     inputs: {payload: {code: 7}},
 #= }
+def {payload} = import('inputs')
 defn raise(value) -> [error(value)]
 try_call(raise, [payload])

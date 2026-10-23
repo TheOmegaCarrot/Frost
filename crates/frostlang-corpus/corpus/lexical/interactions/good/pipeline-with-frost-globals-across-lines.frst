@@ -1,6 +1,7 @@
 # A leading-`@` pipeline through globals written in Frost (`dig`, `tap`,
 # `collect`), each step on its own line with a comment.
 #= {result: ['b', 'end'], printed: ['b'], inputs: {m: {a: {b: 'b'}}}}
+def {m} = import('inputs')
 m
     # reach into the Map
     @ dig('a', 'b')

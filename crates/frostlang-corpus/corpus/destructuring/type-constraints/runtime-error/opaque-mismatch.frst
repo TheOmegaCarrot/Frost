@@ -1,4 +1,5 @@
 # `is Opaque` rejects a non-Opaque value.
 #= {raises: 'expected an Opaque', inputs: {v: 1}}
+def {v} = import('inputs')
 def x is Opaque = v
 x

@@ -1,5 +1,0 @@
-# Int overflow in a threaded call wraps in two's complement, as it does in a
-# direct call; it never raises.
-#= {result: [-9223372036854775808, 9223372036854775807]}
-defn inc(x) -> x + 1
-[9223372036854775807 @ inc(), (-9223372036854775808) @ minus(1)]

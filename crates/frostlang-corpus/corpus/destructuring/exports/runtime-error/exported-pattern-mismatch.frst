@@ -1,4 +1,5 @@
 # A mismatch in an exported def raises like any other.
 #= {raises: 'exactly 2 elements', inputs: {xs: [1]}}
+def {xs} = import('inputs')
 export def [a, b] = xs
 0

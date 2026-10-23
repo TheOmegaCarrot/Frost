@@ -1,5 +1,6 @@
 # A failed lookup raises before the next key is evaluated.
 #= {result: false, printed: ['a'], inputs: {m: {b: 2}}}
+def {m} = import('inputs')
 defn note(k) -> {
     print(k)
     k

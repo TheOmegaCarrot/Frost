@@ -1,5 +1,6 @@
 # An abbreviated lambda reading its placeholder twice, `$($ + $)`, repeats
 # each element, and the Array mapped is unchanged.
 #= {result: [[[1, 1], [2, 2]], [[1], [2]]], inputs: {n: 1}}
+def {n} = import('inputs')
 def xs = [[n], [2]]
 [map(xs, $($ + $)), xs]

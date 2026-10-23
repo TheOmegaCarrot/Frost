@@ -1,4 +1,5 @@
 # A runtime false on the left of `or` leaves it undecided, so the raising right
 # operand runs.
 #= {raises: 'the right operand ran', inputs: {f: false}}
+def {f} = import('inputs')
 f or error('the right operand ran')

@@ -17,6 +17,7 @@
 #=         exponent: 100,
 #=     },
 #= }
+def {nines, one, long, short, exponent} = import('inputs')
 defn add(xs, ys, carry) -> match [xs, ys] {
     [[], []] => if carry == 0: [] else: [carry],
     _ => do {

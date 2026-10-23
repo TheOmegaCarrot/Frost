@@ -2,6 +2,7 @@
 # branch on its own line, a continued `@` input, a Map value after a line
 # break, and a block's last statement after `;`.
 #= {result: [[null,], null, 'Null', {k: null}, null], inputs: {c: false}}
+def {c} = import('inputs')
 def a = [null,]
 def b = if c: 1
 else:

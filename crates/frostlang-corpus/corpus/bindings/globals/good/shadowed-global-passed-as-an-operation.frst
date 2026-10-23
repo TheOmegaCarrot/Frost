@@ -1,5 +1,6 @@
 # A name shadowing a global, passed to `map` as its function, is the
 # binding's function, not the global.
 #= {result: [7, 7], inputs: {xs: [[1, 2], []]}}
+def {xs} = import('inputs')
 def len = fn v -> 7
 map(xs, len)

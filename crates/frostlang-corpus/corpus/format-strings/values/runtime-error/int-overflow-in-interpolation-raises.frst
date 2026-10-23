@@ -1,0 +1,7 @@
+# Int arithmetic in an interpolation raises on overflow, as it does anywhere.
+#= {
+#=     raises: ['Int overflow', '9223372036854775807 + 1'],
+#=     inputs: {max: 9223372036854775807},
+#= }
+def {max} = import('inputs')
+$'${max + 1}'

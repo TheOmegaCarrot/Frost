@@ -1,6 +1,7 @@
 # The chain of chain-of-bindings, starting from a value only known at runtime,
 # computes the same values.
 #= {result: [1, 2, 4, 8], inputs: {one: 1}}
+def {one} = import('inputs')
 def a = one
 def b = a * 2
 def c = b * 2

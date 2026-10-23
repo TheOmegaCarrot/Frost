@@ -1,4 +1,5 @@
 # Equal Arrays known only at runtime order as equal even when they begin with
 # Null: the equal Nulls are passed over, never ordered.
 #= {result: true, inputs: {a: [null, 1], b: [null, 1]}}
+def {a, b} = import('inputs')
 a <= b

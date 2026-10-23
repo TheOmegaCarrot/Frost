@@ -1,5 +1,6 @@
 # A constant interpolation that would raise does not fail compilation: its
 # error belongs to running it, so in a function never called, nothing raises.
 #= {result: 'safe', inputs: {flag: false}}
+def {flag} = import('inputs')
 def risky = fn -> $'a${1 / 0}b'
 if flag: risky() else: 'safe'

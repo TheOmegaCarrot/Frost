@@ -1,4 +1,5 @@
 # A parenthesized condition may span lines.
 #= {result: 'no', inputs: {a: true, b: false}}
+def {a, b} = import('inputs')
 if (a
     and b): 'yes' else: 'no'

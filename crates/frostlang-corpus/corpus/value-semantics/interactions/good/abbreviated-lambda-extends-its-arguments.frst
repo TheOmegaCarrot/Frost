@@ -1,6 +1,7 @@
 # Abbreviated lambdas extending a placeholder or the rest arguments leave the
 # values passed in unchanged.
 #= {result: [[1, 2], [[1], 0], [1]], inputs: {n: 1}}
+def {n} = import('inputs')
 def push = $($1 + [$2])
 def gather = $($$ + [0])
 def xs = [n]

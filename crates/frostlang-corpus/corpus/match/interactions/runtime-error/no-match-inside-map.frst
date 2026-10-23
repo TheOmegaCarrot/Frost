@@ -1,5 +1,6 @@
 # A no-match error in a `map` callback stops the map and propagates.
 #= {raises: ['no match arm', '3'], inputs: {xs: [1, 2, 3]}}
+def {xs} = import('inputs')
 map(xs, fn v -> match v {
     1 | 2 => 'small',
 })

@@ -1,6 +1,7 @@
 # A parenthesized value may be an `if`, compared by the value its taken branch
 # yields.
 #= {result: [['one', 'other'], ['other', 'one']], inputs: {t: true, f: false}}
+def {t, f} = import('inputs')
 defn classify(c, v) -> match v {
     (if c: 1 else: 2) => 'one',
     _ => 'other',

@@ -1,5 +1,6 @@
 # A `do` block inside an abbreviated lambda may destructure a placeholder.
 #= {result: [3, [3, 4]], inputs: {xs: [1, 2, 3, 4]}}
+def {xs} = import('inputs')
 def f = $(do {
     def [a, b, ...rest] = $
     [a + b, rest]

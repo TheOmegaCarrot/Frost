@@ -1,6 +1,7 @@
 # A line starting with `.` continues the previous expression, so a field
 # chain may break before each dot, even past blank lines and comments.
 #= {result: 3, inputs: {m: {a: {b: {c: 3}}}}}
+def {m} = import('inputs')
 m
     .a # first step
 

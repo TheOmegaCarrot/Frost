@@ -4,6 +4,7 @@
 #=     result: ['pass', 'pass', 'pass', 'pass', 'pass', 'pass', 'fail', 'fail'],
 #=     inputs: {xs: [true, 0, 0.0, '', [], {}, null, false]},
 #= }
+def {xs} = import('inputs')
 map(xs, fn g -> match 1 {
     _ if: g => 'pass',
     _ => 'fail',

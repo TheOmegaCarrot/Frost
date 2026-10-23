@@ -1,4 +1,0 @@
-# An input named like a global shadows it: the script's enclosing scope comes
-# before the globals.
-#= {result: 6, inputs: {len: 5}}
-len + 1

@@ -9,6 +9,7 @@
 #=         width: 10,
 #=     },
 #= }
+def {values, width} = import('inputs')
 defn bar(n) -> if n == 0: '' else: '#' + bar(n - 1)
 
 def counts = reduce(values, {}, fn acc, v -> {

@@ -1,4 +1,5 @@
 # A Null initial value satisfies a Map's need for one: it is an initial value,
 # not a missing one.
 #= {result: [null, 'a', 1], inputs: {m: {a: 1}}}
+def {m} = import('inputs')
 reduce(m, null, fn acc, k, v -> [acc, k, v])

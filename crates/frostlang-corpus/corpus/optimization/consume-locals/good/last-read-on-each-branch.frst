@@ -1,5 +1,6 @@
 # A binding's last read on one branch, and its two reads on the other, each
 # see its value.
 #= {result: [[1, 2, 3], [[1, 2], [1, 2]], [1, 2]], inputs: {xs: [1, 2], yes: true, no: false}}
+def {xs, yes, no} = import('inputs')
 defn pick(v, flag) -> if flag: v + [3] else: [v, v]
 [pick(xs, yes), pick(xs, no), xs]

@@ -1,6 +1,7 @@
 # A logical result bound with `def` is an ordinary value, usable as an operand
 # of another logical expression.
 #= {result: [[3, 4], [7, 8]], inputs: {n: null, seven: 7}}
+def {n, seven} = import('inputs')
 defn derive(x) -> {
     def y = x or 3
     def z = y and y + 1

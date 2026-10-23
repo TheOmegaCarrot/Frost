@@ -1,5 +1,6 @@
 # A `.` ending a line does not continue onto the next: the field name must
 # follow on the same line, and the help says to move the `.` down.
 #= {rejects: 'move the `.`', inputs: {m: {k: 1}}}
+def {m} = import('inputs')
 def v = m.
     k

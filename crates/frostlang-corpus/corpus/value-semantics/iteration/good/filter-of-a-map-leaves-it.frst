@@ -1,6 +1,7 @@
 # `filter` over a Map builds a new Map of the kept entries and leaves the
 # input unchanged.
 #= {result: [{a: 1, b: 2, c: 3}, {b: 2, c: 3}], inputs: {v: 1}}
+def {v} = import('inputs')
 def m = {a: v, b: 2, c: 3}
 def kept = filter(m, fn _, x -> x > 1)
 [m, kept]

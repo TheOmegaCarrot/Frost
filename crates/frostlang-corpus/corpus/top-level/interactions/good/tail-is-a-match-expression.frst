@@ -1,5 +1,6 @@
 # A `match` as the last statement makes the chosen arm's value the tail.
 #= {result: 'many', inputs: {xs: [1, 2, 3]}}
+def {xs} = import('inputs')
 match xs {
     [] => 'none',
     [_] => 'one',

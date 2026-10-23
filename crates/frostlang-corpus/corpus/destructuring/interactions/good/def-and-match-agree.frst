@@ -4,6 +4,7 @@
 #=     result: [true, [1, 'x', [3], {k: 'x'}]],
 #=     inputs: {v: [1, {k: 'x'}, 3]},
 #= }
+def {v} = import('inputs')
 def [a, {k} as m, ...r] = v
 def from_def = [a, k, r, m]
 def from_match = match v {

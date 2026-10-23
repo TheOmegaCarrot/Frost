@@ -1,5 +1,6 @@
 # A field is read from a call's result directly, and the read may continue
 # into a further call when the field holds a function.
 #= {result: ['ada', 7], inputs: {name: 'ada'}}
+def {name} = import('inputs')
 defn person() -> {name, next: fn n -> n + 1}
 [person().name, person().next(6)]

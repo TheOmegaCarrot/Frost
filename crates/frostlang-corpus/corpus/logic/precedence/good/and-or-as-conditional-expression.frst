@@ -4,6 +4,7 @@
 #=     result: ['yes', 'no', 'no', 'yes'],
 #=     inputs: {t: true, f: false, n: null, zero: 0},
 #= }
+def {t, f, n, zero} = import('inputs')
 [
     t and 'yes' or 'no',
     f and 'yes' or 'no',

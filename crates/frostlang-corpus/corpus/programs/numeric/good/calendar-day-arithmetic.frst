@@ -15,6 +15,7 @@
 #=         years: [1900, 2000, 2024, 2100],
 #=     },
 #= }
+def {dates, years} = import('inputs')
 def names = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
 
 defn days_from_civil(date) -> {

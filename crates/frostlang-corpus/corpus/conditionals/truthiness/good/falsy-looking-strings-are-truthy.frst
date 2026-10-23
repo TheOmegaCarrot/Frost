@@ -4,4 +4,5 @@
 #=     result: ['T', 'T', 'T', 'T', 'T'],
 #=     inputs: {values: ['false', 'null', '0', ' ', 'nil']},
 #= }
+def {values} = import('inputs')
 map(values, fn v -> if v: 'T' else: 'F')

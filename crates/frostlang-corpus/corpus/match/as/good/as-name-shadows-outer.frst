@@ -1,6 +1,7 @@
 # An `as` name binds afresh within its arm, shadowing an enclosing name only
 # there.
 #= {result: [{a: 1}, 'outer'], inputs: {v: {a: 1}}}
+def {v} = import('inputs')
 def m = 'outer'
 def r = match v {
     {} as m => m,

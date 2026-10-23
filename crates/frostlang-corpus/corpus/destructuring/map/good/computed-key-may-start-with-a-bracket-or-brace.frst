@@ -3,5 +3,6 @@
 # looks up `'key'`. Subtle because the doubled opener looks like a nested
 # pattern rather than a key.
 #= {result: ['two', 'value'], inputs: {m: {[2]: 'two', key: 'value'}}}
+def {m} = import('inputs')
 def {[[1, 2][1]]: two, [{k: 'key'}.k]: v} = m
 [two, v]

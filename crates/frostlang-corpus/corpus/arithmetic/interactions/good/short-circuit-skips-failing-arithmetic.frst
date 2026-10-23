@@ -1,6 +1,7 @@
 # `and` and `or` never evaluate a right operand they do not need, so a
 # failing operation there does not raise.
 #= {result: [true, null, 1], inputs: {yes: true, nothing: null, one: 1, zero: 0}}
+def {yes, nothing, one, zero} = import('inputs')
 [
     yes or one / zero,
     nothing and one % zero,

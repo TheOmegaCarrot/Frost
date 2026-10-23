@@ -1,6 +1,7 @@
 # Escapes in a String pattern are expanded exactly as in an expression: the
 # pattern 'a\nb' is a, newline, b, not a backslash and an n.
 #= {result: ['newline', 'tab', 'unicode', 'backslash n'], inputs: {xs: ['a\nb', 'a\tb', 'é', 'a\\nb']}}
+def {xs} = import('inputs')
 map(xs, fn s -> match s {
     'a\nb' => 'newline',
     'a\tb' => 'tab',

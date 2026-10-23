@@ -3,6 +3,7 @@
 # rest parameter. Subtle because an argument count kept in 16 bits would
 # wrap past 65535.
 #= {result: [[0, 1, 65535], 65537, 65536], inputs: {n: 65537}}
+def {n} = import('inputs')
 def args = range(n)
 [
     call(fn a, b, ...rest -> [a, b, len(rest)], args),

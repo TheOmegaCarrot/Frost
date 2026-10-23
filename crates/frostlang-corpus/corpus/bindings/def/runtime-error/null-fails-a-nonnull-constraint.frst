@@ -1,4 +1,5 @@
 # A `Nonnull` type constraint rejects a Null value at runtime.
 #= {raises: ['does not match', 'Nonnull'], inputs: {n: null}}
+def {n} = import('inputs')
 def x is Nonnull = n
 x

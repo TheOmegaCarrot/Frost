@@ -1,5 +1,6 @@
 # `as _` binds nothing, matching exactly as the Map pattern alone does.
 #= {result: [1, 'other'], inputs: {xs: [{a: 1}, {b: 1}]}}
+def {xs} = import('inputs')
 map(xs, fn v -> match v {
     {a} as _ => a,
     _ => 'other',

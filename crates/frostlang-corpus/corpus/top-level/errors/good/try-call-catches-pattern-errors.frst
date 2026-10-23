@@ -10,6 +10,7 @@
 #=     ],
 #=     inputs: {n: 3, pair: [1, 2], m: {}},
 #= }
+def {n, pair, m} = import('inputs')
 defn summary(outcome) -> [outcome.ok, is_string(outcome.error)]
 [
     summary(try_call(fn -> match n {

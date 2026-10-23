@@ -1,4 +1,5 @@
 # Even an empty Map needs an initial value. Subtle: an empty Array without one
 # reduces to Null, but a Map's need for one does not depend on its size.
 #= {raises: 'requires an initial value', inputs: {m: {}}}
+def {m} = import('inputs')
 reduce(m, fn acc, k, v -> acc + v)

@@ -2,6 +2,7 @@
 # then raises for want of a matching arm, caught by `try_call`, leaves the
 # scrutinee's binding as it was.
 #= {result: [false, [1, 2, 3]], inputs: {n: 1}}
+def {n} = import('inputs')
 def xs = [n, 2, 3]
 def r = try_call(fn -> match xs {
     [first, ...rest] if: len(rest) == 0 => first,

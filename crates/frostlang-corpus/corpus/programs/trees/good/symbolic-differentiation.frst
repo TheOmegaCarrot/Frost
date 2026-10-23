@@ -24,6 +24,7 @@
 #=         at: 4,
 #=     },
 #= }
+def {expressions, at} = import('inputs')
 defn derive(e) -> match e {
     _ is Int => 0,
     'x' => 1,

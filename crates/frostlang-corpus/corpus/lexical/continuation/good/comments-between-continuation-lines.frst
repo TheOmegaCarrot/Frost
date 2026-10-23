@@ -1,6 +1,7 @@
 # Comments, whether trailing a line or on lines of their own, do not break a
 # continuation: a pipeline's steps can each be commented.
 #= {result: [20, 40], inputs: {xs: [1, 2, 3, 4]}}
+def {xs} = import('inputs')
 xs # the input
     # keep the even ones
     @ filter(fn x -> x % 2 == 0)

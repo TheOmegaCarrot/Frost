@@ -1,6 +1,7 @@
 # A `try_call` result is matched by its shape: a Map pattern with `value`
 # matches only a success, one with `error` only a failure.
 #= {result: ['value 2', 'error zero'], inputs: {divisors: [5, 0]}}
+def {divisors} = import('inputs')
 defn describe(outcome) -> match outcome {
     {ok: true, value} => $'value ${value}',
     {ok: false, error} => $'error ${error}',

@@ -1,6 +1,7 @@
 # A nested constant in a function body is the same value on every call, even
 # when each call extends an inner Array of it.
 #= {result: [{list: [0, 1]}, {list: [0, 2]}, {list: [0, 1]}], inputs: {n: 1}}
+def {n} = import('inputs')
 defn extend(x) -> {
     def template = {list: [0]}
     template + {list: template.list + [x]}

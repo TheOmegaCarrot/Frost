@@ -3,6 +3,7 @@
 #=     result: ['Null', 'Int', 'Float', 'Bool', 'String', 'Bytes', 'Array', 'Map', 'Function'],
 #=     inputs: {values: [null, 1, 1.5, true, 's', x'00', [], {}, fn x -> x]},
 #= }
+def {values} = import('inputs')
 [
     values[0] @ type(),
     values[1] @ type(),

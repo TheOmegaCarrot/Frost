@@ -1,6 +1,7 @@
 # Adding nothing to a value gives a value equal to it, and the source stays
 # equal to what it was.
 #= {result: [true, true, true, [1], {k: 1}], inputs: {n: 1}}
+def {n} = import('inputs')
 def xs = [n]
 def m = {k: n}
 [xs + [] == xs, m + {} == m, [] + xs == [n], xs, m]

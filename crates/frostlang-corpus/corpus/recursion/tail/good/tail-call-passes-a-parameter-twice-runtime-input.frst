@@ -2,5 +2,6 @@
 # known only at runtime. Subtle: the extension must not update the Array in
 # place, since the unextended value is still needed for the next argument.
 #= {result: [['x', 3, 2, 1], ['x', 3, 2]], inputs: {start: ['x']}}
+def {start} = import('inputs')
 defn go(n, xs, prev) -> if n == 0: [xs, prev] else: go(n - 1, xs + [n], xs)
 go(3, start, null)

@@ -1,6 +1,7 @@
 # A leading `@` continues an exported binding's value, so the export holds
 # the whole pipeline.
 #= {result: 3, exports: {total: 6, count: 3}, inputs: {xs: [1, 2, 3]}}
+def {xs} = import('inputs')
 export def total = xs
     @ reduce(0, plus)
 export def count = xs

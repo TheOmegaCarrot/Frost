@@ -1,0 +1,7 @@
+# The product of multiplication-overflow-through-a-binding-raises, on a
+# binding of a value only known at runtime, raises the same error.
+#= {raises: 'Int overflow: 9223372036854775807 * 2', inputs: {greatest_in: 9223372036854775807}}
+def {greatest_in} = import('inputs')
+def greatest = greatest_in
+def doubled = greatest * 2
+doubled

@@ -10,6 +10,7 @@
 #=         ]},
 #=     },
 #= }
+def {tree} = import('inputs')
 defn fold_tree(node, combine) -> combine(node.label, map(node.children, fn child -> fold_tree(child, combine)))
 
 fold_tree(tree, fn label, sizes -> reduce(sizes, 1, fn total, n -> total + n))

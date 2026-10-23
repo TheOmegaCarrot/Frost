@@ -1,4 +1,5 @@
 # Threading into a call whose callee is not a function raises when the call
 # is made.
 #= {raises: ['non-function', 'Int'], inputs: {n: 1, callee: 5}}
+def {n, callee} = import('inputs')
 n @ callee()

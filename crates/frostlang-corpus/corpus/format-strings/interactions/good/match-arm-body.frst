@@ -4,6 +4,7 @@
 #=     result: ['pair 1 and 2', 'named ada, 36', 'int 5'],
 #=     inputs: {subjects: [[1, 2], {name: 'ada', age: 36}, 5]},
 #= }
+def {subjects} = import('inputs')
 map(subjects, fn s -> match s {
     [a, b] => $'pair ${a} and ${b}',
     {name, age: years} => $'named ${name}, ${years}',

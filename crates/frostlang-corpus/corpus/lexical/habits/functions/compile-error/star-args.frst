@@ -1,3 +1,4 @@
 # Python's `*args` is neither spread nor rest in Frost.
 #= {rejects: 'no spread', inputs: {args: [1]}}
+def {args} = import('inputs')
 len(*args)

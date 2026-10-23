@@ -5,6 +5,7 @@
 #=     result: [{a: 2}, {a: 1}, {a: 2}, {a: 2}],
 #=     inputs: {x: 1, shared: {a: 2}},
 #= }
+def {x, shared} = import('inputs')
 def fresh_left = {a: x} + shared
 def fresh_right = shared + {a: x}
 [fresh_left, fresh_right, shared, {a: x} + {a: x + 1}]

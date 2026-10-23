@@ -1,3 +1,4 @@
 # In a `match` Array pattern too, a rest binding takes no trailing comma.
 #= {rejects: 'comes last', inputs: {xs: [1]}}
+def {xs} = import('inputs')
 match xs { [...rest,] => rest, }

@@ -1,5 +1,6 @@
 # An exported binding to a format String exports the String it evaluates to.
 #= {result: 'hi ada', exports: {greeting: 'hi ada', shout: 'HI!'}, inputs: {name: 'ada'}}
+def {name} = import('inputs')
 export def greeting = $'hi ${name}'
 export def shout = $'HI${"!"}'
 greeting

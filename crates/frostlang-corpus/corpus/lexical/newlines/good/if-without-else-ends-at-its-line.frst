@@ -1,5 +1,6 @@
 # An `if` without `else` ends at its line break when the next line is not an
 # `elif` or `else`, so the next line is a statement of its own.
 #= {result: 2, inputs: {c: true}}
+def {c} = import('inputs')
 if c: 1
 2

@@ -1,3 +1,4 @@
 # `reduce` over Null is a type error, not the initial value.
 #= {raises: ['Structured', 'argument 1', 'Null'], inputs: {nothing: null}}
+def {nothing} = import('inputs')
 reduce(nothing, 0, fn acc, x -> acc + x)

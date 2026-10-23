@@ -1,5 +1,6 @@
 # The call of known-function-through-call-with-a-wrong-arity, with an
 # argument Array only known at runtime, raises the same error.
 #= {raises: 'expects 1 argument', inputs: {args: [1, 2]}}
+def {args} = import('inputs')
 def f = fn x -> x
 call(f, args)

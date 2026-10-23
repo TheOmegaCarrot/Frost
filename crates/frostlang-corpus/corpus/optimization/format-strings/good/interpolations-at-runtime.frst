@@ -4,6 +4,7 @@
 #=     result: ['3 and ab', 'hello, world', '', 'ab2c', 'héllo 日本'],
 #=     inputs: {one: 1, a: 'a', name: 'world', accent: 'é', japan: '日本'},
 #= }
+def {one, a, name, accent, japan} = import('inputs')
 [
     $'${one + 2} and ${a + 'b'}',
     $'hello, ${name}',

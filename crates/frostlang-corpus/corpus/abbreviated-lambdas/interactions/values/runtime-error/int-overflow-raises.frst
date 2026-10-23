@@ -1,0 +1,4 @@
+# Arithmetic on a placeholder raises at the Int limits, as everywhere in Frost.
+#= {raises: 'Int overflow'}
+def inc = $($ + 1)
+inc(9223372036854775807)

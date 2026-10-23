@@ -1,5 +1,6 @@
 # The rest is a new Array: building on it leaves the matched Array unchanged.
 #= {result: [[2, 3, 99], [1, 2, 3]], inputs: {v: [1, 2, 3]}}
+def {v} = import('inputs')
 match v {
     [_, ...others] => [others + [99], v],
 }

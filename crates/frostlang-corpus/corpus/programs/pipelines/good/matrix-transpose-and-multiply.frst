@@ -14,6 +14,7 @@
 #=         eye: [[1, 0, 0], [0, 1, 0], [0, 0, 1]],
 #=     },
 #= }
+def {a, b, eye} = import('inputs')
 defn upto(n) -> if n == 0: [] else: upto(n - 1) + [n - 1]
 
 defn transpose(m) -> map(upto(len(m[0])), fn j -> map(m, fn row -> row[j]))

@@ -4,4 +4,5 @@
 #=     result: [['1', 'null'], ['1', 'null'], [false, true], [1, null]],
 #=     inputs: {xs: [1, null]},
 #= }
+def {xs} = import('inputs')
 [map([1, null], to_string), map(xs, to_string), map(xs, is_null), map(xs, id)]

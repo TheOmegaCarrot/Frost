@@ -1,5 +1,6 @@
 # Values bound by destructuring take part in arithmetic like any binding.
 #= {result: [3, 1, 12], inputs: {pair: [7, 2], size: {w: 3, h: 4}}}
+def {pair, size} = import('inputs')
 def [a, b] = pair
 def {w, h} = size
 [a / b, a % b, w * h]

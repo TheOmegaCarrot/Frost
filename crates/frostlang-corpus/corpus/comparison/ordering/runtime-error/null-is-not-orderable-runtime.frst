@@ -1,4 +1,5 @@
 # Null has no ordering, even against itself, with the Nulls known only at
 # runtime: `>=` raises although `==` would say the two are equal.
 #= {raises: ['Null', 'not orderable'], inputs: {a: null, b: null}}
+def {a, b} = import('inputs')
 a >= b

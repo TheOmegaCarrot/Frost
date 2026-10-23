@@ -1,4 +1,5 @@
 # The tally of counting-words-with-a-reduce, over words only known at runtime,
 # is the same.
 #= {result: {a: 3, b: 2, c: 1, ['é']: 1}, inputs: {words: ['a', 'b', 'a', 'c', 'b', 'a', 'é']}}
+def {words} = import('inputs')
 reduce(words, {}, fn counts, w -> counts + {[w]: (counts[w] or 0) + 1})

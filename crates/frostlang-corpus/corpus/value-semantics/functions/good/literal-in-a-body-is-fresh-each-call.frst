@@ -1,6 +1,7 @@
 # An Array literal in a function body is the same value on every call:
 # extending it in one call never changes what the next call starts from.
 #= {result: [[0, 1], [0, 2], [0, 1]], inputs: {n: 1}}
+def {n} = import('inputs')
 defn fresh(x) -> {
     def base = [0]
     base + [x]

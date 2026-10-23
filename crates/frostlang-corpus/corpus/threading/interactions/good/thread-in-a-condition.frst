@@ -1,4 +1,5 @@
 # A threaded call can be the condition of an `if`, combined with comparison.
 #= {result: ['many', 'few'], inputs: {big: [1, 2, 3], small: [1]}}
+def {big, small} = import('inputs')
 defn size(xs) -> if xs @ len() > 2: 'many' else: 'few'
 [size(big), size(small)]

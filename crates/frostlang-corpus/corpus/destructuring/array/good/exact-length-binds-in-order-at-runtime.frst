@@ -1,5 +1,6 @@
 # An Array pattern of exact length binds each element of a value known only
 # at runtime, so the compiler cannot match it ahead of time.
 #= {result: [3, 2, 1], inputs: {xs: [1, 2, 3]}}
+def {xs} = import('inputs')
 def [a, b, c] = xs
 [c, b, a]

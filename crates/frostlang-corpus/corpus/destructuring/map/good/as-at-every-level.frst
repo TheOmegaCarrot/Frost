@@ -3,5 +3,6 @@
 #=     result: [1, {b: 1}, {a: {b: 1}, c: 2}],
 #=     inputs: {m: {a: {b: 1}, c: 2}},
 #= }
+def {m} = import('inputs')
 def {a: {b} as inner} as outer = m
 [b, inner, outer]

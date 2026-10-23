@@ -10,6 +10,7 @@
 #=         m: {a: 'x', b: 'b'},
 #=     },
 #= }
+def {records, xs, m} = import('inputs')
 [
     filter(records, index('on')),
     filter(xs, const(0)),

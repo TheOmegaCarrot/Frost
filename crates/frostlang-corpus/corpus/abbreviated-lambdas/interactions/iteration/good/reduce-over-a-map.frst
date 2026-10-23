@@ -1,4 +1,5 @@
 # Reducing a Map passes the accumulator, key, and value: `$3` is the value,
 # and `$2`, the key, goes unused but still counts.
 #= {result: 3, inputs: {m: {a: 1, b: 2}}}
+def {m} = import('inputs')
 reduce(m, 0, $($1 + $3))

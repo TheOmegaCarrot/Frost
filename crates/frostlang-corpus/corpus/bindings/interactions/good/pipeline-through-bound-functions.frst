@@ -1,6 +1,7 @@
 # A pipeline threads a value through functions bound by `def` and `defn`, each
 # reading a captured binding.
 #= {result: 40, inputs: {start: 3}}
+def {start} = import('inputs')
 def factor = 2
 def offset = 10
 def scale = fn x -> x * factor

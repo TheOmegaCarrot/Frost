@@ -4,5 +4,6 @@
 #=     result: 7,
 #=     inputs: {xs: [7, 1, -1, 1.5, -2.5, 'ok', x'0102', null, true, false]},
 #= }
+def {xs} = import('inputs')
 def [a, 1, -1, 1.5, -2.5, 'ok', x'0102', null, true, false] = xs
 a

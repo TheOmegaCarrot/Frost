@@ -1,5 +1,6 @@
 # `{key: name}` requires the key and binds its value to a different name.
 #= {result: 'ada', inputs: {v: {name: 'ada'}}}
+def {v} = import('inputs')
 match v {
     {name: who} => who,
 }

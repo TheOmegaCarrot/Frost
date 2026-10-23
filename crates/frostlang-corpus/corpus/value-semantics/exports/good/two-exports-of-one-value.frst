@@ -1,6 +1,7 @@
 # Two exports bound to the same value, one of them derived from afterward,
 # both export the original.
 #= {result: [1, 2], exports: {a: [1], b: [1]}, inputs: {n: 1}}
+def {n} = import('inputs')
 export def a = [n]
 export def b = a
 b + [2]

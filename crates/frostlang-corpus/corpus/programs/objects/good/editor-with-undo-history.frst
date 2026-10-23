@@ -30,6 +30,7 @@
 #=         ],
 #=     },
 #= }
+def {commands} = import('inputs')
 defn edit(doc, command) -> match command {
     {append: text} => doc + {lines: doc.lines + [text]},
     {rename: title} => doc + {title},

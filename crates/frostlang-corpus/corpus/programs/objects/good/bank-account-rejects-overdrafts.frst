@@ -16,6 +16,7 @@
 #=         ],
 #=     },
 #= }
+def {transactions} = import('inputs')
 defn account(balance) -> {
     balance: fn -> balance,
     deposit: fn amount ->

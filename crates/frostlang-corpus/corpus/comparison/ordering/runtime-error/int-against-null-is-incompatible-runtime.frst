@@ -1,3 +1,4 @@
 # Ordering an Int against Null raises, with both known only at runtime.
 #= {raises: ['incompatible types', 'Int', 'Null'], inputs: {n: 1, nothing: null}}
+def {n, nothing} = import('inputs')
 n > nothing

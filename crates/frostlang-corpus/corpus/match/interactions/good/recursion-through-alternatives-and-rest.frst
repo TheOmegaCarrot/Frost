@@ -1,5 +1,6 @@
 # Recursion over a list whose elements are matched by nested alternatives.
 #= {result: 6, inputs: {xs: [[1, 0], [0, 2], 3]}}
+def {xs} = import('inputs')
 defn count(items, acc) -> match items {
     [] => acc,
     [[a, 0] | [0, a] | a, ...others] => count(others, acc + a),

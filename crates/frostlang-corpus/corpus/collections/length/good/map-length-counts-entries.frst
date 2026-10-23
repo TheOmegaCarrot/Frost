@@ -1,6 +1,7 @@
 # A Map's length counts its entries: Null-valued ones count, and a repeated
 # key counts once.
 #= {result: [2, 1, 1, 5], inputs: {m: {a: 1, b: {c: 2, d: 3}}}}
+def {m} = import('inputs')
 [
     len(m),
     len({a: null}),

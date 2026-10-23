@@ -1,5 +1,6 @@
 # The globals written in Frost thread like any function: the threaded value
 # is the first argument of `collect`, `tap`, and `dig`.
 #= {result: [[1, 2, 3], 6, 7], printed: ['tapped 5'], inputs: {n: 5, m: {a: {b: 7}}}}
+def {n, m} = import('inputs')
 defn inc(x) -> x + 1
 [1 @ collect(2, 3), n @ tap(fn v -> print($'tapped ${v}')) @ inc(), m @ dig('a', 'b')]

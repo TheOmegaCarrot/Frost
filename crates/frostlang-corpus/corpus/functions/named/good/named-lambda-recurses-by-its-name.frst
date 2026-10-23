@@ -1,4 +1,5 @@
 # A named lambda can call itself by its self-name, whatever it is bound to.
 #= {result: 120, inputs: {n: 5}}
+def {n} = import('inputs')
 def factorial = fn fact(k) -> if k <= 1: 1 else: k * fact(k - 1)
 factorial(n)

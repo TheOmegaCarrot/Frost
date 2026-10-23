@@ -1,4 +1,5 @@
 # `_: name` takes the String key "_" and binds its value.
 #= {result: 2, inputs: {m: {['_']: 2}}}
+def {m} = import('inputs')
 def {_: x} = m
 x

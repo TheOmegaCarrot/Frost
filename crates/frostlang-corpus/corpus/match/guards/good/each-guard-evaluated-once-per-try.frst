@@ -1,6 +1,7 @@
 # Each guard tried is evaluated once; a matching arm's guard is not
 # re-evaluated before its result.
 #= {result: 3, printed: ['3', '4'], inputs: {v: 3}}
+def {v} = import('inputs')
 defn noted(n, ok) -> {
     print(to_string(n))
     ok

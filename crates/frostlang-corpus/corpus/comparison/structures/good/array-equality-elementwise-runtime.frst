@@ -4,6 +4,7 @@
 #=     result: [true, false, false, true, true],
 #=     inputs: {xs: [1, 2, 3], ys: [1, 2, 3], reversed: [3, 2, 1], one: 1, empty: []},
 #= }
+def {xs, ys, reversed, one, empty} = import('inputs')
 [
     xs == ys,
     xs == reversed,

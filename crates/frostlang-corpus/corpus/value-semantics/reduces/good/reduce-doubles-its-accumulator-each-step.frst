@@ -2,6 +2,7 @@
 # leaves the seed as it was. Subtle because the accumulator is both operands of
 # one `+`, so neither may be extended in place before both are read.
 #= {result: [[1, 1, 1, 1, 1, 1, 1, 1], [1]], inputs: {one: 1, steps: [1, 2, 3]}}
+def {one, steps} = import('inputs')
 def seed = [one]
 [
     reduce(steps, seed, fn acc, _ -> acc + acc),

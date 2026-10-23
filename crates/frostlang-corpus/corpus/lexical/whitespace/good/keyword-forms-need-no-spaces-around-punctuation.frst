@@ -2,6 +2,7 @@
 # `fn`, `defn`, `match`, `if`, `elif`, `else`, and `do` separates them from
 # their parts as a space would.
 #= {result: [2, 4, 't', 1, 2, 5], inputs: {c: true}}
+def {c} = import('inputs')
 def f=fn(x)->x+1
 defn g(y)->y*2
 [

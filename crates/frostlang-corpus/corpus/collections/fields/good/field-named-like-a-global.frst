@@ -1,3 +1,4 @@
 # A field may share a name with a global; the field read is unrelated to it.
 #= {result: [3, 'x'], inputs: {m: {len: 3, type: 'x'}}}
+def {m} = import('inputs')
 [m.len, m.type]

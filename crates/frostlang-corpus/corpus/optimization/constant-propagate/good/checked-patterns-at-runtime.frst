@@ -4,6 +4,7 @@
 #=     result: [5, 'two', 7, 7, 2],
 #=     inputs: {five: 5, pair: [1, 'two'], seven_one: [7, 1], seven_two: [7, 2], keyed: {k: 'v', w: 2}},
 #= }
+def {five, pair, seven_one, seven_two, keyed} = import('inputs')
 def n is Int = five
 def [_, s is String] = pair
 def [a, 1] = seven_one

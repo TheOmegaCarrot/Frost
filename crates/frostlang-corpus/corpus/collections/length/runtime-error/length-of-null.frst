@@ -1,3 +1,4 @@
 # Null has no length; `len` raises rather than answering zero.
 #= {raises: ['Function len requires', 'Null'], inputs: {n: null}}
+def {n} = import('inputs')
 len(n)

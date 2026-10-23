@@ -1,0 +1,3 @@
+# Overflow of constants raises, so no predicate sees a wrapped Int or a Float.
+#= {raises: ['Int overflow', '9223372036854775807 + 1']}
+is_int(9223372036854775807 + 1)

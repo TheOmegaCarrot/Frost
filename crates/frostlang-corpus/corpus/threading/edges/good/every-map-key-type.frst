@@ -4,4 +4,5 @@
 #=     result: [5, true, true, true, true, true, false],
 #=     inputs: {m: {[1]: 'i', [1.5]: 'f', [true]: 'b', s: 's', [x'00']: 'y'}},
 #= }
+def {m} = import('inputs')
 [m @ len(), m @ has(1), m @ has(1.5), m @ has(true), m @ has('s'), m @ has(x'00'), m @ has(2)]

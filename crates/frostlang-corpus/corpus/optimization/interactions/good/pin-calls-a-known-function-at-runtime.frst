@@ -1,6 +1,7 @@
 # The defs of pin-calls-a-known-function-on-an-earlier-part, over values only
 # known at runtime, bind the same parts.
 #= {result: [2, 3], inputs: {first: [2, 4], second: [3, 0]}}
+def {first, second} = import('inputs')
 def double = fn x -> x * 2
 def [a, (double(a))] = first
 def [b, (double(b))] | [b, _] = second

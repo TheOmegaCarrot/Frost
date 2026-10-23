@@ -5,6 +5,7 @@
 #=     lints: [['unused binding', '`a`'], ['unused binding', '`b`']],
 #=     inputs: {xs: [[4], []]},
 #= }
+def {xs} = import('inputs')
 def [[a, ...r], (r)] = [[1, 2, 3], [2, 3]]
 def [[b, ...s], (s)] = xs
 [r, s]

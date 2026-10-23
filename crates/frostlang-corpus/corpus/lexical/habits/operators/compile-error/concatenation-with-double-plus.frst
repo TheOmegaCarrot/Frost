@@ -1,3 +1,4 @@
 # Frost joins with `+`, not `++`.
 #= {rejects: 'join with `+`', inputs: {xs: [1], ys: [2]}}
+def {xs, ys} = import('inputs')
 xs ++ ys

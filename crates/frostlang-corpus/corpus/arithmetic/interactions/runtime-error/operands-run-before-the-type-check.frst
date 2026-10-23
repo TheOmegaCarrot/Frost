@@ -3,4 +3,5 @@
 # in the right operand raises first. Subtle because the left operand's type
 # alone already dooms the addition.
 #= {raises: 'division by zero', inputs: {one: 1, zero: 0}}
+def {one, zero} = import('inputs')
 'a' + (one / zero)

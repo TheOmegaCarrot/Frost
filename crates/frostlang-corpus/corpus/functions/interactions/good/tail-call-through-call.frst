@@ -1,4 +1,5 @@
 # `call` in tail position hands the arguments on correctly.
 #= {result: [2, 1], inputs: {a: 1, b: 2}}
+def {a, b} = import('inputs')
 def flip = fn x, y -> call(fn p, q -> [q, p], [x, y])
 flip(a, b)

@@ -1,6 +1,7 @@
 # A String and a number join only after the number is converted, by
 # `to_string` or by interpolation.
 #= {result: ['n=3', 'n=3', 'x=0.5'], inputs: {one: 1, two: 2}}
+def {one, two} = import('inputs')
 [
     'n=' + to_string(one + two),
     $'n=${one + two}',

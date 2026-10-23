@@ -11,6 +11,7 @@
 #=         min: -9223372036854775808,
 #=     },
 #= }
+def {five, six, zero, minus_one, max, min} = import('inputs')
 [
     five == 5,
     five == six,

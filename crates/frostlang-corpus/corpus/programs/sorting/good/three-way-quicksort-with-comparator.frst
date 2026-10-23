@@ -14,6 +14,7 @@
 #=         ],
 #=     },
 #= }
+def {people} = import('inputs')
 defn by_age_then_name(a, b) ->
     if a.age > b.age: -1
     elif a.age < b.age: 1

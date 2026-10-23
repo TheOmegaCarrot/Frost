@@ -1,5 +1,6 @@
 # Inside brackets, an alternative's branches may be split across lines.
 #= {result: 4, inputs: {xs: [1, {b: 4}]}}
+def {xs} = import('inputs')
 def [
     _,
     {a: v}

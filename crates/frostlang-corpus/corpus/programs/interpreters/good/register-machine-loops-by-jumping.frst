@@ -9,6 +9,7 @@
 #=     ],
 #=     inputs: {small: 10, large: 1000},
 #= }
+def {small, large} = import('inputs')
 def sum_down = [
     ['set', 'acc', 0],
     ['add', 'acc', 'n'],

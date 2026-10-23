@@ -1,5 +1,6 @@
 # A format string interpolation may call a function, or create and call a
 # lambda in place.
 #= {result: 'result: 42, inline: 3', inputs: {n: 21}}
+def {n} = import('inputs')
 def f = fn x -> x * 2
 $'result: ${f(n)}, inline: ${(fn -> 1 + 2)()}'

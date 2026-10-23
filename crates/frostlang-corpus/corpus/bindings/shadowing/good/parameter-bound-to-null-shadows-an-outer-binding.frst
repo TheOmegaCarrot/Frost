@@ -1,6 +1,7 @@
 # A parameter given Null still shadows an enclosing binding of its name: inside
 # the lambda it reads as Null, not as the outer value.
 #= {result: [[null, 'default'], [2, 2], 1], inputs: {nothing: null}}
+def {nothing} = import('inputs')
 def x = 1
 def f = fn x -> [x, x or 'default']
 [f(nothing), f(2), x]

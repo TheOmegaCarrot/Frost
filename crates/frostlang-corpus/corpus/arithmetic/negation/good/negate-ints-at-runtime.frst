@@ -1,5 +1,6 @@
 # Unary `-` negates an Int only known at runtime, of either sign or zero.
 #= {result: [-5, 5, 0, 5], inputs: {five: 5, minus_five: -5, zero: 0}}
+def {five, minus_five, zero} = import('inputs')
 [
     -five,
     -minus_five,

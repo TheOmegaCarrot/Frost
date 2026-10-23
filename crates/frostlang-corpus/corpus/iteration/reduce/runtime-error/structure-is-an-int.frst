@@ -1,3 +1,4 @@
 # An Int is not a range to fold over, even with an initial value.
 #= {raises: ['Structured', 'argument 1', 'Int'], inputs: {n: 3}}
+def {n} = import('inputs')
 reduce(n, 0, fn acc, x -> acc + x)

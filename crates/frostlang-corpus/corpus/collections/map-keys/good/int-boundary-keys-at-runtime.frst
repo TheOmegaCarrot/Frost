@@ -1,9 +1,9 @@
 # Int keys at the boundaries, supplied at runtime, round-trip through a Map,
-# and wrapping past one boundary lands on the other's key.
+# including when a key is recomputed in range.
 #= {
-#=     result: ['max', 'min', 'min', 'max'],
-#=     inputs: {max: 9223372036854775807, one: 1},
+#=     result: ['max', 'min', 'max', 'min'],
+#=     inputs: {max: 9223372036854775807, min: -9223372036854775808, one: 1},
 #= }
-def min = max + one
+def {max, min, one} = import('inputs')
 def m = {[max]: 'max', [min]: 'min'}
-[m[max], m[min], m[max + one], m[min - one]]
+[m[max], m[min], m[max - one + one], m[min + one - one]]

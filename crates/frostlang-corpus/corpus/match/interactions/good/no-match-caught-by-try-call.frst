@@ -1,6 +1,7 @@
 # A no-match error can be caught with `try_call`, and later matches run
 # normally afterwards.
 #= {result: [false, 9], inputs: {v: 1}}
+def {v} = import('inputs')
 def outcome = try_call(fn -> match v {
     2 => 0,
 })

@@ -1,6 +1,7 @@
 # Statements run in order, so of two raising statements, the first one's
 # error is the one raised.
 #= {raises: 'division by zero', inputs: {zero: 0}}
+def {zero} = import('inputs')
 do {
     1 / zero
     1 % zero

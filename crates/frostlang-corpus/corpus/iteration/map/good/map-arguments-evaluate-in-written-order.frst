@@ -5,6 +5,7 @@
 #=     printed: ['structure', 'function', 'call', 'call'],
 #=     inputs: {xs: [1, 2]},
 #= }
+def {xs} = import('inputs')
 map(
     do {
         print('structure')

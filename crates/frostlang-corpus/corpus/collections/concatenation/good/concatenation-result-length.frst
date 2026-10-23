@@ -4,4 +4,5 @@
 #=     result: [5, 4, 3, 3],
 #=     inputs: {xs: [1, 2], ys: [3, 4, 5], s: 'ab', t: 'cé', a: {x: 1, y: 2}, b: {y: 3, z: 4}},
 #= }
+def {xs, ys, s, t, a, b} = import('inputs')
 [len(xs + ys), len(s + t), len(a + b), len(x'01' + x'0203')]

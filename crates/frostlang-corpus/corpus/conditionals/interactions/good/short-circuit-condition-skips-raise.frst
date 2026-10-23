@@ -1,6 +1,7 @@
 # A condition's `and` short-circuits, so its raising right operand is never
 # evaluated when the left one is falsy, and the `else` branch is taken.
 #= {result: ['else', 'else'], inputs: {f: false, zero: 0}}
+def {f, zero} = import('inputs')
 [
     if f and 1 / zero: 'then' else: 'else',
     if false and 1 / 0: 'then' else: 'else',

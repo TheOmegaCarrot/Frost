@@ -1,0 +1,5 @@
+# The same overflowing arithmetic over a constant argument, which the
+# optimizer may compute ahead of time, raises the same way.
+#= {raises: 'Int overflow: 9223372036854775807 + 1'}
+def inc = fn x -> x + 1
+inc(9223372036854775807)

@@ -1,6 +1,7 @@
 # A tail call passing one parameter twice, once extended, gives the callee
 # the original in the other position, whichever argument comes first.
 #= {result: [[[1, 0], [1]], [[1], [1, 0]]], inputs: {n: 1}}
+def {n} = import('inputs')
 defn pair(a, b) -> [a, b]
 defn derived_first(xs) -> pair(xs + [0], xs)
 defn derived_last(xs) -> pair(xs, xs + [0])

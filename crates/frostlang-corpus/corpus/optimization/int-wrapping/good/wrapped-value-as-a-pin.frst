@@ -1,8 +1,0 @@
-# A pin whose constant expression overflows compares against its wrapped
-# value, whether the target is known ahead of time or only at runtime.
-#= {result: ['least', 'least', 'other'], inputs: {least: -9223372036854775808}}
-defn name(n) -> match n {
-    (9223372036854775807 + 1) => 'least',
-    _ => 'other',
-}
-[name(-9223372036854775808), name(least), name(9223372036854775807)]

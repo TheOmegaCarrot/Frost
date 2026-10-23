@@ -1,6 +1,7 @@
 # A `do` block binding that shadows a name with a value derived from that
 # same name reads the outer binding, which is unchanged after the block.
 #= {result: [[1, 2], [1]], inputs: {n: 1}}
+def {n} = import('inputs')
 def xs = [n]
 def inner = do {
     def xs = xs + [2]

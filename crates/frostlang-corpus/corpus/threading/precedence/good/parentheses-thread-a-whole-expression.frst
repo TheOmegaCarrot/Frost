@@ -1,4 +1,5 @@
 # Parentheses around a binary expression thread its whole value.
 #= {result: [4, 7, 8], inputs: {one: 1, two: 2}}
+def {one, two} = import('inputs')
 defn inc(x) -> x + 1
 [(1 + 2) @ inc(), (2 * 3) @ inc(), (one + two * 3) @ inc()]

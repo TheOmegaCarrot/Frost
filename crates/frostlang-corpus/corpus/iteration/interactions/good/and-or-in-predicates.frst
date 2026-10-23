@@ -5,4 +5,5 @@
 #=     result: [[2], [0, null]],
 #=     inputs: {xs: [null, 1, 2], ys: [0, null, false]},
 #= }
+def {xs, ys} = import('inputs')
 [filter(xs, fn x -> x and x > 1), filter(ys, fn y -> y or is_null(y))]

@@ -4,6 +4,7 @@
 #=     result: ['found', 'missing', 'found', 'missing'],
 #=     inputs: {at_zero: {[0.0]: 'found'}, at_negative: {[-0.0]: 'found'}, zero: 0.0, negative: -0.0},
 #= }
+def {at_zero, at_negative, zero, negative} = import('inputs')
 [
     match at_zero { {[zero]: found} => found, _ => 'missing' },
     match at_zero { {[negative]: found} => found, _ => 'missing' },

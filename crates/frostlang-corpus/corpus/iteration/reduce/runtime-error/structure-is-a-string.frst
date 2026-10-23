@@ -1,3 +1,4 @@
 # A String is not a structure `reduce` folds.
 #= {raises: ['Structured', 'argument 1', 'String'], inputs: {s: 'abc'}}
+def {s} = import('inputs')
 reduce(s, '', fn acc, c -> acc + c)

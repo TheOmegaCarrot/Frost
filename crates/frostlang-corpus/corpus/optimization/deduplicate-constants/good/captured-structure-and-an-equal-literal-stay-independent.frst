@@ -6,6 +6,7 @@
 #=     result: [[1, 2, 3], [1, 2, 4], [1, 2], [1, 2], [1, 2]],
 #=     inputs: {three: 3, four: 4},
 #= }
+def {three, four} = import('inputs')
 def base = [1, 2]
 def build = fn x, y -> [base + [x], [1, 2] + [y], base, [1, 2]]
 build(three, four) + [base]

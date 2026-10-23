@@ -1,6 +1,7 @@
 # Inside a `match`'s braces, a line break may fall around an arm's `=>`, its
 # guard's `if:`, a pattern's `|` alternatives, and its `is` type test.
 #= {result: ['low', 'high', 'text'], inputs: {xs: [2, 9, 'x']}}
+def {xs} = import('inputs')
 defn classify(v) -> match v {
     1
     | 2

@@ -4,6 +4,7 @@
 #=     result: [[true, false], [true, false], [true, false]],
 #=     inputs: {t: true, f: false, one: 1},
 #= }
+def {t, f, one} = import('inputs')
 [
     [not not true, not not false],
     [not not t, not not f],

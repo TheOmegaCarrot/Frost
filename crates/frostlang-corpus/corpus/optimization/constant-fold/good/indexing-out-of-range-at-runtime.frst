@@ -4,6 +4,7 @@
 #=     result: [null, null, null, null, null],
 #=     inputs: {xs: [10, 20, 30], three: 3, minus_four: -4, empty: [], zero: 0, empty_map: {}},
 #= }
+def {xs, three, minus_four, empty, zero, empty_map} = import('inputs')
 [
     xs[three],
     xs[minus_four],

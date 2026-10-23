@@ -5,6 +5,7 @@
 #=     result: [['hello', 'hello', 'hello!'], [[1, [2]], [1, [2], 3]], {a: 1, b: [2]}],
 #=     inputs: {tag: 'runtime'},
 #= }
+def {tag} = import('inputs')
 defn greet(t) -> ['hello', 'hello', 'hello' + '!']
 defn lists(t) -> [[1, [2]], [1, [2]] + [3]]
 defn ordered(t) -> [{a: 1, b: [2]}, {b: [2], a: 1}]

@@ -1,10 +1,10 @@
 # The tokenizer state machine over literal character Arrays, which the
-# optimizer may run ahead of time, String comparisons and wrapping Int
-# accumulation included: its tokens must match the runtime tokenizer's.
+# optimizer may run ahead of time, String comparisons and Int accumulation
+# included: its tokens must match the runtime tokenizer's.
 #= {
 #=     result: [
 #=         [{ident: 'x1'}, {op: '='}, {int: 42}, {op: '+'}, {ident: 'y'}],
-#=         [{int: -9223372036854775808}],
+#=         [{int: 9223372036854775807}],
 #=         [],
 #=     ],
 #= }
@@ -45,7 +45,7 @@ defn tokenize(chars) -> flush(reduce(chars, {tokens: [], current: null}, step))
     tokenize(['x', '1', ' ', '=', ' ', '4', '2', '+', 'y']),
     tokenize([
         '9', '2', '2', '3', '3', '7', '2', '0', '3', '6',
-        '8', '5', '4', '7', '7', '5', '8', '0', '8',
+        '8', '5', '4', '7', '7', '5', '8', '0', '7',
     ]),
     tokenize([' ']),
 ]

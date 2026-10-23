@@ -2,5 +2,6 @@
 # order must pass the old values, not ones already overwritten for the next
 # call. Subtle: a tail call reuses the frame.
 #= {result: [[1, 2], [2, 1], [1, 2], [2, 1]], inputs: {a: 1, b: 2}}
+def {a, b} = import('inputs')
 defn swap(x, y, k) -> if k == 0: [x, y] else: swap(y, x, k - 1)
 [swap(a, b, 0), swap(a, b, 1), swap(a, b, 2), swap(a, b, 3)]

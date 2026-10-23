@@ -1,6 +1,7 @@
 # Deriving through the first name, at its last use, leaves the value bound
 # to the second name unchanged.
 #= {result: [[1], [1, 2]], inputs: {n: 1}}
+def {n} = import('inputs')
 def a = [n]
 def b = a
 def c = a + [2]

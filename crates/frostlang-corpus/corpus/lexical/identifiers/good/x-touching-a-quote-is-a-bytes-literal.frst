@@ -1,4 +1,5 @@
 # `x'00ff'` is one Bytes literal, even where a name `x` is bound: the quote
 # touching the `x` makes the prefix. Subtle, since `x` is a common name.
 #= {result: ['Bytes', 'String'], inputs: {x: 'not used'}}
+def {x} = import('inputs')
 [type(x'00ff'), type(x)]

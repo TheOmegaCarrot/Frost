@@ -2,6 +2,7 @@
 # value is derived through that name, even though the derivation is the
 # second name's last use and may reuse storage nothing else holds.
 #= {result: [[1, 2], [1, 2], [1, 2, 3]], inputs: {n: 1}}
+def {n} = import('inputs')
 def a = [n, 2]
 def b = a
 def c = b + [3]

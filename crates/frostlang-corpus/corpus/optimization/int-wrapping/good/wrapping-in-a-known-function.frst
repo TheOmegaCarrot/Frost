@@ -1,7 +1,0 @@
-# A known function whose arithmetic wraps, called over constants, returns the
-# wrapped value: computing the call ahead of time wraps as the VM does.
-#= {result: [-9223372036854775808, -9223372036709301616, 9223372036854775805]}
-defn inc(n) -> n + 1
-defn square(n) -> n * n
-defn triple(n) -> n * 3
-[inc(9223372036854775807), square(3037000500), triple(9223372036854775807)]

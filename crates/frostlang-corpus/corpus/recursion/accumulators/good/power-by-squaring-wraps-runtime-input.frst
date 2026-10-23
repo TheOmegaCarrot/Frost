@@ -1,7 +1,0 @@
-# Exponentiation by squaring past the Int range, on exponents known only at
-# runtime: the products wrap in two's complement and never raise.
-#= {result: [-9223372036854775808, 0, -6289078614652622815], inputs: {e63: 63, e64: 64, e40: 40}}
-defn pow(base, exp) -> if exp == 0: 1
-    elif exp % 2 == 0: pow(base * base, exp / 2)
-    else: base * pow(base, exp - 1)
-[pow(2, e63), pow(2, e64), pow(3, e40)]

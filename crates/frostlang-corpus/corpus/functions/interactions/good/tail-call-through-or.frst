@@ -1,5 +1,6 @@
 # The right operand of `or` is in tail position, so a self-call there runs
 # to a large depth and returns the operand's value.
 #= {result: true, inputs: {n: 100000}}
+def {n} = import('inputs')
 defn reaches_zero(k) -> k == 0 or reaches_zero(k - 1)
 reaches_zero(n)

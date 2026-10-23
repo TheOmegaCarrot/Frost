@@ -5,6 +5,7 @@
 #=     result: [3, null, true, 2, null, false],
 #=     inputs: {truthy: [1, 'a', 3], mixed: [1, null, false], empty: [], late: [null, false, 2, 4]},
 #= }
+def {truthy, mixed, empty, late} = import('inputs')
 [
     reduce(truthy, true, fn acc, x -> acc and x),
     reduce(mixed, true, fn acc, x -> acc and x),

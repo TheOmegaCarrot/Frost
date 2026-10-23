@@ -3,6 +3,7 @@
 #=     result: [{a: [1, 2], b: 3}, 1, [2], 3, [1, 2], {a: [1, 2], b: 3}],
 #=     inputs: {m: {a: [1, 2], b: 3}},
 #= }
+def {m} = import('inputs')
 def {a: [x, ...y], b} = m
 def {a} as whole = m
 [m, x, y, b, a, whole]

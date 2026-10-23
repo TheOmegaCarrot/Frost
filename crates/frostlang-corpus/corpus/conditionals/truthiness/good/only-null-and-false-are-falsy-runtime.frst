@@ -6,4 +6,5 @@
 #=         values: [null, false, true, 0, 0.0, -0.0, -1, '', x'', [], {}, [false], {[1]: null}],
 #=     },
 #= }
+def {values} = import('inputs')
 map(values, fn v -> if v: 'T' else: 'F')

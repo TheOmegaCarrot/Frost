@@ -1,0 +1,8 @@
+# Int addition of operands only known at runtime raises past the least Int,
+# exactly as a folded sum does.
+#= {
+#=     raises: 'Int overflow: -9223372036854775808 + -1',
+#=     inputs: {least: -9223372036854775808, one: 1},
+#= }
+def {least, one} = import('inputs')
+least + -one

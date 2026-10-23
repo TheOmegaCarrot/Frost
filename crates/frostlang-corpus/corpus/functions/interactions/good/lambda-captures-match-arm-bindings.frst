@@ -1,6 +1,7 @@
 # A lambda made in a match arm captures that arm's bindings, which outlive
 # the match through it.
 #= {result: [3, 'b', [2, [3]]], inputs: {v: [1, 2], m: {k: 'b'}, w: [1, 2, 3]}}
+def {v, m, w} = import('inputs')
 def from_array = match v {
     [a, b] => fn -> a + b,
 }

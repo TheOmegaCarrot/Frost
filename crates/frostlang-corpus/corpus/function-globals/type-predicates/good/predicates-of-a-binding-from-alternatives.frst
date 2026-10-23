@@ -5,6 +5,7 @@
 #=     result: [[true, false], [false, true], [true, false], 'none'],
 #=     inputs: {samples: [1, ['x'], [2], 'y']},
 #= }
+def {samples} = import('inputs')
 map(samples, fn v -> match v {
     a is Int | [a] => [is_int(a), is_string(a)],
     _ => 'none',

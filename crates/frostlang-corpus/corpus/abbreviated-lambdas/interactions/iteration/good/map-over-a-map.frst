@@ -1,4 +1,5 @@
 # Mapping over a Map calls the function with each key and value, as `$1`
 # and `$2`, and merges the Maps it returns.
 #= {result: {a: 10, b: 20}, inputs: {m: {a: 1, b: 2}}}
+def {m} = import('inputs')
 map(m, $({[$1]: $2 * 10}))

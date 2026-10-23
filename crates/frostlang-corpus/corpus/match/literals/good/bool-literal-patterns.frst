@@ -1,5 +1,6 @@
 # `true` and `false` patterns each match only that Bool.
 #= {result: ['yes', 'no'], inputs: {t: true, f: false}}
+def {t, f} = import('inputs')
 defn name(b) -> match b {
     true => 'yes',
     false => 'no',

@@ -6,6 +6,7 @@
 #=     result: [true, false, true, false],
 #=     inputs: {past_exact: 9007199254740993, greatest: 9223372036854775807},
 #= }
+def {past_exact, greatest} = import('inputs')
 [
     past_exact + 0.0 < past_exact,
     past_exact + 0.0 >= past_exact,

@@ -3,6 +3,7 @@
 #=     result: [12, 20, 'ab', 'aq'],
 #=     inputs: {n: null, five: 5, q: 'q'},
 #= }
+def {n, five, q} = import('inputs')
 [
     10 + (n or 1) * 2,
     10 + (five or 1) * 2,

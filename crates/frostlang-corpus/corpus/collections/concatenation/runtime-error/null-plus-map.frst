@@ -1,3 +1,4 @@
 # Null plus a Map raises; Null is not the empty Map.
 #= {raises: ['Cannot add', 'Null + Map'], inputs: {n: null}}
+def {n} = import('inputs')
 n + {a: 1}

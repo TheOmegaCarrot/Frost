@@ -1,4 +1,5 @@
 # An `if` may yield a lambda defined in its branch, which is then called.
 #= {result: [10, 6], inputs: {t: true, f: false}}
+def {t, f} = import('inputs')
 defn chooser(c) -> if c: fn n -> n * 2 else: fn n -> n + 1
 [chooser(t)(5), chooser(f)(5)]

@@ -1,4 +1,5 @@
 # An `and` condition with a truthy left operand evaluates its right operand,
 # so a remainder by zero there raises instead of choosing the `else` branch.
 #= {raises: 'modulus by zero', inputs: {d: 0}}
+def {d} = import('inputs')
 if d == 0 and 10 % d == 0: 'divides' else: 'does not divide'

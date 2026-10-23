@@ -1,4 +1,5 @@
 # Array concatenation joins only the top level: nested Arrays stay elements,
 # not flattened.
 #= {result: [[[1], [2, 3]], [[], []], 2], inputs: {a: [[1]], b: [[2, 3]]}}
+def {a, b} = import('inputs')
 [a + b, [[]] + [[]], len(a + b)]

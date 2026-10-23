@@ -2,5 +2,6 @@
 # Functions, so they are unequal: Function equality is identity, not behavior.
 # Subtle: the two closures are indistinguishable by any call.
 #= {result: false, inputs: {one: 1}}
+def {one} = import('inputs')
 def adder = fn n -> fn x -> x + n
 adder(one) == adder(one)

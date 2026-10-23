@@ -1,3 +1,4 @@
 # A shell's `|` into a call is Frost's `@`.
 #= {rejects: 'threads a value into a call with `@`', inputs: {xs: [1]}}
+def {xs} = import('inputs')
 xs | len()

@@ -6,6 +6,7 @@
 #=     result: ['0', 'Int', '0.0', '-0.0'],
 #=     inputs: {zero: 0, zero_float: 0.0},
 #= }
+def {zero, zero_float} = import('inputs')
 [
     to_string(-zero),
     type(-zero),

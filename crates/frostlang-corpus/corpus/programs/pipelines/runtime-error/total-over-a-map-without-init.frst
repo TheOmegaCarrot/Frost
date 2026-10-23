@@ -5,5 +5,6 @@
 #=     raises: 'requires an initial value',
 #=     inputs: {counts: {apples: 3, pears: 5}},
 #= }
+def {counts} = import('inputs')
 def total = reduce(counts, fn acc, name, count -> acc + count)
 $'total: ${total}'

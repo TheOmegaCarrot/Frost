@@ -1,6 +1,7 @@
 # Newlines inside the braces of a Map pattern are insignificant, including
 # around a computed key and after an entry's colon.
 #= {result: [1, 2, 3], inputs: {m: {x: 1, k: 2, y: [3]}}}
+def {m} = import('inputs')
 def {
     x,
     [

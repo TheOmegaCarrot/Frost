@@ -7,6 +7,7 @@
 #=     ],
 #=     inputs: {zero: 0.0, negative_zero: -0.0, half: 0.5, tiny: 5e-324, huge: 1.7976931348623157e308},
 #= }
+def {zero, negative_zero, half, tiny, huge} = import('inputs')
 [
     [
         not not 0.0,

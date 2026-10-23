@@ -8,6 +8,7 @@
 #=         above: 9007199254740994.0,
 #=     },
 #= }
+def {odd, below, above} = import('inputs')
 [
     odd > below,
     odd < above,

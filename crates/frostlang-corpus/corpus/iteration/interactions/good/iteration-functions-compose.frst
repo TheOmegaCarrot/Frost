@@ -1,6 +1,7 @@
 # The iteration functions compose: the result of one is the structure of the
 # next.
 #= {result: [[30, 40], 14, [3, 3]], inputs: {xs: [1, 2, 3, 4], rows: [[1, 2], [3]]}}
+def {xs, rows} = import('inputs')
 def big = map(filter(xs, fn x -> x > 2), fn x -> x * 10)
 def squares = reduce(map([1, 2, 3], fn x -> x * x), fn acc, x -> acc + x)
 def sums = map(rows, fn row -> reduce(row, 0, fn acc, x -> acc + x))

@@ -1,6 +1,7 @@
 # A pinned value compared against the scrutinee is unchanged by the
 # comparison, and can be extended in the arm and read again afterward.
 #= {result: [[1, 2], [1]], inputs: {n: 1}}
+def {n} = import('inputs')
 def target = [n]
 def r = match [n] {
     (target) => target + [2],

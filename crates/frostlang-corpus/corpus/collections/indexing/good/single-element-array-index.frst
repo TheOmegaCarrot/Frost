@@ -1,4 +1,5 @@
 # In a one-element Array, index 0 and -1 are the same element, and 1 and -2
 # are just out of range.
 #= {result: [7, 7, null, null], inputs: {xs: [7]}}
+def {xs} = import('inputs')
 [xs[0], xs[-1], xs[1], xs[-2]]

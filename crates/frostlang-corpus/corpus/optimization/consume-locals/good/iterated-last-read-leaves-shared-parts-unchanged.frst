@@ -6,6 +6,7 @@
 #=     result: [[[1, 0], [2, 0]], [1], [[1], [2]], [[1, 9], [2, 9]], [1]],
 #=     inputs: {one: 1, two: 2},
 #= }
+def {one, two} = import('inputs')
 def rows = [[one], [two]]
 def first = rows[0]
 def peek = fn -> rows

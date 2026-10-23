@@ -4,6 +4,7 @@
 #=     result: ['b', 3, 2],
 #=     inputs: {f: false, xs: ['a', 'b']},
 #= }
+def {f, xs} = import('inputs')
 [
     xs[if f: 0 else: 1],
     (if f: [1, 2] else: [3])[0],

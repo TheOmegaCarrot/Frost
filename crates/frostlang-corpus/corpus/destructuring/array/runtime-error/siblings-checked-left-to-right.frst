@@ -1,4 +1,5 @@
 # When two sibling parts both mismatch, the leftmost fails first.
 #= {raises: 'exactly 2 elements', inputs: {xs: [[1], [2, 3]]}}
+def {xs} = import('inputs')
 def [[a, b], [c]] = xs
 [a, b, c]

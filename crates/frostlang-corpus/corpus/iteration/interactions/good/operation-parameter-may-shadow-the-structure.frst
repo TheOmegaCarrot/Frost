@@ -2,4 +2,5 @@
 # evaluated outside the lambda, so it still names the whole Array, while the
 # body sees one element under that name.
 #= {result: [[10, 20], [1, 2]], inputs: {xs: [1, 2]}}
+def {xs} = import('inputs')
 [map(xs, fn xs -> xs * 10), xs]

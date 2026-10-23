@@ -1,3 +1,4 @@
 # A String and Bytes do not order against each other.
 #= {raises: ['Cannot compare incompatible types', 'String', 'Bytes'], inputs: {s: 'a', y: x'61'}}
+def {s, y} = import('inputs')
 s < y

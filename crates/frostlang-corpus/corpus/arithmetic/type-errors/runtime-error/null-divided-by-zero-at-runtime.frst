@@ -1,4 +1,5 @@
 # Null divided by a zero, both only known at runtime, is a type error, not a
 # division by zero.
 #= {raises: 'Null / Int', inputs: {nothing: null, zero: 0}}
+def {nothing, zero} = import('inputs')
 nothing / zero

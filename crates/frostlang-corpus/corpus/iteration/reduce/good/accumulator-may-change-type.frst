@@ -1,4 +1,5 @@
 # The accumulator is whatever the operation returns, so its type may differ
 # from the elements': here Ints build an Array, prepending each element.
 #= {result: [3, 2, 1], inputs: {xs: [1, 2, 3]}}
+def {xs} = import('inputs')
 reduce(xs, [], fn acc, x -> [x] + acc)

@@ -4,6 +4,7 @@
 #=     result: [2, 0, null],
 #=     inputs: {n: null, xs: [3, 1], empty: []},
 #= }
+def {n, xs, empty} = import('inputs')
 [
     n or xs @ len(),
     empty @ len() or 'never',

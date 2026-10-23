@@ -1,5 +1,6 @@
 # Destructured parts are the values themselves: each compares equal to the
 # part of the source it came from.
 #= {result: [true, true, true], inputs: {m: {a: [1, {b: 2.5}], c: x'ff'}}}
+def {m} = import('inputs')
 def {a: [one, inner], c} = m
 [one == m.a[0], inner == m.a[1], c == m.c]

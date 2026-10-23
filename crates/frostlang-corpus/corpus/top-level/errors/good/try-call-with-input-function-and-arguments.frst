@@ -8,5 +8,6 @@
 #=         args: [21],
 #=     },
 #= }
+def {double, fail, args} = import('inputs')
 def failed = try_call(fail, ['from input'])
 [try_call(double, args), failed.ok, failed.error]

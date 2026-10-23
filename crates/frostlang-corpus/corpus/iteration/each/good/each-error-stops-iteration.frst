@@ -5,6 +5,7 @@
 #=     printed: ['a', 'b'],
 #=     inputs: {xs: ['a', 'b', 'c']},
 #= }
+def {xs} = import('inputs')
 def outcome = try_call(fn -> each(xs, fn x -> {
     print(x)
     if x == 'b': error($'stop at ${x}')

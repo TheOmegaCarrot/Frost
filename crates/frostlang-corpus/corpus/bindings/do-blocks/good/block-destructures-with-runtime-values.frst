@@ -1,6 +1,7 @@
 # A destructuring `def` in a block binds each part, and the parts end with the
 # block.
 #= {result: [3, 'outer'], inputs: {pair: [1, 2]}}
+def {pair} = import('inputs')
 def a = 'outer'
 def sum = do {
     def [a, b] = pair

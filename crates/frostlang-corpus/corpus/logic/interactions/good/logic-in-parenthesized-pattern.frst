@@ -1,6 +1,7 @@
 # A parenthesized `match` pattern compares against an expression's value, and
 # that expression may be logical: here `fallback or 2` evaluates to 2.
 #= {result: ['two', 'other'], inputs: {fallback: null, xs: [2, 3]}}
+def {fallback, xs} = import('inputs')
 map(xs, fn x -> match x {
     (fallback or 2) => 'two',
     _ => 'other',

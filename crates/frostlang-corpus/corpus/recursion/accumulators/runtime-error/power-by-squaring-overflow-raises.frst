@@ -1,0 +1,7 @@
+# Exponentiation by squaring, mixing tail and non-tail recursion. A power past
+# the Int range raises: 2 to the 63rd overflows in the non-tail multiply.
+#= {raises: 'Int overflow: 2 * 4611686018427387904'}
+defn pow(base, exp) -> if exp == 0: 1
+    elif exp % 2 == 0: pow(base * base, exp / 2)
+    else: base * pow(base, exp - 1)
+pow(2, 63)

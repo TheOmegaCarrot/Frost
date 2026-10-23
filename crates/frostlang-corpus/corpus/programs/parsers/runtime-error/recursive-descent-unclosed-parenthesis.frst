@@ -4,6 +4,7 @@
 #=     raises: 'expected )',
 #=     inputs: {chars: ['(', '1', '*', '(', '2', '+', '3', ')']},
 #= }
+def {chars} = import('inputs')
 def digits = {['1']: 1, ['2']: 2, ['3']: 3}
 
 defn number(chars) -> match chars {

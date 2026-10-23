@@ -3,6 +3,7 @@
 # parameter holds exactly the spread Array's elements, so reusing that Array
 # as the rest parameter, and then extending it in place, would look sound.
 #= {result: [[1, 2, 3], [1, 2, 4], [1, 2]], inputs: {args: [1, 2]}}
+def {args} = import('inputs')
 def extend = fn ...xs -> xs + [len(xs) + 1]
 def first = call(extend, args)
 def second = call(fn ...xs -> xs + [4], args)

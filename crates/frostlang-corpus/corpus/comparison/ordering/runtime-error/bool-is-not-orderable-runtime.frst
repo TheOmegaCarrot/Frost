@@ -1,4 +1,5 @@
 # Bool has no ordering, even between equal Bools known only at runtime: `<=`
 # raises.
 #= {raises: ['Bool', 'not orderable'], inputs: {yes: true}}
+def {yes} = import('inputs')
 yes <= yes

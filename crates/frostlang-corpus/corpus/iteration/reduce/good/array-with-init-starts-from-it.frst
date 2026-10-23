@@ -1,5 +1,6 @@
 # With an initial value, `reduce` starts the accumulator there and folds every
 # element left to right: ((10 - 1) - 2) - 3.
 #= {result: [4, 4], inputs: {xs: [1, 2, 3]}}
+def {xs} = import('inputs')
 def minus = fn acc, x -> acc - x
 [reduce([1, 2, 3], 10, minus), reduce(xs, 10, minus)]

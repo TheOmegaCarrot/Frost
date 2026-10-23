@@ -3,4 +3,5 @@
 #=     result: [null, false, null],
 #=     inputs: {values: [0, null, false, '', null, 1.5]},
 #= }
+def {values} = import('inputs')
 filter(values, fn x -> not x)

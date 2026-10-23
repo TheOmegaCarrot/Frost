@@ -2,4 +2,5 @@
 # pairs, so `x'ab cd'` is a malformed Bytes literal rather than the name `x`
 # beside a String.
 #= {rejects: 'Bytes literal',inputs: {x: 1}}
+def {x} = import('inputs')
 x'ab cd'

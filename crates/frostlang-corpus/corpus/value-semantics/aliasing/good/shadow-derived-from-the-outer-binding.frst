@@ -1,6 +1,7 @@
 # A block binding that shadows an outer name with a value derived from it
 # leaves the outer binding unchanged when the block ends.
 #= {result: [[1], [1, 2]], inputs: {n: 1}}
+def {n} = import('inputs')
 def xs = [n]
 def base = xs
 def inside = do {

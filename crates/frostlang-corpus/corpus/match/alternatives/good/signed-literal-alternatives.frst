@@ -1,5 +1,6 @@
 # Negative literals work as alternatives alongside positive ones.
 #= {result: ['unit', 'unit', 'other'], inputs: {xs: [-1, 1, 0]}}
+def {xs} = import('inputs')
 map(xs, fn n -> match n {
     -1 | 1 => 'unit',
     _ => 'other',

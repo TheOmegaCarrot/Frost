@@ -1,6 +1,7 @@
 # A match target may be an unparenthesized `if`, with or without `else`: its
 # last branch ends at the brace that opens the arms.
 #= {result: [['one', 'two'], ['one', 'none']], inputs: {t: true, f: false}}
+def {t, f} = import('inputs')
 defn with_else(c) -> match if c: 1 else: 2 {
     1 => 'one',
     _ => 'two',

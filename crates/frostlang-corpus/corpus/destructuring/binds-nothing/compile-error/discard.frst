@@ -1,5 +1,6 @@
 # A def whose whole pattern is `_` binds no name, which is an error: a def
 # exists to bind.
 #= {rejects: ['binds nothing', 'binds no name'], inputs: {v: 1}}
+def {v} = import('inputs')
 def _ = v
 0

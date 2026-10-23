@@ -1,6 +1,7 @@
 # A mixed Int and Float result is a Float even when it is whole, and so is
 # not equal to the matching Int: `1 + 1.0` is 2.0, and `2.0 == 2` is false.
 #= {result: [2.0, false, 'Float', 'Float', 'Float'], inputs: {one: 1, one_float: 1.0}}
+def {one, one_float} = import('inputs')
 [
     one + one_float,
     one + one_float == 2,

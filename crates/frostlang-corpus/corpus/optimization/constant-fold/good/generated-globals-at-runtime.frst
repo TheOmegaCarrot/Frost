@@ -10,6 +10,7 @@
 #=         five: 5,
 #=     },
 #= }
+def {ten, subtract, nested, holey, five} = import('inputs')
 [
     curry(subtract, ten)(3),
     bcurry(subtract, ten)(13),

@@ -1,3 +1,4 @@
 # Bytes are not a structure `map` iterates.
 #= {raises: ['Structured', 'argument 1', 'Bytes'], inputs: {b: x'0102'}}
+def {b} = import('inputs')
 map(b, fn x -> x)

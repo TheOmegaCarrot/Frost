@@ -4,6 +4,7 @@
 #=     result: [[2, 4, 6], [20, 40], [2, 3], 6, 16],
 #=     inputs: {xs: [1, 2, 3], tens: [10, 20]},
 #= }
+def {xs, tens} = import('inputs')
 [
     map(xs, $($ * 2)),
     map(tens, fn x -> x * 2),

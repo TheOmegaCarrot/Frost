@@ -4,5 +4,6 @@
 #=     result: [2, 'precomposed', 'decomposed', null],
 #=     inputs: {pre: '\u{e9}', dec: 'e\u{301}'},
 #= }
+def {pre, dec} = import('inputs')
 def m = {[pre]: 'precomposed', [dec]: 'decomposed'}
 [len(m), m[pre], m[dec], {[pre]: 'x'}[dec]]

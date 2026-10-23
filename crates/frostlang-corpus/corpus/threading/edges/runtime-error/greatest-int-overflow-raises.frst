@@ -1,0 +1,4 @@
+# Int overflow in a threaded call raises, as it does in a direct call.
+#= {raises: ['Int overflow', '9223372036854775807 + 1']}
+defn inc(x) -> x + 1
+9223372036854775807 @ inc()

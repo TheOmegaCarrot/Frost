@@ -1,6 +1,7 @@
 # A constant binding that shadows a runtime one decides the condition, and
 # once its block ends the runtime binding is back in view.
 #= {result: [2, 1], inputs: {x: true}}
+def {x} = import('inputs')
 def c = x
 def inner = do {
     def c = false

@@ -1,3 +1,4 @@
 # A `false` condition known only at runtime takes the alternate.
 #= {result: 'no', inputs: {c: false}}
+def {c} = import('inputs')
 if c: 'yes' else: 'no'

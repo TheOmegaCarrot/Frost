@@ -1,5 +1,6 @@
 # `$` names the first argument when the argument is known only at runtime,
 # so the optimizer cannot compute the call ahead of time.
 #= {result: 10, inputs: {x: 5}}
+def {x} = import('inputs')
 def double = $($ * 2)
 double(x)

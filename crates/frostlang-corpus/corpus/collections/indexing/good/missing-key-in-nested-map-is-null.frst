@@ -1,4 +1,5 @@
 # A soft index into a nested Map yields Null for a key missing at the last
 # step, the same as at the first.
 #= {result: [null, null], inputs: {m: {a: {}}}}
+def {m} = import('inputs')
 [m['a']['b'], m['nope']]

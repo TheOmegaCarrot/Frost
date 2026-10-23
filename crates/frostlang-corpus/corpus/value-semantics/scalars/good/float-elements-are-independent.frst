@@ -1,5 +1,6 @@
 # Floats stored in a structure and used to compute new Floats are unchanged.
 #= {result: [[0.5, 1.5], [0.5, 1.5, 2.0]], inputs: {f: 0.5}}
+def {f} = import('inputs')
 def fs = [f, 1.5]
 def more = fs + [fs[0] + fs[1]]
 [fs, more]

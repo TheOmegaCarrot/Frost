@@ -1,6 +1,7 @@
 # `defn` binds a name like `def`, so it may take a global's name; calls then
 # reach the script's function, which recurses through that name.
 #= {result: [0, 3], inputs: {xs: [1, 2, 3]}}
+def {xs} = import('inputs')
 defn len(v) -> match v {
     [_, ...rest] => 1 + len(rest),
     _ => 0,

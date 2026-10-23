@@ -1,3 +1,4 @@
 # Unary `-` on a Null only known at runtime is a type error.
 #= {raises: ['negate', 'Null'], inputs: {nothing: null}}
+def {nothing} = import('inputs')
 -nothing

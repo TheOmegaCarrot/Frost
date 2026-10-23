@@ -1,3 +1,4 @@
 # `elif` takes a condition; the final branch is `else:`.
 #= {rejects: '`elif` takes a condition', inputs: {x: true}}
+def {x} = import('inputs')
 if x: 1 elif: 2

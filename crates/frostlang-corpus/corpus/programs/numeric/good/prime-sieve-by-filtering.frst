@@ -9,6 +9,7 @@
 #=     ],
 #=     inputs: {bounds: [50, 1, 2]},
 #= }
+def {bounds} = import('inputs')
 defn from_to(low, high) -> if low > high: [] else: [low] + from_to(low + 1, high)
 
 defn sieve(candidates) -> match candidates {

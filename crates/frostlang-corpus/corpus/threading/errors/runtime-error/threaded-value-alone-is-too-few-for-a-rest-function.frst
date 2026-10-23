@@ -1,5 +1,6 @@
 # The threaded value counts toward a rest function's fixed parameters, but
 # alone it does not fill two of them.
 #= {raises: ['expects at least 2', 'called with 1'], inputs: {n: 5}}
+def {n} = import('inputs')
 defn pair_and_rest(a, b, ...rest) -> [a, b, rest]
 n @ pair_and_rest()

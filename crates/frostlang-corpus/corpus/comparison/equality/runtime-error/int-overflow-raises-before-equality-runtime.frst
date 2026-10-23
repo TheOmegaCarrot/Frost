@@ -1,0 +1,9 @@
+# Int arithmetic overflow raises instead of wrapping, so no result is ever
+# compared to the Int at the other end of the range. The operands are known
+# only at runtime.
+#= {
+#=     raises: ['Int overflow', '9223372036854775807 + 1'],
+#=     inputs: {max: 9223372036854775807, min: -9223372036854775808, one: 1},
+#= }
+def {max, min, one} = import('inputs')
+max + one == min

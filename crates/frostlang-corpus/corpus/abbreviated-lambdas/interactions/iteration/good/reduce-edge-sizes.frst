@@ -2,5 +2,6 @@
 # yields it, and reducing nothing yields the initial value, or Null without
 # one.
 #= {result: [5, 10, null], inputs: {one: [5], none: []}}
+def {one, none} = import('inputs')
 def add = $($1 + $2)
 [reduce(one, add), reduce(none, 10, add), reduce(none, add)]

@@ -4,6 +4,7 @@
 #=     result: [true, true, true, true, true, true, true, true, true],
 #=     inputs: {samples: [null, false, 0, 0.0, '', x'', [], {}, len]},
 #= }
+def {samples} = import('inputs')
 defn by_constraint(v) -> [
     match v { _ is Null => true, _ => false },
     match v { _ is Bool => true, _ => false },

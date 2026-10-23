@@ -1,5 +1,6 @@
 # Outside brackets, `@` must start the continued line, not end the line
 # before: a trailing `@` leaves it without a call.
 #= {rejects: 'a line continues only when', inputs: {xs: [1]}}
+def {xs} = import('inputs')
 xs @
     len()

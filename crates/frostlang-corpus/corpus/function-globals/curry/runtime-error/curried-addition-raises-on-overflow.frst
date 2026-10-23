@@ -1,0 +1,4 @@
+# A curried addition past the largest Int raises, as the addition itself
+# does, with constants.
+#= {raises: ['Int overflow', '9223372036854775807 + 1']}
+curry(plus, 9223372036854775807)(1)

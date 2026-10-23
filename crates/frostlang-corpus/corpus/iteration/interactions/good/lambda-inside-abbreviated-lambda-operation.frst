@@ -6,4 +6,5 @@
 #=     lints: ['lambda in abbreviated lambda'],
 #=     inputs: {rows: [[1, 2], []]},
 #= }
+def {rows} = import('inputs')
 map(rows, $(map($, fn x -> x + 1)))

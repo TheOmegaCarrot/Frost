@@ -4,6 +4,7 @@
 #=     result: [[3, [1, 2], 0], [3, 3, 2]],
 #=     inputs: {rows: [[plus, 1, 2], [collect, 1, 2], [len, []]]},
 #= }
+def {rows} = import('inputs')
 def results = map(rows, fn row -> match row {
     [f, ...args] => call(f, args),
 })

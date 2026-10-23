@@ -1,6 +1,7 @@
 # A range-end literal in a function body keeps its value when the function is called,
 # including through a call the optimizer cannot see into.
 #= {result: [-9223372036854775808, 9223372036854775807, true], inputs: {apply: fn f -> f()}}
+def {apply} = import('inputs')
 defn least() -> -9223372036854775808
 defn greatest() -> 0x7fffffffffffffff
 [least(), greatest(), apply(least) == -9223372036854775808]

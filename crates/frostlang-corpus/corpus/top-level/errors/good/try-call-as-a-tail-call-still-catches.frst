@@ -2,6 +2,7 @@
 # catches errors from the function it calls. Subtle because the catch must
 # belong to the `try_call`, not to the frame the tail call replaced.
 #= {result: [{ok: true, value: 1}, 'x', 'y'], inputs: {payload: 'y'}}
+def {payload} = import('inputs')
 defn safely(f) -> try_call(f)
 defn safely_with(f, args) -> try_call(f, args)
 [

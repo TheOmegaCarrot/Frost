@@ -1,6 +1,7 @@
 # Each element is an arbitrary expression over runtime values: arithmetic,
 # an `if`, a `do` block, and a call.
 #= {result: [7, 8, 10, 14, 49], inputs: {x: 7}}
+def {x} = import('inputs')
 defn square(n) -> n * n
 [
     x,

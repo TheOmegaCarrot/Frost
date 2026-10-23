@@ -1,6 +1,7 @@
 # String patterns compare non-ASCII text exactly: accented, non-Latin, and
 # astral-plane characters each match only the identical String.
 #= {result: ['accented', 'cjk', 'emoji', 'other'], inputs: {xs: ['café', '日本語', '🦀', 'cafe']}}
+def {xs} = import('inputs')
 map(xs, fn s -> match s {
     'café' => 'accented',
     '日本語' => 'cjk',

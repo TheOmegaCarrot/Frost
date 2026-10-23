@@ -1,6 +1,7 @@
 # A closure capturing a structure reads it later by index and field, and the
 # captured value is unaffected by concatenations made from it elsewhere.
 #= {result: [20, 'ada', [10, 20], [10, 20, 30]], inputs: {xs: [10, 20], m: {name: 'ada'}}}
+def {xs, m} = import('inputs')
 def read = fn -> [xs[1], m.name, xs]
 def grown = xs + [30]
 def seen = read()

@@ -1,4 +1,5 @@
 # A literal entry part raises when the present key holds another value.
 #= {raises: "expected `'point'`", inputs: {m: {kind: 'line', y: 2}}}
+def {m} = import('inputs')
 def {kind: 'point', y} = m
 y

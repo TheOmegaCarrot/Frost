@@ -4,6 +4,7 @@
 #=     result: [false, true, false],
 #=     inputs: {holding_null: {a: null}, empty: {}, nothing: null},
 #= }
+def {holding_null, empty, nothing} = import('inputs')
 [
     holding_null == empty,
     holding_null == {a: nothing},

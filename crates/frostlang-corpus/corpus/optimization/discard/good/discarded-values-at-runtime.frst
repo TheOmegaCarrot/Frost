@@ -1,6 +1,7 @@
 # Discarded statements reading values only known at runtime, and a discarded
 # function capturing one, leave the result unchanged.
 #= {result: 2, inputs: {x: 1, xs: [1]}}
+def {x, xs} = import('inputs')
 x
 xs
 fn -> xs

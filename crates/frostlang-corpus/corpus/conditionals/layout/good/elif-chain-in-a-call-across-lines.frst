@@ -1,6 +1,7 @@
 # An `if` chain spread over lines may be a call's argument, whose line breaks
 # inside the parentheses are insignificant.
 #= {result: 6, inputs: {c: null, d: 0}}
+def {c, d} = import('inputs')
 len(
     if c:
         'a'

@@ -1,5 +1,6 @@
 # A computed key may be any expression, here a name known only at runtime.
 #= {result: 5, inputs: {k: 'b', v: {a: 1, b: 5}}}
+def {k, v} = import('inputs')
 match v {
     {[k]: found} => found,
 }

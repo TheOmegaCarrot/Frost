@@ -1,5 +1,6 @@
 # `curry` joins its stored arguments with each call's: every call starts from
 # the stored arguments as they were, never from an earlier call's join.
 #= {result: [[1, 2], [1, 3, 4], [1]], inputs: {n: 1}}
+def {n} = import('inputs')
 def gather = curry(collect, n)
 [gather(2), gather(3, 4), gather()]

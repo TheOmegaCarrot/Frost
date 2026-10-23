@@ -1,4 +1,5 @@
 # `not x > 0` is `(not x) > 0`, which orders a Bool against an Int and raises,
 # with `x` known only at runtime.
 #= {raises: ['incompatible types', 'Bool', 'Int'], inputs: {x: 5}}
+def {x} = import('inputs')
 not x > 0

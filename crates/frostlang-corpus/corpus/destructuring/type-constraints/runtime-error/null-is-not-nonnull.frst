@@ -1,4 +1,5 @@
 # `is Nonnull` rejects Null.
 #= {raises: 'expected a Nonnull', inputs: {v: null}}
+def {v} = import('inputs')
 def x is Nonnull = v
 x

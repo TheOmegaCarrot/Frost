@@ -10,6 +10,7 @@
 #=     ],
 #=     inputs: {v: [1]},
 #= }
+def {v} = import('inputs')
 defn check(label) -> {
     print(label)
     true

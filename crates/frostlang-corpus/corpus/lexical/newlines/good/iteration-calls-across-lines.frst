@@ -1,6 +1,7 @@
 # `map`, `filter`, and `reduce` calls may break lines around their arguments
 # and commas.
 #= {result: [[2, 4, 6], [2, 3], 16], inputs: {xs: [1, 2, 3]}}
+def {xs} = import('inputs')
 def doubled = map(xs
     , fn x -> x * 2)
 def big = filter(xs,

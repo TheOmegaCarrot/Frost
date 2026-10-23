@@ -1,3 +1,4 @@
 # `\$` suppresses interpolation in a double-quoted format String too.
 #= {result: '${x} is 7', inputs: {x: 7}}
+def {x} = import('inputs')
 $"\${x} is ${x}"

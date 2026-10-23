@@ -1,5 +1,6 @@
 # An interpolated placeholder converts a non-String argument to text, Null
 # included.
 #= {result: ['null', 'false', '1.5'], inputs: {nothing: null}}
+def {nothing} = import('inputs')
 def show = $($'${$}')
 [show(nothing), show(false), show(1.5)]

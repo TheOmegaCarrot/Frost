@@ -4,6 +4,7 @@
 #=     result: [true, true, {less: true, same: false}],
 #=     inputs: {a: 1, b: 2},
 #= }
+def {a, b} = import('inputs')
 def report = {less: a < b, same: a == b}
 [
     [a < b, a == b] == [true, false],

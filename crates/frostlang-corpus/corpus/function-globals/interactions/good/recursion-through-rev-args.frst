@@ -1,5 +1,6 @@
 # A function may recur through a reversed copy of itself, supplying its
 # arguments in reverse.
 #= {result: 'done', inputs: {n: 50}}
+def {n} = import('inputs')
 defn countdown(k, label) -> if k == 0: label else: rev_args(countdown)(label, k - 1)
 countdown(n, 'done')

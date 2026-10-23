@@ -1,4 +1,5 @@
 # A threaded call can compute an index key.
 #= {result: ['b', 2], inputs: {xs: ['a', 'b', 'c'], m: {[1]: 2}}}
+def {xs, m} = import('inputs')
 defn inc(x) -> x + 1
 [xs[0 @ inc()], m[0 @ inc()]]

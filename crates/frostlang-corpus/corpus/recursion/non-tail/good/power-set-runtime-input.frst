@@ -1,6 +1,7 @@
 # A recursion that uses its sub-result twice, on an Array known only at
 # runtime: the subsets of an Array.
 #= {result: [[], ['b'], ['a'], ['a', 'b']], inputs: {xs: ['a', 'b']}}
+def {xs} = import('inputs')
 defn subsets(ys) -> match ys {
     [] => [[]],
     [head, ...tail] => do {

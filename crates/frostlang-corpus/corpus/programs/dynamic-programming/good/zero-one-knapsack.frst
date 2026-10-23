@@ -9,6 +9,7 @@
 #=         heavy: [{w: 10, v: 100}],
 #=     },
 #= }
+def {items, heavy} = import('inputs')
 defn upto(n) -> if n == 0: [] else: upto(n - 1) + [n - 1]
 
 defn best(things, capacity) -> {

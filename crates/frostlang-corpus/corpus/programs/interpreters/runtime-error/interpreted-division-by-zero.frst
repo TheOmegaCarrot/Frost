@@ -6,6 +6,7 @@
 #=         program: {div: [{num: 10}, {sub: [{num: 3}, {num: 3}]}]},
 #=     },
 #= }
+def {program} = import('inputs')
 defn evaluate(node) -> match node {
     {num} => num,
     {sub: [l, r]} => evaluate(l) - evaluate(r),

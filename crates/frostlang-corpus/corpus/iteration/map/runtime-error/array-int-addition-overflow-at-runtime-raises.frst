@@ -1,0 +1,8 @@
+# Int addition in a `map` operation raises on overflow rather than wrapping,
+# here over runtime values.
+#= {
+#=     raises: 'Int overflow: 9223372036854775807 + 1',
+#=     inputs: {xs: [1, 9223372036854775807]},
+#= }
+def {xs} = import('inputs')
+map(xs, fn x -> x + 1)

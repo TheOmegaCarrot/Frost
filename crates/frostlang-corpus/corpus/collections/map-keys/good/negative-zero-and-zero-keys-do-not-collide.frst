@@ -1,6 +1,7 @@
 # `0.0` and `-0.0` in one literal are two keys, not a repeated one: the Map
 # holds two entries, each with its own value.
 #= {result: [2, 'first', 'second', 2, 'first', 'second'], inputs: {nz: -0.0}}
+def {nz} = import('inputs')
 def folded = {[0.0]: 'first', [-0.0]: 'second'}
 def runtime = {[0.0]: 'first', [nz]: 'second'}
 [len(folded), folded[0.0], folded[-0.0], len(runtime), runtime[0.0], runtime[nz]]

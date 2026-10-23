@@ -5,6 +5,7 @@
 #=     printed: ['structure', 'init', 'function', 'call', 'call'],
 #=     inputs: {xs: [1, 2]},
 #= }
+def {xs} = import('inputs')
 reduce(
     do {
         print('structure')

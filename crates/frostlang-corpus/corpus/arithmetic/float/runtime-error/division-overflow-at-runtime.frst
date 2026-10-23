@@ -1,4 +1,5 @@
 # A Float quotient of operands only known at runtime that is too large to be
 # finite raises, though the divisor is not zero.
 #= {raises: 'infinity', inputs: {big: 1e308, tiny: 1e-10}}
+def {big, tiny} = import('inputs')
 big / tiny

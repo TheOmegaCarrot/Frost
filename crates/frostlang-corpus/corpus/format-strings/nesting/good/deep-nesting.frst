@@ -1,4 +1,5 @@
 # Format Strings nest several levels deep, alternating and repeating quotes;
 # each level wraps the one inside it.
 #= {result: 'abcd7efgh', inputs: {x: 7}}
+def {x} = import('inputs')
 $'a${$"b${$'c${$"d${x}e"}f'}g"}h'

@@ -1,6 +1,7 @@
 # Null is an ordinary argument: a parameter bound to Null is still bound, and
 # it counts toward arity like any other value.
 #= {result: [true, null, 'fallback'], inputs: {nothing: null}}
+def {nothing} = import('inputs')
 def is_missing = fn x -> x == null
 def ident = fn x -> x
 def or_default = fn x, d -> x or d

@@ -1,6 +1,7 @@
 # A rest binding split off an Array that nothing else holds is the right
 # elements, and extending it is unaffected by the elements split away.
 #= {result: [[2, 3, 0], 1], inputs: {n: 1}}
+def {n} = import('inputs')
 match [n, 2, 3] {
     [a, ...rest] => [rest + [0], a],
 }

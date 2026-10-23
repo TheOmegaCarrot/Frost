@@ -1,3 +1,4 @@
 # The initial value may be any expression, evaluated once.
 #= {result: 9, inputs: {xs: [1, 2, 3], base: 1}}
+def {xs, base} = import('inputs')
 reduce(xs, base + 2, fn acc, x -> acc + x)

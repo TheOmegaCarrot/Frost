@@ -1,4 +1,5 @@
 # A Map has no first element to seed the accumulator with, so `reduce` over
 # one without an initial value is an error.
 #= {raises: 'requires an initial value', inputs: {m: {a: 1}}}
+def {m} = import('inputs')
 reduce(m, fn acc, k, v -> acc + v)

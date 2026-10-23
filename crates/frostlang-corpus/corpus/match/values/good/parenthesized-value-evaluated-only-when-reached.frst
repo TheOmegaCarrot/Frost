@@ -1,6 +1,7 @@
 # A parenthesized value is evaluated only when matching reaches it: values in
 # arms already failed, or after a failed part, never run.
 #= {result: 'third', printed: ['0', '3', '1', '2'], inputs: {v: [1, 2]}}
+def {v} = import('inputs')
 defn note(n) -> {
     print(to_string(n))
     n

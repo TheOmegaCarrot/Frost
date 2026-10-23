@@ -4,6 +4,7 @@
 #=     result: [true, true, 1, 2],
 #=     inputs: {f: false, one: 1, two: 2, n: null},
 #= }
+def {f, one, two, n} = import('inputs')
 [
     true or false and false,
     false and true or true,

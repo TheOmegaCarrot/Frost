@@ -1,5 +1,6 @@
 # `$($)` is the identity function: it returns its argument unchanged,
 # Null included.
 #= {result: [null, false, [1, [2]], {a: null}], inputs: {nested: [1, [2]], m: {a: null}}}
+def {nested, m} = import('inputs')
 def id = $($)
 [id(null), id(false), id(nested), id(m)]

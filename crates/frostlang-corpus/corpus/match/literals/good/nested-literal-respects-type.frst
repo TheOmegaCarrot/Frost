@@ -2,6 +2,7 @@
 # level: the element 1 never matches the pattern element 1.0, nor 1.0 the
 # pattern element 1.
 #= {result: ['Int', 'Float'], inputs: {xs: [[1], [1.0]]}}
+def {xs} = import('inputs')
 map(xs, fn v -> match v {
     [1.0] => 'Float',
     [1] => 'Int',

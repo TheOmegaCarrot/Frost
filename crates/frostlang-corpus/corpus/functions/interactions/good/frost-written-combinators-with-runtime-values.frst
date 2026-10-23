@@ -4,6 +4,7 @@
 #=     result: [[1, 2, 3], 30, ['a', 'b'], 'c'],
 #=     inputs: {f: fn a, b, c -> [a, b, c], one: 1, x: 2, k: 'c'},
 #= }
+def {f, one, x, k} = import('inputs')
 [
     curry(f, one)(2, 3),
     compose(fn v -> v + 1, fn v -> v * 10)(x),

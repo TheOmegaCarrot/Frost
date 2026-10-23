@@ -1,6 +1,7 @@
 # `reduce` reads the Array it reduces without changing it, even when that
 # Array is also the initial value.
 #= {result: [[1, 2, 1, 2], [1, 2]], inputs: {n: 1}}
+def {n} = import('inputs')
 def xs = [n, 2]
 def built = reduce(xs, xs, fn acc, x -> acc + [x])
 [built, xs]

@@ -13,6 +13,7 @@
 #=     printed: ['square 1', 'square 3', 'square 5'],
 #=     inputs: {letters: ['a', 'b', 'c']},
 #= }
+def {letters} = import('inputs')
 defn naturals_from(n) -> {next: fn -> [n, naturals_from(n + 1)]}
 
 defn from_array(xs) -> {next: fn -> match xs {

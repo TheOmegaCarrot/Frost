@@ -3,6 +3,7 @@
 # line would be its own statement, and here a vertical list missing its comma
 # silently subtracts instead of holding two elements.
 #= {result: [[0], {a: 4}], inputs: {n: 1}}
+def {n} = import('inputs')
 def list = [
     n
     -1

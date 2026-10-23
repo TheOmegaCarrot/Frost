@@ -1,5 +1,6 @@
 # A `do` block may be a condition: its final expression decides the branch.
 #= {result: [2, 1], inputs: {t: true, n: null}}
+def {t, n} = import('inputs')
 defn pick(x) -> if do {
     def y = x
     not y

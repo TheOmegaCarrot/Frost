@@ -1,3 +1,4 @@
 # An interpolated empty String contributes nothing.
 #= {result: ['<>', '', 'ab'], inputs: {e: ''}}
+def {e} = import('inputs')
 [$'<${e}>', $'${e}${e}', $'a${e}b']

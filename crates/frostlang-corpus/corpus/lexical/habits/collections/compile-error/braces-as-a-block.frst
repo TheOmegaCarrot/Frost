@@ -1,3 +1,4 @@
 # Braces after `=` start a Map, not a block of statements.
 #= {rejects: 'use `do { ... }`', inputs: {y: 1}}
+def {y} = import('inputs')
 def x = { y + 1 }

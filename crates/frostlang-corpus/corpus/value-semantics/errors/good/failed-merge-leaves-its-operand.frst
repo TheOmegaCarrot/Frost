@@ -1,6 +1,7 @@
 # A Map merge that raises, caught by `try_call`, leaves its Map operand as it
 # was.
 #= {result: [false, {k: 1}], inputs: {v: 1}}
+def {v} = import('inputs')
 def m = {k: v}
 def r = try_call(fn -> m + [1])
 [r.ok, m]

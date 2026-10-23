@@ -5,6 +5,7 @@
 #=     result: ['String', 'Bytes', 'Array', 'Map', 'String', 'Bytes', 'Array', 'Map'],
 #=     inputs: {tag: 'runtime'},
 #= }
+def {tag} = import('inputs')
 defn build(t) -> [t, '', x'', [], {}, [''], [x''], [[]], [{}]]
 def [_, s, b, a, m, ws, wb, wa, wm] = build(tag)
 [type(s), type(b), type(a), type(m), type(ws[0]), type(wb[0]), type(wa[0]), type(wm[0])]

@@ -1,6 +1,7 @@
 # Only the taken branch is evaluated, also when the condition and the raising
 # operands are known only at runtime.
 #= {result: [1, 2, null], inputs: {t: true, f: false, zero: 0}}
+def {t, f, zero} = import('inputs')
 [
     if t: 1 else: 1 / zero,
     if f: 1 / zero else: 2,

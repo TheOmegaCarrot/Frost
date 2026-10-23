@@ -1,6 +1,7 @@
 # Deep equality keeps Int and Float apart inside structures: `[1]` does not
 # equal `[1.0]`, nor `{a: 1.0}` equal `{a: 1}`.
 #= {result: ['different', 'different'], inputs: {a: [1], m: {a: 1.0}}}
+def {a, m} = import('inputs')
 [
     match a { ([1.0]) => 'same', _ => 'different' },
     match m { ({a: 1}) => 'same', _ => 'different' },

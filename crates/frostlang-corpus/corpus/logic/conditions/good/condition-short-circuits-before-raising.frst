@@ -4,4 +4,5 @@
 #=     result: ['does not divide', 'divides', 'does not divide'],
 #=     inputs: {divisors: [0, 5, 3]},
 #= }
+def {divisors} = import('inputs')
 map(divisors, fn d -> if d != 0 and 10 % d == 0: 'divides' else: 'does not divide')

@@ -1,5 +1,6 @@
 # An error raised while evaluating the target propagates out of the match.
 #= {raises: 'division by zero', inputs: {d: 0}}
+def {d} = import('inputs')
 match 1 / d {
     _ => 'reached',
 }

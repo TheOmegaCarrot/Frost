@@ -1,5 +1,0 @@
-# The least Int divided by -1 has no Int answer: its true quotient is one past
-# the greatest Int. It wraps to the least Int instead of raising, as every
-# other Int overflow does.
-#= {result: -9223372036854775808}
--9223372036854775808 / -1

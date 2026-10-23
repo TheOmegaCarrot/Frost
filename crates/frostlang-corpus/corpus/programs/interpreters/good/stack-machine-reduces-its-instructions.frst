@@ -11,6 +11,7 @@
 #=         empty: [],
 #=     },
 #= }
+def {first, second, third, empty} = import('inputs')
 defn binary(stack, operation) -> match stack {
     [b, a, ...rest] => [operation(a, b)] + rest,
 }

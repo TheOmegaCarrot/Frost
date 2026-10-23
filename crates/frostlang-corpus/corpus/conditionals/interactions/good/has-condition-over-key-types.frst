@@ -7,4 +7,5 @@
 #=         keys: ['s', 2, 0.5, true, x'ff', 'absent'],
 #=     },
 #= }
+def {m, keys} = import('inputs')
 map(keys, fn k -> if has(m, k): 'yes' else: 'no')

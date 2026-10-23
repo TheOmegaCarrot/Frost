@@ -9,6 +9,7 @@
 #=     ],
 #=     inputs: {text: 'never read', one: 1, pair: [1, 2]},
 #= }
+def {text, one, pair} = import('inputs')
 def unused = text
 def chain_a = one
 def chain_b = chain_a

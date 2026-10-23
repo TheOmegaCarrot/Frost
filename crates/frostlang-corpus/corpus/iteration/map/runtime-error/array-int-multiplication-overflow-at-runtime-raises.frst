@@ -1,0 +1,8 @@
+# Int multiplication in a `map` operation raises on overflow past the
+# greatest Int rather than wrapping, here over runtime values.
+#= {
+#=     raises: 'Int overflow: 9223372036854775807 * 2',
+#=     inputs: {xs: [1, 9223372036854775807]},
+#= }
+def {xs} = import('inputs')
+map(xs, fn x -> x * 2)

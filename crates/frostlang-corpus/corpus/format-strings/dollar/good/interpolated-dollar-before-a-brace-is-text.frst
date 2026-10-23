@@ -2,4 +2,5 @@
 # the text or from another interpolation. Subtle: the result reads `${x}`, yet
 # `x` is never interpolated, as interpolations are found in the source only.
 #= {result: ['${x}', '${x}'], inputs: {dollar: '$', brace: '{'}}
+def {dollar, brace} = import('inputs')
 [$'${dollar}{x}', $'${dollar}${brace}x}']

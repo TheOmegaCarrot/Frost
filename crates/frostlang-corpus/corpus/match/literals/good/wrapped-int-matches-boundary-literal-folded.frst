@@ -1,7 +1,0 @@
-# Int overflow wraps in two's complement when the optimizer computes the target
-# ahead of time too: the largest Int plus one matches the smallest Int.
-#= {result: 'min'}
-match 9223372036854775807 + 1 {
-    9223372036854775807 => 'max',
-    -9223372036854775808 => 'min',
-}

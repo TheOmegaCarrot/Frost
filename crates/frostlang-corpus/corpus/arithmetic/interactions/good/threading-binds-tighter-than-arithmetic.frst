@@ -2,6 +2,7 @@
 # `1 + 2 @ double()`, only 2 is threaded, giving 1 + 4. Subtle because it
 # reads like a pipeline over the whole sum.
 #= {result: [5, 6], inputs: {one: 1, two: 2}}
+def {one, two} = import('inputs')
 defn double(n) -> n * 2
 [
     one + two @ double(),

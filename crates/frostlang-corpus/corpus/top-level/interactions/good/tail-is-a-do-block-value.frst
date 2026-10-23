@@ -1,6 +1,7 @@
 # A top-level `do` block as the last statement gives its own last expression
 # as the program's tail.
 #= {result: 3, inputs: {n: 1}}
+def {n} = import('inputs')
 do {
     def doubled = n * 2
     doubled + 1

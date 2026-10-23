@@ -1,3 +1,4 @@
 # An equal String is neither less nor greater, but is both `<=` and `>=`.
 #= {result: [false, false, true, true], inputs: {s: 'same'}}
+def {s} = import('inputs')
 [s < 'same', s > 'same', s <= 'same', s >= 'same']

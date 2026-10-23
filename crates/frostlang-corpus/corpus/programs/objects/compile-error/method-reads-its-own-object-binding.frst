@@ -5,6 +5,7 @@
 #=     rejects: ['`self`', 'not defined'],
 #=     inputs: {a: 1, b: 2},
 #= }
+def {a, b} = import('inputs')
 defn point(x, y) -> {
     def self = {
         x: fn -> x,

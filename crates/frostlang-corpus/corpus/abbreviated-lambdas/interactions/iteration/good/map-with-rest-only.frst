@@ -1,4 +1,5 @@
 # A rest-only abbreviated lambda accepts the single element `map` passes,
 # wrapping each in an Array.
 #= {result: [[1], [null], ['z']], inputs: {xs: [1, null, 'z']}}
+def {xs} = import('inputs')
 map(xs, $($$))

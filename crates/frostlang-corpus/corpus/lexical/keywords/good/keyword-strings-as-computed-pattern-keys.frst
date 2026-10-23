@@ -1,5 +1,6 @@
 # A Map pattern reaches a keyword-named key with a computed key in brackets,
 # binding its value to an ordinary name.
 #= {result: [1, 2], inputs: {m: {['if']: 1, ['match']: 2}}}
+def {m} = import('inputs')
 def {['if']: cond, ['match']: arms} = m
 [cond, arms]

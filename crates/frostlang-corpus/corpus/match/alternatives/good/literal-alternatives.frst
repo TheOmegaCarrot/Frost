@@ -1,5 +1,6 @@
 # An arm with alternatives `p1 | p2 | ...` matches when any of them does.
 #= {result: ['low', 'low', 'low', 'high'], inputs: {xs: [1, 2, 3, 4]}}
+def {xs} = import('inputs')
 map(xs, fn n -> match n {
     1 | 2 | 3 => 'low',
     _ => 'high',

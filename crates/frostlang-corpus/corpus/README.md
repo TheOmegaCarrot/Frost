@@ -84,23 +84,29 @@ with the script's outcome directory.
 | `raises` | `runtime-error` | A String, or an Array of Strings, each of which the error's message must contain, ignoring case. |
 | `rejects` | `compile-error` | As `raises`, matched against the diagnostics: their messages, labels, help, and codes, but not the source lines they quote. |
 | `lints` | `good`, `runtime-error` | An Array with one entry per lint the script compiles with, in source order: a String, or an Array of Strings, each of which that lint must contain, matched as `rejects` is. Absent, the script must compile with no lints. |
-| `inputs` | any | A Map of values by name. Each name is in the script's enclosing scope, and its value is supplied only when the script runs. |
+| `inputs` | any | A Map of values by name, each name one a script can bind. The Map is the content of a host component named `inputs`, which the script imports. |
 | `known_issue` | any | The ID of the Backlog task tracking a bug that keeps the script from behaving as expected, such as `'FROST-123'`. |
 | `regression` | any | `true` if that bug is an accepted regression: the script once behaved as expected. Requires `known_issue`. |
 
 Any other field is an error.
 
-An input is unknown to the compiler, so no optimization can fold or propagate
-it. A script that must exercise runtime behavior, rather than what the
-optimizer computes ahead of time, takes its values as inputs:
+An import is a runtime call, so an input is unknown to the compiler, and no
+optimization can fold or propagate it. A script that must exercise runtime
+behavior, rather than what the optimizer computes ahead of time, takes its
+values as inputs, importing them in its first statement:
 
 ```frost
 # An Array pattern destructures a value only known at runtime.
 #= {result: [3, 2, 1], inputs: {xs: [1, 2, 3]}}
+def {xs} = import('inputs')
 match xs {
     [a, b, c] => [c, b, a],
 }
 ```
+
+Every script is compiled on its own, as the CLI compiles a file, so any script
+that compiles can be listed with `frost list` to study what the compiler
+emits; its import fails only if run outside the corpus.
 
 Error fragments match loosely so that rewording a message does not break the
 corpus. Choose the smallest fragment that still tells this error from others.

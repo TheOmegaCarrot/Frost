@@ -1,4 +1,5 @@
 # `is Bytes` rejects a String.
 #= {raises: 'expected Bytes', inputs: {v: 'a'}}
+def {v} = import('inputs')
 def x is Bytes = v
 x

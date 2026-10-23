@@ -16,6 +16,7 @@
 #=         ],
 #=     },
 #= }
+def {users, orders} = import('inputs')
 def names = reduce(users, {}, fn acc, user -> acc + {[user.id]: user.name})
 def joined = map(orders, fn order -> {name: names[order.user] or 'unknown', amount: order.amount})
 def totals = reduce(joined, {}, fn acc, row -> acc + {[row.name]: (acc[row.name] or 0) + row.amount})

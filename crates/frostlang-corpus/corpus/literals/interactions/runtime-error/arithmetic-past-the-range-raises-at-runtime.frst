@@ -1,0 +1,7 @@
+# Arithmetic past the Int range raises the same way on Ints known only at runtime.
+#= {
+#=     raises: ['Int overflow', '9223372036854775807 + 1'],
+#=     inputs: {max: 9223372036854775807},
+#= }
+def {max} = import('inputs')
+max + 1

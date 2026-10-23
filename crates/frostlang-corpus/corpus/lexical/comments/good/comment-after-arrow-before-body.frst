@@ -1,6 +1,7 @@
 # A comment may follow a lambda's `->` when its body starts on the next line,
 # and follow an `if`'s colon the same way.
 #= {result: [2, 'yes'], inputs: {c: true}}
+def {c} = import('inputs')
 def f = fn x -> # the body is below
     x + 1
 def g = if c: # the branch is below

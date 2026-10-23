@@ -1,5 +1,6 @@
 # A runtime error deep in a recursion on a runtime-only argument surfaces at
 # runtime, whatever the optimizer could see.
 #= {raises: 'Division by zero', inputs: {n: 30}}
+def {n} = import('inputs')
 defn f(k) -> if k == 0: 1 / k else: f(k - 1)
 f(n)

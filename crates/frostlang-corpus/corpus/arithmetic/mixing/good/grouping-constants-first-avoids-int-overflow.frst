@@ -1,0 +1,5 @@
+# Grouping the constants first makes a Float sum, which cannot overflow an
+# Int: `9223372036854775807 + (1 + 0.5)` is a Float past the Int range, where
+# `9223372036854775807 + 1 + 0.5` overflows its Int sum.
+#= {result: 9.223372036854776e18}
+9223372036854775807 + (1 + 0.5)

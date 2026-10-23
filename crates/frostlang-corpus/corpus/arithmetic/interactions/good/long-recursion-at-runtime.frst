@@ -1,0 +1,13 @@
+# A long tail-recursive sum over arguments only known at runtime gives the
+# exact answer, including a running sum of large Ints that stays in range.
+#= {
+#=     result: [5000050000, 9223464270520368],
+#=     inputs: {count: 100000, odd_count: 100001, zero: 0},
+#= }
+def {count, odd_count, zero} = import('inputs')
+defn sum_to(n, acc) -> if n == 0: acc else: sum_to(n - 1, acc + n)
+defn add_large(n, acc) -> if n == 0: acc else: add_large(n - 1, acc + 92233720368)
+[
+    sum_to(count, zero),
+    add_large(odd_count, zero),
+]

@@ -1,6 +1,7 @@
 # A match binding read by its arm's guard and again by the arm's result has
 # its value in the result.
 #= {result: [[1, 2, 0], 'empty'], inputs: {xs: [1, 2], none: []}}
+def {xs, none} = import('inputs')
 defn grow(v) -> match v {
     w if: len(w + [9]) > 1 => w + [0],
     _ => 'empty',

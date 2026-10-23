@@ -3,6 +3,7 @@
 # lambda is created. Subtle because the read is deferred to a later call, made
 # after the shadow exists.
 #= {result: [20, 10], inputs: {base: 10}}
+def {base} = import('inputs')
 def scale = 2
 def f = fn x -> {
     def scale = fn -> x * scale

@@ -4,5 +4,6 @@
 #=     raises: 'no value at key "b"',
 #=     inputs: {n: 0, m: {a: {}}},
 #= }
+def {n, m} = import('inputs')
 def {a: {b}, [1 / n]: y} = m
 [b, y]

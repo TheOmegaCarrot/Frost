@@ -1,5 +1,6 @@
 # A `do` block in an interpolation, with statements separated by `;`; its
 # bindings are local to the block.
 #= {result: ['21', 'x'], inputs: {x: 7}}
+def {x} = import('inputs')
 def y = 'x'
 [$'${do { def y = x; y * 3 }}', y]

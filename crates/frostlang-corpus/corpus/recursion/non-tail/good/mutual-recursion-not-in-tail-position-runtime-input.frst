@@ -2,6 +2,7 @@
 # every call, for depths known only at runtime, so each level keeps its frame
 # until the bottom returns.
 #= {result: [['a', 5000], ['b', 4999]], inputs: {even: 5000, odd: 4999}}
+def {even, odd} = import('inputs')
 defn a(n, other) -> if n == 0: ['a', 0] else: do {
     def [bottom, depth] = other(n - 1, a)
     [bottom, depth + 1]

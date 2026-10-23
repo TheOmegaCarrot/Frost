@@ -1,6 +1,7 @@
 # A known value whose pattern pins both an earlier part and a runtime input:
 # the def cannot be matched ahead of time, yet every check is still made.
 #= {result: 1, inputs: {rt: 5}}
+def {rt} = import('inputs')
 def sq = fn x -> x * x
 def [a, (a + sq(3)), (rt)] = [1, 10, 5]
 a

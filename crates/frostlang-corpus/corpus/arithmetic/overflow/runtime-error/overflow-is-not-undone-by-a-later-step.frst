@@ -1,0 +1,9 @@
+# An overflow raises where it happens, even when a later step would bring the
+# value back into range: `greatest + 1 - 1` never reaches `- 1`. Subtle because
+# the exact value of the whole expression is in range.
+#= {
+#=     raises: 'Int overflow: 9223372036854775807 + 1',
+#=     inputs: {greatest: 9223372036854775807},
+#= }
+def {greatest} = import('inputs')
+greatest + 1 - 1

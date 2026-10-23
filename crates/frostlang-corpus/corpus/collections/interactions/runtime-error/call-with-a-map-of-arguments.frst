@@ -1,3 +1,4 @@
 # `call` spreads an Array of arguments; a Map is not accepted in its place.
 #= {raises: ['requires Array', 'got Map'], inputs: {args: {a: 1}}}
+def {args} = import('inputs')
 call(fn a -> a, args)

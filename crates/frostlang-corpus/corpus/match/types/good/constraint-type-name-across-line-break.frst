@@ -4,6 +4,7 @@
 #=     lints: [['unused binding', '`n`'], ['unused binding', '`n`']],
 #=     inputs: {i: 1, s: 'a'},
 #= }
+def {i, s} = import('inputs')
 defn kind(v) -> match v {
     n
         is Int => 'Int',

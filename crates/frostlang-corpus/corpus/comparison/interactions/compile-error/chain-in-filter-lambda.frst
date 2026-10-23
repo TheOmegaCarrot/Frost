@@ -1,3 +1,4 @@
 # A chained comparison in a `filter` lambda is rejected.
 #= {rejects: 'cannot chain', inputs: {xs: [1, 2]}}
+def {xs} = import('inputs')
 filter(xs, fn x -> x == 1 == true)

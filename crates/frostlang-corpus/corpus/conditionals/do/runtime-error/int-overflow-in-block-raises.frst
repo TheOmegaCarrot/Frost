@@ -1,0 +1,7 @@
+# Int arithmetic in a block raises on overflow when the operands are
+# constants.
+#= {raises: 'Int overflow'}
+do {
+    def m = 9223372036854775807
+    m + 1
+}

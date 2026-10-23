@@ -4,6 +4,7 @@
 #=     result: [[1, [2, 3]], 1, 2, [3], 1, [[2, 3]]],
 #=     inputs: {xs: [1, [2, 3]]},
 #= }
+def {xs} = import('inputs')
 def [a, [b, ...c]] = xs
 def [d, ...e] = xs
 [xs, a, b, c, d, e]

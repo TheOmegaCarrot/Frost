@@ -6,6 +6,7 @@
 #=     printed: ['right of a truthy constant group', 'right of a truthy runtime group'],
 #=     inputs: {one: 1, two: 2, zero: 0, n: null, f: false},
 #= }
+def {one, two, zero, n, f} = import('inputs')
 [
     [
         (1 and null) and print('right of a Null group'),

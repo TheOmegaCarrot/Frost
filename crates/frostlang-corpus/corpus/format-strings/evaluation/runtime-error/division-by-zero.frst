@@ -1,3 +1,4 @@
 # An interpolation dividing by a runtime zero raises.
 #= {raises: 'division by zero', inputs: {zero: 0}}
+def {zero} = import('inputs')
 $'a${1 / zero}b'

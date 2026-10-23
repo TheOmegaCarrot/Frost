@@ -7,6 +7,7 @@
 #=     result: [[0, 'a', 0], [1, 'b', 1], [2, 'é', 2]],
 #=     inputs: {names: ['a', 'b', 'é']},
 #= }
+def {names} = import('inputs')
 def handlers = reduce(names, [], fn made, name -> {
     def index = len(made)
     made + [{describe: fn -> [index, name, len(made)]}]

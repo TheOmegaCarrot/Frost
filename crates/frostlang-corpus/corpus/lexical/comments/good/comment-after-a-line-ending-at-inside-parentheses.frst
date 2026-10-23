@@ -1,5 +1,6 @@
 # Inside parentheses, a comment may follow an `@` that ends its line; the
 # call on the next line is still threaded.
 #= {result: 3, inputs: {xs: [1, 2, 3]}}
+def {xs} = import('inputs')
 (xs @ # count them
     len())

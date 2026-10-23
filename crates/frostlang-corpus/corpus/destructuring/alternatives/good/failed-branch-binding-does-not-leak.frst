@@ -2,5 +2,6 @@
 # the value the matching branch gives it. Subtle because the first branch
 # stores `a` before its literal check fails.
 #= {result: 2, inputs: {v: [1, 2]}}
+def {v} = import('inputs')
 def [a, 1] | [1, a] = v
 a

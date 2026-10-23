@@ -5,6 +5,7 @@
 #=     exports: {first: [1, 2], second: [1, 2, 3]},
 #=     inputs: {n: 1},
 #= }
+def {n} = import('inputs')
 def base = [n]
 export def first = base + [2]
 export def second = first + [3]

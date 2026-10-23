@@ -1,4 +1,5 @@
 # Over a Map, `filter` calls its predicate with key and value, so a
 # one-parameter predicate is an arity error.
 #= {raises: 'called with 2', inputs: {m: {a: 1}}}
+def {m} = import('inputs')
 filter(m, fn entry -> true)

@@ -6,6 +6,7 @@
 #=     result: [[3, 2, 2, 0, 5], true, false, 1],
 #=     inputs: {words: ['tea', 'ten', 'to', 'inn', 'in', 'tea']},
 #= }
+def {words} = import('inputs')
 defn insert(node, letters) -> match letters {
     [] => node + {['$end']: true},
     [letter, ...rest] => node + {[letter]: insert(node[letter] or {}, rest)},

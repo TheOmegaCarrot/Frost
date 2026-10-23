@@ -1,3 +1,4 @@
 # A guard is written `if:`, with a colon, as Rust's `if` without one is not.
 #= {rejects: 'a guard is written `if:`', inputs: {x: 1}}
+def {x} = import('inputs')
 match x { n if n > 0 => n }

@@ -5,6 +5,7 @@
 #=     printed: ['2', '4'],
 #=     inputs: {xs: [1, 2, 3, 4]},
 #= }
+def {xs} = import('inputs')
 (
     xs
     @ filter(fn x -> x % 2 == 0)

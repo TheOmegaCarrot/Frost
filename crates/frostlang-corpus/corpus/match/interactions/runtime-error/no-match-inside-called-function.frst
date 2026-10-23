@@ -1,5 +1,6 @@
 # A no-match error inside a called function propagates out through the call.
 #= {raises: 'no match arm', inputs: {v: 'x'}}
+def {v} = import('inputs')
 defn digit(c) -> match c {
     '0' => 0,
     '1' => 1,

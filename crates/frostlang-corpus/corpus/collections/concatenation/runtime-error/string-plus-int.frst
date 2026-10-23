@@ -1,4 +1,5 @@
 # `+` does not stringify: a String plus an Int raises. A format string is the
 # way to join text with other values.
 #= {raises: ['Cannot add', 'String + Int'], inputs: {n: 1}}
+def {n} = import('inputs')
 'n = ' + n

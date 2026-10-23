@@ -1,0 +1,4 @@
+# Subtraction below the least Int literal raises rather than wrapping, here
+# where the optimizer can fold it.
+#= {raises: ['Int overflow', '-9223372036854775808 - 1']}
+-9223372036854775808 - 1

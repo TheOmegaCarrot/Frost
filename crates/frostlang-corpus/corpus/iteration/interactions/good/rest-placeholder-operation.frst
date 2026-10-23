@@ -1,4 +1,5 @@
 # An abbreviated lambda using only `$$` accepts any number of arguments, so
 # the same one serves over an Array and over a Map.
 #= {result: [[[1], [2]], {a: ['a', 1]}], inputs: {xs: [1, 2], m: {a: 1}}}
+def {xs, m} = import('inputs')
 [map(xs, $($$)), map(m, $({[$$[0]]: $$}))]

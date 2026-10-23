@@ -1,5 +1,6 @@
 # Names bound by destructuring are captured like any other binding.
 #= {result: [3, 3, 'yes'], inputs: {pair: [1, 2], m: {flag: 'yes'}}}
+def {pair, m} = import('inputs')
 def [a, b] = [1, 2]
 def [c, d] = pair
 def {flag} = m

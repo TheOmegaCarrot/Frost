@@ -1,6 +1,7 @@
 # Building a new Array from a rest parameter leaves the rest parameter as it
 # was for later reads.
 #= {result: [[1, 2, 9], [1, 2]], inputs: {a: 1, b: 2}}
+def {a, b} = import('inputs')
 def f = fn ...rest -> {
     def grown = rest + [9]
     [grown, rest]

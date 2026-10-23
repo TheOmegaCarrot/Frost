@@ -5,6 +5,7 @@
 #=     result: [2, [4, {k: 0, n: null}], {inner: [[], {}], s: 'ab'}],
 #=     inputs: {one: 1, three: 3, nothing: null, a: 'a'},
 #= }
+def {one, three, nothing, a} = import('inputs')
 [
     one + 1,
     [2 * 2, {k: three - 3, n: nothing}],

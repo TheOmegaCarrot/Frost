@@ -1,4 +1,5 @@
 # When neither runtime argument has the right type, `map` reports the
 # first one, the structure, naming itself.
 #= {raises: ['map', 'argument 1', 'Int'], inputs: {n: 5, op: 'f'}}
+def {n, op} = import('inputs')
 map(n, op)

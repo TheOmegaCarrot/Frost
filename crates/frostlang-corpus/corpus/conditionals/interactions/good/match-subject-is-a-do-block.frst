@@ -1,6 +1,7 @@
 # A `do` block may be the value a `match` examines, unparenthesized: the
 # block's closing brace ends the subject, and the next brace opens the arms.
 #= {result: ['empty', 'one'], inputs: {lists: [[], [1]]}}
+def {lists} = import('inputs')
 map(lists, fn xs -> match do {
     def n = len(xs)
     n

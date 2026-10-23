@@ -1,6 +1,7 @@
 # A placeholder works as the target of indexing and field access, and as an
 # index itself.
 #= {result: [20, 5, 'b'], inputs: {xs: [10, 20], m: {a: 5}, i: 1}}
+def {xs, m, i} = import('inputs')
 def at = $($1[$2])
 def field = $($1.a)
 def letter = $(['a', 'b', 'c'][$])

@@ -1,4 +1,5 @@
 # A destructuring whose format String value part differs from the value raises.
 #= {raises: 'does not match', inputs: {xs: ['1', 'v2']}}
+def {xs} = import('inputs')
 def [a, $'v${a}'] = xs
 a

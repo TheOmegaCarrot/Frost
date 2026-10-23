@@ -2,5 +2,6 @@
 # the original as an element: the element was taken before the outer `+`
 # could reuse any storage.
 #= {result: [[1, [1]], [[1], 1], [1]], inputs: {n: 1}}
+def {n} = import('inputs')
 def xs = [n]
 [xs + [xs], [xs] + xs, xs]

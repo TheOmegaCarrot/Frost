@@ -1,6 +1,7 @@
 # A Map key built from a String binding leaves that binding unchanged, and
 # the binding still reads as its own key.
 #= {result: [{['é!']: 1, ['é']: 2}, 'é'], inputs: {s: 'é'}}
+def {s} = import('inputs')
 def k = s + '!'
 def m = {[k]: 1, [s]: 2}
 [m, s]

@@ -5,5 +5,6 @@
 #=     printed: ['Bool', 'Int', 'Float', 'String', 'Bytes'],
 #=     inputs: {m: {[x'ff']: 5, s: 4, [3.5]: 3, [2]: 2, [true]: 1}},
 #= }
+def {m} = import('inputs')
 each(m, fn k, v -> print(type(k)))
 null

@@ -1,4 +1,5 @@
 # A guard must come first: in `x > 0 and x`, the comparison runs before any
 # test of `x`, so a Null `x` raises. (`x and x > 0` would yield Null.)
 #= {raises: ['compare', 'Null'], inputs: {x: null}}
+def {x} = import('inputs')
 x > 0 and x

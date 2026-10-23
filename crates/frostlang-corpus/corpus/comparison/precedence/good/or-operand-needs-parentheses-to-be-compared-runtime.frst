@@ -1,6 +1,7 @@
 # `or` binds looser than `==`, with operands known only at runtime: the
 # unparenthesized form returns the truthy left operand itself.
 #= {result: ['x', false, true], inputs: {s: 'x', fallback: 'y', nothing: null}}
+def {s, fallback, nothing} = import('inputs')
 [
     s or fallback == 'y',
     (s or fallback) == 'y',

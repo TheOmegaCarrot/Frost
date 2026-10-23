@@ -1,4 +1,5 @@
 # An Array of functions is not itself callable; one of its elements is.
 #= {raises: ['non-function', 'Array'], inputs: {n: 1}}
+def {n} = import('inputs')
 def fns = [fn x -> x]
 n @ fns()

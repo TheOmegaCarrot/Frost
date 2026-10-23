@@ -1,0 +1,9 @@
+# Summing past the largest Int in a `reduce` raises rather than wrapping, here
+# over runtime values.
+#= {
+#=     raises: 'Int overflow: 9223372036854775807 + 1',
+#=     inputs: {xs: [9223372036854775807, 1]},
+#= }
+def {xs} = import('inputs')
+def add = fn acc, x -> acc + x
+reduce(xs, add)

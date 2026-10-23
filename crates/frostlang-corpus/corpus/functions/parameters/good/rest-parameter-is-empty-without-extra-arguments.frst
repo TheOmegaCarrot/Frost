@@ -1,6 +1,7 @@
 # With no arguments beyond the fixed parameters, the rest parameter is an
 # empty Array, never Null.
 #= {result: [[], [1, 2, []]], inputs: {a: 1, b: 2}}
+def {a, b} = import('inputs')
 def only = fn ...rest -> rest
 def fixed = fn x, y, ...rest -> [x, y, rest]
 [only(), fixed(a, b)]

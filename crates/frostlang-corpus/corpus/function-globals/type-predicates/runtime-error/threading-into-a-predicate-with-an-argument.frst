@@ -1,4 +1,5 @@
 # Threading supplies the first argument, so a written argument is a second
 # one: `v @ is_int(v)` calls `is_int(v, v)`.
 #= {raises: ['is_int', 'expects 1', 'called with 2'], inputs: {v: 1}}
+def {v} = import('inputs')
 v @ is_int(v)

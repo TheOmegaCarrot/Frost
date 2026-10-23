@@ -1,5 +1,6 @@
 # `{} as m` accepts any Map, empty or not, and binds it whole.
 #= {result: [{}, {k: 1}], inputs: {empty: {}, full: {k: 1}}}
+def {empty, full} = import('inputs')
 def {} as e = empty
 def {} as f = full
 [e, f]

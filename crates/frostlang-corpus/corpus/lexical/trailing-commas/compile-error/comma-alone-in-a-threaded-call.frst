@@ -2,4 +2,5 @@
 # threads in is not written in the list, so no item precedes the comma.
 # Subtle, since the call does receive one argument.
 #= {rejects: 'found `,`', inputs: {xs: [1]}}
+def {xs} = import('inputs')
 xs @ len(,)

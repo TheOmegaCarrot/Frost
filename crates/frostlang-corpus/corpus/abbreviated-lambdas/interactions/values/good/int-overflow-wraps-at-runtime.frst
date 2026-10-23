@@ -1,9 +1,0 @@
-# Wrapping holds when the Int limits arrive only at runtime, out of the
-# optimizer's sight.
-#= {
-#=     result: [-9223372036854775808, 9223372036854775807],
-#=     inputs: {max: 9223372036854775807, min: -9223372036854775808},
-#= }
-def inc = $($ + 1)
-def dec = $($ - 1)
-[inc(max), dec(min)]

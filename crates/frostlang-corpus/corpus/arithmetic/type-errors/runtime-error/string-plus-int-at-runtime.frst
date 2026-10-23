@@ -1,4 +1,5 @@
 # A String plus an Int, both only known at runtime, is a type error, as with
 # constants.
 #= {raises: 'String + Int', inputs: {s: 'count: ', n: 1}}
+def {s, n} = import('inputs')
 s + n

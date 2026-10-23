@@ -1,3 +1,4 @@
 # An `if` may choose the collection a `map` call walks.
 #= {result: [10, 20], inputs: {f: false, xs: [0], ys: [1, 2]}}
+def {f, xs, ys} = import('inputs')
 map((if f: xs else: ys), fn y -> y * 10)

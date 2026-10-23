@@ -1,5 +1,6 @@
 # An argument Array only known at runtime that does not fit the function's
 # arity raises an error `try_call` catches as a String.
 #= {result: [false, true], inputs: {args: [1, 2]}}
+def {args} = import('inputs')
 def outcome = try_call(fn x -> x, args)
 [outcome.ok, is_string(outcome.error)]

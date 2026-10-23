@@ -1,4 +1,5 @@
 # Where nothing along the way is Null, `dig` reads exactly what chained
 # indexing reads.
 #= {result: [true, true], inputs: {m: {a: [{b: 1}, {b: 2}]}}}
+def {m} = import('inputs')
 [dig(m, 'a', 1, 'b') == m['a'][1]['b'], dig(m, 'a', 0) == m['a'][0]]

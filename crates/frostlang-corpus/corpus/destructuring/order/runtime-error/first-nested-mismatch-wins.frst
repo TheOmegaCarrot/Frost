@@ -4,5 +4,6 @@
 #=     raises: 'no value at key "a"',
 #=     inputs: {xs: [{}, 5]},
 #= }
+def {xs} = import('inputs')
 def [{a}, [b]] = xs
 [a, b]

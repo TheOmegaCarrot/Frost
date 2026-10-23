@@ -5,6 +5,7 @@
 #=     exports: {config: {list: [1]}},
 #=     inputs: {n: 1},
 #= }
+def {n} = import('inputs')
 export def config = {list: [n]}
 def extended = fn -> config.list + [2]
 [extended(), extended()]

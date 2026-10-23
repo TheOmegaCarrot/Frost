@@ -1,5 +1,6 @@
 # A block may destructure with `def`, and its bindings are local to the block.
 #= {result: [1, [2, 3], 'b'], inputs: {xs: [1, 2, 3], m: {name: 'b'}}}
+def {xs, m} = import('inputs')
 do {
     def [first, ...rest] = xs
     def {name} = m

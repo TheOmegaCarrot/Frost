@@ -5,6 +5,7 @@
 #=     exports: {config: {debug: false, level: 2}, doubled: 4},
 #=     inputs: {settings: {debug: false, level: 2}},
 #= }
+def {settings} = import('inputs')
 export def config = settings
 def level = config.level
 export def doubled = level * 2

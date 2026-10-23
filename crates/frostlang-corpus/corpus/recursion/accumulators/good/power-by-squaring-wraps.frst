@@ -1,7 +1,0 @@
-# Exponentiation by squaring, mixing tail and non-tail recursion. Powers past
-# the Int range wrap: 2 to the 63rd is the minimum Int, the 64th is zero.
-#= {result: [1, 1024, -9223372036854775808, 0, -6289078614652622815]}
-defn pow(base, exp) -> if exp == 0: 1
-    elif exp % 2 == 0: pow(base * base, exp / 2)
-    else: base * pow(base, exp - 1)
-[pow(7, 0), pow(2, 10), pow(2, 63), pow(2, 64), pow(3, 40)]

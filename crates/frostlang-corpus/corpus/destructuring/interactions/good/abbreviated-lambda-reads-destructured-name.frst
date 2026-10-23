@@ -1,4 +1,5 @@
 # An abbreviated lambda may read a name bound by a pattern.
 #= {result: [11, 12], inputs: {cfg: [10], xs: [1, 2]}}
+def {cfg, xs} = import('inputs')
 def [offset] = cfg
 map(xs, $($ + offset))

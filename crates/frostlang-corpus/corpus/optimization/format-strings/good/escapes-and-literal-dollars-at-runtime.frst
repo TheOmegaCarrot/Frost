@@ -2,6 +2,7 @@
 # only known at runtime, give the same text: the escaped interpolation never
 # reads the binding.
 #= {result: ['plain', '${name}', 'cost: $5', 'x$'], inputs: {name: 'x'}}
+def {name} = import('inputs')
 [
     $'plain',
     $'\${name}',

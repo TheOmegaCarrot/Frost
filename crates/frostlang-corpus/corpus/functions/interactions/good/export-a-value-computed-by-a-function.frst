@@ -1,5 +1,6 @@
 # A top-level export may hold the result of calling a function.
 #= {result: 42, exports: {answer: 42, label: 'n=21'}, inputs: {n: 21}}
+def {n} = import('inputs')
 defn double(x) -> x * 2
 export def answer = double(n)
 export def label = (fn v -> $'n=${v}')(n)

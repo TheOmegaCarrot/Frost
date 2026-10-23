@@ -4,6 +4,7 @@
 #=     result: ['falsy', 'falsy', 'truthy', 'truthy', 'truthy'],
 #=     inputs: {values: [null, false, 0, '', []]},
 #= }
+def {values} = import('inputs')
 map(values, fn v -> match v {
     w if: w => 'truthy',
     _ => 'falsy',

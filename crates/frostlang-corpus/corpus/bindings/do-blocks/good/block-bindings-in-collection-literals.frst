@@ -1,6 +1,7 @@
 # Blocks inside Array and Map literals, including a computed key, each scope
 # their own bindings and leave exactly their value.
 #= {result: [[1, 11, 3], {a: 10}], inputs: {x: 10}}
+def {x} = import('inputs')
 def items = [1, do {
     def a = x
     a + 1

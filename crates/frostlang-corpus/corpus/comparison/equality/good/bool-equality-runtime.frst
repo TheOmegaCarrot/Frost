@@ -1,5 +1,6 @@
 # Bool equality on values known only at runtime.
 #= {result: [true, false, true, false], inputs: {yes: true, no: false, one: 1}}
+def {yes, no, one} = import('inputs')
 [
     yes == true,
     yes == no,

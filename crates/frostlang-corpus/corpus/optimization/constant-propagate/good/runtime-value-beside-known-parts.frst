@@ -1,5 +1,6 @@
 # A pattern over a value mixing known parts with a part only known at runtime
 # binds every part correctly; the known ones are not mistaken for the rest.
 #= {result: [1, 'runtime', 3], inputs: {r: 'runtime'}}
+def {r} = import('inputs')
 def [a, b, c] = [1, r, 3]
 [a, b, c]

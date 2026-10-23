@@ -4,6 +4,7 @@
 #=     result: ['int', 'float', 'string', 'bytes', 'false', 'true'],
 #=     inputs: {n: null, f: false, zero: 0, empty: x'', t: true},
 #= }
+def {n, f, zero, empty, t} = import('inputs')
 def m = {
     [true]: 'true',
     [false]: 'false',

@@ -1,10 +1,11 @@
-# An Int bound to two names and used to compute a wrapped value is unchanged
+# An Int bound to two names and used to compute a derived value is unchanged
 # under both names.
 #= {
-#=     result: [9223372036854775807, 9223372036854775807, -9223372036854775808],
+#=     result: [9223372036854775807, 9223372036854775807, 9223372036854775806],
 #=     inputs: {n: 9223372036854775807},
 #= }
+def {n} = import('inputs')
 def a = n
 def b = a
-def c = b + 1
+def c = b - 1
 [a, b, c]

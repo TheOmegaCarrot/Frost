@@ -4,6 +4,7 @@
 #=     result: ['anonymous', 'anonymous', 'ada', '', 0, []],
 #=     inputs: {a: null, b: false, c: 'ada', d: '', e: 0, g: []},
 #= }
+def {a, b, c, d, e, g} = import('inputs')
 [
     a or 'anonymous',
     b or 'anonymous',

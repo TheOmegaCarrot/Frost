@@ -1,0 +1,6 @@
+# A recursive factorial of an argument only known at runtime raises on Int
+# overflow exactly as a folded one does.
+#= {raises: 'Int overflow', inputs: {twenty: 20}}
+def {twenty} = import('inputs')
+defn fact(n) -> if n <= 1: 1 else: n * fact(n - 1)
+fact(twenty + 1)

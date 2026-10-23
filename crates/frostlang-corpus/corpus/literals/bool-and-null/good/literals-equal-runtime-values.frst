@@ -4,4 +4,5 @@
 #=     result: [true, true, true, false, false],
 #=     inputs: {yes: true, no: false, nothing: null},
 #= }
+def {yes, no, nothing} = import('inputs')
 [true == yes, false == no, null == nothing, null == no, false == nothing]

@@ -4,5 +4,6 @@
 #=     result: [2, [0], 4],
 #=     inputs: {m: {a: ['z', 0], z: 2, k: 'x', inner: {x: 4}}},
 #= }
+def {m} = import('inputs')
 def {a: [k1, ...r], [k1]: v, k, inner: {[k]: w}} = m
 [v, r, w]

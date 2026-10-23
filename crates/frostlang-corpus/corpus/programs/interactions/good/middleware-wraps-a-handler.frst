@@ -16,6 +16,7 @@
 #=         ],
 #=     },
 #= }
+def {requests} = import('inputs')
 defn handler(request) -> {
     status: 200,
     body: $'hello, ${request.user}',

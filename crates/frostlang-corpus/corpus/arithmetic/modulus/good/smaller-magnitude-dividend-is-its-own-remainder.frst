@@ -1,6 +1,7 @@
 # A dividend smaller in magnitude than the divisor is its own remainder,
 # whatever the signs.
 #= {result: [2, -2, 2, -2], inputs: {two: 2, five: 5}}
+def {two, five} = import('inputs')
 [
     two % five,
     -two % five,

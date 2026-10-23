@@ -4,6 +4,7 @@
 #=     raises: 'unexpected character é',
 #=     inputs: {chars: ['a', ' ', 'é', 'b']},
 #= }
+def {chars} = import('inputs')
 defn is_letter(c) -> (c >= 'a' and c <= 'z') or c == '_'
 
 defn step(state, c) ->

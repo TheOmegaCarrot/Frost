@@ -1,0 +1,8 @@
+# A parenthesized arithmetic value that overflows raises like any Int arithmetic,
+# once matching reaches it, rather than wrapping to equal the target.
+#= {raises: 'Int overflow', inputs: {max: 9223372036854775807, v: -9223372036854775807 - 1}}
+def {max, v} = import('inputs')
+match v {
+    (max + 1) => 'wrapped',
+    _ => 'not wrapped',
+}

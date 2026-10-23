@@ -1,6 +1,7 @@
 # Raw and multiline Strings are value patterns like any String literal, matching by
 # their decoded text.
 #= {result: ['raw', 'multiline'], inputs: {path: 'a\\nb', lines: 'one\ntwo'}}
+def {path, lines} = import('inputs')
 defn classify(s) -> match s {
     R'(a\nb)' => 'raw',
     '''

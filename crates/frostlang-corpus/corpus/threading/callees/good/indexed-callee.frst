@@ -1,6 +1,7 @@
 # A callee may be an indexed element, with a constant or a computed key, in
 # an Array or a Map.
 #= {result: [6, 4, 6, 4], inputs: {n: 3, i: 1, k: 'inc'}}
+def {n, i, k} = import('inputs')
 def fns = [fn x -> x * 2, fn x -> x + 1]
 def named = {double: fn x -> x * 2, inc: fn x -> x + 1}
 [n @ fns[0](), n @ fns[i](), n @ named['double'](), n @ named[k]()]

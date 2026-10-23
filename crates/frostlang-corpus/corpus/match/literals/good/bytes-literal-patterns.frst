@@ -1,5 +1,6 @@
 # A Bytes literal pattern matches equal Bytes, the empty Bytes included.
 #= {result: ['hi', 'empty', 'high', 'other'], inputs: {xs: [x'6869', x'', x'ff00', x'68']}}
+def {xs} = import('inputs')
 map(xs, fn b -> match b {
     x'6869' => 'hi',
     x'' => 'empty',

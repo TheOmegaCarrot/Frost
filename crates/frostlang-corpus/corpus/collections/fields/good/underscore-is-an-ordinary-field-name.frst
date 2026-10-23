@@ -2,4 +2,5 @@
 # key `'_'`, read like any other field. Subtle because `_` can never be read
 # as a variable.
 #= {result: [1, 2], inputs: {m: {_: 2}}}
+def {m} = import('inputs')
 [{_: 1}._, m._]

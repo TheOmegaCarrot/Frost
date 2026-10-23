@@ -1,0 +1,4 @@
+# Int addition past the greatest Int raises instead of wrapping: one past it
+# has no Int value.
+#= {raises: 'Int overflow: 9223372036854775807 + 1'}
+9223372036854775807 + 1

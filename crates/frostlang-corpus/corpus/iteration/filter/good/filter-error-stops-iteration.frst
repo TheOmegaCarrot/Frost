@@ -5,6 +5,7 @@
 #=     printed: ['a', 'b'],
 #=     inputs: {m: {a: 1, b: null, c: 3}},
 #= }
+def {m} = import('inputs')
 def outcome = try_call(fn -> filter(m, fn k, v -> {
     print(k)
     if is_null(v): error($'bad entry ${k}') else: true

@@ -1,3 +1,4 @@
 # Runtime Bytes are not indexable.
 #= {raises: ['Cannot index value', 'Bytes'], inputs: {b: x'0102'}}
+def {b} = import('inputs')
 b[0]

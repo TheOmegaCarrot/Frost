@@ -1,4 +1,5 @@
 # `def name is Type = value` checks the whole value's type and binds it.
 #= {result: 5, inputs: {v: 5}}
+def {v} = import('inputs')
 def x is Int = v
 x

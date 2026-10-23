@@ -1,0 +1,9 @@
+# Int arithmetic that lands exactly on an end of the range equals that end's
+# literal: a sum, a difference, and a product at the bounds are exact. Written
+# with literals the folder can evaluate.
+#= {result: [true, true, true]}
+[
+    9223372036854775806 + 1 == 9223372036854775807,
+    -9223372036854775807 - 1 == -9223372036854775808,
+    4611686018427387903 * 2 == 9223372036854775806,
+]

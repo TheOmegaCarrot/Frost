@@ -2,6 +2,7 @@
 # inside the body; it does not thread the lambda. Subtle because the lambda
 # itself could be threaded only in parentheses.
 #= {result: [2, 'Function'], inputs: {one: 1}}
+def {one} = import('inputs')
 defn inc(x) -> x + 1
 def body_threads = fn x -> x @ inc()
 [body_threads(one), (fn x -> x) @ type()]

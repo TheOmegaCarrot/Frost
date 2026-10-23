@@ -1,3 +1,4 @@
 # Abbreviated lambdas compose like any function.
 #= {result: 8, inputs: {n: 3}}
+def {n} = import('inputs')
 compose($($ + 1), $($ * 2))(n)

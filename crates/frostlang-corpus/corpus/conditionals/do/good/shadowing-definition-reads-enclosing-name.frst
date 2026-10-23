@@ -1,6 +1,7 @@
 # A block's `def x = x + 1` reads the enclosing `x` on its right: the new
 # binding only takes effect after its own definition.
 #= {result: [2, 1], inputs: {x: 1}}
+def {x} = import('inputs')
 [
     do {
         def x = x + 1

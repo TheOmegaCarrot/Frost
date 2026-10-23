@@ -1,0 +1,4 @@
+# Int subtraction past the least Int raises instead of wrapping: one below it
+# has no Int value.
+#= {raises: 'Int overflow: -9223372036854775808 - 1'}
+-9223372036854775808 - 1

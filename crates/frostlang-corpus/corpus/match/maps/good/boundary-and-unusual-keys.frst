@@ -4,6 +4,7 @@
 #=     result: ['min', 'neg', 'empty', 'raw'],
 #=     inputs: {v: {[-9223372036854775807 - 1]: 'min', [-2.5]: 'neg', ['']: 'empty', [x'ff']: 'raw'}},
 #= }
+def {v} = import('inputs')
 match v {
     {[-9223372036854775808]: a, [-2.5]: b, ['']: c, [x'ff']: d} => [a, b, c, d],
 }

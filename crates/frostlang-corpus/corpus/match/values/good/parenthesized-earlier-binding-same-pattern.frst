@@ -1,6 +1,7 @@
 # A parenthesized name may refer to a binding made earlier in the same pattern,
 # requiring two parts to be equal.
 #= {result: ['same', 'different'], inputs: {a: [1, 1], b: [1, 2]}}
+def {a, b} = import('inputs')
 defn pair(v) -> match v {
     [x, (x)] => 'same',
     _ => 'different',

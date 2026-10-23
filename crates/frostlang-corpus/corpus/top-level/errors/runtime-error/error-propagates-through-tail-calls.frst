@@ -1,4 +1,5 @@
 # An error raised at the end of a chain of tail calls still ends the program.
 #= {raises: 'deep', inputs: {n: 100}}
+def {n} = import('inputs')
 defn countdown(k) -> if k == 0: error('deep') else: countdown(k - 1)
 countdown(n)

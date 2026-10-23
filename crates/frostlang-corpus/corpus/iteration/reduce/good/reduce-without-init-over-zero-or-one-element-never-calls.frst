@@ -4,5 +4,6 @@
 #=     result: [null, null, 'only', 'only', [1]],
 #=     inputs: {empty: [], one: ['only'], nested: [[1]]},
 #= }
+def {empty, one, nested} = import('inputs')
 def boom = fn ...args -> error('called')
 [reduce([], boom), reduce(empty, boom), reduce(['only'], boom), reduce(one, boom), reduce(nested, boom)]

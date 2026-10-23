@@ -1,0 +1,5 @@
+# Multiplication on a placeholder raises past the least Int, as everywhere in
+# Frost.
+#= {raises: 'Int overflow: -9223372036854775808 * 2'}
+def double = $($ * 2)
+double(-9223372036854775808)

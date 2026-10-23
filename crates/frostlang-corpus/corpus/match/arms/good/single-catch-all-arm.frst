@@ -1,5 +1,6 @@
 # A match with a lone discard arm always takes it.
 #= {result: 'always', inputs: {v: [1, {a: null}]}}
+def {v} = import('inputs')
 match v {
     _ => 'always',
 }

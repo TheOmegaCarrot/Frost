@@ -1,3 +1,4 @@
 # Interpolations with no text between them join directly, in order.
 #= {result: ['123', '1-2-3', '<1', '1>'], inputs: {a: 1, b: 2, c: 3}}
+def {a, b, c} = import('inputs')
 [$'${a}${b}${c}', $'${a}-${b}-${c}', $'<${a}', $'${a}>']

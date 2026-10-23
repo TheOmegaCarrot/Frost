@@ -4,6 +4,7 @@
 #=     result: [[false, true, false], [true, false, true]],
 #=     inputs: {xs: [1, 2, 3]},
 #= }
+def {xs} = import('inputs')
 [
     xs @ map(fn x -> x == 2),
     map(xs, fn x -> x != 2),

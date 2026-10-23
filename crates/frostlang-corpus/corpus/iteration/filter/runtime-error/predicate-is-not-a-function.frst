@@ -1,4 +1,5 @@
 # The predicate must be a Function; `true` is not a keep-everything
 # shorthand.
 #= {raises: ['Function', 'argument 2', 'Bool'], inputs: {xs: [1]}}
+def {xs} = import('inputs')
 filter(xs, true)

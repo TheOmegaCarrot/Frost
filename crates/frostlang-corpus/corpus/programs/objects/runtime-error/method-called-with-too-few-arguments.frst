@@ -4,6 +4,7 @@
 #=     raises: ['expects 1 argument', 'called with 0'],
 #=     inputs: {start: 0},
 #= }
+def {start} = import('inputs')
 defn counter(n) -> {
     value: fn -> n,
     increment: fn -> counter(n + 1),

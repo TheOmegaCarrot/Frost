@@ -1,7 +1,0 @@
-# The same wrapping arithmetic over constant arguments, which the optimizer
-# may compute ahead of time, wraps the same way.
-#= {result: [-9223372036854775808, 9223372036854775807, -9223372036854775808]}
-def inc = fn x -> x + 1
-def dec = fn x -> x - 1
-def double = fn x -> x * 2
-[inc(9223372036854775807), dec(-9223372036854775808), double(4611686018427387904)]

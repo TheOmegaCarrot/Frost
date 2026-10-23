@@ -2,5 +2,6 @@
 # last branch, not to the whole `if`. Subtle because it reads like threading
 # the conditional's value.
 #= {result: [1, 3], inputs: {yes: true, no: false}}
+def {yes, no} = import('inputs')
 defn inc(x) -> x + 1
 [if yes: 1 else: 2 @ inc(), if no: 1 else: 2 @ inc()]

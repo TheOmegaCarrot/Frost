@@ -1,6 +1,7 @@
 # An abbreviated lambda inside a plain one captures its parameters, and is a
 # function like any other.
 #= {result: [5, [0, [1, 2]], [2, 4]], inputs: {n: 2}}
+def {n} = import('inputs')
 defn adder(k) -> $($ + k)
 def pair_with = fn ...rest -> $([$, rest])
 [adder(n)(3), pair_with(1, 2)(0), map([1, 2], $($ * n))]

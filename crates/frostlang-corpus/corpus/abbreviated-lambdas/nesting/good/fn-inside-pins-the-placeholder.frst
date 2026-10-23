@@ -6,6 +6,7 @@
 #=     lints: ['lambda in abbreviated lambda'],
 #=     inputs: {three: 3},
 #= }
+def {three} = import('inputs')
 def same_as = $(fn x -> match x {
     ($) => 'same',
     _ => 'different',

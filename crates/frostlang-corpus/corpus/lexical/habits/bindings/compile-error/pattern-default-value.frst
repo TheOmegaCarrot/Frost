@@ -1,3 +1,4 @@
 # A destructuring pattern takes no default values, as JavaScript's does.
 #= {rejects: 'patterns have no default values', inputs: {m: {a: 1}}}
+def {m} = import('inputs')
 def {a = 1} = m

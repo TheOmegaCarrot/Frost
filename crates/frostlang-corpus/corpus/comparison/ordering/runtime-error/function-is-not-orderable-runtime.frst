@@ -1,3 +1,4 @@
 # Functions known only at runtime have no ordering.
 #= {raises: ['Function', 'not orderable'], inputs: {f: fn -> 1, g: fn -> 2}}
+def {f, g} = import('inputs')
 f > g

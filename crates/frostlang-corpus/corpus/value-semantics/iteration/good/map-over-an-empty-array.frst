@@ -1,5 +1,6 @@
 # Mapping an empty Array gives an empty Array; extending that result
 # leaves the empty input empty.
 #= {result: [[1], []], inputs: {none: []}}
+def {none} = import('inputs')
 def out = map(none, fn x -> x)
 [out + [1], none]

@@ -1,3 +1,4 @@
 # A Map field cannot be assigned: values are immutable.
 #= {rejects: 'immutable', inputs: {m: {k: 1}}}
+def {m} = import('inputs')
 m.k = 2

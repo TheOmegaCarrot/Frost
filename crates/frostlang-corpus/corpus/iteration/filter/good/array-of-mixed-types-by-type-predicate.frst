@@ -3,4 +3,5 @@
 #=     result: [[1, 2.5], ['a', x'00']],
 #=     inputs: {xs: [1, 'a', null, 2.5, [1], x'00', true]},
 #= }
+def {xs} = import('inputs')
 [filter(xs, is_numeric), filter(xs, is_flat)]

@@ -4,6 +4,7 @@
 #=     result: [{[7]: 'literal'}, {[7]: 'runtime'}, {[7]: 'second'}],
 #=     inputs: {k: 7, j: 7},
 #= }
+def {k, j} = import('inputs')
 [
     {[k]: 'runtime', [7]: 'literal'},
     {[7]: 'literal', [k]: 'runtime'},

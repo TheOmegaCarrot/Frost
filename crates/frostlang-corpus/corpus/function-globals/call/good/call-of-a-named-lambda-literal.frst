@@ -2,6 +2,7 @@
 # name. Subtle once `call` with a literal function is inlined into a direct
 # call: the lambda's self-name must still refer to it.
 #= {result: [120, 10], inputs: {n: 5}}
+def {n} = import('inputs')
 [
     call(fn fact(k) -> if k <= 1: 1 else: k * fact(k - 1), [n]),
     call(fn sum(k, acc) -> if k == 0: acc else: sum(k - 1, acc + k), [n - 1, 0]),

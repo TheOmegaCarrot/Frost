@@ -1,6 +1,7 @@
 # The `is_*` globals see whichever binding of a name is in scope, including a
 # shadow of a different type.
 #= {result: [true, false, true, true], inputs: {s: 'text'}}
+def {s} = import('inputs')
 def v = 1
 def inner = do {
     def v = s

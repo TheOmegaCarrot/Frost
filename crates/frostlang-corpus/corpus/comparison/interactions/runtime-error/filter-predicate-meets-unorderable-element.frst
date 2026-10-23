@@ -1,4 +1,5 @@
 # A comparison inside a `filter` predicate raises when it reaches an element
 # it cannot order, and the error ends the run.
 #= {raises: ['incompatible types', 'String', 'Int'], inputs: {xs: [1, 5, 'seven', 9]}}
+def {xs} = import('inputs')
 xs @ filter(fn x -> x > 2)

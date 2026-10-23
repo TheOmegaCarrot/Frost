@@ -3,6 +3,7 @@
 #=     result: [true, false, true, false],
 #=     inputs: {n: null},
 #= }
+def {n} = import('inputs')
 [
     not not not null,
     not not not not null,

@@ -17,6 +17,7 @@
 #=         small: [50, 30, 70],
 #=     },
 #= }
+def {keys, small} = import('inputs')
 defn insert(tree, key) ->
     if tree == null: {key, left: null, right: null}
     elif key < tree.key: tree + {left: insert(tree.left, key)}

@@ -4,5 +4,6 @@
 #=     result: [[0, 1], [0, 'a', 1]],
 #=     inputs: {xs: [1], m: {a: 1}},
 #= }
+def {xs, m} = import('inputs')
 def args = fn ...args -> args
 [reduce(xs, 0, args), reduce(m, 0, args)]

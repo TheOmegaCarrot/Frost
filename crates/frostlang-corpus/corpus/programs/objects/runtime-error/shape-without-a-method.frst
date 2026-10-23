@@ -5,6 +5,7 @@
 #=     raises: ['no value at key', 'area'],
 #=     inputs: {sides: [2, 3]},
 #= }
+def {sides} = import('inputs')
 defn square(side) -> {area: fn -> side * side, name: fn -> 'square'}
 defn point() -> {name: fn -> 'point'}
 

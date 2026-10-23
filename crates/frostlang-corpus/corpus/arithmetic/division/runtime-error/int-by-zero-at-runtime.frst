@@ -1,3 +1,4 @@
 # Dividing an Int by an Int zero only known at runtime raises.
 #= {raises: 'division by zero', inputs: {n: 7, zero: 0}}
+def {n, zero} = import('inputs')
 n / zero

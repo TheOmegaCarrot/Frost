@@ -1,3 +1,4 @@
 # A format String built error message reaches `try_call` intact.
 #= {result: 'bad value: 7', inputs: {x: 7}}
+def {x} = import('inputs')
 try_call(fn -> error($'bad value: ${x}')).error

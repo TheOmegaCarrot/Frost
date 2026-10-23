@@ -1,0 +1,11 @@
+# Int subtraction of operands only known at runtime succeeds when the result
+# lands exactly on the least or greatest Int, as a folded difference does.
+#= {
+#=     result: [-9223372036854775808, 9223372036854775807],
+#=     inputs: {above_least: -9223372036854775807, below_greatest: 9223372036854775806, one: 1},
+#= }
+def {above_least, below_greatest, one} = import('inputs')
+[
+    above_least - one,
+    below_greatest - -one,
+]

@@ -10,4 +10,5 @@
 #=     },
 #=     inputs: {m: {[true]: 1, [2]: 2, [3.5]: 3, s: 4, [x'ff']: 5}},
 #= }
+def {m} = import('inputs')
 map(m, fn k, v -> {[k]: type(k)})

@@ -1,5 +1,6 @@
 # Leading `@` lines continue an expression inside a block body.
 #= {result: 13, inputs: {n: 5}}
+def {n} = import('inputs')
 defn inc(x) -> x + 1
 defn double(x) -> x * 2
 defn process(v) -> {

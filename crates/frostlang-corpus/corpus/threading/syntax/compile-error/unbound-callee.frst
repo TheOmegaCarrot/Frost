@@ -1,4 +1,5 @@
 # The callee of a threaded call is resolved like any name: an unbound one is
 # a compile error.
 #= {rejects: ['`missing`', 'not defined'], inputs: {xs: [1]}}
+def {xs} = import('inputs')
 xs @ missing()

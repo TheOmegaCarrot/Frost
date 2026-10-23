@@ -1,6 +1,7 @@
 # A pinned value compared in an arm that fails is read again, unchanged, by
 # the next arm.
 #= {result: [[2], [1, 0]], inputs: {n: 1}}
+def {n} = import('inputs')
 def target = [n]
 match [2] {
     (target) => 'never',

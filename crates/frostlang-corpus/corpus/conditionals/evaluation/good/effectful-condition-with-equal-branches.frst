@@ -2,6 +2,7 @@
 # its side effect must happen. Subtle: an optimizer replacing the `if` with
 # the shared branch value would skip the condition.
 #= {result: [1, 1], printed: ['checked', 'checked'], inputs: {c: true}}
+def {c} = import('inputs')
 defn check(v) -> do {
     print('checked')
     v

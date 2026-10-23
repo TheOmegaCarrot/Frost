@@ -1,6 +1,7 @@
 # The type predicates see each result's type: Int over Ints, Float as soon as
 # a Float is involved, and Numeric either way.
 #= {result: [true, false, true, true, true, true], inputs: {seven: 7, two: 2}}
+def {seven, two} = import('inputs')
 [
     is_int(seven / two),
     is_float(seven / two),

@@ -21,6 +21,7 @@
 #=         ],
 #=     },
 #= }
+def {pairs} = import('inputs')
 defn to_map(rest_pairs, acc) -> match rest_pairs {
     [] => acc,
     [[k, v], ...rest] => to_map(rest, acc + {[k]: v}),

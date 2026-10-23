@@ -5,6 +5,7 @@
 #=     result: [true, true, true],
 #=     inputs: {xs: [1, 2], m: {a: 1}},
 #= }
+def {xs, m} = import('inputs')
 def longer = xs + [3]
 def merged = m + {a: 2}
 [

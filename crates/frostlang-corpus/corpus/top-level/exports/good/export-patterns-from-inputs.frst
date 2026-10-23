@@ -5,5 +5,6 @@
 #=     exports: {first: 1, rest: [2, 3], host: 'h', whole: {host: 'h'}},
 #=     inputs: {xs: [1, 2, 3], config: {host: 'h'}},
 #= }
+def {xs, config} = import('inputs')
 export def [first, ...rest] = xs
 export def {host} as whole = config

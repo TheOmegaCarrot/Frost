@@ -1,6 +1,7 @@
 # One chain may mix callees of every kind: a global, a local lambda, a Map
 # member, an Array element, and a parenthesized lambda.
 #= {result: 15, inputs: {n: 2}}
+def {n} = import('inputs')
 defn inc(x) -> x + 1
 def ops = {double: fn x -> x * 2}
 def fns = [fn x -> x - 1]

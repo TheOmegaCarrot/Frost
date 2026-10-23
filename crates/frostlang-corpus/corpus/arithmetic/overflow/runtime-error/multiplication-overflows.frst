@@ -1,0 +1,4 @@
+# Int multiplication past the Int range raises instead of keeping the low 64
+# bits of the product.
+#= {raises: 'Int overflow: 9223372036854775807 * 2'}
+9223372036854775807 * 2

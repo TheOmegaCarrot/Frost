@@ -1,4 +1,5 @@
 # A value of the wrong type raises, naming the expected type.
 #= {raises: 'expected an Int', inputs: {v: 's'}}
+def {v} = import('inputs')
 def x is Int = v
 x

@@ -1,4 +1,5 @@
 # A one-parameter native cannot be `map`'s function over a Map: it is
 # called with key and value, and the arity error names the native.
 #= {raises: ['is_null', 'called with 2'], inputs: {m: {a: 1}}}
+def {m} = import('inputs')
 map(m, is_null)

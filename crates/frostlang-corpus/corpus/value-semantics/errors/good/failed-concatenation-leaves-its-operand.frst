@@ -1,5 +1,6 @@
 # A `+` that raises, caught by `try_call`, leaves its Array operand as it was.
 #= {result: [false, [1]], inputs: {n: 1}}
+def {n} = import('inputs')
 def xs = [n]
 def r = try_call(fn -> xs + 5)
 [r.ok, xs]

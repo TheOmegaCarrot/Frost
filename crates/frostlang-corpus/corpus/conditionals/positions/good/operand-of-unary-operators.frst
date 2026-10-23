@@ -1,6 +1,7 @@
 # `-` and `not` apply to a whole unparenthesized `if`, its alternate's
 # trailing operators included: `-if c: 1 else: 2 + 3` is `-(if c: 1 else: 5)`.
 #= {result: [-1, -5, false, true], inputs: {t: true, f: false}}
+def {t, f} = import('inputs')
 [
     -if t: 1 else: 2 + 3,
     -if f: 1 else: 2 + 3,

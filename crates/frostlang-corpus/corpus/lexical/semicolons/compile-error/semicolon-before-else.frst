@@ -5,4 +5,5 @@
 #=     rejects: ['found `else`', 'conditional is written `if a: b else: c`'],
 #=     inputs: {c: true},
 #= }
+def {c} = import('inputs')
 if c: 1; else: 2

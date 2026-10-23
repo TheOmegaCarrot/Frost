@@ -1,4 +1,0 @@
-# A constant condition detecting Int overflow by its wrapping: folding must
-# wrap as runtime arithmetic does.
-#= {result: 'wrapped'}
-if 9223372036854775807 + 1 < 0: 'wrapped' else: 'grew'

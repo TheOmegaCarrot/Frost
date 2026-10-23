@@ -1,0 +1,9 @@
+# Arithmetic on bound Ints raises on overflow when the bindings are only known
+# at runtime, so nothing can be folded ahead of time.
+#= {
+#=     raises: 'Int overflow: -9223372036854775808 - 1',
+#=     inputs: {min: -9223372036854775808},
+#= }
+def {min} = import('inputs')
+def runtime_down = min - 1
+runtime_down

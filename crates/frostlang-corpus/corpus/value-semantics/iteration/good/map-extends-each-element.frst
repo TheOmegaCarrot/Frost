@@ -1,6 +1,7 @@
 # `map` extending each element, themselves Arrays, leaves the input and
 # its elements unchanged.
 #= {result: [[[1], [2]], [[1, 0], [2, 0]]], inputs: {n: 1}}
+def {n} = import('inputs')
 def xs = [[n], [2]]
 def grown = map(xs, fn x -> x + [0])
 [xs, grown]

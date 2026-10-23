@@ -5,6 +5,7 @@
 #=     printed: ['literal left', 'runtime left'],
 #=     inputs: {f: false},
 #= }
+def {f} = import('inputs')
 [
     null or print('literal left'),
     f or print('runtime left'),

@@ -1,4 +1,5 @@
 # Both operands are evaluated before `+` checks their types, so an error in
 # the right operand surfaces before the mismatch would.
 #= {raises: 'Division by zero', inputs: {zero: 0}}
+def {zero} = import('inputs')
 [1] + (1 / zero)

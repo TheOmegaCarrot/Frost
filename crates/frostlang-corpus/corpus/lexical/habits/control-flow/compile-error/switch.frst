@@ -1,3 +1,4 @@
 # Frost has no `switch`; `match` takes its place.
 #= {rejects: 'no `switch`', inputs: {x: 1}}
+def {x} = import('inputs')
 switch (x) { case 1: 2 }

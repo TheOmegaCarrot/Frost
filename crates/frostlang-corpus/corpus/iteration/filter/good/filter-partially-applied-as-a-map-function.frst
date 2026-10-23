@@ -1,4 +1,5 @@
 # `filter` with its predicate fixed by `bcurry` becomes a one-argument
 # function, which `map` can apply to each row of a nested Array.
 #= {result: [[1], [], [2, 3]], inputs: {rows: [[1, 'a'], ['b'], [2, null, 3]]}}
+def {rows} = import('inputs')
 map(rows, bcurry(filter, is_int))

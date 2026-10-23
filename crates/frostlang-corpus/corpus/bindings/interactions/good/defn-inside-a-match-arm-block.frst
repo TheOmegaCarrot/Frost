@@ -1,5 +1,6 @@
 # A `defn` in a block in a match arm may recurse and read the arm's binding.
 #= {result: 15, inputs: {n: 5}}
+def {n} = import('inputs')
 match n {
     limit => do {
         defn sum(i) -> if i > limit: 0 else: i + sum(i + 1)

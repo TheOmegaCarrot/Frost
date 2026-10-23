@@ -18,6 +18,7 @@
 #=         empty_map_in: {},
 #=     },
 #= }
+def {s_in, bytes_in, xs_in, m_in, empty_array_in, empty_map_in} = import('inputs')
 def s = s_in
 def bytes = bytes_in
 def xs = xs_in

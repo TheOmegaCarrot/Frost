@@ -5,6 +5,7 @@
 #=     result: [false, true, true],
 #=     inputs: {precomposed: '\u{e9}', base: 'e', accent: '\u{301}'},
 #= }
+def {precomposed, base, accent} = import('inputs')
 [
     precomposed == base + accent,
     precomposed != base + accent,

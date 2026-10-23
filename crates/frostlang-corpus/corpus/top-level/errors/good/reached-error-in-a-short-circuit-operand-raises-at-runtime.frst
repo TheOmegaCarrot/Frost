@@ -4,6 +4,7 @@
 #=     result: ['and', 'or', 'null or'],
 #=     inputs: {yes: true, no: false, nothing: null},
 #= }
+def {yes, no, nothing} = import('inputs')
 [
     try_call(fn -> yes and error('and')).error,
     try_call(fn -> no or error('or')).error,

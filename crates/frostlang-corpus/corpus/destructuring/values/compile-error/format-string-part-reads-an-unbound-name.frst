@@ -1,4 +1,5 @@
 # A format String part's interpolation must read a name already in scope.
 #= {rejects: '`zz` is not defined', inputs: {xs: [1, 'v']}}
+def {xs} = import('inputs')
 def [a, $'v${zz}'] = xs
 a

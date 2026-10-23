@@ -1,5 +1,6 @@
 # An Array cannot be a Map key, even one built at runtime that nothing else
 # holds.
 #= {raises: ['Array', 'not a valid Map key'], inputs: {n: 1}}
+def {n} = import('inputs')
 def k = [n]
 {[k]: 1}

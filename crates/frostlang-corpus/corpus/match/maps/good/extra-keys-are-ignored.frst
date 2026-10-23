@@ -1,5 +1,6 @@
 # A Map pattern checks only the keys it names; any others are ignored.
 #= {result: 3, inputs: {v: {a: 1, b: 2, c: 3, d: 4}}}
+def {v} = import('inputs')
 match v {
     {c} => c,
 }

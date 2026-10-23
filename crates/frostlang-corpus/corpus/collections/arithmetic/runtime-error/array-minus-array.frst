@@ -1,3 +1,4 @@
 # `-` is numeric only: it is not Array difference.
 #= {raises: ['Cannot subtract', 'Array - Array'], inputs: {xs: [1, 2], ys: [2]}}
+def {xs, ys} = import('inputs')
 xs - ys

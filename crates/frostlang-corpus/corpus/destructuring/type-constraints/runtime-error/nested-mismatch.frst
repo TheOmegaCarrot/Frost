@@ -1,4 +1,5 @@
 # A constraint deep in a pattern raises like one at the top.
 #= {raises: 'expected a Bool', inputs: {m: {a: {b: 1}}}}
+def {m} = import('inputs')
 def {a: {b is Bool}} = m
 b

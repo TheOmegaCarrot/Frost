@@ -13,6 +13,7 @@
 #=         half_below: -2251799813685248.5,
 #=     },
 #= }
+def {odd, above, below, whole, half_below} = import('inputs')
 [
     odd < above,
     odd > below,

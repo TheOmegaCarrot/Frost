@@ -1,5 +1,6 @@
 # A match guard may call a closure that captures from the enclosing function.
 #= {result: ['small', 'big'], inputs: {limit: 10}}
+def {limit} = import('inputs')
 def classify = fn v -> {
     def over = fn x -> x > limit
     match v {

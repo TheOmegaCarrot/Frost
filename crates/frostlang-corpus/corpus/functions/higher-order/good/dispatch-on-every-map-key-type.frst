@@ -4,6 +4,7 @@
 #=     result: ['bool', 'int', 'float', 'string', 'bytes'],
 #=     inputs: {kb: true, ki: 1, kf: 1.5, ks: 'k', kx: x'00ff'},
 #= }
+def {kb, ki, kf, ks, kx} = import('inputs')
 def table = {
     [true]: fn -> 'bool',
     [1]: fn -> 'int',

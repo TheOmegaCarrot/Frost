@@ -1,6 +1,7 @@
 # A key whose value is Null is present: it matches, binding Null. Subtle: a
 # present Null and a missing key are different things to a pattern.
 #= {result: [['present', null], 'missing'], inputs: {xs: [{a: null}, {}]}}
+def {xs} = import('inputs')
 map(xs, fn v -> match v {
     {a} => ['present', a],
     _ => 'missing',

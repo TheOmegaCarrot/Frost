@@ -1,5 +1,6 @@
 # A guard whose own match finds no arm raises; it is not a failed guard.
 #= {raises: 'no match arm', inputs: {v: 2}}
+def {v} = import('inputs')
 match v {
     x if: match x { 1 => true } => 'one',
     _ => 'other',

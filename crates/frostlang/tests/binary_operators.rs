@@ -47,11 +47,11 @@ fn subtract_float_int_promotes() {
 }
 
 #[test]
-fn subtract_int_overflow_wraps() {
-    let min = Value::from(i64::MIN);
-    let one = Value::from(1i64);
-    let result = min.subtract(&one).unwrap();
-    assert_eq!(result, Value::from(i64::MAX));
+fn subtract_int_overflow_raises() {
+    let error = Value::from(i64::MIN)
+        .subtract(&Value::from(1i64))
+        .unwrap_err();
+    assert_eq!(error.message(), "Int overflow: -9223372036854775808 - 1");
 }
 
 #[test]
@@ -96,11 +96,11 @@ fn multiply_float_int_promotes() {
 }
 
 #[test]
-fn multiply_int_overflow_wraps() {
-    let max = Value::from(i64::MAX);
-    let two = Value::from(2i64);
-    let result = max.multiply(&two).unwrap();
-    assert_eq!(result, Value::from(-2i64));
+fn multiply_int_overflow_raises() {
+    let error = Value::from(i64::MAX)
+        .multiply(&Value::from(2i64))
+        .unwrap_err();
+    assert_eq!(error.message(), "Int overflow: 9223372036854775807 * 2");
 }
 
 #[test]
@@ -232,11 +232,82 @@ fn add_float_int_promotes() {
 }
 
 #[test]
-fn add_int_overflow_wraps() {
-    let max = Value::from(i64::MAX);
-    let one = Value::from(1i64);
-    let result = max.add(&one).unwrap();
-    assert_eq!(result, Value::from(i64::MIN));
+fn add_int_overflow_raises() {
+    let error = Value::from(i64::MAX).add(&Value::from(1i64)).unwrap_err();
+    assert_eq!(error.message(), "Int overflow: 9223372036854775807 + 1");
+}
+
+// ---- Int bounds ----
+//
+// Each operator succeeds when its true result is exactly at a bound, and
+// raises one step past it. `%` never overflows: its true result always fits.
+
+type IntOperator = fn(&Value, &Value) -> Result<Value, frostlang::FrostError>;
+
+const OPERATORS: [(&str, IntOperator); 5] = [
+    ("+", Value::add),
+    ("-", Value::subtract),
+    ("*", Value::multiply),
+    ("/", Value::divide),
+    ("%", Value::modulus),
+];
+
+fn int_operator(glyph: &str) -> IntOperator {
+    OPERATORS
+        .iter()
+        .find(|(name, _)| *name == glyph)
+        .map(|&(_, operator)| operator)
+        .expect("a known operator")
+}
+
+#[test]
+fn int_results_exactly_at_a_bound_succeed() {
+    let (max, min) = (i64::MAX, i64::MIN);
+    for (lhs, glyph, rhs, expected) in [
+        (max - 1, "+", 1, max),
+        (min + 1, "+", -1, min),
+        (min + 1, "-", 1, min),
+        (max - 1, "-", -1, max),
+        (max, "*", 1, max),
+        (min, "*", 1, min),
+        (-max, "*", -1, max),
+        (min / 2, "*", 2, min),
+        (min, "/", 1, min),
+        (max, "/", -1, -max),
+        (min, "%", -1, 0),
+        (min, "%", max, -1),
+        (max, "%", min, max),
+    ] {
+        let result = int_operator(glyph)(&Value::from(lhs), &Value::from(rhs));
+        assert_eq!(
+            result.map_err(|error| error.message().into_owned()),
+            Ok(Value::from(expected)),
+            "{lhs} {glyph} {rhs}"
+        );
+    }
+}
+
+#[test]
+fn int_results_one_step_past_a_bound_raise() {
+    let (max, min) = (i64::MAX, i64::MIN);
+    for (lhs, glyph, rhs) in [
+        (max, "+", 1),
+        (min, "+", -1),
+        (min, "-", 1),
+        (max, "-", -1),
+        (max, "*", 2),
+        (min, "*", 2),
+        (min, "*", -1),
+        (max / 2 + 1, "*", 2),
+        (min, "/", -1),
+    ] {
+        let result = int_operator(glyph)(&Value::from(lhs), &Value::from(rhs));
+        assert_eq!(
+            result.map_err(|error| error.message().into_owned()),
+            Err(format!("Int overflow: {lhs} {glyph} {rhs}")),
+            "{lhs} {glyph} {rhs}"
+        );
+    }
 }
 
 #[test]

@@ -1,0 +1,8 @@
+# The least Int times -1, with both only known at runtime, raises as the folded
+# product does.
+#= {
+#=     raises: 'Int overflow: -9223372036854775808 * -1',
+#=     inputs: {least: -9223372036854775808, minus_one: -1},
+#= }
+def {least, minus_one} = import('inputs')
+least * minus_one

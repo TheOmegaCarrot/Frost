@@ -1,4 +1,5 @@
 # The remainder of modulus-by-zero-in-constants, by a zero only known at
 # runtime, raises the same error.
 #= {raises: 'modulus by zero', inputs: {zero: 0}}
+def {zero} = import('inputs')
 7 % zero

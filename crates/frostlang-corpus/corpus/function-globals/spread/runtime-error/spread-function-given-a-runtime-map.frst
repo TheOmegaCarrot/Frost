@@ -1,4 +1,5 @@
 # A Map known only at run time is not spread, as named arguments or
 # otherwise.
 #= {raises: ['Array', 'got Map'], inputs: {args: {a: 1}}}
+def {args} = import('inputs')
 spread(collect)(args)

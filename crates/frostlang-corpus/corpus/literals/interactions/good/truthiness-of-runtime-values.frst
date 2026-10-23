@@ -4,4 +4,5 @@
 #=     result: ['truthy', 'truthy', 'truthy', 'truthy', 'truthy', 'falsy', 'falsy'],
 #=     inputs: {values: [0, 0.0, -0.0, '', x'', false, null]},
 #= }
+def {values} = import('inputs')
 map(values, fn x -> if x: 'truthy' else: 'falsy')

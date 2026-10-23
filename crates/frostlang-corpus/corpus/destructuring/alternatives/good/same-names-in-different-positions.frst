@@ -1,6 +1,7 @@
 # Branches binding the same names in different orders bind them consistently
 # whichever branch matches.
 #= {result: [[2, 1], [1, 2]], inputs: {arr: [1, 2], dict: {x: 1, y: 2}}}
+def {arr, dict} = import('inputs')
 def {x: a, y: b} | [b, a] = arr
 def {x: c, y: d} | [d, c] = dict
 [[a, b], [c, d]]

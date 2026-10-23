@@ -5,6 +5,7 @@
 #=     printed: ['structure', 'predicate', 'call', 'call'],
 #=     inputs: {xs: [1, 2]},
 #= }
+def {xs} = import('inputs')
 filter(
     do {
         print('structure')

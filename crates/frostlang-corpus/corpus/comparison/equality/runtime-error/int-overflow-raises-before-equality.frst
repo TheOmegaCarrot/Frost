@@ -1,0 +1,5 @@
+# Int arithmetic overflow raises instead of wrapping, so no result is ever
+# compared to the Int at the other end of the range. Written with literals the
+# folder can evaluate.
+#= {raises: ['Int overflow', '9223372036854775807 + 1']}
+9223372036854775807 + 1 == -9223372036854775808

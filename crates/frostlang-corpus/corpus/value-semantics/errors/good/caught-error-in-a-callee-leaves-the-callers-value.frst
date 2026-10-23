@@ -1,6 +1,7 @@
 # A callee that extends its argument and then raises, caught by `try_call`,
 # leaves the caller's argument as it was, so a retry starts from the original.
 #= {result: [false, [1, 2, 'done']], inputs: {n: 1}}
+def {n} = import('inputs')
 defn attempt(xs, fail) -> {
     def grown = xs + [2]
     if fail: [error('failed')] else: grown + ['done']

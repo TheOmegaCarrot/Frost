@@ -1,6 +1,7 @@
 # A parenthesized value in a later alternative is evaluated only if the
 # earlier alternatives fail.
 #= {result: ['first', 'second'], printed: ['checked'], inputs: {a: 1, b: 2}}
+def {a, b} = import('inputs')
 defn two() -> {
     print('checked')
     2

@@ -1,6 +1,7 @@
 # When every alternative fails, partway through binding, the match moves on
 # to the next arm cleanly, and surrounding values are undisturbed.
 #= {result: [3, 9], lints: [['unused binding', '`x`']], inputs: {v: [1, [2]]}}
+def {v} = import('inputs')
 [
     match v {
         [x, [0]] | [0, [x]] => 'never',

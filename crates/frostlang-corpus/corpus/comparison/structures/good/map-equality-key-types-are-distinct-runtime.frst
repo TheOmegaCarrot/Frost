@@ -4,6 +4,7 @@
 #=     result: [false, false, false, true],
 #=     inputs: {i: 1, f: 1.0, s: '1', b: x'31'},
 #= }
+def {i, f, s, b} = import('inputs')
 [
     {[i]: 'v'} == {[f]: 'v'},
     {[s]: 'v'} == {[b]: 'v'},

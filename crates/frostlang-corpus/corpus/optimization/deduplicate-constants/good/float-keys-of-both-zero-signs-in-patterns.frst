@@ -1,6 +1,7 @@
 # Map patterns keyed by 0.0 and -0.0 look up different entries, as the two
 # keys differ; each Map reaches only the arm of its own zero.
 #= {result: ['positive zero arm', 'negative zero arm'], inputs: {pos: {[0.0]: 1}, neg: {[-0.0]: 1}}}
+def {pos, neg} = import('inputs')
 defn which(m) -> match m {
     {[0.0]: _} => 'positive zero arm',
     {[-0.0]: _} => 'negative zero arm',

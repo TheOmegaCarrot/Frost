@@ -1,5 +1,6 @@
 # Array elements, Map values, and computed Map keys may each be threaded
 # calls.
 #= {result: [[2, 3], {a: 2, [3]: 'three'}], inputs: {one: 1, two: 2}}
+def {one, two} = import('inputs')
 defn inc(x) -> x + 1
 [[one @ inc(), two @ inc()], {a: one @ inc(), [two @ inc()]: 'three'}]

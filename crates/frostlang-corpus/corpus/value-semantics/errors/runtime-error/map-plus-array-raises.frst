@@ -1,4 +1,5 @@
 # Adding an Array to a Map that nothing else holds raises a type error.
 #= {raises: ['cannot add', 'Map + Array'], inputs: {v: 1}}
+def {v} = import('inputs')
 def m = {k: v}
 m + [1]

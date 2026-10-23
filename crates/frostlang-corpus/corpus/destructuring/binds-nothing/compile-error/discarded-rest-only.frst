@@ -1,4 +1,5 @@
 # A pattern of only a discarded rest binds no name.
 #= {rejects: 'binds no name', inputs: {xs: [1]}}
+def {xs} = import('inputs')
 def [..._] = xs
 0

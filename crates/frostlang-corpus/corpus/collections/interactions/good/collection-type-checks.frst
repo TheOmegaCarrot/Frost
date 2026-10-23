@@ -10,5 +10,6 @@
 #=     ],
 #=     inputs: {xs: [], m: {}, s: '', y: x''},
 #= }
+def {xs, m, s, y} = import('inputs')
 defn check(v) -> [is_array(v), is_map(v), is_string(v), is_bytes(v)]
 [check(xs), check(m), check(s), check(y), [type(xs), type(m), type(s), type(y)]]

@@ -2,4 +2,5 @@
 # into: `@` needs its own argument list after the callee. Subtle because the
 # parentheses hold a call.
 #= {rejects: ['right side of `@` must be a call', 'not a call'], inputs: {one: 1, two: 2}}
+def {one, two} = import('inputs')
 one @ (two @ collect())

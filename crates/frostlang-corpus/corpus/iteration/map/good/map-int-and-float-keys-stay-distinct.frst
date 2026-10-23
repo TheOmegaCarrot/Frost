@@ -1,4 +1,5 @@
 # An Int key and the equal-looking Float key are different keys, so `map`
 # keeps both entries rather than merging them.
 #= {result: {[1]: 'Int', [1.0]: 'Float'}, inputs: {m: {[1]: 0, [1.0]: 0}}}
+def {m} = import('inputs')
 map(m, fn k, v -> {[k]: type(k)})

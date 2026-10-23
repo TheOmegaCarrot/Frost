@@ -3,6 +3,7 @@
 #=     result: [2, 'anonymous', 0],
 #=     inputs: {pair: [null, 2], person: {name: null, age: 0}},
 #= }
+def {pair, person} = import('inputs')
 def [first, second] = pair
 def {name, age} = person
 [first or second, name or 'anonymous', age or 'unknown']

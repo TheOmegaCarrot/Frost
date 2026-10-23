@@ -1,3 +1,4 @@
 # `filter` keeps the elements whose format String rendering equals a target.
 #= {result: [12], inputs: {xs: [1, 12, 21]}}
+def {xs} = import('inputs')
 filter(xs, fn x -> $'${x}' == '12')

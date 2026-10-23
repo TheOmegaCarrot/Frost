@@ -2,5 +2,6 @@
 # comes last, at the binding's last use: the element already taken keeps the
 # original even if the derivation reuses the binding's storage.
 #= {result: [[1], [1, 2]], inputs: {n: 1}}
+def {n} = import('inputs')
 def xs = [n]
 [xs, xs + [2]]

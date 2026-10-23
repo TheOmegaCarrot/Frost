@@ -4,6 +4,7 @@
 #=     result: [true, false, true, true, true],
 #=     inputs: {a: 1.5, b: 2.5, tiny: 5e-324, huge: 1.7976931348623157e308},
 #= }
+def {a, b, tiny, huge} = import('inputs')
 [
     a < b,
     b <= a,

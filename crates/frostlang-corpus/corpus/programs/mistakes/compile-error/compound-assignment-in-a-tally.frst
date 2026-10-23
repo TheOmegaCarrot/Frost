@@ -4,6 +4,7 @@
 #=     rejects: 'no `+=`',
 #=     inputs: {words: ['a', 'b', 'a']},
 #= }
+def {words} = import('inputs')
 defn tally(items) -> reduce(items, {}, fn counts, word -> {
     counts[word] += 1
     counts

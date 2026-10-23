@@ -2,6 +2,7 @@
 # lambda's body is the whole pipeline. Subtle because it can read as
 # threading the lambda.
 #= {result: 4, inputs: {one: 1}}
+def {one} = import('inputs')
 defn inc(x) -> x + 1
 defn double(x) -> x * 2
 def f = fn x -> x

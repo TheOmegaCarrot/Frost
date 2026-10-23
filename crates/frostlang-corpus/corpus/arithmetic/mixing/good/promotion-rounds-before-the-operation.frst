@@ -4,6 +4,7 @@
 # 2^53 + 1.5 would have rounded up to 2^53 + 2. Subtle because the result is two roundings
 # away from the exact answer, not one.
 #= {result: [9007199254740992.0, false], inputs: {past_exact: 9007199254740993}}
+def {past_exact} = import('inputs')
 [
     past_exact + 0.5,
     past_exact + 0.5 == 9007199254740994.0,

@@ -5,6 +5,7 @@
 #=     lints: [['unused binding', '`n`']],
 #=     inputs: {values: [-1, 0, 0.5, 9, 10.0, '5']},
 #= }
+def {values} = import('inputs')
 defn classify(v) -> match v {
     n is Numeric if: n < 0 => 'negative',
     n is Numeric if: n <= 0 => 'zero',

@@ -1,6 +1,7 @@
 # A computed key may be an unparenthesized `if`; the closing bracket ends its
 # last branch.
 #= {result: [[1, 'none'], ['none', 2]], inputs: {t: true, f: false}}
+def {t, f} = import('inputs')
 defn pick(c, v) -> match v {
     {[if c: 'a' else: 'b']: x} => x,
     _ => 'none',

@@ -1,0 +1,6 @@
+# A closure's arithmetic on a captured Int boundary raises on overflow, for a
+# constant capture the compiler may build into the closure.
+#= {raises: 'Int overflow: 9223372036854775807 + 1'}
+def big = 9223372036854775807
+def folded = fn -> big + 1
+folded()

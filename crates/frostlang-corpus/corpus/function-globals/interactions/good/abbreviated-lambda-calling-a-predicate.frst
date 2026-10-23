@@ -1,3 +1,4 @@
 # A predicate inside an abbreviated lambda tests its placeholder.
 #= {result: [2, 3], inputs: {xs: [1, 'a', 2, null, 3]}}
+def {xs} = import('inputs')
 filter(xs, $(is_int($) and $ > 1))

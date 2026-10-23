@@ -5,6 +5,7 @@
 #=     raises: 'Null + Int',
 #=     inputs: {rows: 3, width: 4},
 #= }
+def {rows, width} = import('inputs')
 defn upto(n) -> if n == 0: [] else: upto(n - 1) + [n - 1]
 
 def first_row = map(upto(width), fn j -> 1)

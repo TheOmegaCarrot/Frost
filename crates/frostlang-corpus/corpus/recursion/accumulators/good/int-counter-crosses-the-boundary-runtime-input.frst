@@ -1,8 +1,0 @@
-# Counters stepped one at a time across either end of the Int range, from a
-# start known only at runtime, wrap around and never raise.
-#= {
-#=     result: [-9223372036854775807, 9223372036854775806],
-#=     inputs: {near_max: 9223372036854775805, near_min: -9223372036854775806},
-#= }
-defn step(n, by, times) -> if times == 0: n else: step(n + by, by, times - 1)
-[step(near_max, 1, 4), step(near_min, -1, 4)]

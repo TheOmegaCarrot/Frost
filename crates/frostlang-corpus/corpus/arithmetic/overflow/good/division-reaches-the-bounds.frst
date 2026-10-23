@@ -1,0 +1,8 @@
+# Int division whose quotient is a bound succeeds: only the least Int divided
+# by -1 overflows, and the greatest Int divided by -1 does not.
+#= {result: [9223372036854775807, -9223372036854775808, -9223372036854775807]}
+[
+    -9223372036854775807 / -1,
+    -9223372036854775808 / 1,
+    9223372036854775807 / -1,
+]

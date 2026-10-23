@@ -1,5 +1,6 @@
 # An `if` on the right of `@` is not a call even when its last branch is: the
 # branch's `()` belongs to the branch.
 #= {rejects: ['right side of `@` must be a call', 'not a call'], inputs: {n: 1, c: true}}
+def {n, c} = import('inputs')
 defn inc(x) -> x + 1
 n @ if c: inc else: inc()

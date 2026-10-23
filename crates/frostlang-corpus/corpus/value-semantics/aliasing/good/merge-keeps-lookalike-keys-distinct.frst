@@ -8,6 +8,7 @@
 #=     ],
 #=     inputs: {i: 1},
 #= }
+def {i} = import('inputs')
 def base = {[i]: 'int', s: 'string'}
 def merged = base + {[1.0]: 'float', [true]: 'bool', [x'73']: 'bytes'}
 [base, merged]

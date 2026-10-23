@@ -1,6 +1,7 @@
 # A recursive function may walk a tree of Maps, matching node shapes, with Null
 # leaves.
 #= {result: 6, inputs: {tree: {value: 1, left: {value: 2, left: null, right: null}, right: {value: 3, left: null, right: null}}}}
+def {tree} = import('inputs')
 defn total(node) -> match node {
     null => 0,
     {value, left, right} => value + total(left) + total(right),

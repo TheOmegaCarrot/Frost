@@ -1,5 +1,6 @@
 # `reduce` threads a Bytes accumulator through Bytes concatenation, the empty
 # Bytes included, whether computed ahead of time or at runtime.
 #= {result: [x'01ff', x'01ff'], inputs: {bs: [x'01', x'', x'ff']}}
+def {bs} = import('inputs')
 def join = fn acc, b -> acc + b
 [reduce([x'01', x'', x'ff'], x'', join), reduce(bs, x'', join)]

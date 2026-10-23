@@ -2,6 +2,7 @@
 # Null. Subtle at the negative end: counting back from the end must not
 # overflow. The smallest Int is computed, since its magnitude has no literal.
 #= {result: [null, null, null, null], inputs: {ys: [1, 2, 3], max: 9223372036854775807}}
+def {ys, max} = import('inputs')
 def xs = [1, 2, 3]
 def min = -9223372036854775807 - 1
-[xs[9223372036854775807], xs[min], ys[max], ys[max + 1]]
+[xs[9223372036854775807], xs[min], ys[max], ys[-max - 1]]

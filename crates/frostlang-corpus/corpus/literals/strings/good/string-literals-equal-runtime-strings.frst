@@ -9,4 +9,5 @@
 #=         empty: R'()',
 #=     },
 #= }
+def {text, quotes, backslash, empty} = import('inputs')
 ['café\n' == text, "it's \"q\"" == quotes, '\\' == backslash, "" == empty]

@@ -1,3 +1,4 @@
 # A Bool modulo an Int, both only known at runtime, is a type error.
 #= {raises: 'Bool % Int', inputs: {flag: true, n: 2}}
+def {flag, n} = import('inputs')
 flag % n

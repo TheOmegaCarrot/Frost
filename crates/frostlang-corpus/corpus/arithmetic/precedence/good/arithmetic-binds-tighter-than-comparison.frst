@@ -1,6 +1,7 @@
 # Arithmetic binds tighter than comparison and equality, so each side of a
 # comparison is computed whole first.
 #= {result: [true, true, false, true], inputs: {one: 1, two: 2, three: 3}}
+def {one, two, three} = import('inputs')
 [
     one + two == three,
     two * three > one + two,

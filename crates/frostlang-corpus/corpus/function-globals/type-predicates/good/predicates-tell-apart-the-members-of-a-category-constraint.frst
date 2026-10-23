@@ -9,6 +9,7 @@
 #=     ],
 #=     inputs: {numbers: [1, 1.5, 'a'], texts: ['a', x'00', 1]},
 #= }
+def {numbers, texts} = import('inputs')
 [
     map(numbers, fn v -> match v {
         n is Numeric => [is_int(n), is_float(n)],

@@ -1,4 +1,5 @@
 # A `null` literal pattern binds no name.
 #= {rejects: 'binds no name', inputs: {v: null}}
+def {v} = import('inputs')
 def null = v
 0

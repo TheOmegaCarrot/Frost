@@ -1,4 +1,5 @@
 # An exported Map pattern requires its keys to be present: a missing key
 # raises rather than exporting null.
 #= {raises: 'no value at key "a"', inputs: {m: {b: 1}}}
+def {m} = import('inputs')
 export def {a} = m

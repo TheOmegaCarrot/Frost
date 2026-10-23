@@ -1,6 +1,7 @@
 # A multiline pipeline in parentheses, the idiomatic layout, threads through
 # each line in order.
 #= {result: [20, 30], inputs: {xs: [1, 2, 3]}}
+def {xs} = import('inputs')
 (xs
     @ filter(fn x -> x > 1)
     @ map(fn x -> x * 10))

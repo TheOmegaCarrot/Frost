@@ -1,6 +1,7 @@
 # A binding in a branch's block shadows an enclosing one only inside that
 # block; the enclosing binding is untouched after the `if`.
 #= {result: [6, 10], inputs: {t: true, n: null}}
+def {t, n} = import('inputs')
 def y = 5
 defn pick(x) -> (if x: do {
     def y = 1

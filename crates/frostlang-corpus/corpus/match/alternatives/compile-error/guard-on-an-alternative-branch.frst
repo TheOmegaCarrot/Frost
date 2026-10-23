@@ -1,6 +1,7 @@
 # A guard belongs to the whole arm, after all its alternatives; a branch of an
 # alternative cannot carry its own guard.
 #= {rejects: 'expected `=>`', inputs: {v: 1}}
+def {v} = import('inputs')
 match v {
     x if: x > 0 | x if: x < -10 => x,
     _ => 0,

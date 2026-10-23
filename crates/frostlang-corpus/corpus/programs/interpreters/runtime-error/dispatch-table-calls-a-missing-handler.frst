@@ -7,6 +7,7 @@
 #=         program: [{op: 'push', arg: 2}, {op: 'dup'}, {op: 'add'}, {op: 'pow', arg: 2}, {op: 'push', arg: 1}],
 #=     },
 #= }
+def {program} = import('inputs')
 def handlers = {
     push: fn stack, arg -> [arg] + stack,
     dup: fn stack, _ -> [stack[0]] + stack,

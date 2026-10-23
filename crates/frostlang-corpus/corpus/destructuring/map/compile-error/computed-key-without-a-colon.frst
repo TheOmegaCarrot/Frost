@@ -1,5 +1,6 @@
 # A computed key has no shorthand form: it must be followed by `:` and the
 # pattern for its value.
 #= {rejects: 'expected `:`', inputs: {m: {k: 1}}}
+def {m} = import('inputs')
 def {['k'] x} = m
 x

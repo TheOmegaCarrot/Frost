@@ -1,5 +1,6 @@
 # The functions of closures-made-per-call-capture-their-own-values, created
 # over values only known at runtime, each capture their own value.
 #= {result: [11, 12, 13], inputs: {ns: [1, 2, 3], ten: 10}}
+def {ns, ten} = import('inputs')
 def adders = map(ns, fn n -> fn x -> x + n)
 map(adders, fn f -> f(ten))

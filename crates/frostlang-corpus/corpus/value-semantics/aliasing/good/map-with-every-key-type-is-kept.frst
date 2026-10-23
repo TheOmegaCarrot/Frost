@@ -7,6 +7,7 @@
 #=     ],
 #=     inputs: {v: 1},
 #= }
+def {v} = import('inputs')
 def m = {[true]: v, [2]: 2, [2.5]: 3, s: 4, [x'ff']: 5}
 def replaced = m + {[true]: 10, [2]: 20, [2.5]: 30, s: 40, [x'ff']: 50}
 [m, replaced]

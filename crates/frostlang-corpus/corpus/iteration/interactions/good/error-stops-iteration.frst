@@ -6,6 +6,7 @@
 #=     printed: ['1', '2'],
 #=     inputs: {xs: [1, 2, 3]},
 #= }
+def {xs} = import('inputs')
 def outcome = try_call(fn -> map(xs, fn x -> {
     print(x)
     if x == 2: error('stop') else: x

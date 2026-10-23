@@ -10,6 +10,7 @@
 #=         m: {a: 1},
 #=     },
 #= }
+def {xs, records, pairs, ys, m} = import('inputs')
 [
     filter(xs, inv(is_null)),
     map(records, index('name')),

@@ -1,4 +1,0 @@
-# Overflow at run time wraps in two's complement and stays an Int.
-#= {result: [true, false, -9223372036854775808], inputs: {max: 9223372036854775807}}
-def wrapped = max + 1
-[is_int(wrapped), is_float(wrapped), wrapped]

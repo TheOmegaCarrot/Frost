@@ -4,6 +4,7 @@
 #=     result: [null, 2, 3],
 #=     inputs: {cases: [[null, false], [false, 0], [null, '']]},
 #= }
+def {cases} = import('inputs')
 defn pick(a, b) -> if a: 1
     elif b == 0: 2
     elif b: 3

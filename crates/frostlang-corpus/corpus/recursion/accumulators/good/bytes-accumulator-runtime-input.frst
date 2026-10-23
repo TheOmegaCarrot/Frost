@@ -1,5 +1,6 @@
 # A Bytes accumulator concatenates chunks known only at runtime, in order.
 #= {result: x'00ff10', inputs: {chunks: [x'00', x'', x'ff10']}}
+def {chunks} = import('inputs')
 defn concat_all(rest_chunks, acc) -> match rest_chunks {
     [] => acc,
     [chunk, ...rest] => concat_all(rest, acc + chunk),

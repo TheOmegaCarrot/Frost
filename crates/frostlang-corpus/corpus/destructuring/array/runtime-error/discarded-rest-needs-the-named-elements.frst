@@ -1,4 +1,5 @@
 # A discarded rest `..._` still requires the elements named before it.
 #= {raises: 'at least 1 element', inputs: {xs: [[]]}}
+def {xs} = import('inputs')
 def [[a, ..._]] = xs
 a

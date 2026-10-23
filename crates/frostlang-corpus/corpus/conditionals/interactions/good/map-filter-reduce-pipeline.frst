@@ -1,5 +1,6 @@
 # `if`s as callbacks of `map`, `filter`, and `reduce`, threaded with `@`.
 #= {result: 'fizz,buzz,fizz', inputs: {ns: [1, 3, 5, 6, 7]}}
+def {ns} = import('inputs')
 (
     ns
     @ map(fn n -> if n % 3 == 0: 'fizz' elif n % 5 == 0: 'buzz')

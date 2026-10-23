@@ -1,4 +1,5 @@
 # Over a Map, `each` calls its function with key and value, so a
 # one-parameter function is an arity error, though its result is ignored.
 #= {raises: 'called with 2', inputs: {m: {a: 1}}}
+def {m} = import('inputs')
 each(m, fn entry -> entry)

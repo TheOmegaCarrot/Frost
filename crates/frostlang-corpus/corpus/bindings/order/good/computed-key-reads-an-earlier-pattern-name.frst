@@ -1,5 +1,6 @@
 # A Map pattern binds its parts in source order, so a computed key may read a
 # name bound earlier in the same pattern.
 #= {result: ['x', 5], inputs: {m: {k: 'x', x: 5}}}
+def {m} = import('inputs')
 def {k, [k]: v} = m
 [k, v]

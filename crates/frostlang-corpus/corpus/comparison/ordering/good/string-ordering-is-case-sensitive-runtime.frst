@@ -4,6 +4,7 @@
 #=     result: [true, true, true, false],
 #=     inputs: {upper_z: 'Z', lower_a: 'a', digit: '9', upper_a: 'A'},
 #= }
+def {upper_z, lower_a, digit, upper_a} = import('inputs')
 [
     upper_z < lower_a,
     upper_a + 'pple' < lower_a + 'pple',

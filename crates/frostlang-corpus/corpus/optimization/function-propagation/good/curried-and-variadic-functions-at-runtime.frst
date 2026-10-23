@@ -1,6 +1,7 @@
 # The functions of curried-and-variadic-functions, over arguments only known
 # at runtime, compute the same results.
 #= {result: [3, [1, [2, 3]], [1, []], 6], inputs: {one: 1, two: 2, three: 3}}
+def {one, two, three} = import('inputs')
 def add = fn x -> fn y -> x + y
 def split = fn first, ...rest -> [first, rest]
 def sum3 = fn a -> fn b -> fn c -> a + b + c

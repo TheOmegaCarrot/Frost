@@ -1,5 +1,6 @@
 # Null arguments are ordinary arguments: a rest parameter keeps each of them,
 # so its length counts them.
 #= {result: [[null, null], 2], inputs: {nothing: null}}
+def {nothing} = import('inputs')
 def f = fn ...rest -> rest
 [f(nothing, null), len(f(null, nothing))]

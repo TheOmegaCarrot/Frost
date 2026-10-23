@@ -12,6 +12,7 @@
 #=     },
 #=     inputs: {n: 6},
 #= }
+def {n} = import('inputs')
 defn gcd(a, b) -> if b == 0: (if a < 0: -a else: a) else: gcd(b, a % b)
 
 defn ratio(num, den) -> {

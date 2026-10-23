@@ -1,0 +1,4 @@
+# Int addition past the least Int raises too: adding a negative Int to the
+# least Int has no Int value.
+#= {raises: 'Int overflow: -9223372036854775808 + -1'}
+-9223372036854775808 + -1

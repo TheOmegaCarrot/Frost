@@ -19,6 +19,7 @@
 #=         clash: {both: [{var: 'q'}, {neg: {var: 'q'}}]},
 #=     },
 #= }
+def {formula, excluded_middle, clash} = import('inputs')
 defn variables(f) -> match f {
     {var} => {[var]: true},
     {neg: inner} => variables(inner),

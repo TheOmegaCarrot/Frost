@@ -1,5 +1,6 @@
 # A malformed based Int literal is rejected in a pattern as in an expression.
 #= {rejects: ['invalid character `2`', 'binary'], inputs: {n: 2}}
+def {n} = import('inputs')
 match n {
     0b2 => 'two',
     _ => 'other',

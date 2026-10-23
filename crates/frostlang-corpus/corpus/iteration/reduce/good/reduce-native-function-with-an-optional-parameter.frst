@@ -2,4 +2,5 @@
 # accumulator then the element: `range` here counts from the first bound to
 # the second.
 #= {result: [2, 3, 4], inputs: {bounds: [2, 5]}}
+def {bounds} = import('inputs')
 reduce(bounds, range)

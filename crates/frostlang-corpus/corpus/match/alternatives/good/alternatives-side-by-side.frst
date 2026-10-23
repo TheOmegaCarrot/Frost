@@ -1,6 +1,7 @@
 # Two elements of one Array pattern may each carry their own alternatives,
 # each binding its own name.
 #= {result: [5, 6], inputs: {v: [[1, 5], [2, 6]]}}
+def {v} = import('inputs')
 match v {
     [[x, 1] | [1, x], [y, 2] | [2, y]] => [x, y],
 }

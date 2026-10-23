@@ -4,6 +4,7 @@
 #=     result: [['', [], {}, x''], ['', [], {}, x'']],
 #=     inputs: {es: '', ea: [], em: {}, eb: x''},
 #= }
+def {es, ea, em, eb} = import('inputs')
 def ident = fn v -> v
 def hold = fn v -> fn -> v
 [

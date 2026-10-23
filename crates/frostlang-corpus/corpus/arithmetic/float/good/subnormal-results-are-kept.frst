@@ -5,6 +5,7 @@
 #=     result: [5.562684646268003e-309, false, 2.2250738585072014e-308],
 #=     inputs: {smallest_normal: 2.2250738585072014e-308},
 #= }
+def {smallest_normal} = import('inputs')
 def quarter = smallest_normal / 4.0
 [
     quarter,

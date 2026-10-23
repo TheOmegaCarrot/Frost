@@ -2,6 +2,7 @@
 # first, then the threaded value, then the written arguments. Subtle: the
 # threaded value is written first, yet runs second.
 #= {result: 1, printed: ['callee', 'threaded', 'written'], inputs: {one: 1}}
+def {one} = import('inputs')
 defn noisy(v, label) -> {
     print(label)
     v

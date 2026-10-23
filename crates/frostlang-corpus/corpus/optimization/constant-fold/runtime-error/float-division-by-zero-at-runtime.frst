@@ -1,4 +1,5 @@
 # The division of float-division-by-zero-in-constants, by a zero only known
 # at runtime, raises the same error.
 #= {raises: 'division by zero', inputs: {zero: 0.0}}
+def {zero} = import('inputs')
 1.5 / zero

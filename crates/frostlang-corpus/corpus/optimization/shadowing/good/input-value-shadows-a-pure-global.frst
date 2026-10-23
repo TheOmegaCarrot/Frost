@@ -1,4 +1,5 @@
 # A non-function value only known at runtime, named like a pure global,
 # shadows it in arithmetic.
 #= {result: [6, 5], inputs: {len: 5}}
+def {len} = import('inputs')
 [len + 1, len]

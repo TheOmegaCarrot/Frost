@@ -1,5 +1,6 @@
 # A chain of bindings each reading the one before, starting from a runtime value.
 #= {result: [10, 11, 21, 42], inputs: {n: 10}}
+def {n} = import('inputs')
 def a = n
 def b = a + 1
 def c = a + b

@@ -1,6 +1,7 @@
 # An arm's result may be another match over the arm's bindings; the inner
 # match's arms see the outer bindings.
 #= {result: [3, 'flat'], inputs: {xs: [[1, [2]], [1, 2]]}}
+def {xs} = import('inputs')
 map(xs, fn v -> match v {
     [a, b] => match b {
         [c] => a + c,

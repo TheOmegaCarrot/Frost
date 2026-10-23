@@ -1,3 +1,4 @@
 # A condition in parentheses, as C writes one, still needs `if`'s colon.
 #= {rejects: '`if` takes a colon after its condition', inputs: {x: true}}
+def {x} = import('inputs')
 if (x) 1

@@ -1,0 +1,6 @@
+# The remainder of the least Int by -1 is 0 and never raises, though the
+# division it accompanies has no Int result. Computed ahead of time, as here,
+# it agrees with runtime.
+#= {result: 0}
+def least = -9223372036854775808
+least % -1

@@ -3,6 +3,7 @@
 #=     result: ['FizzBuzz', 'Fizz', 'Buzz', 'other', 'Fizz'],
 #=     inputs: {ns: [15, 9, 10, 7, -3]},
 #= }
+def {ns} = import('inputs')
 defn fizz(n) -> match n % 3 {
     0 if: n % 5 == 0 => 'FizzBuzz',
     0 => 'Fizz',

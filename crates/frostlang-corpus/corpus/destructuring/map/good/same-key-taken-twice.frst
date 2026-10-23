@@ -1,4 +1,5 @@
 # A pattern may take the same key twice, binding it to two names.
 #= {result: [1, 1], inputs: {m: {a: 1}}}
+def {m} = import('inputs')
 def {a, a: b} = m
 [a, b]

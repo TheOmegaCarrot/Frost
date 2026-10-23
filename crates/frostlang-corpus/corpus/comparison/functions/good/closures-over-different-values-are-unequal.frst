@@ -1,6 +1,7 @@
 # Closures made by one lambda over different captured values behave
 # differently, so they are unequal, while each equals itself.
 #= {result: [false, true], inputs: {one: 1, two: 2}}
+def {one, two} = import('inputs')
 def adder = fn n -> fn x -> x + n
 def add_one = adder(one)
 def add_two = adder(two)

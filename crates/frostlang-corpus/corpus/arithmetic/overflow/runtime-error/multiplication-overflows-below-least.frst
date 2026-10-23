@@ -1,0 +1,4 @@
+# Int multiplication past the least Int raises too: a product more negative
+# than the least Int has no Int value.
+#= {raises: 'Int overflow: -9223372036854775808 * 2'}
+-9223372036854775808 * 2

@@ -1,0 +1,9 @@
+# Int overflow of a value known only at runtime raises even as the left
+# operand of `or`: no wrapped Int, zero or otherwise, reaches the truthiness
+# test.
+#= {
+#=     raises: ['Int overflow', '-9223372036854775808 * 2'],
+#=     inputs: {min: -9223372036854775808},
+#= }
+def {min} = import('inputs')
+(min * 2) or 'falsy'

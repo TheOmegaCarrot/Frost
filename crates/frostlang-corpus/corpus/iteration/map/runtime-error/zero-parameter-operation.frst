@@ -1,4 +1,5 @@
 # A function taking no parameters cannot be the operation: `map` always
 # passes it the element.
 #= {raises: 'called with 1', inputs: {xs: [1]}}
+def {xs} = import('inputs')
 map(xs, fn -> 0)

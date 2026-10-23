@@ -1,4 +1,5 @@
 # A one-argument native predicate cannot filter a Map either: it is called
 # with key and value.
 #= {raises: 'called with 2', inputs: {m: {a: null}}}
+def {m} = import('inputs')
 filter(m, is_null)

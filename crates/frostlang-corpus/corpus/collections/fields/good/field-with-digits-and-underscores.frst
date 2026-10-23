@@ -1,3 +1,4 @@
 # A field name is any identifier, digits and underscores included.
 #= {result: [1, 2, 3], inputs: {m: {a1: 1, _b: 2, snake_case_2: 3}}}
+def {m} = import('inputs')
 [m.a1, m._b, m.snake_case_2]

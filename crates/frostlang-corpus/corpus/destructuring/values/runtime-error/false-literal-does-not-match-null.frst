@@ -1,5 +1,6 @@
 # Literal parts compare by equality, not truthiness: `false` does not match
 # Null, though both are falsy.
 #= {raises: 'expected `false`', inputs: {xs: [0, null]}}
+def {xs} = import('inputs')
 def [a, false] = xs
 a

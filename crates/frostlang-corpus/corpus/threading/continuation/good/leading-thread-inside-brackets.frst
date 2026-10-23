@@ -1,6 +1,7 @@
 # A leading `@` continues an element inside an Array literal and an argument
 # inside a call.
 #= {result: [[2, 4], [3]], inputs: {one: 1}}
+def {one} = import('inputs')
 defn inc(x) -> x + 1
 [
     [

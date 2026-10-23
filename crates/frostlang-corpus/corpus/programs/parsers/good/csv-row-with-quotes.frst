@@ -20,6 +20,7 @@
 #=         ],
 #=     },
 #= }
+def {rows} = import('inputs')
 def start = {mode: 'start', field: '', fields: []}
 
 defn push(state) -> start + {fields: state.fields + [state.field]}

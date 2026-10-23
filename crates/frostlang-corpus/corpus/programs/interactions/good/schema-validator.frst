@@ -23,6 +23,7 @@
 #=         ],
 #=     },
 #= }
+def {people} = import('inputs')
 def schema = {record: {
     name: 'String',
     age: 'Numeric',

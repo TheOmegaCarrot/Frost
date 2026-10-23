@@ -4,6 +4,7 @@
 #=     exports: {ordered: true, same: false},
 #=     inputs: {a: 1, b: 1.0},
 #= }
+def {a, b} = import('inputs')
 export def ordered = a <= b
 export def same = a == b
 null

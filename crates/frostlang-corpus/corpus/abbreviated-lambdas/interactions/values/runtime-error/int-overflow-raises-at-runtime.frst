@@ -1,0 +1,6 @@
+# Overflow raises when the Int limit arrives only at runtime, out of the
+# optimizer's sight.
+#= {raises: 'Int overflow', inputs: {max: 9223372036854775807}}
+def {max} = import('inputs')
+def inc = $($ + 1)
+inc(max)

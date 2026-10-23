@@ -1,0 +1,4 @@
+# The least Int divided by -1 has no Int answer: its true quotient is one past
+# the greatest Int. It raises, as every other Int overflow does.
+#= {raises: 'Int overflow: -9223372036854775808 / -1'}
+-9223372036854775808 / -1

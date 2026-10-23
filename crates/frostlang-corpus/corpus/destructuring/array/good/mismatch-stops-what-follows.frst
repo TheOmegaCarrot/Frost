@@ -1,6 +1,7 @@
 # A failed destructuring raises at once: what follows it in the function never
 # runs, while what came before it already did. `try_call` catches the error.
 #= {result: false, printed: ['before'], inputs: {xs: [1, 2]}}
+def {xs} = import('inputs')
 def outcome = try_call(fn -> {
     print('before')
     def [a] = xs

@@ -11,4 +11,5 @@
 #=         ],
 #=     },
 #= }
+def {people} = import('inputs')
 map(people, fn p -> p['nick'] or p['name'] or 'anonymous')

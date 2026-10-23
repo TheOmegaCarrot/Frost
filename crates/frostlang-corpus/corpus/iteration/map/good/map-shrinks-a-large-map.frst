@@ -13,4 +13,5 @@
 #=         },
 #=     },
 #= }
+def {m} = import('inputs')
 map(m, fn k, v -> if k > 18: {[k]: v} else: {})

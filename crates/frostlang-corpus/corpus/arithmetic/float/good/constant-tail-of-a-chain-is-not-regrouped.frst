@@ -7,6 +7,7 @@
 #=     result: [1e16, 1.0000000000000002e16, 3.0000000000000004, 3.0],
 #=     inputs: {big: 1e16, three: 3.0},
 #= }
+def {big, three} = import('inputs')
 [
     big + 1.0 + 1.0,
     big + (1.0 + 1.0),

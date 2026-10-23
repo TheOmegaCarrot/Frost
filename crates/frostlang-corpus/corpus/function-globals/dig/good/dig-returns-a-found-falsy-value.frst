@@ -2,4 +2,5 @@
 # special, and only as a structure still to be indexed. Subtle because False
 # is falsy like Null, yet must come back as itself rather than as Null.
 #= {result: [false, 0, ''], inputs: {data: {a: {b: false}, n: [0], s: {t: ''}}}}
+def {data} = import('inputs')
 [dig(data, 'a', 'b'), dig(data, 'n', 0), dig(data, 's', 't')]

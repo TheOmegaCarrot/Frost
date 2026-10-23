@@ -1,0 +1,7 @@
+# Negating an Int whose negation is a bound succeeds: only the least Int has
+# no Int negation.
+#= {result: [-9223372036854775807, 9223372036854775807]}
+[
+    -9223372036854775807,
+    -(-9223372036854775807),
+]

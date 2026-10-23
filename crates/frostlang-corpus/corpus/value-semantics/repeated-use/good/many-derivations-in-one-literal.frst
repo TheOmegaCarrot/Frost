@@ -1,5 +1,6 @@
 # Several values derived from one binding inside a single Array literal are
 # each built from the original, never from one another.
 #= {result: [[1, 2], [1], [1, 3], [0, 1], [1]], inputs: {n: 1}}
+def {n} = import('inputs')
 def xs = [n]
 [xs + [2], xs, xs + [3], [0] + xs, xs]

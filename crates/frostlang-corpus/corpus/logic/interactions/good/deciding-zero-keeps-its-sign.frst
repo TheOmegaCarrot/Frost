@@ -7,6 +7,7 @@
 #=     result: ['-0.0', '-0.0', '-0.0', '0.0', '0.0', '-0.0'],
 #=     inputs: {n: null, zero: 0.0},
 #= }
+def {n, zero} = import('inputs')
 [
     to_string(-0.0 or 1),
     to_string(n or -0.0),

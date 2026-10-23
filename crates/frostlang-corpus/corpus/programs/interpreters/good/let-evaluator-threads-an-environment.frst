@@ -23,6 +23,7 @@
 #=         globals: {z: 7},
 #=     },
 #= }
+def {nested, negative, free, globals} = import('inputs')
 defn evaluate(node, env) -> match node {
     {num} => num,
     {var} => if has(env, var): env[var] else: error($'unbound variable ${var}'),

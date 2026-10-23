@@ -4,6 +4,7 @@
 #=     result: ['default', null, false, 0, true, 'yes'],
 #=     inputs: {nothing: null, no: false, zero: 0, yes: true},
 #= }
+def {nothing, no, zero, yes} = import('inputs')
 [
     nothing or 'default',
     nothing and 'unreached',

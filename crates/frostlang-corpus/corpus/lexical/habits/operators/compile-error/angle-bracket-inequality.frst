@@ -1,3 +1,4 @@
 # Frost's inequality is `!=`, not SQL's `<>`.
 #= {rejects: 'inequality is `!=`', inputs: {a: 1, b: 2}}
+def {a, b} = import('inputs')
 a <> b

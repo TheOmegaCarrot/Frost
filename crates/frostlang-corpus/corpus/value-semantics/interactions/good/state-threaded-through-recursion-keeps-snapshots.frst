@@ -4,6 +4,7 @@
 #=     result: [{v: [1]}, {v: [1, 2]}, {v: [1, 2, 1]}],
 #=     inputs: {n: 1},
 #= }
+def {n} = import('inputs')
 defn run(k, state, snapshots) -> if k == 0: snapshots + [state] else: do {
     def next = state + {v: state.v + [k]}
     run(k - 1, next, snapshots + [state])

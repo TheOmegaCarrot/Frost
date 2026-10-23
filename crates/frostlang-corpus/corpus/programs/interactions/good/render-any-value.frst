@@ -15,6 +15,7 @@
 #=         },
 #=     },
 #= }
+def {value} = import('inputs')
 defn join(parts) -> if parts == []: '' else: reduce(parts, fn text, part -> text + ', ' + part)
 
 defn render(v) -> match v {

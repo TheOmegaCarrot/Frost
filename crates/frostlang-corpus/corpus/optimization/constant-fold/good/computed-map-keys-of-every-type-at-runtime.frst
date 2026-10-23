@@ -13,6 +13,7 @@
 #=     ],
 #=     inputs: {int: 1, float: 1.0, no: false, a: 'a', bytes: x'01'},
 #= }
+def {int, float, no, a, bytes} = import('inputs')
 def m = {
     [int + 1]: 'int',
     [float + 1.0]: 'float',

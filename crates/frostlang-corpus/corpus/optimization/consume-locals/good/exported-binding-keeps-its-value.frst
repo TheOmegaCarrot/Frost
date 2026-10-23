@@ -1,6 +1,7 @@
 # An exported binding keeps its own value for the export, though the script
 # builds a new structure from it after its last read.
 #= {result: [1, 2, 3], exports: {kept: [1, 2]}, inputs: {xs: [1, 2]}}
+def {xs} = import('inputs')
 export def kept = xs
 def grown = kept + [3]
 grown

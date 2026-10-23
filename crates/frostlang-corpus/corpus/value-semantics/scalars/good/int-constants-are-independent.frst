@@ -1,0 +1,6 @@
+# Constant Ints at the boundary, used to compute derived values, keep their
+# own values, however much of this the compiler computes.
+#= {result: [9223372036854775807, 9223372036854775806, -9223372036854775808, -9223372036854775807]}
+def max = 9223372036854775807
+def min = -9223372036854775808
+[max, max - 1, min, min + 1]

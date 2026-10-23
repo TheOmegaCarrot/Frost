@@ -3,5 +3,6 @@
 #=     raises: 'no value at key "first"',
 #=     inputs: {m: {}},
 #= }
+def {m} = import('inputs')
 def {first, second} = m
 [first, second]

@@ -3,6 +3,7 @@
 # constants at runtime rather than folded into the result. Subtle because
 # merging look-alike constants would lose the sign.
 #= {result: ['0.0', '-0.0', '-0.0', '0.0'], inputs: {flag: true}}
+def {flag} = import('inputs')
 def positive = if flag: 0.0 else: 1
 def negative = if flag: -0.0 else: 1
 def product = if flag: 0.0 * -1.0 else: 1

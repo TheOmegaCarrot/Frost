@@ -1,4 +1,5 @@
 # The arity check holds when the arguments are known only at runtime.
 #= {raises: 'expects 3 argument', inputs: {a: 1, b: 2}}
+def {a, b} = import('inputs')
 def f = $($1 + $3)
 f(a, b)

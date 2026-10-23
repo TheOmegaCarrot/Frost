@@ -1,4 +1,5 @@
 # Escapes in a nested format String decode by its own rules: here `\$` keeps
 # the inner `${x}` as text, and `\t` is a tab.
 #= {result: "<${x}\t7>", inputs: {x: 7}}
+def {x} = import('inputs')
 $'<${$'\${x}\t${x}'}>'

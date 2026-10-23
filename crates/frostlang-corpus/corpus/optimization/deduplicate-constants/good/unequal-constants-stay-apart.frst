@@ -5,6 +5,7 @@
 #=     result: [['Int', 'Float'], ['String', 'Bytes'], ['Bool', 'Int'], ['Array', 'Int']],
 #=     inputs: {tag: 'runtime'},
 #= }
+def {tag} = import('inputs')
 defn build(t) -> [t, [1], [1.0], ['1'], [x'31'], [true], [1], [[1]], [1]]
 def [_, int, float, string, bytes, bool, one, nested, flat] = build(tag)
 [

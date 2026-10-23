@@ -1,6 +1,7 @@
 # A computed key that is not a valid Map key raises only once looked up; when
 # the target is not a Map, the pattern fails before reaching it.
 #= {result: 'not a Map', inputs: {v: 5}}
+def {v} = import('inputs')
 match v {
     {[null]: x} => x,
     _ => 'not a Map',

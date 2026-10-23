@@ -1,6 +1,7 @@
 # Inside a match, a negative literal pattern may break the line after its `-`;
 # the two still read as one literal.
 #= {result: ['minus one', 'one'], inputs: {xs: [-1, 1]}}
+def {xs} = import('inputs')
 map(xs, fn n -> match n {
     -
         1 => 'minus one',

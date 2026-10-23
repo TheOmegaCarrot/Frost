@@ -20,6 +20,7 @@
 #=         five: [1, 2, 3, 4, 5],
 #=     },
 #= }
+def {three, letters, twins, five} = import('inputs')
 defn upto(n) -> if n == 0: [] else: upto(n - 1) + [n - 1]
 
 defn without(xs, index) -> reduce(upto(len(xs)), [], fn kept, i -> if i == index: kept else: kept + [xs[i]])

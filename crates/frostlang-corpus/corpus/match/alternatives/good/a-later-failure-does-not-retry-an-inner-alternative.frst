@@ -3,6 +3,7 @@
 # alternative's other branches are not retried. Subtle: here `[_, x]` would
 # let the pin `(x)` pass, but `[x, _]` matched first.
 #= {result: ['none', 'none', 1], inputs: {xs: [[[1, 2], 2], [[0, 5], 5], [[1, 2], 1]]}}
+def {xs} = import('inputs')
 map(xs, fn v -> match v {
     [[x, _] | [_, x], (x)] => x,
     _ => 'none',

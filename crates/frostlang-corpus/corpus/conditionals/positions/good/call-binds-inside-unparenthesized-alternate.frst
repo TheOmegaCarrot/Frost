@@ -2,6 +2,7 @@
 # alternate: `if c: f else: g(1)` calls `g` only, and yields `f` uncalled
 # when `c` is truthy.
 #= {result: [true, 0], inputs: {t: true, f: false}}
+def {t, f} = import('inputs')
 defn inc(n) -> n + 1
 defn dec(n) -> n - 1
 [is_function(if t: inc else: dec(1)), if f: inc else: dec(1)]

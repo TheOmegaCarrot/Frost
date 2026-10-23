@@ -1,6 +1,7 @@
 # Each `elif` and `else` may start its own line: a line starting with one
 # continues the `if` above it.
 #= {result: 3, inputs: {a: false, b: null}}
+def {a, b} = import('inputs')
 if a: 1
 elif b: 2
 else: 3

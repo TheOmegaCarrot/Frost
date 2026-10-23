@@ -1,4 +1,5 @@
 # A String does not order against an Array of characters, with both known
 # only at runtime.
 #= {raises: ['incompatible types', 'String', 'Array'], inputs: {s: 'ab', chars: ['a', 'b']}}
+def {s, chars} = import('inputs')
 s < chars

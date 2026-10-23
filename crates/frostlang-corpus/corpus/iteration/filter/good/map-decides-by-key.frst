@@ -1,3 +1,4 @@
 # A Map predicate may decide by the key alone.
 #= {result: {keep: 1}, inputs: {m: {keep: 1, drop: 2}}}
+def {m} = import('inputs')
 filter(m, fn k, v -> k == 'keep')

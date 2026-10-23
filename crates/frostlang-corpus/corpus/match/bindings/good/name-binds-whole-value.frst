@@ -1,5 +1,6 @@
 # A bare name pattern matches any value and binds the whole of it.
 #= {result: [[1, {a: 2}], 'text', 1.5], inputs: {xs: [[1, {a: 2}], 'text', 1.5]}}
+def {xs} = import('inputs')
 map(xs, fn v -> match v {
     whole => whole,
 })

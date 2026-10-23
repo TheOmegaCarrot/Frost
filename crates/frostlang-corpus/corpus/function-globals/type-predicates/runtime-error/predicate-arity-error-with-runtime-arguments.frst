@@ -1,3 +1,4 @@
 # Extra arguments known only at run time are still counted.
 #= {raises: ['is_null', 'expects 1', 'called with 2'], inputs: {a: null, b: null}}
+def {a, b} = import('inputs')
 is_null(a, b)

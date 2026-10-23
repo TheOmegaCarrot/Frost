@@ -7,6 +7,7 @@
 #=     lints: [['type name binding', '`String`'], ['unused binding', '`String`']],
 #=     inputs: {v: 5},
 #= }
+def {v} = import('inputs')
 match v {
     1 => 'one',
     String => 'text',

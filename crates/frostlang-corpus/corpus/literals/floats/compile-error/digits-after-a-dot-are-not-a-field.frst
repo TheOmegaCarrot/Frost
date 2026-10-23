@@ -1,4 +1,5 @@
 # After a name, `.1` lexes as a Float, not a numeric field: Frost has no tuple-style
 # indexing, so `xs.1` is two operands with no operator between them.
 #= {rejects: 'found `.1`', inputs: {xs: [10, 20]}}
+def {xs} = import('inputs')
 xs.1

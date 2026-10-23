@@ -1,3 +1,4 @@
 # The value threaded through a chain may change type at each step.
 #= {result: 'Int', inputs: {xs: [1, 2, 3]}}
+def {xs} = import('inputs')
 xs @ len() @ to_string() @ len() @ type()

@@ -1,0 +1,7 @@
+# Negating a least Int only known at runtime raises, as a folded negation does.
+#= {
+#=     raises: 'Int overflow: -(-9223372036854775808)',
+#=     inputs: {least: -9223372036854775808},
+#= }
+def {least} = import('inputs')
+-least

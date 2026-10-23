@@ -4,6 +4,7 @@
 #=     rejects: ['`=`', 'immutable'],
 #=     inputs: {xs: [1, 2, 3]},
 #= }
+def {xs} = import('inputs')
 defn step(s, x) -> {
     s.count = s.count + x
     s

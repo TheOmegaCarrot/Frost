@@ -1,6 +1,7 @@
 # A lambda can capture a function and thread into it; building a pipeline
 # from captured stages applies them in order.
 #= {result: [4, 6, 8], inputs: {xs: [1, 2, 3]}}
+def {xs} = import('inputs')
 defn pipeline(first, second) -> fn v -> v @ first() @ second()
 def step = pipeline(fn x -> x + 1, fn x -> x * 2)
 xs @ map(step)

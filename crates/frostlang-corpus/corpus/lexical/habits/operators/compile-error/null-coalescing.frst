@@ -1,3 +1,4 @@
 # Frost has no `??`; `or` gives a fallback for Null.
 #= {rejects: 'use `or`', inputs: {a: null, b: 1}}
+def {a, b} = import('inputs')
 a ?? b

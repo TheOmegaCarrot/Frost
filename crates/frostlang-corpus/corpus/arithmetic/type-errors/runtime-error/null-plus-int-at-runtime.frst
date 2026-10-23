@@ -1,3 +1,4 @@
 # Null only known at runtime plus an Int is a type error: Null is not zero.
 #= {raises: 'Null + Int', inputs: {nothing: null, n: 1}}
+def {nothing, n} = import('inputs')
 nothing + n

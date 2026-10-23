@@ -1,6 +1,7 @@
 # An `if` with no `else` whose condition fails yields Null, which becomes a
 # real element or entry value, not an omitted one.
 #= {result: [[null, 2], 2, {a: null}, 1], inputs: {flag: false}}
+def {flag} = import('inputs')
 def xs = [if flag: 1, 2]
 def m = {a: if flag: 1}
 [xs, len(xs), m, len(m)]

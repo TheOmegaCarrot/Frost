@@ -1,0 +1,5 @@
+# Subtraction below the least Int known only at runtime raises rather than
+# wrapping.
+#= {raises: ['Int overflow', '-9223372036854775808 - 1'], inputs: {min: -9223372036854775808}}
+def {min} = import('inputs')
+min - 1

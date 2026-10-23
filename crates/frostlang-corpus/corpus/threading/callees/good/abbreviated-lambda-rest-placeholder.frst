@@ -2,6 +2,7 @@
 # first element of its rest Array; with `$1` too, the rest holds only the
 # written arguments.
 #= {result: [[1, 2, 3], [2, 3]], inputs: {one: 1}}
+def {one} = import('inputs')
 [one @ $($$)(2, 3), one @ $(do {
     $1
     $$

@@ -2,5 +2,6 @@
 # once `tap` is inlined: a call the compiler cannot resolve to `tap` must
 # still check its arity.
 #= {raises: ['tap', 'expects 2', 'called with 1'], inputs: {value: 1}}
+def {value} = import('inputs')
 def observe = tap
 observe(value)

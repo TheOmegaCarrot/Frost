@@ -5,6 +5,7 @@
 #=     result: [['string', 'bytes', 'int', 'float', 'bool'], ['string', 'bytes', 'int', 'float', 'bool']],
 #=     inputs: {m: {a: 'string', [x'61']: 'bytes', [1]: 'int', [1.0]: 'float', [true]: 'bool'}},
 #= }
+def {m} = import('inputs')
 defn read(r) -> [
     match r {
         {a, [x'61']: b, [1]: c, [1.0]: d, [true]: e} => [a, b, c, d, e],

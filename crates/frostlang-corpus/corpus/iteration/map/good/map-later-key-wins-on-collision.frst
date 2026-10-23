@@ -6,5 +6,6 @@
 #=     result: [{dup: 'from b'}, {dup: 'from b'}],
 #=     inputs: {m: {b: 'from b', a: 'from a'}},
 #= }
+def {m} = import('inputs')
 def to_dup = fn k, v -> {dup: v}
 [map({b: 'from b', a: 'from a'}, to_dup), map(m, to_dup)]

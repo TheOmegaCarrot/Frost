@@ -1,3 +1,4 @@
 # `else` is followed by a colon.
 #= {rejects: '`else` is followed by a colon', inputs: {a: true}}
+def {a} = import('inputs')
 if a: 1 else 2

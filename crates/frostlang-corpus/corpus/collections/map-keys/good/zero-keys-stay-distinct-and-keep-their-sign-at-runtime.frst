@@ -12,6 +12,7 @@
 #=     ],
 #=     inputs: {z: 0.0, nz: -0.0},
 #= }
+def {z, nz} = import('inputs')
 [
     to_string({[z]: 'a', [nz]: 'b'}),
     to_string({[nz]: 'a', [z]: 'b'}),

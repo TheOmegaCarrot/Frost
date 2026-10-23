@@ -1,0 +1,7 @@
+# Int overflow raises when the optimizer would compute the target ahead of time
+# too: the largest Int plus one never reaches the smallest Int's literal pattern.
+#= {raises: ['Int overflow', '9223372036854775807 + 1']}
+match 9223372036854775807 + 1 {
+    9223372036854775807 => 'max',
+    -9223372036854775808 => 'min',
+}

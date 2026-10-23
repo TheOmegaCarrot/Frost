@@ -1,6 +1,7 @@
 # Names bound by destructuring a lambda's argument are read by a nested block
 # and a nested closure alike.
 #= {result: ['Ada:36', 'Ada!'], inputs: {person: {name: 'Ada', age: 36}}}
+def {person} = import('inputs')
 def describe = fn p -> {
     def {name, age} = p
     def label = do {

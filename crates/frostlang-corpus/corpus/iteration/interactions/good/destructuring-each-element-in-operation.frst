@@ -4,6 +4,7 @@
 #=     result: [[3, 7], ['a1', 'b2']],
 #=     inputs: {pairs: [[1, 2], [3, 4]], records: [{name: 'a', n: 1}, {name: 'b', n: 2}]},
 #= }
+def {pairs, records} = import('inputs')
 def sums = map(pairs, fn pair -> {
     def [a, b] = pair
     a + b

@@ -6,6 +6,7 @@
 #=     lints: [['unused binding', '`hidden`']],
 #=     inputs: {one: 1},
 #= }
+def {one} = import('inputs')
 export def shown = one + 1
 def hidden = 2
 3

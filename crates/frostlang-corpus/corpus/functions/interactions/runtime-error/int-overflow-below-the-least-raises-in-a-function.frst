@@ -1,0 +1,9 @@
+# Int arithmetic in a function body raises on overflow past the least Int,
+# with an argument known only at runtime.
+#= {
+#=     raises: 'Int overflow: -9223372036854775808 - 1',
+#=     inputs: {min: -9223372036854775808},
+#= }
+def {min} = import('inputs')
+def dec = fn x -> x - 1
+dec(min)

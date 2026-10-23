@@ -1,6 +1,7 @@
 # A shadow inside one branch's block does not reach the other branch, whichever
 # runs.
 #= {result: ['inner', 'outer'], inputs: {yes: true, no: false}}
+def {yes, no} = import('inputs')
 def x = 'outer'
 defn pick(c) -> if c: do {
     def x = 'inner'

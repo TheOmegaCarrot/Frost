@@ -1,6 +1,7 @@
 # Each branch of an alternative is tried in order, and a later branch only if
 # an earlier one failed; the matched branch's keys run once.
 #= {result: 2, printed: ['first', 'second'], inputs: {m: {y: 2}}}
+def {m} = import('inputs')
 defn note(label, k) -> {
     print(label)
     k

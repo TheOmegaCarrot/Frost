@@ -1,6 +1,7 @@
 # Null as condition, consequent, and alternate: each position keeps Null's
 # meaning, falsy as a condition and an ordinary value as a branch.
 #= {result: [null, null, 'alt', null], inputs: {n: null, t: true, f: false}}
+def {n, t, f} = import('inputs')
 [
     if t: n else: 1,
     if f: 1 else: n,

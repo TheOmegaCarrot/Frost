@@ -1,0 +1,9 @@
+# An Int sum of a value known only at runtime raises past the greatest Int
+# even as the left operand of `or`: no wrapped least Int reaches the
+# truthiness test.
+#= {
+#=     raises: ['Int overflow', '9223372036854775807 + 1'],
+#=     inputs: {max: 9223372036854775807},
+#= }
+def {max} = import('inputs')
+(max + 1) or 'falsy'

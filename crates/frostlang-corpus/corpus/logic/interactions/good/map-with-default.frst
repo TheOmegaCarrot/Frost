@@ -1,3 +1,4 @@
 # `map` with an `or` default replaces only the falsy elements.
 #= {result: [1, 0, 0, 0, ''], inputs: {values: [1, null, false, 0, '']}}
+def {values} = import('inputs')
 map(values, fn x -> x or 0)

@@ -1,5 +1,6 @@
 # As with a constant condition, a runtime condition that skips the branch
 # holding `$3` leaves the arity at three.
 #= {raises: 'expects 3 argument', inputs: {go: true}}
+def {go} = import('inputs')
 def f = $(if go: $1 else: $3)
 f(1)

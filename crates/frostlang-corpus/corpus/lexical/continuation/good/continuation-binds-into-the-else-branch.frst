@@ -3,6 +3,7 @@
 # applies only to the second Map, so a true condition yields the first Map
 # whole. Subtle, since the indentation suggests otherwise.
 #= {result: [{k: 1}, 2], inputs: {m1: {k: 1}, m2: {k: 2}}}
+def {m1, m2} = import('inputs')
 defn pick(c) -> if c: m1 else: m2
     .k
 [pick(true), pick(false)]

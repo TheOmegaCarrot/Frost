@@ -1,6 +1,7 @@
 # A literal matches only its own type: an Int never matches a Float literal of
 # the same magnitude, nor a Float an Int literal, as `3 == 3.0` is false.
 #= {result: ['Int', 'Float'], inputs: {i: 1, f: 1.0}}
+def {i, f} = import('inputs')
 [
     match i { 1.0 => 'Float', 1 => 'Int' },
     match f { 1 => 'Int', 1.0 => 'Float' },

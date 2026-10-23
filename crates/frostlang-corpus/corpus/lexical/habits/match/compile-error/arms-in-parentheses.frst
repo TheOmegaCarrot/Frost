@@ -1,3 +1,4 @@
 # `match` arms go in braces, not parentheses.
 #= {rejects: '`match` arms go in braces', inputs: {x: 1}}
+def {x} = import('inputs')
 match x ( _ => 1 )

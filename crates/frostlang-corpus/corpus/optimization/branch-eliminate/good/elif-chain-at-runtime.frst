@@ -1,6 +1,7 @@
 # The `elif` chain of elif-chain-of-constants, with conditions only known at
 # runtime, picks the same branch.
 #= {result: 3, printed: ['picked'], inputs: {no: false, nothing: null, zero: 0}}
+def {no, nothing, zero} = import('inputs')
 if no: print('one')
 elif nothing: print('two')
 elif zero: do {

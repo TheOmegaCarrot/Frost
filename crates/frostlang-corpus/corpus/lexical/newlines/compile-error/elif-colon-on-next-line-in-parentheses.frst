@@ -2,6 +2,7 @@
 # line breaks are otherwise insignificant: an `elif`'s condition and its `:`
 # share a line.
 #= {rejects: ['expected `:`', 'stay on the line'], inputs: {c: false}}
+def {c} = import('inputs')
 (if c: 1
     elif true
     : 2)

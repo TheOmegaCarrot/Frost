@@ -10,7 +10,11 @@ use crate::{
 };
 
 /// `n`, the argument at 1-based `position` of `function`, whose parameter is
-/// named `name`, as a count of at least `minimum`.
+/// named `name`, as a count of at least `minimum`, which must not be negative.
+///
+/// A count past `usize::MAX`, possible where `usize` is narrower than an Int, is
+/// `usize::MAX`: no sequence has that many elements either, so every count
+/// function treats the two alike.
 fn count_arg(
     function: &str,
     position: usize,
@@ -24,7 +28,7 @@ fn count_arg(
              to be at least {minimum}, got {n}"
         )));
     }
-    Ok(usize::try_from(n).expect("a count at least its minimum is not negative"))
+    Ok(usize::try_from(n).unwrap_or(usize::MAX))
 }
 
 /// Checks that `function` can make a sequence of `count` items of `size` bytes

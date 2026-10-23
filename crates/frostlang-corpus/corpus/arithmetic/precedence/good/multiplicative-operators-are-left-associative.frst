@@ -5,6 +5,7 @@
 #=     result: [18, 2, 6, 2, 2],
 #=     inputs: {two: 2, three: 3, four: 4, five: 5, seven: 7, ten: 10, twelve: 12, hundred: 100},
 #= }
+def {two, three, four, five, seven, ten, twelve, hundred} = import('inputs')
 [
     twelve / two * three,
     hundred / ten / five,

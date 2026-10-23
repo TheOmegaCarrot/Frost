@@ -1,6 +1,7 @@
 # A function matches the `Function` type constraint and can be called in the
 # arm; other values fall through to their own arms.
 #= {result: [11, 'int 5', 'null'], inputs: {f: fn v -> v + 1}}
+def {f} = import('inputs')
 def apply = fn v -> match v {
     g is Function => g(10),
     n is Int => $'int ${n}',

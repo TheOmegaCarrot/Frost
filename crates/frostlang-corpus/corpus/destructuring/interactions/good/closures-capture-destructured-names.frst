@@ -1,5 +1,6 @@
 # Lambdas capture names bound by a pattern, each closing over its own value.
 #= {result: [6, 4], inputs: {config: {step: 1, base: 5}}}
+def {config} = import('inputs')
 def {step, base} = config
 def [inc, dec] = [fn -> base + step, fn -> base - step]
 [inc(), dec()]

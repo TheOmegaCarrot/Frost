@@ -1,3 +1,4 @@
 # A `match` arm's arrow is `=>`, not `->`.
 #= {rejects: 'arm is written `pattern => result`', inputs: {x: 1}}
+def {x} = import('inputs')
 match x { 1 -> 2 }

@@ -1,3 +1,4 @@
 # A Map member callee known only at runtime is threaded into like any other.
 #= {result: 3, inputs: {n: 5, m: {sub: fn a, b -> a - b}}}
+def {n, m} = import('inputs')
 n @ m.sub(2)

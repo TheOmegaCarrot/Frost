@@ -18,6 +18,7 @@
 #=         overlong: ['supercalifragilistic', 'a'],
 #=     },
 #= }
+def {sentence, foreign, overlong} = import('inputs')
 defn wrap(words, width) -> {
     def newest_first = reduce(words, [], fn lines, word -> match lines {
         [current, ...earlier] if: len(current + ' ' + word) <= width => [current + ' ' + word] + earlier,

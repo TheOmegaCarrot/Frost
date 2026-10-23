@@ -8,6 +8,7 @@
 #=     ],
 #=     inputs: {divisors: [1, 0, 2]},
 #= }
+def {divisors} = import('inputs')
 defn checked_div(n, d) -> if d == 0: [error('zero')] else: n / d
 defn attempt(d) -> do {
     def outcome = try_call(checked_div, [10, d])

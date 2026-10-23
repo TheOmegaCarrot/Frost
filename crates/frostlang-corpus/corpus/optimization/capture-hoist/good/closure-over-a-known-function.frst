@@ -1,6 +1,7 @@
 # A function capturing a known function calls it with each argument it gets,
 # and returns it as the very same Function.
 #= {result: [10, 17, true], inputs: {three: 3, four: 4}}
+def {three, four} = import('inputs')
 def square = fn x -> x * x
 def apply = fn y -> square(y) + 1
 def get = fn -> square

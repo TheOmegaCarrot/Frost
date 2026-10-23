@@ -1,3 +1,4 @@
 # `+` joins runtime Arrays in order, Null elements included.
 #= {result: [[1, null, null, 2], [], [1, null]], inputs: {a: [1, null], b: [null, 2], empty: []}}
+def {a, b, empty} = import('inputs')
 [a + b, empty + empty, empty + a]

@@ -1,5 +1,6 @@
 # Non-ASCII text passes through parameters, captures, and results intact.
 #= {result: ['héllo wörld ✓!', {['日本']: 'ok'}], inputs: {s: 'héllo wörld ✓'}}
+def {s} = import('inputs')
 def bang = fn t -> t + '!'
 def keyed = fn k -> fn v -> ({[k]: v})
 [bang(s), keyed('日本')('ok')]

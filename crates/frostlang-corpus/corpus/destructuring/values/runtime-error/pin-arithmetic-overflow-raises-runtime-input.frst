@@ -1,0 +1,9 @@
+# A pin's expression follows ordinary arithmetic, so Int overflow raises there
+# too, at runtime.
+#= {
+#=     raises: 'Int overflow',
+#=     inputs: {max: 9223372036854775807, xs: ['runtime', -9223372036854775807 - 1]},
+#= }
+def {max, xs} = import('inputs')
+def [r, (max + 1)] = xs
+r

@@ -1,4 +1,5 @@
 # Array and Map literals built from runtime values, indexed inside an
 # interpolation.
 #= {result: '7 8', inputs: {x: 7}}
+def {x} = import('inputs')
 $'${[x, x + 1][0]} ${{k: x + 1}.k}'

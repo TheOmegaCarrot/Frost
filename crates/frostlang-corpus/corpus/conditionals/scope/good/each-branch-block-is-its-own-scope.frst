@@ -1,5 +1,6 @@
 # Each branch's `do` block is its own scope, so both may bind the same name.
 #= {result: [1, 12], inputs: {t: true, n: null}}
+def {t, n} = import('inputs')
 defn pick(x) -> if x: do {
     def y = 1
     y

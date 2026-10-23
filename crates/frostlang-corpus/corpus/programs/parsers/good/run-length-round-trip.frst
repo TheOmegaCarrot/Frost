@@ -20,6 +20,7 @@
 #=         ],
 #=     },
 #= }
+def {sources} = import('inputs')
 defn reversed(xs) -> reduce(xs, [], fn acc, x -> [x] + acc)
 
 defn encode(chars) -> reversed(reduce(chars, [], fn runs, c -> match runs {

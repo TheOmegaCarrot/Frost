@@ -1,4 +1,5 @@
 # A one-element Array pattern binds the element itself, not an Array of it.
 #= {result: 'only', inputs: {xs: ['only']}}
+def {xs} = import('inputs')
 def [x] = xs
 x

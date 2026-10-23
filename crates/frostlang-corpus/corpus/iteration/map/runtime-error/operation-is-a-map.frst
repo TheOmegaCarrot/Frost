@@ -1,3 +1,4 @@
 # A Map is not a function from key to value: it cannot be the operation.
 #= {raises: ['Function', 'argument 2', 'Map'], inputs: {xs: ['a']}}
+def {xs} = import('inputs')
 map(xs, {a: 1})

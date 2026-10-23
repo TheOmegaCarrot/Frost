@@ -9,6 +9,7 @@
 #=     ],
 #=     inputs: {xs: [[], [1], [1, 2]]},
 #= }
+def {xs} = import('inputs')
 map(xs, fn v -> match v {
     [a, b, ...others] => 'long enough',
     _ => 'short',

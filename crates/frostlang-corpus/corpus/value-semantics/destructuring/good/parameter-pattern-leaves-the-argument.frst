@@ -1,6 +1,7 @@
 # A function destructuring its argument in a `def`, then extending the
 # parts, leaves the caller's argument unchanged.
 #= {result: [[[2, 1], {k: [1, 0]}], [[1, 2], {k: [1]}]], inputs: {n: 1}}
+def {n} = import('inputs')
 defn swap(pair) -> {
     def [xs, m] = pair
     def [a, b] = xs

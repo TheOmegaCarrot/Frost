@@ -1,4 +1,5 @@
 # An abbreviated lambda serves as the operation, its `$` bound to each
 # element.
 #= {result: [1, 4, 9], inputs: {xs: [1, 2, 3]}}
+def {xs} = import('inputs')
 map(xs, $($ * $))

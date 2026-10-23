@@ -26,6 +26,7 @@
 #=         maybes: [null, 5, false],
 #=     },
 #= }
+def {products, pairs, maybes} = import('inputs')
 defn cheap(p) -> p.price < 10
 def fallback = const('fallback')
 

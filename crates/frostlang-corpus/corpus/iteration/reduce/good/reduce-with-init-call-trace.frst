@@ -5,6 +5,7 @@
 #=     printed: ['10 + 1', '11 + 2', '13 + 3'],
 #=     inputs: {xs: [1, 2, 3]},
 #= }
+def {xs} = import('inputs')
 reduce(xs, 10, fn acc, x -> {
     print($'${acc} + ${x}')
     acc + x

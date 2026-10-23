@@ -3,6 +3,7 @@
 #=     result: [0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0],
 #=     inputs: {xs: [null, false, true, 0, -1, 0.0, 1.5, '', 'é', x'', x'00', [], [null], {}, {a: null}]},
 #= }
+def {xs} = import('inputs')
 map(xs + [len], fn v -> match v {
     _ is Bytes => 1,
     _ => 0,

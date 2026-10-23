@@ -1,5 +1,6 @@
 # An Array is not a valid Map key; looking one up in a Map raises.
 #= {raises: 'not a valid Map key', inputs: {v: {a: 1}, k: [1]}}
+def {v, k} = import('inputs')
 match v {
     {[k]: x} => x,
     _ => 'fallback',

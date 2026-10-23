@@ -1,3 +1,4 @@
 # A nested format String escapes its own quote, which is also the outer one's.
 #= {result: "it's 7, it's", inputs: {x: 7}}
+def {x} = import('inputs')
 $'it\'s ${x}, ${$'it\'s'}'

@@ -2,6 +2,7 @@
 # `if` still open: the innermost value needs every condition to hold, and
 # otherwise the first failing level's `else` is taken.
 #= {result: ['all', 'level 3', 'level 1'], inputs: {ns: [5, 2, 0]}}
+def {ns} = import('inputs')
 defn probe(n) -> if n > 0:
     if n > 1:
         if n > 2:

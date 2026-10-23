@@ -6,6 +6,7 @@
 #=     result: [[[1], [2]], [2, 4], 'skipped', [2], [[10, 20], 2]],
 #=     inputs: {flag: false},
 #= }
+def {flag} = import('inputs')
 defn spin(n) -> if n == 0: 0 else: spin(n - 1)
 def long = map([1, 2], fn x -> filter([x], fn _ -> spin(60000) == 0))
 def after_long = map([1, 2], fn x -> reduce([x, x], 0, fn acc, y -> acc + y))

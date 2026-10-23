@@ -2,6 +2,7 @@
 # same computation, both from runtime values and from constants the optimizer
 # can fold.
 #= {result: [true, true, true, true], inputs: {a: 0.1, b: 0.2}}
+def {a, b} = import('inputs')
 [
     $'${a + b}' == to_string(a + b),
     $'${0.1 + 0.2}' == to_string(0.1 + 0.2),

@@ -2,5 +2,6 @@
 # and the second opens an interpolation of the placeholder. Subtle: `$$`
 # here is neither the rest placeholder nor an escape.
 #= {result: 'price: $5', inputs: {five: 5}}
+def {five} = import('inputs')
 def price = $($'price: $${$}')
 price(five)

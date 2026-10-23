@@ -1,4 +1,5 @@
 # With no `else`, a falsy condition known only at runtime makes the `if` yield
 # Null, for both falsy values.
 #= {result: [null, null], inputs: {f: false, n: null}}
+def {f, n} = import('inputs')
 [if f: 'yes', if n: 'yes']

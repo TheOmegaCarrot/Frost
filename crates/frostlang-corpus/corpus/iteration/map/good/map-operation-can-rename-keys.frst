@@ -1,4 +1,5 @@
 # The Map the operation returns decides the result's keys, so `map` can
 # rename them.
 #= {result: {aa: 1, bb: 2}, inputs: {m: {a: 1, b: 2}}}
+def {m} = import('inputs')
 map(m, fn k, v -> {[k + k]: v})

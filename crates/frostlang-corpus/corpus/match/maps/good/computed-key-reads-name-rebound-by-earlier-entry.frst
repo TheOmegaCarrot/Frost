@@ -2,6 +2,7 @@
 # binds the key's name in between rebinds it for the later lookup. Subtle: the
 # first `[k]` reads the outer `k`, 'a'; the second reads the 'b' found there.
 #= {result: [['b', 1], 'no'], inputs: {xs: [{a: 'b', b: 1}, {b: 'a'}]}}
+def {xs} = import('inputs')
 def k = 'a'
 map(xs, fn v -> match v {
     {[k]: k, [k]: y} => [k, y],

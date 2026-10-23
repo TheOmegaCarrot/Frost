@@ -5,6 +5,7 @@
 #=     result: [true, false, true],
 #=     inputs: {short: [1], long: [1, null], empty: [], maps: [{}]},
 #= }
+def {short, long, empty, maps} = import('inputs')
 [
     short < long,
     long <= short,

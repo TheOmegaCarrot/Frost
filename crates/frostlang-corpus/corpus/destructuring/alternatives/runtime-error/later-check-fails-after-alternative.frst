@@ -1,5 +1,6 @@
 # A part after an alternative is checked after the branch matched; its own
 # failure raises its own error, not the alternative's.
 #= {raises: 'expected `9`', inputs: {xs: [[5], 0]}}
+def {xs} = import('inputs')
 def [[a] | a, 9] = xs
 a

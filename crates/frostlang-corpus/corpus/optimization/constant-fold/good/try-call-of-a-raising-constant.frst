@@ -2,6 +2,7 @@
 # with the same message as the same error raised on a value only known at
 # runtime: computing the call ahead of time does not change the error.
 #= {result: [[false, true], [false, 'boom'], [true, 5]], inputs: {zero: 0}}
+def {zero} = import('inputs')
 def folded = try_call(fn -> 1 / 0)
 def at_runtime = try_call(fn -> 1 / zero)
 def outcome = fn result -> if result.ok: [true, result.value] else: [false, result.error]

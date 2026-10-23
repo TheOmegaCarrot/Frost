@@ -1,6 +1,7 @@
 # Arithmetic inside a callback applies per element, through `map` with a
 # `fn`, an abbreviated lambda, and a threaded call alike.
 #= {result: [[1, 4, 9], [2, 4, 6], [0.5, 1.0, 1.5], []], inputs: {xs: [1, 2, 3], empty: []}}
+def {xs, empty} = import('inputs')
 [
     map(xs, fn x -> x * x),
     map(xs, $($ * 2)),

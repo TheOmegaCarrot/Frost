@@ -1,5 +1,6 @@
 # An exported function that raises, called while computing another export,
 # ends the program.
 #= {raises: 'invalid: x', inputs: {raw: 'x'}}
+def {raw} = import('inputs')
 export defn validate(v) -> if is_int(v): v else: error($'invalid: ${v}')
 export def checked = validate(raw)

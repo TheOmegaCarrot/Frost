@@ -1,6 +1,7 @@
 # A parenthesized Map compares by its entries, not by the order they were
 # written in.
 #= {result: ['same', 'different'], inputs: {xs: [{a: 1, b: 2}, {a: 1, b: 3}]}}
+def {xs} = import('inputs')
 map(xs, fn v -> match v {
     ({b: 2, a: 1}) => 'same',
     _ => 'different',

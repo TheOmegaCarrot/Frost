@@ -1,4 +1,5 @@
 # A Bytes literal equals the same octets known only at runtime, whatever the case of
 # its digits.
 #= {result: [true, true, false, true], inputs: {octets: x'00FF', empty: x""}}
+def {octets, empty} = import('inputs')
 [x'00ff' == octets, x"00Ff" == octets, x'ff00' == octets, x'' == empty]

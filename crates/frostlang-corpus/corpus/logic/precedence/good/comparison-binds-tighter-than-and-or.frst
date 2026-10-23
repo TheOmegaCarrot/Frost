@@ -4,6 +4,7 @@
 #=     result: [false, true, true, false],
 #=     inputs: {x: 5},
 #= }
+def {x} = import('inputs')
 [
     1 < 2 and 3 > 4,
     1 == 2 or 2 != 3,

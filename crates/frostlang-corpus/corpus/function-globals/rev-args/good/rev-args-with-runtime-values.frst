@@ -1,3 +1,4 @@
 # Reversing the arguments of a function known only at run time.
 #= {result: 9, inputs: {f: fn a, b -> a - b, x: 1, y: 10}}
+def {f, x, y} = import('inputs')
 rev_args(f)(x, y)

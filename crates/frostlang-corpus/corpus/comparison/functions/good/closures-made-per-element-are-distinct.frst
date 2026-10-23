@@ -1,6 +1,7 @@
 # A lambda evaluated once per element makes a distinct closure each time, even
 # when it captures nothing, while each closure still equals itself.
 #= {result: [false, true], inputs: {xs: [1, 2]}}
+def {xs} = import('inputs')
 def made = map(xs, fn _ -> fn -> 1)
 [
     made[0] == made[1],

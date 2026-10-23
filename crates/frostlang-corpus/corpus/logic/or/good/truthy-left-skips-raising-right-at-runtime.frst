@@ -1,6 +1,7 @@
 # A truthy left operand known only at runtime stops `or` before a right
 # operand that would raise.
 #= {result: [3, []], inputs: {three: 3, empty: [], zero: 0}}
+def {three, empty, zero} = import('inputs')
 [
     three or 1 / zero,
     empty or error('the right operand ran'),

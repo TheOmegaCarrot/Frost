@@ -1,4 +1,5 @@
 # With an initial value, the operation is the third argument, and the error
 # says so.
 #= {raises: ['Function', 'argument 3', 'Int'], inputs: {xs: [1]}}
+def {xs} = import('inputs')
 reduce(xs, 0, 5)

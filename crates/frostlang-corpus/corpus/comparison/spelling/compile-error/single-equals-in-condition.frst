@@ -1,4 +1,5 @@
 # A single `=` is not a comparison, and Frost has no assignment expression: an
 # `if` condition written with `=` is rejected, pointing to `==`.
 #= {rejects: '`==`', inputs: {x: 1}}
+def {x} = import('inputs')
 if x = 1: 'one' else: 'other'

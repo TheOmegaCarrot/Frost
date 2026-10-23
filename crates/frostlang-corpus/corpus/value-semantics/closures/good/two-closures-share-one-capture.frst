@@ -1,6 +1,7 @@
 # Two closures capturing the same binding see the same original value, however
 # often one of them derives from it.
 #= {result: [[1, 2], [1], [1, 3], [1]], inputs: {n: 1}}
+def {n} = import('inputs')
 def base = [n]
 def push = fn x -> base + [x]
 def peek = fn -> base

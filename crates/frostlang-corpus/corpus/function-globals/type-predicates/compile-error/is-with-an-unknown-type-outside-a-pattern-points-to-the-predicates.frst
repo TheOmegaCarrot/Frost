@@ -1,5 +1,6 @@
 # `is` outside a pattern with a name that only looks like a type is still
 # rejected, and the help points to the type predicates in general.
 #= {rejects: ['`is` works only in a pattern', 'is_int(x)'], inputs: {v: 1}}
+def {v} = import('inputs')
 def ok = v is Integer
 ok

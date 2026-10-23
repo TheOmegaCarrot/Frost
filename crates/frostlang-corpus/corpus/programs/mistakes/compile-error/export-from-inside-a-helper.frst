@@ -5,6 +5,7 @@
 #=     rejects: ['`export`', 'top level'],
 #=     inputs: {xs: [1, 2, 3]},
 #= }
+def {xs} = import('inputs')
 defn summarize(items) -> {
     export def count = len(items)
     count

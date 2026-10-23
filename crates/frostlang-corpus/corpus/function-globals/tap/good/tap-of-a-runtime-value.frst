@@ -1,3 +1,4 @@
 # Tapping a value known only at run time.
 #= {result: {a: 1}, printed: ['1'], inputs: {v: {a: 1}}}
+def {v} = import('inputs')
 tap(v, fn m -> print(m.a))

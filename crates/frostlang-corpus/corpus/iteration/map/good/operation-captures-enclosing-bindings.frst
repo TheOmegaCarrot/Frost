@@ -1,4 +1,5 @@
 # The operation closes over bindings in scope where it is written.
 #= {result: [13, 23], inputs: {xs: [1, 2], scale: 10}}
+def {xs, scale} = import('inputs')
 def offset = 3
 map(xs, fn x -> x * scale + offset)

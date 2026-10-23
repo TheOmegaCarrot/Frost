@@ -1,5 +1,6 @@
 # A runtime error the VM raises inside a function, not through `error`, also
 # propagates to the top level when nothing catches it.
 #= {raises: 'division by zero', inputs: {zero: 0}}
+def {zero} = import('inputs')
 defn ratio(n) -> [n / zero]
 ratio(1)

@@ -1,6 +1,7 @@
 # Each call to `collect` makes its own Array: extending one result leaves
 # another, made from the same arguments, unchanged.
 #= {result: [[1, 2, 3], [1, 2]], inputs: {a: 1, b: 2}}
+def {a, b} = import('inputs')
 def first = collect(a, b)
 def second = collect(a, b)
 [first + [3], second]

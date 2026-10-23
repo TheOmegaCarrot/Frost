@@ -1,0 +1,4 @@
+# Int overflow past the least Int in a threaded call to a global raises, as it
+# does in a direct call.
+#= {raises: ['Int overflow', '-9223372036854775808 - 1']}
+(-9223372036854775808) @ minus(1)

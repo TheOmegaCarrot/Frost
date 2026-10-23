@@ -1,6 +1,7 @@
 # Destructuring works the same at top level, in a `do` block, in a lambda, and
 # in a named function.
 #= {result: [3, 3, 3, 3], inputs: {pair: [1, 2]}}
+def {pair} = import('inputs')
 def [a, b] = pair
 def block = do {
     def [c, d] = pair

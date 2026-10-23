@@ -5,6 +5,7 @@
 #=     result: ['-0.0', '-0.0', '-0.0', '-0.0', '0.0', '0.0', false],
 #=     inputs: {zero: 0.0, minus_one: -1.0, int_zero: 0},
 #= }
+def {zero, minus_one, int_zero} = import('inputs')
 [
     to_string(zero * minus_one),
     to_string(zero / minus_one),

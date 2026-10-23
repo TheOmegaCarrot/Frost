@@ -4,6 +4,7 @@
 #=     result: [true, true, true, false, true],
 #=     inputs: {m: {k: null}, xs: [null, 1]},
 #= }
+def {m, xs} = import('inputs')
 defn identity(v) -> v
 [
     not identity(null),

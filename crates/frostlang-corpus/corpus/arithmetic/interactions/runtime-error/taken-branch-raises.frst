@@ -1,3 +1,4 @@
 # A division by zero in the branch taken at runtime raises once reached.
 #= {raises: 'division by zero', inputs: {flag: true}}
+def {flag} = import('inputs')
 if flag: 1 / 0 else: 'safe'

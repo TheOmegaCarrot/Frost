@@ -1,5 +1,6 @@
 # A rest may appear at any nesting level, each applying to its own Array.
 #= {result: [1, [2, 3], [5]], inputs: {v: [[1, 2, 3], 4, 5]}}
+def {v} = import('inputs')
 match v {
     [[h, ...t], _, ...outer] => [h, t, outer],
 }

@@ -1,4 +1,5 @@
 # A local binding that shadows a global is the callee a threaded call uses.
 #= {result: 'mine: 2', inputs: {xs: [1, 2]}}
+def {xs} = import('inputs')
 defn len(v) -> $'mine: ${v[1]}'
 xs @ len()

@@ -4,6 +4,7 @@
 #=     result: ['fallback', 'one', 'zero', 'default'],
 #=     inputs: {zero: 0, one: 1, n: null},
 #= }
+def {zero, one, n} = import('inputs')
 defn name(x) -> match x {
     1 => 'one',
     _ => null,

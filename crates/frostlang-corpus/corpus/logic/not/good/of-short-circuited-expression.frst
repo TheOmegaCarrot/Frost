@@ -1,6 +1,7 @@
 # `not` applied to a parenthesized logical expression negates its deciding
 # operand's truthiness; the skipped operand still never runs.
 #= {result: [true, false, true, false], inputs: {n: null, zero: 0}}
+def {n, zero} = import('inputs')
 [
     not (null and error('skipped')),
     not (0 or error('skipped')),

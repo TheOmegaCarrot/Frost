@@ -1,6 +1,7 @@
 # Quicksort over an Array of Strings known only at runtime. Strings order by
 # their text, non-ASCII included.
 #= {result: ['', 'apple', 'banana', 'cherry', 'é'], inputs: {words: ['cherry', 'é', 'apple', '', 'banana']}}
+def {words} = import('inputs')
 defn qsort(xs) -> match xs {
     [] => [],
     [pivot, ...rest] => qsort(filter(rest, $($ < pivot))) + [pivot] + qsort(filter(rest, $($ >= pivot))),

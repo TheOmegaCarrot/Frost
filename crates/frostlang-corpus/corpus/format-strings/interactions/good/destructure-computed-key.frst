@@ -1,6 +1,7 @@
 # A format String as a computed key in a Map destructuring, including one that
 # reads a name bound earlier in the same pattern.
 #= {result: [2, 4], inputs: {suffix: 'b', data: {kb: 2, n: 1, k1: 4}}}
+def {suffix, data} = import('inputs')
 def {[$'k${suffix}']: first} = data
 def {n, [$'k${n}']: second} = data
 [first, second]

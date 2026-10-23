@@ -1,5 +1,0 @@
-# A counter stepped one at a time across the top of the Int range wraps to the
-# bottom, and the recursion's base case still triggers normally.
-#= {result: [9223372036854775807, -9223372036854775808, -9223372036854775807]}
-defn step(n, times) -> if times == 0: n else: step(n + 1, times - 1)
-[step(9223372036854775805, 2), step(9223372036854775805, 3), step(9223372036854775805, 4)]

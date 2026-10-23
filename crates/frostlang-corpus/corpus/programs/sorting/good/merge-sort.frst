@@ -17,6 +17,7 @@
 #=         one: [42],
 #=     },
 #= }
+def {ints, words, empty, one} = import('inputs')
 defn split(xs) -> match xs {
     [] => [[], []],
     [x] => [[x], []],

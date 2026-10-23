@@ -1,6 +1,7 @@
 # `each` returns its input as it was, though its callback derives values from
 # every element; extending that result leaves the input unchanged.
 #= {result: [[[1], [2], [3]], [[1], [2]]], inputs: {n: 1}}
+def {n} = import('inputs')
 def xs = [[n], [2]]
 def same = each(xs, fn x -> x + [0])
 [same + [[3]], xs]

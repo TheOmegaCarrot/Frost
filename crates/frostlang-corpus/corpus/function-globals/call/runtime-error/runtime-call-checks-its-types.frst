@@ -1,3 +1,4 @@
 # `call` supplied at run time still type-checks its arguments.
 #= {raises: ['call', 'Array as argument 2', 'got Int'], inputs: {apply: call}}
+def {apply} = import('inputs')
 apply(collect, 3)

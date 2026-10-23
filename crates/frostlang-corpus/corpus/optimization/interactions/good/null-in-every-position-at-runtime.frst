@@ -4,6 +4,7 @@
 #=     result: [null, [null], {k: null}, null, true, null, 'null arm', true, 'null', null, null, false],
 #=     inputs: {n: null},
 #= }
+def {n} = import('inputs')
 [
     n,
     [n],

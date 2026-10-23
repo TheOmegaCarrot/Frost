@@ -1,5 +1,6 @@
 # `null` in the name position is the Null literal pattern, not a name, so the
 # `def` binds nothing even when the value is Null.
 #= {rejects: ['binds no name'], inputs: {n: null}}
+def {n} = import('inputs')
 def null = n
 1

@@ -1,5 +1,6 @@
 # A call's `(` never continues from the line before, even inside parentheses,
 # so a threaded callee whose arguments start on the next line is not a call.
 #= {rejects: 'right side of `@` must be a call', inputs: {xs: [1]}}
+def {xs} = import('inputs')
 (xs @ len
     ())

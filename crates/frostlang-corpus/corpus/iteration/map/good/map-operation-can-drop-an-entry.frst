@@ -2,5 +2,6 @@
 # whether the optimizer computes the `map` ahead of time or it runs on a
 # runtime Map.
 #= {result: [{a: 1, c: 3}, {a: 1, c: 3}], inputs: {m: {a: 1, b: 2, c: 3}}}
+def {m} = import('inputs')
 def drop_two = fn k, v -> if v == 2: {} else: {[k]: v}
 [map({a: 1, b: 2, c: 3}, drop_two), map(m, drop_two)]

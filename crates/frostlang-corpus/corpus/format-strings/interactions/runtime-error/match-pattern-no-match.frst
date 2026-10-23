@@ -1,6 +1,7 @@
 # When no format String pattern equals the subject and no other arm matches,
 # the match raises.
 #= {raises: 'no match arm', inputs: {x: 2, s: 'v3'}}
+def {x, s} = import('inputs')
 match s {
     $'v${x}' => 'hit',
 }

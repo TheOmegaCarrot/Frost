@@ -1,6 +1,7 @@
 # In a destructuring `def` inside an abbreviated lambda, `($1)` compares a
 # part with the first argument rather than binding a name.
 #= {result: 'checked', inputs: {key: 1, entry: [1, 'checked']}}
+def {key, entry} = import('inputs')
 def take = $(do {
     def [($1), value] = $2
     value

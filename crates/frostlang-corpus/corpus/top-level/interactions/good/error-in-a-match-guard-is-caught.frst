@@ -1,6 +1,7 @@
 # An error raised while evaluating a `match` guard propagates out of the
 # `match`; it is not treated as the guard failing.
 #= {result: 'guard raised', inputs: {n: 1}}
+def {n} = import('inputs')
 def outcome = try_call(fn -> match n {
     _ if: error('guard raised') => 'first',
     _ => 'fallback',

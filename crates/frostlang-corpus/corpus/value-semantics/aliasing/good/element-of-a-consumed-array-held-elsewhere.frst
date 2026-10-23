@@ -2,6 +2,7 @@
 # leaves the element's other binding unchanged. The outer Array is given up
 # by the read, but the element it held is still held by `inner`.
 #= {result: [[1, 2], [1]], inputs: {n: 1}}
+def {n} = import('inputs')
 def inner = [n]
 def outer = [inner]
 def grown = outer[0] + [2]

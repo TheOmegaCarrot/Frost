@@ -1,6 +1,7 @@
 # After values are derived from a binding, it still compares equal to the
 # literal it started as, and unequal to what was derived.
 #= {result: [true, false, true], inputs: {n: 1}}
+def {n} = import('inputs')
 def xs = [n, 2]
 def ys = xs + [3]
 [xs == [1, 2], xs == ys, ys == [1, 2, 3]]

@@ -17,6 +17,7 @@
 #=         repeated: ['z', 'z', 'z'],
 #=     },
 #= }
+def {message, repeated} = import('inputs')
 defn count(symbols) -> reduce(symbols, {}, fn acc, s -> acc + {[s]: (acc[s] or 0) + 1})
 
 defn lighter(a, b) -> a.weight < b.weight or (a.weight == b.weight and a.id < b.id)

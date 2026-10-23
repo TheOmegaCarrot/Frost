@@ -1,0 +1,5 @@
+# The same overflowing factorial over a constant, which the optimizer may
+# compute ahead of time: it must raise exactly as the runtime does.
+#= {raises: 'Int overflow'}
+defn fact(k) -> if k <= 1: 1 else: k * fact(k - 1)
+fact(21)

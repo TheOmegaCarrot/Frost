@@ -1,4 +1,5 @@
 # A line starting with `or` does not continue the line before.
 #= {rejects: 'a line continues only when', inputs: {a: null, b: 1}}
+def {a, b} = import('inputs')
 def x = a
     or b

@@ -4,6 +4,7 @@
 #=     result: [{code: 1}, {code: 2}, {code: 3}, {code: 4}],
 #=     inputs: {xs: [1]},
 #= }
+def {xs} = import('inputs')
 def caught = fn thunk -> try_call(thunk).error
 [
     caught(fn -> map(xs, fn x -> error({code: 1}))),

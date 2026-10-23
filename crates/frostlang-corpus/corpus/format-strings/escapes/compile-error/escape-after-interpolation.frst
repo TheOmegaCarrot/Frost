@@ -1,3 +1,4 @@
 # Escapes are checked in the text after an interpolation too.
 #= {rejects: ['invalid escape sequence', R'(`\q`)'], inputs: {x: 7}}
+def {x} = import('inputs')
 def s = $'${x}\q'

@@ -1,6 +1,7 @@
 # An accumulator threaded through many tail calls holds every element in
 # order: building it step by step loses and repeats nothing.
 #= {result: [200, 200, 1, 100], inputs: {start: 200}}
+def {start} = import('inputs')
 defn build(k, acc) -> if k == 0: acc else: build(k - 1, acc + [k])
 def xs = build(start, [])
 [len(xs), xs[0], xs[199], xs[100]]

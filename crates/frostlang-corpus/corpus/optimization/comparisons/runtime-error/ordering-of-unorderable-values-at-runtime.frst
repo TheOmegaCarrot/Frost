@@ -1,4 +1,5 @@
 # The comparison of ordering-of-unorderable-constants, over Bools only known
 # at runtime, raises the same error.
 #= {raises: 'not orderable', inputs: {yes: true, no: false}}
+def {yes, no} = import('inputs')
 yes < no

@@ -2,6 +2,7 @@
 # on the line after a consequent applies to the consequent alone, and an
 # `else` after it still belongs to the `if`.
 #= {result: [1, 0, 1, null], inputs: {m: {a: 1}, t: true, f: false}}
+def {m, t, f} = import('inputs')
 defn with_else(c) -> if c: m
     .a
 else: 0

@@ -5,6 +5,7 @@
 #=     printed: ['a', 'b', 'c', 'else'],
 #=     inputs: {f: false},
 #= }
+def {f} = import('inputs')
 defn note(label, value) -> {
     print(label)
     value

@@ -1,4 +1,5 @@
 # A computed key known only at runtime looks up the key it evaluates to.
 #= {result: [1, 2], inputs: {key: 'x', m: {x: 1, ['x!']: 2}}}
+def {key, m} = import('inputs')
 def {[key]: v, [key + '!']: w} = m
 [v, w]

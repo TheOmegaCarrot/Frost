@@ -4,6 +4,7 @@
 #=     result: [[0, '', [], 'a'], [0, '', [], 'a']],
 #=     inputs: {values: [0, null, false, '', [], 'a']},
 #= }
+def {values} = import('inputs')
 [
     filter([0, null, false, '', [], 'a'], fn x -> x),
     filter(values, fn x -> x),

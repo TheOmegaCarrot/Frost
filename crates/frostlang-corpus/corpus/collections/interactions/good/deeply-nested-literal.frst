@@ -1,5 +1,6 @@
 # A moderately deep literal mixing Arrays and Maps keeps every level, read
 # back by a chain of indexes and fields.
 #= {result: ['bottom', 6], inputs: {k: 'c'}}
+def {k} = import('inputs')
 def tree = {a: [{b: [[{[k]: {d: ['bottom']}}]]}]}
 [tree.a[0].b[0][0][k].d[0], len([[[[[[1]]]]], 2, 3, 4, 5, 6])]

@@ -4,6 +4,7 @@
 #=     result: [false, true, false, false],
 #=     inputs: {f: fn x -> x, g: fn x -> [x]},
 #= }
+def {f, g} = import('inputs')
 [
     f == g,
     f != g,

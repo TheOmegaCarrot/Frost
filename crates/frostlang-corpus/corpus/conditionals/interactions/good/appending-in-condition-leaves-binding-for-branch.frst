@@ -2,6 +2,7 @@
 # binding intact for the branch. Subtle: the condition runs first, so an
 # optimizer reusing the Array in place there would corrupt the branch's value.
 #= {result: [[0, 1], []], inputs: {xs: [0], none: []}}
+def {xs, none} = import('inputs')
 defn keep_if_long(start) -> {
     def a = start + [1]
     if len(a + [9]) > 2: a else: []

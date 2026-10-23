@@ -1,4 +1,5 @@
 # Multibyte characters directly against an interpolation are kept whole on both
 # sides; the `${` boundary never splits a character.
 #= {result: 'é7日本🎉', inputs: {x: 7}}
+def {x} = import('inputs')
 $'é${x}日本🎉'

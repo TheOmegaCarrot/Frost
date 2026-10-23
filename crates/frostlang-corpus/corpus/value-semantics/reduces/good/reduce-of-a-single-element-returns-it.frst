@@ -1,6 +1,7 @@
 # A `reduce` without an initial value over one element returns that element without
 # calling the function; extending the result leaves the input unchanged.
 #= {result: [[1, 2], [[1]]], inputs: {n: 1}}
+def {n} = import('inputs')
 def xs = [[n]]
 def only = reduce(xs, fn (acc, x) -> acc + x + x)
 [only + [2], xs]

@@ -5,4 +5,5 @@
 #=     result: ['default', [], 0, 'default'],
 #=     inputs: {m: {empty: [], zero: 0, off: false}},
 #= }
+def {m} = import('inputs')
 [m['missing'] or 'default', m['empty'] or 'default', m['zero'] or 'default', m['off'] or 'default']

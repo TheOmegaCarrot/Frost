@@ -4,6 +4,7 @@
 #=     result: [2, 5, [3, 'z']],
 #=     inputs: {first: [1, 2], second: [2, 5], third: {c: 3, k: 'z'}},
 #= }
+def {first, second, third} = import('inputs')
 def b = 1
 def f = fn x -> x * 2
 def k = 'c'

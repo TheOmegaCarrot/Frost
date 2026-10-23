@@ -1,6 +1,7 @@
 # Functions returning format Strings work through `call`, `curry`, and
 # `compose`, which hand their arguments on unchanged.
 #= {result: ['1-2', 'x-y', '<[7]>'], inputs: {x: 7}}
+def {x} = import('inputs')
 def join = fn a, b -> $'${a}-${b}'
 def angle = fn s -> $'<${s}>'
 def square = fn s -> $'[${s}]'

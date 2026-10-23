@@ -1,3 +1,4 @@
 # Calling a Bool raises, naming its type.
 #= {raises: ['non-function', 'Bool'], inputs: {flag: true}}
+def {flag} = import('inputs')
 flag()

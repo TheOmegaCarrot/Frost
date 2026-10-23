@@ -1,8 +1,0 @@
-# Int arithmetic wraps in two's complement, so one past the greatest Int is
-# the least Int, which sorts below everything.
-#= {result: [true, true, true]}
-[
-    9223372036854775807 + 1 < 0,
-    -9223372036854775808 - 1 > 0,
-    9223372036854775807 + 1 < 9223372036854775807,
-]

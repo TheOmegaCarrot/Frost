@@ -1,3 +1,4 @@
 # A falsy `if` with no `else` yields Null, which cannot be a Map key.
 #= {raises: 'Null is not a valid Map key', inputs: {f: false}}
+def {f} = import('inputs')
 {[if f: 'a']: 1}

@@ -1,3 +1,4 @@
 # `<>` is not an inequality operator; the error points to `!=`.
 #= {rejects: '`!=`', inputs: {a: 1, b: 2}}
+def {a, b} = import('inputs')
 a <> b

@@ -1,4 +1,5 @@
 # A continued `@` line still needs a call on its right side.
 #= {rejects: 'must be a call', inputs: {xs: [1]}}
+def {xs} = import('inputs')
 xs
     @ len

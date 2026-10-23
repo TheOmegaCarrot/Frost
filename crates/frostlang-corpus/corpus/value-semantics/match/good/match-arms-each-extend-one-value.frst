@@ -1,6 +1,7 @@
 # Arms that each extend the same outer binding differently build from the
 # original, whichever arm runs.
 #= {result: [[1, 'one'], [1, 'two'], [1, 'other', 1]], inputs: {n: 1}}
+def {n} = import('inputs')
 def base = [n]
 defn tag(v) -> match v {
     1 => base + ['one'],

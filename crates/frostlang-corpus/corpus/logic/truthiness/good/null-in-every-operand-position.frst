@@ -7,6 +7,7 @@
 #=     ],
 #=     inputs: {n: null, one: 1},
 #= }
+def {n, one} = import('inputs')
 [
     [null and 1, 1 and null, null or null, null and null, not null],
     [n and one, one and n, n or n, n and n, not n],

@@ -4,4 +4,5 @@
 #=     result: [[1, 2], {b: 2}],
 #=     inputs: {xs: [1, 2], m: {a: 1, b: 2}},
 #= }
+def {xs, m} = import('inputs')
 [filter(xs, fn x, ...rest -> rest == []), filter(m, fn k, ...rest -> rest == [2])]

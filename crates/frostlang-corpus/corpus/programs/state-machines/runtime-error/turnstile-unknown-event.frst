@@ -4,6 +4,7 @@
 #=     raises: 'no match arm',
 #=     inputs: {events: ['coin', 'push', 'kick', 'coin']},
 #= }
+def {events} = import('inputs')
 defn transition(s, event) -> match [s.state, event] {
     ['locked', 'coin'] => s + {state: 'unlocked'},
     ['locked', 'push'] => s,

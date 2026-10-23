@@ -1,0 +1,5 @@
+# A known Int expression that overflows is not folded into a divisor: the
+# overflow raises when the program reaches it, before any division happens.
+#= {raises: 'Int overflow'}
+def overflowing = 9223372036854775807 * 2 + 2
+100 / overflowing

@@ -1,0 +1,6 @@
+# Int arithmetic in a recursive function raises on overflow rather than
+# wrapping: 21! does not fit in an Int.
+#= {raises: 'Int overflow', inputs: {n: 21}}
+def {n} = import('inputs')
+defn fact(k) -> if k <= 1: 1 else: k * fact(k - 1)
+fact(n)

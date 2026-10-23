@@ -1,6 +1,7 @@
 # A closure merging its argument into a captured Map raises when the argument
 # is not a Map, on a later call as on the first.
 #= {raises: ['cannot add', 'Map + Int'], inputs: {v: 1}}
+def {v} = import('inputs')
 def merged = do {
     def base = {k: v}
     fn extra -> base + extra

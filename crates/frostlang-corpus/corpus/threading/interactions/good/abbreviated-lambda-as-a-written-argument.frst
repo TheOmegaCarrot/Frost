@@ -1,4 +1,5 @@
 # An abbreviated lambda written as an argument of a threaded call is the
 # function the call receives, not a lambda around the call.
 #= {result: [[4], [2, 3]], inputs: {xs: [1, 2, 3]}}
+def {xs} = import('inputs')
 [xs @ filter($($ % 2 == 0)) @ map($($ * 2)), xs @ filter($($ > 1))]

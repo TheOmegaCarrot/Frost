@@ -5,6 +5,7 @@
 #=     rejects: 'no `return`',
 #=     inputs: {xs: [4, 8, 15]},
 #= }
+def {xs} = import('inputs')
 defn find_index(items, target, i) -> {
     if items[i] == target: return i
     find_index(items, target, i + 1)

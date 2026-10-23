@@ -1,3 +1,4 @@
 # A single ellipsis character `…` is not the three dots `...`.
 #= {rejects: 'write `...`', inputs: {xs: [1]}}
+def {xs} = import('inputs')
 def [a, …rest] = xs

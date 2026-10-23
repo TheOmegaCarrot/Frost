@@ -1,6 +1,7 @@
 # A Null target that matches no arm raises, naming the value as null; Null is
 # not a sign that nothing matched.
 #= {raises: ['no match arm', 'null'], inputs: {v: null}}
+def {v} = import('inputs')
 match v {
     false => 'false',
     [] => 'empty',

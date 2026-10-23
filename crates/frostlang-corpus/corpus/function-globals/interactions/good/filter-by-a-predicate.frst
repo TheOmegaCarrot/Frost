@@ -1,3 +1,4 @@
 # A type predicate passed as a value serves as `filter`'s test.
 #= {result: [1, 2.5], inputs: {xs: [1, 'a', null, 2.5, [3]]}}
+def {xs} = import('inputs')
 filter(xs, is_numeric)

@@ -1,6 +1,7 @@
 # Literals, parenthesized values, and bindings mix freely within an Array
 # pattern, each element tested in turn.
 #= {result: ['tagged', 'x'], inputs: {tag: 'point', v: ['point', 1, 'x']}}
+def {tag, v} = import('inputs')
 match v {
     [(tag), 0, name] => ['origin', name],
     [(tag), 1, name] => ['tagged', name],

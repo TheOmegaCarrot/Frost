@@ -1,4 +1,5 @@
 # Braces after a condition were meant as a block, which Frost writes after
 # the colon with `do`.
 #= {rejects: 'for a block, write `if x: do { ... }`', inputs: {x: true}}
+def {x} = import('inputs')
 if x { 1 } else { 2 }

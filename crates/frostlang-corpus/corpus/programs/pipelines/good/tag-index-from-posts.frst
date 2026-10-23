@@ -18,6 +18,7 @@
 #=         ],
 #=     },
 #= }
+def {posts} = import('inputs')
 def all = reduce(posts, [], fn acc, post -> acc + post.tags)
 def set = reduce(all, {}, fn acc, tag -> acc + {[tag]: true})
 def unique = reduce(set, [], fn acc, tag, present -> acc + [tag])

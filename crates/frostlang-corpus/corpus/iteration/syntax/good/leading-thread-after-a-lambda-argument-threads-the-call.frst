@@ -3,5 +3,6 @@
 # its closing parenthesis ended the lambda's body, so the mapped Array is
 # threaded, not each element.
 #= {result: 2, inputs: {xs: [[1, 2, 3], [4]]}}
+def {xs} = import('inputs')
 map(xs, fn x -> x)
 @ len()

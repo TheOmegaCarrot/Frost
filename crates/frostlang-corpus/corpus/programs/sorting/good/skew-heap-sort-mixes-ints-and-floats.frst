@@ -6,6 +6,7 @@
 #=     result: [[-2, 0, 1.5, 1.5, 2, 3], [-2, 0, 1.5, 1.5, 2, 3], 6],
 #=     inputs: {values: [3, 1.5, -2, 1.5, 0, 2]},
 #= }
+def {values} = import('inputs')
 defn merge(a, b) -> match [a, b] {
     [null, _] => b,
     [_, null] => a,

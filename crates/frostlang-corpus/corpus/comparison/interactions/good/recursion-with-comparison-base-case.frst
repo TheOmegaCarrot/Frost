@@ -1,6 +1,7 @@
 # A comparison decides a recursive function's base case; the recursion runs
 # deep enough to exercise the comparison many times, with a Float bound.
 #= {result: [120, 1, 5050], inputs: {five: 5, zero: 0, hundred: 100}}
+def {five, zero, hundred} = import('inputs')
 defn fact(n) -> if n <= 1.0: 1 else: n * fact(n - 1)
 defn sum_to(n, acc) -> if n == 0: acc else: sum_to(n - 1, acc + n)
 [

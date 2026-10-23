@@ -1,3 +1,4 @@
 # An Array is indexed with brackets, not a tuple-style `.0`.
 #= {rejects: 'index an Array with brackets', inputs: {t: [1]}}
+def {t} = import('inputs')
 t.0

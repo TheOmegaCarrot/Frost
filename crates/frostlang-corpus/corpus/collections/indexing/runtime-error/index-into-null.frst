@@ -1,3 +1,4 @@
 # Null is not indexable.
 #= {raises: ['Cannot index value', 'Null'], inputs: {n: null}}
+def {n} = import('inputs')
 n[0]

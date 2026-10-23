@@ -1,6 +1,7 @@
 # The Map `try_call` returns destructures like any Map, here after a failed
 # destructuring inside the call.
 #= {result: [false, true], inputs: {xs: [1, 2]}}
+def {xs} = import('inputs')
 def {ok} = try_call(fn -> {
     def [a] = xs
     a

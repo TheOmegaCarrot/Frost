@@ -2,5 +2,6 @@
 # truncates, so `7 / 2` makes the Int key 3, found by 3 but not by 3.0. A
 # Float operand makes the Float key 3.5 instead.
 #= {result: ['int', null, 'float', 2, 'folded'], inputs: {seven: 7, two: 2}}
+def {seven, two} = import('inputs')
 def m = {[seven / two]: 'int', [seven / 2.0]: 'float'}
 [m[3], m[3.0], m[3.5], len(m), {[7 / 2]: 'folded'}[3]]

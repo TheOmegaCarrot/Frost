@@ -4,6 +4,7 @@
 #=     result: ['none', 'none', 'none', 0, 1],
 #=     inputs: {m: {k: false, z: 0}, xs: [1]},
 #= }
+def {m, xs} = import('inputs')
 [
     m['missing'] or 'none',
     xs[10] or 'none',

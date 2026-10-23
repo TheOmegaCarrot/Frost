@@ -1,6 +1,7 @@
 # A falsy left operand known only at runtime stops `and` before a right operand
 # that would raise.
 #= {result: [false, null], inputs: {f: false, n: null, zero: 0}}
+def {f, n, zero} = import('inputs')
 [
     f and 1 / zero,
     n and error('the right operand ran'),

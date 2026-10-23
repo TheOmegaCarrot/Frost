@@ -10,6 +10,7 @@
 #=     ],
 #=     inputs: {v: {a: 1}},
 #= }
+def {v} = import('inputs')
 defn key(k) -> {
     print(k)
     k

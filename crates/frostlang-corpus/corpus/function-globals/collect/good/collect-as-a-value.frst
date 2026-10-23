@@ -1,5 +1,6 @@
 # `collect` through a binding, and supplied at run time, gathers as it does
 # by name.
 #= {result: [[1, 2], []], inputs: {runtime_collect: collect}}
+def {runtime_collect} = import('inputs')
 def gather = collect
 [gather(1, 2), runtime_collect()]

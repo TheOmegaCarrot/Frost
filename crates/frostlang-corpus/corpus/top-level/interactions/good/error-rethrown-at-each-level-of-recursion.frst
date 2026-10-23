@@ -1,5 +1,6 @@
 # Each level of a recursion catches the error from the level below and raises
 # a new one from it, so the outermost catch sees one increment per level.
 #= {result: 4, inputs: {depth: 3}}
+def {depth} = import('inputs')
 defn unwind(n) -> if n == 0: error(1) else: error(try_call(unwind, [n - 1]).error + 1)
 try_call(unwind, [depth]).error

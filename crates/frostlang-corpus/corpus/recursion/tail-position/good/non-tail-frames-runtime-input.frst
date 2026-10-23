@@ -1,6 +1,7 @@
 # A call that is an operand keeps its caller's frame at depths known only at
 # runtime: the backtrace from the bottom grows by one frame per level.
 #= {result: 495, inputs: {deep: 500, shallow: 5}}
+def {deep, shallow} = import('inputs')
 defn down(n) -> if n == 0: error('bottom') else: down(n - 1) * 2
 defn frames(n) -> len(try_call(down, [n]).trace)
 frames(deep) - frames(shallow)

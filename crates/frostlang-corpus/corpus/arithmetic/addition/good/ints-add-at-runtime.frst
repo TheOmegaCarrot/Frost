@@ -4,6 +4,7 @@
 #=     result: [5, -3, 0, -7, 0, 42],
 #=     inputs: {two: 2, three: 3, minus_four: -4, one: 1, zero: 0, hundred: 100, forty_two: 42},
 #= }
+def {two, three, minus_four, one, zero, hundred, forty_two} = import('inputs')
 [
     two + three,
     minus_four + one,

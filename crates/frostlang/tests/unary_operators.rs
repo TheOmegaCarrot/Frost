@@ -13,12 +13,22 @@ fn negate_negative_int() {
 }
 
 #[test]
-fn negate_int_min_wraps() {
-    // i64::MIN has no positive counterpart; negation wraps back to itself.
-    assert_eq!(
-        Value::from(i64::MIN).negate().unwrap(),
-        Value::from(i64::MIN)
-    );
+fn negate_int_min_raises() {
+    // i64::MIN has no positive counterpart.
+    let error = Value::from(i64::MIN).negate().unwrap_err();
+    assert_eq!(error.message(), "Int overflow: -(-9223372036854775808)");
+}
+
+#[test]
+fn negate_int_at_the_bounds() {
+    // Every result here fits: each is one of the bounds or one inside them.
+    for (operand, expected) in [(i64::MAX, i64::MIN + 1), (i64::MIN + 1, i64::MAX), (0, 0)] {
+        assert_eq!(
+            Value::from(operand).negate().unwrap(),
+            Value::from(expected),
+            "-({operand})"
+        );
+    }
 }
 
 #[test]

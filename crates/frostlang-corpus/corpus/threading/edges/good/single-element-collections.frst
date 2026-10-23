@@ -1,6 +1,7 @@
 # A single-element collection threads through collection functions: `reduce` with no
 # initial value returns the lone element without calling its function.
 #= {result: [7, [14], 1, {a: 2}], inputs: {one: [7], m: {a: 1}}}
+def {one, m} = import('inputs')
 [
     one @ reduce(fn a, b -> error('never called')),
     one @ map(fn x -> x * 2),

@@ -112,12 +112,13 @@ add(1, 5)
 }
 
 #[test]
-fn inputs_are_in_scope_with_their_values() {
+fn inputs_are_imported_with_their_values() {
     let source = r"
 #= {
 #=     result: [3, 'xy', 7],
 #=     inputs: {n: 3, s: 'x', f: fn v -> v + 1},
 #= }
+def {n, s, f} = import('inputs')
 [n, s + 'y', f(6)]
 ";
     assert_eq!(report("area/good/script", source), Report::Passed);
@@ -127,6 +128,7 @@ fn inputs_are_in_scope_with_their_values() {
 fn inputs_reach_every_kind_of_script() {
     let raises = r"
 #= {raises: 'no match', inputs: {n: 2}}
+def {n} = import('inputs')
 match n {
     1 => 1,
 }
@@ -135,15 +137,26 @@ match n {
     // The input is bound, so only the other name is unbound.
     let rejects = r"
 #= {rejects: '`other`', inputs: {n: 2}}
+def {n} = import('inputs')
 n + other
 ";
     assert_eq!(report("area/compile-error/script", rejects), Report::Passed);
 }
 
 #[test]
+fn a_script_compiles_on_its_own_so_an_input_not_imported_is_unbound() {
+    let source = r"
+#= {rejects: '`n` is not defined', inputs: {n: 2}}
+n + 1
+";
+    assert_eq!(report("area/compile-error/script", source), Report::Passed);
+}
+
+#[test]
 fn inputs_agree_under_every_permutation() {
     let source = r"
 #= {result: 10, inputs: {n: 4}}
+def {n} = import('inputs')
 def double = fn x -> x * 2
 double(n) + 2
 ";

@@ -1,6 +1,7 @@
 # Closures made by `map`, each extending one shared captured base, each
 # build from the original base when called.
 #= {result: [[[0, 1], [0, 2], [0, 3]], [0]], inputs: {n: 0}}
+def {n} = import('inputs')
 def base = [n]
 def makers = map([1, 2, 3], fn k -> fn -> base + [k])
 [map(makers, fn f -> f()), base]

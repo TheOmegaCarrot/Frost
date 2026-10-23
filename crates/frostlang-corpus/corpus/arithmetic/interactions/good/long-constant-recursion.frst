@@ -1,0 +1,10 @@
+# A constant computation too long for the compiler to evaluate ahead of time
+# still gives the exact answer at runtime. Subtle because every argument is
+# constant, yet the work must be left for runtime.
+#= {result: [5000050000, 9223464270520368]}
+defn sum_to(n, acc) -> if n == 0: acc else: sum_to(n - 1, acc + n)
+defn add_large(n, acc) -> if n == 0: acc else: add_large(n - 1, acc + 92233720368)
+[
+    sum_to(100000, 0),
+    add_large(100001, 0),
+]

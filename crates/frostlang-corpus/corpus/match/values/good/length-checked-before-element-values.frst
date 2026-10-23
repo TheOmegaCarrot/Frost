@@ -1,6 +1,7 @@
 # An Array pattern checks the length before evaluating any element value, so
 # a wrong-length target runs none of them.
 #= {result: 'other', printed: [], inputs: {v: [1]}}
+def {v} = import('inputs')
 defn note(n) -> {
     print(to_string(n))
     n

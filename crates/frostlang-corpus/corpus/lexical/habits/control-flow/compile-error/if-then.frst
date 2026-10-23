@@ -1,3 +1,4 @@
 # Frost has no `then`: a colon follows the condition.
 #= {rejects: '`if` takes a colon after its condition', inputs: {x: true}}
+def {x} = import('inputs')
 if x then 1 else 2

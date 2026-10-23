@@ -1,0 +1,5 @@
+# Multiplication past the greatest Int known only at runtime raises rather than
+# wrapping.
+#= {raises: ['Int overflow', '9223372036854775807 * 2'], inputs: {max: 9223372036854775807}}
+def {max} = import('inputs')
+max * 2

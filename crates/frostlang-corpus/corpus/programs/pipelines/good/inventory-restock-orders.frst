@@ -17,6 +17,7 @@
 #=         },
 #=     },
 #= }
+def {inventory} = import('inputs')
 defn restock(items) -> {
     def low = filter(items, fn name, item -> item.stock < item.min)
     map(low, fn name, item -> {[name]: item.min - item.stock})

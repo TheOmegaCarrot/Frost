@@ -2,5 +2,6 @@
 # that starts the next line has no left operand: only `.`, `@`, and `->`
 # continue a line.
 #= {rejects: 'expected an expression', inputs: {a: 1, b: 2}}
+def {a, b} = import('inputs')
 a
     < b

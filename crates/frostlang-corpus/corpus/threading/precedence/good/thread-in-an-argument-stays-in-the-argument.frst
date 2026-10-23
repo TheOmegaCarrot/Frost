@@ -3,6 +3,7 @@
 # with `hundredfold(inc)`. Parentheses thread the whole call instead. Subtle
 # because `map(xs, inc) @ len()` reads alike but threads the call's result.
 #= {result: [[200, 300], 2], inputs: {xs: [1, 2]}}
+def {xs} = import('inputs')
 defn inc(x) -> x + 1
 defn hundredfold(f) -> fn x -> f(x) * 100
 [map(xs, inc @ hundredfold()), map(xs, inc) @ len()]

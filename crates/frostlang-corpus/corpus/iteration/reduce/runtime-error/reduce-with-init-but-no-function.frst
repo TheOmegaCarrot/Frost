@@ -2,4 +2,5 @@
 # structure and an initial value. Subtle: `reduce(xs, 0)` reads as an initial
 # value missing its function, but it is the function argument that is wrong.
 #= {raises: ['reduce', 'Function', 'argument 2', 'Int'], inputs: {xs: [1, 2]}}
+def {xs} = import('inputs')
 reduce(xs, 0)

@@ -4,6 +4,7 @@
 #=     rejects: 'no `let`',
 #=     inputs: {xs: [1, 2, 3]},
 #= }
+def {xs} = import('inputs')
 defn average(items) -> {
     let total = reduce(items, 0, fn acc, x -> acc + x)
     total / len(items)

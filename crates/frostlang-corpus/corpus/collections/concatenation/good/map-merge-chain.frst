@@ -1,4 +1,5 @@
 # A chain of merges applies left to right, so the rightmost value of a key
 # wins.
 #= {result: {a: 3, b: 2, c: 3}, inputs: {base: {a: 1}}}
+def {base} = import('inputs')
 base + {a: 2, b: 2} + {a: 3, c: 3}

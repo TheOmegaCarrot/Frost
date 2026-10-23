@@ -3,4 +3,5 @@
 #=     raises: 'did you mean "deep"?',
 #=     inputs: {m: {inner: {deep: 1}}},
 #= }
+def {m} = import('inputs')
 m.inner.dep

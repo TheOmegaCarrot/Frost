@@ -1,4 +1,5 @@
 # Tree recursion on an argument known only at runtime.
 #= {result: 610, inputs: {n: 15}}
+def {n} = import('inputs')
 defn fib(k) -> if k < 2: k else: fib(k - 1) + fib(k - 2)
 fib(n)

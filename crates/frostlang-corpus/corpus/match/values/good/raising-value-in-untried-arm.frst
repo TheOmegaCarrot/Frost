@@ -1,5 +1,6 @@
 # A parenthesized value that would raise is harmless in an arm never reached.
 #= {result: 'one', inputs: {v: 1, zero: 0}}
+def {v, zero} = import('inputs')
 match v {
     1 => 'one',
     (1 / zero) => 'never',

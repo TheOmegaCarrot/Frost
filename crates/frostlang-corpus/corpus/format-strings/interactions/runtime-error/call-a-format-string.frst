@@ -1,3 +1,4 @@
 # A format String's result is a String, which cannot be called.
 #= {raises: ['non-function', 'String'], inputs: {x: 7}}
+def {x} = import('inputs')
 $'f${x}'()

@@ -1,5 +1,6 @@
 # A format String may be a match target, compared with String literals.
 #= {result: 'greeting', inputs: {name: 'world'}}
+def {name} = import('inputs')
 match $'hello, ${name}' {
     'hello, world' => 'greeting',
     _ => 'other',

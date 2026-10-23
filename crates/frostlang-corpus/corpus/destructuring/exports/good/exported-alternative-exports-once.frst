@@ -1,6 +1,7 @@
 # An exported alternative exports each name once, with the matching branch's
 # value.
 #= {result: 0, exports: {a: 2, b: 6}, inputs: {pair: [1, 2], m: {b: 6}}}
+def {pair, m} = import('inputs')
 export def [a, 1] | [1, a] = pair
 export def {b} | [b] = m
 0

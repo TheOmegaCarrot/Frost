@@ -6,6 +6,7 @@
 #=     rejects: ['`expr`', 'not defined'],
 #=     inputs: {chars: ['(', '1', ')']},
 #= }
+def {chars} = import('inputs')
 defn factor(cs) -> match cs {
     ['(', ...rest] => expr(rest),
     [c, ...rest] => [c, rest],

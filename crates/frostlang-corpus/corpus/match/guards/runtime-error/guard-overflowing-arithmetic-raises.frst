@@ -1,0 +1,8 @@
+# Arithmetic in a guard raises on Int overflow like any other: the largest Int
+# plus one is an error, not a failed guard.
+#= {raises: ['Int overflow', '9223372036854775807 + 1'], inputs: {xs: [1, 9223372036854775807]}}
+def {xs} = import('inputs')
+map(xs, fn v -> match v {
+    n if: n + 1 < n => 'at the top',
+    _ => 'below the top',
+})

@@ -1,3 +1,4 @@
 # An exported `def` of a runtime value that fails its type constraint raises.
 #= {raises: 'expected an Int', inputs: {s: 'not an Int'}}
+def {s} = import('inputs')
 export def n is Int = s

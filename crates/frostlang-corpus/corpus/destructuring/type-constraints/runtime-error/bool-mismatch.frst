@@ -1,4 +1,5 @@
 # `is Bool` rejects an Int.
 #= {raises: 'expected a Bool', inputs: {v: 1}}
+def {v} = import('inputs')
 def x is Bool = v
 x

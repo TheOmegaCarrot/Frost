@@ -2,4 +2,5 @@
 # plus an Int, which is a type error. Subtle because it reads like
 # `not (one + two)`.
 #= {raises: 'Bool + Int', inputs: {one: 1, two: 2}}
+def {one, two} = import('inputs')
 not one + two

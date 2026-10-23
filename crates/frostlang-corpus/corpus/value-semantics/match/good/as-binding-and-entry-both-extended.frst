@@ -4,6 +4,7 @@
 #=     result: [{items: [1], extra: 1}, [1, 2], {items: [1]}, [1]],
 #=     inputs: {n: 1},
 #= }
+def {n} = import('inputs')
 def m = {items: [n]}
 match m {
     {items} as whole => [whole + {extra: 1}, items + [2], whole, items],

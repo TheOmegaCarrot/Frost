@@ -4,6 +4,7 @@
 #=     result: ['hello, anonymous', 'hello, ñandú', 'hello, 0', 'missing: true'],
 #=     inputs: {n: null, bird: 'ñandú', zero: 0},
 #= }
+def {n, bird, zero} = import('inputs')
 [
     $'hello, ${n or "anonymous"}',
     $'hello, ${bird or "anonymous"}',

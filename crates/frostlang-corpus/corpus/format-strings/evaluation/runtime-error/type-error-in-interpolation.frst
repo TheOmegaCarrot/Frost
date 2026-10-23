@@ -1,4 +1,5 @@
 # An operator type error inside an interpolation raises; the format String does
 # not render its operands instead.
 #= {raises: 'incompatible types', inputs: {x: 7}}
+def {x} = import('inputs')
 $'${x + "a"}'

@@ -17,6 +17,7 @@
 #=         ],
 #=     },
 #= }
+def {cases} = import('inputs')
 def closers = {['(']: ')', ['[']: ']', ['{']: '}'}
 def closing = {[')']: true, [']']: true, ['}']: true}
 

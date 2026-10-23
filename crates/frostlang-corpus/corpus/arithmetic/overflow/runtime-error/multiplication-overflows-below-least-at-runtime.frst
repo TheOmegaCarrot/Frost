@@ -1,0 +1,8 @@
+# Int multiplication of operands only known at runtime raises past the least
+# Int, exactly as a folded product does.
+#= {
+#=     raises: 'Int overflow: -9223372036854775808 * 2',
+#=     inputs: {least: -9223372036854775808, two: 2},
+#= }
+def {least, two} = import('inputs')
+least * two

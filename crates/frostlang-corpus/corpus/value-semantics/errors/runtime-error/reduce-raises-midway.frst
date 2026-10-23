@@ -1,4 +1,5 @@
 # An error raised partway through a reduce that has been building its
 # accumulator propagates out of the reduce unchanged.
 #= {raises: 'stop at 3', inputs: {xs: [1, 2, 3, 4]}}
+def {xs} = import('inputs')
 reduce(xs, [], fn acc, x -> if x == 3: error('stop at 3') else: acc + [x])

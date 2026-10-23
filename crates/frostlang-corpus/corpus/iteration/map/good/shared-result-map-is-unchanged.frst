@@ -6,5 +6,6 @@
 #=     result: [{shared: 0, b: 2}, {shared: 0}],
 #=     inputs: {m: {a: 1, b: 2}, base: {shared: 0}},
 #= }
+def {m, base} = import('inputs')
 def merged = map(m, fn k, v -> if k == 'a': base else: {[k]: v})
 [merged, base]

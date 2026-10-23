@@ -1,6 +1,7 @@
 # Captures of known constants (which the optimizer may build in) mix with
 # captures of runtime values without disturbing each other's order.
 #= {result: [20, 1, 10, 2, 30, 1], inputs: {one: 1, two: 2}}
+def {one, two} = import('inputs')
 def k1 = 10
 def k2 = 20
 def k3 = 30

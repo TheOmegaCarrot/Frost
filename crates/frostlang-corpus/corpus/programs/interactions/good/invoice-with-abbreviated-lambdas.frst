@@ -20,6 +20,7 @@
 #=         ],
 #=     },
 #= }
+def {lines} = import('inputs')
 def amounts = map(lines, $($.qty * $.price))
 def total = reduce(amounts, 0, $($1 + $2))
 def rendered = map(lines, $($'${$.name} x${$.qty} @ $${$.price} = $${$.qty * $.price}${if $.qty >= 10: ' (bulk)' else: ''}'))

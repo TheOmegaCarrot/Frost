@@ -5,6 +5,7 @@
 #=     printed: ['and', 'or'],
 #=     inputs: {yes: true, no: false, one: 1, nothing: null},
 #= }
+def {yes, no, one, nothing} = import('inputs')
 [
     yes and print('and'),
     no or print('or'),

@@ -11,6 +11,7 @@
 #=     },
 #=     inputs: {short: 8, long: 10000},
 #= }
+def {short, long} = import('inputs')
 def durations = {green: 3, yellow: 1, red: 2}
 def following = {green: 'yellow', yellow: 'red', red: 'green'}
 

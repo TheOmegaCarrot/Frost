@@ -1,6 +1,7 @@
 # Array elements compare strictly by type at runtime: Int against Float is
 # unequal inside an Array as outside one.
 #= {result: [false, true, false], inputs: {ints: [1, 2], floats: [1.0, 2.0], i: 1}}
+def {ints, floats, i} = import('inputs')
 [
     ints == floats,
     [i, 2] == ints,

@@ -1,4 +1,5 @@
 # Characters Frost rejects in code are ordinary text inside Strings:
 # non-ASCII letters, symbols, curly quotes, and a backtick.
 #= {result: ['café', '☃', '“hi”', '`ls`', '≠', 'λ'], inputs: {s: '☃'}}
+def {s} = import('inputs')
 ['café', s, '“hi”', '`ls`', $'≠', "λ"]

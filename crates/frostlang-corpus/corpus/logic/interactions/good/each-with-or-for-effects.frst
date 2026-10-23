@@ -4,4 +4,5 @@
 #=     printed: ['falsy', 'falsy'],
 #=     inputs: {values: [1, null, 0, false]},
 #= }
+def {values} = import('inputs')
 each(values, fn x -> x or print('falsy'))

@@ -1,6 +1,7 @@
 # The right operand of `+` is unchanged too: concatenating onto the front of
 # a bound Array leaves that Array as it was.
 #= {result: [[1], [0, 1]], inputs: {n: 1}}
+def {n} = import('inputs')
 def r = [n]
 def s = [0] + r
 [r, s]

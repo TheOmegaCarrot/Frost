@@ -1,6 +1,7 @@
 # A closure created before a shadowing definition keeps the earlier binding,
 # with values known only at runtime.
 #= {result: [1, 2], inputs: {one: 1, two: 2}}
+def {one, two} = import('inputs')
 def x = one
 def outer = fn -> {
     def inner = fn -> x

@@ -1,3 +1,4 @@
 # Frost has no `? :` conditional operator; its conditional is `if`.
 #= {rejects: 'conditional is written `if a: b else: c`', inputs: {a: true}}
+def {a} = import('inputs')
 a ? 1 : 2

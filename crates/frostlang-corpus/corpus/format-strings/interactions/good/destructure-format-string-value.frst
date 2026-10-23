@@ -1,4 +1,5 @@
 # Format String results destructure like any Strings in an Array.
 #= {result: ['7!', '<7>'], inputs: {x: 7}}
+def {x} = import('inputs')
 def [a, b] = [$'${x}!', $'<${x}>']
 [a, b]

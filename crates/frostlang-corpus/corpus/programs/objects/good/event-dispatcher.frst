@@ -13,6 +13,7 @@
 #=     printed: ['log: saved doc.txt', 'audit: saved doc.txt', 'bye ada'],
 #=     inputs: {user: 'ada', file: 'doc.txt'},
 #= }
+def {user, file} = import('inputs')
 defn dispatcher(handlers) -> {
     on: fn event, handler -> dispatcher(handlers + {[event]: (handlers[event] or []) + [handler]}),
     emit: fn event, payload -> map(handlers[event] or [], fn handler -> handler(payload)),

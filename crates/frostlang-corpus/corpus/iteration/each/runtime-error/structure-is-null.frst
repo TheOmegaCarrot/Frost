@@ -1,3 +1,4 @@
 # `each` over Null is a type error, not a no-op.
 #= {raises: ['Structured', 'argument 1', 'Null'], inputs: {nothing: null}}
+def {nothing} = import('inputs')
 each(nothing, fn x -> x)

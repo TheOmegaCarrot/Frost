@@ -1,6 +1,7 @@
 # An `if` may be a `do` block's final expression, including one with no
 # `else` that yields Null.
 #= {result: [2, null], inputs: {f: false}}
+def {f} = import('inputs')
 [
     do {
         def y = 1

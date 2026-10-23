@@ -8,6 +8,7 @@
 #=         none: [],
 #=     },
 #= }
+def {spans, none} = import('inputs')
 defn merge_into(merged, span) -> match merged {
     [] => [span],
     _ if: span[0] <= merged[-1][1] => do {

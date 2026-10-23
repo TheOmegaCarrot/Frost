@@ -1,3 +1,4 @@
 # An abbreviated lambda's `$$` gathers every argument `call` spreads into it.
 #= {result: [3, [1, 2, 3], 0], inputs: {args: [1, 2, 3]}}
+def {args} = import('inputs')
 [call($(len($$)), args), call($($$), args), call($(len($$)), [])]

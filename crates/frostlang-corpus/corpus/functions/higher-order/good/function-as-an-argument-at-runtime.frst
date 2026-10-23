@@ -1,4 +1,5 @@
 # A higher-order function applies a callback it only learns of at runtime.
 #= {result: [7, 9], inputs: {inc: fn v -> v + 1, x: 5}}
+def {inc, x} = import('inputs')
 def apply_twice = fn f, v -> f(f(v))
 [apply_twice(inc, x), apply_twice(fn v -> v + 2, x)]

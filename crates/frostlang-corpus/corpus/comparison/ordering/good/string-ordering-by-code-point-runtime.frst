@@ -4,6 +4,7 @@
 #=     result: [true, true, false],
 #=     inputs: {z: 'z', e_acute: '\u{e9}', halfwidth: '\u{ff61}', emoji: '\u{1f600}'},
 #= }
+def {z, e_acute, halfwidth, emoji} = import('inputs')
 [
     z < e_acute,
     halfwidth < emoji,

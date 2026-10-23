@@ -1,3 +1,4 @@
 # A Bool interpolates as `true` or `false`.
 #= {result: ['true', 'false', 'true/false'], inputs: {t: true, f: false}}
+def {t, f} = import('inputs')
 [$'${t}', $'${f}', $'${t}/${f}']

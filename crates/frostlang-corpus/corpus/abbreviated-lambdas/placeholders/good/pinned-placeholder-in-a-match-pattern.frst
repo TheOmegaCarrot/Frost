@@ -1,6 +1,7 @@
 # In a match pattern, `($)` compares against the argument rather than
 # binding a name, so this lambda tests whether its two arguments are equal.
 #= {result: ['same', 'different', 'different'], inputs: {a: 3, b: 4}}
+def {a, b} = import('inputs')
 def compare = $(match $2 {
     ($) => 'same',
     _ => 'different',

@@ -4,6 +4,7 @@
 #=     result: [true, false],
 #=     inputs: {a: [1, 'hello'], b: [2, 3.14], c: [2, null], d: [1, null]},
 #= }
+def {a, b, c, d} = import('inputs')
 [
     a < b,
     c < d,

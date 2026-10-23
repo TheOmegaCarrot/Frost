@@ -1,3 +1,4 @@
 # A match with no arms raises for a target known only at runtime, too.
 #= {raises: 'no match arm', inputs: {v: null}}
+def {v} = import('inputs')
 match v {}

@@ -1,0 +1,7 @@
+# The negation of negation-overflow-through-a-binding-raises, on a binding of
+# a value only known at runtime, raises the same error.
+#= {raises: 'Int overflow: -(-9223372036854775808)', inputs: {least_in: -9223372036854775808}}
+def {least_in} = import('inputs')
+def least = least_in
+def negated = -least
+negated

@@ -1,3 +1,4 @@
 # Python's `b if a else c` is not Frost's conditional.
 #= {rejects: 'conditional is written `if a: b else: c`', inputs: {a: true}}
+def {a} = import('inputs')
 1 if a else 2

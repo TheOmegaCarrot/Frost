@@ -2,4 +2,5 @@
 # never compared, even ones that could not be ordered against each other.
 # Subtle because `'a' < 3` alone raises.
 #= {result: [true, false], inputs: {a: [1, 'a'], b: [2, 3]}}
+def {a, b} = import('inputs')
 [a < b, [1, null] > [2, null]]

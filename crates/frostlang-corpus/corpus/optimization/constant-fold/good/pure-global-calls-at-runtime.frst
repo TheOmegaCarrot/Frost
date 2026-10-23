@@ -4,6 +4,7 @@
 #=     result: [3, 'Float', '42', true, false, true, true],
 #=     inputs: {xs: [1, 2, 3], f: 1.5, n: 42, one: 1, bytes: x'00', zero: 0, m: {a: null}},
 #= }
+def {xs, f, n, one, bytes, zero, m} = import('inputs')
 [
     len(xs),
     type(f),

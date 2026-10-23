@@ -1,3 +1,4 @@
 # A Null known only at runtime cannot key a Map either.
 #= {raises: ['Null', 'not a valid Map key'], inputs: {key: null}}
+def {key} = import('inputs')
 {[key]: 1}

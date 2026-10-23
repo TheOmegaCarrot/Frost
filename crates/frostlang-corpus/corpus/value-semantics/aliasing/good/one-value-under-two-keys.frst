@@ -1,6 +1,7 @@
 # One Array stored under two keys of a Map stays the same under the key that
 # is not replaced when a merge replaces the other with an extended copy.
 #= {result: [{a: [1], b: [1]}, {a: [1, 2], b: [1]}], inputs: {n: 1}}
+def {n} = import('inputs')
 def v = [n]
 def m = {a: v, b: v}
 def updated = m + {a: m.a + [2]}

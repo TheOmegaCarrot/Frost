@@ -1,0 +1,3 @@
+# Int overflow is an error, not a wraparound, so it ends the program.
+#= {raises: 'Int overflow: 9223372036854775807 + 1'}
+9223372036854775807 + 1

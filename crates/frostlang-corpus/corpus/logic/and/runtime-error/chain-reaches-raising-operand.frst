@@ -1,4 +1,5 @@
 # An `and` chain whose earlier operands are all truthy reaches a later operand
 # that raises.
 #= {raises: 'division by zero', inputs: {a: 1, b: 'b'}}
+def {a, b} = import('inputs')
 a and b and 1 / 0 and null

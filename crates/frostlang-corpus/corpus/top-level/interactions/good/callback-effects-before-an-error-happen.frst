@@ -1,5 +1,6 @@
 # A callback's effects for the elements before the one that raises still
 # happen, and nothing after it runs.
 #= {result: 'stop at 3', printed: ['1', '2'], inputs: {xs: [1, 2, 3, 4]}}
+def {xs} = import('inputs')
 def outcome = try_call(fn -> each(xs, fn x -> if x == 3: error($'stop at ${x}') else: print(x)))
 outcome.error

@@ -1,5 +1,6 @@
 # `def` binds a value known only at runtime, so no optimization can stand in
 # for the binding itself.
 #= {result: 14, inputs: {n: 7}}
+def {n} = import('inputs')
 def x = n * 2
 x

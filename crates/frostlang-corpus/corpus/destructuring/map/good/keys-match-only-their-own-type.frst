@@ -5,5 +5,6 @@
 #=     result: ['int', 'string', 'bytes', 'text', 'false', 'zero'],
 #=     inputs: {m: {[1]: 'int', ['1']: 'string', [x'61']: 'bytes', a: 'text', [false]: 'false', [0]: 'zero'}},
 #= }
+def {m} = import('inputs')
 def {[1]: i, ['1']: s, [x'61']: y, a, [false]: f, [0]: z} = m
 [i, s, y, a, f, z]

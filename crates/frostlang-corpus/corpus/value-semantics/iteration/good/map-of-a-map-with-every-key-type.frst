@@ -7,5 +7,6 @@
 #=     ],
 #=     inputs: {n: 1},
 #= }
+def {n} = import('inputs')
 def m = {[true]: [n], [2]: [2], [2.5]: [3], s: [4], [x'ff']: [5]}
 [m, map(m, fn k, v -> {[k]: v + [0]})]

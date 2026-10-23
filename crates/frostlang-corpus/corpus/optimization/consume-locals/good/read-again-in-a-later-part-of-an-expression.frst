@@ -7,6 +7,7 @@
 #=     result: [0, 1, {[2]: [1]}, [[1, 2], [1, 2], [1, 2]], '[ 1, 2, 0 ] [ 1, 2 ]'],
 #=     inputs: {one: 1, two: 2},
 #= }
+def {one, two} = import('inputs')
 def a = [one, two, 3]
 def fs = [fn xs -> len(xs)]
 def k = [one]

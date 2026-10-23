@@ -4,6 +4,7 @@
 #=     result: [false, true, false],
 #=     inputs: {i: 1, f: 1.0, nested: {b: [1, {c: null}]}},
 #= }
+def {i, f, nested} = import('inputs')
 [
     {a: i} == {a: f},
     {a: nested} == {a: {b: [i, {c: null}]}},

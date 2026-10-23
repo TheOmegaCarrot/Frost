@@ -1,6 +1,7 @@
 # A raising value nested inside an Array pattern raises once its element is
 # reached.
 #= {raises: 'boom', inputs: {v: [1, 2]}}
+def {v} = import('inputs')
 match v {
     [_, (error('boom'))] => 'never',
     _ => 'fallback',

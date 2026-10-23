@@ -4,6 +4,7 @@
 #=     lints: [['unused binding', '`q`']],
 #=     inputs: {xs: [{p: {q: {r: 7}}}, {p: {q: 1}}]},
 #= }
+def {xs} = import('inputs')
 map(xs, fn v -> match v {
     {p: {q: {r}}} => r,
     {p: {q}} => 'shallow',

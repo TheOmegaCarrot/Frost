@@ -5,6 +5,7 @@
 #=     exports: {a: 1, b: [2, 3], c: 'c'},
 #=     inputs: {three: [1, 2, 3], keyed: {c: 'c'}},
 #= }
+def {three, keyed} = import('inputs')
 export def [a, ...b] = three
 export def {c} = keyed
 'ok'

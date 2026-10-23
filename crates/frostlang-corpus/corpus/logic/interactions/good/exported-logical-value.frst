@@ -4,6 +4,7 @@
 #=     exports: {mode: 'debug', flag: null, quiet: true},
 #=     inputs: {setting: null},
 #= }
+def {setting} = import('inputs')
 export def mode = setting or 'debug'
 export def flag = setting and 'on'
 export def quiet = not setting

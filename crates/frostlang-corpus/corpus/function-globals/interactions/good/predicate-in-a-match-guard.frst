@@ -1,5 +1,6 @@
 # Predicates in guards pick an arm; the first guard that holds wins.
 #= {result: ['text', 'number', 'other', 'nothing'], inputs: {xs: ['a', 1.5, [1], null]}}
+def {xs} = import('inputs')
 defn describe(v) -> match v {
     x if: is_string(x) => 'text',
     x if: is_numeric(x) => 'number',

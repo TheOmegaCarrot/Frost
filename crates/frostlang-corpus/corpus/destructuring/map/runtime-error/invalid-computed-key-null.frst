@@ -1,5 +1,6 @@
 # A computed key that evaluates to Null is not a valid Map key and raises,
 # rather than being treated as a missing key.
 #= {raises: 'not a valid Map key', inputs: {k: null, m: {a: 1}}}
+def {k, m} = import('inputs')
 def {[k]: x} = m
 x

@@ -1,5 +1,6 @@
 # Null cannot be a Map key, even beside a valid entry built from a value
 # that nothing else holds.
 #= {raises: ['Null', 'not a valid Map key'], inputs: {n: 1, nothing: null}}
+def {n, nothing} = import('inputs')
 def xs = [n]
 {a: xs, [nothing]: xs}

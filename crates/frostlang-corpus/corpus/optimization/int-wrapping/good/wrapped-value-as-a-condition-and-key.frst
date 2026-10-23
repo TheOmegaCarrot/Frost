@@ -1,9 +1,0 @@
-# A wrapped constant drives later folding as its wrapped value: it decides a
-# branch and serves as a Map key.
-#= {result: ['wrapped to negative', 'least']}
-def wrapped = 9223372036854775807 + 1
-def names = {[-9223372036854775808]: 'least'}
-[
-    if wrapped < 0: 'wrapped to negative' else: error('did not wrap'),
-    names[wrapped],
-]

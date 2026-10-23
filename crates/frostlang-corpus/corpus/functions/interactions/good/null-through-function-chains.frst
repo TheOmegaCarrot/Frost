@@ -1,6 +1,7 @@
 # Null passes through functions as an ordinary value, and `or` supplies a
 # fallback for a Null result.
 #= {result: ['fallback', null, [null]], inputs: {nothing: null}}
+def {nothing} = import('inputs')
 def lookup = fn m, k -> if has(m, k): m[k] else: null
 def first_or_null = fn xs -> if len(xs) > 0: xs[0] else: null
 [lookup({}, 'k') or 'fallback', first_or_null([]), [first_or_null([nothing])]]

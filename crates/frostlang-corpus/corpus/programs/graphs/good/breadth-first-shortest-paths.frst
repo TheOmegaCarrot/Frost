@@ -22,6 +22,7 @@
 #=         },
 #=     },
 #= }
+def {graph} = import('inputs')
 defn discover(state, node) -> reduce(graph[node], state, fn acc, n -> {
     def {dist, parent, next} = acc
     if has(dist, n): acc

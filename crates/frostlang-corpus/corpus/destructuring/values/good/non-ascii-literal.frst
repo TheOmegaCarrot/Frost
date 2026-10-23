@@ -1,4 +1,5 @@
 # A non-ASCII String literal part compares by its full text.
 #= {result: 'ok', inputs: {xs: ['日本語', 'ok']}}
+def {xs} = import('inputs')
 def ['日本語', a] = xs
 a

@@ -8,6 +8,7 @@
 #=         near_and_a_half: 2251799813685248.5,
 #=     },
 #= }
+def {zero, tiny, near, near_and_a_half} = import('inputs')
 [
     zero < tiny,
     zero > -tiny,

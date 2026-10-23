@@ -15,6 +15,7 @@
 #=         ],
 #=     },
 #= }
+def {games} = import('inputs')
 defn score(rolls, frame) -> if frame == 10: 0 else: match rolls {
     [10, a, b, ...rest] => 10 + a + b + score([a, b] + rest, frame + 1),
     [x, y, a, ...rest] if: x + y == 10 => 10 + a + score([a] + rest, frame + 1),

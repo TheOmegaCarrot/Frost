@@ -1,4 +1,5 @@
 # A `filter` call inside another's predicate runs fully for each outer
 # element: here, rows are kept when they hold no Null.
 #= {result: [[1, 2], []], inputs: {rows: [[1, 2], [null], [], [3, null]]}}
+def {rows} = import('inputs')
 filter(rows, fn row -> filter(row, is_null) == [])

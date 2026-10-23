@@ -10,6 +10,7 @@
 #=     },
 #=     inputs: {sizes: [1, 2, 3, 4, 5, 6]},
 #= }
+def {sizes} = import('inputs')
 defn upto(n) -> if n == 0: [] else: upto(n - 1) + [n - 1]
 
 defn absolute(x) -> if x < 0: -x else: x

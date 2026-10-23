@@ -1,0 +1,7 @@
+# A reduce's running sum raises on Int overflow like any other addition.
+#= {
+#=     raises: 'Int overflow: 9223372036854775807 + 1',
+#=     inputs: {xs: [9223372036854775807, 1]},
+#= }
+def {xs} = import('inputs')
+reduce(xs, 0, fn acc, x -> acc + x)

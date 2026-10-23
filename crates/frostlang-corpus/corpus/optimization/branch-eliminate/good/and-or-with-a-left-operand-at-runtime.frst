@@ -4,6 +4,7 @@
 #=     result: [false, null, true, 0, ''],
 #=     inputs: {no: false, nothing: null, yes: true, zero: 0, blank: ''},
 #= }
+def {no, nothing, yes, zero, blank} = import('inputs')
 [
     no and error('never'),
     nothing and 1 / 0,

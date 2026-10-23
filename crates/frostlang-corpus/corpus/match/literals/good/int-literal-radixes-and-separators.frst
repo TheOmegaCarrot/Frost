@@ -1,6 +1,7 @@
 # Int patterns may be written in any radix and with `_` separators, and match
 # by value however they are written.
 #= {result: ['hex', 'binary', 'octal', 'separated', 'negative hex'], inputs: {xs: [255, 10, 63, 1000, -255]}}
+def {xs} = import('inputs')
 defn name(n) -> match n {
     0xff => 'hex',
     0b1010 => 'binary',

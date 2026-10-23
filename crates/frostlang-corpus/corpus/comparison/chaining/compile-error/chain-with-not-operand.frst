@@ -1,4 +1,5 @@
 # `not` binds tighter than comparison, so `not a == b == c` is a chain of two
 # comparisons whose first operand is `not a`.
 #= {rejects: 'cannot chain', inputs: {a: true, b: false, c: true}}
+def {a, b, c} = import('inputs')
 not a == b == c

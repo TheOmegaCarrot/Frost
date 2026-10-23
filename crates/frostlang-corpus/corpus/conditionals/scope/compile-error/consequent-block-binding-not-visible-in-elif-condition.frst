@@ -1,6 +1,7 @@
 # A name a consequent's `do` block defines is not in scope for a later `elif`
 # condition, which is evaluated only when that block never ran.
 #= {rejects: '`t` is not defined', inputs: {c: false}}
+def {c} = import('inputs')
 if c: do {
     def t = 1
     t

@@ -10,6 +10,7 @@
 #=     ],
 #=     inputs: {v: [1, [2, 3]]},
 #= }
+def {v} = import('inputs')
 [
     match v {
         [a, [b, c]] if: false => 0,

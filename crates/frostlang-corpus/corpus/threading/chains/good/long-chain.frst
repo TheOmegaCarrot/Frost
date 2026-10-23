@@ -1,5 +1,6 @@
 # A long chain applies every step in order.
 #= {result: 'value: 18', inputs: {start: 1}}
+def {start} = import('inputs')
 defn inc(x) -> x + 1
 defn double(x) -> x * 2
 defn label(x, name) -> $'${name}: ${x}'

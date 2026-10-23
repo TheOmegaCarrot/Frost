@@ -1,4 +1,5 @@
 # A format String's text holds non-ASCII text on both sides of an
 # interpolation, and the interpolated value may be non-ASCII too.
 #= {result: '☃ café ☃', inputs: {s: 'café'}}
+def {s} = import('inputs')
 $'☃ ${s} ☃'

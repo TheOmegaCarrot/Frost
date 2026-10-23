@@ -1,3 +1,4 @@
 # An `if` may be a Map entry's value; the comma after it starts the next entry.
 #= {result: {a: 1, b: null, c: 3}, inputs: {t: true, f: false}}
+def {t, f} = import('inputs')
 {a: if t: 1 else: 2, b: if f: 2, c: 3}

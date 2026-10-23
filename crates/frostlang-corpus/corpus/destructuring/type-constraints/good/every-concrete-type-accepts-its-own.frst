@@ -3,5 +3,6 @@
 #=     result: [null, 1, 1.5, true, 's', x'00', [1], {a: 1}],
 #=     inputs: {xs: [null, 1, 1.5, true, 's', x'00', [1], {a: 1}]},
 #= }
+def {xs} = import('inputs')
 def [n is Null, i is Int, f is Float, b is Bool, s is String, y is Bytes, a is Array, m is Map] = xs
 [n, i, f, b, s, y, a, m]

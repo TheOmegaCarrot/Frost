@@ -1,4 +1,5 @@
 # Because `each` yields its structure, an effect can be slotted into the
 # middle of a computation.
 #= {result: 3, printed: ['1', '2'], inputs: {xs: [1, 2]}}
+def {xs} = import('inputs')
 reduce(each(xs, print), fn acc, x -> acc + x)

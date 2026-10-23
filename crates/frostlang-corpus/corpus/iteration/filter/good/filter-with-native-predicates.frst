@@ -9,4 +9,5 @@
 #=         prefixes: {abc: 'ab', b: 'b', cd: 'x'},
 #=     },
 #= }
+def {xs, m, prefixes} = import('inputs')
 [filter(xs, is_int), filter(m, equal), filter(prefixes, starts_with)]

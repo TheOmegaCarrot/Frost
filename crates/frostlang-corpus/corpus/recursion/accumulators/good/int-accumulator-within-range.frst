@@ -1,0 +1,5 @@
+# An Int accumulator multiplies exactly up to 20!, the largest factorial that
+# fits in the Int range.
+#= {result: [1, 120, 2432902008176640000]}
+defn fact(n, acc) -> if n <= 1: acc else: fact(n - 1, acc * n)
+[fact(0, 1), fact(5, 1), fact(20, 1)]

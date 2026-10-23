@@ -2,5 +2,6 @@
 # Array it was given unchanged. Subtle because the rest parameter holds
 # exactly that Array's elements.
 #= {result: [[1, 2, 9], [1, 2]], inputs: {args: [1, 2]}}
+def {args} = import('inputs')
 def extended = spread(fn ...xs -> xs + [9])(args)
 [extended, args]

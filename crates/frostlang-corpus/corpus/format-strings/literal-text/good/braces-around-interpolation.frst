@@ -2,4 +2,5 @@
 # Subtle: in `{${x}}`, the first `{` is text since no `$` precedes it, and of
 # the two `}`, the first closes the interpolation and the second is text.
 #= {result: ['{7}', '}7{', '{{7}}'], inputs: {x: 7}}
+def {x} = import('inputs')
 [$'{${x}}', $'}${x}{', $'{{${x}}}']

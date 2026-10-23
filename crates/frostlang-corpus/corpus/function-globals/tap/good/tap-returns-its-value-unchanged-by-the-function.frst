@@ -2,5 +2,6 @@
 # a longer Array from it. Subtle because the function receives the value
 # before `tap` returns it, so extending it in place would change the result.
 #= {result: [[1, 2], [1, 2]], inputs: {xs: [1, 2]}}
+def {xs} = import('inputs')
 def tapped = tap(xs, fn v -> v + [3])
 [tapped, xs]

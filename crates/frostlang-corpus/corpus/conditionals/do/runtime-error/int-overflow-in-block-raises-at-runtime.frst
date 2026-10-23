@@ -1,0 +1,8 @@
+# Int arithmetic in a block raises on overflow when the operands are only
+# known at runtime.
+#= {raises: 'Int overflow', inputs: {max: 9223372036854775807}}
+def {max} = import('inputs')
+do {
+    def m = max
+    m + 1
+}

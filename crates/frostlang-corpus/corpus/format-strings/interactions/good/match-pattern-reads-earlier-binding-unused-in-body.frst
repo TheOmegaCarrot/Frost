@@ -2,6 +2,7 @@
 # body, is still bound when that pattern compares. Subtle: the body never uses
 # `p`, so nothing else keeps the binding alive.
 #= {result: ['hit', 'no'], inputs: {subjects: [['a', 'a1'], ['a', 'b1']]}}
+def {subjects} = import('inputs')
 map(subjects, fn s -> match s {
     [p, $'${p}1'] => 'hit',
     _ => 'no',

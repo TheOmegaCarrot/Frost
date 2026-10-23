@@ -1,6 +1,7 @@
 # A multi-step `@` pipeline builds a new value at each step, and the binding
 # it started from is unchanged.
 #= {result: [[1, 2, 3], [4, 6, 0]], inputs: {n: 1}}
+def {n} = import('inputs')
 def xs = [n, 2, 3]
 def out = (
     xs

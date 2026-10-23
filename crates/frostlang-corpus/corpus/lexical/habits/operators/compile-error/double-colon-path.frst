@@ -1,3 +1,4 @@
 # Frost has no `::` path separator; a module's entries are reached with `.`.
 #= {rejects: 'no `::`', inputs: {math: {}}}
+def {math} = import('inputs')
 math::sqrt(4)

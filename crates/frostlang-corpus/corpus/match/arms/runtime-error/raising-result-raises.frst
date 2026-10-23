@@ -1,5 +1,6 @@
 # An error raised by the taken arm's result propagates out of the match.
 #= {raises: 'from the arm', inputs: {v: 2}}
+def {v} = import('inputs')
 match v {
     1 => 'one',
     2 => error('from the arm'),

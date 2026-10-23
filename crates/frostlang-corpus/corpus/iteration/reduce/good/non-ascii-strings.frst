@@ -1,3 +1,4 @@
 # `reduce` concatenates non-ASCII Strings intact, in element order.
 #= {result: 'é日本🧊', inputs: {xs: ['é', '日本', '🧊']}}
+def {xs} = import('inputs')
 reduce(xs, '', fn acc, s -> acc + s)

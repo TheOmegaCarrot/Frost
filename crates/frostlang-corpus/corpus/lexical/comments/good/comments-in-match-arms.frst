@@ -5,6 +5,7 @@
 #=     lints: [['unused binding', '`n`']],
 #=     inputs: {xs: [2, 9, 'x']},
 #= }
+def {xs} = import('inputs')
 defn classify(v) -> match v {
     # small numbers
     1 | 2 # either

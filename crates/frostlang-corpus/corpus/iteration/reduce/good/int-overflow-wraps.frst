@@ -1,8 +1,0 @@
-# Summing past the largest Int in a `reduce` wraps in two's complement,
-# whether the optimizer computes it ahead of time or it runs on runtime values.
-#= {
-#=     result: [-9223372036854775808, -9223372036854775808],
-#=     inputs: {xs: [9223372036854775807, 1]},
-#= }
-def add = fn acc, x -> acc + x
-[reduce([9223372036854775807, 1], add), reduce(xs, add)]

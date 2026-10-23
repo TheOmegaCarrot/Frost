@@ -4,6 +4,7 @@
 #=     result: [[null], [null, null], {k: null}, {k: null, j: null}],
 #=     inputs: {nothing: null},
 #= }
+def {nothing} = import('inputs')
 def xs = [nothing]
 def more = xs + [nothing]
 def m = {k: nothing}

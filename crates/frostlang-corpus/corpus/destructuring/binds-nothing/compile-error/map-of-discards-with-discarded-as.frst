@@ -1,4 +1,5 @@
 # Discarded entries and a discarded `as` together bind no name.
 #= {rejects: 'binds no name', inputs: {m: {a: 1}}}
+def {m} = import('inputs')
 def {a: _} as _ = m
 0

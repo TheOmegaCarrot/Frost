@@ -1,3 +1,4 @@
 # A threaded value is the first argument, so it leads the collected Array.
 #= {result: [[1, 2, 3], [1]], inputs: {one: 1}}
+def {one} = import('inputs')
 [one @ collect(2, 3), one @ collect()]

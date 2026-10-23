@@ -2,6 +2,7 @@
 # returns its value with the updated memo Map, which the caller destructures
 # and threads on.
 #= {result: [12586269025, 51], inputs: {n: 50}}
+def {n} = import('inputs')
 defn fib(k, memo) -> if has(memo, k): [memo[k], memo]
     elif k < 2: [k, memo + {[k]: k}]
     else: do {

@@ -2,6 +2,7 @@
 # belongs to the branch: `if c: 1 else: 2 == 2` is
 # `if c: 1 else: (2 == 2)`. An `if` may also be a comparison's right operand.
 #= {result: [true, 1, true], inputs: {yes: true, no: false}}
+def {yes, no} = import('inputs')
 [
     if no: 1 else: 2 == 2,
     if yes: 1 else: 2 == 2,

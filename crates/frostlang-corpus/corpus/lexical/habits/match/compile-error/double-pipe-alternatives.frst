@@ -1,3 +1,4 @@
 # Pattern alternatives are separated by a single `|`.
 #= {rejects: 'alternatives are separated by `|`', inputs: {x: 1}}
+def {x} = import('inputs')
 match x { 1 || 2 => 1 }

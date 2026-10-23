@@ -1,4 +1,5 @@
 # An exported pattern with alternatives over a runtime value that fits none of
 # them raises.
 #= {raises: 'no alternative', inputs: {value: [1, 2]}}
+def {value} = import('inputs')
 export def {a} | [a] = value

@@ -1,3 +1,4 @@
 # A Map member that is not a function cannot be threaded into.
 #= {raises: ['non-function', 'Int'], inputs: {n: 1, m: {f: 5}}}
+def {n, m} = import('inputs')
 n @ m.f()

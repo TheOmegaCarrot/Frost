@@ -19,6 +19,7 @@
 #=         counts: [1, 2],
 #=     },
 #= }
+def {ten_tenths, readings, counts} = import('inputs')
 defn total(xs) -> reduce(xs, 0, fn sum, x -> sum + x)
 defn reversed(xs) -> reduce(xs, [], fn acc, x -> [x] + acc)
 defn mean(xs) -> total(xs) / len(xs)

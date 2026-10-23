@@ -1,4 +1,5 @@
 # A value only known at runtime, named like a pure global, shadows it: a call
 # of the name over constants calls the supplied function, never the global.
 #= {result: ['shadowed', 'shadowed'], inputs: {to_string: fn v -> 'shadowed'}}
+def {to_string} = import('inputs')
 [to_string(1), to_string('a')]

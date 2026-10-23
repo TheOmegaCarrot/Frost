@@ -1,0 +1,9 @@
+# Each operation is typed by its own operands, left to right: in
+# `greatest + 1 + 0.5` the Int sum overflows before the Float joins, so it
+# raises. Subtle because the exact result is a finite Float.
+#= {
+#=     raises: 'Int overflow: 9223372036854775807 + 1',
+#=     inputs: {greatest: 9223372036854775807},
+#= }
+def {greatest} = import('inputs')
+greatest + 1 + 0.5

@@ -1,5 +1,6 @@
 # A function threaded into `call` or `try_call` is applied to the Array of
 # arguments written after it.
 #= {result: [5, [1, 2], true, 5], inputs: {args: [4]}}
+def {args} = import('inputs')
 defn inc(x) -> x + 1
 [inc @ call(args), collect @ call([1, 2]), (inc @ try_call(args)).ok, (inc @ try_call(args)).value]

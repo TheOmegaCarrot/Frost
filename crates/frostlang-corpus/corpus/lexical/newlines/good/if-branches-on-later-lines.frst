@@ -1,6 +1,7 @@
 # Each `if` branch may start on the line after its colon, and `elif` and
 # `else` may start later lines, with blank lines between.
 #= {result: ['one', 'two', 'many'], inputs: {ns: [1, 2, 3]}}
+def {ns} = import('inputs')
 defn name(n) -> if n == 1:
     'one'
 

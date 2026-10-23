@@ -4,6 +4,7 @@
 #=     raises: 'unknown operator %',
 #=     inputs: {program: ['+', 1, ['*', 2, ['%', 7, 3]]]},
 #= }
+def {program} = import('inputs')
 def builtins = {
     ['+']: fn a, b -> a + b,
     ['*']: fn a, b -> a * b,

@@ -1,0 +1,9 @@
+# Exponentiation by squaring on an exponent known only at runtime raises when
+# the squared base passes the Int range: 2 to the 64th overflows in a tail
+# call's argument, not in the non-tail multiply.
+#= {raises: 'Int overflow: 4294967296 * 4294967296', inputs: {e64: 64}}
+def {e64} = import('inputs')
+defn pow(base, exp) -> if exp == 0: 1
+    elif exp % 2 == 0: pow(base * base, exp / 2)
+    else: base * pow(base, exp - 1)
+pow(2, e64)

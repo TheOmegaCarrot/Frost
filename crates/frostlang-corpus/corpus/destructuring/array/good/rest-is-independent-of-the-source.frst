@@ -1,6 +1,7 @@
 # A rest is a value of its own: extending it leaves the source Array, and the
 # Array built from it, unchanged.
 #= {result: [[1, 2, 3], [2, 3], [2, 3, 4]], inputs: {xs: [1, 2, 3]}}
+def {xs} = import('inputs')
 def [_, ...rest] = xs
 def longer = rest + [4]
 [xs, rest, longer]

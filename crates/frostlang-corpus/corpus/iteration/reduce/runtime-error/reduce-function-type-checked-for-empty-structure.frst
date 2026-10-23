@@ -1,4 +1,5 @@
 # `reduce` requires a Function even when the structure is empty and the initial
 # value is the result, so the function would never be called.
 #= {raises: ['reduce', 'argument 3', 'String'], inputs: {xs: [], op: 'plus'}}
+def {xs, op} = import('inputs')
 reduce(xs, 0, op)

@@ -11,6 +11,7 @@
 #=         edges: [[1, 2], [3, 4], [2, 5], [4, 1], [5, 1]],
 #=     },
 #= }
+def {nodes, edges} = import('inputs')
 defn find(parents, x) -> {
     def parent = parents[x]
     if parent == x: [x, parents]

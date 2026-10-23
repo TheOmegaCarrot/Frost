@@ -1,4 +1,5 @@
 # An explicit key's colon must be followed by a pattern.
 #= {rejects: 'expected a pattern', inputs: {m: {a: 1}}}
+def {m} = import('inputs')
 def {a: } = m
 0

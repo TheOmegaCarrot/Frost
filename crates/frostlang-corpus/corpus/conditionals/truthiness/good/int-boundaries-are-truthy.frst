@@ -1,9 +1,9 @@
-# The largest and smallest Ints are truthy, including the smallest reached by
-# wrapping past the largest.
+# The largest and smallest Ints are truthy, the smallest whether written as a
+# literal or reached by arithmetic.
 #= {result: ['T', 'T', 'T']}
 def max = 9223372036854775807
 [
     if max: 'T' else: 'F',
     if -max - 1: 'T' else: 'F',
-    if max + 1: 'T' else: 'F',
+    if -9223372036854775808: 'T' else: 'F',
 ]

@@ -3,6 +3,7 @@
 #=     result: [true, false, true, true],
 #=     inputs: {short: [1, 2], long: [1, 2, 3], empty: []},
 #= }
+def {short, long, empty} = import('inputs')
 [
     short < long,
     long < short,

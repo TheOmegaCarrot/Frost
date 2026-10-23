@@ -2,6 +2,7 @@
 # happen: not a match with no matching arm, a failed destructuring, a missing
 # Map key, a type error, nor a call of Null.
 #= {result: [1, null, 1, null, 1], inputs: {one: 1, n: null, pair: [1, 2]}}
+def {one, n, pair} = import('inputs')
 [
     one or match one {
         2 => 'two',

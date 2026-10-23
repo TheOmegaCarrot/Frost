@@ -1,4 +1,5 @@
 # A `defn` function's name is its self-name too, so it can recurse.
 #= {result: 10, inputs: {n: 4}}
+def {n} = import('inputs')
 defn sum_to(k) -> if k <= 0: 0 else: k + sum_to(k - 1)
 sum_to(n)

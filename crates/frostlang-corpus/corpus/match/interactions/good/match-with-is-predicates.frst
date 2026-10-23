@@ -1,6 +1,7 @@
 # The `is_*` predicates in a guard agree with the type constraints in a
 # pattern.
 #= {result: ['String', 'Int', 'Null', 'other'], inputs: {xs: ['s', 1, null, [1]]}}
+def {xs} = import('inputs')
 map(xs, fn v -> match v {
     x if: is_string(x) => 'String',
     x if: is_int(x) => 'Int',

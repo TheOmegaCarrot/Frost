@@ -1,5 +1,6 @@
 # Calls to `map`, `filter`, and `reduce` work inside an interpolation.
 #= {result: ['first 2', 'kept 2', 'total 6'], inputs: {xs: [1, 2, 3]}}
+def {xs} = import('inputs')
 [
     $'first ${map(xs, fn x -> x * 2)[0]}',
     $'kept ${len(filter(xs, fn x -> x > 1))}',

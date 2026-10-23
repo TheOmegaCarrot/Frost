@@ -7,6 +7,7 @@
 #=         program: {add: [{let: 'y', value: {num: 2}, body: {var: 'y'}}, {var: 'y'}]},
 #=     },
 #= }
+def {program} = import('inputs')
 defn evaluate(node, env) -> match node {
     {num} => num,
     {var} => if has(env, var): env[var] else: error($'unbound variable ${var}'),

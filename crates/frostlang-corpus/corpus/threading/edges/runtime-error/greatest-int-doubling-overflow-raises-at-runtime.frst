@@ -1,0 +1,8 @@
+# Int multiplication overflow raises for a runtime value threaded into a
+# global.
+#= {
+#=     raises: ['Int overflow', '9223372036854775807 * 2'],
+#=     inputs: {max: 9223372036854775807},
+#= }
+def {max} = import('inputs')
+max @ times(2)

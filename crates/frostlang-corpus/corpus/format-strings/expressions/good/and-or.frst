@@ -1,4 +1,5 @@
 # `and` and `or` in an interpolation yield an operand, not a coerced Bool, and
 # that operand is what interpolates.
 #= {result: 'default yes 0 null', inputs: {missing: null, x: 7}}
+def {missing, x} = import('inputs')
 $'${missing or "default"} ${x and "yes"} ${false or 0} ${missing and x}'

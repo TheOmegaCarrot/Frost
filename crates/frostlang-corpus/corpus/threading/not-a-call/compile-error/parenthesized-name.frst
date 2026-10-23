@@ -1,5 +1,6 @@
 # A parenthesized name on the right of `@` is not a call; the suggestion keeps
 # the parentheses.
 #= {rejects: ['right side of `@` must be a call', 'try `(inc)()`'], inputs: {n: 1}}
+def {n} = import('inputs')
 defn inc(x) -> x + 1
 n @ (inc)

@@ -1,4 +1,5 @@
 # The right side of `@` starts with its callee; it cannot start with `.`
 # as a method call would.
 #= {rejects: ['expected an expression', '`.`'], inputs: {xs: [1]}}
+def {xs} = import('inputs')
 xs @ .len()

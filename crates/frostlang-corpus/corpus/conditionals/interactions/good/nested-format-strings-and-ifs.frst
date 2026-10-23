@@ -1,4 +1,5 @@
 # A format String inside an `if` inside another format String's
 # interpolation.
 #= {result: ['[n=3]', '[none]'], inputs: {values: [3, null]}}
+def {values} = import('inputs')
 map(values, fn n -> $'[${if n: $'n=${n}' else: 'none'}]')

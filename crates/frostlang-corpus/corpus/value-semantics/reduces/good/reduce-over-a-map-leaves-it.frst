@@ -1,6 +1,7 @@
 # Reducing over a Map reads its entries without changing it, even when the
 # initial value is that same Map.
 #= {result: [{a: [1], b: [2], a2: [1, 0], b2: [2, 0]}, {a: [1], b: [2]}], inputs: {n: 1}}
+def {n} = import('inputs')
 def m = {a: [n], b: [2]}
 def built = reduce(m, m, fn acc, k, v -> acc + {[k + '2']: v + [0]})
 [built, m]

@@ -1,5 +1,6 @@
 # A call after a threaded call applies to its result, which here is an Int,
 # not a function.
 #= {raises: ['non-function', 'Int'], inputs: {n: 5}}
+def {n} = import('inputs')
 defn inc(x) -> x + 1
 n @ inc()(1)

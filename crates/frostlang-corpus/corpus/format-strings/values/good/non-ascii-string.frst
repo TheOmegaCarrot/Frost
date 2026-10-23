@@ -1,4 +1,5 @@
 # An interpolated String with non-ASCII text, including a combining mark and an
 # emoji, is inserted unchanged.
 #= {result: '[naïve e\u{301} 日本 🎉]', inputs: {s: 'naïve e\u{301} 日本 🎉'}}
+def {s} = import('inputs')
 $'[${s}]'

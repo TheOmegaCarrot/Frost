@@ -6,6 +6,7 @@
 #=     result: [null, false, 2, 2.5, 's', x'02', 3, 3.5, [], {}, 's', x'01', 0, false, ''],
 #=     inputs: {xs: [null, false, 2, 2.5, 's', x'02', 3, 3.5, [], {}, 's', x'01', 0, false, '']},
 #= }
+def {xs} = import('inputs')
 def [
     p1 is Primitive,
     p2 is Primitive,

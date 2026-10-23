@@ -2,4 +2,5 @@
 # false because a String is truthy, while `(not v) @ type()` is the type of a
 # Bool.
 #= {result: [false, 'Bool'], inputs: {v: 5}}
+def {v} = import('inputs')
 [not v @ type(), (not v) @ type()]

@@ -1,4 +1,5 @@
 # A literal may be an entry's part: the key must be present and equal it.
 #= {result: 2, inputs: {m: {kind: 'point', y: 2}}}
+def {m} = import('inputs')
 def {kind: 'point', y} = m
 y

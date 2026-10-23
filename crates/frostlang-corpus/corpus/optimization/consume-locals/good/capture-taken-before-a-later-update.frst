@@ -1,6 +1,7 @@
 # A function capturing a binding keeps the value it captured, though the
 # binding's later last read builds a new structure from it.
 #= {result: [[1, 2], [1, 2, 3]], inputs: {xs: [1, 2]}}
+def {xs} = import('inputs')
 def v = xs
 def f = fn -> v
 def w = v + [3]

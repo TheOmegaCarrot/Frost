@@ -1,5 +1,6 @@
 # Into a lambda with only a rest parameter, the threaded value is the first
 # element of the rest Array.
 #= {result: [[1], [1, 2, 3]], inputs: {one: 1}}
+def {one} = import('inputs')
 defn all(...args) -> args
 [one @ all(), one @ all(2, 3)]

@@ -1,4 +1,5 @@
 # A name cannot start with a digit: `1x` is the number 1 touching the name
 # `x`, which makes no statement.
 #= {rejects: 'found `x`', inputs: {x: 1}}
+def {x} = import('inputs')
 1x

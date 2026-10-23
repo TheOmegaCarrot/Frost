@@ -1,5 +1,6 @@
 # A guard that raises propagates the error; it does not count as a failed guard.
 #= {raises: 'division by zero', inputs: {v: 1}}
+def {v} = import('inputs')
 match v {
     x if: x / 0 => 0,
     _ => 1,

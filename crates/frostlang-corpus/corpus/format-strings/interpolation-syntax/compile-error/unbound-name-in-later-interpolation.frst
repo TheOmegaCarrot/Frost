@@ -1,4 +1,5 @@
 # Every interpolation is resolved, not only the first: an unbound name in a
 # later one is still a compile error.
 #= {rejects: ['`nope`', 'not defined'], inputs: {x: 7}}
+def {x} = import('inputs')
 def s = $'${x} ${x + 1} ${nope}'

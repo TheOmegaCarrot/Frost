@@ -3,6 +3,7 @@
 #=     result: [[1.0, 3.0, -4.5], [1.0, 3.0, -4.5]],
 #=     inputs: {xs: [0.5, 1.5, -2.25]},
 #= }
+def {xs} = import('inputs')
 def literal = map([0.5, 1.5, -2.25], fn x -> x * 2.0)
 def runtime = map(xs, fn x -> x * 2.0)
 [literal, runtime]

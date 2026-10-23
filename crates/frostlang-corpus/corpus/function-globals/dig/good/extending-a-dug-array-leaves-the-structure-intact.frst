@@ -1,5 +1,6 @@
 # Extending an Array that `dig` found builds a new Array: the structure dug
 # into still holds the original.
 #= {result: [[1, 2, 3], {a: {b: [1, 2]}}], inputs: {data: {a: {b: [1, 2]}}}}
+def {data} = import('inputs')
 def extended = dig(data, 'a', 'b') + [3]
 [extended, data]

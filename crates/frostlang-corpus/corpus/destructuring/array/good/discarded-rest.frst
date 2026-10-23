@@ -1,6 +1,7 @@
 # `..._` accepts any number of trailing elements, including none, and binds
 # nothing.
 #= {result: [1, 5], inputs: {long: [1, 2, 3], short: [5]}}
+def {long, short} = import('inputs')
 def [a, ..._] = long
 def [b, ..._] = short
 [a, b]

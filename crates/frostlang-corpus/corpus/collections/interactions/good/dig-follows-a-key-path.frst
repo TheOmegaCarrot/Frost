@@ -4,4 +4,5 @@
 #=     result: [5, null, null, {a: [{b: 5}]}],
 #=     inputs: {data: {a: [{b: 5}]}},
 #= }
+def {data} = import('inputs')
 [dig(data, 'a', 0, 'b'), dig(data, 'missing', 0, 'b'), dig(data, 'a', 9, 'b'), dig(data)]

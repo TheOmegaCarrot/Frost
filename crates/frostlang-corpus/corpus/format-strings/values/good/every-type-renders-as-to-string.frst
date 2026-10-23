@@ -4,4 +4,5 @@
 #=     result: [true, true, true, true, true, true, true, true, true],
 #=     inputs: {values: [null, true, 7, 2.5, 'text', x'00ff', [1, 'a'], {k: 'v'}, fn -> 1]},
 #= }
+def {values} = import('inputs')
 map(values, fn v -> $'<${v}>' == '<' + to_string(v) + '>')

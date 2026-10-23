@@ -1,0 +1,11 @@
+# Int addition of operands only known at runtime succeeds when the result
+# lands exactly on the greatest or least Int, as a folded sum does.
+#= {
+#=     result: [9223372036854775807, -9223372036854775808],
+#=     inputs: {below_greatest: 9223372036854775806, above_least: -9223372036854775807, one: 1},
+#= }
+def {below_greatest, above_least, one} = import('inputs')
+[
+    below_greatest + one,
+    above_least + -one,
+]

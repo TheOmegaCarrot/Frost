@@ -4,6 +4,7 @@
 #=     result: [true, false, true, true],
 #=     inputs: {m: {a: 1, b: 2, c: 3}, n: {a: 1, b: 2}, one: 1},
 #= }
+def {m, n, one} = import('inputs')
 [
     m == {c: 3, b: 2, a: one},
     m == n,

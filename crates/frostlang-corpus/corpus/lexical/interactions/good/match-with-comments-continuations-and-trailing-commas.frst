@@ -6,6 +6,7 @@
 #=     lints: [['unused binding', '`first`']],
 #=     inputs: {vs: [1, {xs: [7, 8, 9]}, [1, 2, 3, 4]]},
 #= }
+def {vs} = import('inputs')
 defn describe(v) -> match v {
     # a small number
     n is Int

@@ -1,3 +1,4 @@
 # `init` is an ordinary name, so it may follow `.` as a field name.
 #= {result: 0, inputs: {settings: {['init']: 0}}}
+def {settings} = import('inputs')
 settings.init

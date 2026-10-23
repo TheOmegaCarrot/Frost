@@ -21,6 +21,7 @@
 #=         flipped: [2, 2.0],
 #=     },
 #= }
+def {people, numbers, flipped} = import('inputs')
 defn sort_by(xs, key) -> {
     defn insert(sorted, x) -> match sorted {
         [] => [x],

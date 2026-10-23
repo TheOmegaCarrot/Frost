@@ -1,6 +1,7 @@
 # Two destructurings of one source each see the original, though the values
 # taken by the first were extended before the second ran.
 #= {result: [[1, 0], [9, 2, 3]], inputs: {n: 1}}
+def {n} = import('inputs')
 def xs = [[n], 2, 3]
 def [a, _, _] = xs
 def grown = a + [0]

@@ -1,5 +1,6 @@
 # A zero result, Int or Float, is truthy: only Null and false are falsy.
 #= {result: ['truthy', 'truthy', 0], inputs: {one: 1, x: 2.5}}
+def {one, x} = import('inputs')
 [
     if one - one: 'truthy' else: 'falsy',
     if x * 0: 'truthy' else: 'falsy',

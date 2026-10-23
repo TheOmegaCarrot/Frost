@@ -1,6 +1,7 @@
 # The `if`s of missing-else-is-null, with conditions only known at runtime,
 # have the same values.
 #= {result: [null, null, 1], inputs: {no: false, nothing: null, yes: true}}
+def {no, nothing, yes} = import('inputs')
 [
     if no: 1,
     if nothing: print('never'),

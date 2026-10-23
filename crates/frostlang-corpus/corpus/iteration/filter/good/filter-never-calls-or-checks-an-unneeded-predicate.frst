@@ -4,5 +4,6 @@
 #=     result: [[], {}, [], {}],
 #=     inputs: {xs: [], m: {}},
 #= }
+def {xs, m} = import('inputs')
 def boom = fn ...args -> error('called')
 [filter(xs, boom), filter(m, boom), filter(xs, fn -> true), filter(m, fn x -> true)]

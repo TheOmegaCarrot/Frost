@@ -1,10 +1,11 @@
 # Arithmetic results serve as Map keys of their own type, and reach entries
 # keyed by the matching literal: Int keys by Int results, Float keys by Float
-# results, including a wrapped Int and a negative Float.
+# results, including the least Int and a negative Float.
 #= {
 #=     result: ['two', 'least', 'half', 'minus one and a half'],
-#=     inputs: {one: 1, greatest: 9223372036854775807, quarter: 0.25, three: 3},
+#=     inputs: {one: 1, next_to_least: -9223372036854775807, quarter: 0.25, three: 3},
 #= }
+def {one, next_to_least, quarter, three} = import('inputs')
 def m = {
     [2]: 'two',
     [-9223372036854775808]: 'least',
@@ -13,7 +14,7 @@ def m = {
 }
 [
     m[one + one],
-    m[greatest + one],
+    m[next_to_least - one],
     m[quarter * 2],
     m[-three / 2.0],
 ]

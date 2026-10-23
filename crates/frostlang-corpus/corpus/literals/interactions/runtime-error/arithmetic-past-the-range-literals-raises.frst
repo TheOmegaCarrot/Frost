@@ -1,0 +1,4 @@
+# A literal is never out of range by wrapping, and arithmetic on the range-end
+# literals raises rather than wrapping, here where the optimizer can fold it.
+#= {raises: ['Int overflow', '9223372036854775807 + 1']}
+9223372036854775807 + 1

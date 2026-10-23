@@ -1,0 +1,9 @@
+# Subtracting below the smallest Int in a `reduce` raises rather than wrapping
+# to the largest, here over runtime values.
+#= {
+#=     raises: 'Int overflow: -9223372036854775808 - 1',
+#=     inputs: {xs: [-9223372036854775808, 1]},
+#= }
+def {xs} = import('inputs')
+def minus = fn acc, x -> acc - x
+reduce(xs, minus)

@@ -1,6 +1,7 @@
 # A multiline `@` pipeline threads a value through lambdas and globals,
 # each receiving the previous result as its first argument.
 #= {result: [20, 40], inputs: {xs: [1, 2, 3, 4]}}
+def {xs} = import('inputs')
 (
     xs
     @ filter(fn v -> v % 2 == 0)

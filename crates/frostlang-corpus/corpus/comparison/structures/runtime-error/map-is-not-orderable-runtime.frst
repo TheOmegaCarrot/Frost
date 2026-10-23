@@ -1,3 +1,4 @@
 # Maps known only at runtime have no ordering, whatever their contents.
 #= {raises: ['Map', 'not orderable'], inputs: {small: {a: 1}, large: {a: 1, b: 2}}}
+def {small, large} = import('inputs')
 small > large

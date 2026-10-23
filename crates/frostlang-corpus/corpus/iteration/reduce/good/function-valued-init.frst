@@ -2,6 +2,7 @@
 # takes the middle one as the initial value and the last as the operation. Each step wraps the
 # accumulated function, multiplying by an element: 5 * 2 * 3.
 #= {result: 30, inputs: {xs: [2, 3]}}
+def {xs} = import('inputs')
 def identity = fn y -> y
 def scale = reduce(xs, identity, fn acc, x -> fn y -> acc(y) * x)
 scale(5)

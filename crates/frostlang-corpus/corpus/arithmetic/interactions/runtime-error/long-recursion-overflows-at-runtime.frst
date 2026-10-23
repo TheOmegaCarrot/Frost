@@ -1,0 +1,9 @@
+# A long tail-recursive running sum over arguments only known at runtime
+# raises when it overflows, here only on its last step.
+#= {
+#=     raises: 'Int overflow: 9223279803134431452 + 92233720368548',
+#=     inputs: {count: 100000, zero: 0},
+#= }
+def {count, zero} = import('inputs')
+defn add_large(n, acc) -> if n == 0: acc else: add_large(n - 1, acc + 92233720368548)
+add_large(count, zero)

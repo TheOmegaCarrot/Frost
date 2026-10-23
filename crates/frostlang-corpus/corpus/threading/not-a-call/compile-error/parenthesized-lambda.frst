@@ -1,3 +1,4 @@
 # A parenthesized lambda on the right of `@` must still be called with `()`.
 #= {rejects: 'right side of `@` must be a call', inputs: {n: 1}}
+def {n} = import('inputs')
 n @ (fn x -> x * 2)

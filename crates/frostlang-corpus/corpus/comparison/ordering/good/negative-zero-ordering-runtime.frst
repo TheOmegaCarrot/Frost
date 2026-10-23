@@ -1,5 +1,6 @@
 # Negative zero orders equal to zero, with the negative zero made at runtime.
 #= {result: [false, false, true, true], inputs: {zero: 0.0}}
+def {zero} = import('inputs')
 def negative_zero = -zero
 [
     negative_zero < zero,

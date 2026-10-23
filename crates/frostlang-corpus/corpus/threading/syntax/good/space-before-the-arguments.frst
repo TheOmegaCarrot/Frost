@@ -1,5 +1,6 @@
 # A space between a threaded callee and its parentheses on the same line
 # still makes the call.
 #= {result: [4, [3, 1]], inputs: {n: 3}}
+def {n} = import('inputs')
 defn inc(x) -> x + 1
 [n @ inc (), n @ collect (1)]

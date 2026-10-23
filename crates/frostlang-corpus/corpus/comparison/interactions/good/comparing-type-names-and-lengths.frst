@@ -1,6 +1,7 @@
 # Comparisons combine with observation globals: `type` returns a String to
 # compare, and `len` an Int to order.
 #= {result: [true, false, true, true], inputs: {xs: [1, 2, 3], s: 'héllo'}}
+def {xs, s} = import('inputs')
 [
     type(xs) == 'Array',
     type(1) == type(1.0),

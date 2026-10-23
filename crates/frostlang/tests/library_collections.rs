@@ -902,6 +902,11 @@ fn take_drop_tail_and_drop_tail_keep_one_end() {
         ("drop([1, 2, 3], 5)", "[]"),
         ("tail([1, 2, 3], 5)", "[1, 2, 3]"),
         ("drop_tail([1, 2, 3], 5)", "[]"),
+        // However far past, up to the largest Int.
+        ("take([1, 2, 3], 9223372036854775807)", "[1, 2, 3]"),
+        ("drop([1, 2, 3], 9223372036854775807)", "[]"),
+        ("tail([1, 2, 3], 9223372036854775807)", "[1, 2, 3]"),
+        ("drop_tail([1, 2, 3], 9223372036854775807)", "[]"),
         ("take([], 1)", "[]"),
         ("tail([], 1)", "[]"),
     ]);
@@ -982,6 +987,7 @@ fn stride_takes_every_nth_element() {
         ("stride([1, 2, 3, 4, 5, 6], 4)", "[1, 5]"),
         ("stride([1, 2, 3], 1)", "[1, 2, 3]"),
         ("stride([1, 2, 3], 10)", "[1]"),
+        ("stride([1, 2, 3], 9223372036854775807)", "[1]"),
         ("stride([], 3)", "[]"),
         ("stride('abcdef', 2)", "'ace'"),
         (r"stride('\u{e9}x\u{1f600}y', 2)", r"'\u{e9}\u{1f600}'"),
@@ -1017,6 +1023,7 @@ fn slide_makes_overlapping_windows() {
         ("slide([1, 2], 1)", "[[1], [2]]"),
         ("slide([1, 2], 2)", "[[1, 2]]"),
         ("slide([1, 2], 3)", "[]"),
+        ("slide([1, 2], 9223372036854775807)", "[]"),
         ("slide([], 1)", "[]"),
     ]);
 }
@@ -1027,6 +1034,7 @@ fn chunk_makes_consecutive_chunks() {
         ("chunk([1, 2, 3, 4, 5], 2)", "[[1, 2], [3, 4], [5]]"),
         ("chunk([1, 2, 3, 4], 2)", "[[1, 2], [3, 4]]"),
         ("chunk([1, 2], 5)", "[[1, 2]]"),
+        ("chunk([1, 2], 9223372036854775807)", "[[1, 2]]"),
         ("chunk([], 2)", "[]"),
     ]);
 }
@@ -1182,6 +1190,7 @@ fn flatten_flattens_to_a_depth() {
         ("flatten([1, [2, [3, 4]], 5], 0)", "[1, [2, [3, 4]], 5]"),
         ("flatten([1, [2, [3, 4]], 5], 2)", "[1, 2, 3, 4, 5]"),
         ("flatten([[[[1]]]], 10)", "[1]"),
+        ("flatten([[[[1]]]], 9223372036854775807)", "[1]"),
     ]);
 }
 
@@ -1328,6 +1337,61 @@ fn product_multiplies_the_elements() {
         ("product([])", "null"),
     ]);
     assert_raises_as(&[("product([2, 'a'])", "2 * 'a'")]);
+}
+
+/// A sum or product of Ints reaching either end of the Int range is that Int;
+/// one past an end raises the overflow error that `+` or `*` raises.
+#[test]
+fn sum_and_product_raise_on_int_overflow() {
+    assert_values(&[
+        ("sum([9223372036854775806, 1])", "9223372036854775807"),
+        (
+            "sum([-9223372036854775807, -1])",
+            "-9223372036854775807 - 1",
+        ),
+        ("product([7, 1317624576693539401])", "9223372036854775807"),
+        (
+            "product([-2, 4611686018427387904])",
+            "-9223372036854775807 - 1",
+        ),
+    ]);
+    assert_raises_as(&[
+        ("sum([9223372036854775807, 1])", "9223372036854775807 + 1"),
+        (
+            "sum([-9223372036854775807 - 1, -1])",
+            "(-9223372036854775807 - 1) + -1",
+        ),
+        (
+            "product([2, 4611686018427387904])",
+            "2 * 4611686018427387904",
+        ),
+        (
+            "product([-3, 4611686018427387904])",
+            "-3 * 4611686018427387904",
+        ),
+    ]);
+}
+
+#[test]
+fn sum_and_product_are_left_to_right_reductions() {
+    // `sum` is `reduce` with `+`, and `product` with `*`, so an overflowing
+    // running total raises even when a later element would bring the whole back
+    // in range.
+    assert_raises_as(&[
+        (
+            "sum([9223372036854775807, 1, -1])",
+            "9223372036854775807 + 1",
+        ),
+        (
+            "product([4611686018427387904, 2, 0])",
+            "4611686018427387904 * 2",
+        ),
+    ]);
+    // In the other order, every running total fits.
+    assert_values(&[
+        ("sum([9223372036854775807, -1, 1])", "9223372036854775807"),
+        ("product([4611686018427387904, 0, 2])", "0"),
+    ]);
 }
 
 #[test]

@@ -1,3 +1,4 @@
 # A Null condition known only at runtime is falsy, so it takes the alternate.
 #= {result: 'no', inputs: {c: null}}
+def {c} = import('inputs')
 if c: 'yes' else: 'no'

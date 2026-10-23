@@ -1,5 +1,6 @@
 # An interpolation reads the binding in scope where the format String stands:
 # a parameter shadows an outer binding of the same name.
 #= {result: ['outer', 'param'], inputs: {x: 'outer'}}
+def {x} = import('inputs')
 def f = fn x -> $'${x}'
 [$'${x}', f('param')]

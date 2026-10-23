@@ -1,6 +1,7 @@
 # An `if` branch is one expression; indenting several statements under it, as
 # Python does, does not make a block.
 #= {rejects: 'an `if` branch is one expression', inputs: {x: true}}
+def {x} = import('inputs')
 if x:
     print(1)
     print(2)

@@ -8,6 +8,7 @@
 #=     ],
 #=     inputs: {n: 1},
 #= }
+def {n} = import('inputs')
 def m = {k: [n]}
 def first = m + {old: m}
 def kept = m

@@ -4,5 +4,6 @@
 #=     result: [null, null, false, 3],
 #=     inputs: {a: null, c: {bar: null}, d: {bar: false}, g: {bar: {baz: 3}}},
 #= }
+def {a, c, d, g} = import('inputs')
 defn dig(foo) -> foo and foo.bar and foo.bar.baz
 [dig(a), dig(c), dig(d), dig(g)]

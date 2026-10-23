@@ -1,0 +1,6 @@
+# Arithmetic on bound Ints raises on overflow past the least Int when the
+# bindings are constants the optimizer may propagate and fold.
+#= {raises: 'Int overflow: -9223372036854775808 - 1'}
+def small = -9223372036854775808
+def folded_down = small - 1
+folded_down

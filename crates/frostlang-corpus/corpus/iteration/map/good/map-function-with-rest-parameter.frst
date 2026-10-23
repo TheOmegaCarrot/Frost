@@ -4,4 +4,5 @@
 #=     result: [[[1, []], [2, []]], {a: [1]}],
 #=     inputs: {xs: [1, 2], m: {a: 1}},
 #= }
+def {xs, m} = import('inputs')
 [map(xs, fn x, ...rest -> [x, rest]), map(m, fn k, ...rest -> {[k]: rest})]

@@ -5,5 +5,6 @@
 #=     lints: ['lambda in abbreviated lambda'],
 #=     inputs: {xs: [1, 2, 3], none: []},
 #= }
+def {xs, none} = import('inputs')
 def total = $(reduce($2, $1, fn acc, x -> acc + x))
 [total(10, xs), total(10, none)]

@@ -1,0 +1,6 @@
+# Multiplying a known binding past the end of the Int range raises, exactly
+# as at runtime: propagating the binding leaves the error to the run.
+#= {raises: 'Int overflow: 9223372036854775807 * 2'}
+def greatest = 9223372036854775807
+def doubled = greatest * 2
+doubled

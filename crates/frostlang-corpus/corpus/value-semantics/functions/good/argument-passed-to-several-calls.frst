@@ -1,6 +1,7 @@
 # The same binding passed to several calls that each extend it gives each
 # call the original.
 #= {result: [[1, 2], [1, 3], [1]], inputs: {n: 1}}
+def {n} = import('inputs')
 defn push(xs, x) -> xs + [x]
 def base = [n]
 [push(base, 2), push(base, 3), base]

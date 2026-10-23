@@ -13,6 +13,7 @@
 #=         m: {},
 #=     },
 #= }
+def {n, b, i, f, s, y, a, m} = import('inputs')
 def n2 = n
 def b2 = b
 def i2 = i

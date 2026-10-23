@@ -162,11 +162,17 @@ pub(crate) fn script(call: &mut SqlCall<'_, '_>) -> Result<i64, SqlCallError> {
 /// How many rows `connection` has changed since its count of changes was
 /// `before`.
 pub(crate) fn changes_since(connection: &Connection, before: u64) -> i64 {
-    // The count can be SQLite's 32-bit one, sign-extended, which wraps every
-    // 2^32 changes. No one call changes nearly that many rows, so the low 32
-    // bits of the difference are exact.
-    let changed = (connection.total_changes() as u32).wrapping_sub(before as u32);
+    let changed = low_bits(connection.total_changes()).wrapping_sub(low_bits(before));
     i64::from(changed)
+}
+
+/// The low 32 bits of `count`, a count of changes from SQLite.
+///
+/// The count can be SQLite's 32-bit one, sign-extended, which wraps every 2^32
+/// changes. No one call changes nearly that many rows, so the low 32 bits of a
+/// call's count, or of the difference of two counts around it, are exact.
+fn low_bits(count: u64) -> u32 {
+    count as u32
 }
 
 /// `db.exec`: runs the call's statement, and counts the rows it changed.
@@ -184,7 +190,7 @@ pub(crate) fn exec(
     if connection.total_changes() == before {
         Ok(0)
     } else {
-        Ok(connection.changes() as i64)
+        Ok(i64::from(low_bits(connection.changes())))
     }
 }
 

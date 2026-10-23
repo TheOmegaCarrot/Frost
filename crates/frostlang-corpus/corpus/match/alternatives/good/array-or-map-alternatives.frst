@@ -1,5 +1,6 @@
 # One arm may accept the same data shaped as an Array or as a Map.
 #= {result: [[1, 2], [3, 4], 'neither'], inputs: {xs: [[1, 2], {a: 3, b: 4}, 'ab']}}
+def {xs} = import('inputs')
 map(xs, fn v -> match v {
     [a, b] | {a, b} => [a, b],
     _ => 'neither',

@@ -1,6 +1,7 @@
 # `or` yields an operand, not a Bool, so a condition `a or b` is tested on the
 # operand it yields: `null or 0` yields 0, which is truthy.
 #= {result: ['taken', 'skipped'], inputs: {n: null, zero: 0, f: false}}
+def {n, zero, f} = import('inputs')
 [
     if n or zero: 'taken' else: 'skipped',
     if n or f: 'taken' else: 'skipped',

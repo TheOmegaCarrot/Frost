@@ -1,6 +1,7 @@
 # Iteration functions with abbreviated lambdas compose: filter, then map, then
 # reduce.
 #= {result: 35, inputs: {xs: [1, 2, 3, 4, 5]}}
+def {xs} = import('inputs')
 def odd = filter(xs, $($ % 2 == 1))
 def squares = map(odd, $($ * $))
 reduce(squares, $($1 + $2))

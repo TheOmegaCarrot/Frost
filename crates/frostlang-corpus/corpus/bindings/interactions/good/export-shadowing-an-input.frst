@@ -1,5 +1,0 @@
-# An exported top-level `def` may shadow an input, reading the input in its own
-# value; the export carries the new binding's value.
-#= {result: 2, exports: {n: 2}, inputs: {n: 1}}
-export def n = n + 1
-n

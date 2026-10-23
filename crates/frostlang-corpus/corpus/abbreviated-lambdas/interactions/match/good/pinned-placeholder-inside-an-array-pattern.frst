@@ -1,6 +1,7 @@
 # A pinned placeholder can sit inside an Array pattern beside a binding:
 # the pair matches only when its head equals the first argument.
 #= {result: [5, null], inputs: {pair: [1, 5]}}
+def {pair} = import('inputs')
 def tail_if = $(match $2 {
     [($1), rest] => rest,
     _ => null,

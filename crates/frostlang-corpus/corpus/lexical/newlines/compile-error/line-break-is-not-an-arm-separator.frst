@@ -1,5 +1,6 @@
 # A line break does not separate `match` arms; they still need commas.
 #= {rejects: 'separate `match` arms with `,`', inputs: {x: 1}}
+def {x} = import('inputs')
 match x {
     1 => 'one'
     _ => 'other'

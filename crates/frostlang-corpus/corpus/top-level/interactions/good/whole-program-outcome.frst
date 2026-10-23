@@ -6,6 +6,7 @@
 #=     printed: ['start', 'checked 3 items', 'done'],
 #=     inputs: {items: [1, 'x', 2, 3]},
 #= }
+def {items} = import('inputs')
 print('start')
 defn check(item) -> if is_int(item): item else: error($'bad: ${item}')
 def outcomes = map(items, fn item -> try_call(check, [item]))

@@ -17,6 +17,7 @@
 #=         ],
 #=     },
 #= }
+def {sales} = import('inputs')
 defn add_sale(totals, sale) -> {
     def {region, qty, price} = sale
     totals + {[region]: (totals[region] or 0) + qty * price}

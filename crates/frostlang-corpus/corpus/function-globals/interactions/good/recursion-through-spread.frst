@@ -1,4 +1,5 @@
 # A function may recur through a spread copy of itself.
 #= {result: 'done', inputs: {n: 50}}
+def {n} = import('inputs')
 defn countdown(k) -> if k == 0: 'done' else: spread(countdown)([k - 1])
 countdown(n)

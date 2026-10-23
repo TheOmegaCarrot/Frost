@@ -1,0 +1,6 @@
+# Grouping the constants first makes a Float sum, which cannot overflow an
+# Int: `greatest + (1 + 0.5)` is a Float past the Int range, though
+# `greatest` is only known at runtime.
+#= {result: 9.223372036854776e18, inputs: {greatest: 9223372036854775807}}
+def {greatest} = import('inputs')
+greatest + (1 + 0.5)

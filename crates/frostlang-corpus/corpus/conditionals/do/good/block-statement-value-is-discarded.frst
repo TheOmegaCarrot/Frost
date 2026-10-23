@@ -1,5 +1,6 @@
 # A block used as a statement runs, but its value is dropped.
 #= {result: 5, printed: ['ran'], inputs: {x: 1}}
+def {x} = import('inputs')
 do { 1 }
 do {
     def y = x

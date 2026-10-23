@@ -1,3 +1,4 @@
 # Matches may be arguments to a call, each evaluated in order.
 #= {result: 2, inputs: {m: {a: [1, 2]}}}
+def {m} = import('inputs')
 len(match m { {a} => a })

@@ -1,3 +1,4 @@
 # A combinator supplied at run time, applied to `print`, still prints.
 #= {result: null, printed: ['runtime'], inputs: {combine: curry}}
+def {combine} = import('inputs')
 combine(print, 'runtime')()

@@ -1,5 +1,6 @@
 # A threaded call's lambda argument may have a block body spanning lines.
 #= {result: [3, 5, 7], inputs: {xs: [1, 2, 3]}}
+def {xs} = import('inputs')
 xs @ map(fn x -> {
     def doubled = x * 2
     doubled + 1

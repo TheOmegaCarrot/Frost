@@ -1,6 +1,7 @@
 # A Bool key and an Int key never coincide: `true` does not find the entry
 # under 1, nor 1 the entry under `true`.
 #= {result: ['no Int key', 'no Bool key'], inputs: {t: {[true]: 0}, i: {[1]: 0}}}
+def {t, i} = import('inputs')
 [
     match t { {[1]: _} => 'Int key', _ => 'no Int key' },
     match i { {[true]: _} => 'Bool key', _ => 'no Bool key' },

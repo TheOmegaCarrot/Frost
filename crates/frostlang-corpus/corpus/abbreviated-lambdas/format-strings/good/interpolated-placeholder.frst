@@ -1,5 +1,6 @@
 # A placeholder may be interpolated in a format string that is the body of
 # an abbreviated lambda.
 #= {result: '<a>', inputs: {s: 'a'}}
+def {s} = import('inputs')
 def wrap = $($'<${$}>')
 wrap(s)

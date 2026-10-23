@@ -1,6 +1,7 @@
 # A format String pattern is evaluated when the match reaches it, and compared
 # by value with the target.
 #= {result: ['matched', 'no'], inputs: {name: 'world', a: 'hello, world', b: 'hello, there'}}
+def {name, a, b} = import('inputs')
 defn greets(s) -> match s {
     $'hello, ${name}' => 'matched',
     _ => 'no',

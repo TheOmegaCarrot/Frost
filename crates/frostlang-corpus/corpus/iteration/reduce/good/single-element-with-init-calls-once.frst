@@ -1,5 +1,6 @@
 # A one-element Array with an initial value calls the operation exactly once,
 # with the initial value and the element.
 #= {result: [[0, 7], [0, 7]], inputs: {one: [7]}}
+def {one} = import('inputs')
 def pair = fn acc, x -> [acc, x]
 [reduce([7], 0, pair), reduce(one, 0, pair)]

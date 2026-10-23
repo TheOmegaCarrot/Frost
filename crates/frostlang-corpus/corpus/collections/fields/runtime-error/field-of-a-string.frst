@@ -1,3 +1,4 @@
 # A String has no fields; there are no methods on values.
 #= {raises: ['Cannot index value', 'String'], inputs: {s: 'abc'}}
+def {s} = import('inputs')
 s.len

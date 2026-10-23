@@ -4,6 +4,7 @@
 #=     result: ['ada', 36, 'anonymous', 0],
 #=     inputs: {person: {name: 'ada', age: 36}, n: null},
 #= }
+def {person, n} = import('inputs')
 def {name, age} = person or {name: 'anonymous', age: 0}
 def {name: other, age: other_age} = n or {name: 'anonymous', age: 0}
 [name, age, other, other_age]

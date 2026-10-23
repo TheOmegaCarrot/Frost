@@ -1,0 +1,6 @@
+# Negating a known binding of the least Int raises, exactly as at runtime:
+# propagating the binding leaves the error to the run.
+#= {raises: 'Int overflow: -(-9223372036854775808)'}
+def least = -9223372036854775808
+def negated = -least
+negated

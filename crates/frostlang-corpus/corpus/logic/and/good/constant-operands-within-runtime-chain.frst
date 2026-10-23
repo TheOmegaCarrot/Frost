@@ -6,6 +6,7 @@
 #=     printed: ['right of a truthy chain'],
 #=     inputs: {one: 1, n: null},
 #= }
+def {one, n} = import('inputs')
 [
     true and one and 3,
     one and null and print('past a constant Null'),

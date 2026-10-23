@@ -1,3 +1,4 @@
 # A Null key known only at runtime raises when the Map is built.
 #= {raises: ['not a valid Map key', 'Null'], inputs: {k: null}}
+def {k} = import('inputs')
 {[k]: 1}

@@ -13,6 +13,7 @@
 #=         ],
 #=     },
 #= }
+def {grids} = import('inputs')
 defn paths(grid) -> {
     def last = reduce(grid, null, fn prev, cells -> reduce(cells, [], fn row, cell -> {
         def j = len(row)

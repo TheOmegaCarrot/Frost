@@ -1,6 +1,7 @@
 # Inside parentheses, line breaks are insignificant, so an `if` may spread its
 # parts over any lines there.
 #= {result: 12, inputs: {c: false}}
+def {c} = import('inputs')
 (
     if c:
         1

@@ -5,6 +5,7 @@
 #=     result: ['positive', 'negative', 'negative', 'positive', 'missing', 'missing'],
 #=     inputs: {z: 0.0, nz: -0.0},
 #= }
+def {z, nz} = import('inputs')
 def pos = {[0.0]: 'positive'}
 def neg = {[nz]: 'negative'}
 [

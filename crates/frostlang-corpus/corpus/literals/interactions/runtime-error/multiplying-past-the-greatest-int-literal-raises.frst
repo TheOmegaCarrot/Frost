@@ -1,0 +1,4 @@
+# Multiplication past the greatest Int literal raises rather than wrapping, here
+# where the optimizer can fold it.
+#= {raises: ['Int overflow', '9223372036854775807 * 2']}
+0x7fffffffffffffff * 2

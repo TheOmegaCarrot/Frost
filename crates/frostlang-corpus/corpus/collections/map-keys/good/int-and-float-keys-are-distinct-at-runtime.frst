@@ -4,4 +4,5 @@
 #=     result: [null, null, 'int', 'float'],
 #=     inputs: {m: {[1]: 'int', [2.0]: 'float'}, i: 2, f: 1.0},
 #= }
+def {m, i, f} = import('inputs')
 [m[f], m[i], m[1], m[2.0]]

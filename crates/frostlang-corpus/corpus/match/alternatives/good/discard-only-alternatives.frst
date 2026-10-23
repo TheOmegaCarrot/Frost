@@ -1,6 +1,7 @@
 # Alternatives that bind nothing at all are valid: they all bind the same,
 # empty, set of names.
 #= {result: ['text', 'text', 'other'], inputs: {xs: ['s', x'00', 1]}}
+def {xs} = import('inputs')
 map(xs, fn v -> match v {
     _ is String | _ is Bytes => 'text',
     _ => 'other',

@@ -27,6 +27,7 @@
 #=         ],
 #=     },
 #= }
+def {cases} = import('inputs')
 defn apply(op, a, b) -> match op {
     '+' => a + b,
     '-' => a - b,

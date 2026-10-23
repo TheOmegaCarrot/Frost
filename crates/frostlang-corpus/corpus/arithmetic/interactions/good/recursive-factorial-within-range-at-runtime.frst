@@ -1,0 +1,9 @@
+# A recursive factorial of arguments only known at runtime multiplies exactly
+# up to 20!, as a folded one does.
+#= {
+#=     result: [1, 120, 2432902008176640000],
+#=     inputs: {zero: 0, five: 5, twenty: 20},
+#= }
+def {zero, five, twenty} = import('inputs')
+defn fact(n) -> if n <= 1: 1 else: n * fact(n - 1)
+[fact(zero), fact(five), fact(twenty)]

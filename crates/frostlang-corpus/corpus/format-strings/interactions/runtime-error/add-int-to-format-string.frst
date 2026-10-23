@@ -1,4 +1,5 @@
 # Adding an Int to a format String's result is a type error: `+` does not
 # render its operand the way an interpolation does.
 #= {raises: 'incompatible types', inputs: {x: 7}}
+def {x} = import('inputs')
 $'n=${x}' + x

@@ -1,3 +1,4 @@
 # A String is not a structure `each` iterates.
 #= {raises: ['Structured', 'argument 1', 'String'], inputs: {s: 'abc'}}
+def {s} = import('inputs')
 each(s, fn c -> c)

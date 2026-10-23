@@ -1,0 +1,5 @@
+# Summing past the largest Int in a `reduce` raises rather than wrapping, here
+# over a literal the optimizer may compute ahead of time.
+#= {raises: 'Int overflow: 9223372036854775807 + 1'}
+def add = fn acc, x -> acc + x
+reduce([9223372036854775807, 1], add)

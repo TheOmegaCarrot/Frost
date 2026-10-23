@@ -1,5 +1,6 @@
 # A match may give a Map literal's value, and a computed key.
 #= {result: {k: 1, two: 2}, inputs: {v: [1]}}
+def {v} = import('inputs')
 {
     k: match v { [x] => x },
     [match v { [_] => 'two' }]: 2,

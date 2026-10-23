@@ -1,5 +1,6 @@
 # Mutual recursion by passing functions, on a count known only at runtime.
 #= {result: 'pong', inputs: {n: 100001}}
+def {n} = import('inputs')
 defn ping(k, other) -> if k == 0: 'ping' else: other(k - 1, ping)
 defn pong(k, other) -> if k == 0: 'pong' else: other(k - 1, pong)
 ping(n, pong)

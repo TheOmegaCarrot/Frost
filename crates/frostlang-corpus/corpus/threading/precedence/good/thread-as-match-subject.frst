@@ -1,5 +1,6 @@
 # A threaded call can be a `match` subject; the whole call is matched.
 #= {result: 'two', inputs: {n: 1}}
+def {n} = import('inputs')
 defn inc(x) -> x + 1
 match n @ inc() {
     1 => 'one',

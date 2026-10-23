@@ -1,4 +1,5 @@
 # An `each` call prints a format String per element, in order.
 #= {printed: ['0: a', '1: b'], result: null, inputs: {xs: ['a', 'b']}}
+def {xs} = import('inputs')
 each([0, 1], fn i -> print($'${i}: ${xs[i]}'))
 null

@@ -1,6 +1,7 @@
 # The function of binding-shadows-a-known-capture, capturing a value only known
 # at runtime, reads the capture and its shadow the same way.
 #= {result: [[5, 50], [5, 50]], inputs: {five: 5}}
+def {five} = import('inputs')
 def n = five
 def f = fn -> {
     def before = n

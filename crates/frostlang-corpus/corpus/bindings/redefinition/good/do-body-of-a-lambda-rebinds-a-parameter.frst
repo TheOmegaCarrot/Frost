@@ -2,6 +2,7 @@
 # opens a scope nested inside the parameters' scope, so a `def` there shadows
 # a parameter instead of rebinding it. The shadow's value reads the parameter.
 #= {result: [6, 11], inputs: {n: 5}}
+def {n} = import('inputs')
 def f = fn x -> do {
     def x = x + 1
     x

@@ -6,6 +6,7 @@
 #=     result: [[[0, 1, 2], [0, 1]], [[0, 1], [0, 1]]],
 #=     inputs: {xs: [0], t: true, f: false},
 #= }
+def {xs, t, f} = import('inputs')
 defn grow(start, c) -> {
     def a = start + [1]
     def b = if c: a + [2] else: a

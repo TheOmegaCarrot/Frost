@@ -1,5 +1,6 @@
 # An exported pattern's `(name)` part compares against that binding's value;
 # a different value raises.
 #= {raises: 'expected the value of', inputs: {pair: [1, 3]}}
+def {pair} = import('inputs')
 def k = 2
 export def [a, (k)] = pair

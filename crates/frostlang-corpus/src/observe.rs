@@ -1,8 +1,8 @@
 use std::collections::BTreeMap;
 use std::sync::{Arc, Mutex};
 
-use frostlang::compile::{CompilerOptions, Diagnostic, compile_in_scope};
-use frostlang::{Value, Vm, VmRuntimeConfiguration};
+use frostlang::compile::{CompilerOptions, Diagnostic, compile_program};
+use frostlang::{HostComponent, ImporterBuilder, MapKey, Value, Vm, VmRuntimeConfiguration};
 
 /// What compiling and running a script does under one set of options.
 #[derive(Debug, PartialEq)]
@@ -27,16 +27,17 @@ pub(crate) struct Finished {
     pub(crate) exports: BTreeMap<String, Value>,
 }
 
-/// Compile `source` under `options`, with each of `inputs` in its enclosing
-/// scope, and run it if it compiles, supplying their values.
+/// Compile `source` on its own under `options`, and run it if it compiles,
+/// with `inputs` as the content of a host component named `inputs`, which the
+/// script imports. An import is a runtime call, so the compiler knows nothing
+/// of an input's value.
 pub(crate) fn observe(
     filename: &str,
     source: &str,
     inputs: &BTreeMap<String, Value>,
     options: CompilerOptions,
 ) -> Observed {
-    let scope: Vec<&str> = inputs.keys().map(String::as_str).collect();
-    let output = match compile_in_scope(filename, source, options, &scope) {
+    let output = match compile_program(filename, source, options) {
         Ok(output) => output,
         Err(diagnostics) => return Observed::Rejected(diagnostics.render_narrated()),
     };
@@ -47,8 +48,17 @@ pub(crate) fn observe(
         .collect();
     let closure = output
         .code
-        .close_with(|name| inputs.get(name).cloned())
-        .expect("every name in scope is supplied");
+        .into_closure()
+        .expect("a script compiled on its own captures nothing");
+    let inputs: Value = inputs
+        .iter()
+        .map(|(name, value)| (MapKey::from(name.as_str()), value.clone()))
+        .collect();
+    let component = HostComponent::new("inputs", inputs).expect("`inputs` is a valid name");
+    let importer = ImporterBuilder::new()
+        .with_component(component)
+        .expect("the importer has no other component")
+        .build();
     let printed = Arc::new(Mutex::new(Vec::new()));
     let sink = {
         let printed = Arc::clone(&printed);
@@ -57,6 +67,7 @@ pub(crate) fn observe(
     let configuration = VmRuntimeConfiguration::default().with_print_sink(Arc::new(sink));
     let outcome = Vm::factory()
         .configuration(configuration)
+        .with_importer(importer)
         .build(closure)
         .run()
         .map(|result| Finished {

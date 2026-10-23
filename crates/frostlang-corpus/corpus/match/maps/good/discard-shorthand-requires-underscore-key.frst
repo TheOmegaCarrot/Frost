@@ -2,6 +2,7 @@
 # named "_" and binds nothing. Subtle: it is not an any-entry wildcard; that
 # reading would need `{foo}` to stop being plain shorthand for `{foo: foo}`.
 #= {result: ['no _ key', 'has _ key'], inputs: {xs: [{a: 1}, {_: 1}]}}
+def {xs} = import('inputs')
 map(xs, fn v -> match v {
     {_} => 'has _ key',
     _ => 'no _ key',

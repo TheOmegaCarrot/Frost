@@ -4,5 +4,6 @@
 #=     result: ['héllo, 世界', 'héllo', '', 9],
 #=     inputs: {a: 'héllo', b: ', 世界', empty: ''},
 #= }
+def {a, b, empty} = import('inputs')
 def joined = a + b
 [joined, a + empty, empty + empty, len(joined)]

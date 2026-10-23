@@ -1,4 +1,5 @@
 # An error the threaded-into function raises propagates out of the call.
 #= {raises: ['String + Int'], inputs: {s: 'a'}}
+def {s} = import('inputs')
 defn inc(x) -> x + 1
 s @ inc()

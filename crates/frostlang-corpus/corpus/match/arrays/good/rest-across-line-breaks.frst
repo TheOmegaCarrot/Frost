@@ -1,5 +1,6 @@
 # A multiline Array pattern may end with a rest on its own line.
 #= {result: [1, [2, 3]], inputs: {v: [1, 2, 3]}}
+def {v} = import('inputs')
 match v {
     [
         a,

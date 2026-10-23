@@ -1,3 +1,4 @@
 # Frost has no `while` loop.
 #= {rejects: 'no `while` loop', inputs: {running: false}}
+def {running} = import('inputs')
 while running { 1 }

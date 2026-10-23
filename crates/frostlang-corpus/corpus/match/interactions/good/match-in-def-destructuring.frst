@@ -1,5 +1,6 @@
 # A match's value may be destructured by a `def` pattern.
 #= {result: [2, 1], inputs: {v: [1, 2]}}
+def {v} = import('inputs')
 def [x, y] = match v {
     [a, b] => [b, a],
 }

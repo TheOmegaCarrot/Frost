@@ -6,5 +6,6 @@
 #=         cases: [[true, true, false], [true, false, true], [true, false, false], [false, true, true]],
 #=     },
 #= }
+def {cases} = import('inputs')
 defn pick(a, b, c) -> if a: if b: 1 elif c: 2
 map(cases, fn case -> call(pick, case))

@@ -1,4 +1,5 @@
 # A division by zero in a branch not taken at runtime never raises; the
 # condition is an input, so the compiler cannot discard the branch.
 #= {result: 'safe', inputs: {flag: false}}
+def {flag} = import('inputs')
 if flag: 1 / 0 else: 'safe'

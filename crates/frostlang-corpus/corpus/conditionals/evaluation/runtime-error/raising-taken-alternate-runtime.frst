@@ -1,4 +1,5 @@
 # A taken alternate that raises raises from the `if`, with the condition and
 # the raising operand known only at runtime.
 #= {raises: 'division by zero', inputs: {c: null, zero: 0}}
+def {c, zero} = import('inputs')
 if c: 1 else: 1 / zero

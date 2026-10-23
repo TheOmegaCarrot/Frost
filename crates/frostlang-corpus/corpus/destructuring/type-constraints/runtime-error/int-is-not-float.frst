@@ -1,4 +1,5 @@
 # `is Float` rejects an Int: the numeric types are distinct.
 #= {raises: 'expected a Float', inputs: {v: 1}}
+def {v} = import('inputs')
 def x is Float = v
 x

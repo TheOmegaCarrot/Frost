@@ -1,6 +1,7 @@
 # In an expression mixing constants with a value only known at runtime, the
 # constant subexpressions fold on their own and the whole computes as written.
 #= {result: [13, [3, 5], {a: 2, b: 'cd'}, 'xab'], inputs: {n: 1, s: 'x'}}
+def {n, s} = import('inputs')
 [
     (2 * 3) + n + (2 + 4),
     [1 + 2, n + 4],

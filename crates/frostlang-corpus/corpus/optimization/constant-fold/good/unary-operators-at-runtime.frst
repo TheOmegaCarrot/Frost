@@ -4,6 +4,7 @@
 #=     result: [-5, 5, -2.5, false, true, true, false, false, false],
 #=     inputs: {five: 5, minus_five: -5, sum: 2.5, yes: true, no: false, nothing: null, zero: 0, blank: '', empty: []},
 #= }
+def {five, minus_five, sum, yes, no, nothing, zero, blank, empty} = import('inputs')
 [
     -five,
     -minus_five,

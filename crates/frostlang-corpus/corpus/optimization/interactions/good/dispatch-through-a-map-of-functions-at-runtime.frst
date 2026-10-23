@@ -1,6 +1,7 @@
 # The dispatch of dispatch-through-a-map-of-functions, by operations only known
 # at runtime, computes the same results.
 #= {result: [5, 6, 'unknown'], inputs: {ops: ['add', 'mul', 'pow']}}
+def {ops} = import('inputs')
 def handlers = {add: fn a, b -> a + b, mul: fn a, b -> a * b}
 defn apply(op, a, b) -> match handlers[op] {
     null => 'unknown',

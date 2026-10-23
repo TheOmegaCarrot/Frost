@@ -2,4 +2,5 @@
 # ordered: in `null < (one / zero)` the left operand alone dooms the
 # comparison, yet the right operand's division by zero raises first.
 #= {raises: 'division by zero', inputs: {one: 1, zero: 0}}
+def {one, zero} = import('inputs')
 null < (one / zero)

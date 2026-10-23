@@ -1,5 +1,6 @@
 # `if` branches may be structure literals, and the chosen one is the value.
 #= {result: [{a: 1}, {}, [1], []], inputs: {yes: true, no: false}}
+def {yes, no} = import('inputs')
 [
     if yes: {a: 1} else: {},
     if no: {a: 1} else: {},

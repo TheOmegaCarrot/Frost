@@ -1,5 +1,6 @@
 # Deep tail recursion on a count known only at runtime, so the VM, not the
 # constant folder, runs every call.
 #= {result: 5000050000, inputs: {n: 100000}}
+def {n} = import('inputs')
 defn sum(k, acc) -> if k == 0: acc else: sum(k - 1, acc + k)
 sum(n, 0)

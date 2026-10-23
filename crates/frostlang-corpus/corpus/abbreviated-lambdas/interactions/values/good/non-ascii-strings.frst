@@ -1,5 +1,6 @@
 # Non-ASCII Strings pass through placeholders and concatenate intact.
 #= {result: ['café ☕', '日本日本'], inputs: {word: '日本'}}
+def {word} = import('inputs')
 def join = $($1 + ' ' + $2)
 def twice = $($ + $)
 [join('café', '☕'), twice(word)]

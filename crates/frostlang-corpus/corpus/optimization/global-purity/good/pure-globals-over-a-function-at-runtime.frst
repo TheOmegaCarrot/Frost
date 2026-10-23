@@ -4,6 +4,7 @@
 #=     result: ['Function', true, false, false, false, true, true, 'Function'],
 #=     inputs: {f: fn -> 1, native: len, impure: print},
 #= }
+def {f, native, impure} = import('inputs')
 [
     type(f),
     is_function(f),

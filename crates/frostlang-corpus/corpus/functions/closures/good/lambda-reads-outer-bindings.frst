@@ -1,5 +1,6 @@
 # A lambda's body reads the bindings in scope where it is written.
 #= {result: 30, inputs: {a: 10, b: 20}}
+def {a, b} = import('inputs')
 def x = a
 def y = b
 def f = fn -> x + y

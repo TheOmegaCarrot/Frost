@@ -1,6 +1,7 @@
 # A line starting with `.` or `@` continues the expression across a CRLF
 # line break.
 #= {result: 3, inputs: {m: {k: [1, 2, 3]}}}
+def {m} = import('inputs')
 m
     .k
     @ len()

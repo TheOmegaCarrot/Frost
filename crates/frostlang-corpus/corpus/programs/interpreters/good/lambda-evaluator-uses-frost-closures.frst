@@ -28,6 +28,7 @@
 #=         ]},
 #=     },
 #= }
+def {first, second, third} = import('inputs')
 defn evaluate(node, env) -> match node {
     {num} => num,
     {var} => env[var],

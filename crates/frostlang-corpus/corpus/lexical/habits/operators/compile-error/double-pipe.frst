@@ -1,3 +1,4 @@
 # Frost's logical "or" is the word `or`, not `||`.
 #= {rejects: 'is `or`', inputs: {a: true, b: true}}
+def {a, b} = import('inputs')
 a || b

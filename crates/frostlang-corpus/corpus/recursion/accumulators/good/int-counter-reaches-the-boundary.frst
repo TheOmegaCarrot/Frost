@@ -1,0 +1,5 @@
+# A counter stepped one at a time up to the top of the Int range lands on the
+# greatest Int exactly, and the recursion's base case triggers normally.
+#= {result: [9223372036854775806, 9223372036854775807]}
+defn step(n, times) -> if times == 0: n else: step(n + 1, times - 1)
+[step(9223372036854775805, 1), step(9223372036854775805, 2)]

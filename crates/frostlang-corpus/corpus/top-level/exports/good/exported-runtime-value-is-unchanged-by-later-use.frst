@@ -6,6 +6,7 @@
 #=     exports: {xs: [1, 2], m: {a: 1}},
 #=     inputs: {base: [1], key: 'a'},
 #= }
+def {base, key} = import('inputs')
 export def xs = base + [2]
 export def m = {[key]: 1}
 [xs + [3], m + {b: 2}]

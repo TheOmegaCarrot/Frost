@@ -29,6 +29,7 @@
 #=         ],
 #=     },
 #= }
+def {requests} = import('inputs')
 def users = {['1']: 'ada', ['2']: 'bo'}
 
 defn route(request) -> match request {

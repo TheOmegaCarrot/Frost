@@ -107,6 +107,36 @@ fn explicit_export_works_even_without_the_implicit_export_option() {
 }
 
 #[test]
+fn an_explicit_export_may_shadow_the_capture_it_reads() {
+    // `export def x = x + 1`: the rhs reads the captured `x`, and the export
+    // binds and harvests the new `x`. After it, the name means the export.
+    let source = r"
+        export def x = x + 1
+        [x, x + 1]
+    ";
+    let finished = Script::new(source).capture("x", Value::Int(1)).finish();
+    assert_eq!(finished.tail, Script::new("[2, 3]").run());
+    assert_eq!(
+        finished.exports.get("x"),
+        Some(&Value::Int(2)),
+        "the export carries the new binding's value"
+    );
+}
+
+#[test]
+fn a_pattern_may_shadow_the_capture_it_destructures() {
+    // The value reads the captured `xs`; the pattern then binds its own `xs`.
+    let source = r"
+        def [head, ...xs] = xs
+        [xs, head]
+    ";
+    let tail = Script::new(source)
+        .capture("xs", Script::new("[1, 2, 3]").run())
+        .run();
+    assert_eq!(tail, Script::new("[[2, 3], 1]").run());
+}
+
+#[test]
 fn multiple_outer_names_are_each_captured_independently() {
     // Two free names, both in the outer scope: each becomes its own capture,
     // seated with its own supplied value.

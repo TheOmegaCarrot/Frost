@@ -1,6 +1,7 @@
 # `{...} as name` binds the whole matched Map, every key included, alongside
 # the entries' own bindings.
 #= {result: [1, {a: 1, b: 2}], inputs: {v: {a: 1, b: 2}}}
+def {v} = import('inputs')
 match v {
     {a} as whole => [a, whole],
 }

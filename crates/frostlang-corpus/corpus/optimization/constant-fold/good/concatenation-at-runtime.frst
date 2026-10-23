@@ -21,6 +21,7 @@
 #=         empty_map: {},
 #=     },
 #= }
+def {ab, hello, japan, one, ones, left, empty_array, empty_map} = import('inputs')
 [
     ab + 'cd',
     hello + ', ' + japan,

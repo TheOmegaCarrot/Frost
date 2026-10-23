@@ -2,6 +2,7 @@
 # tried: in `x | [x]`, `x` binds the whole value, so `[x]` is dead, as an arm
 # after an unguarded binding arm is.
 #= {rejects: 'unreachable alternative branch', inputs: {v: [5]}}
+def {v} = import('inputs')
 match v {
     x | [x] => x,
 }

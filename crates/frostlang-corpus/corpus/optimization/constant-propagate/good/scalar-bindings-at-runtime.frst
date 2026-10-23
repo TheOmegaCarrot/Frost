@@ -4,6 +4,7 @@
 #=     result: [5, 10, 2.5, true, null, 'null'],
 #=     inputs: {five: 5, half: 2.5, yes: true, nothing: null},
 #= }
+def {five, half, yes, nothing} = import('inputs')
 def n = five
 def f = half
 def b = yes

@@ -1,5 +1,6 @@
 # A parenthesized value may be a function call, evaluated when reached.
 #= {result: 'three elements', inputs: {xs: [1, 2, 3]}}
+def {xs} = import('inputs')
 match 3 {
     (len(xs)) => 'three elements',
     _ => 'other',

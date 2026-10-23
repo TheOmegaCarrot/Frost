@@ -5,6 +5,7 @@
 #=     result: [false, false, false, true],
 #=     inputs: {one: 1},
 #= }
+def {one} = import('inputs')
 [
     not 1 == true,
     not null == false,

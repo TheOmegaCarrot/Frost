@@ -1,6 +1,7 @@
 # A `def` runs before the final expression, even when its binding is never
 # used: its error is the one raised.
 #= {raises: 'modulus by zero', lints: [['unused binding', '`y`']], inputs: {zero: 0}}
+def {zero} = import('inputs')
 do {
     def y = 1 % zero
     1 / zero

@@ -1,5 +1,6 @@
 # An invalid computed key is an error, not a mismatch, so it raises from
 # inside an alternative rather than trying the next branch.
 #= {raises: 'not a valid Map key', inputs: {k: null, v: {x: 1}}}
+def {k, v} = import('inputs')
 def {[k]: a} | {x: a} = v
 a

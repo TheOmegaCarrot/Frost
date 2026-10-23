@@ -1,5 +1,6 @@
 # A literal-looking Array or Map in a pattern is itself a pattern of literal
 # parts, so it matches a structurally equal value.
 #= {result: 'ok', inputs: {xs: [[1, 2], {k: 'v'}, 'ok']}}
+def {xs} = import('inputs')
 def [[1, 2], {k: 'v'}, a] = xs
 a

@@ -1,6 +1,7 @@
 # An `each` whose value goes unused still runs: discarding a statement's
 # value never discards its effects.
 #= {result: 'done', printed: ['1', '2'], inputs: {xs: [1, 2]}}
+def {xs} = import('inputs')
 each(xs, fn x -> print(x))
 each([1, 2], fn x -> null)
 'done'

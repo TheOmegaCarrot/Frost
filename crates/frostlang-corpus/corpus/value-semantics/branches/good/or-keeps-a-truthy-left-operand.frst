@@ -1,6 +1,7 @@
 # `or` with a truthy left operand returns that very value; extending the
 # result leaves the binding it came from unchanged.
 #= {result: [[1, 2], [1]], inputs: {n: 1}}
+def {n} = import('inputs')
 def xs = [n]
 def picked = xs or [0]
 [picked + [2], xs]

@@ -1,0 +1,5 @@
+# A sum that overflows partway through a reduce over constants raises, even
+# though adding the last element would bring the total back into range.
+#= {raises: 'Int overflow'}
+def big = 9223372036854775807
+reduce([big, big, -big], fn acc, x -> acc + x)

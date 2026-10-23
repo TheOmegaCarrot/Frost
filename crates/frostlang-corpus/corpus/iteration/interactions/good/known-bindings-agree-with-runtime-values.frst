@@ -4,6 +4,7 @@
 #=     result: [[3, 6], [3, 6], {b: 20}, {b: 20}, 6, 6],
 #=     inputs: {runtime_xs: [1, 2], runtime_m: {a: 1, b: 2}},
 #= }
+def {runtime_xs, runtime_m} = import('inputs')
 def known_xs = [1, 2]
 def known_m = {a: 1, b: 2}
 def triple = fn x -> x * 3

@@ -1,8 +1,0 @@
-# Int arithmetic wraps in two's complement, so a wrapped result equals the Int
-# at the other end of the range. Written with literals the folder can evaluate.
-#= {result: [true, true, true]}
-[
-    9223372036854775807 + 1 == -9223372036854775808,
-    -9223372036854775808 - 1 == 9223372036854775807,
-    9223372036854775807 * 2 == -2,
-]

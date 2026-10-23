@@ -1,4 +1,5 @@
 # A Float difference of operands only known at runtime that is too large in
 # magnitude to be finite raises.
 #= {raises: 'infinity', inputs: {largest: 1.7976931348623157e308}}
+def {largest} = import('inputs')
 -largest - largest

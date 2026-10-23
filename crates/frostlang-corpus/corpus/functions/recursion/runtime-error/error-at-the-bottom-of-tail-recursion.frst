@@ -1,4 +1,5 @@
 # An error raised at the end of a tail recursion propagates to the caller.
 #= {raises: 'division by zero', inputs: {n: 3}}
+def {n} = import('inputs')
 defn down(k) -> if k == 0: 1 / k else: down(k - 1)
 down(n)

@@ -1,6 +1,7 @@
 # An error raised in a callback propagates out of `map`, `filter`, `reduce`,
 # and `each`, and is caught intact around the call.
 #= {result: ['t1', 's1', 'f1', 'e1'], inputs: {xs: [1, 2]}}
+def {xs} = import('inputs')
 [
     try_call(fn -> map(xs, fn x -> error($'t${x}'))).error,
     try_call(fn -> filter(xs, fn x -> error($'s${x}'))).error,

@@ -1,3 +1,4 @@
 # A written argument of a threaded call is resolved like any expression.
 #= {rejects: ['`missing`', 'not defined'], inputs: {xs: [1]}}
+def {xs} = import('inputs')
 xs @ collect(missing)

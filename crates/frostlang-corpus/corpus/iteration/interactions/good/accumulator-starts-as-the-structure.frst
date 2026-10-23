@@ -2,5 +2,6 @@
 # accumulator never changes the structure `reduce` walks, nor the binding
 # holding it.
 #= {result: [[1, 2, 1, 2], [1, 2]], inputs: {xs: [1, 2]}}
+def {xs} = import('inputs')
 def grown = reduce(xs, xs, fn acc, x -> acc + [x])
 [grown, xs]

@@ -1,0 +1,8 @@
+# Int multiplication whose product lands exactly on the greatest or least Int,
+# or is the bound itself, succeeds: only a product past a bound overflows.
+#= {result: [9223372036854775806, -9223372036854775808, -9223372036854775807]}
+[
+    4611686018427387903 * 2,
+    -4611686018427387904 * 2,
+    9223372036854775807 * -1,
+]

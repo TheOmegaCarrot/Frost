@@ -6,6 +6,7 @@
 #=     lints: [['unused binding', '`empty`']],
 #=     inputs: {items: ['a']},
 #= }
+def {items} = import('inputs')
 defn stack(xs) -> {
     push: fn x -> stack([x] + xs),
     pop: fn -> match xs {

@@ -7,4 +7,5 @@
 #=         right: {[true]: 'r', [1]: 'r', ['s']: 'r', [x'00']: 'r'},
 #=     },
 #= }
+def {left, right} = import('inputs')
 left + right

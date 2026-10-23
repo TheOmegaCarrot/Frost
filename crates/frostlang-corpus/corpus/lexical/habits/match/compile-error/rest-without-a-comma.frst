@@ -1,3 +1,4 @@
 # A rest binding follows a comma like any other element.
 #= {rejects: 'a `...rest` binding follows a comma', inputs: {xs: [1, 2]}}
+def {xs} = import('inputs')
 def [a ...rest] = xs

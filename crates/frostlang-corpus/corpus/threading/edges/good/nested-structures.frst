@@ -1,4 +1,5 @@
 # Nested structures thread whole; a chain can walk into them step by step.
 #= {result: [2, 3, [[1, [2]], 9]], inputs: {data: [[1, [2]], {k: [3]}]}}
+def {data} = import('inputs')
 defn at(v, key) -> v[key]
 [data @ at(0) @ at(1) @ at(0), data @ dig(1, 'k', 0), data[0] @ collect(9)]

@@ -1,0 +1,5 @@
+# A counter stepped one at a time reaches the top of the Int range, and the
+# step past it raises rather than wrapping.
+#= {raises: 'Int overflow: 9223372036854775807 + 1'}
+defn step(n, times) -> if times == 0: n else: step(n + 1, times - 1)
+step(9223372036854775805, 3)

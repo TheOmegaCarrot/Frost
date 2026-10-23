@@ -4,6 +4,7 @@
 #=     result: [true, true, true, true],
 #=     inputs: {floats: [1.0, -0.0, 1.5e-7, 1e20]},
 #= }
+def {floats} = import('inputs')
 [
     $'${1.0}' == $'${floats[0]}',
     $'${-0.0}' == $'${floats[1]}',

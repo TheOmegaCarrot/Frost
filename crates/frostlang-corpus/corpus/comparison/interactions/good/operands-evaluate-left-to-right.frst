@@ -6,6 +6,7 @@
 #=     printed: ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l'],
 #=     inputs: {one: 1, two: 2},
 #= }
+def {one, two} = import('inputs')
 defn noisy(label, value) -> {
     print(label)
     value

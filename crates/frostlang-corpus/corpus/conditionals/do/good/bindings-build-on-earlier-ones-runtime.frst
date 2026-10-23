@@ -1,6 +1,7 @@
 # A block's bindings build on a value known only at runtime, read from the
 # enclosing scope.
 #= {result: 10, inputs: {x: 4}}
+def {x} = import('inputs')
 do {
     def y = x + 1
     y * 2

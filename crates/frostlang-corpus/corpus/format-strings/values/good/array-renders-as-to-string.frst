@@ -5,4 +5,5 @@
 #=     result: [true, true, true, true],
 #=     inputs: {cases: [[], [1], [[1, [2]], []], [null, true, 1, 2.5, 'two', x'0a']]},
 #= }
+def {cases} = import('inputs')
 map(cases, fn a -> $'${a}' == to_string(a))

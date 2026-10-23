@@ -1,5 +1,6 @@
 # A bare name entry `{sku}` is shorthand for `{sku: sku}`: the key is the
 # name as a String, the value the variable's value.
 #= {result: {sku: 'A-1', qty: 2}, inputs: {sku: 'A-1'}}
+def {sku} = import('inputs')
 def qty = 2
 {sku, qty}

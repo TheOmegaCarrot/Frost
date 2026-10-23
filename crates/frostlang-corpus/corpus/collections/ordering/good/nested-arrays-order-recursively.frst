@@ -1,3 +1,4 @@
 # Nested Arrays order recursively, element by element.
 #= {result: [true, true, false], inputs: {a: [[1, 2], [3]], b: [[1, 2], [4]]}}
+def {a, b} = import('inputs')
 [a < b, [[1]] < [[1, 0]], [['b']] < [['a', 'z']]]

@@ -13,6 +13,7 @@
 #=         edges: [[1, 2], [2, 3], [4, 5], [6, 6]],
 #=     },
 #= }
+def {nodes, edges} = import('inputs')
 defn link(adjacency, from, to) -> adjacency + {[from]: (adjacency[from] or []) + [to]}
 
 def adjacency = reduce(edges, {}, fn acc, edge -> {

@@ -1,5 +1,6 @@
 # A format String can be the threaded value.
 #= {result: ['hi, Ann', 7], printed: ['hi, Ann'], inputs: {name: 'Ann'}}
+def {name} = import('inputs')
 def greeting = $'hi, ${name}'
 greeting @ print()
 [greeting, $'hi, ${name}' @ len()]

@@ -1,0 +1,5 @@
+# The same overflow past the least Int over a constant argument, which the
+# optimizer may compute ahead of time, raises the same way.
+#= {raises: 'Int overflow: -9223372036854775808 - 1'}
+def dec = fn x -> x - 1
+dec(-9223372036854775808)

@@ -1,3 +1,4 @@
 # A raw String's text equals the same text known only at runtime.
 #= {result: true, inputs: {path: 'C:\\dir\\file\u{2e}txt'}}
+def {path} = import('inputs')
 R'(C:\dir\file.txt)' == path

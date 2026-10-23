@@ -1,6 +1,7 @@
 # A Function passed through calls and structures is the same Function on the
 # way out: passing it along does not copy it.
 #= {result: [true, true, true], inputs: {f: fn x -> x * 2}}
+def {f} = import('inputs')
 def pass = fn g -> g
 def wrapped = {inner: [f]}
 [

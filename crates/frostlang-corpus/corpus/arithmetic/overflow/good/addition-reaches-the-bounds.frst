@@ -1,0 +1,7 @@
+# Int addition whose result lands exactly on the greatest or least Int
+# succeeds: only a result past a bound overflows.
+#= {result: [9223372036854775807, -9223372036854775808]}
+[
+    9223372036854775806 + 1,
+    -9223372036854775807 + -1,
+]

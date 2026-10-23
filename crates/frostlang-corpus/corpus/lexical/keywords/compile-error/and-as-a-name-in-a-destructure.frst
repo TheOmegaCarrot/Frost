@@ -1,3 +1,4 @@
 # `and` is a keyword operator, so it cannot be bound in an Array pattern.
 #= {rejects: 'keyword', inputs: {xs: [1, 2]}}
+def {xs} = import('inputs')
 def [a, and] = xs

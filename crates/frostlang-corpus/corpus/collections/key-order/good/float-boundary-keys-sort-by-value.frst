@@ -5,6 +5,7 @@
 #=     result: [['min', 'zero', 'tiny', 'max'], 'tiny', 'max'],
 #=     inputs: {tiny: 5e-324, max: 1.7976931348623157e308},
 #= }
+def {tiny, max} = import('inputs')
 def m = {
     [max]: 'max',
     [tiny]: 'tiny',

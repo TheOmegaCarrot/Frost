@@ -1,3 +1,4 @@
 # A String plus Null raises; Null is not the empty String.
 #= {raises: ['Cannot add', 'String + Null'], inputs: {n: null}}
+def {n} = import('inputs')
 'a' + n

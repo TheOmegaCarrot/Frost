@@ -1,5 +1,6 @@
 # A recursive function may recurse from inside a `reduce`'s operation: here
 # summing a nested Array, empty rows included.
 #= {result: 10, inputs: {tree: [1, [2, [3, 4]], []]}}
+def {tree} = import('inputs')
 defn total(t) -> if is_array(t): reduce(t, 0, fn acc, x -> acc + total(x)) else: t
 total(tree)

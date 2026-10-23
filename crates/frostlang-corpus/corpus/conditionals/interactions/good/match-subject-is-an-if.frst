@@ -1,5 +1,6 @@
 # A parenthesized `if` may be the value a `match` examines.
 #= {result: ['one', 'two'], inputs: {t: true, f: false}}
+def {t, f} = import('inputs')
 defn describe(c) -> match (if c: 1 else: 2) {
     1 => 'one',
     _ => 'two',

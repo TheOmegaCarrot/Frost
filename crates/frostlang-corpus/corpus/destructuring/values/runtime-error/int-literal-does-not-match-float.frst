@@ -1,5 +1,6 @@
 # A literal compares without cross-type numeric equality: Int 3 does not match
 # Float 3.0.
 #= {raises: 'expected `3`', inputs: {xs: [7, 3.0]}}
+def {xs} = import('inputs')
 def [a, 3] = xs
 a

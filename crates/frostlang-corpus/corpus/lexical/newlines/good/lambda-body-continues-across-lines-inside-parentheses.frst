@@ -3,5 +3,6 @@
 # next line joins the body. Subtle, since outside brackets the body would
 # end at the line break.
 #= {result: [2, 3], inputs: {xs: [1, 2], one: 1}}
+def {xs, one} = import('inputs')
 xs @ map(fn x -> x
     + one)

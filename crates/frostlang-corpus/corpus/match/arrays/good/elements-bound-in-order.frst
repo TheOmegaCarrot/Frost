@@ -1,5 +1,6 @@
 # Each element pattern binds the element at its position.
 #= {result: ['c', 'b', 'a'], inputs: {v: ['a', 'b', 'c']}}
+def {v} = import('inputs')
 match v {
     [first, second, third] => [third, second, first],
 }

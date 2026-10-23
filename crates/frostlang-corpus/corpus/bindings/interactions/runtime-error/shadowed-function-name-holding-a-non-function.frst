@@ -1,5 +1,6 @@
 # Shadowing a global function with a non-function value is allowed, but calling
 # the name then calls the binding, which raises because it is not a function.
 #= {raises: 'non-function', inputs: {n: 3}}
+def {n} = import('inputs')
 def len = n
 len([1, 2])

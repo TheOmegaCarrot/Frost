@@ -1,6 +1,7 @@
 # A comparison as the tail of a `do` block is the block's value, and bindings
 # made in the block are in scope for it.
 #= {result: [true, false], inputs: {x: 4}}
+def {x} = import('inputs')
 def check = do {
     def doubled = x * 2
     doubled > 7

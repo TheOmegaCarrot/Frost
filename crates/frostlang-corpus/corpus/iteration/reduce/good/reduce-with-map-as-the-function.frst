@@ -5,4 +5,5 @@
 #=     result: [20, 30],
 #=     inputs: {xs: [1, 2], steps: [fn x -> x + 1, fn x -> x * 10]},
 #= }
+def {xs, steps} = import('inputs')
 reduce(steps, xs, map)

@@ -1,6 +1,7 @@
 # A known binding inside a function body propagates there, while the function
 # computes over each argument it is called with.
 #= {result: [11, 12], inputs: {one: 1, two: 2}}
+def {one, two} = import('inputs')
 defn shift(n) -> {
     def offset = 10
     n + offset

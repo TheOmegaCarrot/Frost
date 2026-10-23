@@ -1,3 +1,4 @@
 # Nothing can follow a rest binding, so no trailing comma may either.
 #= {rejects: 'comes last', inputs: {xs: [1, 2]}}
+def {xs} = import('inputs')
 def [a, ...rest,] = xs

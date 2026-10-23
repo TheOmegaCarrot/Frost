@@ -1,6 +1,7 @@
 # A constant Array placed in a runtime-built Array, then taken out and
 # extended, leaves both the outer Array and the constant's binding unchanged.
 #= {result: [[1, 2, 3], [[1, 2], 9], [1, 2]], inputs: {n: 9}}
+def {n} = import('inputs')
 def k = [1, 2]
 def outer = [k, n]
 def grown = outer[0] + [3]

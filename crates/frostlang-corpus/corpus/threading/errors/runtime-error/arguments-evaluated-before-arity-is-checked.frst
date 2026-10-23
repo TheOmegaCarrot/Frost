@@ -1,5 +1,6 @@
 # Every argument, threaded and written, is evaluated before the arity is
 # checked, so an argument's error wins over the arity error.
 #= {raises: 'division by zero', inputs: {zero: 0}}
+def {zero} = import('inputs')
 defn inc(x) -> x + 1
 5 @ inc(1 / zero)

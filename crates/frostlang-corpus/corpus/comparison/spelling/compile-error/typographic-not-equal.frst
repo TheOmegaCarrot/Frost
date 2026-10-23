@@ -1,4 +1,5 @@
 # Frost's operators are ASCII: the typographic not-equal sign (U+2260) is
 # rejected, pointing to `!=`.
 #= {rejects: ['U+2260', '`!=`'], inputs: {a: 1, b: 2}}
+def {a, b} = import('inputs')
 a ≠ b

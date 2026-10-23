@@ -1,3 +1,4 @@
 # Ruby's and Perl's `elsif` is Frost's `elif`.
 #= {rejects: 'use `elif`', inputs: {a: false, b: true}}
+def {a, b} = import('inputs')
 if a: 1 elsif b: 2

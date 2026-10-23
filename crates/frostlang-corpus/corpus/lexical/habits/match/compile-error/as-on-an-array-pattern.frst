@@ -1,3 +1,4 @@
 # `as` binds a whole Map pattern only, not an Array pattern.
 #= {rejects: '`as` binds a whole Map pattern', inputs: {x: [1, 2]}}
+def {x} = import('inputs')
 match x { [a, b] as m => m }

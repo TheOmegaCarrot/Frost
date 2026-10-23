@@ -1,4 +1,5 @@
 # When both operands only known at runtime raise, the left one's error is the
 # one reported.
 #= {raises: 'modulus by zero', inputs: {one: 1, zero: 0}}
+def {one, zero} = import('inputs')
 (one % zero) + (one / zero)

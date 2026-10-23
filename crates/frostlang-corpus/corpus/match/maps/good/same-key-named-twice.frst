@@ -2,6 +2,7 @@
 # value at its key, and all must match: here the shorthand binds the whole
 # value and the second entry destructures it further.
 #= {result: [[1, 2], 1], inputs: {v: {a: [1, 2]}}}
+def {v} = import('inputs')
 match v {
     {a, a: [first, _]} => [a, first],
 }

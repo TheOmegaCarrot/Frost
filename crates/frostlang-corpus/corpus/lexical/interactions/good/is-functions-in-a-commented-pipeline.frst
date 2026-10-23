@@ -1,6 +1,7 @@
 # `filter` with the `is_*` family across continuation lines, each step
 # commented.
 #= {result: [['a'], [1, 2.5], [null]], inputs: {xs: ['a', 1, null, 2.5]}}
+def {xs} = import('inputs')
 [
     xs
         # Strings

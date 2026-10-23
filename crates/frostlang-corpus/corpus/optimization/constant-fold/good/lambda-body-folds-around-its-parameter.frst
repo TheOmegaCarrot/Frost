@@ -1,5 +1,6 @@
 # A lambda's body folds its constant parts around its parameter, and the
 # lambda computes the same result for each argument it is called with.
 #= {result: [[1, 42, 'ab'], [2, 42, 'ab']], inputs: {one: 1, two: 2}}
+def {one, two} = import('inputs')
 def f = fn x -> [x, 6 * 7, 'a' + 'b']
 [f(one), f(two)]

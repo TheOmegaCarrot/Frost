@@ -1,0 +1,8 @@
+# Exponentiation by squaring past the Int range, on an exponent known only at
+# runtime: the product raises rather than wrapping.
+#= {raises: 'Int overflow', inputs: {e63: 63}}
+def {e63} = import('inputs')
+defn pow(base, exp) -> if exp == 0: 1
+    elif exp % 2 == 0: pow(base * base, exp / 2)
+    else: base * pow(base, exp - 1)
+pow(2, e63)

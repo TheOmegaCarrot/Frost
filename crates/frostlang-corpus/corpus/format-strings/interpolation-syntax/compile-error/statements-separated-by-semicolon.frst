@@ -1,4 +1,5 @@
 # An interpolation is an expression, not a sequence of statements: `;` cannot
 # separate two of them there; a `do` block can.
 #= {rejects: ['expected `}`', 'in this interpolation'], inputs: {x: 7}}
+def {x} = import('inputs')
 def s = $'${x; x}'

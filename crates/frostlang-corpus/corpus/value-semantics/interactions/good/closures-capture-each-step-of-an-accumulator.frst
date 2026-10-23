@@ -2,5 +2,6 @@
 # the accumulator as it stands: each closure keeps the accumulator from its
 # own step, though the accumulator goes on growing after it is captured.
 #= {result: [0, 1, 2], inputs: {k: 3}}
+def {k} = import('inputs')
 defn build(k, acc) -> if k == 0: acc else: build(k - 1, acc + [fn -> acc])
 map(build(k, []), fn f -> len(f()))

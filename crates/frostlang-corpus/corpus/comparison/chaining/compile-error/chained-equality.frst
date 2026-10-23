@@ -1,4 +1,5 @@
 # Equality does not chain: `a == b == c` is rejected rather than read as
 # `(a == b) == c`, which would compare a Bool with `c`.
 #= {rejects: 'cannot chain', inputs: {a: 1, b: 1, c: 1}}
+def {a, b, c} = import('inputs')
 a == b == c

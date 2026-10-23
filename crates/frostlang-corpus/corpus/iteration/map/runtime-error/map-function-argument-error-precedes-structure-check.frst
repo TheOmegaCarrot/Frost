@@ -2,4 +2,5 @@
 # raised while evaluating the function argument surfaces, not the type error
 # the wrong structure would cause.
 #= {raises: 'from the function argument', inputs: {n: 5}}
+def {n} = import('inputs')
 map(n, error('from the function argument'))

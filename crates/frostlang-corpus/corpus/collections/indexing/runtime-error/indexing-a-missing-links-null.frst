@@ -1,4 +1,5 @@
 # A soft index yields Null for a missing key only at its own step: indexing
 # that Null again raises, rather than propagating Null down the chain.
 #= {raises: ['Cannot index', 'Null'], inputs: {m: {a: 1}}}
+def {m} = import('inputs')
 m['nope']['deeper']

@@ -1,6 +1,7 @@
 # A Map literal spanning lines, with computed keys of every key type and a
 # trailing comma, reads back each entry.
 #= {result: [1, 2, 3, 4, 5, 5], inputs: {k: 'name'}}
+def {k} = import('inputs')
 def m = {
     [true]: 1,
     [7]: 2,

@@ -1,6 +1,7 @@
 # Values are immutable: concatenating builds a new value and leaves both
 # operands as they were, even when the left operand is extended twice.
 #= {result: [[1, 2], [1, 2, 3], [1, 2, 4], [3]], inputs: {b: [3]}}
+def {b} = import('inputs')
 def a = [1, 2]
 def ab = a + b
 def a4 = a + [4]

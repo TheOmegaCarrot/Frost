@@ -1,3 +1,4 @@
 # A spread function applied to an Array known only at run time.
 #= {result: 6, inputs: {pair: [10, 4]}}
+def {pair} = import('inputs')
 spread(minus)(pair)

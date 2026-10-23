@@ -1,6 +1,7 @@
 # An Array grown one element at a time keeps every snapshot taken along the
 # way at the length it had then.
 #= {result: [50, [0, 10, 25], [9, 24, null]], inputs: {stop: 50}}
+def {stop} = import('inputs')
 defn grow(k, xs, snapshots) -> if k == stop: [xs, snapshots] else: do {
     def kept = if k == 0 or k == 10 or k == 25: snapshots + [xs] else: snapshots
     grow(k + 1, xs + [k], kept)

@@ -2,5 +2,6 @@
 # its mismatch is reported rather than the later key's error. Subtle because a
 # constraint only tests what is already bound, and could be deferred.
 #= {raises: 'expected an Int', inputs: {n: 0, m: {a: 's', b: 1}}}
+def {n, m} = import('inputs')
 def {a is Int, [1 / n]: b} = m
 [a, b]

@@ -1,4 +1,5 @@
 # A Unicode escape right before or after an interpolation yields its whole
 # character on that side.
 #= {result: 'é7é', inputs: {x: 7}}
+def {x} = import('inputs')
 $'\u{e9}${x}\u{e9}'

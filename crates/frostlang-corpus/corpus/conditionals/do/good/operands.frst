@@ -1,5 +1,6 @@
 # Blocks are expressions, usable as operands of binary and unary operators.
 #= {result: [5, -3, false, 10], inputs: {x: 10}}
+def {x} = import('inputs')
 [
     do { 2 } + do { 3 },
     -do { 3 },

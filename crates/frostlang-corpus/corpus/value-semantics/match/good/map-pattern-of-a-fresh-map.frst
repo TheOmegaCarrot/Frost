@@ -2,6 +2,7 @@
 # Map with `as`: extending the entry leaves the whole-Map binding's entry as
 # it was.
 #= {result: [[1, 2], {items: [1]}], inputs: {n: 1}}
+def {n} = import('inputs')
 match {items: [n]} {
     {items} as whole => [items + [2], whole],
 }

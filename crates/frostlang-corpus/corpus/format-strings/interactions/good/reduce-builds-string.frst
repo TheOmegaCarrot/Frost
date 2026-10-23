@@ -1,6 +1,7 @@
 # `reduce` with a format String accumulator; an empty Array with an initial
 # value leaves it unchanged.
 #= {result: ['(((start)1)2)3', 'start'], inputs: {xs: [1, 2, 3], none: []}}
+def {xs, none} = import('inputs')
 [
     reduce(xs, 'start', fn (acc, x) -> $'(${acc})${x}'),
     reduce(none, 'start', fn (acc, x) -> $'(${acc})${x}'),

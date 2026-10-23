@@ -5,6 +5,7 @@
 #=     result: [9007199254740992.0, 9223372036854775808.0, -9223372036854775808.0],
 #=     inputs: {past_exact: 9007199254740993, greatest: 9223372036854775807, least: -9223372036854775808},
 #= }
+def {past_exact, greatest, least} = import('inputs')
 [
     past_exact + 0.0,
     greatest * 1.0,

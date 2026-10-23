@@ -9,6 +9,7 @@
 #=     ],
 #=     inputs: {low: 3, mid: 10, high: 11},
 #= }
+def {low, mid, high} = import('inputs')
 [
     [low < mid, mid < mid, high < mid],
     [low <= mid, mid <= mid, high <= mid],

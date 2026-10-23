@@ -1,6 +1,7 @@
 # A function made by `spread` passes an Array's elements as arguments, and
 # leaves the Array unchanged across calls.
 #= {result: [[1, 2, 0], [1, 2], [1, 2, 0]], inputs: {n: 1}}
+def {n} = import('inputs')
 def pair = spread(fn a, b -> [a, b] + [0])
 def args = [n, 2]
 [pair(args), args, pair(args)]

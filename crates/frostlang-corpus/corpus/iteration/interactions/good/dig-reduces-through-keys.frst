@@ -4,4 +4,5 @@
 #=     result: [1, null, {b: [1]}],
 #=     inputs: {data: {a: {b: [1]}, n: null}},
 #= }
+def {data} = import('inputs')
 [dig(data, 'a', 'b', 0), dig(data, 'n', 'b'), dig(data, 'a')]

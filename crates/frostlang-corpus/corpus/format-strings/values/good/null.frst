@@ -1,3 +1,4 @@
 # Null interpolates as `null`, at the start, middle, and end, and alone.
 #= {result: ['null', 'a null b', 'nullnull'], inputs: {v: null}}
+def {v} = import('inputs')
 [$'${v}', $'a ${v} b', $'${v}${v}']

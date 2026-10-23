@@ -1,6 +1,7 @@
 # `$2` in an operand that `and` never evaluates still makes a two-argument
 # lambda, which accepts two arguments and returns the short-circuited value.
 #= {result: [false, false], inputs: {never: false}}
+def {never} = import('inputs')
 def constant = $(false and $2)
 def runtime = $(never and $2)
 [constant(1, 2), runtime(1, 2)]

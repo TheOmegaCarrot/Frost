@@ -1,4 +1,5 @@
 # A String is not a structure `map` iterates: it accepts only an Array or a
 # Map, and the error names the first argument and the type it got.
 #= {raises: ['Structured', 'argument 1', 'String'], inputs: {s: 'abc'}}
+def {s} = import('inputs')
 map(s, fn c -> c)

@@ -1,6 +1,7 @@
 # The calls of call-of-a-bound-function, with arguments only known at runtime,
 # compute the same results.
 #= {result: [3, 10], inputs: {two: 2, five: 5}}
+def {two, five} = import('inputs')
 def n = 5
 def inc = fn x -> x + 1
 def add_n = fn x -> x + n

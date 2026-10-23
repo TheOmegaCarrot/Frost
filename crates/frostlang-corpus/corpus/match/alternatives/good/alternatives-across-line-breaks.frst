@@ -1,6 +1,7 @@
 # Inside a match, alternatives may be split across lines with the `|` leading
 # or trailing.
 #= {result: ['low', 'mid'], inputs: {a: 2, b: 5}}
+def {a, b} = import('inputs')
 defn size(n) -> match n {
     1
     | 2

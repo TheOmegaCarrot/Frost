@@ -1,4 +1,5 @@
 # A reduce whose accumulator grows by a copy of its own last element, extended,
 # keeps every earlier element as it was.
 #= {result: [[], [1], [1, 2], [1, 2, 3]], inputs: {xs: [1, 2, 3]}}
+def {xs} = import('inputs')
 reduce(xs, [[]], fn acc, x -> acc + [acc[-1] + [x]])

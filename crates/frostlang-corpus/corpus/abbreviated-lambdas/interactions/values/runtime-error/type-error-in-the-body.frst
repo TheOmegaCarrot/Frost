@@ -1,5 +1,6 @@
 # An operator in the body checks the argument's type when the lambda runs;
 # a String where an Int is needed raises.
 #= {raises: 'String * Int', inputs: {word: 'a'}}
+def {word} = import('inputs')
 def double = $($ * 2)
 double(word)

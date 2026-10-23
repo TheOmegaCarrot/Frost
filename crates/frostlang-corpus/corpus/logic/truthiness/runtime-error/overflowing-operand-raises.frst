@@ -1,0 +1,4 @@
+# Int overflow raises even as the left operand of `or`: no wrapped Int, zero or
+# otherwise, reaches the truthiness test.
+#= {raises: ['Int overflow', '-9223372036854775808 * 2']}
+(-9223372036854775808 * 2) or 'falsy'

@@ -5,5 +5,6 @@
 #=     raises: ['must return a Map', 'Int'],
 #=     inputs: {prices: {apple: 2, pear: 5}, rate: 2},
 #= }
+def {prices, rate} = import('inputs')
 def raised = map(prices, fn item, price -> price * rate)
 reduce(raised, 0, fn total, item, price -> total + price)

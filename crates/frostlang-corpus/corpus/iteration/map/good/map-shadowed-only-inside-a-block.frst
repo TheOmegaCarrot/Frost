@@ -2,6 +2,7 @@
 # the block ends, including for a function created inside the block and
 # called after it.
 #= {result: ['local', 'local', [2, 3]], inputs: {xs: [1, 2]}}
+def {xs} = import('inputs')
 def inc = fn x -> x + 1
 def [inside, later] = do {
     def map = fn s, f -> 'local'

@@ -1,0 +1,8 @@
+# A pin whose constant expression overflows raises when the match reaches it,
+# not at compile time.
+#= {raises: 'Int overflow'}
+defn name(n) -> match n {
+    (9223372036854775807 + 1) => 'least',
+    _ => 'other',
+}
+name(9223372036854775807)

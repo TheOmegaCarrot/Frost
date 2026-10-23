@@ -1,0 +1,17 @@
+# Int arithmetic that lands exactly on an end of the range equals that end's
+# literal. The operands are known only at runtime.
+#= {
+#=     result: [true, true, true],
+#=     inputs: {
+#=         below_max: 9223372036854775806,
+#=         above_min: -9223372036854775807,
+#=         half_max: 4611686018427387903,
+#=         one: 1,
+#=     },
+#= }
+def {below_max, above_min, half_max, one} = import('inputs')
+[
+    below_max + one == 9223372036854775807,
+    above_min - one == -9223372036854775808,
+    half_max * 2 == 9223372036854775806,
+]

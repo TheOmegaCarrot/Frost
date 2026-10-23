@@ -1,0 +1,5 @@
+# A condition that overflows raises before either branch is chosen: the
+# largest Int plus one has no Int result.
+#= {raises: 'Int overflow', inputs: {max: 9223372036854775807}}
+def {max} = import('inputs')
+if max + 1 < 0: 'wrapped' else: 'grew'

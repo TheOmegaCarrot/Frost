@@ -2,5 +2,6 @@
 # gives the full result, and leaves the iterated value and the initial
 # accumulator unchanged.
 #= {result: [[2, 4, 6], [1, 2, 3], []], inputs: {xs: [1, 2, 3], start: []}}
+def {xs, start} = import('inputs')
 def built = reduce(xs, start, fn acc, x -> acc + [x * 2])
 [built, xs, start]

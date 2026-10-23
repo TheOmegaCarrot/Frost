@@ -1,3 +1,4 @@
 # An error the predicate raises propagates out of `filter`.
 #= {raises: 'bad element', inputs: {xs: [1, 2, 3]}}
+def {xs} = import('inputs')
 filter(xs, fn x -> if x == 3: error('bad element') else: true)

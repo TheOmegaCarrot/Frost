@@ -1,5 +1,6 @@
 # An Array added to itself repeats its elements, and is unchanged itself:
 # both operands are the same value, read from one binding.
 #= {result: [[1, 2, 1, 2], [1, 2]], inputs: {n: 1}}
+def {n} = import('inputs')
 def xs = [n, 2]
 [xs + xs, xs]

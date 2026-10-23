@@ -4,4 +4,5 @@
 #=     result: [[true, false, false], [[1], {}], [1, 'a']],
 #=     inputs: {xs: ['a', 1, null], ys: [[1], 1, {}], zs: [1, null, 'a']},
 #= }
+def {xs, ys, zs} = import('inputs')
 [map(xs, is_string), filter(ys, is_structured), filter(zs, is_nonnull)]

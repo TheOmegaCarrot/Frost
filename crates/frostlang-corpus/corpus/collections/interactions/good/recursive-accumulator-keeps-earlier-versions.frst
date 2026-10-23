@@ -1,5 +1,6 @@
 # A recursive function grows an Array by concatenation, keeping every
 # intermediate version; each version is unchanged by later growth.
 #= {result: [[], [0], [0, 1], [0, 1, 2]], inputs: {n: 3}}
+def {n} = import('inputs')
 defn versions(acc, i, limit) -> if i > limit: [] else: [acc] + versions(acc + [i], i + 1, limit)
 versions([], 0, n)

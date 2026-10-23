@@ -1,3 +1,4 @@
 # A match may be an `if` condition, and each branch may be a match.
 #= {result: ['yes', 'no'], inputs: {xs: [[1], []]}}
+def {xs} = import('inputs')
 map(xs, fn v -> if match v { [] => false, _ => true }: match v { [_] => 'yes' } else: match v { [] => 'no' })

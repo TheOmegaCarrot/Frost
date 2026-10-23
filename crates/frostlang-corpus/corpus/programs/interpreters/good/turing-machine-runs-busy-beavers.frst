@@ -20,6 +20,7 @@
 #=         },
 #=     },
 #= }
+def {two_state, three_state} = import('inputs')
 defn run(rules, state, tape, head, steps) -> if state == 'H': {steps, tape} else: do {
     def [write, move, next] = rules[state][tape[head] or 0]
     run(rules, next, tape + {[head]: write}, head + move, steps + 1)

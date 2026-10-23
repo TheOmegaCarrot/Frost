@@ -1,5 +1,6 @@
 # The error raised when no arm matches names the unmatched value.
 #= {raises: ['no match arm', '9876'], inputs: {v: 9876}}
+def {v} = import('inputs')
 match v {
     1 => 'one',
 }

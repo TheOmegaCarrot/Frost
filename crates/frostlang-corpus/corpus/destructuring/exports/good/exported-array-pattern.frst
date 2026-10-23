@@ -1,5 +1,6 @@
 # `export def` with an Array pattern exports every name it binds, including a
 # rest, and no discarded part.
 #= {result: 0, exports: {a: 1, b: 3, c: [4]}, inputs: {xs: [1, 2, [3, 4], 5]}}
+def {xs} = import('inputs')
 export def [a, _, [b, ...c], ..._] = xs
 0

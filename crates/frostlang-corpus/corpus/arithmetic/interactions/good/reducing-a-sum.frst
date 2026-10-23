@@ -1,6 +1,7 @@
 # Reducing with `+` sums the elements. The accumulator's type carries through:
 # a Float start makes a Float sum, and an empty Array reduces to the start.
 #= {result: [10, 10.0, 0, 6], inputs: {xs: [1, 2, 3, 4], empty: []}}
+def {xs, empty} = import('inputs')
 [
     reduce(xs, 0, fn acc, x -> acc + x),
     reduce(xs, 0.0, fn acc, x -> acc + x),

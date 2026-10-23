@@ -1,4 +1,5 @@
 # An Array pattern of only discards binds no name.
 #= {rejects: 'binds no name', inputs: {p: [1, 2]}}
+def {p} = import('inputs')
 def [_, _] = p
 0

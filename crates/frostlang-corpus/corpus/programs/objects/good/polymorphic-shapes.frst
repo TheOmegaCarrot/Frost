@@ -18,6 +18,7 @@
 #=         ],
 #=     },
 #= }
+def {specs} = import('inputs')
 defn rect(w, h) -> {
     area: fn -> w * h,
     describe: fn -> $'rect ${w}x${h}',

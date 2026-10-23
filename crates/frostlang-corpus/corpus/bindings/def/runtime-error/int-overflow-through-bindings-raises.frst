@@ -1,0 +1,6 @@
+# Arithmetic on bound Ints raises on overflow past the greatest Int when the
+# bindings are constants the optimizer may propagate and fold.
+#= {raises: 'Int overflow: 9223372036854775807 + 1'}
+def big = 9223372036854775807
+def folded_up = big + 1
+folded_up

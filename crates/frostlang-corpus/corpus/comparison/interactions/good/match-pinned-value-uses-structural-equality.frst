@@ -5,6 +5,7 @@
 #=     result: ['equal', 'equal', 'not equal', 'has a', 'not equal'],
 #=     inputs: {pair: [1, 2], small: {a: 1}, big: {b: 2, a: 1}},
 #= }
+def {pair, small, big} = import('inputs')
 defn compare_with(v, expected) -> match v {
     (expected) => 'equal',
     _ => 'not equal',

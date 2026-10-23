@@ -1,6 +1,7 @@
 # A rest part taken by a pattern and built upon leaves the destructured value
 # unchanged.
 #= {result: [1, [2, 3, 0], [1, 2, 3]], inputs: {xs: [1, 2, 3]}}
+def {xs} = import('inputs')
 def [first, ...rest] = xs
 def more = rest + [0]
 [first, more, xs]

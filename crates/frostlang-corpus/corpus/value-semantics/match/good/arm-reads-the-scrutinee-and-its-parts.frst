@@ -1,6 +1,7 @@
 # An arm that extends a bound element and also reads the scrutinee's binding
 # sees the scrutinee unchanged.
 #= {result: [[1, 9], [[1], 2]], inputs: {n: 1}}
+def {n} = import('inputs')
 def xs = [[n], 2]
 match xs {
     [inner, _] => [inner + [9], xs],

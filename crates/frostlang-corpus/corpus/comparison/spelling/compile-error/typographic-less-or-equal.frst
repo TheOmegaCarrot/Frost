@@ -1,4 +1,5 @@
 # Frost's operators are ASCII: the typographic less-than-or-equal sign
 # (U+2264) is rejected, pointing to `<=`.
 #= {rejects: ['U+2264', '`<=`'], inputs: {a: 1, b: 2}}
+def {a, b} = import('inputs')
 a ≤ b

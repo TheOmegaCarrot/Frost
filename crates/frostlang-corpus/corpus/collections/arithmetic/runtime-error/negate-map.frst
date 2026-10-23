@@ -1,3 +1,4 @@
 # Unary `-` is numeric only.
 #= {raises: ['Cannot negate', 'Map'], inputs: {m: {}}}
+def {m} = import('inputs')
 -m

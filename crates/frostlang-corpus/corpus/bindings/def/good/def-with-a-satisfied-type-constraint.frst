@@ -1,5 +1,6 @@
 # `def name is Type = value` binds the name when the value has that type.
 #= {result: [5, 'five'], inputs: {s: 'five'}}
+def {s} = import('inputs')
 def x is Int = 5
 def y is String = s
 [x, y]

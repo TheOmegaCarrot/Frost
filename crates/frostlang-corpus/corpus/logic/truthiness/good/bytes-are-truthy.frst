@@ -3,6 +3,7 @@
 #=     result: [[true, true, true], [true, true, true]],
 #=     inputs: {empty: x'', zero: x'00', some: x'ff10'},
 #= }
+def {empty, zero, some} = import('inputs')
 [
     [
         not not x'',

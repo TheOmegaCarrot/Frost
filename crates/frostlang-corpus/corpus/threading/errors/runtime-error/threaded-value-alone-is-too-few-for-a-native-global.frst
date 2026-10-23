@@ -1,4 +1,5 @@
 # `reduce` takes a structure, an optional initial value, and a function; the
 # threaded structure alone is too few.
 #= {raises: ['expects between 2 and 3', 'called with 1'], inputs: {xs: [1]}}
+def {xs} = import('inputs')
 xs @ reduce()

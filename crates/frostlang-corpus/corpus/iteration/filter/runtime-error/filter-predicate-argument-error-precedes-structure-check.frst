@@ -2,4 +2,5 @@
 # while evaluating the predicate argument surfaces, not the type error the
 # wrong structure would cause.
 #= {raises: 'from the predicate argument', inputs: {s: 'text'}}
+def {s} = import('inputs')
 filter(s, error('from the predicate argument'))

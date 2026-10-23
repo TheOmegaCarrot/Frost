@@ -1,6 +1,7 @@
 # A match subject may be an index or field read, and an out-of-range read is
 # matched as Null.
 #= {result: ['two', 'none', 'map'], inputs: {xs: [1, 2], m: {inner: {}}}}
+def {xs, m} = import('inputs')
 defn describe(v) -> match v {
     2 => 'two',
     null => 'none',

@@ -26,6 +26,7 @@
 #=         ],
 #=     },
 #= }
+def {entries} = import('inputs')
 defn describe(entry) -> {
     def kind = if entry.amount < 0: 'withdraw' else: 'deposit'
     def size = if entry.amount < 0: -entry.amount else: entry.amount

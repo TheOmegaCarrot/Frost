@@ -1,4 +1,5 @@
 # A one-parameter operation cannot fold: it is always called with the
 # accumulator and the element.
 #= {raises: 'called with 2', inputs: {xs: [1, 2]}}
+def {xs} = import('inputs')
 reduce(xs, fn x -> x)

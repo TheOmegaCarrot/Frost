@@ -1,6 +1,7 @@
 # `a @ f(b)` is f(a, b), so with a non-commutative function the threaded value
 # is the left operand.
 #= {result: [7, -7, 1], inputs: {three: 3, ten: 10}}
+def {three, ten} = import('inputs')
 defn minus(a, b) -> a - b
 defn remainder(a, b) -> a % b
 [

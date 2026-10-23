@@ -1,3 +1,4 @@
 # Comparisons, equality, and `not` interpolate their Bool results.
 #= {result: 'true false true false', inputs: {x: 7}}
+def {x} = import('inputs')
 $'${x > 5} ${x == 8} ${x != 8} ${not x}'

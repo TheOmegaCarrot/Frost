@@ -1,5 +1,6 @@
 # A leading-`@` pipeline threads a value only known at runtime.
 #= {result: 12, inputs: {xs: [1, 2, 3, 4]}}
+def {xs} = import('inputs')
 xs
     @ filter(fn x -> x % 2 == 0)
     @ map(fn x -> x * 2)

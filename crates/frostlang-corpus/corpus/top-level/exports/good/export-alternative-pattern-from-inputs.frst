@@ -5,5 +5,6 @@
 #=     exports: {a: 6, b: 7},
 #=     inputs: {from_map: {a: 6}, from_array: [7]},
 #= }
+def {from_map, from_array} = import('inputs')
 export def {a} | [a] = from_map
 export def {b} | [b] = from_array

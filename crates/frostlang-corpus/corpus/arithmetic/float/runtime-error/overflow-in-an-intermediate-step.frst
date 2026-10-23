@@ -3,4 +3,5 @@
 # `big + big - big` never yields `big`. Subtle because the exact value of the
 # whole expression is finite.
 #= {raises: 'infinity', inputs: {big: 1e308}}
+def {big} = import('inputs')
 big + big - big

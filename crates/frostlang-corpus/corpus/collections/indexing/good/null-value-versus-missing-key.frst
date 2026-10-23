@@ -1,4 +1,5 @@
 # A key mapped to Null and a missing key both read as Null through a soft
 # index; `has` tells them apart.
 #= {result: [null, null, true, false], inputs: {m: {a: null}}}
+def {m} = import('inputs')
 [m['a'], m['b'], has(m, 'a'), has(m, 'b')]

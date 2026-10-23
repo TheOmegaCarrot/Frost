@@ -1,0 +1,5 @@
+# The least Int divided by -1 has no Int result, so it raises. Computing it
+# ahead of time must leave the error to the run, as at runtime.
+#= {raises: 'Int overflow'}
+def least = -9223372036854775808
+least / -1

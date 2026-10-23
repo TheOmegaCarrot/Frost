@@ -1,5 +1,6 @@
 # A lambda reads a binding from the scope it is written in.
 #= {result: [1, 7], inputs: {n: 7}}
+def {n} = import('inputs')
 def x = 1
 def f = fn -> x
 def g = fn -> n

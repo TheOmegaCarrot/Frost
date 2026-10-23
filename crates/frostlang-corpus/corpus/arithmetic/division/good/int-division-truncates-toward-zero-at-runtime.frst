@@ -4,6 +4,7 @@
 #=     result: [3, -3, -3, 3, 0, 0, 0, 0],
 #=     inputs: {one: 1, two: 2, three: 3, seven: 7},
 #= }
+def {one, two, three, seven} = import('inputs')
 [
     seven / two,
     -seven / two,

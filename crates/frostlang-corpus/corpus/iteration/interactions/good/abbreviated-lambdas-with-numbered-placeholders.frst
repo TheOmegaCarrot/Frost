@@ -2,6 +2,7 @@
 # function needs. Subtle: `$($2 > 1)` uses only `$2`, yet still takes two
 # parameters, so it fits a Map's key and value.
 #= {result: [{b: 2}, 6, {a: 'a1'}], inputs: {m: {a: 1, b: 2}, xs: [1, 2, 3]}}
+def {m, xs} = import('inputs')
 [
     filter(m, $($2 > 1)),
     reduce(xs, 0, $($1 + $2)),

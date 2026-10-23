@@ -2,4 +2,5 @@
 # point inside it. Subtle because an order by UTF-16 code units would put the
 # emoji's leading surrogate (U+D83D) before U+FFFF.
 #= {result: [true, true, false], inputs: {top: '\u{ffff}', emoji: '😀'}}
+def {top, emoji} = import('inputs')
 [top < emoji, '\u{ffff}' < '\u{1f600}', emoji < '\u{e000}']

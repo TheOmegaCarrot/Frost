@@ -1,6 +1,7 @@
 # A parenthesized `if` may be the condition of another; its value, not its
 # own condition, decides the outer branch.
 #= {result: [2, 1], inputs: {t: true, n: null}}
+def {t, n} = import('inputs')
 [
     if (if t: false else: true): 1 else: 2,
     if (if n: false else: true): 1 else: 2,

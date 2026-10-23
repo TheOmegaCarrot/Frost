@@ -1,3 +1,4 @@
 # Calling Null raises; there is no implicit no-op call.
 #= {raises: ['non-function', 'Null'], inputs: {nothing: null}}
+def {nothing} = import('inputs')
 nothing(1)

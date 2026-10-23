@@ -15,6 +15,7 @@
 #=         ],
 #=     },
 #= }
+def {programs} = import('inputs')
 def builtins = {
     ['+']: fn a, b -> a + b,
     ['-']: fn a, b -> a - b,

@@ -1,6 +1,7 @@
 # Comment lines may stand between an `if` branch and its `elif` or `else` on
 # later lines, and between a branch's colon and its expression.
 #= {result: 'two', inputs: {n: 2}}
+def {n} = import('inputs')
 if n == 1: # the first case
     'one'
 # the second case

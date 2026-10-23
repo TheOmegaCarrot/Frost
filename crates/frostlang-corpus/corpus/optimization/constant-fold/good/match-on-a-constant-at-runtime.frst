@@ -4,6 +4,7 @@
 #=     result: ['three', 'low', 'string', 'pair'],
 #=     inputs: {three: 3, two: 2, x: 'x', pair: [1, 2]},
 #= }
+def {three, two, x, pair} = import('inputs')
 [
     match three {
         1 => error('one'),

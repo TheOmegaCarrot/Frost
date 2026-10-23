@@ -2,5 +2,6 @@
 # optimizer cannot short-circuit ahead of time: only the right operand is
 # threaded.
 #= {result: [3, 3, null, 1], inputs: {no: false, yes: true, nothing: null, one: 1, two: 2}}
+def {no, yes, nothing, one, two} = import('inputs')
 defn inc(x) -> x + 1
 [no or two @ inc(), yes and two @ inc(), nothing and two @ inc(), one or two @ inc()]

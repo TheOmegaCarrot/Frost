@@ -2,5 +2,6 @@
 # that inner `if`; the second `else` belongs to the outer one. Subtle: the
 # lambda body ends where the inner `if` can take no more.
 #= {result: [2, 1, 3], inputs: {t: true, f: false}}
+def {t, f} = import('inputs')
 defn choose(c) -> if c: fn x -> if x: 1 else: 2 else: 3
 [choose(t)(null), choose(t)(0), choose(f)]

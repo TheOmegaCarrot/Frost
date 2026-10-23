@@ -1,5 +1,6 @@
 # A missing key inside an alternative is a plain mismatch, so with no branch
 # matching, the error is that no alternative matched, not the lookup's.
 #= {raises: 'matches no alternative', inputs: {m: {c: 1}}}
+def {m} = import('inputs')
 def {a} | {b: a} = m
 a

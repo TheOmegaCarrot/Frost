@@ -1,3 +1,4 @@
 # Empty structures interpolate as `[]` and `{}`.
 #= {result: '[] {}', inputs: {xs: [], m: {}}}
+def {xs, m} = import('inputs')
 $'${xs} ${m}'

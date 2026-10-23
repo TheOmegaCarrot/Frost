@@ -1,3 +1,4 @@
 # Non-ASCII Strings pass through `filter` intact.
 #= {result: ['日本', '🧊'], inputs: {xs: ['a', '日本', 'b', '🧊']}}
+def {xs} = import('inputs')
 filter(xs, fn s -> s != 'a' and s != 'b')

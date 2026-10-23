@@ -1,4 +1,5 @@
 # Even inside parentheses, the field name follows its `.` on the same line.
 #= {rejects: 'move the `.`', inputs: {m: {k: 1}}}
+def {m} = import('inputs')
 len((m.
     k))

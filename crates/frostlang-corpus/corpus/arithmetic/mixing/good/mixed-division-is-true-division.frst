@@ -1,6 +1,7 @@
 # A division with a Float operand is true division: 7 / 2.0 is 3.5, though
 # 7 / 2 truncates to 3. One Float operand is enough.
 #= {result: [3.5, 3.5, -3.5, 3], inputs: {seven: 7, two: 2, two_float: 2.0, seven_float: 7.0}}
+def {seven, two, two_float, seven_float} = import('inputs')
 [
     seven / two_float,
     seven_float / two,

@@ -1,6 +1,7 @@
 # A recursive named function capturing a known value reads it on every level
 # of the recursion.
 #= {result: [[0, 1, 2, 3], [5]], inputs: {zero: 0, five: 5}}
+def {zero, five} = import('inputs')
 def limit = 3
 defn count(n) -> if n >= limit: [n] else: [n] + count(n + 1)
 [count(zero), count(five)]

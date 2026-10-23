@@ -1,4 +1,5 @@
 # A native global called in tail position has its arity checked too.
 #= {raises: ['expects 1 argument', 'called with 2'], inputs: {xs: [1]}}
+def {xs} = import('inputs')
 defn size(v) -> len(v, v)
 size(xs)

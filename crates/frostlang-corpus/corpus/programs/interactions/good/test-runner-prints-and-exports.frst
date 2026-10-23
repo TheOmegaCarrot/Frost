@@ -17,6 +17,7 @@
 #=     ],
 #=     inputs: {zero: 0},
 #= }
+def {zero} = import('inputs')
 defn add(a, b) -> a + b
 defn halve(n) -> n / 2
 defn divide(a, b) -> a / b

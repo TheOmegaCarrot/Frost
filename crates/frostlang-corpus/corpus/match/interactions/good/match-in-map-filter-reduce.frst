@@ -1,5 +1,6 @@
 # Matches drive the callbacks of `map`, `filter`, and `reduce`.
 #= {result: [[1, 2, 0], [[1], [2]], 3], inputs: {xs: [[1], [2], 'x']}}
+def {xs} = import('inputs')
 def heads = map(xs, fn v -> match v {
     [h] => h,
     _ => 0,

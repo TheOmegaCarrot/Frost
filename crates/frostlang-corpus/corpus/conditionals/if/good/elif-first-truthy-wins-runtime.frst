@@ -15,6 +15,7 @@
 #=         ],
 #=     },
 #= }
+def {cases} = import('inputs')
 defn pick(a, b, c) -> if a: 1
     elif b: 2
     elif c: 3

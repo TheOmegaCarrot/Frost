@@ -1,5 +1,6 @@
 # `match` arms are separated by `,`, not `;`, even on separate lines.
 #= {rejects: 'separate `match` arms with `,`, not `;`', inputs: {x: 1}}
+def {x} = import('inputs')
 match x {
     1 => 'a';
     _ => 'b'

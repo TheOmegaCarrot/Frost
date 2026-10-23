@@ -1,5 +1,6 @@
 # A match guard reads both the arm's bindings and enclosing bindings.
 #= {result: ['big', 'small'], inputs: {big: 50, small: 5}}
+def {big, small} = import('inputs')
 def threshold = 10
 defn size(v) -> match v {
     n if: n > threshold => 'big',

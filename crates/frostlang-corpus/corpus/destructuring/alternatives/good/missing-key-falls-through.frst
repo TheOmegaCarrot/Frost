@@ -1,5 +1,6 @@
 # Inside an alternative, a missing key is a plain mismatch, so the next branch
 # gets its turn instead of the lookup raising.
 #= {result: [1, 2], inputs: {m: {b: 1, c: 2}}}
+def {m} = import('inputs')
 def {a, c} | {b: a, c} = m
 [a, c]

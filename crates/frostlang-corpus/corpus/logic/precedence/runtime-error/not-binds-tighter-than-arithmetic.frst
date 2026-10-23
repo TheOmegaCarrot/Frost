@@ -2,4 +2,5 @@
 # `not` yields, which raises. Subtle because `not` reads like it should apply to
 # the whole sum.
 #= {raises: ['add', 'Bool'], inputs: {x: 1}}
+def {x} = import('inputs')
 not x + 1

@@ -1,6 +1,7 @@
 # A global that builds a function is threaded into through parentheses: the
 # value goes to the built function, not to the builder.
 #= {result: [-7, 7, 3, [3, 2, 1], false, 12, 'v'], inputs: {n: 10, m: {k: 'v'}}}
+def {n, m} = import('inputs')
 defn inc(x) -> x + 1
 defn double(x) -> x * 2
 [

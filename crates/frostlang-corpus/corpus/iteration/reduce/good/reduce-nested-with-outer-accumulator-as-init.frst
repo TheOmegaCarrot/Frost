@@ -1,6 +1,7 @@
 # A `reduce` inside another's function can take the outer accumulator as its
 # initial value, threading one running total through every row of a nested Array.
 #= {result: [1, 3, 6, 10], inputs: {rows: [[1, 2], [], [3, 4]]}}
+def {rows} = import('inputs')
 reduce(rows, [], fn acc, row -> reduce(row, acc, fn inner, x -> {
     def last = if inner == []: 0 else: inner[len(inner) - 1]
     inner + [last + x]

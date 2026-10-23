@@ -4,6 +4,7 @@
 #=     rejects: 'no `for` loop',
 #=     inputs: {records: [{name: 'a', score: 3}, {name: 'b', score: 5}]},
 #= }
+def {records} = import('inputs')
 defn describe(record) -> $'${record.name}: ${record.score}'
 for record in records: print(describe(record))
 len(records)

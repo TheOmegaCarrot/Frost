@@ -1,0 +1,4 @@
+# Constant Int arithmetic in an interpolation raises on overflow past the
+# least Int too: folding it ahead of time must give the runtime's answer.
+#= {raises: ['Int overflow', '-9223372036854775808 - 1']}
+$'${-9223372036854775808 - 1}'

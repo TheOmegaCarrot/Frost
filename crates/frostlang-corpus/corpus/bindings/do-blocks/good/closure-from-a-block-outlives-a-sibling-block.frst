@@ -3,6 +3,7 @@
 # Subtle because sibling blocks are separate scopes whose bindings may reuse
 # the same storage, and a last read may move the value rather than copy it.
 #= {result: [[1, 2], 'second', [1, 2]], inputs: {xs: [1, 2]}}
+def {xs} = import('inputs')
 def get = do {
     def held = xs + []
     fn -> held

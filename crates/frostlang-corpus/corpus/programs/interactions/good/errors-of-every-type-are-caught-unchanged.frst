@@ -17,6 +17,7 @@
 #=     ],
 #=     inputs: {failures: [404, 0.5, false, null, 'boom', x'0102', ['a', 'b'], {detail: 'disk'}]},
 #= }
+def {failures} = import('inputs')
 defn job(value) -> fn -> error(value)
 
 defn describe(outcome) -> if outcome.ok: $'ok: ${outcome.value}' else: match outcome.error {

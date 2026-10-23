@@ -1,4 +1,5 @@
 # A Map pattern nested in an Array pattern may key on an earlier element.
 #= {result: 5, inputs: {xs: ['a', {a: 5}]}}
+def {xs} = import('inputs')
 def [k, {[k]: v}] = xs
 v

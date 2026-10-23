@@ -1,6 +1,7 @@
 # A curried function takes its arguments one call at a time; partially
 # applied, it can be reused with different remaining arguments.
 #= {result: [6, 11, 12], inputs: {one: 1}}
+def {one} = import('inputs')
 def add3 = fn a -> fn b -> fn c -> a + b + c
 def add_one_two = add3(one)(2)
 [add_one_two(3), add3(one)(4)(6), add_one_two(9)]

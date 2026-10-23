@@ -1,3 +1,4 @@
 # Frost has no `in` membership operator.
 #= {rejects: 'no `in` operator', inputs: {xs: [1, 2, 3]}}
+def {xs} = import('inputs')
 3 in xs

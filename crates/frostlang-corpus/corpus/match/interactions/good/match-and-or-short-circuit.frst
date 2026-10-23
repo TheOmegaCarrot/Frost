@@ -1,6 +1,7 @@
 # A match may be an operand of `and`/`or`, which short-circuit around it: the
 # right-hand match runs only when needed.
 #= {result: ['default', 5], printed: ['ran'], inputs: {a: null, b: 5}}
+def {a, b} = import('inputs')
 defn noisy(v) -> match v {
     x => do {
         print('ran')

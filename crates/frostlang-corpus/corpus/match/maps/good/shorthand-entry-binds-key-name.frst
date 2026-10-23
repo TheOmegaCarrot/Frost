@@ -1,6 +1,7 @@
 # A shorthand entry `{name}` requires the key `name` and binds its value to the
 # same name.
 #= {result: ['ada', 36], inputs: {v: {name: 'ada', age: 36}}}
+def {v} = import('inputs')
 match v {
     {name, age} => [name, age],
 }

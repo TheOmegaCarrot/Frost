@@ -24,6 +24,7 @@
 #=         prices: {cola: 50, chips: 75},
 #=     },
 #= }
+def {events, prices} = import('inputs')
 defn handle(state, event) -> match event {
     {coin} => state + {credit: state.credit + coin},
     {select: item} if: not has(prices, item) => state + {messages: state.messages + [$'no ${item}']},

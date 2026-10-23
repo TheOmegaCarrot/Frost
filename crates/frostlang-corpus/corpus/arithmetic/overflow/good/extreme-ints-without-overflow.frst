@@ -1,5 +1,5 @@
 # Operations at the ends of the Int range that stay within it are exact: no
-# wrapping where none is due.
+# overflow where none is due.
 #= {
 #=     result: [
 #=         9223372036854775807,
@@ -15,6 +15,7 @@
 #=     ],
 #=     inputs: {greatest: 9223372036854775807, least: -9223372036854775808},
 #= }
+def {greatest, least} = import('inputs')
 [
     greatest - 0,
     least + 0,
