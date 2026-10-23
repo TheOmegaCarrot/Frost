@@ -21,108 +21,113 @@ use crate::error::{
     closed_error, denied_error, in_use_error, inner_transaction_error, is_function_denial,
     nul_error, open_transaction_error, rolled_back_error, sqlite_error, transaction_ended_error,
 };
-use crate::run::{self, Failure, Run};
+use crate::run::{self, SqlCall, SqlCallError};
 use crate::transaction;
 use crate::{Authorizer, Method};
 
 /// What every bundle over one connection shares: the connection, until
 /// closed, and how scripts may use it.
-pub(crate) struct Shared {
+pub(crate) struct ConnectionState {
     // Reentrant, since a method running a statement may call back into Frost,
     // which may use the same connection on the same thread. The `RefCell` lets
     // `close` take the connection, and tell when a call further up the stack
     // is still using it.
-    connection: ReentrantMutex<RefCell<Option<Held>>>,
+    connection: ReentrantMutex<RefCell<Option<OpenConnection>>>,
     filter: Option<SqlFilter>,
     /// How many actions the connection's authorizer has denied.
     denials: Arc<AtomicU64>,
     methods: EnumSet<Method>,
 }
 
-/// The bundle a call comes through.
+/// What a call may use the connection for, as the bundle it comes through
+/// gives it.
 #[derive(Clone, Copy, PartialEq, Eq)]
-pub(crate) enum Owner {
-    /// The connection's own, `db`.
-    Connection,
-    /// The `tx` of the transaction with this id.
-    Transaction(u64),
+pub(crate) enum Scope {
+    /// Autocommit mode, through `db`.
+    Autocommit,
+    /// The transaction with this id, through its `tx`.
+    Transaction(TransactionId),
 }
 
-impl Shared {
-    /// The state of a connection bundle over `held`, whose authorizer, if the
-    /// extension installed it, counts its denials in `denials`.
+/// The id of a transaction opened on a connection, unique to the connection.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub(crate) struct TransactionId(u64);
+
+impl ConnectionState {
+    /// The state of a connection bundle over `connection`, whose authorizer,
+    /// if the extension installed it, counts its denials in `denials`.
     pub(crate) fn new(
-        held: Held,
+        connection: OpenConnection,
         filter: Option<SqlFilter>,
         denials: Arc<AtomicU64>,
         methods: EnumSet<Method>,
     ) -> Arc<Self> {
         Arc::new(Self {
-            connection: ReentrantMutex::new(RefCell::new(Some(held))),
+            connection: ReentrantMutex::new(RefCell::new(Some(connection))),
             filter,
             denials,
             methods,
         })
     }
 
-    /// Runs `operation` for the function `ctx` runs, through `owner`, once
-    /// `sql` passes the extension's checks and the host's filter.
+    /// Runs `operation` for the function `ctx` runs, in `scope`, once `sql`
+    /// passes the extension's checks and the host's filter.
     fn with_sql<T>(
         &self,
         ctx: &mut NativeCtx<'_>,
-        owner: Owner,
+        scope: Scope,
         sql: &str,
-        operation: impl FnOnce(&mut Run<'_, '_>) -> Result<T, Failure>,
+        operation: impl FnOnce(&mut SqlCall<'_, '_>) -> Result<T, SqlCallError>,
     ) -> Result<T, FrostError> {
         let function = ctx.name();
         if sql.contains('\0') {
             return Err(nul_error(function));
         }
-        self.with_connection(ctx, owner, |connection, ctx| {
+        self.with_connection(ctx, scope, |connection, ctx| {
             if let Some(filter) = &self.filter {
                 filter(sql)?;
             }
-            let mut run = Run::new(
+            let mut call = SqlCall::new(
                 connection,
                 sql,
                 ctx,
                 &self.denials,
-                self.transaction_hint(owner),
+                self.transaction_hint(scope),
             );
-            operation(&mut run).map_err(|failure| match failure {
-                Failure::Frost(err) => err,
+            operation(&mut call).map_err(|err| match err {
+                SqlCallError::Frost(err) => err,
                 // SQLite words a denied function under another code than
                 // `SQLITE_AUTH`, naming it. Its wording alone could be any
                 // failure's, so only a denial while SQLite ran confirms it.
-                Failure::Sqlite(err) if run.denied() && is_function_denial(&err) => {
+                SqlCallError::Sqlite(err) if call.denied() && is_function_denial(&err) => {
                     denied_error(function)
                 }
-                Failure::Sqlite(err) => sqlite_error(function, &err),
+                SqlCallError::Sqlite(err) => sqlite_error(function, &err),
             })
         })
     }
 
-    /// What a call through `owner` running a transaction statement should do
+    /// What a call in `scope` running a transaction statement should do
     /// instead, as its error suggests.
-    fn transaction_hint(&self, owner: Owner) -> &'static str {
-        match owner {
-            Owner::Connection if self.methods.contains(Method::Transaction) => {
+    fn transaction_hint(&self, scope: Scope) -> &'static str {
+        match scope {
+            Scope::Autocommit if self.methods.contains(Method::Transaction) => {
                 "; use db.transaction"
             }
-            Owner::Connection => "",
-            Owner::Transaction(_) => {
+            Scope::Autocommit => "",
+            Scope::Transaction(_) => {
                 "; tx.transaction makes savepoints, and a transaction ends as its function returns"
             }
         }
     }
 
-    /// Runs `operation` on the connection, for the function `ctx` runs,
-    /// through `owner`.
+    /// Runs `operation` on the connection, for the function `ctx` runs, in
+    /// `scope`.
     pub(crate) fn with_connection<'c, T>(
         &self,
         ctx: &mut NativeCtx<'c>,
-        owner: Owner,
-        operation: impl FnOnce(&Held, &mut NativeCtx<'c>) -> Result<T, FrostError>,
+        scope: Scope,
+        operation: impl FnOnce(&OpenConnection, &mut NativeCtx<'c>) -> Result<T, FrostError>,
     ) -> Result<T, FrostError> {
         let function = ctx.name();
         let lock = self.connection.lock();
@@ -130,20 +135,20 @@ impl Shared {
         // so no mutable borrow is live here. Every method must keep it so: a
         // mutable borrow held across a call back into Frost would make a call
         // reentering the bundle panic.
-        let held = lock.borrow();
-        let held = held.as_ref().ok_or_else(|| closed_error(function))?;
-        held.transactions.admit(function, owner)?;
+        let connection = lock.borrow();
+        let connection = connection.as_ref().ok_or_else(|| closed_error(function))?;
+        connection.transactions.check_scope(function, scope)?;
         // Scripts cannot end a transaction, but SQLite itself may, on an `OR
         // ROLLBACK` conflict, say, ending every savepoint within it. The
         // transaction's `tx`s are then spent, and `transaction` cannot commit.
-        if owner != Owner::Connection && held.is_autocommit() {
+        if scope != Scope::Autocommit && connection.is_autocommit() {
             return Err(rolled_back_error(function));
         }
-        let _watching = held
-            .watch
+        let _caller_token = connection
+            .caller_token
             .as_ref()
-            .map(|watch| watch.watching(ctx.cancel_token().cloned()));
-        operation(held, ctx)
+            .map(|caller_token| caller_token.set(ctx.cancel_token().cloned()));
+        operation(connection, ctx)
     }
 }
 
@@ -152,25 +157,26 @@ impl Shared {
 /// milliseconds, rarely enough to cost little.
 const PROGRESS_INTERVAL: i32 = 1000;
 
-/// A connection as its bundles hold it.
-pub(crate) struct Held {
+/// A connection open to scripts, with the handlers the extension installed on
+/// it and its open transactions.
+pub(crate) struct OpenConnection {
     source: Source,
     /// Whether the extension installed the connection's authorizer.
     authorized: bool,
     /// What the connection's progress handler checks, if the extension
     /// installed it.
-    watch: Option<Watch>,
-    pub(crate) transactions: Transactions,
+    caller_token: Option<CallerToken>,
+    pub(crate) transactions: TransactionStack,
 }
 
-impl Held {
+impl OpenConnection {
     /// `source`, with none of the extension's handlers installed yet.
     pub(crate) fn new(source: Source) -> Self {
         Self {
             source,
             authorized: false,
-            watch: None,
-            transactions: Transactions::default(),
+            caller_token: None,
+            transactions: TransactionStack::default(),
         }
     }
 
@@ -194,19 +200,22 @@ impl Held {
 
     /// Installs a progress handler interrupting a statement once the calling
     /// run is cancelled.
-    pub(crate) fn watch_cancellation(&mut self) -> rusqlite::Result<()> {
-        let watch = Watch::default();
-        let watched = watch.clone();
+    pub(crate) fn interrupt_on_cancel(&mut self) -> rusqlite::Result<()> {
+        let caller_token = CallerToken::default();
+        let checked = caller_token.clone();
         self.source
-            .progress_handler(PROGRESS_INTERVAL, Some(move || watched.is_cancelled()))?;
-        self.watch = Some(watch);
+            .progress_handler(PROGRESS_INTERVAL, Some(move || checked.is_cancelled()))?;
+        self.caller_token = Some(caller_token);
         Ok(())
     }
 
     /// Runs `operation` with no run's cancellation interrupting it, as a
     /// rollback must not be.
     pub(crate) fn uninterrupted<T>(&self, operation: impl FnOnce(&Connection) -> T) -> T {
-        let _unwatched = self.watch.as_ref().map(|watch| watch.watching(None));
+        let _no_caller_token = self
+            .caller_token
+            .as_ref()
+            .map(|caller_token| caller_token.set(None));
         operation(self)
     }
 }
@@ -214,9 +223,9 @@ impl Held {
 /// The token of the run calling on a cancellable connection, which the
 /// connection's progress handler checks.
 #[derive(Clone, Default)]
-struct Watch(Arc<Mutex<Option<CancelToken>>>);
+struct CallerToken(Arc<Mutex<Option<CancelToken>>>);
 
-impl Watch {
+impl CallerToken {
     /// Whether the calling run is cancelled.
     fn is_cancelled(&self) -> bool {
         self.0
@@ -225,31 +234,31 @@ impl Watch {
             .is_some_and(CancelToken::is_cancelled)
     }
 
-    /// Watches `token` until the returned guard is dropped, then the token
-    /// watched before, so that a call within another leaves the outer call
-    /// watched as it returns.
-    fn watching(&self, token: Option<CancelToken>) -> Watching<'_> {
+    /// Sets `token` until the returned guard is dropped, then the token set
+    /// before, so that a call within another leaves the outer call's token
+    /// set as it returns.
+    fn set(&self, token: Option<CancelToken>) -> CallerTokenGuard<'_> {
         let previous = mem::replace(&mut *self.0.lock(), token);
-        Watching {
-            watch: self,
+        CallerTokenGuard {
+            caller_token: self,
             previous,
         }
     }
 }
 
-/// A token being watched, until this is dropped.
-struct Watching<'w> {
-    watch: &'w Watch,
+/// Restores the token a [`CallerToken`] held before, as this is dropped.
+struct CallerTokenGuard<'t> {
+    caller_token: &'t CallerToken,
     previous: Option<CancelToken>,
 }
 
-impl Drop for Watching<'_> {
+impl Drop for CallerTokenGuard<'_> {
     fn drop(&mut self) {
-        *self.watch.0.lock() = self.previous.take();
+        *self.caller_token.0.lock() = self.previous.take();
     }
 }
 
-impl Deref for Held {
+impl Deref for OpenConnection {
     type Target = Connection;
 
     fn deref(&self) -> &Connection {
@@ -257,7 +266,7 @@ impl Deref for Held {
     }
 }
 
-impl Drop for Held {
+impl Drop for OpenConnection {
     fn drop(&mut self) {
         // An owned connection closes, and with it go its handlers and any
         // open transaction, which SQLite rolls back. A pooled one stays open
@@ -271,7 +280,7 @@ impl Drop for Held {
         if self.authorized {
             let _ = connection.authorizer(None::<fn(AuthContext<'_>) -> Authorization>);
         }
-        if self.watch.is_some() {
+        if self.caller_token.is_some() {
             let _ = connection.progress_handler(0, None::<fn() -> bool>);
         }
         if !connection.is_autocommit() {
@@ -283,44 +292,45 @@ impl Drop for Held {
 /// The transactions open on a connection, innermost last. Only the innermost
 /// one's `tx` may be used, and `db` only while none is open.
 #[derive(Default)]
-pub(crate) struct Transactions {
-    open: RefCell<Vec<u64>>,
-    next_id: Cell<u64>,
+pub(crate) struct TransactionStack {
+    open: RefCell<Vec<TransactionId>>,
+    next_id: Cell<TransactionId>,
 }
 
-impl Transactions {
-    /// Whether `function`, called through `owner`, may use the connection.
-    fn admit(&self, function: &str, owner: Owner) -> Result<(), FrostError> {
+impl TransactionStack {
+    /// Whether `function`, called in `scope`, may use the connection.
+    fn check_scope(&self, function: &str, scope: Scope) -> Result<(), FrostError> {
         let open = self.open.borrow();
-        match owner {
-            Owner::Connection if open.is_empty() => Ok(()),
-            Owner::Connection => Err(open_transaction_error(function)),
-            Owner::Transaction(id) if open.last() == Some(&id) => Ok(()),
-            Owner::Transaction(id) if open.contains(&id) => Err(inner_transaction_error(function)),
-            Owner::Transaction(_) => Err(transaction_ended_error(function)),
+        match scope {
+            Scope::Autocommit if open.is_empty() => Ok(()),
+            Scope::Autocommit => Err(open_transaction_error(function)),
+            Scope::Transaction(id) if open.last() == Some(&id) => Ok(()),
+            Scope::Transaction(id) if open.contains(&id) => Err(inner_transaction_error(function)),
+            Scope::Transaction(_) => Err(transaction_ended_error(function)),
         }
     }
 
     /// Makes a new transaction's `tx` usable, innermost, until the returned
     /// guard is dropped.
-    pub(crate) fn open(&self) -> Usable<'_> {
+    pub(crate) fn push(&self) -> InnermostGuard<'_> {
         let id = self.next_id.get();
-        self.next_id.set(id + 1);
+        self.next_id.set(TransactionId(id.0 + 1));
         self.open.borrow_mut().push(id);
-        Usable {
+        InnermostGuard {
             transactions: self,
             id,
         }
     }
 }
 
-/// A transaction whose `tx` is usable until this is dropped.
-pub(crate) struct Usable<'t> {
-    transactions: &'t Transactions,
-    pub(crate) id: u64,
+/// Keeps a transaction innermost, so that its `tx` is usable, until this is
+/// dropped.
+pub(crate) struct InnermostGuard<'t> {
+    transactions: &'t TransactionStack,
+    pub(crate) id: TransactionId,
 }
 
-impl Drop for Usable<'_> {
+impl Drop for InnermostGuard<'_> {
     fn drop(&mut self) {
         let ended = self.transactions.open.borrow_mut().pop();
         debug_assert_eq!(ended, Some(self.id), "transactions end innermost first");
@@ -329,33 +339,33 @@ impl Drop for Usable<'_> {
 
 /// The state of a connection's own bundle, `db`.
 struct Db {
-    shared: Arc<Shared>,
+    state: Arc<ConnectionState>,
 }
 
 impl Db {
-    fn owner(&self) -> Owner {
-        Owner::Connection
+    fn scope(&self) -> Scope {
+        Scope::Autocommit
     }
 }
 
 /// The state of an open transaction's bundle, `tx`.
 struct Tx {
-    shared: Arc<Shared>,
-    id: u64,
+    state: Arc<ConnectionState>,
+    id: TransactionId,
 }
 
 impl Tx {
-    fn owner(&self) -> Owner {
-        Owner::Transaction(self.id)
+    fn scope(&self) -> Scope {
+        Scope::Transaction(self.id)
     }
 }
 
-/// The connection's own bundle, `db`, with the methods `shared` allows.
-pub(crate) fn connection_bundle(shared: Arc<Shared>) -> Value {
-    let methods = shared.methods;
+/// The connection's own bundle, `db`, with the methods `state` allows.
+pub(crate) fn connection_bundle(state: Arc<ConnectionState>) -> Value {
+    let methods = state.methods;
     methods
         .iter()
-        .fold(Bundle::new(Db { shared }), |bundle, method| match method {
+        .fold(Bundle::new(Db { state }), |bundle, method| match method {
             Method::Script => bundle.with(Db::script_method),
             Method::Exec => bundle.with(Db::exec_method),
             Method::Query => bundle.with(Db::query_method),
@@ -367,17 +377,17 @@ pub(crate) fn connection_bundle(shared: Arc<Shared>) -> Value {
         .build()
 }
 
-/// The bundle, `tx`, of the open transaction `id` on `shared`'s connection,
-/// with the methods `shared` allows but `close`.
-pub(crate) fn transaction_bundle(shared: &Arc<Shared>, id: u64) -> Value {
-    let state = Tx {
-        shared: Arc::clone(shared),
+/// The bundle, `tx`, of the open transaction `id` on `state`'s connection,
+/// with the methods `state` allows but `close`.
+pub(crate) fn transaction_bundle(state: &Arc<ConnectionState>, id: TransactionId) -> Value {
+    let tx = Tx {
+        state: Arc::clone(state),
         id,
     };
-    shared
+    state
         .methods
         .iter()
-        .fold(Bundle::new(state), |bundle, method| match method {
+        .fold(Bundle::new(tx), |bundle, method| match method {
             Method::Script => bundle.with(Tx::script_method),
             Method::Exec => bundle.with(Tx::exec_method),
             Method::Query => bundle.with(Tx::query_method),
@@ -390,7 +400,7 @@ pub(crate) fn transaction_bundle(shared: &Arc<Shared>, id: u64) -> Value {
 }
 
 /// The methods `db` and `tx` share, for the bundle state `$state`, whose
-/// functions are named with `$prefix`: each calls through the state's owner.
+/// functions are named with `$prefix`: each calls in the state's scope.
 macro_rules! shared_methods {
     ($state:ident, $prefix:literal) => {
         #[frost_bundle(prefix = $prefix, group = script_method)]
@@ -400,7 +410,7 @@ macro_rules! shared_methods {
                 #[frost(ctx)] ctx: &mut NativeCtx<'_>,
                 sql: FrostString,
             ) -> Result<i64, FrostError> {
-                self.shared.with_sql(ctx, self.owner(), &sql, run::script)
+                self.state.with_sql(ctx, self.scope(), &sql, run::script)
             }
         }
 
@@ -412,8 +422,8 @@ macro_rules! shared_methods {
                 sql: FrostString,
                 bindings: Optional<Structured>,
             ) -> Result<i64, FrostError> {
-                self.shared
-                    .with_sql(ctx, self.owner(), &sql, |run| run::exec(run, bindings.0))
+                self.state
+                    .with_sql(ctx, self.scope(), &sql, |call| run::exec(call, bindings.0))
             }
         }
 
@@ -425,8 +435,8 @@ macro_rules! shared_methods {
                 sql: FrostString,
                 bindings: Optional<Structured>,
             ) -> FrostResult {
-                self.shared
-                    .with_sql(ctx, self.owner(), &sql, |run| run::query(run, bindings.0))
+                self.state
+                    .with_sql(ctx, self.scope(), &sql, |call| run::query(call, bindings.0))
             }
         }
 
@@ -440,8 +450,8 @@ macro_rules! shared_methods {
                 initial: Value,
                 #[frost(unnamed)] function: Function,
             ) -> FrostResult {
-                self.shared.with_sql(ctx, self.owner(), &sql, |run| {
-                    run::fold(run, bindings.0, initial, &function)
+                self.state.with_sql(ctx, self.scope(), &sql, |call| {
+                    run::fold(call, bindings.0, initial, &function)
                 })
             }
         }
@@ -452,8 +462,10 @@ macro_rules! shared_methods {
                 &self,
                 #[frost(ctx)] ctx: &mut NativeCtx<'_>,
             ) -> Result<i64, FrostError> {
-                self.shared
-                    .with_connection(ctx, self.owner(), |held, _| Ok(held.last_insert_rowid()))
+                self.state
+                    .with_connection(ctx, self.scope(), |connection, _| {
+                        Ok(connection.last_insert_rowid())
+                    })
             }
         }
 
@@ -464,7 +476,7 @@ macro_rules! shared_methods {
                 #[frost(ctx)] ctx: &mut NativeCtx<'_>,
                 #[frost(unnamed)] function: Function,
             ) -> FrostResult {
-                transaction::run(&self.shared, ctx, self.owner(), &function)
+                transaction::run(&self.state, ctx, self.scope(), &function)
             }
         }
     };
@@ -476,19 +488,19 @@ shared_methods!(Tx, "tx");
 #[frost_bundle(prefix = "db", group = close_method)]
 impl Db {
     fn close(&self, #[frost(ctx)] ctx: &mut NativeCtx<'_>) -> Result<(), FrostError> {
-        let held = {
-            let lock = self.shared.connection.lock();
-            let mut held = lock
+        let connection = {
+            let lock = self.state.connection.lock();
+            let mut connection = lock
                 .try_borrow_mut()
                 .map_err(|_| in_use_error(ctx.name()))?;
-            held.take()
+            connection.take()
         };
         // Dropped only now the lock and borrow are released: releasing the
         // connection may run code that reaches this bundle, which then finds
         // it closed.
-        match held {
-            Some(held) => {
-                drop(held);
+        match connection {
+            Some(connection) => {
+                drop(connection);
                 Ok(())
             }
             None => Err(closed_error(ctx.name())),

@@ -12,27 +12,27 @@ use crate::error::{statement_text_error, transaction_statement_error};
 use crate::statement::{bind, column_keys, is_transaction_statement, prepare_one, row_value};
 
 /// Why a call running SQL failed.
-pub(crate) enum Failure {
+pub(crate) enum SqlCallError {
     /// SQLite's failure, for the call to word.
     Sqlite(rusqlite::Error),
     /// A failure already worded as the call's error.
     Frost(FrostError),
 }
 
-impl From<rusqlite::Error> for Failure {
+impl From<rusqlite::Error> for SqlCallError {
     fn from(err: rusqlite::Error) -> Self {
         Self::Sqlite(err)
     }
 }
 
-impl From<FrostError> for Failure {
+impl From<FrostError> for SqlCallError {
     fn from(err: FrostError) -> Self {
         Self::Frost(err)
     }
 }
 
 /// A call running SQL on its connection.
-pub(crate) struct Run<'r, 'c> {
+pub(crate) struct SqlCall<'r, 'c> {
     connection: &'r Connection,
     /// The call's SQL, as checked and filtered.
     sql: &'r str,
@@ -45,7 +45,7 @@ pub(crate) struct Run<'r, 'c> {
     transaction_hint: &'static str,
 }
 
-impl<'r, 'c> Run<'r, 'c> {
+impl<'r, 'c> SqlCall<'r, 'c> {
     /// The call `ctx` makes, running `sql` on `connection`, whose authorizer
     /// counts its denials in `denials`; a transaction statement fails ending
     /// with `transaction_hint`.
@@ -68,7 +68,7 @@ impl<'r, 'c> Run<'r, 'c> {
 
     /// Fails if `sql`'s first statement is a transaction statement, which
     /// only the transaction methods run.
-    fn forbid_transaction_statement(&self, sql: &str) -> Result<(), Failure> {
+    fn forbid_transaction_statement(&self, sql: &str) -> Result<(), SqlCallError> {
         if is_transaction_statement(sql) {
             return Err(transaction_statement_error(self.name(), self.transaction_hint).into());
         }
@@ -87,7 +87,7 @@ impl<'r, 'c> Run<'r, 'c> {
     }
 
     /// The call's one statement, with `bindings` bound.
-    fn prepare(&self, bindings: Option<Structured>) -> Result<Statement<'r>, Failure> {
+    fn prepare(&self, bindings: Option<Structured>) -> Result<Statement<'r>, SqlCallError> {
         self.forbid_transaction_statement(self.sql)?;
         let mut statement = prepare_one(self.connection, self.sql, self.name())?;
         bind(&mut statement, bindings, self.name())?;
@@ -96,13 +96,13 @@ impl<'r, 'c> Run<'r, 'c> {
 
     /// Fails once the run is aborting, so that work between rows and
     /// statements stops there.
-    fn check_abort(&self) -> Result<(), Failure> {
+    fn check_abort(&self) -> Result<(), SqlCallError> {
         Ok(self.ctx.check_abort()?)
     }
 
     /// Steps `statement` through every row it returns, so that it runs in
     /// full, unless the run aborts meanwhile.
-    fn step_to_end(&self, statement: &mut Statement<'_>) -> Result<(), Failure> {
+    fn step_to_end(&self, statement: &mut Statement<'_>) -> Result<(), SqlCallError> {
         let mut rows = statement.raw_query();
         loop {
             self.check_abort()?;
@@ -118,7 +118,7 @@ impl<'r, 'c> Run<'r, 'c> {
         &self,
         statement: &mut Statement<'_>,
         keys: &[MapKey],
-    ) -> Result<C, Failure> {
+    ) -> Result<C, SqlCallError> {
         statement
             .raw_query()
             .and_then(|row| {
@@ -133,7 +133,7 @@ impl<'r, 'c> Run<'r, 'c> {
         &mut self,
         function: &Function,
         args: impl IntoIterator<Item = Value>,
-    ) -> Result<Value, Failure> {
+    ) -> Result<Value, SqlCallError> {
         let result = self.ctx.invoke(function, args);
         // Any denial meanwhile was some other call's, which `function` made
         // and may have caught.
@@ -144,17 +144,17 @@ impl<'r, 'c> Run<'r, 'c> {
 
 /// `db.script`: runs every statement of the call's SQL, and counts the rows
 /// they changed.
-pub(crate) fn script(run: &mut Run<'_, '_>) -> Result<i64, Failure> {
-    let connection = run.connection;
+pub(crate) fn script(call: &mut SqlCall<'_, '_>) -> Result<i64, SqlCallError> {
+    let connection = call.connection;
     let before = connection.total_changes();
-    let mut statements = Batch::new(connection, run.sql);
+    let mut statements = Batch::new(connection, call.sql);
     while let Some(mut statement) = statements.next()? {
         // Expanding changes only parameters, never the first word.
         let text = statement
             .expanded_sql()
-            .ok_or_else(|| statement_text_error(run.name()))?;
-        run.forbid_transaction_statement(&text)?;
-        run.step_to_end(&mut statement)?;
+            .ok_or_else(|| statement_text_error(call.name()))?;
+        call.forbid_transaction_statement(&text)?;
+        call.step_to_end(&mut statement)?;
     }
     Ok(changes_since(connection, before))
 }
@@ -170,11 +170,14 @@ pub(crate) fn changes_since(connection: &Connection, before: u64) -> i64 {
 }
 
 /// `db.exec`: runs the call's statement, and counts the rows it changed.
-pub(crate) fn exec(run: &mut Run<'_, '_>, bindings: Option<Structured>) -> Result<i64, Failure> {
-    let connection = run.connection;
-    let mut statement = run.prepare(bindings)?;
+pub(crate) fn exec(
+    call: &mut SqlCall<'_, '_>,
+    bindings: Option<Structured>,
+) -> Result<i64, SqlCallError> {
+    let connection = call.connection;
+    let mut statement = call.prepare(bindings)?;
     let before = connection.total_changes();
-    run.step_to_end(&mut statement)?;
+    call.step_to_end(&mut statement)?;
     // SQLite's count of changes is the last INSERT's, UPDATE's, or DELETE's,
     // kept through any other statement. Only such a statement changing rows
     // changes the total.
@@ -186,28 +189,31 @@ pub(crate) fn exec(run: &mut Run<'_, '_>, bindings: Option<Structured>) -> Resul
 }
 
 /// `db.query`: the rows of the call's statement.
-pub(crate) fn query(run: &mut Run<'_, '_>, bindings: Option<Structured>) -> Result<Value, Failure> {
-    let mut statement = run.prepare(bindings)?;
-    let keys = column_keys(&statement, run.name())?;
-    run.read_all(&mut statement, &keys)
+pub(crate) fn query(
+    call: &mut SqlCall<'_, '_>,
+    bindings: Option<Structured>,
+) -> Result<Value, SqlCallError> {
+    let mut statement = call.prepare(bindings)?;
+    let keys = column_keys(&statement, call.name())?;
+    call.read_all(&mut statement, &keys)
 }
 
 /// `db.fold`: the rows of the call's statement, folded by `function`.
 pub(crate) fn fold(
-    run: &mut Run<'_, '_>,
+    call: &mut SqlCall<'_, '_>,
     bindings: Option<Structured>,
     initial: Value,
     function: &Function,
-) -> Result<Value, Failure> {
-    let mut statement = run.prepare(bindings)?;
-    let keys = column_keys(&statement, run.name())?;
+) -> Result<Value, SqlCallError> {
+    let mut statement = call.prepare(bindings)?;
+    let keys = column_keys(&statement, call.name())?;
     if !statement.readonly() {
         // A statement that writes holds its own transaction until it ends, so
         // one `function` began meanwhile could never commit. It runs in full
         // first: SQLite makes its changes before returning any row anyway.
-        let rows: Vec<Value> = run.read_all(&mut statement, &keys)?;
+        let rows: Vec<Value> = call.read_all(&mut statement, &keys)?;
         return rows.into_iter().try_fold(initial, |accumulator, row| {
-            run.invoke(function, [accumulator, row])
+            call.invoke(function, [accumulator, row])
         });
     }
     let mut rows = statement.raw_query();
@@ -215,11 +221,11 @@ pub(crate) fn fold(
     loop {
         // Calling `function` back stops an aborting run as well; this stops
         // it before stepping to a row it would not take.
-        run.check_abort()?;
+        call.check_abort()?;
         let Some(row) = rows.next()? else {
             return Ok(accumulator);
         };
-        let row = row_value(row, &keys, run.name())?;
-        accumulator = run.invoke(function, [accumulator, row])?;
+        let row = row_value(row, &keys, call.name())?;
+        accumulator = call.invoke(function, [accumulator, row])?;
     }
 }

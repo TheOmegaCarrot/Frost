@@ -12,7 +12,7 @@ use frostlang::{FrostError, Value, frost_closure};
 use rusqlite::Connection;
 
 use crate::Authorizer;
-use crate::bundle::{Held, Shared, connection_bundle};
+use crate::bundle::{ConnectionState, OpenConnection, connection_bundle};
 use crate::error::sqlite_error;
 
 /// A method of a connection bundle, the value through which a script uses a
@@ -322,20 +322,22 @@ impl ScriptConnection {
     /// The connection bundle, failing as `function` if SQLite refuses to
     /// install the authorizer or progress handler.
     pub(crate) fn into_bundle(self, function: &str) -> Result<Value, FrostError> {
-        // Held first, so that a failure to install one handler still removes
-        // any installed before it.
-        let mut held = Held::new(self.connection);
+        // Made an `OpenConnection` first, so that a failure to install one
+        // handler still removes any installed before it.
+        let mut connection = OpenConnection::new(self.connection);
         let denials = Arc::new(AtomicU64::new(0));
         if let Some(authorizer) = self.authorizer {
-            held.authorize(authorizer, &denials)
+            connection
+                .authorize(authorizer, &denials)
                 .map_err(|err| sqlite_error(function, &err))?;
         }
         if self.cancellable {
-            held.watch_cancellation()
+            connection
+                .interrupt_on_cancel()
                 .map_err(|err| sqlite_error(function, &err))?;
         }
-        let shared = Shared::new(held, self.filter, denials, self.methods);
-        Ok(connection_bundle(shared))
+        let state = ConnectionState::new(connection, self.filter, denials, self.methods);
+        Ok(connection_bundle(state))
     }
 }
 

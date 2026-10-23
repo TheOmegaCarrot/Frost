@@ -15,7 +15,7 @@ use crate::error::{
     invalid_text_error, missing_binding_error, nameless_parameter_error, nan_binding_error,
     no_bindings_error, no_statement_error, statements_error, unknown_binding_error,
 };
-use crate::run::Failure;
+use crate::run::SqlCallError;
 
 /// The one statement of `sql`, failing as `function` if `sql` holds none or
 /// more than one.
@@ -23,7 +23,7 @@ pub(crate) fn prepare_one<'c>(
     connection: &'c Connection,
     sql: &str,
     function: &str,
-) -> Result<Statement<'c>, Failure> {
+) -> Result<Statement<'c>, SqlCallError> {
     let mut statements = Batch::new(connection, sql);
     let Some(statement) = statements.next()? else {
         return Err(no_statement_error(function).into());
@@ -98,7 +98,7 @@ pub(crate) fn bind(
     statement: &mut Statement<'_>,
     bindings: Option<Structured>,
     function: &str,
-) -> Result<(), Failure> {
+) -> Result<(), SqlCallError> {
     match bindings {
         None => match statement.parameter_count() {
             0 => Ok(()),
@@ -116,7 +116,7 @@ fn bind_positional(
     statement: &mut Statement<'_>,
     bindings: &[Value],
     function: &str,
-) -> Result<(), Failure> {
+) -> Result<(), SqlCallError> {
     let expected = statement.parameter_count();
     if bindings.len() != expected {
         return Err(binding_count_error(function, expected, bindings.len()).into());
@@ -134,7 +134,7 @@ fn bind_named(
     statement: &mut Statement<'_>,
     bindings: &ValueMap,
     function: &str,
-) -> Result<(), Failure> {
+) -> Result<(), SqlCallError> {
     let mut used = BTreeSet::new();
     for index in 1..=statement.parameter_count() {
         let parameter = statement
@@ -168,7 +168,7 @@ fn sql_value<'v>(
     value: &'v Value,
     parameter: Parameter<'_>,
     function: &str,
-) -> Result<ToSqlOutput<'v>, Failure> {
+) -> Result<ToSqlOutput<'v>, SqlCallError> {
     let value = match value {
         Value::Null => ValueRef::Null,
         Value::Bool(boolean) => ValueRef::Integer(i64::from(*boolean)),
@@ -193,7 +193,7 @@ fn sql_value<'v>(
 pub(crate) fn column_keys(
     statement: &Statement<'_>,
     function: &str,
-) -> Result<Vec<MapKey>, Failure> {
+) -> Result<Vec<MapKey>, SqlCallError> {
     (0..statement.column_count())
         .map(|index| {
             // TODO: rusqlite panics on a column name that is not UTF-8,
@@ -208,7 +208,11 @@ pub(crate) fn column_keys(
 /// `row` as a Map of its columns keyed by `keys`, failing as `function`.
 ///
 /// Where columns share a name, the last one's value stands.
-pub(crate) fn row_value(row: &Row<'_>, keys: &[MapKey], function: &str) -> Result<Value, Failure> {
+pub(crate) fn row_value(
+    row: &Row<'_>,
+    keys: &[MapKey],
+    function: &str,
+) -> Result<Value, SqlCallError> {
     keys.iter()
         .enumerate()
         .map(|(index, key)| {

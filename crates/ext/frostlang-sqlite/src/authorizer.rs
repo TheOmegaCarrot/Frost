@@ -84,8 +84,8 @@ pub struct Authorizer {
     /// `None` while every pragma is allowed.
     pragmas: Option<Pragmas>,
     /// The functions allowed; `None` while every function is.
-    allowed_functions: Option<Names>,
-    denied_functions: Names,
+    allowed_functions: Option<SqlNames>,
+    denied_functions: SqlNames,
     rules: Vec<Rule>,
 }
 
@@ -93,15 +93,15 @@ pub struct Authorizer {
 #[derive(Clone, Debug, Default)]
 struct Pragmas {
     /// Allowed with any argument.
-    any: Names,
+    any: SqlNames,
     /// Allowed only with no argument.
-    reads: Names,
+    reads: SqlNames,
 }
 
 /// SQL names, lowercase, as SQL matches them regardless of case.
-type Names = BTreeSet<String>;
+type SqlNames = BTreeSet<String>;
 
-/// `names`, lowercase, for [`Names`].
+/// `names`, lowercase, for [`SqlNames`].
 fn lowercased(names: impl IntoIterator<Item = impl AsRef<str>>) -> impl Iterator<Item = String> {
     names
         .into_iter()
@@ -109,7 +109,7 @@ fn lowercased(names: impl IntoIterator<Item = impl AsRef<str>>) -> impl Iterator
 }
 
 /// Whether `names` holds `name`, regardless of case.
-fn holds(names: &Names, name: &str) -> bool {
+fn holds(names: &SqlNames, name: &str) -> bool {
     names.contains(&name.to_ascii_lowercase())
 }
 
