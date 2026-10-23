@@ -74,6 +74,7 @@ pub struct ListedInstruction<'a> {
     /// The instruction.
     pub op: Bytecode,
     /// What its operand refers to, if it refers to anything.
+    /// [`Bytecode::Nop`] refers to nothing, and labels no target.
     pub reference: Option<Reference<'a>>,
     /// Its debug info, if the function has an entry for it.
     pub debug: Option<ListedDebugInfo>,
@@ -230,7 +231,8 @@ fn reference<'a>(
             name: entry(&function.child_fns, u64::from(child)).map(|child| child.name.as_str()),
             captures,
         },
-        Jump(offset)
+        // At 0, `Jump` is `Nop`, which jumps nowhere.
+        Jump(offset @ 1..)
         | JumpIfTrue(offset)
         | JumpIfFalse(offset)
         | PeekJumpIfTrue(offset)
@@ -244,7 +246,8 @@ fn reference<'a>(
             }),
         },
         // Exhaustive, so that a new opcode decides what it refers to.
-        PushNull
+        Bytecode::Nop
+        | PushNull
         | PushTrue
         | PushFalse
         | PushInt(_)
@@ -306,7 +309,8 @@ impl Labels {
             .iter()
             .enumerate()
             .filter_map(|(index, op)| match *op {
-                Bytecode::Jump(offset)
+                // At 0, `Jump` is `Nop`, which jumps nowhere.
+                Bytecode::Jump(offset @ 1..)
                 | Bytecode::JumpIfTrue(offset)
                 | Bytecode::JumpIfFalse(offset)
                 | Bytecode::PeekJumpIfTrue(offset)

@@ -12,7 +12,7 @@
 //        0  inv_fn (child 0)
 //   code
 //        0  DefLocal       0    ; f
-//        1  DropBelow      0
+//        1  Pop
 //        2  LoadGlobal     8    ; is_function
 //        3  LoadLocal      0    ; f
 //        4  Call           1
@@ -29,7 +29,7 @@
 //   L0:
 //       15  PushNull
 //   L1:
-//       16  DropBelow      0
+//       16  Pop
 //       17  ConsumeLocal   0    ; f
 //       18  CreateClosure  0    ; inv_fn, 1 capture
 //
@@ -40,7 +40,7 @@
 //        1  args
 //   code
 //        0  DefLocal      1    ; args
-//        1  DropBelow     0
+//        1  Pop
 //        2  LoadGlobal    108  ; call
 //        3  ConsumeLocal  0    ; f
 //        4  ConsumeLocal  1    ; args
@@ -59,7 +59,7 @@
 //   code
 //        0  DefLocal       0    ; outer
 //        1  DefLocal       1    ; f
-//        2  DropBelow      0
+//        2  Pop
 //        3  LoadGlobal     8    ; is_function
 //        4  LoadLocal      1    ; f
 //        5  Call           1
@@ -76,7 +76,7 @@
 //   L0:
 //       16  PushNull
 //   L1:
-//       17  DropBelow      0
+//       17  Pop
 //       18  ConsumeLocal   1    ; f
 //       19  ConsumeLocal   0    ; outer
 //       20  CreateClosure  0    ; curry_fn, 2 captures
@@ -89,7 +89,7 @@
 //        2  inner
 //   code
 //        0  DefLocal      2    ; inner
-//        1  DropBelow     0
+//        1  Pop
 //        2  LoadGlobal    108  ; call
 //        3  ConsumeLocal  0    ; f
 //        4  ConsumeLocal  1    ; outer
@@ -109,7 +109,7 @@
 //   code
 //        0  DefLocal       0    ; outer
 //        1  DefLocal       1    ; f
-//        2  DropBelow      0
+//        2  Pop
 //        3  LoadGlobal     8    ; is_function
 //        4  LoadLocal      1    ; f
 //        5  Call           1
@@ -126,7 +126,7 @@
 //   L0:
 //       16  PushNull
 //   L1:
-//       17  DropBelow      0
+//       17  Pop
 //       18  ConsumeLocal   1    ; f
 //       19  ConsumeLocal   0    ; outer
 //       20  CreateClosure  0    ; bcurry_fn, 2 captures
@@ -139,7 +139,7 @@
 //        2  inner
 //   code
 //        0  DefLocal      2    ; inner
-//        1  DropBelow     0
+//        1  Pop
 //        2  LoadGlobal    108  ; call
 //        3  ConsumeLocal  0    ; f
 //        4  ConsumeLocal  2    ; inner
@@ -153,7 +153,7 @@
 //        0  e
 //   code
 //        0  DefLocal      0  ; e
-//        1  DropBelow     0
+//        1  Pop
 //        2  ConsumeLocal  0  ; e
 //
 // function spread
@@ -166,7 +166,7 @@
 //        0  spread_fn (child 0)
 //   code
 //        0  DefLocal       0    ; f
-//        1  DropBelow      0
+//        1  Pop
 //        2  LoadGlobal     8    ; is_function
 //        3  LoadLocal      0    ; f
 //        4  Call           1
@@ -183,7 +183,7 @@
 //   L0:
 //       15  PushNull
 //   L1:
-//       16  DropBelow      0
+//       16  Pop
 //       17  ConsumeLocal   0    ; f
 //       18  CreateClosure  0    ; spread_fn, 1 capture
 //
@@ -196,7 +196,7 @@
 //        0  "Function spread_fn requires Array as argument 1, got "
 //   code
 //        0  DefLocal      1    ; arr
-//        1  DropBelow     0
+//        1  Pop
 //        2  LoadGlobal    6    ; is_array
 //        3  LoadLocal     1    ; arr
 //        4  Call          1
@@ -213,7 +213,7 @@
 //   L0:
 //       15  PushNull
 //   L1:
-//       16  DropBelow     0
+//       16  Pop
 //       17  LoadGlobal    108  ; call
 //       18  ConsumeLocal  0    ; f
 //       19  ConsumeLocal  1    ; arr
@@ -229,7 +229,7 @@
 //        0  rev_args_fn (child 0)
 //   code
 //        0  DefLocal       0    ; f
-//        1  DropBelow      0
+//        1  Pop
 //        2  LoadGlobal     8    ; is_function
 //        3  LoadLocal      0    ; f
 //        4  Call           1
@@ -246,7 +246,7 @@
 //   L0:
 //       15  PushNull
 //   L1:
-//       16  DropBelow      0
+//       16  Pop
 //       17  ConsumeLocal   0    ; f
 //       18  CreateClosure  0    ; rev_args_fn, 1 capture
 //
@@ -257,7 +257,7 @@
 //        1  args
 //   code
 //        0  DefLocal      1    ; args
-//        1  DropBelow     0
+//        1  Pop
 //        2  LoadGlobal    108  ; call
 //        3  ConsumeLocal  0    ; f
 //        4  LoadGlobal    67   ; reverse
@@ -275,7 +275,7 @@
 //   code
 //        0  DefLocal      0    ; f
 //        1  DefLocal      1    ; a
-//        2  DropBelow     0
+//        2  Pop
 //        3  LoadGlobal    8    ; is_function
 //        4  LoadLocal     0    ; f
 //        5  Call          1
@@ -292,11 +292,11 @@
 //   L0:
 //       16  PushNull
 //   L1:
-//       17  DropBelow     0
+//       17  Pop
 //       18  ConsumeLocal  0    ; f
 //       19  LoadLocal     1    ; a
 //       20  Call          1
-//       21  DropBelow     0
+//       21  Pop
 //       22  ConsumeLocal  1    ; a
 //
 // function const
@@ -307,7 +307,7 @@
 //        0  const_fn (child 0)
 //   code
 //        0  DefLocal       0  ; v
-//        1  DropBelow      0
+//        1  Pop
 //        2  ConsumeLocal   0  ; v
 //        3  CreateClosure  0  ; const_fn, 1 capture
 //
@@ -316,8 +316,8 @@
 //   slots
 //        0  v  capture
 //   code
-//        0  DropBelow     0
-//        1  DropBelow     0
+//        0  Pop
+//        1  Pop
 //        2  ConsumeLocal  0  ; v
 //
 // function compose
@@ -354,17 +354,17 @@
 //       16  ConsumeLocal       4    ; functions
 //       17  CreateClosure      0    ; <lambda>, 1 capture
 //       18  Call               2
-//       19  DropBelow          0
+//       19  Pop
 //       20  CreateClosure      1    ; compose2, 0 captures
 //       21  DefLocal           5    ; compose2
 //       22  LoadLocal          0    ; rest
 //       23  MarkStack
-//       24  PeekDown           0
+//       24  Dup
 //       25  TestArrayLenExact  0
 //       26  JumpIfFalse        L0   ; +8
 //       27  ExplodeArray       0
 //       28  DropMark
-//       29  DropBelow          0
+//       29  Pop
 //       30  ConsumeLocal       5    ; compose2
 //       31  ConsumeLocal       2    ; f
 //       32  ConsumeLocal       1    ; g
@@ -374,7 +374,7 @@
 //       35  RewindToMark
 //       36  MarkStack
 //       37  DropMark
-//       38  DropBelow          0
+//       38  Pop
 //       39  LoadGlobal         108  ; call
 //       40  ConsumeLocal       3    ; compose
 //       41  ConsumeLocal       5    ; compose2
@@ -405,7 +405,7 @@
 //        1  ", got "
 //   code
 //        0  DefLocal            1    ; i
-//        1  DropBelow           0
+//        1  Pop
 //        2  ConsumeLocal        0    ; functions
 //        3  LoadLocal           1    ; i
 //        4  SoftIndexStructure
@@ -442,7 +442,7 @@
 //   code
 //        0  DefLocal       0  ; f2
 //        1  DefLocal       1  ; f1
-//        2  DropBelow      0
+//        2  Pop
 //        3  ConsumeLocal   0  ; f2
 //        4  ConsumeLocal   1  ; f1
 //        5  CreateClosure  0  ; compose_fn, 2 captures
@@ -455,7 +455,7 @@
 //        2  args
 //   code
 //        0  DefLocal      2    ; args
-//        1  DropBelow     0
+//        1  Pop
 //        2  ConsumeLocal  0    ; f2
 //        3  LoadGlobal    108  ; call
 //        4  ConsumeLocal  1    ; f1
@@ -471,7 +471,7 @@
 //        0  index_fn (child 0)
 //   code
 //        0  DefLocal       0  ; key
-//        1  DropBelow      0
+//        1  Pop
 //        2  ConsumeLocal   0  ; key
 //        3  CreateClosure  0  ; index_fn, 1 capture
 //
@@ -482,7 +482,7 @@
 //        1  structure
 //   code
 //        0  DefLocal            1  ; structure
-//        1  DropBelow           0
+//        1  Pop
 //        2  ConsumeLocal        1  ; structure
 //        3  ConsumeLocal        0  ; key
 //        4  SoftIndexStructure
@@ -498,7 +498,7 @@
 //   code
 //        0  DefLocal       0   ; keys
 //        1  DefLocal       1   ; structure
-//        2  DropBelow      0
+//        2  Pop
 //        3  CreateClosure  0   ; step, 0 captures
 //        4  DefLocal       2   ; step
 //        5  LoadGlobal     80  ; fold
@@ -515,7 +515,7 @@
 //   code
 //        0  DefLocal            0   ; key
 //        1  DefLocal            1   ; found
-//        2  DropBelow           0
+//        2  Pop
 //        3  LoadGlobal          0   ; is_null
 //        4  LoadLocal           1   ; found
 //        5  Call                1

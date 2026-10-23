@@ -227,7 +227,10 @@ fn a_malformed_reference_gathers_as_absent() {
 #[test]
 fn labels_number_jump_targets_in_code_order() {
     // Index 1 jumps to 4 (the end), index 2 jumps to 3.
-    let main = function("<main>", vec![PushTrue, JumpIfFalse(2), Jump(0), PushNull]);
+    let main = function(
+        "<main>",
+        vec![PushTrue, JumpIfFalse(2), PeekJumpIfTrue(0), PushNull],
+    );
     let listing = main.listing();
     let listed = &listing.functions[0];
     let labels: Vec<Option<usize>> = listed
@@ -244,6 +247,38 @@ fn labels_number_jump_targets_in_code_order() {
         listed.end_label,
         Some(1),
         "the target just past the end is label 1"
+    );
+}
+
+/// `Nop` is a `Jump` that skips nothing: it refers to nothing and labels
+/// nothing, while a `Jump` that skips something still does both.
+#[test]
+fn a_nop_is_not_a_jump() {
+    let main = function("<main>", vec![Bytecode::Nop, Jump(1), PushNull, PushNull]);
+    let listing = main.listing();
+    let listed = &listing.functions[0];
+    assert_eq!(
+        references(listed),
+        [
+            None,
+            Some(Reference::Jump {
+                offset: 1,
+                target: Some(JumpTarget { index: 3, label: 0 }),
+            }),
+            None,
+            None,
+        ],
+        "only the Jump that skips an instruction refers to a target"
+    );
+    let labels: Vec<Option<usize>> = listed
+        .instructions
+        .iter()
+        .map(|instruction| instruction.label)
+        .collect();
+    assert_eq!(
+        labels,
+        [None, None, None, Some(0)],
+        "the instruction after the Nop is not labeled"
     );
 }
 

@@ -18,7 +18,8 @@ impl CompiledFunction {
     /// it, depth first. Print it with `{}`.
     ///
     /// Each listing shows the function's arity, its slots, constants, Map keys,
-    /// and nested functions, then its code. Jumps name labeled targets, and
+    /// and nested functions, then its code. An instruction with an alias, such
+    /// as [`Bytecode::Dup`], lists by the alias. Jumps name labeled targets, and
     /// each instruction that refers to a slot, constant, key, global, or
     /// nested function is annotated with what it refers to. Where the function
     /// has debug info, each instruction also shows its source location and its
@@ -278,8 +279,9 @@ fn operand(op: Bytecode) -> String {
     match op {
         PushInt(int) => int.to_string(),
         PushFloat(float) => Value::Float(float).to_debug_string(),
-        PeekDown(n)
-        | DropBelow(n)
+        // At 0, these are `Dup` and `Pop`, which list by name alone.
+        PeekDown(n @ 1..)
+        | DropBelow(n @ 1..)
         | Call(n)
         | TailCall(n)
         | MakeArray(n)
@@ -295,7 +297,9 @@ fn operand(op: Bytecode) -> String {
         }
         // No operand, or (from `DefLocal` on) one that refers to something, so
         // lists by its reference instead.
-        PushNull
+        Bytecode::Dup
+        | Bytecode::Pop
+        | PushNull
         | PushTrue
         | PushFalse
         | Add
@@ -337,11 +341,14 @@ fn operand(op: Bytecode) -> String {
     }
 }
 
-/// The name an opcode lists by.
+/// The name an opcode lists by: its alias's, if it has one.
 fn opcode_name(op: Bytecode) -> &'static str {
     use Bytecode::*;
 
     match op {
+        Bytecode::Dup => "Dup",
+        Bytecode::Pop => "Pop",
+        Bytecode::Nop => "Nop",
         PushNull => "PushNull",
         PushTrue => "PushTrue",
         PushFalse => "PushFalse",

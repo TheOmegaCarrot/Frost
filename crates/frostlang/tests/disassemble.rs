@@ -173,9 +173,9 @@ fn jumps_name_labels_in_code_order() {
             JumpIfFalse(3), // to 5
             PushInt(1),
             PeekJumpIfTrue(3), // to 7, the end
-            Jump(0),           // to 5
+            Jump(1),           // to 6
             PushInt(2),
-            Jump(0), // to 7, the end
+            PushInt(3),
         ],
     );
     let expected = r"function <main>
@@ -184,12 +184,13 @@ fn jumps_name_labels_in_code_order() {
        0  PushTrue
        1  JumpIfFalse     L0  ; +3
        2  PushInt         1
-       3  PeekJumpIfTrue  L1  ; +3
-       4  Jump            L0  ; +0
+       3  PeekJumpIfTrue  L2  ; +3
+       4  Jump            L1  ; +1
   L0:
        5  PushInt         2
-       6  Jump            L1  ; +0
   L1:
+       6  PushInt         3
+  L2:
        7  (end)
 ";
     assert_eq!(listing(&main), expected);
@@ -218,6 +219,39 @@ fn other_operands_are_shown_plainly() {
        3  TestArrayLenAtLeast  2
        4  PeekDown             1
        5  TailCall             0
+";
+    assert_eq!(listing(&main), expected);
+}
+
+/// `Dup`, `Pop`, and `Nop` list by name, with no operand and, for `Nop`, no
+/// label after it; with any other operand, their opcodes list as usual.
+#[test]
+fn aliases_list_by_their_own_names() {
+    let main = function(
+        "<main>",
+        vec![
+            Bytecode::Dup,
+            PeekDown(1),
+            Bytecode::Pop,
+            DropBelow(2),
+            Bytecode::Nop,
+            Jump(1), // to 7
+            PushNull,
+            PushNull,
+        ],
+    );
+    let expected = r"function <main>
+  arity 0, 0 captures
+  code
+       0  Dup
+       1  PeekDown   1
+       2  Pop
+       3  DropBelow  2
+       4  Nop
+       5  Jump       L0  ; +1
+       6  PushNull
+  L0:
+       7  PushNull
 ";
     assert_eq!(listing(&main), expected);
 }
@@ -418,7 +452,7 @@ fn a_function_without_debug_info_lists_as_before_beside_one_with_it() {
        0  child (child 0)
   code (line:column, stack height)
        0  1:1  1  CreateClosure  0  ; child, 0 captures
-       1  1:1  2  DropBelow      0
+       1  1:1  2  Pop
 
 function child (child 0)
   arity 0, 0 captures
@@ -432,7 +466,10 @@ function child (child 0)
 fn labels_and_the_end_align_with_debug_info() {
     // Index 1 jumps to 4 (the end), index 2 jumps to 3.
     let main = with_debug_info(
-        function("<main>", vec![PushTrue, JumpIfFalse(2), Jump(0), PushNull]),
+        function(
+            "<main>",
+            vec![PushTrue, JumpIfFalse(2), PeekJumpIfTrue(0), PushNull],
+        ),
         "abcd",
         &[(0, Some(1)), (1, Some(2)), (2, Some(1)), (3, Some(1))],
     );
@@ -440,8 +477,8 @@ fn labels_and_the_end_align_with_debug_info() {
   arity 0, 0 captures
   code (line:column, stack height)
        0  1:1  1  PushTrue
-       1  1:2  2  JumpIfFalse  L1  ; +2
-       2  1:3  1  Jump         L0  ; +0
+       1  1:2  2  JumpIfFalse     L1  ; +2
+       2  1:3  1  PeekJumpIfTrue  L0  ; +0
   L0:
        3  1:4  1  PushNull
   L1:
