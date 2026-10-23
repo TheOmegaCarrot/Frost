@@ -558,7 +558,7 @@ impl FunctionBuilder<'_> {
             Expr::Array(elements) => self.compile_array_literal(elements, span),
             Expr::Map(entries) => self.compile_map_literal(entries, span),
             Expr::FormatString(segments) => self.compile_format_string(segments, span),
-            Expr::Lambda { .. } | Expr::AbbreviatedLambda { .. } => self.compile_lambda(expr),
+            Expr::Lambda { .. } | Expr::AbbreviatedLambda { .. } => self.compile_lambda(expr, None),
             Expr::Filter {
                 structure,
                 operation,

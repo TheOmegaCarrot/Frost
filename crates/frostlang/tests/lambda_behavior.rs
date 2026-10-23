@@ -484,6 +484,164 @@ fn a_discarded_parameter_still_counts_toward_arity() {
     ]);
 }
 
+// --- Debug names ---
+//
+// A lambda without a name of its own, bound by a plain `def`, is named after
+// the binding in errors and backtraces. `try_call`'s `trace` names the frames
+// an error passed through, innermost first. Each call below whose frame should
+// be named is not in tail position, so the frame is still there to name.
+
+#[test]
+fn a_lambda_bound_by_def_is_named_by_the_binding_in_errors() {
+    assert_raises(&[
+        (
+            r"
+            def f = fn x -> x
+            f()
+            ",
+            "Function f expects",
+        ),
+        (
+            r"
+            def f = $($1 + $2)
+            f(1)
+            ",
+            "Function f expects",
+        ),
+        (
+            r"
+            def f is Function = fn x -> x
+            f()
+            ",
+            "Function f expects",
+        ),
+    ]);
+}
+
+#[test]
+fn a_lambda_bound_by_def_is_named_by_the_binding_in_backtraces() {
+    assert_values(&[
+        (
+            r"
+            def f = fn x -> 1 / x + 1
+            try_call(fn -> f(0) + 1).trace
+            ",
+            "['f', '<lambda>']",
+        ),
+        (
+            r"
+            def f = $(1 / $ + 1)
+            try_call(fn -> f(0) + 1).trace
+            ",
+            "['f', '<lambda>']",
+        ),
+        (
+            r"
+            def outer = fn -> {
+                def inner = fn -> 1 / 0 + 1
+                inner() + 1
+            }
+            try_call(outer).trace
+            ",
+            "['inner', 'outer']",
+        ),
+    ]);
+}
+
+#[test]
+fn the_name_a_def_gives_a_lambda_is_not_bound_inside_it() {
+    assert_compile_errors(&[(
+        r"
+        def f = fn n -> if n == 0: 0 else: f(n - 1)
+        f(1)
+        ",
+        "`f` is not defined",
+    )]);
+    // Inside, the name is still the outer one.
+    assert_values(&[(
+        r"
+        def f = fn -> 1
+        def g = do {
+            def f = fn -> f() + 1
+            f
+        }
+        g()
+        ",
+        "2",
+    )]);
+}
+
+#[test]
+fn a_lambda_with_its_own_name_keeps_it_when_bound_by_def() {
+    assert_raises(&[
+        (
+            r"
+            def g = fn f(x) -> x
+            g()
+            ",
+            "Function f expects",
+        ),
+        (
+            r"
+            defn h(x) -> x
+            h()
+            ",
+            "Function h expects",
+        ),
+    ]);
+    assert_values(&[(
+        r"
+        def g = fn f(x) -> 1 / x + 1
+        try_call(fn -> g(0) + 1).trace
+        ",
+        "['f', '<lambda>']",
+    )]);
+}
+
+#[test]
+fn only_a_lambda_that_is_the_whole_value_of_a_plain_def_is_named_by_it() {
+    assert_raises(&[
+        // Destructured.
+        (
+            r"
+            def [f] = [fn x -> x]
+            f()
+            ",
+            "Function <lambda> expects",
+        ),
+        (
+            r"
+            def {f} = {f: fn x -> x}
+            f()
+            ",
+            "Function <lambda> expects",
+        ),
+        // Not the value itself.
+        (
+            r"
+            def f = if true: fn x -> x else: null
+            f()
+            ",
+            "Function <lambda> expects",
+        ),
+        (
+            r"
+            def f = do { fn x -> x }
+            f()
+            ",
+            "Function <lambda> expects",
+        ),
+        // Nested in the value.
+        (
+            r"
+            def f = fn -> fn x -> x
+            f()()
+            ",
+            "Function <lambda> expects",
+        ),
+    ]);
+}
+
 #[test]
 fn a_named_lambda_is_checked_for_arity_like_any_other() {
     assert_raises(&[

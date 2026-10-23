@@ -16,13 +16,14 @@ use crate::compile::{
     },
 };
 
-/// The name given to a lambda the script leaves unnamed. It is not an
-/// identifier, so no name in a script can refer to it.
+/// The name given to a lambda the script neither names nor binds by name. It is
+/// not an identifier, so no name in a script can refer to it.
 const ANONYMOUS_NAME: &str = "<lambda>";
 
 /// A lambda of either form, reduced to what compiling it needs.
 struct NormalizedLambda<'a> {
-    /// Every function has a name: the script's, or [`ANONYMOUS_NAME`].
+    /// Every function has a name: the script's, the name the lambda is bound
+    /// to, or [`ANONYMOUS_NAME`].
     name: &'a str,
     params: Vec<Param<'a>>,
     variadic_param: Option<Param<'a>>,
@@ -55,8 +56,10 @@ fn written(binding: &Spanned<Binding>) -> Param<'_> {
 
 impl<'a> NormalizedLambda<'a> {
     /// `lambda` must be an [`Expr::Lambda`] or [`Expr::AbbreviatedLambda`].
-    fn new(lambda: &'a Spanned<Expr>) -> Self {
+    /// See [`FunctionBuilder::compile_lambda`] for `bound_name`.
+    fn new(lambda: &'a Spanned<Expr>, bound_name: Option<&'a str>) -> Self {
         let generated = |binding| generated(binding, lambda.span);
+        let unnamed = bound_name.unwrap_or(ANONYMOUS_NAME);
         match &lambda.node {
             Expr::Lambda {
                 params,
@@ -65,7 +68,7 @@ impl<'a> NormalizedLambda<'a> {
                 body,
                 return_expr,
             } => Self {
-                name: self_name.as_ref().map_or(ANONYMOUS_NAME, |name| &name.node),
+                name: self_name.as_ref().map_or(unnamed, |name| &name.node),
                 params: params.iter().map(written).collect(),
                 variadic_param: variadic_param.as_ref().map(written),
                 self_binding: match self_name {
@@ -85,7 +88,7 @@ impl<'a> NormalizedLambda<'a> {
                 uses_rest,
                 body,
             } => Self {
-                name: ANONYMOUS_NAME,
+                name: unnamed,
                 params: used_params
                     .iter()
                     .enumerate()
@@ -119,9 +122,14 @@ impl FunctionBuilder<'_> {
     /// `fn name(a, b, ...rest) -> { body; return_expr }` or `$(body)`.
     ///
     /// `lambda` must be an [`Expr::Lambda`] or [`Expr::AbbreviatedLambda`].
+    ///
+    /// `bound_name` is the name a `def` binds the lambda to, if it does. A
+    /// lambda without a name of its own takes it, for errors and backtraces
+    /// only: unlike its own name, it is not bound inside the lambda.
     pub(super) fn compile_lambda(
         &mut self,
         lambda: &Spanned<Expr>,
+        bound_name: Option<&str>,
     ) -> Result<ExprFragment, Diagnostics> {
         if let Some(outer) = self.abbreviated.take()
             && self.lints_on()
@@ -184,7 +192,7 @@ impl FunctionBuilder<'_> {
         }
 
         let lambda_start = lambda.span.start;
-        let lambda = NormalizedLambda::new(lambda);
+        let lambda = NormalizedLambda::new(lambda, bound_name);
         let mut child = self.child(lambda.name.to_owned(), lambda.arity(), captures, hoisted);
         child.abbreviated = abbreviated;
 

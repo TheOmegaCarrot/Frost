@@ -28,8 +28,21 @@ impl FunctionBuilder<'_> {
         let fold = self.options.optimization_options.constant_fold;
         let propagate = self.options.optimization_options.constant_propagate;
 
-        // The rhs is a fold point.
-        let expr_fragment = self.compile_expression(expr, Position::Inner)?;
+        // The rhs is a fold point. A lambda bound to a name is named by it.
+        let expr_fragment = match (&pattern.node, &expr.node) {
+            (
+                Pattern::Binding {
+                    name:
+                        Spanned {
+                            node: Binding::Named(name),
+                            ..
+                        },
+                    ..
+                },
+                Expr::Lambda { .. } | Expr::AbbreviatedLambda { .. },
+            ) => self.compile_lambda(expr, Some(name))?,
+            _ => self.compile_expression(expr, Position::Inner)?,
+        };
         let (expr_fragment, known) = self.fold_binding_value(expr_fragment);
 
         // A plain name takes the whole value, so it needs no run. Any other
