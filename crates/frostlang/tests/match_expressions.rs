@@ -81,6 +81,18 @@ fn calls_by_kind(emitted: &Emitted) -> (usize, usize) {
     )
 }
 
+/// How many of each op that tries an arm the code holds: `MarkStack`, `Dup`,
+/// `DropMark`, and `RewindToMark`.
+fn tries(emitted: &Emitted) -> [usize; 4] {
+    [
+        Bytecode::MarkStack,
+        Bytecode::Dup,
+        Bytecode::DropMark,
+        Bytecode::RewindToMark,
+    ]
+    .map(|op| emitted.count(&op))
+}
+
 // --- Choosing an arm ---
 
 #[test]
@@ -233,6 +245,49 @@ fn a_match_in_a_lambda_matches_afresh_on_each_call() {
         ",
         "[1, 2, 0, 4]",
     )]);
+}
+
+#[test]
+fn a_catch_all_arm_takes_whatever_no_earlier_arm_matched() {
+    // A runtime target, so no arm is chosen at compile time.
+    assert_values(&[
+        (
+            r"
+            defn f(x) -> match x { 1 => 'one', n => [n] }
+            [f(1), f(2), f(null)]
+            ",
+            "['one', [2], [null]]",
+        ),
+        (
+            r"
+            defn f(x) -> match x { [] => 'empty', [n] | n => n }
+            [f([]), f([5]), f(7), f([1, 2])]
+            ",
+            "['empty', 5, 7, [1, 2]]",
+        ),
+        (
+            r"
+            defn f(x) -> match x { n if: n > 5 => 'big', _ => 'small' }
+            [f(9), f(3)]
+            ",
+            "['big', 'small']",
+        ),
+        (
+            r"
+            defn f(x) -> match x { n => match n { m => [n, m] } }
+            f(4)
+            ",
+            "[4, 4]",
+        ),
+        // As the only arm, among other values on the stack.
+        (
+            r"
+            defn f(x) -> [0, match x { n => n + 1 }, 2]
+            f(1)
+            ",
+            "[0, 2, 2]",
+        ),
+    ]);
 }
 
 // --- Names ---
@@ -1296,6 +1351,24 @@ fn only_an_arms_result_is_in_tail_position() {
     assert_eq!(calls_by_kind(&lambda), (1, 0), "{lambda:?}");
 }
 
+#[test]
+fn a_catch_all_arms_result_is_in_tail_position() {
+    for source in [
+        "fn f(n) -> match n { k => f(k) }",
+        "fn f(n) -> match n { [k] | k => f(k) }",
+        "fn f(n) -> match n { 0 => 0, _ => f(n) }",
+    ] {
+        for optimization in optimization_permutations() {
+            let lambda = Script::new(source).code(optimization).nested(0);
+            assert_eq!(
+                calls_by_kind(&lambda),
+                (0, 1),
+                "{source:?} under {optimization:?}: {lambda:?}"
+            );
+        }
+    }
+}
+
 // --- What the compiler emits ---
 
 #[test]
@@ -1384,6 +1457,64 @@ fn without_folding_nothing_is_folded() {
     let emitted = Script::new("match 3 { 1 => 10, 3 => 2 * 15 }").code(UNOPTIMIZED);
     assert_eq!(emitted.count(&Bytecode::MarkStack), 2, "{emitted:?}");
     assert_eq!(emitted.count(&Bytecode::Multiply), 1, "{emitted:?}");
+}
+
+#[test]
+fn a_catch_all_arm_is_never_tried_on_a_copy() {
+    // Only the arms before the catch-all, and the branches inside it, are tried:
+    // each marks, copies, drops its mark, and rewinds once.
+    for (source, tried) in [
+        ("match x { _ => 0 }", 0),
+        ("match x { n => n }", 0),
+        ("match x { 1 => 0, n => n }", 1),
+        ("match x { 1 => 0, 2 => 0, _ => 1 }", 2),
+        // The first branch is tried within the arm; the arm itself is not.
+        ("match x { [n] | n => n }", 1),
+        ("match x { 1 => 0, [n] | n => n }", 2),
+        // A guard can fail, so an arm with one is tried.
+        ("match x { n if: n => n, _ => 0 }", 1),
+    ] {
+        let emitted = Script::new(source)
+            .capture("x", Value::Null)
+            .code(UNOPTIMIZED);
+        assert_eq!(tries(&emitted), [tried; 4], "{source:?}: {emitted:?}");
+    }
+}
+
+#[test]
+fn a_catch_all_arm_binds_the_target_itself() {
+    let emitted = Script::new("match x { n => n }")
+        .capture("x", Value::Null)
+        .code(UNOPTIMIZED);
+    let (x, n) = (emitted.slot_named("x"), emitted.slot_named("n"));
+    assert_eq!(
+        emitted.code[..4],
+        [
+            Bytecode::Pop,
+            Bytecode::LoadLocal(x),
+            Bytecode::DefLocal(n),
+            Bytecode::LoadLocal(n),
+        ],
+        "the target goes straight into the binding: {emitted:?}"
+    );
+}
+
+#[test]
+fn a_discarding_catch_all_arm_leaves_nothing_to_discard() {
+    // With nothing marked around it, the target's load meets the discard's `Pop`.
+    let emitted = Script::new("match x { _ => 0 }")
+        .capture("x", Value::Null)
+        .code(UNOPTIMIZED.with(Optimization::DiscardEliminate, true));
+    assert_eq!(
+        emitted.code[..2],
+        [Bytecode::Pop, Bytecode::PushInt(0)],
+        "only the leading fn-value `Pop` comes before the result: {emitted:?}"
+    );
+    assert_eq!(
+        emitted.count(&Bytecode::LoadLocal(emitted.slot_named("x"))),
+        0,
+        "the target is never loaded: {emitted:?}"
+    );
 }
 
 #[test]

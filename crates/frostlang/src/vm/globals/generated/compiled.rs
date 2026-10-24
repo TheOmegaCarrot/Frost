@@ -369,30 +369,27 @@
 //       31  ConsumeLocal       2    ; f
 //       32  ConsumeLocal       1    ; g
 //       33  TailCall           2
-//       34  Jump               L1   ; +20
+//       34  Jump               L1   ; +17
 //   L0:
 //       35  RewindToMark
-//       36  MarkStack
-//       37  DropMark
-//       38  Pop
-//       39  LoadGlobal         108  ; call
-//       40  ConsumeLocal       3    ; compose
-//       41  ConsumeLocal       5    ; compose2
-//       42  ConsumeLocal       2    ; f
-//       43  ConsumeLocal       1    ; g
-//       44  Call               2
-//       45  MakeArray          1
-//       46  ConsumeLocal       0    ; rest
-//       47  Add
-//       48  TailCall           2
-//       49  Jump               L1   ; +5
-//       50  RewindToMark
-//       51  LoadConst          0    ; "No match arm matches the value: "
-//       52  PeekDown           1
-//       53  Concat             2
-//       54  ProduceError
+//       36  Pop
+//       37  LoadGlobal         108  ; call
+//       38  ConsumeLocal       3    ; compose
+//       39  ConsumeLocal       5    ; compose2
+//       40  ConsumeLocal       2    ; f
+//       41  ConsumeLocal       1    ; g
+//       42  Call               2
+//       43  MakeArray          1
+//       44  ConsumeLocal       0    ; rest
+//       45  Add
+//       46  TailCall           2
+//       47  Jump               L1   ; +4
+//       48  LoadConst          0    ; "No match arm matches the value: "
+//       49  PeekDown           1
+//       50  Concat             2
+//       51  ProduceError
 //   L1:
-//       55  (end)
+//       52  (end)
 //
 // function <lambda> (child 0)
 //   arity 1, 1 capture
@@ -783,10 +780,8 @@ pub(super) fn functions() -> Value {
                 map([(string("ConsumeLocal"), int(2))]),
                 map([(string("ConsumeLocal"), int(1))]),
                 map([(string("TailCall"), int(2))]),
-                map([(string("Jump"), int(20))]),
+                map([(string("Jump"), int(17))]),
                 string("RewindToMark"),
-                string("MarkStack"),
-                string("DropMark"),
                 map([(string("DropBelow"), int(0))]),
                 map([(string("LoadGlobal"), int(108))]),
                 map([(string("ConsumeLocal"), int(3))]),
@@ -798,8 +793,7 @@ pub(super) fn functions() -> Value {
                 map([(string("ConsumeLocal"), int(0))]),
                 string("Add"),
                 map([(string("TailCall"), int(2))]),
-                map([(string("Jump"), int(5))]),
-                string("RewindToMark"),
+                map([(string("Jump"), int(4))]),
                 map([(string("LoadConst"), int(0))]),
                 map([(string("PeekDown"), int(1))]),
                 map([(string("Concat"), int(2))]),

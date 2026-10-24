@@ -602,29 +602,33 @@ f([[1], 2])
     );
 }
 
-/// After an arm that matches every value, the match's failure path is unreachable.
+/// After an alternative branch that cannot fail, the failure path of that branch
+/// and of the whole raising alternative is unreachable.
 #[test]
 fn code_nothing_reaches_has_no_height() {
     let source = r"
-defn f(x) -> match x {
-    _ => 0,
+defn f(x) -> {
+    def [a] | a = x
+    a
 }
-f(1)
+f([1])
 ";
     let emitted = Script::new(source).code(UNOPTIMIZED).nested(0);
     let rows = rows(source, &emitted);
-    let rewind = rows
+    let unreached: Vec<Row> = rows
         .iter()
-        .position(|(op, ..)| *op == RewindToMark)
-        .expect("the arm rewinds on failure");
-    assert!(
-        rows[rewind..].iter().all(|(.., height)| height.is_none()),
-        "nothing jumps to the failed arm's rewind, so it and the no-match error after it \
-         have no height: {rows:?}"
-    );
-    assert!(
-        rows[..rewind].iter().all(|(.., height)| height.is_some()),
-        "everything before is reached: {rows:?}"
+        .copied()
+        .filter(|(.., height)| height.is_none())
+        .collect();
+    assert_eq!(
+        unreached,
+        [
+            (RewindToMark, "a", None),
+            (LoadConst(0), "[a] | a", None),
+            (ProduceError, "[a] | a", None),
+        ],
+        "nothing jumps to the last branch's rewind, so it and the error after it have no \
+         height, and everything else is reached: {rows:?}"
     );
 }
 
@@ -653,11 +657,9 @@ f(2)
             (RewindToMark, "1"),
             (DropMark, "1 | 2 => true"),
             (RewindToMark, "1 | 2 => true"),
-            (MarkStack, "_ => false"),
-            (DropMark, "_ => false"),
-            (RewindToMark, "_ => false"),
         ],
-        "each alternative branch is tried as the branch, within its arm"
+        "each alternative branch is tried as the branch, within its arm; the catch-all \
+         arm is never abandoned, so it marks nothing"
     );
 }
 
@@ -744,12 +746,15 @@ f(1)
         .position(|(op, ..)| *op == TailCall(1))
         .expect("the arm's result is a tail call");
     assert_eq!(
-        rows[call..call + 2],
-        [
-            (TailCall(1), "print(x)", Some(2)),
-            (Jump(13), "1 => print(x)", Some(1)),
-        ],
-        "after the tail call, the arm jumps on with only the result"
+        rows[call],
+        (TailCall(1), "print(x)", Some(2)),
+        "the arm's result is a tail call"
+    );
+    // How far the jump goes depends on the code after the arm, so it is not pinned.
+    assert!(
+        matches!(rows[call + 1], (Jump(_), "1 => print(x)", Some(1))),
+        "after the tail call, the arm jumps on with only the result: {:?}",
+        rows[call + 1]
     );
 }
 

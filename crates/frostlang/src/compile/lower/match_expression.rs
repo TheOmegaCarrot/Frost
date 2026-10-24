@@ -7,6 +7,10 @@
 //! the pattern had laid out, and moves on to the next arm; the locals an
 //! abandoned arm bound are never read. A matched arm drops its mark and the
 //! target before its result, so the result is the last code its path runs.
+//!
+//! The catch-all, an arm with no guard whose pattern cannot fail, is never
+//! abandoned, so it needs no mark and no copy: its pattern takes the target
+//! itself. Any arm after it is an error, so it is always the last.
 
 use std::num::NonZeroU64;
 
@@ -87,6 +91,37 @@ impl ArmFragment {
     }
 }
 
+/// A compiled catch-all arm, and the arm's span.
+struct CatchAllFragment {
+    pattern: PatternFragment,
+    result: ExprFragment,
+    span: Span,
+}
+
+impl CatchAllFragment {
+    fn foldable(&self) -> bool {
+        self.pattern.foldable && self.result.foldable
+    }
+
+    /// `( t -- r )` on to the end of the match.
+    fn code(self, end: Label) -> impl Iterator<Item = Ir> {
+        let Self {
+            pattern,
+            result,
+            span,
+        } = self;
+        pattern
+            .code
+            .into_iter()
+            .chain(result.code)
+            .chain([Op::Jump {
+                kind: JumpType::Unconditional,
+                label: end,
+            }
+            .at(span)])
+    }
+}
+
 impl FunctionBuilder<'_> {
     pub(super) fn compile_match_expression(
         &mut self,
@@ -96,13 +131,23 @@ impl FunctionBuilder<'_> {
         span: Span,
     ) -> Result<ExprFragment, Diagnostics> {
         let target = self.compile_expression(target, Position::Inner)?;
-        let catch_all = arms.iter().position(|arm| matches_everything(&arm.node));
-        let (reachable, dead) = arms.split_at(catch_all.map_or(arms.len(), |at| at + 1));
-        let arms = reachable
+        let at = arms
+            .iter()
+            .position(|arm| matches_everything(&arm.node))
+            .unwrap_or(arms.len());
+        let (tried, rest) = arms.split_at(at);
+        let (catch_all, dead) = match rest.split_first() {
+            Some((catch_all, dead)) => (Some(catch_all), dead),
+            None => (None, rest),
+        };
+        let arms = tried
             .iter()
             .map(|arm| self.in_scope(|this| this.compile_arm(arm, position)))
             .collect::<Result<Vec<_>, _>>()?;
-        if let (Some(dead), Some(catch_all)) = (dead.first(), reachable.last()) {
+        let catch_all_fragment = catch_all
+            .map(|arm| self.in_scope(|this| this.compile_catch_all(arm, position)))
+            .transpose()?;
+        if let (Some(dead), Some(catch_all)) = (dead.first(), catch_all) {
             // Each arm's bindings are out of view again.
             let help = self.catch_all_help(&catch_all.node.pattern.node);
             return Err(self
@@ -117,11 +162,15 @@ impl FunctionBuilder<'_> {
 
         // TODO: with a constant target, branch elimination could pick the arm at
         // compile time.
-        let foldable = target.foldable && arms.iter().all(ArmFragment::foldable);
+        let foldable = target.foldable
+            && arms.iter().all(ArmFragment::foldable)
+            && catch_all_fragment
+                .as_ref()
+                .is_none_or(CatchAllFragment::foldable);
         // The folding rule (see the `fold` module doc), over the target and each
         // arm's guard and result. A pattern's own expressions fold as it compiles.
-        let (target, arms) = if foldable {
-            (target, arms)
+        let (target, arms, catch_all_fragment) = if foldable {
+            (target, arms, catch_all_fragment)
         } else {
             let arms = arms
                 .into_iter()
@@ -134,7 +183,11 @@ impl FunctionBuilder<'_> {
                     ..arm
                 })
                 .collect();
-            (self.fold_if_eligible(target), arms)
+            let catch_all_fragment = catch_all_fragment.map(|fragment| CatchAllFragment {
+                result: self.fold_if_eligible(fragment.result),
+                ..fragment
+            });
+            (self.fold_if_eligible(target), arms, catch_all_fragment)
         };
 
         let end = self.next_label();
@@ -144,6 +197,11 @@ impl FunctionBuilder<'_> {
                 .code
                 .into_iter()
                 .chain(arms.into_iter().flat_map(|arm| arm.code(end)))
+                .chain(
+                    catch_all_fragment
+                        .into_iter()
+                        .flat_map(|fragment| fragment.code(end)),
+                )
                 .chain([
                     Op::Const(Value::from(NO_MATCH)).at(span),
                     Op::Ready(Bytecode::PeekDown(1)).at(span),
@@ -189,6 +247,30 @@ impl FunctionBuilder<'_> {
             fail,
             pattern,
             guard,
+            result,
+            span: debug_span(arm.span),
+        })
+    }
+
+    /// Compile the catch-all arm, in its own scope: its bindings are visible to
+    /// its result only.
+    fn compile_catch_all(
+        &mut self,
+        arm: &Spanned<MatchArm>,
+        position: Position,
+    ) -> Result<CatchAllFragment, Diagnostics> {
+        // The pattern cannot fail, so this label is never placed: assembly
+        // panics on a jump to it.
+        let never = self.next_label();
+        let pattern = self.compile_pattern(
+            &arm.node.pattern,
+            Mismatch::Jump(never),
+            BindMode::Arm,
+            &mut Vec::new(),
+        )?;
+        let result = self.compile_expression(&arm.node.result, position)?;
+        Ok(CatchAllFragment {
+            pattern,
             result,
             span: debug_span(arm.span),
         })

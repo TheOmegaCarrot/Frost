@@ -6,8 +6,7 @@
 //! instruction before reaching it. The walk tracks the stack marks too: a
 //! `RewindToMark` returns the height to its mark's.
 //!
-//! Code that nothing reaches has no height. The compiler emits some, such as
-//! the failure path of a match arm that cannot fail.
+//! Code that nothing reaches has no height.
 //!
 //! The compiler's IR is well-formed, so any inconsistency is a compiler bug: a
 //! debug assertion catches it, and a release build goes on with a best-effort
