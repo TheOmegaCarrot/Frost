@@ -20,6 +20,9 @@ use script::{
 
 const FOLD: OptimizationOptions = UNOPTIMIZED.with(Optimization::ConstantFold, true);
 
+/// The message a `match` raises when no arm matches, before the value.
+const NO_MATCH_MESSAGE: &str = "No match arm matches the value: ";
+
 /// Defines `note(v)`, which appends `v` to a log and returns it, and `log()`,
 /// the values noted so far, in order. A script appends its own statements.
 const NOTE: &str = r"
@@ -1488,14 +1491,15 @@ fn a_catch_all_arm_binds_the_target_itself() {
         .code(UNOPTIMIZED);
     let (x, n) = (emitted.slot_named("x"), emitted.slot_named("n"));
     assert_eq!(
-        emitted.code[..4],
+        emitted.code,
         [
             Bytecode::Pop,
             Bytecode::LoadLocal(x),
             Bytecode::DefLocal(n),
             Bytecode::LoadLocal(n),
         ],
-        "the target goes straight into the binding: {emitted:?}"
+        "the target goes straight into the binding, and nothing follows the result: \
+         {emitted:?}"
     );
 }
 
@@ -1506,15 +1510,85 @@ fn a_discarding_catch_all_arm_leaves_nothing_to_discard() {
         .capture("x", Value::Null)
         .code(UNOPTIMIZED.with(Optimization::DiscardEliminate, true));
     assert_eq!(
-        emitted.code[..2],
+        emitted.code,
         [Bytecode::Pop, Bytecode::PushInt(0)],
-        "only the leading fn-value `Pop` comes before the result: {emitted:?}"
+        "only the leading fn-value `Pop` comes before the result, and nothing follows it: \
+         {emitted:?}"
     );
-    assert_eq!(
-        emitted.count(&Bytecode::LoadLocal(emitted.slot_named("x"))),
-        0,
-        "the target is never loaded: {emitted:?}"
-    );
+}
+
+#[test]
+fn a_match_ending_in_a_catch_all_ends_with_its_result() {
+    // No value gets past the catch-all, so the match neither raises for no
+    // match nor jumps past such an error: its last op is the catch-all's result.
+    for source in [
+        "match x { 1 => 0, n => 2 }",
+        "match x { 1 => 0, 2 => 0, _ => 2 }",
+        "match x { 1 => 0, [n] | n => 2 }",
+        "match x { n if: n => n, _ => 2 }",
+    ] {
+        let emitted = Script::new(source)
+            .capture("x", Value::Null)
+            .code(UNOPTIMIZED);
+        assert_eq!(
+            emitted.code.last(),
+            Some(&Bytecode::PushInt(2)),
+            "{source:?} ends with the catch-all's result, with no jump after it: {emitted:?}"
+        );
+        assert_eq!(
+            emitted.count(&Bytecode::ProduceError),
+            0,
+            "{source:?} raises nothing: {emitted:?}"
+        );
+        assert!(
+            !emitted.constants().contains(&Value::from(NO_MATCH_MESSAGE)),
+            "{source:?} has no no-match message: {emitted:?}"
+        );
+    }
+}
+
+#[test]
+fn whether_a_match_raises_for_no_match_is_its_own() {
+    // Each pair nests a match with a catch-all and one without: only the one
+    // without raises, whichever encloses the other.
+    for source in [
+        "match x { 1 => 0, _ => match x { 2 => 2 } }",
+        "match x { 1 => match x { _ => 0 } }",
+    ] {
+        let emitted = Script::new(source)
+            .capture("x", Value::Null)
+            .code(UNOPTIMIZED);
+        assert_eq!(
+            emitted.count(&Bytecode::ProduceError),
+            1,
+            "{source:?}: {emitted:?}"
+        );
+    }
+}
+
+#[test]
+fn a_match_without_a_catch_all_raises_when_no_arm_matches() {
+    for source in [
+        "match x {}",
+        "match x { 1 => 0 }",
+        "match x { n if: n => n }",
+        "match x { 1 => 0, n is Int => n }",
+        "match x { [n] | {n} => n }",
+    ] {
+        let emitted = Script::new(source)
+            .capture("x", Value::Null)
+            .code(UNOPTIMIZED);
+        assert_eq!(
+            emitted.count(&Bytecode::ProduceError),
+            1,
+            "{source:?}: {emitted:?}"
+        );
+        assert_eq!(
+            emitted.constants(),
+            [Value::from(NO_MATCH_MESSAGE)],
+            "{source:?}: {emitted:?}"
+        );
+    }
 }
 
 #[test]

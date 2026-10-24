@@ -329,8 +329,6 @@
 //        3  compose
 //        4  functions
 //        5  compose2
-//   constants
-//        0  "No match arm matches the value: "
 //   children
 //        0  <lambda> (child 0)
 //        1  compose2 (child 1)
@@ -369,7 +367,7 @@
 //       31  ConsumeLocal       2    ; f
 //       32  ConsumeLocal       1    ; g
 //       33  TailCall           2
-//       34  Jump               L1   ; +17
+//       34  Jump               L1   ; +12
 //   L0:
 //       35  RewindToMark
 //       36  Pop
@@ -383,13 +381,8 @@
 //       44  ConsumeLocal       0    ; rest
 //       45  Add
 //       46  TailCall           2
-//       47  Jump               L1   ; +4
-//       48  LoadConst          0    ; "No match arm matches the value: "
-//       49  PeekDown           1
-//       50  Concat             2
-//       51  ProduceError
 //   L1:
-//       52  (end)
+//       47  (end)
 //
 // function <lambda> (child 0)
 //   arity 1, 1 capture
@@ -780,7 +773,7 @@ pub(super) fn functions() -> Value {
                 map([(string("ConsumeLocal"), int(2))]),
                 map([(string("ConsumeLocal"), int(1))]),
                 map([(string("TailCall"), int(2))]),
-                map([(string("Jump"), int(17))]),
+                map([(string("Jump"), int(12))]),
                 string("RewindToMark"),
                 map([(string("DropBelow"), int(0))]),
                 map([(string("LoadGlobal"), int(108))]),
@@ -793,13 +786,8 @@ pub(super) fn functions() -> Value {
                 map([(string("ConsumeLocal"), int(0))]),
                 string("Add"),
                 map([(string("TailCall"), int(2))]),
-                map([(string("Jump"), int(4))]),
-                map([(string("LoadConst"), int(0))]),
-                map([(string("PeekDown"), int(1))]),
-                map([(string("Concat"), int(2))]),
-                string("ProduceError"),
             ])),
-            (string("constants"), array([map([(string("String"), string("No match arm matches the value: "))])])),
+            (string("constants"), array([])),
             (string("debug_info"), null()),
             (string("key_constants"), array([])),
             (string("name"), string("compose")),

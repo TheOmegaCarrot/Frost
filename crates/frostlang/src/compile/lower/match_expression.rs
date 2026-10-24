@@ -10,7 +10,8 @@
 //!
 //! The catch-all, an arm with no guard whose pattern cannot fail, is never
 //! abandoned, so it needs no mark and no copy: its pattern takes the target
-//! itself. Any arm after it is an error, so it is always the last.
+//! itself. Any arm after it is an error, so it is always the last, and it ends
+//! the match in place of the error raised when no arm matches.
 
 use std::num::NonZeroU64;
 
@@ -91,11 +92,10 @@ impl ArmFragment {
     }
 }
 
-/// A compiled catch-all arm, and the arm's span.
+/// A compiled catch-all arm.
 struct CatchAllFragment {
     pattern: PatternFragment,
     result: ExprFragment,
-    span: Span,
 }
 
 impl CatchAllFragment {
@@ -103,23 +103,26 @@ impl CatchAllFragment {
         self.pattern.foldable && self.result.foldable
     }
 
-    /// `( t -- r )` on to the end of the match.
-    fn code(self, end: Label) -> impl Iterator<Item = Ir> {
-        let Self {
-            pattern,
-            result,
-            span,
-        } = self;
-        pattern
-            .code
-            .into_iter()
-            .chain(result.code)
-            .chain([Op::Jump {
-                kind: JumpType::Unconditional,
-                label: end,
-            }
-            .at(span)])
+    /// `( t -- r )`, as the last code of the match.
+    fn code(self) -> Vec<Ir> {
+        let mut code = self.pattern.code;
+        code.extend(self.result.code);
+        code
     }
+}
+
+/// `( t -- )`: raise that no arm matches `t`. The raise is derived from the
+/// `match` at `span`.
+fn no_match_error(span: Span) -> Vec<Ir> {
+    vec![
+        Op::Const(Value::from(NO_MATCH)).at(span),
+        Op::Ready(Bytecode::PeekDown(1)).at(span),
+        Op::Ready(Bytecode::Concat(
+            NonZeroU64::new(2).expect("two is nonzero"),
+        ))
+        .at(span),
+        Op::Ready(Bytecode::ProduceError).at(span),
+    ]
 }
 
 impl FunctionBuilder<'_> {
@@ -190,6 +193,10 @@ impl FunctionBuilder<'_> {
             (self.fold_if_eligible(target), arms, catch_all_fragment)
         };
 
+        let ending = match catch_all_fragment {
+            Some(fragment) => fragment.code(),
+            None => no_match_error(span),
+        };
         let end = self.next_label();
         Ok(ExprFragment {
             foldable,
@@ -197,21 +204,8 @@ impl FunctionBuilder<'_> {
                 .code
                 .into_iter()
                 .chain(arms.into_iter().flat_map(|arm| arm.code(end)))
-                .chain(
-                    catch_all_fragment
-                        .into_iter()
-                        .flat_map(|fragment| fragment.code(end)),
-                )
-                .chain([
-                    Op::Const(Value::from(NO_MATCH)).at(span),
-                    Op::Ready(Bytecode::PeekDown(1)).at(span),
-                    Op::Ready(Bytecode::Concat(
-                        NonZeroU64::new(2).expect("two is nonzero"),
-                    ))
-                    .at(span),
-                    Op::Ready(Bytecode::ProduceError).at(span),
-                    Op::Label(end).at(span),
-                ])
+                .chain(ending)
+                .chain([Op::Label(end).at(span)])
                 .collect(),
         })
     }
@@ -269,11 +263,7 @@ impl FunctionBuilder<'_> {
             &mut Vec::new(),
         )?;
         let result = self.compile_expression(&arm.node.result, position)?;
-        Ok(CatchAllFragment {
-            pattern,
-            result,
-            span: debug_span(arm.span),
-        })
+        Ok(CatchAllFragment { pattern, result })
     }
 }
 
