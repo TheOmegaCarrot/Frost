@@ -12,6 +12,9 @@
 //! debug assertion catches it, and a release build goes on with a best-effort
 //! height.
 
+#[cfg(test)]
+mod tests;
+
 use crate::Arity;
 use crate::bytecode::{Bytecode, OpDebugInfo};
 use crate::vm::{from_operand, to_operand};

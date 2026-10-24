@@ -602,36 +602,6 @@ f([[1], 2])
     );
 }
 
-/// After an alternative branch that cannot fail, the failure path of that branch
-/// and of the whole raising alternative is unreachable.
-#[test]
-fn code_nothing_reaches_has_no_height() {
-    let source = r"
-defn f(x) -> {
-    def [a] | a = x
-    a
-}
-f([1])
-";
-    let emitted = Script::new(source).code(UNOPTIMIZED).nested(0);
-    let rows = rows(source, &emitted);
-    let unreached: Vec<Row> = rows
-        .iter()
-        .copied()
-        .filter(|(.., height)| height.is_none())
-        .collect();
-    assert_eq!(
-        unreached,
-        [
-            (RewindToMark, "a", None),
-            (LoadConst(0), "[a] | a", None),
-            (ProduceError, "[a] | a", None),
-        ],
-        "nothing jumps to the last branch's rewind, so it and the error after it have no \
-         height, and everything else is reached: {rows:?}"
-    );
-}
-
 #[test]
 fn an_alternatives_branch_is_tried_as_the_branch() {
     let source = r"
@@ -675,15 +645,19 @@ f([1])
     let alternative = "[a] | [a, _]";
     let emitted = Script::new(source).code(UNOPTIMIZED).nested(0);
     let rows = rows(source, &emitted);
-    let tail = &rows[rows.len() - 3..];
+    let raise = rows
+        .iter()
+        .position(|(op, ..)| *op == ProduceError)
+        .expect("the last branch's check raises");
     assert_eq!(
-        tail,
+        rows[raise - 3..=raise],
         [
+            (TestArrayLenExact(2), "[a, _]", Some(1)),
+            (JumpIfTrue(2), "[a, _]", Some(2)),
             (LoadConst(0), alternative, Some(1)),
             (ProduceError, alternative, Some(2)),
-            (LoadLocal(2), "a", Some(0)),
         ],
-        "no branch matching raises as the whole alternative"
+        "the last branch's check is its own, and its failure raises as the whole alternative"
     );
     let marks: Vec<(Bytecode, &str)> = rows
         .iter()
@@ -692,13 +666,38 @@ f([1])
         .collect();
     assert_eq!(
         marks,
+        [(MarkStack, "[a]"), (RewindToMark, "[a]")],
+        "a raising alternative marks every branch but the last"
+    );
+}
+
+#[test]
+fn an_alternative_nested_in_a_last_branch_raises_as_the_outer_one() {
+    let source = r"
+defn f(x) -> {
+    def [a] | [a, 1 | 2] = x
+    a
+}
+f([1])
+";
+    let outer = "[a] | [a, 1 | 2]";
+    let emitted = Script::new(source).code(UNOPTIMIZED).nested(0);
+    let raises: Vec<(Bytecode, &str)> = rows(source, &emitted)
+        .into_iter()
+        .filter(|(op, ..)| matches!(op, LoadConst(_) | ProduceError))
+        .map(|(op, text, _)| (op, text))
+        .collect();
+    assert_eq!(
+        raises,
         [
-            (MarkStack, "[a]"),
-            (RewindToMark, "[a]"),
-            (MarkStack, "[a, _]"),
-            (RewindToMark, "[a, _]"),
+            // The outer last branch's length check.
+            (LoadConst(0), outer),
+            (ProduceError, outer),
+            // The inner last branch's value check.
+            (LoadConst(1), outer),
+            (ProduceError, outer),
         ],
-        "a raising alternative marks every branch, the last included"
+        "no alternative is left once the inner one fails, so it raises as the outer one"
     );
 }
 

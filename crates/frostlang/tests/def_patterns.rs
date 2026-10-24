@@ -8,11 +8,14 @@
 //!
 //! The harness runs every behavioral case under every optimization permutation;
 //! constant propagation of the bound parts is tested in `constant_propagation`.
+//! Code-shape cases pin exactly the options they are about.
 
+use crate::common::Pop;
 use crate::script;
 
 use frostlang::Value;
-use script::{Script, compile_errors, raises, run};
+use frostlang::bytecode::Bytecode;
+use script::{Emitted, Script, UNOPTIMIZED, compile_errors, raises, run};
 
 /// Assert each `source` runs to the value of the Frost expression `expected`.
 fn assert_values(cases: &[(&str, &str)]) {
@@ -41,6 +44,9 @@ fn assert_compile_errors(cases: &[(&str, &str)]) {
 
 /// The prefix of every message a failed pattern check raises.
 const NO_MATCH: &str = "Pattern does not match: ";
+
+/// What a failed alternative raises.
+const NO_ALTERNATIVE: &str = "Pattern does not match: the value matches no alternative";
 
 // --- Every form is accepted ---
 
@@ -737,34 +743,21 @@ fn a_pin_raises_quoting_its_source() {
 #[test]
 fn an_alternative_nothing_matches_raises_at_any_depth() {
     assert_raises_exactly(&[
-        (
-            "def [a, 1] | [1, a] = [3, 4]",
-            "Pattern does not match: the value matches no alternative",
-        ),
-        (
-            "def [a] | a is Int = 's'",
-            "Pattern does not match: the value matches no alternative",
-        ),
-        (
-            "def [a, 1 | 2] = [0, 3]",
-            "Pattern does not match: the value matches no alternative",
-        ),
-        (
-            "def {k: 1 | 2, v} = {k: 3, v: 0}",
-            "Pattern does not match: the value matches no alternative",
-        ),
-        (
-            "def [a, [b] | [b, 0]] = [1, [2, 3]]",
-            "Pattern does not match: the value matches no alternative",
-        ),
+        ("def [a, 1] | [1, a] = [3, 4]", NO_ALTERNATIVE),
+        ("def [a] | a is Int = 's'", NO_ALTERNATIVE),
+        ("def [a, 1 | 2] = [0, 3]", NO_ALTERNATIVE),
+        ("def {k: 1 | 2, v} = {k: 3, v: 0}", NO_ALTERNATIVE),
+        ("def [a, [b] | [b, 0]] = [1, [2, 3]]", NO_ALTERNATIVE),
         (
             "def [a, [b, 1 | 2] | b is Int] = [1, [3, 4]]",
-            "Pattern does not match: the value matches no alternative",
+            NO_ALTERNATIVE,
         ),
-        (
-            "def x is Int | x is String = null",
-            "Pattern does not match: the value matches no alternative",
-        ),
+        ("def x is Int | x is String = null", NO_ALTERNATIVE),
+        // The last branch fails on its type, a nested alternative, or a pin, in
+        // a three-branch alternative too.
+        ("def [a] | {a} = 5", NO_ALTERNATIVE),
+        ("def [a, 1] | [a, 2 | 3] = [0, 4]", NO_ALTERNATIVE),
+        ("def [a, 1] | [a, 2] | [a, (a)] = [0, 3]", NO_ALTERNATIVE),
     ]);
 }
 
@@ -789,17 +782,19 @@ fn a_missing_key_raises_its_lookup_error_outside_an_alternative() {
 #[test]
 fn a_missing_key_inside_an_alternative_is_a_plain_mismatch() {
     assert_raises_exactly(&[
+        ("def {a} | [a] = {b: 1}", NO_ALTERNATIVE),
+        ("def [{a} | {b: a}] = [{c: 1}]", NO_ALTERNATIVE),
+        ("def {k: {a} | {b: a}} = {k: {c: 1}}", NO_ALTERNATIVE),
+        // A key known only at runtime, in the last branch.
         (
-            "def {a} | [a] = {b: 1}",
-            "Pattern does not match: the value matches no alternative",
-        ),
-        (
-            "def [{a} | {b: a}] = [{c: 1}]",
-            "Pattern does not match: the value matches no alternative",
-        ),
-        (
-            "def {k: {a} | {b: a}} = {k: {c: 1}}",
-            "Pattern does not match: the value matches no alternative",
+            r"
+            defn f(k) -> {
+                def [a] | {[k]: a} = {c: 1}
+                a
+            }
+            f('b')
+            ",
+            NO_ALTERNATIVE,
         ),
     ]);
     // A later branch still gets its turn after an earlier one lacks the key.
@@ -850,6 +845,26 @@ fn a_mismatch_raised_in_a_function_is_catchable() {
         [try_call(fn -> first_is_one([2, 3])).ok, try_call(fn -> first_is_one([1, 3])).ok]
         ",
         "[false, true]",
+    )]);
+}
+
+#[test]
+fn a_last_branch_that_raises_with_its_parts_laid_out_leaves_nothing_behind() {
+    // The inner check fails with the outer Array's elements on the stack. Each
+    // raise is caught and the calls go on, so anything left over would pile up.
+    assert_values(&[(
+        r"
+        defn f(v) -> {
+            def [a] | [a, [_]] = v
+            a
+        }
+        defn go(n, caught) -> if n == 0: caught else: do {
+            def r = try_call(fn -> f([1, [2, 3]]))
+            go(n - 1, caught + [r.ok])
+        }
+        [go(3, []), f([4, [5]])]
+        ",
+        "[[false, false, false], 4]",
     )]);
 }
 
@@ -1256,4 +1271,95 @@ fn every_form_works_in_any_scope() {
             "[1, 2]",
         ),
     ]);
+}
+
+// --- What the compiler emits ---
+
+/// A top-level `def` of `pattern` from a runtime `x`, compiled unoptimized.
+fn def_from_runtime(pattern: &str) -> Emitted {
+    Script::new(&format!("def {pattern} = x"))
+        .capture("x", Value::Null)
+        .code(UNOPTIMIZED)
+}
+
+#[test]
+fn a_last_branch_that_cannot_fail_takes_the_value_itself() {
+    let emitted = def_from_runtime("[a] | a");
+    let (x, a) = (emitted.slot_named("x"), emitted.slot_named("a"));
+    assert_eq!(
+        emitted.code,
+        [
+            Pop,
+            Bytecode::LoadLocal(x),
+            // The first branch, tried on a copy under a mark.
+            Bytecode::MarkStack,
+            Bytecode::Dup,
+            Bytecode::TestArrayLenExact(1),
+            Bytecode::JumpIfFalse(5),
+            Bytecode::ExplodeArray(1),
+            Bytecode::DefLocal(a),
+            Bytecode::DropMark,
+            Pop,
+            Bytecode::Jump(2),
+            Bytecode::RewindToMark,
+            // The last branch: no mark, no copy, and no error after it.
+            Bytecode::DefLocal(a),
+        ],
+        "{emitted:?}"
+    );
+    assert!(emitted.constants().is_empty(), "{emitted:?}");
+}
+
+#[test]
+fn a_last_branch_that_can_fail_raises_in_place() {
+    // Each case: the pattern, and how many checks its last branch raises from.
+    for (pattern, raises) in [
+        ("[a] | [a, _]", 1),
+        ("[a] | a is Int", 1),
+        // The Map check, then the key's test: a missing key is no lookup error.
+        ("[a] | {a}", 2),
+        // The outer last branch's length check, then the inner last branch's value.
+        ("[a] | [a, 1 | 2]", 2),
+    ] {
+        let emitted = def_from_runtime(pattern);
+        assert_eq!(
+            emitted.count(&Bytecode::ProduceError),
+            raises,
+            "{pattern:?}: {emitted:?}"
+        );
+        let messages: Vec<&Value> = emitted
+            .constants()
+            .iter()
+            .filter(|constant| constant.as_str().is_some_and(|s| s.starts_with(NO_MATCH)))
+            .collect();
+        assert!(
+            messages
+                .iter()
+                .all(|message| **message == Value::from(NO_ALTERNATIVE)),
+            "{pattern:?} raises only that no alternative matches: {emitted:?}"
+        );
+        // Every branch but the last is marked: one per `|`.
+        let marked = pattern.matches('|').count();
+        assert_eq!(
+            emitted.count(&Bytecode::MarkStack),
+            marked,
+            "{pattern:?}: {emitted:?}"
+        );
+    }
+}
+
+#[test]
+fn a_last_branch_tests_for_its_keys() {
+    let key_tests = |emitted: &Emitted| {
+        emitted
+            .code
+            .iter()
+            .filter(|op| matches!(op, Bytecode::TestConstKey(_)))
+            .count()
+    };
+    let emitted = def_from_runtime("[a] | {a}");
+    assert_eq!(key_tests(&emitted), 1, "the key is tested: {emitted:?}");
+    // Outside an alternative, the lookup raises, naming the key, instead.
+    let emitted = def_from_runtime("{a}");
+    assert_eq!(key_tests(&emitted), 0, "the key is not tested: {emitted:?}");
 }

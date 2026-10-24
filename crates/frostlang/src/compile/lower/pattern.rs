@@ -6,9 +6,11 @@
 //! scope for the parts after it. A failed check does what the fragment's
 //! [`Mismatch`] says: a `def` raises, and a `match` arm moves on to the next.
 //!
-//! An alternative, `p1 | p2`, tries each branch under its own mark, rewinding
-//! the stack to it when the branch fails. Every check inside a branch jumps to
-//! that branch's failure label, so a `def` raises only once no branch matches.
+//! An alternative, `p1 | p2`, tries each branch but the last under its own
+//! mark, rewinding the stack to it when the branch fails. Every check inside
+//! such a branch jumps to that branch's failure label. Once the last branch
+//! fails, no branch is left, so its checks fail as the whole alternative does:
+//! in a `def`, each raises in place that no alternative matches.
 //! Every branch binds the same names into the same locals, so what follows
 //! reads them alike whichever branch matched.
 
@@ -41,11 +43,15 @@ pub(super) struct PatternFragment {
     pub(super) foldable: bool,
 }
 
-/// What a failed check does.
+/// What a failed check does. A raise leaves the stack as it is: the error
+/// discards it with the frame.
 #[derive(Clone, Copy)]
 pub(super) enum Mismatch {
     /// Raise an error saying what the check expected.
     Raise,
+    /// Raise that the value matches no alternative, as the raising alternative
+    /// at this span, whose last branch holds the check.
+    RaiseNoAlternative(Span),
     /// Jump to this label, leaving the stack for the label's rewind to restore.
     Jump(Label),
 }
@@ -159,8 +165,8 @@ impl FunctionBuilder<'_> {
     }
 
     /// Run `test`, which leaves a Bool atop the stack, and handle a false one
-    /// per `mismatch`, as the check at `span`. A raised error says the check
-    /// `expected` something.
+    /// per `mismatch`, as the check at `span`. Under [`Mismatch::Raise`], the
+    /// error says the check `expected` something.
     fn check(
         &mut self,
         test: impl IntoIterator<Item = Ir>,
@@ -169,33 +175,33 @@ impl FunctionBuilder<'_> {
         expected: impl FnOnce() -> String,
     ) -> Vec<Ir> {
         let test = test.into_iter();
-        match mismatch {
-            Mismatch::Raise => {
-                let passed = self.next_label();
-                test.chain([
-                    Op::Jump {
-                        kind: JumpType::IfTrue,
-                        label: passed,
+        let (message, raise_span) = match mismatch {
+            Mismatch::Jump(label) => {
+                return test
+                    .chain([Op::Jump {
+                        kind: JumpType::IfFalse,
+                        label,
                     }
-                    .at(span),
-                    Op::Const(Value::from(format!(
-                        "{PATTERN_DOES_NOT_MATCH}{}",
-                        expected()
-                    )))
-                    .at(span),
-                    Op::Ready(Bytecode::ProduceError).at(span),
-                    Op::Label(passed).at(span),
-                ])
-                .collect()
+                    .at(span)])
+                    .collect();
             }
-            Mismatch::Jump(label) => test
-                .chain([Op::Jump {
-                    kind: JumpType::IfFalse,
-                    label,
-                }
-                .at(span)])
-                .collect(),
-        }
+            Mismatch::Raise => (expected(), span),
+            Mismatch::RaiseNoAlternative(alternative) => {
+                ("the value matches no alternative".to_owned(), alternative)
+            }
+        };
+        let passed = self.next_label();
+        test.chain([
+            Op::Jump {
+                kind: JumpType::IfTrue,
+                label: passed,
+            }
+            .at(span),
+            Op::Const(Value::from(format!("{PATTERN_DOES_NOT_MATCH}{message}"))).at(raise_span),
+            Op::Ready(Bytecode::ProduceError).at(raise_span),
+            Op::Label(passed).at(span),
+        ])
+        .collect()
     }
 
     /// Check the value is an Array of `count` elements (at least, if `rest`), then
@@ -230,8 +236,8 @@ impl FunctionBuilder<'_> {
     /// `( m -- m k )`, then looked up, `( m k -- m v )`. Its part consumes the
     /// value. The Map left at the end is bound whole, or dropped.
     ///
-    /// A missing key is a mismatch. A raising pattern leaves the lookup itself to
-    /// raise, whose error names the key.
+    /// A missing key is a mismatch. Under [`Mismatch::Raise`], the lookup itself
+    /// raises, its error naming the key.
     fn compile_map_pattern(
         &mut self,
         entries: &[Spanned<MapPatternEntry>],
@@ -261,44 +267,31 @@ impl FunctionBuilder<'_> {
             foldable &= key.foldable && part.foldable;
             // The entry's own lookup.
             let entry_span = debug_span(entry.span);
-            let missing = match mismatch {
-                Mismatch::Raise => None,
-                Mismatch::Jump(label) => Some(
-                    Op::Jump {
-                        kind: JumpType::IfFalse,
-                        label,
-                    }
-                    .at(entry_span),
+            let (test, extract) = match constant_key_of(&key.code) {
+                Some(known_key) => (
+                    Op::ConstKey {
+                        op: ConstKeyOp::Test,
+                        key: known_key.clone(),
+                    },
+                    Op::ConstKey {
+                        op: ConstKeyOp::Extract,
+                        key: known_key,
+                    },
                 ),
-            };
-            match constant_key_of(&key.code) {
-                Some(known_key) => {
-                    if let Some(missing) = missing {
-                        code.extend([
-                            Op::ConstKey {
-                                op: ConstKeyOp::Test,
-                                key: known_key.clone(),
-                            }
-                            .at(entry_span),
-                            missing,
-                        ]);
-                    }
-                    code.push(
-                        Op::ConstKey {
-                            op: ConstKeyOp::Extract,
-                            key: known_key,
-                        }
-                        .at(entry_span),
-                    );
-                }
                 None => {
                     code.extend(key.code);
-                    if let Some(missing) = missing {
-                        code.extend([Op::Ready(Bytecode::TestKey).at(entry_span), missing]);
-                    }
-                    code.push(Op::Ready(Bytecode::ExtractKey).at(entry_span));
+                    (
+                        Op::Ready(Bytecode::TestKey),
+                        Op::Ready(Bytecode::ExtractKey),
+                    )
                 }
+            };
+            if !matches!(mismatch, Mismatch::Raise) {
+                code.extend(self.check([test.at(entry_span)], mismatch, entry_span, || {
+                    unreachable!("only `Mismatch::Raise` says what a check expected")
+                }));
             }
+            code.push(extract.at(entry_span));
             code.extend(part.code);
         }
 
@@ -311,12 +304,12 @@ impl FunctionBuilder<'_> {
         Ok(PatternFragment { code, foldable })
     }
 
-    /// `p1 | p2 | ...`: try each branch in turn under its own mark. With a
-    /// jumping `mismatch`, the last branch needs no mark: it fails straight to
-    /// the enclosing label. The first branch binds per `mode`; every later one
-    /// must bind the same names, and binds them into the first's locals. Each
-    /// branch sees only the names in view before the alternative, and those it
-    /// has bound itself.
+    /// `p1 | p2 | ...`: try each branch in turn under its own mark, but the
+    /// last, which needs none: it fails as the alternative does, straight to
+    /// the enclosing label, or raising in place. The first branch binds per
+    /// `mode`; every later one must bind the same names, and binds them into
+    /// the first's locals. Each branch sees only the names in view before the
+    /// alternative, and those it has bound itself.
     fn compile_alternative(
         &mut self,
         branches: &[Spanned<Pattern>],
@@ -340,14 +333,16 @@ impl FunctionBuilder<'_> {
         let mut first_bound = Vec::new();
         let mut code = Vec::new();
         let mut foldable = true;
+        // An alternative nested in the last branch of another raises as that
+        // outer one.
+        let last_mismatch = match mismatch {
+            Mismatch::Raise => Mismatch::RaiseNoAlternative(span),
+            Mismatch::RaiseNoAlternative(_) | Mismatch::Jump(_) => mismatch,
+        };
 
         for (index, branch) in reachable.iter().enumerate() {
-            let enclosing = match mismatch {
-                Mismatch::Jump(fail) if index == last => Some(fail),
-                _ => None,
-            };
-            let branch_fail = enclosing.unwrap_or_else(|| self.next_label());
-            let branch_mismatch = Mismatch::Jump(branch_fail);
+            let branch_fail = (index != last).then(|| self.next_label());
+            let branch_mismatch = branch_fail.map_or(last_mismatch, Mismatch::Jump);
             let fragment = if index == 0 {
                 let fragment = self.compile_pattern(branch, branch_mismatch, mode, bound)?;
                 first_bound = bound[start..].to_vec();
@@ -368,24 +363,26 @@ impl FunctionBuilder<'_> {
 
             // Trying the branch is the branch's own.
             let branch_span = debug_span(branch.span);
-            if enclosing.is_some() {
-                code.extend(fragment.code);
-            } else {
-                code.extend(
-                    [Bytecode::MarkStack, Bytecode::Dup].map(|op| Op::Ready(op).at(branch_span)),
-                );
-                code.extend(fragment.code);
-                code.extend([
-                    Op::Ready(Bytecode::DropMark).at(branch_span),
-                    Op::Ready(Bytecode::Pop).at(branch_span),
-                    Op::Jump {
-                        kind: JumpType::Unconditional,
-                        label: matched,
-                    }
-                    .at(branch_span),
-                    Op::Label(branch_fail).at(branch_span),
-                    Op::Ready(Bytecode::RewindToMark).at(branch_span),
-                ]);
+            match branch_fail {
+                None => code.extend(fragment.code),
+                Some(branch_fail) => {
+                    code.extend(
+                        [Bytecode::MarkStack, Bytecode::Dup]
+                            .map(|op| Op::Ready(op).at(branch_span)),
+                    );
+                    code.extend(fragment.code);
+                    code.extend([
+                        Op::Ready(Bytecode::DropMark).at(branch_span),
+                        Op::Ready(Bytecode::Pop).at(branch_span),
+                        Op::Jump {
+                            kind: JumpType::Unconditional,
+                            label: matched,
+                        }
+                        .at(branch_span),
+                        Op::Label(branch_fail).at(branch_span),
+                        Op::Ready(Bytecode::RewindToMark).at(branch_span),
+                    ]);
+                }
             }
         }
         if let (Some(dead), Some(catch_all)) = (dead.first(), reachable.last()) {
@@ -393,15 +390,7 @@ impl FunctionBuilder<'_> {
                 .unreachable(Unreachable::Branch, dead.span, catch_all.span, help)
                 .into());
         }
-        if let Mismatch::Raise = mismatch {
-            code.extend([
-                Op::Const(Value::from(format!(
-                    "{PATTERN_DOES_NOT_MATCH}the value matches no alternative"
-                )))
-                .at(span),
-                Op::Ready(Bytecode::ProduceError).at(span),
-            ]);
-        }
+        // Only matching gets past the last branch.
         code.push(Op::Label(matched).at(span));
 
         Ok(PatternFragment { code, foldable })
