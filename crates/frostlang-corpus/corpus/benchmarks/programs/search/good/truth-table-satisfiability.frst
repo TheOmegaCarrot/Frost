@@ -1,0 +1,57 @@
+# A brute-force satisfiability checker: collect a formula's variables into a
+# Map used as a sorted set, enumerate every assignment as a Map of Bools
+# (false before true, first variable slowest), and evaluate the formula under
+# each with Frost's own `and`, `or`, and `not`. A tautology is satisfied by
+# every assignment and a contradiction by none. (Node keys avoid `and`, `or`,
+# and `not`, which are keywords and cannot be bare Map keys.)
+#= {
+#=     result: {
+#=         satisfying: ['a0 b1 c0', 'a0 b1 c1', 'a1 b0 c0', 'a1 b1 c0'],
+#=         tautology: true,
+#=         contradiction: [],
+#=     },
+#=     inputs: {
+#=         formula: {both: [
+#=             {either: [{var: 'a'}, {var: 'b'}]},
+#=             {neg: {both: [{var: 'a'}, {var: 'c'}]}},
+#=         ]},
+#=         excluded_middle: {either: [{var: 'p'}, {neg: {var: 'p'}}]},
+#=         clash: {both: [{var: 'q'}, {neg: {var: 'q'}}]},
+#=     },
+#=     bench: true,
+#= }
+def {formula, excluded_middle, clash} = import('inputs')
+defn variables(f) -> match f {
+    {var} => {[var]: true},
+    {neg: inner} => variables(inner),
+    {both: [l, r]} | {either: [l, r]} => variables(l) + variables(r),
+}
+
+defn holds(f, env) -> match f {
+    {var} => env[var],
+    {neg: inner} => not holds(inner, env),
+    {both: [l, r]} => holds(l, env) and holds(r, env),
+    {either: [l, r]} => holds(l, env) or holds(r, env),
+}
+
+defn assignments(names) -> match names {
+    [] => [{}],
+    [name, ...rest] => do {
+        def tails = assignments(rest)
+        map(tails, fn a -> a + {[name]: false}) + map(tails, fn a -> a + {[name]: true})
+    },
+}
+
+defn solutions(f) -> {
+    def names = reduce(variables(f), [], fn acc, name, present -> acc + [name])
+    filter(assignments(names), fn env -> holds(f, env))
+}
+
+defn show(env) -> reduce(env, '', fn text, name, value ->
+    (if text == '': '' else: text + ' ') + name + (if value: '1' else: '0'))
+
+{
+    satisfying: map(solutions(formula), show),
+    tautology: len(solutions(excluded_middle)) == 2,
+    contradiction: solutions(clash),
+}

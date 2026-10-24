@@ -33,7 +33,11 @@ cargo run -p frostlang-cli -- file.frst   # run a Frost script
 cargo doc --no-deps --workspace   # build RustDoc (intra-doc links must resolve clean)
 cargo clippy --workspace --all-targets
 cargo fmt
+cargo bench -p frostlang-corpus   # time the corpus's benchmarks (see corpus/README.md)
 ```
+
+Benchmark timings mean something only on an otherwise-quiet machine.
+Claude must never assume the machine is quiet, nor treat the timings as meaningful, unless explicitly told the machine is quiet.
 
 ## Architecture
 
@@ -50,7 +54,7 @@ independently:
 | `frostlang-repl` | An interactive read-eval-print loop. |
 | `frostlang-cli` | The `frost` binary, built on `frostlang-driver`. |
 | `frostlang-astviz` | AST visualization; compiles the tree-sitter Frost grammar from `editor/`. Unpublished. |
-| `frostlang-corpus` | The core-language test corpus (`corpus/`, one script per file, each pinning its expected outcome) and its runner, run by `cargo test`. Its `corpus/README.md` and `corpus/MAINTENANCE.md` give the format and the rules for keeping it. Unpublished. |
+| `frostlang-corpus` | The core-language test corpus (`corpus/`, one script per file, each pinning its expected outcome) and its runner, run by `cargo test`. Scripts under `corpus/benchmarks/` marked `bench` are also the benchmarks, run by `cargo bench`. Its `corpus/README.md` and `corpus/MAINTENANCE.md` give the format and the rules for keeping it. Unpublished. |
 
 First-party extensions (the `ext.*` modules) live in `crates/ext/<crate name>/`, one crate each,
 named `frostlang-<name>`. Each exposes `extension(/* its configuration */) -> Extension` for a

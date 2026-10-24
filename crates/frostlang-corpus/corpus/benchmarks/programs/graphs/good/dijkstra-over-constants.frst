@@ -1,0 +1,28 @@
+# Dijkstra's algorithm over a literal graph, which the optimizer may solve
+# ahead of time: the distances must equal those found from a runtime graph.
+#= {result: {a: 0, b: 7, c: 9, d: 20, e: 20, f: 11}, bench: true}
+def graph = {
+    a: {b: 7, c: 9, f: 14},
+    b: {a: 7, c: 10, d: 15},
+    c: {a: 9, b: 10, d: 11, f: 2},
+    d: {b: 15, c: 11, e: 6},
+    e: {d: 6, f: 9},
+    f: {a: 14, c: 2, e: 9},
+}
+
+defn closest(dist, done) -> reduce(dist, null, fn best, node, d ->
+    if has(done, node): best
+    elif best == null or d < dist[best]: node
+    else: best)
+
+defn relax(dist, node) -> reduce(graph[node], dist, fn acc, next, weight -> {
+    def candidate = dist[node] + weight
+    if has(acc, next) and acc[next] <= candidate: acc else: acc + {[next]: candidate}
+})
+
+defn step(dist, done) -> {
+    def node = closest(dist, done)
+    if node == null: dist else: step(relax(dist, node), done + {[node]: true})
+}
+
+step({a: 0}, {})

@@ -1,0 +1,40 @@
+# A stack machine runs a program by reducing its instructions over a stack
+# held top-first in an Array. Each instruction is matched by shape: a Map for
+# one with an operand, a bare String for one without. The empty program
+# leaves the empty stack.
+#= {
+#=     result: [[14], [-3, 25], [9], []],
+#=     inputs: {
+#=         first: [{push: 2}, {push: 3}, {push: 4}, 'mul', 'add'],
+#=         second: [{push: 5}, 'dup', 'mul', {push: 3}, {push: 6}, 'sub'],
+#=         third: [{push: 1}, {push: 10}, 'swap', 'sub'],
+#=         empty: [],
+#=     },
+#=     bench: {
+#=         inputs: {
+#=             first: [{push: 0}] + flat_map(range(300), fn i ->
+#=                 [{push: i}, 'dup', 'mul', 'add', {push: 1}, 'swap', 'sub']),
+#=             second: [{push: 1}] + flat_map(range(300), fn i -> [{push: i % 5}, 'swap', 'sub']),
+#=             third: [{push: 1}, {push: 10}, 'swap', 'sub'],
+#=             empty: [],
+#=         },
+#=     },
+#= }
+def {first, second, third, empty} = import('inputs')
+defn binary(stack, operation) -> match stack {
+    [b, a, ...rest] => [operation(a, b)] + rest,
+}
+
+defn step(stack, instruction) -> match instruction {
+    {push: n} => [n] + stack,
+    'dup' => [stack[0]] + stack,
+    'swap' => match stack {
+        [b, a, ...rest] => [a, b] + rest,
+    },
+    'add' => binary(stack, fn a, b -> a + b),
+    'sub' => binary(stack, fn a, b -> a - b),
+    'mul' => binary(stack, fn a, b -> a * b),
+}
+
+defn run(program) -> reduce(program, [], step)
+[run(first), run(second), run(third), run(empty)]

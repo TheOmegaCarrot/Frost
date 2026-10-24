@@ -1,0 +1,55 @@
+# Lazy sequences as objects: a sequence is a Map whose `next` method returns
+# [value, rest of the sequence], or Null when it ends. An infinite sequence of
+# naturals is mapped, filtered, and zipped lazily, and only the elements
+# taken are ever computed, as the printed trace shows: the squaring function
+# runs once per element pulled, never ahead.
+#= {
+#=     result: {
+#=         evens: [0, 2, 4, 6, 8],
+#=         squares: [1, 9, 25],
+#=         zipped: [['a', 10], ['b', 11], ['c', 12]],
+#=         none: [],
+#=     },
+#=     printed: ['square 1', 'square 3', 'square 5'],
+#=     inputs: {letters: ['a', 'b', 'c']},
+#=     bench: {inputs: {letters: map(range(100), fn i -> $'letter ${i}')}},
+#= }
+def {letters} = import('inputs')
+defn naturals_from(n) -> {next: fn -> [n, naturals_from(n + 1)]}
+
+defn from_array(xs) -> {next: fn -> match xs {
+    [] => null,
+    [x, ...rest] => [x, from_array(rest)],
+}}
+
+defn mapped(seq, f) -> {next: fn -> match seq.next() {
+    null => null,
+    [x, rest] => [f(x), mapped(rest, f)],
+}}
+
+defn filtered(seq, keep) -> {next: fn -> match seq.next() {
+    null => null,
+    [x, rest] => if keep(x): [x, filtered(rest, keep)] else: filtered(rest, keep).next(),
+}}
+
+defn zipped(a, b) -> {next: fn -> match [a.next(), b.next()] {
+    [[x, xs], [y, ys]] => [[x, y], zipped(xs, ys)],
+    _ => null,
+}}
+
+defn take(seq, n) -> if n == 0: [] else: match seq.next() {
+    null => [],
+    [x, rest] => [x] + take(rest, n - 1),
+}
+
+def odds = filtered(naturals_from(0), fn x -> x % 2 == 1)
+def squares = mapped(odds, fn x -> {
+    print($'square ${x}')
+    x * x
+})
+{
+    evens: take(filtered(naturals_from(0), fn x -> x % 2 == 0), 5),
+    squares: take(squares, 3),
+    zipped: take(zipped(from_array(letters), naturals_from(10)), 100),
+    none: take(from_array([]), 3),
+}

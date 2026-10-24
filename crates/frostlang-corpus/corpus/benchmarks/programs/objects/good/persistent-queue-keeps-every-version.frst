@@ -1,0 +1,30 @@
+# A functional queue of two Arrays: pushes go on the back, newest first,
+# pops come off the front, and an empty front is refilled by reversing the
+# back. Every version stays usable after later pushes and pops, since none
+# is changed in place: popping an old version again yields what it yielded
+# before.
+#= {
+#=     result: [[1, 2, 3, 4], [1, 1], [2, 3, 4], [1, 2, 3], [3, 4]],
+#=     inputs: {first: [1, 2, 3]},
+#=     bench: {inputs: {first: range(1, 301)}},
+#= }
+def {first} = import('inputs')
+def empty = {front: [], back: []}
+defn push(q, x) -> q + {back: [x] + q.back}
+defn normalize(q) -> if q.front == []: {front: reverse(q.back), back: []} else: q
+defn pop(q) -> {
+    def {front, back} = normalize(q)
+    [front[0], {front: drop(front, 1), back}]
+}
+defn drain(q) -> if q.front == [] and q.back == []: []
+    else: do {
+        def [x, rest] = pop(q)
+        [x] + drain(rest)
+    }
+
+def q1 = reduce(first, empty, push)
+def [one, q2] = pop(q1)
+def q3 = push(q2, 4)
+def [again, _] = pop(q1)
+def [_, q4] = pop(q3)
+[drain(push(q1, 4)), [one, again], drain(q3), drain(q1), drain(q4)]

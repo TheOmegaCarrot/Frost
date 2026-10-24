@@ -1,0 +1,4 @@
+# Sums its input; benchmarked with a larger one.
+#= {result: 6, inputs: {n: 3}, bench: {inputs: {n: 100}}}
+def {n} = import('inputs')
+reduce(range(n + 1), 0, fn total, x -> total + x)

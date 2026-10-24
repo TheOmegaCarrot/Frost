@@ -1,0 +1,47 @@
+# A CSV row splitter as a four-mode state machine over characters: a quoted
+# field may hold commas, a doubled quote inside one is a literal quote, and
+# an empty row is one empty field. The mode names are matched as String
+# literals.
+#= {
+#=     result: [
+#=         ['a', 'b', '', 'c,d', ''],
+#=         ['say "hi"', 'x'],
+#=         [''],
+#=         ['', ''],
+#=         ['日本', 'é'],
+#=     ],
+#=     inputs: {
+#=         rows: [
+#=             ['a', ',', 'b', ',', ',', '"', 'c', ',', 'd', '"', ',', '"', '"'],
+#=             ['"', 's', 'a', 'y', ' ', '"', '"', 'h', 'i', '"', '"', '"', ',', 'x'],
+#=             [],
+#=             [','],
+#=             ['日', '本', ',', '"', 'é', '"'],
+#=         ],
+#=     },
+#=     bench: true,
+#= }
+def {rows} = import('inputs')
+def start = {mode: 'start', field: '', fields: []}
+
+defn push(state) -> start + {fields: state.fields + [state.field]}
+
+defn step(state, c) -> match state.mode {
+    'start' =>
+        if c == '"': state + {mode: 'quoted'}
+        elif c == ',': push(state)
+        else: state + {mode: 'plain', field: c},
+    'plain' => if c == ',': push(state) else: state + {field: state.field + c},
+    'quoted' => if c == '"': state + {mode: 'closing'} else: state + {field: state.field + c},
+    'closing' =>
+        if c == '"': state + {mode: 'quoted', field: state.field + '"'}
+        elif c == ',': push(state)
+        else: error('text after a closing quote'),
+}
+
+defn split(chars) -> {
+    def last = reduce(chars, start, step)
+    if last.mode == 'quoted': error('unclosed quote') else: push(last).fields
+}
+
+map(rows, split)

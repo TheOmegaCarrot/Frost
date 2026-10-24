@@ -6,6 +6,7 @@ use std::panic::{AssertUnwindSafe, catch_unwind};
 use frostlang::{Value, write_quoted_string};
 use rayon::prelude::*;
 
+use crate::bench::BENCHMARKS;
 use crate::discover::Entry;
 use crate::expectation::{Expectation, Expected, ExpectedRun, Kind, KnownIssue};
 use crate::mode::Mode;
@@ -100,6 +101,11 @@ fn report(name: &str, source: &str, kind: Option<Kind>, mode: Mode) -> Report {
         Ok(Err(reason)) => return Report::Malformed(reason),
         Err(message) => return Report::Panicked(format!("reading the expectation: {message}")),
     };
+    if expectation.bench.is_some() && !name.starts_with(BENCHMARKS) {
+        return Report::Malformed(format!(
+            "only a script under `{BENCHMARKS}` may have `bench`"
+        ));
+    }
     if expectation.expected.kind() != kind {
         return Report::Malformed(format!(
             "the expectation is of a {} script, but the script is in a `{}` directory",

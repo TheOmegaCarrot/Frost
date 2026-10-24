@@ -1,0 +1,67 @@
+# The recursive-descent arithmetic parser over literal character Arrays,
+# which the optimizer may evaluate ahead of time, raising and catching
+# included: it must agree with the parser run on runtime input.
+#= {result: [12, 3, 6, 'expected )', 'unexpected )'], bench: true}
+def digits = {
+    ['0']: 0, ['1']: 1, ['2']: 2, ['3']: 3, ['4']: 4,
+    ['5']: 5, ['6']: 6, ['7']: 7, ['8']: 8, ['9']: 9,
+}
+
+defn contains(xs, x) -> reduce(xs, false, fn found, y -> found or y == x)
+
+defn apply(op, a, b) -> match op {
+    '+' => a + b,
+    '-' => a - b,
+    '*' => a * b,
+    '/' => a / b,
+}
+
+defn number(chars) -> {
+    defn more(value, rest, count) -> match rest {
+        [c, ...after] if: has(digits, c) => more(value * 10 + digits[c], after, count + 1),
+        _ => if count == 0: error('expected a number') else: [value, rest],
+    }
+    more(0, chars, 0)
+}
+
+defn chain(parse, operand, ops, chars) -> {
+    defn more(left, rest) -> match rest {
+        [op, ...after] if: contains(ops, op) => do {
+            def [right, remaining] = parse(operand, after)
+            more(apply(op, left, right), remaining)
+        },
+        _ => [left, rest],
+    }
+    def [first, rest] = parse(operand, chars)
+    more(first, rest)
+}
+
+defn parse(rule, chars) -> match rule {
+    'expr' => chain(parse, 'term', ['+', '-'], chars),
+    'term' => chain(parse, 'factor', ['*', '/'], chars),
+    'factor' => match chars {
+        ['(', ...rest] => match parse('expr', rest) {
+            [value, [')', ...after]] => [value, after],
+            _ => error('expected )'),
+        },
+        _ => number(chars),
+    },
+}
+
+defn calculate(chars) -> match parse('expr', chars) {
+    [value, []] => value,
+    [_, [next, ..._]] => error($'unexpected ${next}'),
+}
+
+defn report(chars) -> {
+    def outcome = try_call(calculate, [chars])
+    if outcome.ok: outcome.value else: outcome.error
+}
+
+[
+    report(['2', '*', '(', '3', '+', '4', ')', '-', '1', '0', '/', '5']),
+    report(['8', '-', '3', '-', '2']),
+    report(['7', '/', '2', '*', '2']),
+    report(['(', '1', '+', '2']),
+    report(['1', ')']),
+]

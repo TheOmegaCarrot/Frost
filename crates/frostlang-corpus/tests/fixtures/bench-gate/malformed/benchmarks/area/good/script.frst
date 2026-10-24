@@ -1,0 +1,4 @@
+# Its `bench` field is malformed, so it is no benchmark, but it must not
+# silently drop out of the timings.
+#= {result: 1, bench: 'yes'}
+1

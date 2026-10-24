@@ -1,0 +1,59 @@
+# A schema validator: schemas are data, values are checked recursively by
+# matching both at once with type constraints (including the category types
+# Numeric and Flat), and every problem is reported with its path. Field
+# order in reports follows the schema Map's key order, a missing field is
+# reported without descending, and an Array schema checks each element.
+#= {
+#=     result: [
+#=         [],
+#=         [
+#=             'age: expected Numeric, got String',
+#=             'name: missing',
+#=             'tags[1]: expected Flat, got Array',
+#=         ],
+#=         ['(root): expected Map, got Null'],
+#=         ['tags: expected Array, got Map'],
+#=     ],
+#=     inputs: {
+#=         people: [
+#=             {name: 'ada', age: 36.5, tags: ['x', x'01']},
+#=             {age: 'old', tags: ['ok', ['nested']], extra: true},
+#=             null,
+#=             {name: 'bo', age: 1, tags: {}},
+#=         ],
+#=     },
+#=     bench: {
+#=         inputs: {
+#=             people: tile([
+#=                 {name: 'ada', age: 36.5, tags: ['x', x'01']},
+#=                 {age: 'old', tags: ['ok', ['nested']], extra: true},
+#=                 null,
+#=                 {name: 'bo', age: 1, tags: {}},
+#=             ], 100),
+#=         },
+#=     },
+#= }
+def {people} = import('inputs')
+def schema = {record: {
+    name: 'String',
+    age: 'Numeric',
+    tags: {list: 'Flat'},
+}}
+
+defn check(value, expected, path) -> match [expected, value] {
+    ['String', _ is String] | ['Numeric', _ is Numeric] | ['Flat', _ is Flat] => [],
+    [{record: fields}, m is Map] => reduce(fields, [], fn problems, key, field_schema -> {
+        def child = if path == '': key else: $'${path}.${key}'
+        if has(m, key): problems + check(m[key], field_schema, child)
+        else: problems + [$'${child}: missing']
+    }),
+    [{list: element_schema}, xs is Array] => reduce(xs, {i: 0, problems: []}, fn s, x -> {
+        i: s.i + 1,
+        problems: s.problems + check(x, element_schema, $'${path}[${s.i}]'),
+    }).problems,
+    [{record: _}, other] => [$'${if path == '': '(root)' else: path}: expected Map, got ${type(other)}'],
+    [{list: _}, other] => [$'${path}: expected Array, got ${type(other)}'],
+    [type_name, other] => [$'${path}: expected ${type_name}, got ${type(other)}'],
+}
+
+map(people, fn person -> check(person, schema, ''))

@@ -1,0 +1,45 @@
+# A bracket matcher folds over characters with a stack of expected closers,
+# and a failure state that absorbs every later character. Input is balanced
+# only if the fold ends without failing and with an empty stack; characters
+# that are not brackets are ignored.
+#= {
+#=     result: [true, false, false, true, true, false, false, true],
+#=     inputs: {
+#=         cases: [
+#=             ['(', '[', ']', ')'],
+#=             ['(', ']'],
+#=             ['('],
+#=             [],
+#=             ['{', 'a', '(', ')', '[', 'é', ']', '}'],
+#=             [')'],
+#=             [']', '['],
+#=             ['x', 'y'],
+#=         ],
+#=     },
+#=     bench: {
+#=         inputs: {
+#=             cases: map(range(30), fn n -> {
+#=                 def balanced = tile(['(', '[', '{', 'a', '}', ']', ')'], n)
+#=                 if n % 3 == 0: balanced + [')']
+#=                 elif n % 3 == 1: [')'] + balanced
+#=                 else: balanced
+#=             }),
+#=         },
+#=     },
+#= }
+def {cases} = import('inputs')
+def closers = {['(']: ')', ['[']: ']', ['{']: '}'}
+def closing = {[')']: true, [']']: true, ['}']: true}
+
+defn step(stack, c) ->
+    if stack == null: null
+    elif has(closers, c): [closers[c]] + stack
+    elif has(closing, c): match stack {
+        [expected, ...rest] if: expected == c => rest,
+        _ => null,
+    }
+    else: stack
+
+defn balanced(chars) -> reduce(chars, [], step) == []
+
+map(cases, balanced)

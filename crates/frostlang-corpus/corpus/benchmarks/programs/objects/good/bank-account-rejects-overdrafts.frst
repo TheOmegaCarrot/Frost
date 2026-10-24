@@ -1,0 +1,44 @@
+# A bank account object whose methods return new accounts and raise a
+# structured error for an invalid operation. A batch of transactions is
+# folded over the account, each attempted through `try_call`: a rejected one
+# leaves the account as it was and records why.
+#= {
+#=     result: {
+#=         balance: 70,
+#=         log: ['deposit 100', 'withdraw 30', 'rejected: insufficient funds', 'rejected: invalid amount'],
+#=     },
+#=     inputs: {
+#=         transactions: [
+#=             ['deposit', 100],
+#=             ['withdraw', 30],
+#=             ['withdraw', 500],
+#=             ['deposit', -5],
+#=         ],
+#=     },
+#=     bench: {
+#=         inputs: {
+#=             transactions: map(range(500), fn i -> [['deposit', 'withdraw'][i % 2], i % 50 - 5]),
+#=         },
+#=     },
+#= }
+def {transactions} = import('inputs')
+defn account(balance) -> {
+    balance: fn -> balance,
+    deposit: fn amount ->
+        if amount <= 0: error({reason: 'invalid amount'})
+        else: account(balance + amount),
+    withdraw: fn amount ->
+        if amount <= 0: error({reason: 'invalid amount'})
+        elif amount > balance: error({reason: 'insufficient funds'})
+        else: account(balance - amount),
+}
+
+defn apply(state, transaction) -> {
+    def [kind, amount] = transaction
+    def outcome = try_call(state.account[kind], [amount])
+    if outcome.ok: {account: outcome.value, log: state.log + [$'${kind} ${amount}']}
+    else: state + {log: state.log + [$'rejected: ${outcome.error.reason}']}
+}
+
+def final = reduce(transactions, {account: account(0), log: []}, apply)
+{balance: final.account.balance(), log: final.log}

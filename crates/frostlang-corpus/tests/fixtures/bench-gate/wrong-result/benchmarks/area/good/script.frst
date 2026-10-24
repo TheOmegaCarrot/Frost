@@ -1,0 +1,3 @@
+# Its expectation is wrong, so its corpus check fails.
+#= {result: 7, bench: true}
+6

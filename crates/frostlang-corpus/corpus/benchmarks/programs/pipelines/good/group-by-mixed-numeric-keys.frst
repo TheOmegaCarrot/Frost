@@ -1,0 +1,25 @@
+# Grouping measurements by value into a Map: Int 1 and Float 1.0 are
+# different keys, since Map keys keep their type, so they form separate
+# groups. Subtle: the groups come out with every Int key before every Float
+# key, so 2 precedes 1.0.
+#= {
+#=     result: {
+#=         counts: {[1]: 2, [2]: 1, [1.0]: 1, [2.5]: 1},
+#=         labels: ['1 x2', '2 x1', '1.0 x1', '2.5 x1'],
+#=         distinct: 4,
+#=     },
+#=     inputs: {measurements: [1, 1.0, 2, 2.5, 1]},
+#=     bench: {
+#=         inputs: {
+#=             measurements: map(range(2000), fn i ->
+#=                 if i % 3 == 0: to_float(i % 40) / 2 else: i % 40),
+#=         },
+#=     },
+#= }
+def {measurements} = import('inputs')
+def counts = reduce(measurements, {}, fn acc, m -> acc + {[m]: (acc[m] or 0) + 1})
+{
+    counts,
+    labels: reduce(counts, [], fn acc, value, n -> acc + [$'${value} x${n}']),
+    distinct: len(counts),
+}

@@ -1,0 +1,17 @@
+# A reduce builds an Array of handler objects, each a closure capturing its
+# step's index, name, and the accumulator as it was at that step. Subtle:
+# the accumulator is extended right after being captured, so extending it
+# must never alter the captured version; each handler later still sees the
+# shorter Array it closed over.
+#= {
+#=     result: [[0, 'a', 0], [1, 'b', 1], [2, 'é', 2]],
+#=     inputs: {names: ['a', 'b', 'é']},
+#=     bench: {inputs: {names: map(range(300), fn i -> $'name${i}')}},
+#= }
+def {names} = import('inputs')
+def handlers = reduce(names, [], fn made, name -> {
+    def index = len(made)
+    made + [{describe: fn -> [index, name, len(made)]}]
+})
+
+map(handlers, fn handler -> handler.describe())

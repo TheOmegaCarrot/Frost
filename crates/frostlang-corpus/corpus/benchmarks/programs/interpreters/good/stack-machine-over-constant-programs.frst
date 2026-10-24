@@ -1,0 +1,26 @@
+# The stack machine again, with its programs written as literals the
+# optimizer may compute ahead of time. It must agree with the run over
+# runtime programs.
+#= {result: [[14], [-3, 25], [9], []], bench: true}
+defn binary(stack, operation) -> match stack {
+    [b, a, ...rest] => [operation(a, b)] + rest,
+}
+
+defn step(stack, instruction) -> match instruction {
+    {push: n} => [n] + stack,
+    'dup' => [stack[0]] + stack,
+    'swap' => match stack {
+        [b, a, ...rest] => [a, b] + rest,
+    },
+    'add' => binary(stack, fn a, b -> a + b),
+    'sub' => binary(stack, fn a, b -> a - b),
+    'mul' => binary(stack, fn a, b -> a * b),
+}
+
+defn run(program) -> reduce(program, [], step)
+[
+    run([{push: 2}, {push: 3}, {push: 4}, 'mul', 'add']),
+    run([{push: 5}, 'dup', 'mul', {push: 3}, {push: 6}, 'sub']),
+    run([{push: 1}, {push: 10}, 'swap', 'sub']),
+    run([]),
+]

@@ -1,0 +1,57 @@
+# Roman numerals: rendering greedily subtracts from a table of values (the
+# subtractive pairs included) to build an Array of letters, and parsing folds
+# over letters, subtracting a value that is smaller than the one after it.
+# Every rendered numeral parses back to its number.
+#= {
+#=     result: {
+#=         rendered: ['MCMXCIV', 'MMXXIV', 'IV', 'MMMCMXCIX', 'I', 'XLIX', ''],
+#=         parsed: [1994, 2024, 4, 3999, 1, 49],
+#=         round_trips: true,
+#=     },
+#=     inputs: {
+#=         numbers: [1994, 2024, 4, 3999, 1, 49, 0],
+#=         numerals: [
+#=             ['M', 'C', 'M', 'X', 'C', 'I', 'V'],
+#=             ['M', 'M', 'X', 'X', 'I', 'V'],
+#=             ['I', 'V'],
+#=             ['M', 'M', 'M', 'C', 'M', 'X', 'C', 'I', 'X'],
+#=             ['I'],
+#=             ['X', 'L', 'I', 'X'],
+#=         ],
+#=     },
+#=     bench: true,
+#= }
+def {numbers, numerals} = import('inputs')
+def table = [
+    [1000, ['M']], [900, ['C', 'M']], [500, ['D']], [400, ['C', 'D']],
+    [100, ['C']], [90, ['X', 'C']], [50, ['L']], [40, ['X', 'L']],
+    [10, ['X']], [9, ['I', 'X']], [5, ['V']], [4, ['I', 'V']], [1, ['I']],
+]
+def letters = {I: 1, V: 5, X: 10, L: 50, C: 100, D: 500, M: 1000}
+
+defn render(n) -> {
+    defn go(rest, pairs) -> match pairs {
+        [] => [],
+        [[value, symbol], ...smaller] =>
+            if rest >= value: symbol + go(rest - value, pairs)
+            else: go(rest, smaller),
+    }
+    go(n, table)
+}
+
+defn parse(chars) -> {
+    def values = map(chars, fn c -> letters[c])
+    def paired = reduce(values, {total: 0, previous: null}, fn s, v ->
+        if s.previous != null and s.previous < v: {total: s.total - 2 * s.previous + v, previous: v}
+        else: {total: s.total + v, previous: v}
+    )
+    paired.total
+}
+
+defn joined(chars) -> reduce(chars, '', fn text, c -> text + c)
+
+{
+    rendered: map(numbers, fn n -> joined(render(n))),
+    parsed: map(numerals, parse),
+    round_trips: map(numbers, fn n -> parse(render(n))) == numbers,
+}

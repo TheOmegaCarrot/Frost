@@ -6,8 +6,11 @@
 
 use std::path::Path;
 
+use frostlang::Value;
+use frostlang::compile::{Optimization, OptimizationOptions};
 use frostlang_corpus::{
-    Entry, Kind, KnownIssue, Mode, Report, Tally, check, check_source, discover,
+    Benchmark, Entry, Kind, KnownIssue, MAX_ID_PART, Mode, OptionSet, Report, Tally, check,
+    check_source, discover, option_sets, prepare,
 };
 
 /// The report for `source`, named `name`, under the default options.
@@ -551,6 +554,277 @@ fn an_expectation_that_does_not_compile_is_malformed() {
 fn an_expectation_that_raises_is_malformed() {
     let reason = malformation("area/good/script", "#= {result: match 1 { 2 => 2 }}\n1\n");
     assert_mentions(&reason, "raised");
+}
+
+// -- Benchmarks --
+
+/// A fixture corpus root under `tests/fixtures/`.
+fn fixture(path: &str) -> std::path::PathBuf {
+    Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("tests/fixtures")
+        .join(path)
+}
+
+/// The labels of `sets`, in order.
+fn labels(sets: &[OptionSet]) -> Vec<&str> {
+    sets.iter().map(|set| set.label.as_str()).collect()
+}
+
+#[test]
+fn a_benchmark_is_checked_like_any_good_script() {
+    for bench in ["true", "{inputs: {n: 100}}"] {
+        let source = format!(
+            r"#= {{result: 6, inputs: {{n: 3}}, bench: {bench}}}
+def {{n}} = import('inputs')
+n * 2
+"
+        );
+        assert_eq!(
+            report("benchmarks/area/good/script", &source),
+            Report::Passed,
+            "bench: {bench}"
+        );
+        // Its own inputs are what its check runs with.
+        let wrong = source.replace("result: 6", "result: 200");
+        assert_mentions(
+            &failure("benchmarks/area/good/script", &wrong),
+            "expected 200, got 6",
+        );
+    }
+}
+
+#[test]
+fn bench_is_allowed_only_in_a_good_script_under_benchmarks() {
+    let outside = r"#= {result: 1, bench: true}
+1
+";
+    assert_mentions(
+        &malformation("area/good/script", outside),
+        "only a script under `benchmarks/` may have `bench`",
+    );
+    let raising = r"#= {raises: 'no match', bench: true}
+match 1 {
+    2 => 2,
+}
+";
+    assert_mentions(
+        &malformation("benchmarks/area/runtime-error/script", raising),
+        "only an expectation with `result` may have `bench`",
+    );
+}
+
+#[test]
+fn a_benchmark_may_not_have_a_known_issue() {
+    let source = r"#= {result: 1, bench: true, known_issue: 'FROST-1'}
+1
+";
+    assert_mentions(
+        &malformation("benchmarks/area/good/script", source),
+        "a benchmark may not have a `known_issue`",
+    );
+}
+
+#[test]
+fn bench_is_true_or_a_map_of_bindable_inputs() {
+    for (bench, fragment) in [
+        (
+            "false",
+            "`bench` is `true` or `{inputs: {...}}`; leave it out",
+        ),
+        ("{inputs: {['1x']: 1}}", "not a name a script can bind"),
+        ("'yes'", "`true` or `{inputs: {...}}`"),
+        ("{n: 1}", "`true` or `{inputs: {...}}`"),
+        // A Map with any field besides `inputs`, such as a misspelling.
+        ("{inputs: {n: 1}, warmup: 3}", "`true` or `{inputs: {...}}`"),
+    ] {
+        let reason = malformation(
+            "benchmarks/area/good/script",
+            &format!("#= {{result: 1, bench: {bench}}}\n1\n"),
+        );
+        assert_mentions(&reason, fragment);
+        assert!(
+            !reason.contains("BenchField"),
+            "no Rust type name reaches the script author: {reason}"
+        );
+    }
+}
+
+#[test]
+fn bench_inputs_may_hold_any_value_inputs_may() {
+    // A Function among them, as `inputs` may hold one.
+    let source = r"#= {
+#=     result: 2,
+#=     inputs: {f: fn x -> x + 1},
+#=     bench: {inputs: {f: fn x -> x * 2}},
+#= }
+def {f} = import('inputs')
+f(1)
+";
+    assert_eq!(
+        report("benchmarks/area/good/script", source),
+        Report::Passed
+    );
+}
+
+#[test]
+fn a_null_bench_is_no_bench() {
+    // As with the other optional fields, Null reads as absent.
+    let source = r"#= {result: 1, bench: null}
+1
+";
+    assert_eq!(report("area/good/script", source), Report::Passed);
+}
+
+#[test]
+fn benchmarks_are_the_marked_scripts_under_benchmarks() {
+    let names: Vec<String> = Benchmark::discover(&fixture("bench"))
+        .expect("the fixtures are readable")
+        .into_iter()
+        .map(|benchmark| benchmark.entry.name)
+        .collect();
+    assert_eq!(
+        names,
+        ["benchmarks/area/good/marked", "benchmarks/area/good/scaled"],
+        "only marked scripts under `benchmarks/`, in name order"
+    );
+}
+
+#[test]
+fn a_benchmark_runs_with_its_bench_inputs() {
+    let benchmarks = prepare(&fixture("bench"), &option_sets(None).unwrap())
+        .expect("the fixture benchmarks pass");
+    let results: Vec<Value> = benchmarks
+        .iter()
+        .map(|benchmark| {
+            let closure = benchmark.closure(Default::default()).expect("it compiles");
+            benchmark.run(&closure).expect("it completes")
+        })
+        .collect();
+    assert_eq!(
+        results,
+        [Value::Int(6), Value::Int(5050)],
+        "`bench: true` keeps the script's inputs; `bench: {{inputs}}` replaces them"
+    );
+}
+
+#[test]
+fn a_benchmark_id_is_its_directory_then_its_file() {
+    let benchmarks = Benchmark::discover(&fixture("bench")).expect("the fixtures are readable");
+    let parts: Vec<(&str, &str)> = benchmarks
+        .iter()
+        .map(|benchmark| (benchmark.group(), benchmark.file()))
+        .collect();
+    assert_eq!(
+        parts,
+        [
+            ("benchmarks/area/good", "marked"),
+            ("benchmarks/area/good", "scaled")
+        ]
+    );
+}
+
+#[test]
+fn prepare_refuses_to_time_anything_while_a_benchmark_fails() {
+    let sets = option_sets(None).unwrap();
+    for (root, fragment) in [
+        ("bench-gate/wrong-result", "expected 7, got 6"),
+        (
+            "bench-gate/raises",
+            "with its bench inputs: Division by zero",
+        ),
+        // Malformed, so no benchmark, yet it blocks the run rather than
+        // silently dropping out of the timings.
+        ("bench-gate/malformed", "`true` or `{inputs: {...}}`"),
+        ("bench-gate/long-name", "longer than 64 bytes"),
+    ] {
+        let Err(error) = prepare(&fixture(root), &sets) else {
+            panic!("{root}: prepare should refuse");
+        };
+        assert_mentions(&error, "none is timed");
+        assert_mentions(&error, fragment);
+    }
+}
+
+#[test]
+fn prepare_checks_every_selected_option_set() {
+    // The long label fails only once the option sets include it.
+    let long = "none, constant-fold=true, constant-propagate=true, branch-eliminate=true";
+    let sets = option_sets(Some(long)).unwrap();
+    let Err(error) = prepare(&fixture("bench"), &sets) else {
+        panic!("a label this long makes an ID part too long");
+    };
+    assert_mentions(&error, "longer than 64 bytes");
+    assert_eq!(MAX_ID_PART, 64, "criterion's directory-name limit");
+}
+
+#[test]
+fn benchmarks_run_under_the_default_options_unless_asked() {
+    for value in [None, Some(""), Some("   ")] {
+        let sets = option_sets(value).unwrap();
+        assert_eq!(labels(&sets), ["default"], "{value:?}");
+        assert_eq!(sets[0].options, Default::default(), "{value:?}");
+    }
+}
+
+#[test]
+fn each_selects_default_none_and_the_defaults_without_each_optimization() {
+    let sets = option_sets(Some("each")).unwrap();
+    let mut expected = vec!["default".to_string(), "none".to_string()];
+    expected.extend(
+        Optimization::ALL
+            .iter()
+            .map(|optimization| format!("{}=false", optimization.name())),
+    );
+    assert_eq!(labels(&sets), expected);
+    assert_eq!(
+        sets[1].options.optimization_options,
+        OptimizationOptions::NONE
+    );
+    for (optimization, set) in Optimization::ALL.iter().zip(&sets[2..]) {
+        assert!(
+            !set.options.optimization_options.get(*optimization),
+            "{} is off",
+            optimization.name()
+        );
+    }
+}
+
+#[test]
+fn a_list_of_option_sets_applies_each_over_the_defaults() {
+    let sets = option_sets(Some(" default ; constant-fold = false;none ")).unwrap();
+    assert_eq!(
+        labels(&sets),
+        ["default", "constant-fold=false", "none"],
+        "labels have their spacing normalized"
+    );
+    let without_fold = sets[1].options.optimization_options;
+    assert!(!without_fold.get(Optimization::ConstantFold));
+    assert!(
+        without_fold.get(Optimization::ConstantPropagate),
+        "the rest stay at their defaults"
+    );
+}
+
+#[test]
+fn a_malformed_list_of_option_sets_is_an_error() {
+    for (value, fragment) in [
+        ("default; folding=off", "folding"),
+        ("default;", "an option set is empty"),
+        ("default;;none", "an option set is empty"),
+        ("each; none", "`each` must stand alone"),
+        (
+            "default; default",
+            "`default` and `default` select the same options",
+        ),
+        (
+            "constant-fold=false; constant-fold = false",
+            "select the same options",
+        ),
+    ] {
+        let error = option_sets(Some(value)).unwrap_err();
+        assert_mentions(&error, "FROST_BENCH_OPTIONS");
+        assert_mentions(&error, fragment);
+    }
 }
 
 // -- Discovery and summary --

@@ -1,0 +1,34 @@
+# A pipeline assembled from an Array of stages: `bcurry` fixes each stage's
+# trailing argument, and reducing the stages with `compose` chains them first
+# to last. A second pipeline reads a nested price with `dig`, whose Null for
+# a missing link is then selected out.
+#= {
+#=     result: [[70, 0, 0], 7],
+#=     inputs: {
+#=         runs: [[3, -1, 4], [-5], []],
+#=         records: [{item: {price: 3}}, {item: {price: 4}}, {item: null}, {}],
+#=     },
+#=     bench: {
+#=         inputs: {
+#=             runs: map(range(50), fn n -> range(-n, n)),
+#=             records: map(range(1000), fn i -> [{item: {price: i % 20}}, {item: null}, {}][i % 3]),
+#=         },
+#=     },
+#= }
+def {runs, records} = import('inputs')
+defn sum(xs) -> reduce(xs, 0, fn total, x -> total + x)
+
+def stages = [
+    bcurry(filter, fn x -> x > 0),
+    bcurry(map, fn x -> x * 10),
+    sum,
+]
+def positive_tens = reduce(stages, compose)
+
+def prices = compose(
+    bcurry(map, fn record -> dig(record, 'item', 'price')),
+    bcurry(filter, is_nonnull),
+    sum,
+)
+
+[map(runs, positive_tens), prices(records)]

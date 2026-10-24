@@ -1,0 +1,44 @@
+# Dijkstra's algorithm over a weighted graph of nested Maps: each step folds
+# the tentative distances to pick the closest unfinished node, then folds its
+# edges to relax its neighbors. The graph is the classic six-node example,
+# plus an isolated node that never gets a distance.
+#= {
+#=     result: [
+#=         {a: 0, b: 7, c: 9, d: 20, e: 20, f: 11},
+#=         {d: 0, b: 15, c: 11, e: 6, f: 13, a: 20},
+#=         {z: 0},
+#=     ],
+#=     inputs: {
+#=         graph: {
+#=             a: {b: 7, c: 9, f: 14},
+#=             b: {a: 7, c: 10, d: 15},
+#=             c: {a: 9, b: 10, d: 11, f: 2},
+#=             d: {b: 15, c: 11, e: 6},
+#=             e: {d: 6, f: 9},
+#=             f: {a: 14, c: 2, e: 9},
+#=             z: {},
+#=         },
+#=     },
+#=     bench: true,
+#= }
+def {graph} = import('inputs')
+defn shortest(source) -> {
+    defn closest(dist, done) -> reduce(dist, null, fn best, node, d ->
+        if has(done, node): best
+        elif best == null or d < dist[best]: node
+        else: best)
+
+    defn relax(dist, node) -> reduce(graph[node], dist, fn acc, next, weight -> {
+        def candidate = dist[node] + weight
+        if has(acc, next) and acc[next] <= candidate: acc else: acc + {[next]: candidate}
+    })
+
+    defn step(dist, done) -> {
+        def node = closest(dist, done)
+        if node == null: dist else: step(relax(dist, node), done + {[node]: true})
+    }
+
+    step({[source]: 0}, {})
+}
+
+[shortest('a'), shortest('d'), shortest('z')]

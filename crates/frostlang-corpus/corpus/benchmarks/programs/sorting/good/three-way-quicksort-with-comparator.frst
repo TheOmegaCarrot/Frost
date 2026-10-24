@@ -1,0 +1,43 @@
+# A three-way quicksort driven by a comparator returning -1, 0, or 1: people
+# sort by age descending, then by name ascending. Elements comparing equal to
+# the pivot (here a duplicate record) are kept, not dropped.
+#= {
+#=     result: ['jo 40', 'jo 40', 'kim 40', 'cy 33', 'al 25', 'bea 25'],
+#=     inputs: {
+#=         people: [
+#=             {name: 'kim', age: 40},
+#=             {name: 'al', age: 25},
+#=             {name: 'jo', age: 40},
+#=             {name: 'bea', age: 25},
+#=             {name: 'cy', age: 33},
+#=             {name: 'jo', age: 40},
+#=         ],
+#=     },
+#=     bench: {
+#=         inputs: {
+#=             people: tile(map(range(100), fn i -> {
+#=                 name: ['kim', 'al', 'jo', 'bea', 'cy'][i % 5],
+#=                 age: i * 37 % 47 + 20,
+#=             }), 2),
+#=         },
+#=     },
+#= }
+def {people} = import('inputs')
+defn by_age_then_name(a, b) ->
+    if a.age > b.age: -1
+    elif a.age < b.age: 1
+    elif a.name < b.name: -1
+    elif a.name > b.name: 1
+    else: 0
+
+defn sort_with(xs, compare) -> match xs {
+    [] => [],
+    [pivot, ...rest] => do {
+        def before = filter(rest, fn x -> compare(x, pivot) < 0)
+        def same = filter(rest, fn x -> compare(x, pivot) == 0)
+        def after = filter(rest, fn x -> compare(x, pivot) > 0)
+        sort_with(before, compare) + [pivot] + same + sort_with(after, compare)
+    },
+}
+
+sort_with(people, by_age_then_name) @ map(fn p -> $'${p.name} ${p.age}')

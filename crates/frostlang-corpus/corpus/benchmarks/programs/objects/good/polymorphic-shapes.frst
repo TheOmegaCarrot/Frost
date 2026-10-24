@@ -1,0 +1,57 @@
+# Polymorphism by convention: each constructor returns a Map with the same
+# method names, so code over a mixed Array of shapes calls `area` and
+# `describe` without knowing which shape it has. Areas mix Ints and Floats,
+# and the total is a Float once any Float joins the sum.
+#= {
+#=     result: {
+#=         descriptions: ['rect 2x3', 'square 4', 'triangle 3/5', 'rect 0x9'],
+#=         areas: [6, 16, 7.5, 0],
+#=         total: 29.5,
+#=         largest: 'square 4',
+#=     },
+#=     inputs: {
+#=         specs: [
+#=             {kind: 'rect', w: 2, h: 3},
+#=             {kind: 'square', side: 4},
+#=             {kind: 'triangle', base: 3, height: 5},
+#=             {kind: 'rect', w: 0, h: 9},
+#=         ],
+#=     },
+#=     bench: {
+#=         inputs: {
+#=             specs: map(range(600), fn i -> match i % 3 {
+#=                 0 => {kind: 'rect', w: i % 7, h: i % 11},
+#=                 1 => {kind: 'square', side: i % 9},
+#=                 _ => {kind: 'triangle', base: i % 5, height: i % 13},
+#=             }),
+#=         },
+#=     },
+#= }
+def {specs} = import('inputs')
+defn rect(w, h) -> {
+    area: fn -> w * h,
+    describe: fn -> $'rect ${w}x${h}',
+}
+
+defn square(side) -> rect(side, side) + {describe: fn -> $'square ${side}'}
+
+defn triangle(base, height) -> {
+    area: fn -> base * height / 2.0,
+    describe: fn -> $'triangle ${base}/${height}',
+}
+
+defn build(spec) -> match spec {
+    {kind: 'rect', w, h} => rect(w, h),
+    {kind: 'square', side} => square(side),
+    {kind: 'triangle', base, height} => triangle(base, height),
+}
+
+def shapes = map(specs, build)
+def areas = map(shapes, fn s -> s.area())
+def largest = reduce(shapes, fn a, b -> if b.area() > a.area(): b else: a)
+{
+    descriptions: map(shapes, fn s -> s.describe()),
+    areas,
+    total: reduce(areas, 0, fn sum, a -> sum + a),
+    largest: largest.describe(),
+}

@@ -1,0 +1,4 @@
+# Passes its corpus check, but raises with its bench inputs.
+#= {result: 5, inputs: {n: 2}, bench: {inputs: {n: 0}}}
+def {n} = import('inputs')
+10 / n

@@ -1,0 +1,45 @@
+# A merge sort built from Array patterns: split deals elements alternately
+# into two halves, and merge takes the smaller head each step. It sorts Ints
+# including both Int extremes, Strings by code point (uppercase before
+# lowercase, and 'é' after every ASCII letter), and the empty and
+# one-element Arrays.
+#= {
+#=     result: [
+#=         [-9223372036854775808, -1, 0, 2, 3, 3, 5, 9223372036854775807],
+#=         ['Apple', 'apple', 'pear', 'zebra', 'éclair'],
+#=         [],
+#=         [42],
+#=     ],
+#=     inputs: {
+#=         ints: [5, -1, 3, 3, 0, 9223372036854775807, -9223372036854775808, 2],
+#=         words: ['pear', 'éclair', 'Apple', 'zebra', 'apple'],
+#=         empty: [],
+#=         one: [42],
+#=     },
+#=     bench: true,
+#= }
+def {ints, words, empty, one} = import('inputs')
+defn split(xs) -> match xs {
+    [] => [[], []],
+    [x] => [[x], []],
+    [a, b, ...rest] => do {
+        def [left, right] = split(rest)
+        [[a] + left, [b] + right]
+    },
+}
+
+defn merge(xs, ys) -> match [xs, ys] {
+    [[], _] => ys,
+    [_, []] => xs,
+    [[x, ...xrest], [y, ...yrest]] => if y < x: [y] + merge(xs, yrest) else: [x] + merge(xrest, ys),
+}
+
+defn sort(xs) -> match xs {
+    [] | [_] => xs,
+    _ => do {
+        def [left, right] = split(xs)
+        merge(sort(left), sort(right))
+    },
+}
+
+[sort(ints), sort(words), sort(empty), sort(one)]

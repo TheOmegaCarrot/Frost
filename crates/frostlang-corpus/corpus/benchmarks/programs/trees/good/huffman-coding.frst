@@ -1,0 +1,76 @@
+# Huffman coding: count symbols into a Map, keep a queue of trees sorted by
+# weight (ties broken by creation order, so the result is deterministic),
+# merge the two lightest until one tree remains, read each symbol's code off
+# the tree as an Array of bits, and check that decoding the encoded bits
+# gives back the message. A message of one repeated symbol gets the one-bit
+# code '0'.
+#= {
+#=     result: {
+#=         counts: {a: 3, b: 1, c: 1, d: 1},
+#=         codes: {a: '0', b: '110', c: '111', d: '10'},
+#=         encoded: '01100111010',
+#=         round_trip: true,
+#=         lone: {codes: {z: '0'}, encoded: '000'},
+#=     },
+#=     inputs: {
+#=         message: ['a', 'b', 'a', 'c', 'a', 'd'],
+#=         repeated: ['z', 'z', 'z'],
+#=     },
+#=     bench: true,
+#= }
+def {message, repeated} = import('inputs')
+defn count(symbols) -> reduce(symbols, {}, fn acc, s -> acc + {[s]: (acc[s] or 0) + 1})
+
+defn lighter(a, b) -> a.weight < b.weight or (a.weight == b.weight and a.id < b.id)
+
+defn enqueue(queue, tree) -> match queue {
+    [] => [tree],
+    [first, ...rest] => if lighter(tree, first): [tree] + queue else: [first] + enqueue(rest, tree),
+}
+
+defn build(queue, next_id) -> match queue {
+    [only] => only,
+    [a, b, ...rest] => build(enqueue(rest, {weight: a.weight + b.weight, id: next_id, left: a, right: b}), next_id + 1),
+}
+
+defn codes(tree, prefix) ->
+    if has(tree, 'symbol'): {[tree.symbol]: if prefix == []: ['0'] else: prefix}
+    else: codes(tree.left, prefix + ['0']) + codes(tree.right, prefix + ['1'])
+
+defn encode(table, symbols) -> reduce(symbols, [], fn bits, s -> bits + table[s])
+
+defn decode(tree, bits) -> {
+    defn walk(node, rest, out) ->
+        if has(node, 'symbol'): (if rest == []: out + [node.symbol] else: walk(tree, rest, out + [node.symbol]))
+        else: match rest {
+            ['0', ...more] => walk(node.left, more, out),
+            ['1', ...more] => walk(node.right, more, out),
+        }
+    walk(tree, bits, [])
+}
+
+defn leaves(counts) -> reduce(counts, {queue: [], id: 0}, fn s, symbol, weight -> {
+    queue: enqueue(s.queue, {weight, id: s.id, symbol}),
+    id: s.id + 1,
+})
+
+defn huffman(symbols) -> {
+    def counts = count(symbols)
+    def start = leaves(counts)
+    def tree = build(start.queue, start.id)
+    {counts, tree, table: codes(tree, [])}
+}
+
+defn join(parts) -> reduce(parts, '', fn text, p -> text + p)
+defn rendered(table) -> map(table, fn symbol, bits -> {[symbol]: join(bits)})
+
+def main = huffman(message)
+def bits = encode(main.table, message)
+def single = huffman(repeated)
+{
+    counts: main.counts,
+    codes: rendered(main.table),
+    encoded: join(bits),
+    round_trip: decode(main.tree, bits) == message,
+    lone: {codes: rendered(single.table), encoded: join(encode(single.table, repeated))},
+}

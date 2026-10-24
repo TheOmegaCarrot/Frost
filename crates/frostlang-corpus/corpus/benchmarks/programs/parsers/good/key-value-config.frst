@@ -1,0 +1,37 @@
+# A `key=value;...` config parser folded over characters. The state tracks
+# whether the key is done; only the first `=` splits, so later ones belong to
+# the value. Empty entries are skipped, a repeated key keeps its last value,
+# a bare key means true, and non-ASCII keys and values pass through intact.
+#= {
+#=     result: [
+#=         {a: '1', b: 'hello', c: '', ['名']: '値'},
+#=         {k: 'x=y', a: '2'},
+#=         {},
+#=         {flag: true, n: '1'},
+#=     ],
+#=     inputs: {
+#=         sources: [
+#=             ['a', '=', '1', ';', 'b', '=', 'h', 'e', 'l', 'l', 'o', ';', 'c', '=', ';', '名', '=', '値'],
+#=             ['k', '=', 'x', '=', 'y', ';', ';', 'a', '=', '1', ';', 'a', '=', '2'],
+#=             [],
+#=             ['f', 'l', 'a', 'g', ';', 'n', '=', '1'],
+#=         ],
+#=     },
+#=     bench: true,
+#= }
+def {sources} = import('inputs')
+def fresh = {key: '', value: '', in_value: false}
+
+defn commit(state) ->
+    if state.key == '': state.result
+    else: state.result + {[state.key]: if state.in_value: state.value else: true}
+
+defn step(state, c) ->
+    if c == ';': fresh + {result: commit(state)}
+    elif state.in_value: state + {value: state.value + c}
+    elif c == '=': state + {in_value: true}
+    else: state + {key: state.key + c}
+
+defn parse(chars) -> commit(reduce(chars, fresh + {result: {}}, step))
+
+map(sources, parse)

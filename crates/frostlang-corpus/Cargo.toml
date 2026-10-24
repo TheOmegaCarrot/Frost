@@ -6,10 +6,13 @@ rust-version.workspace = true
 description = "The core-language test corpus for Frost, and its runner"
 publish = false
 
-# The library's tests are the `runner` target's.
+# The library's tests are the `runner` target's, and its benchmarks the
+# `corpus` bench target's. Left benchable, the library would run under
+# libtest's bench harness too, which rejects criterion's options.
 [lib]
 test = false
 doctest = false
+bench = false
 
 [dependencies]
 frostlang.workspace = true
@@ -21,6 +24,9 @@ serde = { version = "1", features = ["derive"] }
 # The corpus test's harness: one trial per script, run in parallel and
 # filtered like the built-in harness.
 libtest-mimic = "0.8"
+# The benchmarks' harness: statistics, and baselines for comparing revisions.
+# Without its default features, which add plotting and HTML reports.
+criterion = { version = "0.8", default-features = false, features = ["cargo_bench_support"] }
 
 # The corpus itself, run by its own harness rather than libtest's.
 [[test]]
@@ -32,6 +38,12 @@ harness = false
 [[test]]
 name = "runner"
 path = "tests/runner.rs"
+
+# The corpus's benchmarks, timed by criterion: `cargo bench -p frostlang-corpus`.
+[[bench]]
+name = "corpus"
+path = "benches/corpus.rs"
+harness = false
 
 [lints]
 workspace = true

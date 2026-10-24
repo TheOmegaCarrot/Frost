@@ -1,0 +1,24 @@
+# A stack machine with a `print` instruction, run over a literal program:
+# however much of the pure work the optimizer computes ahead of time, every
+# print still happens, once each, in program order, interleaved with the
+# host program's own print.
+#= {
+#=     result: [3, 10],
+#=     printed: ['start', '3', '7', '10'],
+#=     bench: true,
+#= }
+defn step(stack, instruction) -> match instruction {
+    {push: n} => [n] + stack,
+    'print' => do {
+        print(stack[0])
+        stack
+    },
+    'add' => match stack {
+        [b, a, ...rest] => [a + b] + rest,
+    },
+}
+
+print('start')
+def program = [{push: 3}, 'print', {push: 4}, 'add', 'print', {push: 3}, 'add', 'print', {push: 3}]
+def final = reduce(program, [], step)
+final

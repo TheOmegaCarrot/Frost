@@ -1,0 +1,66 @@
+# A tokenizer as a state machine folded over an Array of one-character
+# Strings: the state holds the finished tokens and the token in progress
+# (Null between tokens). Characters are classified by String comparison, and
+# digits are valued through a Map. Subtle: the Int accumulation is exact up to
+# the largest Int, so literals at and just below it lex unchanged.
+#= {
+#=     result: [
+#=         [{ident: 'x1'}, {op: '='}, {int: 42}, {op: '+'}, {ident: 'y'}],
+#=         [{op: '('}, {ident: 'a_b'}, {op: '*'}, {int: 10}, {op: ')'}],
+#=         [],
+#=         [{int: 7}, {ident: 'x'}],
+#=         [],
+#=         [{int: 9223372036854775807}, {int: 9223372036854775806}],
+#=     ],
+#=     inputs: {
+#=         sources: [
+#=             ['x', '1', ' ', '=', ' ', '4', '2', '+', 'y'],
+#=             ['(', 'a', '_', 'b', '*', '1', '0', ')'],
+#=             [],
+#=             ['7', 'x'],
+#=             [' ', ' '],
+#=             [
+#=                 '9', '2', '2', '3', '3', '7', '2', '0', '3', '6',
+#=                 '8', '5', '4', '7', '7', '5', '8', '0', '7', ' ',
+#=                 '9', '2', '2', '3', '3', '7', '2', '0', '3', '6',
+#=                 '8', '5', '4', '7', '7', '5', '8', '0', '6',
+#=             ],
+#=         ],
+#=     },
+#=     bench: true,
+#= }
+def {sources} = import('inputs')
+def digits = {
+    ['0']: 0, ['1']: 1, ['2']: 2, ['3']: 3, ['4']: 4,
+    ['5']: 5, ['6']: 6, ['7']: 7, ['8']: 8, ['9']: 9,
+}
+def operators = {['=']: true, ['+']: true, ['*']: true, ['(']: true, [')']: true}
+
+defn is_letter(c) -> (c >= 'a' and c <= 'z') or c == '_'
+
+defn finish(token) -> match token {
+    {kind: 'ident', text} => {ident: text},
+    {kind: 'int', value} => {int: value},
+}
+
+defn flush(state) -> if state.current == null: state.tokens else: state.tokens + [finish(state.current)]
+
+defn step(state, c) -> {
+    def current = state.current
+    if has(digits, c): match current {
+        {kind: 'ident', text} => state + {current: {kind: 'ident', text: text + c}},
+        {kind: 'int', value} => state + {current: {kind: 'int', value: value * 10 + digits[c]}},
+        null => state + {current: {kind: 'int', value: digits[c]}},
+    }
+    elif is_letter(c): match current {
+        {kind: 'ident', text} => state + {current: {kind: 'ident', text: text + c}},
+        _ => {tokens: flush(state), current: {kind: 'ident', text: c}},
+    }
+    elif c == ' ': {tokens: flush(state), current: null}
+    elif has(operators, c): {tokens: flush(state) + [{op: c}], current: null}
+    else: error($'unexpected character ${c}')
+}
+
+defn tokenize(chars) -> flush(reduce(chars, {tokens: [], current: null}, step))
+
+map(sources, tokenize)

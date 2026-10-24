@@ -2,7 +2,9 @@ use std::collections::BTreeMap;
 use std::sync::{Arc, Mutex};
 
 use frostlang::compile::{CompilerOptions, Diagnostic, compile_program};
-use frostlang::{HostComponent, ImporterBuilder, MapKey, Value, Vm, VmRuntimeConfiguration};
+use frostlang::{
+    HostComponent, Importer, ImporterBuilder, MapKey, Value, Vm, VmRuntimeConfiguration,
+};
 
 /// What compiling and running a script does under one set of options.
 #[derive(Debug, PartialEq)]
@@ -25,6 +27,20 @@ pub(crate) enum Observed {
 pub(crate) struct Finished {
     pub(crate) result: Value,
     pub(crate) exports: BTreeMap<String, Value>,
+}
+
+/// An importer whose only component, `inputs`, holds `inputs` as a Map, for a
+/// script to import.
+pub(crate) fn inputs_importer(inputs: &BTreeMap<String, Value>) -> Arc<Importer> {
+    let inputs: Value = inputs
+        .iter()
+        .map(|(name, value)| (MapKey::from(name.as_str()), value.clone()))
+        .collect();
+    let component = HostComponent::new("inputs", inputs).expect("`inputs` is a valid name");
+    ImporterBuilder::new()
+        .with_component(component)
+        .expect("the importer has no other component")
+        .build()
 }
 
 /// Compile `source` on its own under `options`, and run it if it compiles,
@@ -50,15 +66,7 @@ pub(crate) fn observe(
         .code
         .into_closure()
         .expect("a script compiled on its own captures nothing");
-    let inputs: Value = inputs
-        .iter()
-        .map(|(name, value)| (MapKey::from(name.as_str()), value.clone()))
-        .collect();
-    let component = HostComponent::new("inputs", inputs).expect("`inputs` is a valid name");
-    let importer = ImporterBuilder::new()
-        .with_component(component)
-        .expect("the importer has no other component")
-        .build();
+    let importer = inputs_importer(inputs);
     let printed = Arc::new(Mutex::new(Vec::new()));
     let sink = {
         let printed = Arc::clone(&printed);

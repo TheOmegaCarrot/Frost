@@ -1,0 +1,46 @@
+# A binary protocol handler: each message's opcode is a Bytes value looked
+# up in a Map with Bytes keys, handlers build responses by concatenating
+# Bytes, and an unknown opcode gets an error frame. The responses are then
+# measured, joined into one stream, and ranked, Bytes ordering being
+# unsigned and lexicographic.
+#= {
+#=     result: {
+#=         responses: [x'8168656c6c6f', x'82', x'81ff', x'ee7f'],
+#=         total: 11,
+#=         stream: x'8168656c6c6f8281ffee7f',
+#=         smallest: x'8168656c6c6f',
+#=         largest: x'ee7f',
+#=     },
+#=     inputs: {
+#=         messages: [
+#=             [x'01', x'68656c6c6f'],
+#=             [x'02', x''],
+#=             [x'01', x'ff'],
+#=             [x'7f', x'00'],
+#=         ],
+#=     },
+#=     bench: {
+#=         inputs: {
+#=             messages: map(range(600), fn i -> [[x'01', x'02', x'7f'][i % 3], tile(x'ab', i % 8)]),
+#=         },
+#=     },
+#= }
+def {messages} = import('inputs')
+def handlers = {
+    [x'01']: fn payload -> x'81' + payload,
+    [x'02']: fn payload -> x'82',
+}
+
+defn respond(message) -> {
+    def [opcode, payload] = message
+    if has(handlers, opcode): handlers[opcode](payload) else: x'ee' + opcode
+}
+
+def responses = map(messages, respond)
+{
+    responses,
+    total: reduce(responses, 0, fn n, r -> n + len(r)),
+    stream: reduce(responses, fn joined, r -> joined + r),
+    smallest: reduce(responses, fn a, b -> if b < a: b else: a),
+    largest: reduce(responses, fn a, b -> if b > a: b else: a),
+}

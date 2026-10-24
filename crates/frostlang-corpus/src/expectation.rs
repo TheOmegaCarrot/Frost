@@ -16,6 +16,15 @@ pub struct Expectation {
     pub inputs: BTreeMap<String, Value>,
     /// The active bug that keeps the script from behaving as expected, if any.
     pub known_issue: Option<KnownIssue>,
+    /// How to benchmark the script, if it is a benchmark.
+    pub bench: Option<Bench>,
+}
+
+/// How a benchmark script is benchmarked.
+#[derive(Debug)]
+pub struct Bench {
+    /// The inputs a benchmark run supplies: the script's own, or larger ones.
+    pub inputs: BTreeMap<String, Value>,
 }
 
 /// The outcome a script is expected to have.
@@ -172,6 +181,19 @@ struct Fields {
     regression: bool,
     #[serde(default)]
     inputs: BTreeMap<String, Value>,
+    /// Read as a plain value and only then by its shape: an untagged enum
+    /// would buffer it in a form that cannot hold a Function input.
+    bench: Option<Value>,
+}
+
+/// What the `bench` field may be.
+const BENCH_FORMS: &str = "`bench` is `true` or `{inputs: {...}}`";
+
+/// The Map form of the `bench` field.
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+struct BenchInputs {
+    inputs: BTreeMap<String, Value>,
 }
 
 /// Deserializes a field that is present, even as Null, to `Some`; an absent
@@ -245,11 +267,33 @@ impl Fields {
             (None, true) => return Err("`regression` requires a `known_issue`".to_string()),
             (None, false) => None,
         };
-        if let Some(name) = self
+        let bench = match self.bench {
+            None => None,
+            Some(_) if expected.kind() != Kind::Good => {
+                return Err("only an expectation with `result` may have `bench`".into());
+            }
+            // A benchmark is timed only while it behaves as expected.
+            Some(_) if known_issue.is_some() => {
+                return Err("a benchmark may not have a `known_issue`".into());
+            }
+            Some(Value::Bool(true)) => Some(Bench {
+                inputs: self.inputs.clone(),
+            }),
+            Some(Value::Bool(false)) => {
+                return Err(format!("{BENCH_FORMS}; leave it out for none"));
+            }
+            Some(map @ Value::Map(_)) => {
+                let BenchInputs { inputs } = from_value(map)
+                    .map_err(|error| format!("{BENCH_FORMS}: {}", error.message()))?;
+                Some(Bench { inputs })
+            }
+            Some(other) => return Err(format!("{BENCH_FORMS}, not {}", other.type_name())),
+        };
+        let mut input_names = self
             .inputs
             .keys()
-            .find(|name| !is_identifier_like_and_not_keyword(name))
-        {
+            .chain(bench.iter().flat_map(|bench| bench.inputs.keys()));
+        if let Some(name) = input_names.find(|name| !is_identifier_like_and_not_keyword(name)) {
             return Err(format!(
                 "the input {name:?} is not a name a script can bind"
             ));
@@ -258,6 +302,7 @@ impl Fields {
             expected,
             inputs: self.inputs,
             known_issue,
+            bench,
         })
     }
 }

@@ -1,0 +1,11 @@
+# The polynomial hash over constant inputs, which the optimizer may compute
+# ahead of time: its results must match the runtime's exactly.
+#= {result: [384764074, 912832879, 7, 7000021, 216893570], bench: true}
+defn hash(codes) -> reduce(codes, 7, fn h, code -> (h * 1000003 + code) % 1000000007)
+[
+    hash([104, 101, 108, 108, 111, 32, 119, 111, 114, 108, 100]),
+    hash([104, 101, 108]),
+    hash([]),
+    hash([0]),
+    hash([255, 255, 255, 255, 255, 255, 255, 255]),
+]

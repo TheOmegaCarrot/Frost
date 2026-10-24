@@ -87,6 +87,7 @@ with the script's outcome directory.
 | `inputs` | any | A Map of values by name, each name one a script can bind. The Map is the content of a host component named `inputs`, which the script imports. |
 | `known_issue` | any | The ID of the Backlog task tracking a bug that keeps the script from behaving as expected, such as `'FROST-123'`. |
 | `regression` | any | `true` if that bug is an accepted regression: the script once behaved as expected. Requires `known_issue`. |
+| `bench` | `good`, under `benchmarks/` | Marks the script as a benchmark: `true` to benchmark it with its `inputs`, or `{inputs: {...}}` for larger ones. See [Benchmarks](#benchmarks). |
 
 Any other field is an error.
 
@@ -163,3 +164,91 @@ Scripts, and each script's option sets, run in parallel; the usual test-harness 
 `--test-threads` overrides.
 
 The corpus runs as part of `cargo test`, under the default optimizations.
+
+## Benchmarks
+
+Tests are about correctness and run anywhere. Benchmarks are about
+performance, and their timings mean something only on an otherwise-quiet
+machine, so they run through `cargo bench`, never `cargo test`.
+
+A benchmark is a `good` script under `benchmarks/` whose expectation has a
+`bench` field. It is still a corpus script: the corpus test pins its
+correctness with its own `inputs`. `bench: true` times it with those inputs;
+`bench: {inputs: {...}}` supplies larger ones, so that a program small enough
+to check quickly still does measurable work when timed. The script is
+unchanged either way: it imports whatever inputs it is given.
+
+Before timing anything, the benchmarks check that every script under
+`benchmarks/` passes its corpus check, and that every benchmark compiles,
+completes with its bench inputs, and gives the same result under each selected
+option set. If any fails, nothing is timed. Results under bench inputs are not
+compared with an expectation; they need only agree. The check covers every
+benchmark whatever the filter, and takes about a second.
+
+### Running
+
+```bash
+cargo bench -p frostlang-corpus                                   # every benchmark, default options
+cargo bench -p frostlang-corpus -- graphs                         # benchmarks whose ID matches `graphs`
+cargo bench -p frostlang-corpus -- /run/                          # only the runs
+cargo bench -p frostlang-corpus -- --list                         # list the benchmarks, timing nothing
+FROST_BENCH_OPTIONS=each cargo bench -p frostlang-corpus          # default, none, and the defaults without each optimization
+FROST_BENCH_OPTIONS='default; constant-fold=false' cargo bench -p frostlang-corpus
+```
+
+A benchmark's ID is `<directory>/<file>/<compile|run>/<options>`: the
+script's path, whether it times compiling the script or running it, and the
+option set's label. The filter after `--` is a regular expression matched
+against the ID. Criterion's own options also follow `--`, such as
+`--measurement-time 10` for steadier numbers.
+
+By default each benchmark runs under the compiler's default options only.
+`FROST_BENCH_OPTIONS` selects others: `each`, or a `;`-separated list of
+option sets, each `default` or optimization settings over the defaults, in the
+syntax `frost` takes (`none`, `all`, `constant-fold=false`, ...). Two sets
+that select the same options are an error.
+
+Each benchmark takes about 8 seconds per option set: a second of warm-up and
+three of measurement, for compiling and again for running. A full run under
+the default options takes about a quarter of an hour, and under `each` about
+ten times that, so filter to what a change touches. To check the harness
+works without waiting, cut the times:
+`cargo bench -p frostlang-corpus -- graphs --warm-up-time 0.05 --measurement-time 0.2`.
+
+A script that the compiler folds entirely, such as the `*-over-constants`
+programs, does no work when run under the default options: its run times only
+the fixed cost of starting a run, and its compile times the folding.
+
+### Reading the results
+
+For each benchmark, criterion prints `time: [low estimate high]`: its estimate
+of the time of one iteration, with a 95% confidence interval. When there is an
+earlier result to compare with, it also prints `change:`, the difference as a
+percentage with its own interval and a p-value, and a verdict:
+`Performance has regressed.`, `Performance has improved.`,
+`Change within noise threshold.`, or `No change in performance detected.`
+Every run saves its results as the baseline `base` and compares with the
+previous one, so changes appear after a second run without asking.
+
+### Comparing two revisions
+
+1. Make the machine quiet: nothing else running (builds and indexers
+   included), on AC power, with the same toolchain for both runs.
+2. Check out the first revision and run
+   `cargo bench -p frostlang-corpus -- --save-baseline before`.
+3. Check out the second, and run
+   `cargo bench -p frostlang-corpus -- --baseline before`.
+
+Both runs must use the same filter and the same `FROST_BENCH_OPTIONS`: with
+`--baseline`, criterion stops at the first benchmark the baseline lacks. When
+the second revision adds or renames benchmarks, use
+`--baseline-lenient before`, which compares those it can. To compare two
+saved runs without timing again, save the second with
+`--save-baseline after` and run `-- --load-baseline after --baseline before`.
+When results disagree from one run to the next, the machine was not quiet:
+run again.
+
+Baselines live in `criterion/` under the Cargo target directory, which
+switching revisions leaves in place and `cargo clean` deletes;
+`CRITERION_HOME` moves them. A benchmark is named by its script's path, so a
+renamed script starts a new history.

@@ -1,0 +1,33 @@
+# Counting monotone paths through a grid, row by row: each cell sums the
+# paths from above (the previous row) and from the left (the row so far),
+# and an obstacle cell has none. An open 3 by 7 grid has C(8, 2) = 28 paths;
+# blocking the centre of a 3 by 3 grid leaves 2; a blocked start leaves 0.
+#= {
+#=     result: [28, 2, 0, 1],
+#=     inputs: {
+#=         grids: [
+#=             [[0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0]],
+#=             [[0, 0, 0], [0, 1, 0], [0, 0, 0]],
+#=             [[1, 0], [0, 0]],
+#=             [[0]],
+#=         ],
+#=     },
+#=     bench: {
+#=         inputs: {
+#=             grids: map(range(4), fn k -> map(range(30), fn r -> map(range(30), fn c ->
+#=                 if (r * 7 + c * 3 + k) % 5 == 4: 1 else: 0))),
+#=         },
+#=     },
+#= }
+def {grids} = import('inputs')
+defn paths(grid) -> {
+    def last = reduce(grid, null, fn prev, cells -> reduce(cells, [], fn row, cell -> {
+        def j = len(row)
+        def from_above = if prev == null: (if j == 0: 1 else: 0) else: prev[j]
+        def from_left = if j == 0: 0 else: row[j - 1]
+        row + [if cell == 1: 0 else: from_above + from_left]
+    }))
+    last[-1]
+}
+
+map(grids, paths)

@@ -1,0 +1,24 @@
+# A text histogram: values are bucketed by Int division into Int-keyed
+# counts, and each bucket renders as a bar built by recursion. Buckets come
+# out in ascending key order, and a bucket with no values (30-39 here) is
+# absent rather than an empty bar.
+#= {
+#=     result: ['0-9 ###', '10-19 ####', '20-29 #', '40-49 ##'],
+#=     inputs: {
+#=         values: [1, 3, 12, 15, 17, 25, 9, 11, 40, 49],
+#=         width: 10,
+#=     },
+#=     bench: {inputs: {values: map(range(2000), fn i -> i * 37 % 500), width: 10}},
+#= }
+def {values, width} = import('inputs')
+defn bar(n) -> if n == 0: '' else: '#' + bar(n - 1)
+
+def counts = reduce(values, {}, fn acc, v -> {
+    def bucket = v / width
+    acc + {[bucket]: (acc[bucket] or 0) + 1}
+})
+
+reduce(counts, [], fn lines, bucket, count -> {
+    def low = bucket * width
+    lines + [$'${low}-${low + width - 1} ${bar(count)}']
+})

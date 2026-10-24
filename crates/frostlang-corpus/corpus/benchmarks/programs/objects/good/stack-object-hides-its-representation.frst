@@ -1,0 +1,41 @@
+# A stack object whose items live only in its closures' captures: callers
+# reach them through methods alone. `pop` returns the top and the rest as a
+# pair to destructure, and popping the empty stack returns Null. Two stacks
+# pushed from one base share nothing observable.
+#= {
+#=     result: {
+#=         popped: ['c', 'b'],
+#=         remaining: 1,
+#=         peek: 'a',
+#=         empty_pop: null,
+#=         empty_peek: null,
+#=         siblings: [['x', 'a'], ['y', 'a']],
+#=     },
+#=     inputs: {items: ['a', 'b', 'c']},
+#=     bench: {inputs: {items: map(range(500), fn i -> $'item${i}')}},
+#= }
+def {items} = import('inputs')
+defn stack(items) -> {
+    push: fn x -> stack([x] + items),
+    pop: fn -> match items {
+        [] => null,
+        [top, ...rest] => [top, stack(rest)],
+    },
+    peek: fn -> items[0],
+    size: fn -> len(items),
+    to_array: fn -> items,
+}
+
+def empty = stack([])
+def full = reduce(items, empty, fn s, x -> s.push(x))
+def [first, after_first] = full.pop()
+def [second, after_second] = after_first.pop()
+def base = empty.push('a')
+{
+    popped: [first, second],
+    remaining: after_second.size(),
+    peek: after_second.peek(),
+    empty_pop: empty.pop(),
+    empty_peek: empty.peek(),
+    siblings: [base.push('x').to_array(), base.push('y').to_array()],
+}

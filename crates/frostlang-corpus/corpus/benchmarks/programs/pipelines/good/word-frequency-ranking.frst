@@ -1,0 +1,33 @@
+# Word frequencies: count words into a Map, then rank them by count, most
+# frequent first, breaking ties by ascending code point order, with an
+# insertion sort over the Map's entries. Subtle: 'café' sorts before 'cat'
+# ('f' precedes 't'), and '日本' after every ASCII word.
+#= {
+#=     result: {
+#=         distinct: 5,
+#=         ranking: ['the=3', 'cat=2', 'café=1', 'saw=1', '日本=1'],
+#=         counts: {['café']: 1, cat: 2, saw: 1, the: 3, ['日本']: 1},
+#=     },
+#=     inputs: {words: ['the', 'cat', 'saw', 'the', 'café', 'the', 'cat', '日本']},
+#=     bench: {
+#=         inputs: {
+#=             words: map(range(1000), fn i -> ['the', 'cat', 'café', '日本'][i % 4] + to_string(i * i % 23)),
+#=         },
+#=     },
+#= }
+def {words} = import('inputs')
+def counts = reduce(words, {}, fn acc, word -> acc + {[word]: (acc[word] or 0) + 1})
+
+defn before(a, b) -> a.count > b.count or (a.count == b.count and a.word < b.word)
+
+defn insert(sorted, entry) -> match sorted {
+    [] => [entry],
+    [first, ...rest] => if before(entry, first): [entry] + sorted else: [first] + insert(rest, entry),
+}
+
+def ranked = reduce(counts, [], fn acc, word, count -> insert(acc, {word, count}))
+{
+    distinct: len(counts),
+    ranking: map(ranked, fn entry -> $'${entry.word}=${entry.count}'),
+    counts,
+}

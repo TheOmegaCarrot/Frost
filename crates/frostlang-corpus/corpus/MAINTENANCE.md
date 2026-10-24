@@ -45,3 +45,10 @@ when a script itself was wrong. The format is described in `README.md`.
   compiler and the VM, plus the globals `README.md` names as in scope. They
   are deterministic: no clock, randomness,
   filesystem, or environment dependence.
+- **Benchmarks keep their names.** Rename or move a benchmark only when its
+  name is wrong: its history goes with the name (see `README.md`).
+- **Bench inputs are the script's inputs, larger.** A benchmark whose own
+  `inputs` are too small to measure takes larger ones in its `bench` field,
+  never a slower program. They keep the shape of its own inputs and reach
+  every branch those do, so the timing measures the program the corpus
+  checks.

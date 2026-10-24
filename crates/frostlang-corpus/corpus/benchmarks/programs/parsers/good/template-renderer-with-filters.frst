@@ -1,0 +1,69 @@
+# A template renderer: `{{name}}` slots are filled from a Map of values, and
+# `{{name|filter}}` runs the value through a named filter first. Rendering
+# folds over the text between `{{` markers. A missing value, an unknown
+# filter, or an unclosed slot raises a structured error, which `render`
+# catches and turns into a message naming the problem.
+#= {
+#=     result: [
+#=         'Dear ADA, you owe 12 coins.',
+#=         'Hi ada!',
+#=         'no slots here',
+#=         'error: missing value: debt',
+#=         'error: unknown filter: shout',
+#=         'error: unclosed slot',
+#=     ],
+#=     inputs: {
+#=         values: {name: 'ada', amount: 12},
+#=         templates: [
+#=             'Dear {{name|upper}}, you owe {{ amount }} coins.',
+#=             'Hi {{name}}!',
+#=             'no slots here',
+#=             'Pay {{debt}} now',
+#=             '{{name|shout}}',
+#=             'Hi {{name',
+#=         ],
+#=     },
+#=     bench: {
+#=         inputs: {
+#=             values: {name: 'ada', amount: 12},
+#=             templates: tile([
+#=                 'Dear {{name|upper}}, you owe {{ amount }} coins.',
+#=                 'Hi {{name}}!',
+#=                 'no slots here',
+#=                 'Pay {{debt}} now',
+#=                 '{{name|shout}}',
+#=                 'Hi {{name',
+#=             ], 50),
+#=         },
+#=     },
+#= }
+def {values, templates} = import('inputs')
+def filters = {upper: to_upper, lower: to_lower}
+
+defn fill(slot) -> {
+    def [name, filter_name] = match split_once(slot, '|') {
+        null => [trim(slot), null],
+        [n, f] => [trim(n), trim(f)],
+    }
+    def value = if has(values, name): to_string(values[name])
+        else: error({problem: 'missing value', detail: name})
+    if filter_name == null: value
+    elif has(filters, filter_name): filters[filter_name](value)
+    else: error({problem: 'unknown filter', detail: filter_name})
+}
+
+defn expand(text, chunk) -> match split_once(chunk, '}}') {
+    null => error({problem: 'unclosed slot', detail: null}),
+    [slot, rest] => text + fill(slot) + rest,
+}
+
+defn render(template) -> {
+    def [head, ...chunks] = split(template, '{{')
+    match try_call(fn -> reduce(chunks, head, expand), []) {
+        {ok: true, value} => value,
+        {error: {problem, detail: null}} => $'error: ${problem}',
+        {error: {problem, detail}} => $'error: ${problem}: ${detail}',
+    }
+}
+
+map(templates, render)

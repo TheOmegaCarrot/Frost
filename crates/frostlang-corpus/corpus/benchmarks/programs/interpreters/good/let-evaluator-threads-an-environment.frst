@@ -1,0 +1,51 @@
+# An evaluator for a small language with `let`: the environment is a Map
+# extended by merging, so an inner `let` shadows an outer binding only within
+# its body. Subtle: after the inner `let x = 1`, the outer `x` (5) is still
+# what the sibling operand saw. The first program is
+# `let x = 5 in let y = x * 2 in (x + y) * (let x = 1 in x + y)`.
+#= {
+#=     result: [165, -1, 49],
+#=     inputs: {
+#=         nested: {
+#=             let: 'x',
+#=             value: {num: 5},
+#=             body: {
+#=                 let: 'y',
+#=                 value: {mul: [{var: 'x'}, {num: 2}]},
+#=                 body: {mul: [
+#=                     {add: [{var: 'x'}, {var: 'y'}]},
+#=                     {let: 'x', value: {num: 1}, body: {add: [{var: 'x'}, {var: 'y'}]}},
+#=                 ]},
+#=             },
+#=         },
+#=         negative: {add: [{num: 1}, {num: -2}]},
+#=         free: {mul: [{var: 'z'}, {var: 'z'}]},
+#=         globals: {z: 7},
+#=     },
+#=     bench: {
+#=         inputs: {
+#=             nested: {
+#=                 let: 'x',
+#=                 value: {num: 0},
+#=                 body: (fn grow(depth) -> if depth == 0: {var: 'x'} else: {
+#=                     let: 'x',
+#=                     value: {add: [{var: 'x'}, {num: 1}]},
+#=                     body: {add: [grow(depth - 1), {mul: [grow(depth - 1), {num: 2}]}]},
+#=                 })(9),
+#=             },
+#=             negative: {add: [{num: 1}, {num: -2}]},
+#=             free: {mul: [{var: 'z'}, {var: 'z'}]},
+#=             globals: {z: 7},
+#=         },
+#=     },
+#= }
+def {nested, negative, free, globals} = import('inputs')
+defn evaluate(node, env) -> match node {
+    {num} => num,
+    {var} => if has(env, var): env[var] else: error($'unbound variable ${var}'),
+    {add: [l, r]} => evaluate(l, env) + evaluate(r, env),
+    {mul: [l, r]} => evaluate(l, env) * evaluate(r, env),
+    {let: name, value, body} => evaluate(body, env + {[name]: evaluate(value, env)}),
+}
+
+[evaluate(nested, {}), evaluate(negative, {}), evaluate(free, globals)]

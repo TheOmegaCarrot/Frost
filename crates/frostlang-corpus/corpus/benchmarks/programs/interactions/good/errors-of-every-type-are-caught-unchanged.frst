@@ -1,0 +1,40 @@
+# A batch of jobs, each failing by raising a different kind of value: an
+# Int code, a Float, a Bool, Null, a String, Bytes, an Array of problems,
+# and a Map. `try_call` hands each back unchanged, and the driver tells them
+# apart by type in a `match`, so an error value need not be a String. The
+# last job succeeds.
+#= {
+#=     result: [
+#=         'code 404',
+#=         'ratio 0.5',
+#=         'flag false',
+#=         'null',
+#=         'message: boom',
+#=         'bytes 2',
+#=         'problems: 2',
+#=         'detail: disk',
+#=         'ok: 7',
+#=     ],
+#=     inputs: {failures: [404, 0.5, false, null, 'boom', x'0102', ['a', 'b'], {detail: 'disk'}]},
+#=     bench: {
+#=         inputs: {
+#=             failures: tile([404, 0.5, false, null, 'boom', x'0102', ['a', 'b'], {detail: 'disk'}], 100),
+#=         },
+#=     },
+#= }
+def {failures} = import('inputs')
+defn job(value) -> fn -> error(value)
+
+defn describe(outcome) -> if outcome.ok: $'ok: ${outcome.value}' else: match outcome.error {
+    null => 'null',
+    n is Int => $'code ${n}',
+    f is Float => $'ratio ${f}',
+    b is Bool => $'flag ${b}',
+    s is String => $'message: ${s}',
+    bytes is Bytes => $'bytes ${len(bytes)}',
+    problems is Array => $'problems: ${len(problems)}',
+    {detail} => $'detail: ${detail}',
+}
+
+def jobs = map(failures, job) + [fn -> 7]
+map(jobs, fn j -> describe(try_call(j)))

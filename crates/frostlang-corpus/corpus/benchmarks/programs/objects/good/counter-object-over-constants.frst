@@ -1,0 +1,14 @@
+# The immutable counter object driven only by literals, so the optimizer may
+# see through the closures in the Map: the chain of method calls must give
+# the same values it gives at runtime, and the original stays unchanged.
+#= {result: [12, 0, [0, 1, 2, 12]], bench: true}
+defn counter(n, history) -> {
+    value: fn -> n,
+    history: fn -> history + [n],
+    increment: fn -> counter(n + 1, history + [n]),
+    add: fn k -> counter(n + k, history + [n]),
+}
+
+def zero = counter(0, [])
+def twelve = zero.increment().increment().add(10)
+[twelve.value(), zero.value(), twelve.history()]

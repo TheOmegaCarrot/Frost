@@ -1,0 +1,26 @@
+# The Float accumulation pipeline over literal readings, which the
+# optimizer may compute ahead of time: its rounding, in reduce order, must
+# match the runtime's bit for bit.
+#= {
+#=     result: {
+#=         tenths: 0.9999999999999999,
+#=         forward: 0.6000000000000001,
+#=         backward: 0.6,
+#=         float_mean: 0.20000000000000004,
+#=         int_mean: 1,
+#=         mixed_mean: 1.5,
+#=     },
+#=     bench: true,
+#= }
+defn total(xs) -> reduce(xs, 0, fn sum, x -> sum + x)
+defn reversed(xs) -> reduce(xs, [], fn acc, x -> [x] + acc)
+defn mean(xs) -> total(xs) / len(xs)
+
+{
+    tenths: total([0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1]),
+    forward: total([0.1, 0.2, 0.3]),
+    backward: total(reversed([0.1, 0.2, 0.3])),
+    float_mean: mean([0.1, 0.2, 0.3]),
+    int_mean: mean([1, 2]),
+    mixed_mean: total([1, 2]) / (len([1, 2]) * 1.0),
+}

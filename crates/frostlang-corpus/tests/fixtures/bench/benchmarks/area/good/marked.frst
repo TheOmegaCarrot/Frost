@@ -1,0 +1,4 @@
+# Benchmarked with its own inputs.
+#= {result: 6, inputs: {n: 3}, bench: true}
+def {n} = import('inputs')
+n * 2

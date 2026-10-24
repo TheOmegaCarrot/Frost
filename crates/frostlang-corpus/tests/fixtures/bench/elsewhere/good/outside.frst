@@ -1,0 +1,3 @@
+# Marked, but outside `benchmarks/`, so not a benchmark.
+#= {result: 1, bench: true}
+1

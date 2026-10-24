@@ -1,0 +1,60 @@
+# A reverse-Polish calculator over tokens that are numbers or operator
+# Strings. It raises structured errors (Maps with a message) for malformed
+# input, and the driver catches every failure with `try_call`: its own
+# errors report their message, and any other error, such as dividing by
+# zero, reports only that it failed.
+#= {
+#=     result: [
+#=         2,
+#=         14,
+#=         3.0,
+#=         'stack underflow at +',
+#=         '2 values left',
+#=         '0 values left',
+#=         'failed',
+#=         'unknown operator ^',
+#=     ],
+#=     inputs: {
+#=         cases: [
+#=             [3, 4, '+', 2, '*', 7, '/'],
+#=             [5, 1, 2, '+', 4, '*', '+', 3, '-'],
+#=             [1.5, 2, '*'],
+#=             ['+'],
+#=             [1, 2],
+#=             [],
+#=             [4, 0, '/'],
+#=             [2, 3, '^'],
+#=         ],
+#=     },
+#=     bench: true,
+#= }
+def {cases} = import('inputs')
+defn apply(op, a, b) -> match op {
+    '+' => a + b,
+    '-' => a - b,
+    '*' => a * b,
+    '/' => a / b,
+    _ => error({message: $'unknown operator ${op}'}),
+}
+
+defn push_or_apply(stack, token) -> match token {
+    n is Numeric => [n] + stack,
+    op is String => match stack {
+        [b, a, ...rest] => [apply(op, a, b)] + rest,
+        _ => error({message: $'stack underflow at ${op}'}),
+    },
+}
+
+defn calculate(tokens) -> match reduce(tokens, [], push_or_apply) {
+    [value] => value,
+    stack => error({message: $'${len(stack)} values left'}),
+}
+
+defn report(tokens) -> {
+    def outcome = try_call(calculate, [tokens])
+    if outcome.ok: outcome.value
+    elif is_map(outcome.error): outcome.error.message
+    else: 'failed'
+}
+
+map(cases, report)
