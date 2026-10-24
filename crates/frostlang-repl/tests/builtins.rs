@@ -470,7 +470,8 @@ capture-hoist          true
 dead-store-eliminate   true
 discard-eliminate      true
 consume-locals         true
-deduplicate-constants  true";
+deduplicate-constants  true
+jump-retarget          true";
     assert_eq!(optimizations_after(OptimizationOptions::ALL, &[]), expected);
     let mut options = OptimizationOptions::NONE;
     options.set(Optimization::CaptureHoist, true);

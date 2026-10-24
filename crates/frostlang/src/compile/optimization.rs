@@ -58,6 +58,10 @@ pub struct OptimizationOptions {
     /// Store identical constants once per function, however many places use
     /// them, making the compiled program smaller.
     pub deduplicate_constants: bool,
+    /// Take the shortest path out of nested conditionals and chained `and` and
+    /// `or`: where a branch leads only to another whose outcome is already
+    /// known, go straight to where that one leads.
+    pub jump_retarget: bool,
 }
 
 impl OptimizationOptions {
@@ -71,6 +75,7 @@ impl OptimizationOptions {
         discard_eliminate: false,
         consume_locals: false,
         deduplicate_constants: false,
+        jump_retarget: false,
     };
 
     /// Every optimization on.
@@ -83,6 +88,7 @@ impl OptimizationOptions {
         discard_eliminate: true,
         consume_locals: true,
         deduplicate_constants: true,
+        jump_retarget: true,
     };
 
     /// Whether `optimization` is on.
@@ -175,6 +181,7 @@ impl OptimizationOptions {
             Optimization::DiscardEliminate => &mut self.discard_eliminate,
             Optimization::ConsumeLocals => &mut self.consume_locals,
             Optimization::DeduplicateConstants => &mut self.deduplicate_constants,
+            Optimization::JumpRetarget => &mut self.jump_retarget,
         }
     }
 }
@@ -200,6 +207,8 @@ pub enum Optimization {
     ConsumeLocals,
     /// [`OptimizationOptions::deduplicate_constants`].
     DeduplicateConstants,
+    /// [`OptimizationOptions::jump_retarget`].
+    JumpRetarget,
 }
 
 impl Optimization {
@@ -213,6 +222,7 @@ impl Optimization {
         Self::DiscardEliminate,
         Self::ConsumeLocals,
         Self::DeduplicateConstants,
+        Self::JumpRetarget,
     ];
 
     /// The name tools give it: its field's name in kebab-case, as
@@ -227,6 +237,7 @@ impl Optimization {
             Self::DiscardEliminate => "discard-eliminate",
             Self::ConsumeLocals => "consume-locals",
             Self::DeduplicateConstants => "deduplicate-constants",
+            Self::JumpRetarget => "jump-retarget",
         }
     }
 

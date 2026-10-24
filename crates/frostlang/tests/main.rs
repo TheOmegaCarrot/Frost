@@ -42,6 +42,7 @@ mod identifier_like;
 mod if_expressions;
 mod image;
 mod index_expressions;
+mod jump_retarget;
 mod lambda_behavior;
 mod lambda_compilation;
 mod library_collections;

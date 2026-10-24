@@ -1,0 +1,12 @@
+# A chain of `or` yields the first truthy operand, or the last operand when all
+# are falsy: the operand value itself, never a Bool.
+#= {result: [0, null, false, '', []], inputs: {zero: 0, empty: '', arr: [], nil: null, no: false}}
+def {zero, empty, arr, nil, no} = import('inputs')
+defn any3(a, b, c) -> a or b or c
+[
+    any3(nil, no, zero),
+    any3(no, no, nil),
+    any3(nil, nil, no),
+    any3(empty, nil, no),
+    any3(nil, arr, zero),
+]

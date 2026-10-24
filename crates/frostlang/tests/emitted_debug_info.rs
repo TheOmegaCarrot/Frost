@@ -900,6 +900,32 @@ f(1)
     );
 }
 
+#[test]
+fn a_fused_jump_keeps_the_peek_jumps_span() {
+    let source = r"
+defn f(a, b) -> if a and b: 1 else: 2
+f(true, false)
+";
+    let conditional = "if a and b: 1 else: 2";
+    assert_nested(
+        source,
+        UNOPTIMIZED.with(Optimization::JumpRetarget, true),
+        &[
+            (DefLocal(0), "b", Some(3)),
+            (DefLocal(1), "a", Some(2)),
+            (DefLocal(2), "f", Some(1)),
+            (LoadLocal(1), "a", Some(0)),
+            // The `and`'s peek jump and `Pop`, fused with the `if`'s test.
+            (JumpIfFalse(4), "a and b", Some(1)),
+            (LoadLocal(0), "b", Some(0)),
+            (JumpIfFalse(2), conditional, Some(1)),
+            (PushInt(1), "1", Some(0)),
+            (Jump(1), conditional, Some(1)),
+            (PushInt(2), "2", Some(0)),
+        ],
+    );
+}
+
 // ============================================================
 // Every option
 // ============================================================
@@ -940,6 +966,13 @@ def n = print(0)
 defn make(x) -> fn y -> x + y + n
 print(make(1)(2))
 print(filter([1, 2, 3], $($ > 1)))
+",
+    r"
+defn pick(x, y, z) -> [
+    if x and y: 1 elif x or z: 2 else: (if z: 3 else: 4),
+    (x and y) or z,
+]
+print([pick(true, 1, null), pick(null, 0, false), pick(false, false, 's')])
 ",
 ];
 

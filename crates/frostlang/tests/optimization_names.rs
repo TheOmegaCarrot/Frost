@@ -80,6 +80,7 @@ fn names_are_kebab_case_and_distinct() {
             "discard-eliminate",
             "consume-locals",
             "deduplicate-constants",
+            "jump-retarget",
         ]
     );
     assert_eq!(names.iter().collect::<HashSet<_>>().len(), names.len());
@@ -250,7 +251,7 @@ fn a_refusal_explains_itself() {
             UnknownOptimization("x".to_string()),
             "there is no optimization `x`; there are constant-fold, constant-propagate, \
              branch-eliminate, capture-hoist, dead-store-eliminate, discard-eliminate, \
-             consume-locals, deduplicate-constants",
+             consume-locals, deduplicate-constants, jump-retarget",
         ),
         (
             InvalidValue {

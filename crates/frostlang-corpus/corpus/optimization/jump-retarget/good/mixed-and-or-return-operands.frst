@@ -1,0 +1,25 @@
+# `(a and b) or c` and `(a or b) and c` each return an operand value, whichever
+# way the inner test falls: a short-circuit out of the inner operator must not
+# skip or repeat the outer test.
+#= {
+#=     result: [['', [], false, null], ['', false, false, null, null]],
+#=     inputs: {zero: 0, empty: '', arr: [], nil: null, no: false},
+#= }
+def {zero, empty, arr, nil, no} = import('inputs')
+defn and_or(a, b, c) -> (a and b) or c
+defn or_and(a, b, c) -> (a or b) and c
+[
+    [
+        and_or(zero, empty, nil),
+        and_or(zero, nil, arr),
+        and_or(nil, zero, no),
+        and_or(no, no, nil),
+    ],
+    [
+        or_and(zero, nil, empty),
+        or_and(nil, arr, no),
+        or_and(nil, no, zero),
+        or_and(no, nil, arr),
+        or_and(zero, nil, nil),
+    ],
+]

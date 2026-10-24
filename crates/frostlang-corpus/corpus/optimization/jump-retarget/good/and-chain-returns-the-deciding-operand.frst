@@ -1,0 +1,13 @@
+# A chain of `and` yields the first falsy operand, or the last operand when all
+# are truthy: the operand value itself, never a Bool. `0`, `""` and `[]` are
+# truthy; `null` and `false` are falsy.
+#= {result: [[], null, false, false, null], inputs: {zero: 0, empty: '', arr: [], nil: null, no: false}}
+def {zero, empty, arr, nil, no} = import('inputs')
+defn all3(a, b, c) -> a and b and c
+[
+    all3(zero, empty, arr),
+    all3(zero, nil, arr),
+    all3(no, zero, empty),
+    all3(zero, empty, no),
+    all3(zero, empty, nil),
+]

@@ -1,0 +1,37 @@
+# In an `if` condition, `and` and `or` test each operand's truthiness, however
+# the operands combine. `if (a or b) and c:` must still test `c` when `a` is
+# truthy.
+#= {
+#=     result: [
+#=         ['yes', 'no', 'no', 'no'],
+#=         ['yes', 'yes', 'yes', 'no'],
+#=         ['yes', 'no', 'yes', 'no', 'yes', 'no', 'no', 'no'],
+#=         ['yes', 'yes', 'no', 'yes'],
+#=     ],
+#=     inputs: {zero: 0, empty: '', arr: [], nil: null, no: false},
+#= }
+def {zero, empty, arr, nil, no} = import('inputs')
+defn both(a, b) -> if a and b: 'yes' else: 'no'
+defn either(a, b) -> if a or b: 'yes' else: 'no'
+defn or_then_and(a, b, c) -> if (a or b) and c: 'yes' else: 'no'
+defn and_then_or(a, b, c) -> if (a and b) or c: 'yes' else: 'no'
+[
+    [both(zero, empty), both(zero, nil), both(no, arr), both(nil, no)],
+    [either(zero, nil), either(nil, empty), either(arr, no), either(no, nil)],
+    [
+        or_then_and(zero, empty, arr),
+        or_then_and(zero, empty, no),
+        or_then_and(zero, nil, arr),
+        or_then_and(zero, nil, nil),
+        or_then_and(no, empty, arr),
+        or_then_and(no, empty, no),
+        or_then_and(nil, no, arr),
+        or_then_and(nil, no, nil),
+    ],
+    [
+        and_then_or(zero, empty, no),
+        and_then_or(zero, nil, arr),
+        and_then_or(zero, nil, no),
+        and_then_or(nil, arr, zero),
+    ],
+]

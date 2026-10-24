@@ -7,6 +7,7 @@
 
 mod consume_locals;
 mod dead_code;
+mod jump_retarget;
 
 use crate::compile::OptimizationOptions;
 use crate::compile::lower::LoweredFunction;
@@ -16,7 +17,8 @@ pub(super) fn run_passes(
     function: LoweredFunction,
     options: &OptimizationOptions,
 ) -> LoweredFunction {
-    let passes: [(bool, &dyn Fn(LoweredFunction) -> LoweredFunction); 2] = [
+    let passes: [(bool, &dyn Fn(LoweredFunction) -> LoweredFunction); 3] = [
+        (options.jump_retarget, &jump_retarget::retarget_jumps),
         // Before consuming locals: removing a read can change which read is last.
         (
             options.dead_store_eliminate || options.discard_eliminate,

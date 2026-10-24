@@ -1,0 +1,19 @@
+# An `and` or `or` in an `if` branch returns the operand value itself, not a
+# Bool, including when the `if` is nested in an `elif` chain.
+#= {
+#=     result: [[null, [], null, '', false], ['a', 'b', 0]],
+#=     inputs: {zero: 0, empty: '', arr: [], nil: null, no: false},
+#= }
+def {zero, empty, arr, nil, no} = import('inputs')
+defn pick(k, a, b) -> if k: a and b else: a or b
+defn chain(k, j, a, b) -> if k: 'a' elif j: 'b' else: a or b
+[
+    [
+        pick(zero, empty, nil),
+        pick(no, nil, arr),
+        pick(zero, nil, arr),
+        pick(no, empty, nil),
+        pick(zero, arr, no),
+    ],
+    [chain(zero, nil, nil, nil), chain(nil, zero, nil, nil), chain(nil, nil, no, zero)],
+]

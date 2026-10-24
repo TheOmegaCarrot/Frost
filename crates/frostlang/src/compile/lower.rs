@@ -41,7 +41,7 @@ fn canonical_name(name: &str) -> &str {
     if name == "$" { "$1" } else { name }
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 enum JumpType {
     Unconditional,
     IfTrue,

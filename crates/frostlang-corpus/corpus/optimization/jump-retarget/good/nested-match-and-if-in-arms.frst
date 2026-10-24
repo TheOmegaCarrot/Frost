@@ -1,0 +1,17 @@
+# A `match` or `if` as the result of a `match` arm yields its own result, for
+# every path through the outer arms.
+#= {
+#=     result: [5, 2, -1, 'y', 'n', 'other', 'n'],
+#=     inputs: {i: 2, j: 3, s: 'text', arr: [], nil: null, no: false},
+#= }
+def {i, j, s, arr, nil, no} = import('inputs')
+defn f(x, y) -> match x {
+    n is Int => match y {
+        m is Int => n + m,
+        null => n,
+        _ => -1,
+    },
+    null => if y: 'y' else: 'n',
+    _ => 'other',
+}
+[f(i, j), f(i, nil), f(i, s), f(nil, i), f(nil, nil), f(arr, i), f(nil, no)]
