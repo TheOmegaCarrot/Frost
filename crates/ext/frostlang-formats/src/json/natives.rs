@@ -1,5 +1,5 @@
-//! The functions of `ext.formats.json`: [`encode`](super::encode) and
-//! [`decode`](super::decode), for scripts.
+//! The functions of `ext.formats.json`: thin wrappers, for scripts, over the
+//! module's Rust API.
 
 use frostlang::native::{De, Optional};
 use frostlang::{

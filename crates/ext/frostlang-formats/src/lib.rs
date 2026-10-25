@@ -15,15 +15,20 @@
 //!   as a Map, or leaves out.
 //! - `decode` takes what `encode` gives, and gives the value it holds.
 //!
-//! For every value `v` that encodes, `decode(encode(v)) == v`. Decoding and
-//! then encoding keeps the data, though not its formatting. The exception is
-//! input holding a value Frost can only approximate, as each format's module
-//! documents.
+//! For every value `v` that encodes, `decode(encode(v)) == v`, and decoding
+//! and then encoding keeps the data, though not its formatting. Each format's
+//! module documents its exceptions, such as a NaN's sign, or input holding a
+//! value Frost can only approximate.
 //!
-//! Encoding a value the format has no form for, such as Bytes in JSON, is an
-//! [`EncodeError`] naming it and where it is within the value encoded; so is
-//! nesting deeper than the format allows. Decoding malformed input is a
-//! [`DecodeError`]. A script gets each as an error raised by the function.
+//! Encoding is an [`EncodeError`] when the value:
+//!
+//! - holds something the format has no form for, such as Bytes in JSON; the
+//!   error names it and where it is within the value;
+//! - is not a document of the format, such as an Int in TOML;
+//! - nests deeper than the format allows.
+//!
+//! Decoding malformed input is a [`DecodeError`]. A script gets each as an
+//! error raised by the function.
 //!
 //! # The extension
 //!
@@ -41,15 +46,21 @@
 //!     .build();
 //! ```
 
+// Each format uses only part of the machinery the formats share, so only a
+// build with every format checks it for dead code. This attribute lists every
+// format's feature, as do others such as `Format`; a new format joins each.
+#![cfg_attr(
+    not(all(feature = "json", feature = "toml")),
+    allow(dead_code, unused_imports, unused_variables)
+)]
+
 mod error;
-// The machinery every format shares: unused when no format is compiled in.
-// Each `not(feature = ...)` attribute, `Format`, and `Format::ALL` list every
-// format's feature; a new format joins each list.
-#[cfg_attr(not(feature = "json"), allow(unused))]
 mod mapping;
 
 #[cfg(feature = "json")]
 pub mod json;
+#[cfg(feature = "toml")]
+pub mod toml;
 
 use std::collections::BTreeSet;
 
@@ -78,6 +89,9 @@ pub enum Format {
     /// JSON, as the module `json`; see [`json`].
     #[cfg(feature = "json")]
     Json,
+    /// TOML, as the module `toml`; see [`toml`].
+    #[cfg(feature = "toml")]
+    Toml,
 }
 
 impl Format {
@@ -85,16 +99,17 @@ impl Format {
     const ALL: &[Format] = &[
         #[cfg(feature = "json")]
         Format::Json,
+        #[cfg(feature = "toml")]
+        Format::Toml,
     ];
 
     /// `extension`, with this format's module added.
-    // With no format compiled in, the match has no arms and `extension` goes
-    // unused.
-    #[cfg_attr(not(feature = "json"), allow(unused_variables))]
     fn add_module(self, extension: ExtensionBuilder) -> ExtensionBuilder {
         match self {
             #[cfg(feature = "json")]
             Format::Json => extension.module("json", json::module),
+            #[cfg(feature = "toml")]
+            Format::Toml => extension.module("toml", toml::module),
         }
     }
 }

@@ -9,6 +9,7 @@ autotests = false
 # One per format, named as its module; see the crate docs.
 [features]
 json = ["dep:serde_json"]
+toml = ["dep:toml"]
 
 [dependencies]
 frostlang = { path = "../../frostlang", version = "0.0.1", default-features = false }
@@ -17,12 +18,13 @@ thiserror = "2"
 # `float_roundtrip`: read each float exactly, so every Float round-trips; by
 # default, the last digit may be off.
 serde_json = { version = "1", optional = true, features = ["float_roundtrip"] }
+toml = { version = "1.1", optional = true }
 
 [dev-dependencies]
 # The tests compile Frost source.
 frostlang.workspace = true
 # The tests cover every format.
-frostlang-formats = { path = ".", features = ["json"] }
+frostlang-formats = { path = ".", features = ["json", "toml"] }
 
 # One binary for every integration test, rather than one per file, to save the
 # build time and disk of linking each separately. Each file in `tests/` is a
@@ -32,7 +34,7 @@ name = "integration"
 path = "tests/main.rs"
 # The dev-dependency above enables every format. A published package drops
 # that dependency, so its tests are then skipped rather than failing to build.
-required-features = ["json"]
+required-features = ["json", "toml"]
 
 # Every format's documentation is on an item that exists only when the format
 # is compiled in.

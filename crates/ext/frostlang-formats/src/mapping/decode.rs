@@ -13,16 +13,56 @@ use crate::mapping::{BeyondInt, Mapping, key_source};
 /// may claim far more elements than it holds.
 const MAX_PREALLOCATION: usize = 1024 * 1024 / std::mem::size_of::<Value>();
 
-/// Decodes a value by a [`Mapping`], failing on any Map holding a key twice or
-/// a key Frost cannot hold.
+/// Decodes a value by a [`Mapping`], failing on anything the mapping or a
+/// Frost value cannot hold.
 #[derive(Clone, Copy)]
 pub(crate) struct Decoder<'a> {
     mapping: &'a Mapping,
+    /// How many Arrays and Maps enclose the value to decode. The decoder
+    /// keeps its own count, rather than trusting the parser's limit, which a
+    /// Cargo feature of the parser may lift.
+    depth: usize,
 }
 
 impl<'a> Decoder<'a> {
+    /// The decoder for a whole value, by `mapping`.
     pub(crate) fn new(mapping: &'a Mapping) -> Self {
-        Self { mapping }
+        Self { mapping, depth: 0 }
+    }
+
+    /// Enters the Array or Map being visited: the decoder for its elements or
+    /// entry values, or an error if it nests deeper than the format allows.
+    fn enter_container<E: Error>(self) -> Result<Self, E> {
+        if self.depth == self.mapping.max_depth {
+            return Err(E::custom(format_args!(
+                "Arrays and Maps nest more than {} deep",
+                self.mapping.max_depth
+            )));
+        }
+        Ok(Self {
+            depth: self.depth + 1,
+            ..self
+        })
+    }
+
+    /// The value the integer `n` decodes to: an Int, or what the mapping
+    /// makes of an integer beyond the Int range. `nearest` is the Float
+    /// nearest `n`.
+    fn integer<E: Error>(
+        self,
+        n: impl TryInto<i64> + fmt::Display,
+        nearest: f64,
+    ) -> Result<Value, E> {
+        let shown = n.to_string();
+        match n.try_into() {
+            Ok(n) => Ok(Value::Int(n)),
+            Err(_) => match self.mapping.beyond_int {
+                BeyondInt::NearestFloat => Ok(Value::from_f64(nearest)),
+                BeyondInt::Refused => Err(E::custom(format_args!(
+                    "integer {shown} is beyond the Int range"
+                ))),
+            },
+        }
     }
 
     /// Adds to `entries` the entry keyed `key`, whose value `map` reads next.
@@ -81,13 +121,16 @@ impl<'de> Visitor<'de> for Decoder<'_> {
         Ok(Value::Int(n))
     }
 
-    fn visit_u64<E>(self, n: u64) -> Result<Value, E> {
-        Ok(match i64::try_from(n) {
-            Ok(n) => Value::Int(n),
-            Err(_) => match self.mapping.beyond_int {
-                BeyondInt::NearestFloat => Value::from_f64(n as f64),
-            },
-        })
+    fn visit_u64<E: Error>(self, n: u64) -> Result<Value, E> {
+        self.integer(n, n as f64)
+    }
+
+    fn visit_i128<E: Error>(self, n: i128) -> Result<Value, E> {
+        self.integer(n, n as f64)
+    }
+
+    fn visit_u128<E: Error>(self, n: u128) -> Result<Value, E> {
+        self.integer(n, n as f64)
     }
 
     fn visit_f64<E>(self, f: f64) -> Result<Value, E> {
@@ -111,30 +154,35 @@ impl<'de> Visitor<'de> for Decoder<'_> {
     }
 
     fn visit_seq<A: SeqAccess<'de>>(self, mut seq: A) -> Result<Value, A::Error> {
+        let element_decoder = self.enter_container()?;
         let hint = seq.size_hint().unwrap_or(0).min(MAX_PREALLOCATION);
         let mut elements = Vec::with_capacity(hint);
-        while let Some(element) = seq.next_element_seed(self)? {
+        while let Some(element) = seq.next_element_seed(element_decoder)? {
             elements.push(element);
         }
         Ok(Value::from(FrostArray::from(elements)))
     }
 
     fn visit_map<A: MapAccess<'de>>(self, mut map: A) -> Result<Value, A::Error> {
+        // Keys are decoded by `self`: a key is a scalar, which nests nothing.
+        // The first is read apart from the rest, since it may be a marker.
         let Some(first) = map.next_key_seed(self)? else {
             return Ok(Value::from(ValueMap::new()));
         };
         // A value serde has no type for arrives as a one-entry Map whose key
-        // is a private marker; see `Mapping::marked`.
+        // is a private marker; see `Mapping::marked`. It is no Frost Map, so
+        // it nests nothing.
         if let Value::String(key) = &first
             && let Some(decode_text) = self.mapping.marked_decoder(key)
         {
             let text: String = map.next_value()?;
             return decode_text(&text).map_err(A::Error::custom);
         }
+        let entry_decoder = self.enter_container()?;
         let mut entries = ValueMap::new();
-        self.insert_entry(&mut entries, first, &mut map)?;
+        entry_decoder.insert_entry(&mut entries, first, &mut map)?;
         while let Some(key) = map.next_key_seed(self)? {
-            self.insert_entry(&mut entries, key, &mut map)?;
+            entry_decoder.insert_entry(&mut entries, key, &mut map)?;
         }
         Ok(Value::from(entries))
     }

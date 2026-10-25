@@ -19,6 +19,13 @@ pub(crate) enum Path<'a> {
     Index(&'a Path<'a>, usize),
 }
 
+impl Path<'_> {
+    /// Whether this is the path of the value being encoded itself.
+    pub(crate) fn is_root(&self) -> bool {
+        matches!(self, Path::Root)
+    }
+}
+
 /// The path as Frost would index it: `name.inner`, `items[2]`, `["my-key"]`.
 /// The root renders as nothing.
 impl fmt::Display for Path<'_> {
@@ -27,11 +34,7 @@ impl fmt::Display for Path<'_> {
             Path::Root => Ok(()),
             Path::Index(parent, index) => write!(f, "{parent}[{index}]"),
             Path::Key(parent, MapKey::String(name)) if is_identifier_like_and_not_keyword(name) => {
-                let dot = if matches!(parent, Path::Root) {
-                    ""
-                } else {
-                    "."
-                };
+                let dot = if parent.is_root() { "" } else { "." };
                 write!(f, "{parent}{dot}{name}")
             }
             Path::Key(parent, key) => write!(f, "{parent}[{}]", key_source(key)),

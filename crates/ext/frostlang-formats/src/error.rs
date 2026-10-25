@@ -6,7 +6,6 @@ use frostlang::FrostError;
 
 /// The error a script sees from the function named `function`, which failed
 /// with `error`, an [`EncodeError`] or [`DecodeError`] reading as a predicate.
-#[cfg_attr(not(feature = "json"), allow(dead_code))]
 pub(crate) fn function_error(function: &str, error: impl Display) -> FrostError {
     FrostError::from_string(format!("Function {function} {error}"))
 }
@@ -28,6 +27,16 @@ pub enum EncodeError {
         /// Where it is within the value, as Frost would index it, such as
         /// `a.b[2]`; empty for the value itself.
         path: String,
+    },
+    /// The value has a form in the format, but not as a whole document: a
+    /// TOML document, for one, must be a Map.
+    #[error("cannot encode {what} as a {format} document")]
+    NotADocument {
+        /// The format's name, such as `TOML`.
+        format: &'static str,
+        /// What the value is, such as `Int`, or an Opaque's rendering, such
+        /// as `<SpecialFloat: inf>`.
+        what: String,
     },
     /// Arrays and Maps nest deeper than the format allows.
     #[error("cannot encode Arrays and Maps nested more than {limit} deep in {format}")]
@@ -61,7 +70,6 @@ pub struct DecodeError {
 }
 
 impl DecodeError {
-    #[cfg_attr(not(feature = "json"), allow(dead_code))]
     pub(crate) fn new(format: &'static str, message: impl ToString) -> Self {
         Self {
             format,

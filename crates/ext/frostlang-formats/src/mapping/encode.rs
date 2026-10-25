@@ -7,7 +7,7 @@ use serde::ser::{Error, Serialize, SerializeMap, SerializeSeq, Serializer};
 
 use crate::EncodeError;
 use crate::mapping::path::Path;
-use crate::mapping::{Mapping, key_source};
+use crate::mapping::{FormatOpaque, Mapping, key_source};
 
 /// Why [`encode`] failed.
 pub(crate) enum EncodeFailure<E> {
@@ -74,40 +74,84 @@ impl Encoder<'_> {
         error
     }
 
-    /// Refuses `what`, which the format has no form for, at this value.
-    fn refuse_unrepresentable<E: Error>(&self, what: String) -> E {
-        self.refuse(EncodeError::Unrepresentable {
+    /// The kind of format Opaque this value is, if it is one the format has.
+    fn format_opaque(&self) -> Option<FormatOpaque> {
+        self.mapping
+            .opaques
+            .iter()
+            .copied()
+            .find(|kind| kind.matches(self.value))
+    }
+
+    /// What errors name this value as. An Opaque is named by its rendering,
+    /// which names its type and approximates its content, as
+    /// `<SpecialFloat: NaN>`.
+    fn description(&self) -> String {
+        match self.value {
+            Value::Opaque(_) => self.value.to_debug_string(),
+            value => value.type_name().to_string(),
+        }
+    }
+
+    /// Whether the format has a form for this value, not looking within it.
+    fn has_form(&self) -> bool {
+        match self.value {
+            Value::NativeFunction(_) | Value::Closure(_) => false,
+            Value::Opaque(_) => self.format_opaque().is_some(),
+            value => value.fits(self.mapping.types),
+        }
+    }
+
+    /// The refusal of `what`, which the format has no form for, at this
+    /// value.
+    fn unrepresentable(&self, what: String) -> EncodeError {
+        EncodeError::Unrepresentable {
             format: self.mapping.name,
             what,
             path: self.path.to_string(),
-        })
+        }
+    }
+
+    /// Why this value cannot be encoded, if it cannot, not looking within it.
+    fn refusal(&self) -> Option<EncodeError> {
+        // A value with no form at all is refused as such, even as the whole
+        // document, so this comes first.
+        if !self.has_form() {
+            return Some(self.unrepresentable(self.description()));
+        }
+        if self.path.is_root() && !self.value.fits(self.mapping.document_types) {
+            return Some(EncodeError::NotADocument {
+                format: self.mapping.name,
+                what: self.description(),
+            });
+        }
+        if (self.value.is_array() || self.value.is_map()) && self.depth == self.mapping.max_depth {
+            // Unlike the other refusals, this omits the path: at the limit it
+            // runs to dozens of segments and would bury the reason.
+            return Some(EncodeError::TooDeep {
+                format: self.mapping.name,
+                limit: self.mapping.max_depth,
+            });
+        }
+        None
     }
 }
 
 impl Serialize for Encoder<'_> {
     fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        if let Some(refusal) = self.refusal() {
+            return Err(self.refuse(refusal));
+        }
         let mapping = self.mapping;
         let value = self.value;
         match value {
-            // Refusals first: they overlap the arms below, so order matters.
             Value::NativeFunction(_) | Value::Closure(_) => {
-                Err(self.refuse_unrepresentable(value.type_name().to_string()))
+                unreachable!("a Function is always refused")
             }
-            // An Opaque's rendering names its type and approximates its
-            // content, as `<SpecialFloat: NaN>`.
-            Value::Opaque(_) => Err(self.refuse_unrepresentable(value.to_debug_string())),
-            _ if !value.fits(mapping.types) => {
-                Err(self.refuse_unrepresentable(value.type_name().to_string()))
-            }
-            // Unlike the other refusals, this omits the path: at the limit it
-            // runs to over a hundred segments and would bury the reason.
-            Value::Array(_) | Value::Map(_) if self.depth == mapping.max_depth => {
-                Err(self.refuse(EncodeError::TooDeep {
-                    format: mapping.name,
-                    limit: mapping.max_depth,
-                }))
-            }
-            // Each type the format has a form for.
+            Value::Opaque(_) => self
+                .format_opaque()
+                .expect("`refusal` admits only an Opaque the format has")
+                .serialize(value, serializer),
             Value::Null => serializer.serialize_unit(),
             Value::Bool(b) => serializer.serialize_bool(*b),
             Value::Int(i) => serializer.serialize_i64(*i),
@@ -124,12 +168,12 @@ impl Serialize for Encoder<'_> {
             Value::Map(map) => {
                 let mut entries = serializer.serialize_map(Some(map.len()))?;
                 for (key, entry) in map {
+                    // Checked here, entry by entry, rather than in `refusal`,
+                    // so that the first refused key or value in key order is
+                    // the one reported.
                     if !mapping.key_types.contains(key_type(key)) {
-                        return Err(self.refuse_unrepresentable(format!(
-                            "the {} key {}",
-                            key_type(key).name(),
-                            key_source(key)
-                        )));
+                        let what = format!("the {} key {}", key_type(key).name(), key_source(key));
+                        return Err(self.refuse(self.unrepresentable(what)));
                     }
                     entries.serialize_entry(
                         &Key(key),

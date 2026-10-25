@@ -1,59 +1,17 @@
 //! JSON: encoding, decoding, the values JSON has no form for, and the options.
 
 use crate::common::{
-    assert_arity, assert_raises, assert_strings, assert_true, assert_values, raises, string,
+    FormatModule, assert_arity, assert_raises, assert_strings, assert_true, assert_values,
+    nested_arrays, nested_maps, raises, string,
 };
 
-/// The error `json.encode` raises for `what`, which JSON has no form for, as
-/// the whole value encoded.
-fn cannot_encode(what: &str) -> String {
-    format!("Function ext.formats.json.encode cannot encode {what} in JSON")
-}
+const JSON: FormatModule = FormatModule {
+    name: "json",
+    format: "JSON",
+};
 
-/// The error `json.encode` raises for `what`, which JSON has no form for,
-/// found at `path` within the value encoded.
-fn cannot_encode_at(what: &str, path: &str) -> String {
-    format!("{} (at `{path}`)", cannot_encode(what))
-}
-
-/// The start of every error `json.decode` raises. The rest is `serde_json`'s
-/// account of the problem, which the tests trust to be reasonable rather than
-/// pin, except where the extension gives the reason itself.
-const CANNOT_DECODE: &str = "Function ext.formats.json.decode cannot decode JSON: ";
-
-/// Assert each expression raises a decode error.
-fn assert_cannot_decode(expressions: &[&str]) {
-    assert_cannot_decode_because(&expressions.iter().map(|&e| (e, "")).collect::<Vec<_>>());
-}
-
-/// Assert each expression raises a decode error whose reason begins with the
-/// given text.
-fn assert_cannot_decode_because(cases: &[(&str, &str)]) {
-    for (expression, reason) in cases {
-        let message = raises(expression);
-        assert!(
-            message.starts_with(&format!("{CANNOT_DECODE}{reason}")),
-            "{expression:?} raises {message:?}, which should begin {CANNOT_DECODE:?}{reason:?}"
-        );
-    }
-}
-
-/// A Frost expression for `depth` Arrays, each the only element of the one
-/// enclosing it.
-fn nested_arrays(depth: usize) -> String {
-    format!("reduce(range({}), [], fn acc, i -> [acc])", depth - 1)
-}
-
-/// A Frost expression for `depth` Maps, each the only entry of the one
-/// enclosing it, under `a`.
-fn nested_maps(depth: usize) -> String {
-    format!(
-        "reduce(range({}), {{}}, fn acc, i -> {{a: acc}})",
-        depth - 1
-    )
-}
-
-/// JSON text of `depth` Arrays, each the only element of the one enclosing it.
+/// A Frost String literal of the JSON text of [`nested_arrays`]: `depth`
+/// Arrays, each the only element of the one enclosing it.
 fn nested_arrays_text(depth: usize) -> String {
     format!("'{}{}'", "[".repeat(depth), "]".repeat(depth))
 }
@@ -131,26 +89,29 @@ fn encode_writes_map_entries_in_key_order() {
 #[test]
 fn encode_refuses_bytes() {
     assert_raises(&[
-        ("json.encode(x'00')", &cannot_encode("Bytes")),
-        ("json.encode(x'')", &cannot_encode("Bytes")),
+        ("json.encode(x'00')", &JSON.cannot_encode("Bytes")),
+        ("json.encode(x'')", &JSON.cannot_encode("Bytes")),
     ]);
 }
 
 #[test]
 fn encode_refuses_a_key_of_any_type_but_string() {
     assert_raises(&[
-        ("json.encode({[1]: 'a'})", &cannot_encode("the Int key 1")),
+        (
+            "json.encode({[1]: 'a'})",
+            &JSON.cannot_encode("the Int key 1"),
+        ),
         (
             "json.encode({[1.5]: 'a'})",
-            &cannot_encode("the Float key 1.5"),
+            &JSON.cannot_encode("the Float key 1.5"),
         ),
         (
             "json.encode({[true]: 'a'})",
-            &cannot_encode("the Bool key true"),
+            &JSON.cannot_encode("the Bool key true"),
         ),
         (
             "json.encode({[x'ff']: 'a'})",
-            &cannot_encode("the Bytes key x'ff'"),
+            &JSON.cannot_encode("the Bytes key x'ff'"),
         ),
     ]);
 }
@@ -160,15 +121,15 @@ fn encode_refuses_special_floats() {
     assert_raises(&[
         (
             "json.encode(math.special_float('NaN'))",
-            &cannot_encode("<SpecialFloat: NaN>"),
+            &JSON.cannot_encode("<SpecialFloat: NaN>"),
         ),
         (
             "json.encode(math.special_float('inf'))",
-            &cannot_encode("<SpecialFloat: inf>"),
+            &JSON.cannot_encode("<SpecialFloat: inf>"),
         ),
         (
             "json.encode(math.special_float('-inf'))",
-            &cannot_encode("<SpecialFloat: -inf>"),
+            &JSON.cannot_encode("<SpecialFloat: -inf>"),
         ),
     ]);
 }
@@ -176,36 +137,42 @@ fn encode_refuses_special_floats() {
 #[test]
 fn encode_refuses_functions_and_opaques() {
     assert_raises(&[
-        ("json.encode(fn -> 1)", &cannot_encode("Function")),
-        ("json.encode(len)", &cannot_encode("Function")),
-        ("json.encode(test.widget)", &cannot_encode("<Widget>")),
+        ("json.encode(fn -> 1)", &JSON.cannot_encode("Function")),
+        ("json.encode(len)", &JSON.cannot_encode("Function")),
+        ("json.encode(test.widget)", &JSON.cannot_encode("<Widget>")),
     ]);
 }
 
 #[test]
 fn encode_says_where_a_refused_value_is() {
     assert_raises(&[
-        ("json.encode([1, x'00'])", &cannot_encode_at("Bytes", "[1]")),
-        ("json.encode({a: x'00'})", &cannot_encode_at("Bytes", "a")),
+        (
+            "json.encode([1, x'00'])",
+            &JSON.cannot_encode_at("Bytes", "[1]"),
+        ),
+        (
+            "json.encode({a: x'00'})",
+            &JSON.cannot_encode_at("Bytes", "a"),
+        ),
         (
             "json.encode({a: {b: [null, [x'00']]}})",
-            &cannot_encode_at("Bytes", "a.b[1][0]"),
+            &JSON.cannot_encode_at("Bytes", "a.b[1][0]"),
         ),
         (
             "json.encode({['my-key']: x'00'})",
-            &cannot_encode_at("Bytes", r#"["my-key"]"#),
+            &JSON.cannot_encode_at("Bytes", r#"["my-key"]"#),
         ),
         (
             "json.encode({['if']: [x'00']})",
-            &cannot_encode_at("Bytes", r#"["if"][0]"#),
+            &JSON.cannot_encode_at("Bytes", r#"["if"][0]"#),
         ),
         (
             "json.encode([{a: {[2]: null}}])",
-            &cannot_encode_at("the Int key 2", "[0].a"),
+            &JSON.cannot_encode_at("the Int key 2", "[0].a"),
         ),
         (
             "json.encode({a: [math.special_float('NaN')]})",
-            &cannot_encode_at("<SpecialFloat: NaN>", "a[0]"),
+            &JSON.cannot_encode_at("<SpecialFloat: NaN>", "a[0]"),
         ),
     ]);
 }
@@ -215,7 +182,7 @@ fn encode_refuses_the_first_unrepresentable_value_in_order() {
     // Entries are written in key order, so `a` is refused before `b`.
     assert_raises(&[(
         "json.encode({b: x'00', a: fn -> 1})",
-        &cannot_encode_at("Function", "a"),
+        &JSON.cannot_encode_at("Function", "a"),
     )]);
 }
 
@@ -229,10 +196,11 @@ fn encode_nests_as_deep_as_decode_reads() {
             "
         )]);
     }
-    let too_deep = "Function ext.formats.json.encode \
-                    cannot encode Arrays and Maps nested more than 127 deep in JSON";
     for too_deep_value in [nested_arrays(128), nested_maps(128), nested_arrays(100_000)] {
-        assert_raises(&[(&format!("json.encode({too_deep_value})"), too_deep)]);
+        assert_raises(&[(
+            &format!("json.encode({too_deep_value})"),
+            &JSON.too_deep(127),
+        )]);
     }
 }
 
@@ -312,7 +280,7 @@ fn decode_reads_a_fraction_finer_than_a_float_as_the_nearest_float() {
 
 #[test]
 fn decode_refuses_a_number_beyond_every_float() {
-    assert_cannot_decode(&[
+    JSON.assert_cannot_decode(&[
         "json.decode('1e400')",
         "json.decode('-1e400')",
         "json.decode('[1.5e999999]')",
@@ -340,7 +308,7 @@ fn decode_reads_string_escapes() {
 #[test]
 fn decode_refuses_a_lone_surrogate() {
     // A String holds only Unicode scalar values, which a lone surrogate is not.
-    assert_cannot_decode(&[
+    JSON.assert_cannot_decode(&[
         r#"json.decode(R'("\ud800")')"#,
         r#"json.decode(R'("\udc00")')"#,
         r#"json.decode(R'("\ud800x")')"#,
@@ -373,7 +341,7 @@ fn decode_ignores_whitespace_between_tokens() {
 
 #[test]
 fn decode_refuses_a_key_given_twice() {
-    assert_cannot_decode_because(&[
+    JSON.assert_cannot_decode_because(&[
         (r#"json.decode('{"a": 1, "a": 2}')"#, r#"duplicate key "a""#),
         (
             r#"json.decode('[{"b": {"x": 1, "x": 1}}]')"#,
@@ -389,16 +357,23 @@ fn decode_refuses_a_key_given_twice() {
 
 #[test]
 fn decode_errors_say_where_the_problem_is() {
-    let message = raises(r#"json.decode('{\n  "a": 1,\n  "b": ?\n}')"#);
+    let reason = JSON.decode_error_reason(
+        r#"json.decode('''
+            {
+              "a": 1,
+              "b": ?
+            }
+            ''')"#,
+    );
     assert!(
-        message.starts_with(CANNOT_DECODE) && message.contains("line 3"),
-        "{message:?} gives the line of the problem"
+        reason.contains("line 3"),
+        "{reason:?} gives the line of the problem"
     );
 }
 
 #[test]
 fn decode_refuses_malformed_input() {
-    assert_cannot_decode(&[
+    JSON.assert_cannot_decode(&[
         "json.decode('')",
         "json.decode('{')",
         "json.decode('[1,]')",
@@ -416,7 +391,7 @@ fn decode_refuses_malformed_input() {
 
 #[test]
 fn decode_refuses_anything_after_the_value() {
-    assert_cannot_decode(&[
+    JSON.assert_cannot_decode(&[
         "json.decode('1 2')",
         "json.decode('[] x')",
         "json.decode('{}}')",
@@ -430,7 +405,7 @@ fn decode_skips_a_leading_byte_order_mark() {
         (r#"json.decode('\u{feff}"x"')"#, "'x'"),
     ]);
     // Only one, and only before the value.
-    assert_cannot_decode(&[
+    JSON.assert_cannot_decode(&[
         r"json.decode('\u{feff}\u{feff}1')",
         r"json.decode('[\u{feff}1]')",
         r"json.decode('1\u{feff}')",
@@ -444,7 +419,7 @@ fn decode_reads_as_deep_as_encode_writes() {
         nested_arrays_text(127),
         nested_arrays(127)
     )]);
-    assert_cannot_decode(&[&format!("json.decode({})", nested_arrays_text(128))]);
+    JSON.assert_cannot_decode(&[&format!("json.decode({})", nested_arrays_text(128))]);
 }
 
 // --- round trips ---

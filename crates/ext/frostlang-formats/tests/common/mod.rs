@@ -64,6 +64,7 @@ fn run(expression: &str) -> Result<Value, FrostError> {
     let source = format!(
         r"
         def json = import('ext.formats.json')
+        def toml = import('ext.formats.toml')
         def math = import('std.math')
         def test = import('test')
         {expression}
@@ -124,6 +125,106 @@ pub(crate) fn assert_raises(cases: &[(&str, &str)]) {
     for (expression, message) in cases {
         assert_eq!(raises(expression), *message, "{expression:?}");
     }
+}
+
+/// A format's module of the extension, as tests of its errors name it.
+pub(crate) struct FormatModule {
+    /// The module's name, as in `ext.formats.json`.
+    pub(crate) name: &'static str,
+    /// The format's name, as errors give it, such as `JSON`.
+    pub(crate) format: &'static str,
+}
+
+impl FormatModule {
+    /// The error `encode` raises for `what`, which the format has no form
+    /// for, as the whole value encoded.
+    pub(crate) fn cannot_encode(&self, what: &str) -> String {
+        format!(
+            "Function ext.formats.{}.encode cannot encode {what} in {}",
+            self.name, self.format
+        )
+    }
+
+    /// The error `encode` raises for `what`, which the format has no form
+    /// for, found at `path` within the value encoded.
+    pub(crate) fn cannot_encode_at(&self, what: &str, path: &str) -> String {
+        format!("{} (at `{path}`)", self.cannot_encode(what))
+    }
+
+    /// The error `encode` raises for `what`, which the format has a form for,
+    /// but not as a whole document.
+    pub(crate) fn cannot_encode_as_document(&self, what: &str) -> String {
+        format!(
+            "Function ext.formats.{}.encode cannot encode {what} as a {} document",
+            self.name, self.format
+        )
+    }
+
+    /// The error `encode` raises for Arrays and Maps nested deeper than
+    /// `limit`.
+    pub(crate) fn too_deep(&self, limit: usize) -> String {
+        format!(
+            "Function ext.formats.{}.encode cannot encode Arrays and Maps nested more than \
+             {limit} deep in {}",
+            self.name, self.format
+        )
+    }
+
+    /// The start of every error `decode` raises. The rest is the parser's
+    /// account of the problem, which the tests trust to be reasonable rather
+    /// than pin, except where the extension gives the reason itself.
+    fn cannot_decode(&self) -> String {
+        format!(
+            "Function ext.formats.{}.decode cannot decode {}: ",
+            self.name, self.format
+        )
+    }
+
+    /// The reason given by the decode error `expression` raises, which must
+    /// be one: the error with its prefix taken off.
+    pub(crate) fn decode_error_reason(&self, expression: &str) -> String {
+        let prefix = self.cannot_decode();
+        let message = raises(expression);
+        message
+            .strip_prefix(&prefix)
+            .unwrap_or_else(|| panic!("{expression:?} raises {message:?}, not {prefix:?}..."))
+            .to_string()
+    }
+
+    /// Assert each expression raises a decode error.
+    pub(crate) fn assert_cannot_decode(&self, expressions: &[&str]) {
+        for expression in expressions {
+            self.assert_cannot_decode_because(&[(expression, "")]);
+        }
+    }
+
+    /// Assert each expression raises a decode error whose reason begins with
+    /// the given text.
+    pub(crate) fn assert_cannot_decode_because(&self, cases: &[(&str, &str)]) {
+        let prefix = self.cannot_decode();
+        for (expression, reason) in cases {
+            let message = raises(expression);
+            assert!(
+                message.starts_with(&format!("{prefix}{reason}")),
+                "{expression:?} raises {message:?}, which should begin {prefix:?}{reason:?}"
+            );
+        }
+    }
+}
+
+/// A Frost expression for `depth` Arrays, each the only element of the one
+/// enclosing it.
+pub(crate) fn nested_arrays(depth: usize) -> String {
+    format!("reduce(range({}), [], fn acc, i -> [acc])", depth - 1)
+}
+
+/// A Frost expression for `depth` Maps, each the only entry of the one
+/// enclosing it, under `a`.
+pub(crate) fn nested_maps(depth: usize) -> String {
+    format!(
+        "reduce(range({}), {{}}, fn acc, i -> {{a: acc}})",
+        depth - 1
+    )
 }
 
 /// Assert `function`, a path within the extension such as `json.encode`,

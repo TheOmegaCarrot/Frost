@@ -43,24 +43,29 @@ mod natives;
 
 pub(crate) use natives::module;
 
-use frostlang::{FrostType, Value};
+use frostlang::{FrostType, TypeSet, Value};
 use serde::de::DeserializeSeed;
 use serde_json::ser::PrettyFormatter;
 
 use crate::mapping::{self, BeyondInt, Decoder, EncodeFailure, Mapping};
 use crate::{DecodeError, EncodeError};
 
+/// The types JSON has a form for, any of which may be a whole document.
+const TYPES: TypeSet = FrostType::Null
+    .or(FrostType::Bool)
+    .or(FrostType::Int)
+    .or(FrostType::Float)
+    .or(FrostType::String)
+    .or(FrostType::Array)
+    .or(FrostType::Map);
+
 /// JSON's data model.
 const JSON: Mapping = Mapping {
     name: "JSON",
-    types: FrostType::Null
-        .or(FrostType::Bool)
-        .or(FrostType::Int)
-        .or(FrostType::Float)
-        .or(FrostType::String)
-        .or(FrostType::Array)
-        .or(FrostType::Map),
+    document_types: TYPES,
+    types: TYPES,
     key_types: FrostType::STRING,
+    opaques: &[],
     // `serde_json` reads 127 levels, failing on the 128th.
     max_depth: 127,
     // JSON numbers carry no Int/Float distinction, so an integer beyond the

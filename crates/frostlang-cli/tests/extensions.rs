@@ -28,7 +28,7 @@ fn uuid_is_installed() {
 #[test]
 fn formats_is_installed_with_every_format() {
     let code = r"
-        print(sorted(keys(import('ext.formats'))) == ['json'])
+        print(sorted(keys(import('ext.formats'))) == ['json', 'toml'])
     ";
     assert_eq!(eval(code), "true\n");
 }
@@ -39,6 +39,16 @@ fn formats_json_round_trips() {
         def json = import('ext.formats.json')
         print(json.encode(json.decode('{"a": [1]}')) == '{"a":[1]}')
     "#;
+    assert_eq!(eval(code), "true\n");
+}
+
+#[test]
+fn formats_toml_round_trips() {
+    let code = r"
+        def toml = import('ext.formats.toml')
+        def text = 'when = 1979-05-27\n\n[t]\na = [1, 2]\n'
+        print(toml.encode(toml.decode(text)) == text)
+    ";
     assert_eq!(eval(code), "true\n");
 }
 
