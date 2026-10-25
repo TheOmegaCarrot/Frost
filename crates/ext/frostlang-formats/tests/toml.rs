@@ -3,7 +3,7 @@
 
 use crate::common::{
     FormatModule, assert_arity, assert_raises, assert_strings, assert_true, assert_values,
-    nested_arrays, nested_maps,
+    borrowed, nested_arrays, nested_maps, type_errors,
 };
 
 const TOML: FormatModule = FormatModule {
@@ -200,6 +200,10 @@ fn encode_refuses_what_toml_has_no_form_for() {
         ("toml.encode(x'00')", &TOML.cannot_encode("Bytes")),
         ("toml.encode(fn -> 1)", &TOML.cannot_encode("Function")),
         ("toml.encode(test.widget)", &TOML.cannot_encode("<Widget>")),
+        (
+            "toml.encode({a: u64.from_string('18446744073709551615')})",
+            &TOML.cannot_encode_at("<Uint64: 18446744073709551615>", "a"),
+        ),
         (
             "toml.encode({a: null})",
             &TOML.cannot_encode_at("Null", "a"),
@@ -551,20 +555,10 @@ fn datetime_reads_any_kind_of_date_or_time() {
 }
 
 #[test]
-fn datetime_refuses_text_that_is_no_date_or_time() {
-    let cases: Vec<(String, String)> = NOT_DATETIMES
-        .iter()
-        .map(|text| {
-            (
-                format!("toml.datetime('{text}')"),
-                format!(
-                    "Function ext.formats.toml.datetime requires a TOML date, time, or \
-                     datetime, got \"{text}\""
-                ),
-            )
-        })
-        .collect();
-    assert_raises(&borrowed(&cases));
+fn datetime_gives_null_for_text_that_is_no_date_or_time() {
+    for text in NOT_DATETIMES {
+        assert_values(&[(&format!("toml.datetime('{text}')"), "null")]);
+    }
 }
 
 // --- round trips ---
@@ -726,31 +720,6 @@ fn options_are_checked() {
 
 // --- arity and types ---
 
-/// The cases of `cases`, borrowed as [`assert_raises`] takes them.
-fn borrowed(cases: &[(String, String)]) -> Vec<(&str, &str)> {
-    cases
-        .iter()
-        .map(|(expression, message)| (expression.as_str(), message.as_str()))
-        .collect()
-}
-
-/// The type errors `function` raises for each argument in `arguments`, of
-/// the type paired with it, as its only argument, `text`.
-fn string_type_errors(function: &str, arguments: &[(&str, &str)]) -> Vec<(String, String)> {
-    arguments
-        .iter()
-        .map(|(argument, type_name)| {
-            (
-                format!("{function}({argument})"),
-                format!(
-                    "Function ext.formats.{function} requires String as argument 1 (text), \
-                     got {type_name}"
-                ),
-            )
-        })
-        .collect()
-}
-
 #[test]
 fn encode_takes_a_document_and_optional_options() {
     assert_arity("toml.encode", "between 1 and 2", &[0, 3, 4]);
@@ -759,8 +728,10 @@ fn encode_takes_a_document_and_optional_options() {
 #[test]
 fn decode_takes_one_string() {
     assert_arity("toml.decode", "1", &[0, 2, 3]);
-    let cases = string_type_errors(
+    let cases = type_errors(
         "toml.decode",
+        "String",
+        "text",
         &[
             ("x'31'", "Bytes"),
             ("1", "Int"),
@@ -774,8 +745,10 @@ fn decode_takes_one_string() {
 #[test]
 fn datetime_takes_one_string() {
     assert_arity("toml.datetime", "1", &[0, 2]);
-    let cases = string_type_errors(
+    let cases = type_errors(
         "toml.datetime",
+        "String",
+        "text",
         &[("x'31'", "Bytes"), ("1", "Int"), ("null", "Null")],
     );
     assert_raises(&borrowed(&cases));

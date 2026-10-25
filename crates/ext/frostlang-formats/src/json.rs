@@ -60,7 +60,7 @@ const TYPES: TypeSet = FrostType::Null
     .or(FrostType::Map);
 
 /// JSON's data model.
-const JSON: Mapping = Mapping {
+pub(crate) const JSON: Mapping = Mapping {
     name: "JSON",
     document_types: TYPES,
     types: TYPES,
@@ -68,6 +68,8 @@ const JSON: Mapping = Mapping {
     opaques: &[],
     // `serde_json` reads 127 levels, failing on the 128th.
     max_depth: 127,
+    // JSON text writes no lengths.
+    max_len: usize::MAX,
     // JSON numbers carry no Int/Float distinction, so an integer beyond the
     // Int range is the nearest Float, as `serde_json` itself gives an integer
     // beyond the `u64` range.

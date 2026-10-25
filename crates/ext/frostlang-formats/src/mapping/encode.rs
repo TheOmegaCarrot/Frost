@@ -7,7 +7,12 @@ use serde::ser::{Error, Serialize, SerializeMap, SerializeSeq, Serializer};
 
 use crate::EncodeError;
 use crate::mapping::path::Path;
-use crate::mapping::{FormatOpaque, Mapping, key_source};
+use crate::mapping::{FormatOpaque, Mapping, describe, key_source};
+
+// White-box: a mapping with a small length limit, since no test can afford
+// data as long as a real format's limit.
+#[cfg(test)]
+mod length_tests;
 
 /// Why [`encode`] failed.
 pub(crate) enum EncodeFailure<E> {
@@ -83,16 +88,6 @@ impl Encoder<'_> {
             .find(|kind| kind.matches(self.value))
     }
 
-    /// What errors name this value as. An Opaque is named by its rendering,
-    /// which names its type and approximates its content, as
-    /// `<SpecialFloat: NaN>`.
-    fn description(&self) -> String {
-        match self.value {
-            Value::Opaque(_) => self.value.to_debug_string(),
-            value => value.type_name().to_string(),
-        }
-    }
-
     /// Whether the format has a form for this value, not looking within it.
     fn has_form(&self) -> bool {
         match self.value {
@@ -117,13 +112,18 @@ impl Encoder<'_> {
         // A value with no form at all is refused as such, even as the whole
         // document, so this comes first.
         if !self.has_form() {
-            return Some(self.unrepresentable(self.description()));
+            return Some(self.unrepresentable(describe(self.value)));
         }
         if self.path.is_root() && !self.value.fits(self.mapping.document_types) {
             return Some(EncodeError::NotADocument {
                 format: self.mapping.name,
-                what: self.description(),
+                what: describe(self.value),
             });
+        }
+        if let Some(len) = length(self.value)
+            && len > self.mapping.max_len
+        {
+            return Some(self.unrepresentable(format!("{} of length {len}", describe(self.value))));
         }
         if (self.value.is_array() || self.value.is_map()) && self.depth == self.mapping.max_depth {
             // Unlike the other refusals, this omits the path: at the limit it
@@ -175,6 +175,12 @@ impl Serialize for Encoder<'_> {
                         let what = format!("the {} key {}", key_type(key).name(), key_source(key));
                         return Err(self.refuse(self.unrepresentable(what)));
                     }
+                    if let Some(len) = key_length(key)
+                        && len > mapping.max_len
+                    {
+                        let what = format!("a {} key of length {len}", key_type(key).name());
+                        return Err(self.refuse(self.unrepresentable(what)));
+                    }
                     entries.serialize_entry(
                         &Key(key),
                         &self.child(entry, Path::Key(&self.path, key)),
@@ -183,6 +189,28 @@ impl Serialize for Encoder<'_> {
                 entries.end()
             }
         }
+    }
+}
+
+/// The length of `value` that a format writes: the bytes of a String or
+/// Bytes, or the elements or entries of an Array or Map. `None` for any other
+/// value.
+fn length(value: &Value) -> Option<usize> {
+    match value {
+        Value::String(s) => Some(s.len()),
+        Value::Bytes(b) => Some(b.len()),
+        Value::Array(array) => Some(array.len()),
+        Value::Map(map) => Some(map.len()),
+        _ => None,
+    }
+}
+
+/// The length of `key` that a format writes, as [`length`] gives it.
+fn key_length(key: &MapKey) -> Option<usize> {
+    match key {
+        MapKey::String(s) => Some(s.len()),
+        MapKey::Bytes(b) => Some(b.len()),
+        MapKey::Bool(_) | MapKey::Int(_) | MapKey::Float(_) => None,
     }
 }
 

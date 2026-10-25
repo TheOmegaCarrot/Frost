@@ -2,9 +2,7 @@
 //! module's Rust API.
 
 use frostlang::native::{De, Optional};
-use frostlang::{
-    ExtensionBuilder, FrostError, FrostResult, FrostString, NativeCtx, Value, frost_fn,
-};
+use frostlang::{ExtensionBuilder, FrostResult, FrostString, NativeCtx, Value, frost_fn};
 use serde::Deserialize;
 
 use crate::error::function_error;
@@ -44,13 +42,6 @@ fn decode(#[frost(ctx)] ctx: &mut NativeCtx<'_>, text: FrostString) -> FrostResu
 }
 
 #[frost_fn]
-fn datetime(#[frost(ctx)] ctx: &mut NativeCtx<'_>, text: FrostString) -> FrostResult {
-    text.parse::<Datetime>().map(Value::opaque).map_err(|_| {
-        // The text is quoted as Frost source writes it.
-        FrostError::from_string(format!(
-            "Function {} requires a TOML date, time, or datetime, got {}",
-            ctx.name(),
-            Value::from(text).to_debug_string()
-        ))
-    })
+fn datetime(text: FrostString) -> Value {
+    text.parse::<Datetime>().map_or(Value::Null, Value::opaque)
 }

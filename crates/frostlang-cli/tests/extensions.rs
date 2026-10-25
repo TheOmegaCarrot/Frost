@@ -28,7 +28,7 @@ fn uuid_is_installed() {
 #[test]
 fn formats_is_installed_with_every_format() {
     let code = r"
-        print(sorted(keys(import('ext.formats'))) == ['json', 'toml'])
+        print(sorted(keys(import('ext.formats'))) == ['json', 'msgpack', 'toml', 'u64'])
     ";
     assert_eq!(eval(code), "true\n");
 }
@@ -48,6 +48,17 @@ fn formats_toml_round_trips() {
         def toml = import('ext.formats.toml')
         def text = 'when = 1979-05-27\n\n[t]\na = [1, 2]\n'
         print(toml.encode(toml.decode(text)) == text)
+    ";
+    assert_eq!(eval(code), "true\n");
+}
+
+#[test]
+fn formats_msgpack_round_trips() {
+    let code = r"
+        def msgpack = import('ext.formats.msgpack')
+        # {a: x'00', b: the Uint64 18446744073709551615}
+        def data = x'82a161c40100a162cfffffffffffffffff'
+        print(msgpack.encode(msgpack.decode(data)) == data)
     ";
     assert_eq!(eval(code), "true\n");
 }

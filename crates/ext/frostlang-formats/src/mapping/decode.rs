@@ -3,15 +3,15 @@
 use std::fmt;
 
 use frostlang::value_map::Entry;
-use frostlang::{FrostArray, MapKey, Value, ValueMap};
+use frostlang::{FrostArray, FrostType, MapKey, Value, ValueMap};
 use serde::de::{DeserializeSeed, Deserializer, Error, MapAccess, SeqAccess, Visitor};
 
 use crate::mapping::{BeyondInt, Mapping, key_source};
 
-/// The most Array elements to reserve room for before reading them: a
-/// mebibyte's worth, as serde caps its own collections. The input's size hint
-/// may claim far more elements than it holds.
-const MAX_PREALLOCATION: usize = 1024 * 1024 / std::mem::size_of::<Value>();
+/// The most Array elements to reserve room for before reading them. The
+/// input's size hint may claim far more elements than it holds, at every
+/// level of nesting, so only a little is trusted in advance.
+const MAX_PREALLOCATION: usize = 4096;
 
 /// Decodes a value by a [`Mapping`], failing on anything the mapping or a
 /// Frost value cannot hold.
@@ -22,12 +22,37 @@ pub(crate) struct Decoder<'a> {
     /// keeps its own count, rather than trusting the parser's limit, which a
     /// Cargo feature of the parser may lift.
     depth: usize,
+    /// Whether the value to decode is a Map key, which cannot be an Array or
+    /// Map: one is refused at once, rather than decoded first, so that keys
+    /// cannot nest past the depth limit.
+    is_key: bool,
 }
 
 impl<'a> Decoder<'a> {
     /// The decoder for a whole value, by `mapping`.
     pub(crate) fn new(mapping: &'a Mapping) -> Self {
-        Self { mapping, depth: 0 }
+        Self {
+            mapping,
+            depth: 0,
+            is_key: false,
+        }
+    }
+
+    /// The decoder for a key of the Map being visited.
+    fn key_decoder(self) -> Self {
+        Self {
+            is_key: true,
+            ..self
+        }
+    }
+
+    /// Refuses the Array or Map being visited if it is a Map key, before
+    /// anything within it is read.
+    fn refuse_key<E: Error>(self, container: FrostType) -> Result<(), E> {
+        if self.is_key {
+            return Err(invalid_key(format_args!("Type {}", container.name())));
+        }
+        Ok(())
     }
 
     /// Enters the Array or Map being visited: the decoder for its elements or
@@ -48,19 +73,22 @@ impl<'a> Decoder<'a> {
     /// The value the integer `n` decodes to: an Int, or what the mapping
     /// makes of an integer beyond the Int range. `nearest` is the Float
     /// nearest `n`.
-    fn integer<E: Error>(
-        self,
-        n: impl TryInto<i64> + fmt::Display,
-        nearest: f64,
-    ) -> Result<Value, E> {
-        let shown = n.to_string();
-        match n.try_into() {
-            Ok(n) => Ok(Value::Int(n)),
-            Err(_) => match self.mapping.beyond_int {
-                BeyondInt::NearestFloat => Ok(Value::from_f64(nearest)),
-                BeyondInt::Refused => Err(E::custom(format_args!(
-                    "integer {shown} is beyond the Int range"
-                ))),
+    fn integer<E: Error, N>(self, n: N, nearest: f64) -> Result<Value, E>
+    where
+        N: fmt::Display + Copy,
+        i64: TryFrom<N>,
+        u64: TryFrom<N>,
+    {
+        if let Ok(n) = i64::try_from(n) {
+            return Ok(Value::Int(n));
+        }
+        let refusal = || E::custom(format_args!("integer {n} is beyond the Int range"));
+        match self.mapping.beyond_int {
+            BeyondInt::NearestFloat => Ok(Value::from_f64(nearest)),
+            BeyondInt::Refused => Err(refusal()),
+            BeyondInt::Uint64 => match u64::try_from(n) {
+                Ok(n) => Ok(crate::uint64::to_value(n)),
+                Err(_) => Err(refusal()),
             },
         }
     }
@@ -72,7 +100,16 @@ impl<'a> Decoder<'a> {
         key: Value,
         map: &mut A,
     ) -> Result<(), A::Error> {
-        let key = MapKey::try_from(key).map_err(|err| A::Error::custom(err.message()))?;
+        if !key.fits(MapKey::TYPES) {
+            // A key may decode to an Opaque, as a NaN does to a SpecialFloat;
+            // its rendering says more than its type.
+            let what = match &key {
+                Value::Opaque(_) => key.to_debug_string(),
+                _ => format!("Type {}", key.type_name()),
+            };
+            return Err(invalid_key(what));
+        }
+        let key = MapKey::try_from(key).expect("the key is of a Map key type");
         match entries.entry(key) {
             Entry::Occupied(entry) => Err(A::Error::custom(format_args!(
                 "duplicate key {}",
@@ -84,6 +121,12 @@ impl<'a> Decoder<'a> {
             }
         }
     }
+}
+
+/// The error for a Map key that `what` describes, which no Frost Map key can
+/// be. Worded as the core words its own refusal of such a key.
+fn invalid_key<E: Error>(what: impl fmt::Display) -> E {
+    E::custom(format_args!("{what} is not a valid Map key"))
 }
 
 impl<'de> DeserializeSeed<'de> for Decoder<'_> {
@@ -111,6 +154,12 @@ impl<'de> Visitor<'de> for Decoder<'_> {
 
     fn visit_some<D: Deserializer<'de>>(self, deserializer: D) -> Result<Value, D::Error> {
         self.deserialize(deserializer)
+    }
+
+    // MessagePack's deserializer passes an extension type as a newtype
+    // struct; Frost has no form for one.
+    fn visit_newtype_struct<D: Deserializer<'de>>(self, _: D) -> Result<Value, D::Error> {
+        Err(D::Error::custom("an extension type has no Frost form"))
     }
 
     fn visit_bool<E>(self, b: bool) -> Result<Value, E> {
@@ -154,6 +203,7 @@ impl<'de> Visitor<'de> for Decoder<'_> {
     }
 
     fn visit_seq<A: SeqAccess<'de>>(self, mut seq: A) -> Result<Value, A::Error> {
+        self.refuse_key(FrostType::Array)?;
         let element_decoder = self.enter_container()?;
         let hint = seq.size_hint().unwrap_or(0).min(MAX_PREALLOCATION);
         let mut elements = Vec::with_capacity(hint);
@@ -164,9 +214,10 @@ impl<'de> Visitor<'de> for Decoder<'_> {
     }
 
     fn visit_map<A: MapAccess<'de>>(self, mut map: A) -> Result<Value, A::Error> {
-        // Keys are decoded by `self`: a key is a scalar, which nests nothing.
-        // The first is read apart from the rest, since it may be a marker.
-        let Some(first) = map.next_key_seed(self)? else {
+        self.refuse_key(FrostType::Map)?;
+        // The first key is read apart from the rest, since it may be a marker.
+        let key_decoder = self.key_decoder();
+        let Some(first) = map.next_key_seed(key_decoder)? else {
             return Ok(Value::from(ValueMap::new()));
         };
         // A value serde has no type for arrives as a one-entry Map whose key
@@ -181,7 +232,7 @@ impl<'de> Visitor<'de> for Decoder<'_> {
         let entry_decoder = self.enter_container()?;
         let mut entries = ValueMap::new();
         entry_decoder.insert_entry(&mut entries, first, &mut map)?;
-        while let Some(key) = map.next_key_seed(self)? {
+        while let Some(key) = map.next_key_seed(key_decoder)? {
             entry_decoder.insert_entry(&mut entries, key, &mut map)?;
         }
         Ok(Value::from(entries))

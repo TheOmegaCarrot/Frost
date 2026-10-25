@@ -22,7 +22,8 @@ pub enum EncodeError {
     Unrepresentable {
         /// The format's name, such as `JSON`.
         format: &'static str,
-        /// What has no form, such as `Bytes` or `the Int key 1`.
+        /// What has no form, such as `Bytes`, `the Int key 1`, or
+        /// `String of length 4294967296`.
         what: String,
         /// Where it is within the value, as Frost would index it, such as
         /// `a.b[2]`; empty for the value itself.
@@ -82,8 +83,8 @@ impl DecodeError {
         self.format
     }
 
-    /// What is wrong with the input, and where, as the format's parser
-    /// describes it.
+    /// What is wrong with the input, and where, as the format's parser or
+    /// this crate describes it.
     pub fn message(&self) -> &str {
         &self.message
     }

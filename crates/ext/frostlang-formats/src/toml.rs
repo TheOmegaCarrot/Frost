@@ -8,7 +8,7 @@
 //!   [`EncodeOptions::pretty`] describes.
 //!
 //! Scripts make a [`Datetime`] with `datetime(text)`, from TOML's text for any
-//! kind of date or time.
+//! kind of date or time; it gives Null for text that spells none.
 //!
 //! The text is laid out as people usually write TOML: a table's plain values
 //! first, in key order, then its Maps and Arrays of Maps, in key order among
@@ -49,7 +49,7 @@ use crate::mapping::{self, BeyondInt, Decoder, EncodeFailure, FormatOpaque, Mapp
 use crate::{DecodeError, EncodeError};
 
 /// TOML's data model.
-const TOML: Mapping = Mapping {
+pub(crate) const TOML: Mapping = Mapping {
     name: "TOML",
     document_types: FrostType::MAP,
     types: FrostType::Bool
@@ -63,6 +63,8 @@ const TOML: Mapping = Mapping {
     // The `toml` parser reads 81 levels of inline nesting, the document's own
     // included, failing on the 82nd.
     max_depth: 81,
+    // TOML text writes no lengths.
+    max_len: usize::MAX,
     // TOML integers are 64-bit signed, and the specification requires an
     // error for any other.
     beyond_int: BeyondInt::Refused,

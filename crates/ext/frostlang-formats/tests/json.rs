@@ -140,6 +140,15 @@ fn encode_refuses_functions_and_opaques() {
         ("json.encode(fn -> 1)", &JSON.cannot_encode("Function")),
         ("json.encode(len)", &JSON.cannot_encode("Function")),
         ("json.encode(test.widget)", &JSON.cannot_encode("<Widget>")),
+        // Another format's Opaques too.
+        (
+            "json.encode(u64.from_string('18446744073709551615'))",
+            &JSON.cannot_encode("<Uint64: 18446744073709551615>"),
+        ),
+        (
+            "json.encode(toml.datetime('1979-05-27'))",
+            &JSON.cannot_encode("<TOML Datetime: 1979-05-27>"),
+        ),
     ]);
 }
 

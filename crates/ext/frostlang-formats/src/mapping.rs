@@ -29,9 +29,13 @@ pub(crate) struct Mapping {
     pub(crate) key_types: TypeSet,
     /// The Opaques the format has a form for.
     pub(crate) opaques: &'static [FormatOpaque],
-    /// How deep Arrays and Maps may nest: as deep as the format's decoder
-    /// reads, so that whatever is encoded decodes back.
+    /// How deep Arrays and Maps may nest, encoding and decoding alike: no
+    /// deeper than the format's parser reads, so that whatever is encoded
+    /// decodes back.
     pub(crate) max_depth: usize,
+    /// The longest String or Bytes, in bytes, and the most elements of an
+    /// Array or entries of a Map, that the format can write.
+    pub(crate) max_len: usize,
     /// What an integer beyond the Int range decodes to.
     pub(crate) beyond_int: BeyondInt,
     /// Values serde's data model has no type for, which the format's
@@ -47,16 +51,21 @@ pub(crate) enum BeyondInt {
     NearestFloat,
     /// Nothing: decoding it is an error.
     Refused,
+    /// A [`Uint64`](crate::uint64::Uint64) Opaque, if within the `u64`
+    /// range; decoding any other is an error.
+    Uint64,
 }
 
 /// An Opaque holding a value of a type a format has, but Frost does not.
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(crate) enum FormatOpaque {
     /// A NaN or infinite float.
     SpecialFloat,
     /// A TOML date, time, or datetime.
     #[cfg(feature = "toml")]
     TomlDatetime,
+    /// An unsigned 64-bit integer beyond the Int range.
+    Uint64,
 }
 
 impl FormatOpaque {
@@ -68,6 +77,7 @@ impl FormatOpaque {
             FormatOpaque::TomlDatetime => {
                 value.downcast_opaque::<crate::toml::Datetime>().is_some()
             }
+            FormatOpaque::Uint64 => value.downcast_opaque::<crate::uint64::Uint64>().is_some(),
         }
     }
 
@@ -92,6 +102,12 @@ impl FormatOpaque {
                     .expect("the caller checked `matches`");
                 serde::Serialize::serialize(datetime.as_toml(), serializer)
             }
+            FormatOpaque::Uint64 => {
+                let n = value
+                    .downcast_opaque::<crate::uint64::Uint64>()
+                    .expect("the caller checked `matches`");
+                serializer.serialize_u64(n.get())
+            }
         }
     }
 }
@@ -112,4 +128,13 @@ impl Mapping {
 /// `key` as Frost source writes it, such as `"my-key"` or `x'ff'`.
 fn key_source(key: &MapKey) -> String {
     Value::from(key.clone()).to_debug_string()
+}
+
+/// What errors name `value` as: its type, or an Opaque's rendering, which
+/// names its type and approximates its content, as `<SpecialFloat: NaN>`.
+pub(crate) fn describe(value: &Value) -> String {
+    match value {
+        Value::Opaque(_) => value.to_debug_string(),
+        value => value.type_name().to_string(),
+    }
 }

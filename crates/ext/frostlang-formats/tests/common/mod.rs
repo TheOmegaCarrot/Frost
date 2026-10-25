@@ -11,6 +11,7 @@ use frostlang::{
     stdlib,
 };
 use frostlang_formats::Formats;
+use frostlang_formats::uint64::Uint64;
 
 /// An Opaque of the host's own, which no format has a form for.
 #[derive(Debug)]
@@ -64,7 +65,9 @@ fn run(expression: &str) -> Result<Value, FrostError> {
     let source = format!(
         r"
         def json = import('ext.formats.json')
+        def msgpack = import('ext.formats.msgpack')
         def toml = import('ext.formats.toml')
+        def u64 = import('ext.formats.u64')
         def math = import('std.math')
         def test = import('test')
         {expression}
@@ -225,6 +228,43 @@ pub(crate) fn nested_maps(depth: usize) -> String {
         "reduce(range({}), {{}}, fn acc, i -> {{a: acc}})",
         depth - 1
     )
+}
+
+/// The [`Uint64`] of `n`, which must be beyond the Int range.
+pub(crate) fn uint64(n: u64) -> Uint64 {
+    Uint64::new(n).unwrap_or_else(|| panic!("{n} should be beyond the Int range"))
+}
+
+/// The cases of `cases`, borrowed as [`assert_raises`] takes them.
+pub(crate) fn borrowed(cases: &[(String, String)]) -> Vec<(&str, &str)> {
+    cases
+        .iter()
+        .map(|(expression, message)| (expression.as_str(), message.as_str()))
+        .collect()
+}
+
+/// The type errors `function`, a path within the extension such as
+/// `toml.decode`, raises for each argument in `arguments` as its only
+/// argument: one of the type paired with it, where the parameter `parameter`
+/// requires `expected`.
+pub(crate) fn type_errors(
+    function: &str,
+    expected: &str,
+    parameter: &str,
+    arguments: &[(&str, &str)],
+) -> Vec<(String, String)> {
+    arguments
+        .iter()
+        .map(|(argument, type_name)| {
+            (
+                format!("{function}({argument})"),
+                format!(
+                    "Function ext.formats.{function} requires {expected} as argument 1 \
+                     ({parameter}), got {type_name}"
+                ),
+            )
+        })
+        .collect()
 }
 
 /// Assert `function`, a path within the extension such as `json.encode`,
