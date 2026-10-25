@@ -64,6 +64,7 @@ pub(crate) fn run_source(source: &str, importer: Arc<Importer>) -> Result<Value,
 fn run(expression: &str) -> Result<Value, FrostError> {
     let source = format!(
         r"
+        def cbor = import('ext.formats.cbor')
         def json = import('ext.formats.json')
         def msgpack = import('ext.formats.msgpack')
         def toml = import('ext.formats.toml')

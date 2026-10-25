@@ -78,6 +78,24 @@ impl DecodeError {
         }
     }
 
+    /// The error for binary data in `format`, wrong as `reason` says, found
+    /// `bytes_read` bytes in.
+    pub(crate) fn bytes_in(format: &'static str, reason: impl Display, bytes_read: usize) -> Self {
+        Self::new(
+            format,
+            format_args!("{reason}, {} in", byte_count(bytes_read)),
+        )
+    }
+
+    /// The error for binary data in `format` holding `count` bytes after its
+    /// value.
+    pub(crate) fn trailing_bytes(format: &'static str, count: usize) -> Self {
+        Self::new(
+            format,
+            format_args!("{} after the value", byte_count(count)),
+        )
+    }
+
     /// The format's name, such as `JSON`.
     pub fn format(&self) -> &'static str {
         self.format
@@ -87,5 +105,13 @@ impl DecodeError {
     /// this crate describes it.
     pub fn message(&self) -> &str {
         &self.message
+    }
+}
+
+/// A count of `n` bytes, as text: `1 byte`, `2 bytes`.
+fn byte_count(n: usize) -> String {
+    match n {
+        1 => "1 byte".to_string(),
+        n => format!("{n} bytes"),
     }
 }

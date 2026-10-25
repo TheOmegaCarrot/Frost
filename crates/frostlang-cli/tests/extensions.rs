@@ -28,7 +28,7 @@ fn uuid_is_installed() {
 #[test]
 fn formats_is_installed_with_every_format() {
     let code = r"
-        print(sorted(keys(import('ext.formats'))) == ['json', 'msgpack', 'toml', 'u64'])
+        print(sorted(keys(import('ext.formats'))) == ['cbor', 'json', 'msgpack', 'toml', 'u64'])
     ";
     assert_eq!(eval(code), "true\n");
 }
@@ -59,6 +59,17 @@ fn formats_msgpack_round_trips() {
         # {a: x'00', b: the Uint64 18446744073709551615}
         def data = x'82a161c40100a162cfffffffffffffffff'
         print(msgpack.encode(msgpack.decode(data)) == data)
+    ";
+    assert_eq!(eval(code), "true\n");
+}
+
+#[test]
+fn formats_cbor_round_trips() {
+    let code = r"
+        def cbor = import('ext.formats.cbor')
+        # {a: x'00', b: the Uint64 18446744073709551615}
+        def data = x'a26161410061621bffffffffffffffff'
+        print(cbor.encode(cbor.decode(data)) == data)
     ";
     assert_eq!(eval(code), "true\n");
 }

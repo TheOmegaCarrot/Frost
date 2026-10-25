@@ -10,7 +10,7 @@ mod decode;
 mod encode;
 mod path;
 
-pub(crate) use decode::Decoder;
+pub(crate) use decode::decode;
 pub(crate) use encode::{EncodeFailure, encode};
 
 use frostlang::{MapKey, SpecialFloat, TypeSet, Value};

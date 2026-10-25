@@ -44,10 +44,9 @@ mod natives;
 pub(crate) use natives::module;
 
 use frostlang::{FrostType, TypeSet, Value};
-use serde::de::DeserializeSeed;
 use serde_json::ser::PrettyFormatter;
 
-use crate::mapping::{self, BeyondInt, Decoder, EncodeFailure, Mapping};
+use crate::mapping::{self, BeyondInt, EncodeFailure, Mapping};
 use crate::{DecodeError, EncodeError};
 
 /// The types JSON has a form for, any of which may be a whole document.
@@ -169,7 +168,7 @@ pub fn decode(text: &str) -> Result<Value, DecodeError> {
     let text = text.strip_prefix('\u{feff}').unwrap_or(text);
     let decode_whole = || -> serde_json::Result<Value> {
         let mut deserializer = serde_json::Deserializer::from_str(text);
-        let value = Decoder::new(&JSON).deserialize(&mut deserializer)?;
+        let value = mapping::decode(&JSON, &mut deserializer).map_err(|failure| failure.error)?;
         // Anything but whitespace after the value is an error.
         deserializer.end()?;
         Ok(value)

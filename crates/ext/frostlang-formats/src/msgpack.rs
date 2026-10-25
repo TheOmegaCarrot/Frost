@@ -41,9 +41,8 @@ mod natives;
 pub(crate) use natives::module;
 
 use frostlang::{FrostType, MapKey, TypeSet, Value};
-use serde::de::DeserializeSeed;
 
-use crate::mapping::{self, BeyondInt, Decoder, EncodeFailure, FormatOpaque, Mapping};
+use crate::mapping::{self, BeyondInt, EncodeFailure, FormatOpaque, Mapping};
 use crate::{DecodeError, EncodeError};
 
 /// The types MessagePack has a form for, Opaques aside.
@@ -100,30 +99,25 @@ pub fn encode(value: &Value) -> Result<Vec<u8>, EncodeError> {
 /// Frost cannot; see the [module docs](self).
 pub fn decode(data: &[u8]) -> Result<Value, DecodeError> {
     let mut deserializer = rmp_serde::Deserializer::new(data);
-    let decoded = Decoder::new(&MSGPACK).deserialize(&mut deserializer);
+    let decoded = mapping::decode(&MSGPACK, &mut deserializer);
     // `rmp-serde` reads straight through `data`, buffering nothing ahead, so
     // what is left unread shows where it stopped. It reads one value, and
     // leaves whatever follows.
     let rest = deserializer.into_inner();
     let bytes_read = data.len() - rest.len();
-    let value = decoded.map_err(|err| {
-        DecodeError::new(
-            MSGPACK.name,
-            format!("{}, {} in", reason(&err), byte_count(bytes_read)),
-        )
+    let value = decoded.map_err(|failure| {
+        let what = failure.refusal.unwrap_or_else(|| reason(&failure.error));
+        DecodeError::bytes_in(MSGPACK.name, what, bytes_read)
     })?;
     if !rest.is_empty() {
-        return Err(DecodeError::new(
-            MSGPACK.name,
-            format!("{} after the value", byte_count(rest.len())),
-        ));
+        return Err(DecodeError::trailing_bytes(MSGPACK.name, rest.len()));
     }
     Ok(value)
 }
 
-/// What `error` says is wrong with the data, in a script author's terms. The
-/// error then says how far reading got, as in
-/// `the data ends early, 2 bytes in`.
+/// What `error`, from `rmp-serde` on malformed data, says is wrong with it,
+/// in a script author's terms. The error then says how far reading got, as
+/// in `the data ends early, 2 bytes in`.
 fn reason(error: &rmp_serde::decode::Error) -> String {
     use rmp_serde::decode::Error;
     match error {
@@ -137,13 +131,5 @@ fn reason(error: &rmp_serde::decode::Error) -> String {
         // that byte.
         Error::TypeMismatch(_) => "byte 0xc1, which MessagePack reserves".to_string(),
         other => other.to_string(),
-    }
-}
-
-/// A count of `n` bytes, as text: `1 byte`, `2 bytes`.
-fn byte_count(n: usize) -> String {
-    match n {
-        1 => "1 byte".to_string(),
-        n => format!("{n} bytes"),
     }
 }

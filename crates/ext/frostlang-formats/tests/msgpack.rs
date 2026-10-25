@@ -20,6 +20,12 @@ fn nested_arrays_data(depth: usize) -> String {
     format!("x'{}90'", "91".repeat(depth - 1))
 }
 
+/// A Frost Bytes literal of the MessagePack data of [`nested_maps`]: `depth`
+/// maps, each the only entry of the one enclosing it, under `a`.
+fn nested_maps_data(depth: usize) -> String {
+    format!("x'{}80'", "81a161".repeat(depth - 1))
+}
+
 // --- encode ---
 
 #[test]
@@ -258,6 +264,9 @@ fn decode_reads_special_floats_bit_for_bit() {
         "msgpack.decode(x'ca7f800000') == math.special_float('inf')",
         "msgpack.decode(x'caff800000') == math.special_float('-inf')",
         "msgpack.decode(x'ca80000000') == -0.0",
+        // A float32 NaN keeps its sign and payload.
+        "msgpack.decode(x'ca7fc00001') == msgpack.decode(x'cb7ff8000020000000')",
+        "msgpack.decode(x'caffc00001') == msgpack.decode(x'cbfff8000020000000')",
     ]);
 }
 
@@ -397,15 +406,30 @@ fn decode_refuses_the_marker_msgpack_reserves() {
 
 #[test]
 fn decode_reads_as_deep_as_encode_writes() {
-    assert_true(&[&format!(
-        "msgpack.decode({}) == {}",
-        nested_arrays_data(127),
-        nested_arrays(127)
-    )]);
-    MSGPACK.assert_cannot_decode_because(&[(
-        &format!("msgpack.decode({})", nested_arrays_data(128)),
-        "Arrays and Maps nest more than 127 deep",
-    )]);
+    assert_true(&[
+        &format!(
+            "msgpack.decode({}) == {}",
+            nested_arrays_data(127),
+            nested_arrays(127)
+        ),
+        &format!(
+            "msgpack.decode({}) == {}",
+            nested_maps_data(127),
+            nested_maps(127)
+        ),
+    ]);
+    MSGPACK.assert_cannot_decode_because(&[
+        (
+            &format!("msgpack.decode({})", nested_arrays_data(128)),
+            "Arrays and Maps nest more than 127 deep",
+        ),
+        // The innermost Map is empty, and counts toward the depth all the
+        // same.
+        (
+            &format!("msgpack.decode({})", nested_maps_data(128)),
+            "Arrays and Maps nest more than 127 deep",
+        ),
+    ]);
 }
 
 // --- unsigned integers beyond the Int range ---

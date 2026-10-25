@@ -43,9 +43,8 @@ pub(crate) use natives::module;
 use std::fmt;
 
 use frostlang::{FrostOpaque, FrostType, Value};
-use serde::de::DeserializeSeed;
 
-use crate::mapping::{self, BeyondInt, Decoder, EncodeFailure, FormatOpaque, Mapping};
+use crate::mapping::{self, BeyondInt, EncodeFailure, FormatOpaque, Mapping};
 use crate::{DecodeError, EncodeError};
 
 /// TOML's data model.
@@ -174,7 +173,9 @@ pub fn encode(document: &Value, options: EncodeOptions) -> Result<String, Encode
 /// the [module docs](self).
 pub fn decode(text: &str) -> Result<Value, DecodeError> {
     ::toml::de::Deserializer::parse(text)
-        .and_then(|deserializer| Decoder::new(&TOML).deserialize(deserializer))
+        .and_then(|deserializer| {
+            mapping::decode(&TOML, deserializer).map_err(|failure| failure.error)
+        })
         .map_err(|err| decode_error(text, &err))
 }
 

@@ -8,12 +8,17 @@ autotests = false
 
 # One per format, named as its module; see the crate docs.
 [features]
+cbor = ["dep:minicbor-serde"]
 json = ["dep:serde_json"]
 msgpack = ["dep:rmp-serde"]
 toml = ["dep:toml"]
 
 [dependencies]
 frostlang = { path = "../../frostlang", version = "0.0.1", default-features = false }
+# `alloc`: read indefinite-length strings, and keep `minicbor`'s detailed
+# messages.
+# `half`: read float16s.
+minicbor-serde = { version = "0.7", optional = true, features = ["alloc", "half"] }
 rmp-serde = { version = "1.3", optional = true }
 serde = "1"
 thiserror = "2"
@@ -26,7 +31,7 @@ toml = { version = "1.1", optional = true }
 # The tests compile Frost source.
 frostlang.workspace = true
 # The tests cover every format.
-frostlang-formats = { path = ".", features = ["json", "msgpack", "toml"] }
+frostlang-formats = { path = ".", features = ["cbor", "json", "msgpack", "toml"] }
 
 # One binary for every integration test, rather than one per file, to save the
 # build time and disk of linking each separately. Each file in `tests/` is a
@@ -36,7 +41,7 @@ name = "integration"
 path = "tests/main.rs"
 # The dev-dependency above enables every format. A published package drops
 # that dependency, so its tests are then skipped rather than failing to build.
-required-features = ["json", "msgpack", "toml"]
+required-features = ["cbor", "json", "msgpack", "toml"]
 
 # Every format's documentation is on an item that exists only when the format
 # is compiled in.

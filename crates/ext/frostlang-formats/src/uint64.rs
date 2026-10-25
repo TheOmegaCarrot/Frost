@@ -22,9 +22,9 @@ use frostlang::{FrostOpaque, Value};
 
 /// An unsigned integer beyond the Int range, which Frost has no type for.
 ///
-/// Every format with a native unsigned 64-bit integer, such as MessagePack,
-/// decodes one beyond the Int range to this Opaque, which encodes back as the
-/// same integer; within the Int range, it is an Int. The Opaque renders as its
+/// Every format with unsigned 64-bit integers decodes one beyond the Int
+/// range to this Opaque, which encodes back as the format's unsigned 64-bit
+/// integer; within the Int range, it is an Int. The Opaque renders as its
 /// decimal text, as in `<Uint64: 18446744073709551615>`, and is `==` to
 /// another of the same value. [`Display`](fmt::Display) writes that text.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]

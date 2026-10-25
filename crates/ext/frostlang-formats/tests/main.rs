@@ -7,6 +7,8 @@
 // Shared harness.
 mod common;
 
+mod cbor;
+mod cbor_api;
 mod extension;
 mod json;
 mod json_api;

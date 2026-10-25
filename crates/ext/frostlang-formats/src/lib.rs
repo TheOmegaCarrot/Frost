@@ -52,13 +52,20 @@
 // build with every format checks it for dead code. This attribute lists every
 // format's feature, as do others such as `Format`; a new format joins each.
 #![cfg_attr(
-    not(all(feature = "json", feature = "msgpack", feature = "toml")),
+    not(all(
+        feature = "cbor",
+        feature = "json",
+        feature = "msgpack",
+        feature = "toml"
+    )),
     allow(dead_code, unused_imports, unused_variables)
 )]
 
 mod error;
 mod mapping;
 
+#[cfg(feature = "cbor")]
+pub mod cbor;
 #[cfg(feature = "json")]
 pub mod json;
 #[cfg(feature = "msgpack")]
@@ -96,6 +103,9 @@ pub fn extension(formats: Formats) -> Extension {
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 #[non_exhaustive]
 pub enum Format {
+    /// CBOR, as the module `cbor`; see [`cbor`].
+    #[cfg(feature = "cbor")]
+    Cbor,
     /// JSON, as the module `json`; see [`json`].
     #[cfg(feature = "json")]
     Json,
@@ -110,6 +120,8 @@ pub enum Format {
 impl Format {
     /// Every format compiled in.
     const ALL: &[Format] = &[
+        #[cfg(feature = "cbor")]
+        Format::Cbor,
         #[cfg(feature = "json")]
         Format::Json,
         #[cfg(feature = "msgpack")]
@@ -121,6 +133,8 @@ impl Format {
     /// How the format's data maps to Frost values.
     fn mapping(self) -> &'static mapping::Mapping {
         match self {
+            #[cfg(feature = "cbor")]
+            Format::Cbor => &cbor::CBOR,
             #[cfg(feature = "json")]
             Format::Json => &json::JSON,
             #[cfg(feature = "msgpack")]
@@ -141,6 +155,8 @@ impl Format {
     /// `extension`, with this format's module added.
     fn add_module(self, extension: ExtensionBuilder) -> ExtensionBuilder {
         match self {
+            #[cfg(feature = "cbor")]
+            Format::Cbor => extension.module("cbor", cbor::module),
             #[cfg(feature = "json")]
             Format::Json => extension.module("json", json::module),
             #[cfg(feature = "msgpack")]
