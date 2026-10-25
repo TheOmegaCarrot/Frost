@@ -365,7 +365,7 @@ fn the_result_converts_through_into_native_result() {
     assert_eq!(run(maybe.clone(), "f(true)"), Value::Int(1));
     assert_eq!(run(maybe, "f(false)"), Value::Null);
     assert_eq!(
-        raises(ratio, "f(1, 0)"),
+        raises(ratio, "f(1.0, 0.0)"),
         f64::INFINITY
             .into_result("ratio")
             .expect_err("a non-finite f64 is an error")

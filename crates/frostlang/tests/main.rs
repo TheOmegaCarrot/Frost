@@ -17,6 +17,7 @@ mod component_builder;
 mod constant_deduplication;
 mod constant_propagation;
 mod consume_locals;
+mod conversion_coherence;
 mod dead_code;
 mod debug_info;
 mod def_patterns;

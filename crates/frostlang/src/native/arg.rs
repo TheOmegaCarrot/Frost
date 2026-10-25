@@ -17,6 +17,8 @@ use crate::{
 
 /// A Rust type a native can take one argument as.
 ///
+/// Each type converts as the [conversion guide](crate::_conversions) describes.
+///
 /// Implement it to take arguments as a type of your own. Each implementing type
 /// is also a required parameter, through [`FrostArg`].
 pub trait FromArg: Sized {
@@ -366,6 +368,7 @@ macro_rules! from_variant {
 from_variant! {
     bool: FrostType::BOOL, Value::Bool(b) => b;
     FrostFloat: FrostType::FLOAT, Value::Float(f) => f;
+    f64: FrostType::FLOAT, Value::Float(f) => f.get();
     String: FrostType::STRING, Value::String(s) => String::from(s);
     FrostString: FrostType::STRING, Value::String(s) => s;
     FrostBytes: FrostType::BYTES, Value::Bytes(b) => b;
@@ -381,19 +384,6 @@ impl FromArg for MapKey {
             mismatch(site, &value)
         }
         Ok(MapKey::try_from(value).expect("a value of a key type is a key"))
-    }
-}
-
-/// A Numeric argument: an Int becomes the nearest `f64`.
-impl FromArg for f64 {
-    const TYPES: TypeSet = FrostType::NUMERIC;
-
-    fn from_arg(value: Value, site: &ArgSite<'_>) -> Result<Self, FrostError> {
-        match value {
-            Value::Int(i) => Ok(i as f64),
-            Value::Float(f) => Ok(f.get()),
-            other => mismatch(site, &other),
-        }
     }
 }
 

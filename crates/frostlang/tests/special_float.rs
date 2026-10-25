@@ -217,12 +217,12 @@ fn from_value_refuses_it_for_a_float() {
     for f in NON_FINITE {
         assert_eq!(
             deserialize_error::<f64>(special(f)),
-            "expected Numeric, got Opaque",
+            "expected Float, got Opaque",
             "{f}"
         );
         assert_eq!(
             deserialize_error::<f32>(special(f)),
-            "expected Numeric, got Opaque",
+            "expected Float, got Opaque",
             "{f} for an f32"
         );
     }
@@ -247,37 +247,38 @@ fn from_value_refuses_it_for_a_nested_float() {
         level: Nullable<f64>,
     }
     let infinity = || special(f64::INFINITY);
+    let one = || Value::Float(FrostFloat::new(1.0).unwrap());
     let fields = || Value::map([("level", infinity())]);
     for (case, message, expected) in [
         (
             "an element",
-            deserialize_error::<Vec<f64>>(Value::array([Value::Int(1), infinity()])),
-            "expected Numeric, got Opaque (at `[1]`)",
+            deserialize_error::<Vec<f64>>(Value::array([one(), infinity()])),
+            "expected Float, got Opaque (at `[1]`)",
         ),
         (
             "a field",
             deserialize_error::<Fields>(fields()),
-            "expected Numeric, got Opaque (at `level`)",
+            "expected Float, got Opaque (at `level`)",
         ),
         (
             "an Option field",
             deserialize_error::<OptionalFields>(fields()),
-            "expected Numeric, got Opaque (at `level`)",
+            "expected Float, got Opaque (at `level`)",
         ),
         (
             "a Nullable field",
             deserialize_error::<NullableFields>(fields()),
-            "expected Numeric, got Opaque (at `level`)",
+            "expected Float, got Opaque (at `level`)",
         ),
         (
             "a Map entry",
             deserialize_error::<BTreeMap<String, f64>>(fields()),
-            "expected Numeric, got Opaque (at `level`)",
+            "expected Float, got Opaque (at `level`)",
         ),
         (
             "a tuple's element",
-            deserialize_error::<(f64, f64)>(Value::array([Value::Int(1), infinity()])),
-            "expected Numeric, got Opaque (at `[1]`)",
+            deserialize_error::<(f64, f64)>(Value::array([one(), infinity()])),
+            "expected Float, got Opaque (at `[1]`)",
         ),
     ] {
         assert_eq!(message, expected, "{case}");

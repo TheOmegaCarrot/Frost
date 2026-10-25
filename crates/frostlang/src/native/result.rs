@@ -11,10 +11,10 @@ use crate::{
 /// A Rust type a native can return, converted to the value the native
 /// returns.
 ///
-/// A `Vec` returns an Array, as it is taken from one by
-/// [`FromArg`](super::FromArg). So a `Vec<u8>` returns an Array of Ints,
-/// unlike `Value::from`, which makes Bytes of it: return Bytes as
-/// [`FrostBytes`], or return a [`Value`] to choose the value exactly.
+/// Each type converts as the [conversion guide](crate::_conversions) describes.
+/// That can differ from `Value::from`: a `Vec<u8>` returns an Array of Ints,
+/// where `Value::from` makes Bytes of it. Return a [`Value`] to choose the
+/// value exactly.
 #[diagnostic::on_unimplemented(
     message = "`{Self}` cannot be returned to Frost",
     label = "not a native's result type",

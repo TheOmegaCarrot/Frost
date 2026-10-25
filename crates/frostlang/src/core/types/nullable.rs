@@ -12,28 +12,8 @@ use crate::core::serde::NULLABLE_NEWTYPE_TOKEN;
 ///
 /// It is how Rust takes or gives a value that may be Null, wherever values
 /// convert: as a native's argument or result, and through [`from_value`] and
-/// [`to_value`].
-///
-/// An `Option`, by contrast, is presence, never Null: Frost tells a Map entry
-/// holding Null apart from no entry at all.
-///
-/// - An omitted argument is `None` in an [`Optional`].
-/// - A struct field or Map entry left out is `None` to [`from_value`], and
-///   one holding `None` is left out by [`to_value`]. A struct variant's
-///   fields count as a struct's.
-/// - Deserializing, anything present is `Some`, Null included: Null reaches
-///   the type the `Option` holds, which takes it only if it is a `Value` or a
-///   `Nullable`.
-/// - Serializing, `None` anywhere but an entry, such as in an Array, has no
-///   value, and [`to_value`] fails on it. A native's result is never absent,
-///   so it is a `Nullable` rather than an `Option`.
-///
-/// `Option<Nullable<T>>` tells all three apart: absent, Null, and a value.
-/// To treat Null as absent, take that type and flatten it.
-///
-/// Deserializing, serde buffers untagged and internally or adjacently tagged
-/// enums, and `#[serde(flatten)]` fields, through an intermediate form of its
-/// own, which reads Null into an `Option` as `None`.
+/// [`to_value`]. An `Option`, by contrast, is presence, never Null; see
+/// [Absence and Null](crate::_conversions#absence-and-null).
 ///
 /// # Examples
 ///
@@ -60,7 +40,6 @@ use crate::core::serde::NULLABLE_NEWTYPE_TOKEN;
 ///
 /// [`from_value`]: crate::from_value
 /// [`to_value`]: crate::to_value
-/// [`Optional`]: crate::native::Optional
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash)]
 pub struct Nullable<T>(pub Option<T>);
 

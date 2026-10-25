@@ -23,6 +23,7 @@
 // resolve within this crate too.
 extern crate self as frostlang;
 
+pub mod _conversions;
 #[cfg(feature = "compile")]
 pub mod compile;
 mod core;

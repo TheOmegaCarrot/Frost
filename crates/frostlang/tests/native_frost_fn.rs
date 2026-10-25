@@ -462,13 +462,13 @@ fn the_result_converts_through_into_native_result() {
             .to_string()
     };
     assert_eq!(
-        raises("f", ratio_frost(), "f(1, 0)"),
+        raises("f", ratio_frost(), "f(1.0, 0.0)"),
         conversion_error("ratio"),
         "the conversion's error, naming the function"
     );
     let named = ratio_frost().build_named("calc.ratio");
     assert_eq!(
-        Script::new("f(1, 0)").capture("f", named).raises(),
+        Script::new("f(1.0, 0.0)").capture("f", named).raises(),
         conversion_error("calc.ratio"),
         "the conversion's error, naming the function by the name it was built with"
     );

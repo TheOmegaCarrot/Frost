@@ -61,8 +61,8 @@ category!(
 
 /// A Numeric argument: an Int or a Float, as given.
 ///
-/// An `f64` argument accepts the same values, but takes each as a float;
-/// this keeps which it is, as for showing it back exactly as written.
+/// It is the type for accepting either; an `f64` accepts only a Float. Read
+/// either as a float with [`to_f64`](Self::to_f64).
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Numeric {
     /// An Int.

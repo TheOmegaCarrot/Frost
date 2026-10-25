@@ -38,9 +38,7 @@ impl ser::Error for SerError {
 
 /// Serializes any `Serialize` type into a Frost `Value`.
 ///
-/// An `Option` is presence: see [`Nullable`](crate::Nullable) for how `None`
-/// and Null serialize. An `f64` or `f32` is finite: see
-/// [`SpecialFloat`](crate::SpecialFloat).
+/// Each type converts as the [conversion guide](crate::_conversions) describes.
 pub fn to_value<T: Serialize>(value: &T) -> Result<Value, crate::core::FrostError> {
     value
         .serialize(ValueSerializer::Required)

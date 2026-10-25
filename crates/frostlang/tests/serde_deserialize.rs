@@ -238,6 +238,37 @@ fn deserialize_unit_enum_invalid_variant() {
     assert!(r.is_err());
 }
 
+#[test]
+fn a_unit_variant_given_as_a_map_entry_holds_null() {
+    assert_eq!(
+        from_value::<Color>(Value::map([("Red", Value::Null)])).unwrap(),
+        Color::Red,
+        "as it is read from its name alone"
+    );
+    assert_eq!(
+        error_of::<Color>(Value::map([("Red", Value::Int(42))])),
+        "expected Null, got Int (at `Red`)",
+        "it has no content to read"
+    );
+}
+
+#[test]
+fn an_enum_given_as_a_map_takes_one_entry_keyed_by_a_string() {
+    for (map, count) in [
+        (Value::map::<&str, 0>([]), 0),
+        (Value::map([("Red", Value::Null), ("Blue", Value::Null)]), 2),
+    ] {
+        assert_eq!(
+            error_of::<Color>(map),
+            format!("expected Map of one entry, got Map of {count} entries")
+        );
+    }
+    assert_eq!(
+        error_of::<Color>(Value::map([(1, Value::Null)])),
+        "expected String, got Int (at a key)"
+    );
+}
+
 #[derive(Deserialize, Debug, PartialEq)]
 enum Shape {
     Circle(f64),
@@ -773,11 +804,11 @@ fn a_primitive_target_names_the_type_it_requires() {
     );
     assert_eq!(
         error_of::<f64>(Value::from("1.5")),
-        "expected Numeric, got String"
+        "expected Float, got String"
     );
     assert_eq!(
         error_of::<f32>(Value::from("1.5")),
-        "expected Numeric, got String"
+        "expected Float, got String"
     );
     assert_eq!(
         error_of::<char>(Value::from(1i64)),
@@ -790,9 +821,15 @@ fn a_primitive_target_names_the_type_it_requires() {
 }
 
 #[test]
-fn a_float_target_takes_an_int() {
-    assert_eq!(from_value::<f64>(Value::from(2i64)).unwrap(), 2.0);
-    assert_eq!(from_value::<f32>(Value::from(2i64)).unwrap(), 2.0);
+fn a_float_target_refuses_an_int() {
+    // As an `f64` argument does; `Numeric` is the type for taking either.
+    for message in [
+        error_of::<f64>(Value::Int(2)),
+        error_of::<f32>(Value::Int(2)),
+        error_of::<FrostFloat>(Value::Int(2)),
+    ] {
+        assert_eq!(message, "expected Float, got Int");
+    }
 }
 
 /// A Float holding `f`, which must be finite.
@@ -857,7 +894,7 @@ fn an_f32_refuses_a_float_beyond_its_range() {
     ] {
         assert_eq!(
             error_of::<f32>(float(f)),
-            format!("expected Numeric from -3.4028235e38 to 3.4028235e38, got {rendered}"),
+            format!("expected Float from -3.4028235e38 to 3.4028235e38, got {rendered}"),
         );
     }
 }

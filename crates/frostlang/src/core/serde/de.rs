@@ -181,17 +181,8 @@ fn frost_type_name(unexpected: &de::Unexpected) -> std::borrow::Cow<'static, str
 
 /// Deserializes a Frost `Value` into any `Deserialize` type.
 ///
-/// An `Option` is presence: see [`Nullable`](crate::Nullable) for how absence
-/// and Null deserialize. An `f64` or `f32` is finite: see
-/// [`SpecialFloat`](crate::SpecialFloat).
-///
-/// An error names what was found in Frost's terms, and where in `value`. Where
-/// this function judges the value, such as its type, a numeric range, or an
-/// Array too long for a tuple, what was expected is in Frost's terms too. Where
-/// the target type judges it, the target describes what it expected in its own
-/// words, such as "a nonzero u8" or "a tuple of size 2". To word that for script
-/// authors, give your own types a description with serde's
-/// `#[serde(expecting = "...")]`.
+/// Each type converts as the [conversion guide](crate::_conversions) describes,
+/// which also covers how errors read.
 pub fn from_value<'de, T: serde::Deserialize<'de>>(
     value: Value,
 ) -> Result<T, crate::core::FrostError> {
@@ -339,13 +330,12 @@ impl<'de> de::Deserializer<'de> for ValueDeserializer {
         }
     }
 
-    /// Float targets read a Float, or an Int as the nearest float. A
+    /// Float targets read a Float and nothing else. A
     /// [`SpecialFloat`](crate::SpecialFloat) is an Opaque, so they refuse it.
     fn deserialize_f64<V: Visitor<'de>>(self, visitor: V) -> Result<V::Value, DeError> {
         match self.0 {
             Value::Float(f) => visitor.visit_f64(f.get()),
-            Value::Int(i) => visitor.visit_i64(i),
-            _ => Err(DeError::mismatch("Numeric", &self.0)),
+            _ => Err(DeError::mismatch("Float", &self.0)),
         }
     }
 
@@ -410,7 +400,7 @@ impl<'de> de::Deserializer<'de> for ValueDeserializer {
                 let narrowed = f.get() as f32;
                 if !narrowed.is_finite() {
                     return Err(DeError::new(format!(
-                        "expected Numeric from {:e} to {:e}, got {}",
+                        "expected Float from {:e} to {:e}, got {}",
                         f32::MIN,
                         f32::MAX,
                         self.0.to_debug_string()
@@ -448,14 +438,17 @@ impl<'de> de::Deserializer<'de> for ValueDeserializer {
             Value::String(s) => visitor.visit_enum(s.as_ref().into_deserializer()),
             Value::Map(map) => {
                 if map.len() != 1 {
-                    return Err(de::Error::custom(
-                        "expected Map with exactly one entry for enum variant",
-                    ));
+                    return Err(DeError::new(format!(
+                        "expected Map of one entry, got Map of {} entries",
+                        map.len()
+                    )));
                 }
                 let (key, value) = map.iter().next().unwrap();
                 let variant_name = match key {
                     MapKey::String(s) => s.as_ref(),
-                    _ => return Err(de::Error::custom("enum variant key must be a String")),
+                    _ => {
+                        return Err(DeError::mismatch("String", &Value::from(key.clone())).in_key());
+                    }
                 };
                 visitor.visit_enum(EnumAccess {
                     variant: variant_name.to_owned(),
@@ -637,11 +630,11 @@ impl<'de> de::Deserializer<'de> for Probe {
     }
 
     fn deserialize_f32<V: Visitor<'de>>(self, _: V) -> Result<V::Value, Probed> {
-        Self::accepts(FrostType::NUMERIC)
+        Self::accepts(FrostType::FLOAT)
     }
 
     fn deserialize_f64<V: Visitor<'de>>(self, _: V) -> Result<V::Value, Probed> {
-        Self::accepts(FrostType::NUMERIC)
+        Self::accepts(FrostType::FLOAT)
     }
 
     fn deserialize_char<V: Visitor<'de>>(self, _: V) -> Result<V::Value, Probed> {
@@ -857,8 +850,10 @@ impl VariantAccess {
 impl<'de> de::VariantAccess<'de> for VariantAccess {
     type Error = DeError;
 
+    /// A unit variant given as a Map entry, rather than by its name alone, must
+    /// hold Null: it has no content to read.
     fn unit_variant(self) -> Result<(), DeError> {
-        Ok(())
+        <()>::deserialize(ValueDeserializer(self.value)).map_err(Self::within(self.variant))
     }
 
     fn newtype_variant_seed<T>(self, seed: T) -> Result<T::Value, DeError>

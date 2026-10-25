@@ -52,7 +52,7 @@ fn each_argument_type_declares_its_types() {
         (<bool as FrostArg>::PARAM, FrostType::BOOL),
         (<i64 as FrostArg>::PARAM, FrostType::INT),
         (<u8 as FrostArg>::PARAM, FrostType::INT),
-        (<f64 as FrostArg>::PARAM, FrostType::NUMERIC),
+        (<f64 as FrostArg>::PARAM, FrostType::FLOAT),
         (<char as FrostArg>::PARAM, FrostType::STRING),
         (<FrostFloat as FrostArg>::PARAM, FrostType::FLOAT),
         (<String as FrostArg>::PARAM, FrostType::STRING),
@@ -162,16 +162,11 @@ fn map_key_takes_a_value_of_each_key_type() {
 }
 
 #[test]
-fn f64_takes_a_float_or_an_int() {
+fn f64_takes_a_float() {
+    // An Int is not a Float; `Numeric` is the type for taking either.
     assert_eq!(
         taken::<f64>(Value::Float(FrostFloat::new(2.5).unwrap())),
         2.5
-    );
-    assert_eq!(taken::<f64>(Value::Int(-3)), -3.0);
-    // An Int beyond 2^53 becomes the nearest f64.
-    assert_eq!(
-        taken::<f64>(Value::Int(i64::MAX)),
-        9_223_372_036_854_775_808.0
     );
 }
 
@@ -449,7 +444,7 @@ fn de_reports_a_float_beyond_an_f32_as_invalid() {
     assert_eq!(
         rejection::<De<f32>>(Value::Float(FrostFloat::new(1e39).unwrap())),
         "Function f requires argument 1 (x) to be valid: \
-         expected Numeric from -3.4028235e38 to 3.4028235e38, got 1e39"
+         expected Float from -3.4028235e38 to 3.4028235e38, got 1e39"
     );
 }
 
@@ -518,16 +513,25 @@ fn de_rejects_a_type_its_target_never_deserializes_from_as_a_wrong_type() {
         ),
         (
             rejection::<De<f64>>(Value::from("1")),
-            wrong_type("Numeric", "String"),
+            wrong_type("Float", "String"),
+        ),
+        // A float takes only a Float, as an `f64` argument does.
+        (
+            rejection::<De<f64>>(Value::Int(1)),
+            wrong_type("Float", "Int"),
+        ),
+        (
+            rejection::<De<f32>>(Value::Int(1)),
+            wrong_type("Float", "Int"),
         ),
         // A SpecialFloat is an Opaque, which no float takes.
         (
             rejection::<De<f64>>(Value::opaque(SpecialFloat::new(f64::INFINITY).unwrap())),
-            wrong_type("Numeric", "Opaque"),
+            wrong_type("Float", "Opaque"),
         ),
         (
             rejection::<De<f32>>(Value::opaque(SpecialFloat::new(f64::INFINITY).unwrap())),
-            wrong_type("Numeric", "Opaque"),
+            wrong_type("Float", "Opaque"),
         ),
         (
             rejection::<De<i128>>(Value::from("1")),
@@ -581,7 +585,10 @@ fn de_rejects_a_type_its_target_never_deserializes_from_as_a_wrong_type() {
 
 #[test]
 fn de_takes_every_type_its_target_deserializes_from() {
-    assert_eq!(taken::<De<f64>>(Value::Int(2)), De(2.0));
+    assert_eq!(
+        taken::<De<f64>>(Value::Float(FrostFloat::new(2.5).unwrap())),
+        De(2.5)
+    );
     assert_eq!(
         taken::<De<Nullable<Options>>>(Value::Null),
         De(Nullable(None))
