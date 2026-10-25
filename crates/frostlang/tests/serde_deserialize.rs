@@ -422,14 +422,18 @@ fn a_target_of_fixed_length_takes_an_array_of_that_length() {
 
 #[test]
 fn a_target_of_fixed_length_refuses_a_longer_array() {
-    // The target would read only its own length and ignore the rest.
-    let expected = "expected Array of at most 2 elements, got 3 elements";
+    // Each target reads only its own length, so the extra element would be
+    // ignored without the error.
+    let expected = "expected Array to end after 2 elements, got 3 elements";
     let triple = || Value::array([1, 2, 3]);
     assert_eq!(error_of::<(i64, i64)>(triple()), expected, "a tuple");
     assert_eq!(error_of::<[i64; 2]>(triple()), expected, "an array");
     assert_eq!(error_of::<Point>(triple()), expected, "a tuple struct");
     assert_eq!(
-        error_of::<Expr>(Value::map([("Pair", triple())])),
+        error_of::<Expr>(Value::map([(
+            "Pair",
+            Value::array([Value::Int(1), Value::from("a"), Value::from("b")])
+        )])),
         format!("{expected} (at `Pair`)"),
         "a tuple variant"
     );
@@ -437,6 +441,97 @@ fn a_target_of_fixed_length_refuses_a_longer_array() {
         error_of::<Vec<(i64, i64)>>(Value::array([triple()])),
         format!("{expected} (at `[0]`)"),
         "nested, with the path"
+    );
+    assert_eq!(
+        error_of::<std::collections::BTreeMap<String, Vec<[i64; 2]>>>(Value::map([(
+            "pairs",
+            Value::array([Value::array([1, 2]), triple()])
+        )])),
+        format!("{expected} (at `pairs[1]`)"),
+        "nested deeper, with the path"
+    );
+    assert_eq!(
+        error_of::<(i64, String)>(triple()),
+        "expected String, got Int (at `[1]`)",
+        "an element the target reads is judged first"
+    );
+}
+
+#[test]
+fn a_target_of_any_length_takes_a_long_array() {
+    let long = || Value::array([1, 2, 3, 4, 5]);
+    assert_eq!(
+        from_value::<Vec<i64>>(long()).unwrap(),
+        [1, 2, 3, 4, 5],
+        "a Vec"
+    );
+    assert_eq!(
+        from_value::<std::collections::BTreeSet<i64>>(long()).unwrap(),
+        std::collections::BTreeSet::from([1, 2, 3, 4, 5]),
+        "a set"
+    );
+    assert_eq!(
+        from_value::<serde_json::Value>(long()).unwrap(),
+        serde_json::json!([1, 2, 3, 4, 5]),
+        "a self-describing value"
+    );
+    assert_eq!(
+        from_value::<serde::de::IgnoredAny>(long()).unwrap(),
+        serde::de::IgnoredAny,
+        "a value the target ignores"
+    );
+}
+
+#[test]
+fn the_elements_a_target_leaves_unread_are_refused() {
+    /// Reads elements until their sum reaches 10, then stops.
+    #[derive(Debug, PartialEq)]
+    struct SumToTen(i64);
+
+    impl<'de> Deserialize<'de> for SumToTen {
+        fn deserialize<D: serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+            struct SumVisitor;
+
+            impl<'de> serde::de::Visitor<'de> for SumVisitor {
+                type Value = SumToTen;
+
+                fn expecting(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+                    f.write_str("Ints summing to 10")
+                }
+
+                fn visit_seq<A: serde::de::SeqAccess<'de>>(
+                    self,
+                    mut seq: A,
+                ) -> Result<SumToTen, A::Error> {
+                    let mut sum = 0;
+                    while sum < 10 {
+                        match seq.next_element::<i64>()? {
+                            Some(int) => sum += int,
+                            None => break,
+                        }
+                    }
+                    Ok(SumToTen(sum))
+                }
+            }
+
+            deserializer.deserialize_seq(SumVisitor)
+        }
+    }
+
+    assert_eq!(
+        from_value::<SumToTen>(Value::array([4, 6])).unwrap(),
+        SumToTen(10),
+        "it reads every element"
+    );
+    assert_eq!(
+        from_value::<SumToTen>(Value::array([4])).unwrap(),
+        SumToTen(4),
+        "it judges a shorter Array itself"
+    );
+    assert_eq!(
+        error_of::<SumToTen>(Value::array([4, 6, 1, 1])),
+        "expected Array to end after 2 elements, got 4 elements",
+        "it stops after two, leaving two unread"
     );
 }
 

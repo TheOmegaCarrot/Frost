@@ -80,11 +80,11 @@
 //! An argument the native cannot take is an error worded alike for every
 //! native: see [`ArgSite`]. A [`from_value`] error names what was found in
 //! Frost's terms, and where in the value. Where [`from_value`] judges the
-//! value, such as its type, a numeric range, or an Array too long for a tuple,
-//! it states what it expected in Frost's terms too. Where the target type
-//! judges it, the target describes what it expected in its own words, such as
-//! "a nonzero u8" or "a tuple of size 2". To word that for script authors, give
-//! your own types a description with serde's `#[serde(expecting = "...")]`.
+//! value, such as its type, a numeric range, or an Array longer than the target
+//! reads, it states what it expected in Frost's terms too. Where the target
+//! type judges it, the target describes what it expected in its own words, such
+//! as "a nonzero u8" or "a tuple of size 2". To word that for script authors,
+//! give your own types a description with serde's `#[serde(expecting = "...")]`.
 //!
 //! # serde's buffered forms
 //!

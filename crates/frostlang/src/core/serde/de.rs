@@ -214,30 +214,6 @@ macro_rules! deserialize_int {
 
 struct ValueDeserializer(Value);
 
-impl ValueDeserializer {
-    /// Deserializes an Array of at most `len` elements, for a target that reads
-    /// a fixed number of them, such as a tuple. A longer Array is refused here,
-    /// since the target would read only the first `len` and ignore the rest. A
-    /// shorter one is the target's to judge: a field with a serde `default` may
-    /// stand in for a missing element.
-    fn deserialize_array_of_at_most<'de, V: Visitor<'de>>(
-        self,
-        len: usize,
-        visitor: V,
-    ) -> Result<V::Value, DeError> {
-        if let Value::Array(ref array) = self.0
-            && array.len() > len
-        {
-            return Err(DeError::new(format!(
-                "expected Array of at most {}, got {}",
-                counted(len, "element"),
-                counted(array.len(), "element")
-            )));
-        }
-        self.deserialize_seq(visitor)
-    }
-}
-
 impl<'de> de::Deserializer<'de> for ValueDeserializer {
     type Error = DeError;
 
@@ -265,35 +241,50 @@ impl<'de> de::Deserializer<'de> for ValueDeserializer {
         }
     }
 
+    /// An element the target leaves unread is an error, since the target, a
+    /// tuple for example, would otherwise silently ignore it. A shorter Array
+    /// is the target's to judge: a field with a serde `default` may stand in for
+    /// a missing element.
     fn deserialize_seq<V: Visitor<'de>>(self, visitor: V) -> Result<V::Value, DeError> {
-        match self.0 {
-            Value::Array(arr) => {
-                let len = arr.len();
-                let elements: Vec<Value> = arr.iter().cloned().collect();
-                visitor.visit_seq(ArrayAccess {
-                    iter: elements.into_iter().enumerate(),
-                    len,
-                })
-            }
-            _ => Err(DeError::mismatch("Array", &self.0)),
+        let Value::Array(array) = self.0 else {
+            return Err(DeError::mismatch("Array", &self.0));
+        };
+        let len = array.len();
+        let mut access = ArrayAccess {
+            iter: array
+                .iter()
+                .cloned()
+                .collect::<Vec<_>>()
+                .into_iter()
+                .enumerate(),
+        };
+        let value = visitor.visit_seq(&mut access)?;
+        let unread = access.iter.len();
+        if unread > 0 {
+            return Err(DeError::new(format!(
+                "expected Array to end after {}, got {}",
+                counted(len - unread, "element"),
+                counted(len, "element")
+            )));
         }
+        Ok(value)
     }
 
     fn deserialize_tuple<V: Visitor<'de>>(
         self,
-        len: usize,
+        _len: usize,
         visitor: V,
     ) -> Result<V::Value, DeError> {
-        self.deserialize_array_of_at_most(len, visitor)
+        self.deserialize_seq(visitor)
     }
 
     fn deserialize_tuple_struct<V: Visitor<'de>>(
         self,
         _name: &'static str,
-        len: usize,
+        _len: usize,
         visitor: V,
     ) -> Result<V::Value, DeError> {
-        self.deserialize_array_of_at_most(len, visitor)
+        self.deserialize_seq(visitor)
     }
 
     fn deserialize_map<V: Visitor<'de>>(self, visitor: V) -> Result<V::Value, DeError> {
@@ -744,7 +735,6 @@ impl<'de> de::Deserializer<'de> for Probe {
 
 struct ArrayAccess {
     iter: std::iter::Enumerate<std::vec::IntoIter<Value>>,
-    len: usize,
 }
 
 impl<'de> de::SeqAccess<'de> for ArrayAccess {
@@ -763,8 +753,9 @@ impl<'de> de::SeqAccess<'de> for ArrayAccess {
         }
     }
 
+    /// The number of elements not yet read.
     fn size_hint(&self) -> Option<usize> {
-        Some(self.len)
+        Some(self.iter.len())
     }
 }
 
@@ -864,12 +855,12 @@ impl<'de> de::VariantAccess<'de> for VariantAccess {
             .map_err(Self::within(self.variant))
     }
 
-    fn tuple_variant<V>(self, len: usize, visitor: V) -> Result<V::Value, DeError>
+    fn tuple_variant<V>(self, _len: usize, visitor: V) -> Result<V::Value, DeError>
     where
         V: Visitor<'de>,
     {
         ValueDeserializer(self.value)
-            .deserialize_array_of_at_most(len, visitor)
+            .deserialize_seq(visitor)
             .map_err(Self::within(self.variant))
     }
 
