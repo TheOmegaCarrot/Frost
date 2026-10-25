@@ -670,7 +670,11 @@ fn a_primitive_target_names_the_type_it_requires() {
     assert_eq!(error_of::<u8>(Value::Null), "expected Int, got Null");
     assert_eq!(
         error_of::<f64>(Value::from("1.5")),
-        "expected Float, got String"
+        "expected Numeric, got String"
+    );
+    assert_eq!(
+        error_of::<f32>(Value::from("1.5")),
+        "expected Numeric, got String"
     );
     assert_eq!(
         error_of::<char>(Value::from(1i64)),
@@ -685,6 +689,74 @@ fn a_primitive_target_names_the_type_it_requires() {
 #[test]
 fn a_float_target_takes_an_int() {
     assert_eq!(from_value::<f64>(Value::from(2i64)).unwrap(), 2.0);
+    assert_eq!(from_value::<f32>(Value::from(2i64)).unwrap(), 2.0);
+}
+
+/// A Float holding `f`, which must be finite.
+fn float(f: f64) -> Value {
+    Value::Float(FrostFloat::new(f).unwrap())
+}
+
+/// The least `f64` that narrows to an `f32` infinity: halfway from `f32::MAX` to
+/// the next power of two, a tie that rounds to even, away from `f32::MAX`'s odd
+/// mantissa.
+fn least_beyond_f32() -> f64 {
+    f64::from(f32::MAX) + 2f64.powi(103)
+}
+
+#[test]
+fn an_f32_takes_a_float_in_its_range() {
+    assert_eq!(from_value::<f32>(float(1.5)).unwrap(), 1.5);
+    assert_eq!(
+        from_value::<f32>(float(f64::from(f32::MAX))).unwrap(),
+        f32::MAX
+    );
+    assert_eq!(
+        from_value::<f32>(float(f64::from(f32::MIN))).unwrap(),
+        f32::MIN
+    );
+    let greatest_within = f64::from_bits(least_beyond_f32().to_bits() - 1);
+    assert_eq!(
+        from_value::<f32>(float(greatest_within)).unwrap(),
+        f32::MAX,
+        "a Float just short of rounding to an infinity rounds to f32::MAX"
+    );
+    assert_eq!(
+        from_value::<f32>(float(-greatest_within)).unwrap(),
+        f32::MIN
+    );
+}
+
+#[test]
+fn an_f32_rounds_a_float_too_small_for_it_to_zero() {
+    // As a cast does, keeping the sign.
+    for (f, zero) in [(1e-300, 0.0f32), (-1e-300, -0.0), (0.0, 0.0), (-0.0, -0.0)] {
+        let narrowed = from_value::<f32>(float(f)).unwrap();
+        assert_eq!(narrowed.to_bits(), zero.to_bits(), "{f} narrows to {zero}");
+    }
+}
+
+#[test]
+fn a_float_target_keeps_negative_zero() {
+    let taken = from_value::<f64>(float(-0.0)).unwrap();
+    assert_eq!(taken.to_bits(), (-0.0f64).to_bits(), "-0.0 keeps its sign");
+}
+
+#[test]
+fn an_f32_refuses_a_float_beyond_its_range() {
+    // It would round to an infinity, which no Float is.
+    for (f, rendered) in [
+        (least_beyond_f32(), "3.4028235677973366e38"),
+        (-least_beyond_f32(), "-3.4028235677973366e38"),
+        (1e39, "1e39"),
+        (-1e39, "-1e39"),
+        (f64::MAX, "1.7976931348623157e308"),
+    ] {
+        assert_eq!(
+            error_of::<f32>(float(f)),
+            format!("expected Numeric from -3.4028235e38 to 3.4028235e38, got {rendered}"),
+        );
+    }
 }
 
 #[test]

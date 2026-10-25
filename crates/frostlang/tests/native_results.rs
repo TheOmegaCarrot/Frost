@@ -6,7 +6,8 @@ use std::collections::BTreeMap;
 
 use frostlang::native::{IntoNativeResult, Nullable, Ser};
 use frostlang::{
-    FrostArray, FrostBytes, FrostError, FrostFloat, FrostMap, FrostString, Value, ValueMap,
+    FrostArray, FrostBytes, FrostError, FrostFloat, FrostMap, FrostString, SpecialFloat, Value,
+    ValueMap,
 };
 use serde::Serialize;
 
@@ -183,6 +184,20 @@ fn ser_rejects_a_result_that_does_not_serialize() {
         message.starts_with("Function f has a result no value can hold: "),
         "{message:?}"
     );
+}
+
+#[test]
+fn ser_rejects_a_non_finite_float() {
+    assert_eq!(
+        rejection(Ser(f64::NAN)),
+        "Function f has a result no value can hold: NaN is not finite"
+    );
+}
+
+#[test]
+fn ser_returns_a_value_holding_a_special_float_as_is() {
+    let infinity = Value::opaque(SpecialFloat::new(f64::INFINITY).unwrap());
+    assert_eq!(returned(Ser(infinity.clone())), infinity);
 }
 
 #[test]

@@ -155,7 +155,8 @@ fn frost_type_name(unexpected: &de::Unexpected) -> std::borrow::Cow<'static, str
 /// Deserializes a Frost `Value` into any `Deserialize` type.
 ///
 /// An `Option` is presence: see [`Nullable`](crate::Nullable) for how absence
-/// and Null deserialize.
+/// and Null deserialize. An `f64` or `f32` is finite: see
+/// [`SpecialFloat`](crate::SpecialFloat).
 pub fn from_value<'de, T: serde::Deserialize<'de>>(
     value: Value,
 ) -> Result<T, crate::core::FrostError> {
@@ -182,6 +183,10 @@ impl<'de> de::Deserializer<'de> for ValueDeserializer {
             Value::NativeFunction(_) | Value::Closure(_) => {
                 Err(de::Error::custom("cannot deserialize Function"))
             }
+            // A target reading whatever it is given, such as serde's buffer for
+            // an untagged enum, takes a SpecialFloat as the float it holds, as a
+            // foreign serializer does. A `Value` read back out of that buffer is
+            // a SpecialFloat again; an `f64` takes the float.
             Value::Opaque(_) => match special_float(&self.0) {
                 Some(f) => visitor.visit_f64(f),
                 None => Err(de::Error::custom("cannot deserialize Opaque")),
@@ -201,6 +206,23 @@ impl<'de> de::Deserializer<'de> for ValueDeserializer {
             }
             _ => Err(DeError::mismatch("Array", &self.0)),
         }
+    }
+
+    fn deserialize_tuple<V: Visitor<'de>>(
+        self,
+        _len: usize,
+        visitor: V,
+    ) -> Result<V::Value, DeError> {
+        self.deserialize_seq(visitor)
+    }
+
+    fn deserialize_tuple_struct<V: Visitor<'de>>(
+        self,
+        _name: &'static str,
+        _len: usize,
+        visitor: V,
+    ) -> Result<V::Value, DeError> {
+        self.deserialize_seq(visitor)
     }
 
     fn deserialize_map<V: Visitor<'de>>(self, visitor: V) -> Result<V::Value, DeError> {
@@ -237,16 +259,13 @@ impl<'de> de::Deserializer<'de> for ValueDeserializer {
         }
     }
 
-    /// Float targets read a Float, an Int as the Float it equals, or a
-    /// [`SpecialFloat`](crate::SpecialFloat) as the float it holds.
+    /// Float targets read a Float, or an Int as the nearest float. A
+    /// [`SpecialFloat`](crate::SpecialFloat) is an Opaque, so they refuse it.
     fn deserialize_f64<V: Visitor<'de>>(self, visitor: V) -> Result<V::Value, DeError> {
         match self.0 {
             Value::Float(f) => visitor.visit_f64(f.get()),
             Value::Int(i) => visitor.visit_i64(i),
-            _ => match special_float(&self.0) {
-                Some(f) => visitor.visit_f64(f),
-                None => Err(DeError::mismatch("Float", &self.0)),
-            },
+            _ => Err(DeError::mismatch("Numeric", &self.0)),
         }
     }
 
@@ -297,8 +316,24 @@ impl<'de> de::Deserializer<'de> for ValueDeserializer {
         self.deserialize_i64(visitor)
     }
 
+    /// As [`deserialize_f64`](Self::deserialize_f64), refusing a Float beyond
+    /// the `f32` range, which would round to an infinity.
     fn deserialize_f32<V: Visitor<'de>>(self, visitor: V) -> Result<V::Value, DeError> {
-        self.deserialize_f64(visitor)
+        match self.0 {
+            Value::Float(f) => {
+                let narrowed = f.get() as f32;
+                if !narrowed.is_finite() {
+                    return Err(DeError::new(format!(
+                        "expected Numeric from {:e} to {:e}, got {}",
+                        f32::MIN,
+                        f32::MAX,
+                        self.0.to_debug_string()
+                    )));
+                }
+                visitor.visit_f32(narrowed)
+            }
+            _ => self.deserialize_f64(visitor),
+        }
     }
 
     fn deserialize_struct<V: Visitor<'de>>(
@@ -426,10 +461,6 @@ impl<'de> de::Deserializer<'de> for ValueDeserializer {
     fn deserialize_ignored_any<V: Visitor<'de>>(self, visitor: V) -> Result<V::Value, DeError> {
         visitor.visit_unit()
     }
-
-    serde::forward_to_deserialize_any! {
-        tuple tuple_struct
-    }
 }
 
 // -- Probing a target's top-level types --
@@ -510,13 +541,12 @@ impl<'de> de::Deserializer<'de> for Probe {
         Self::accepts(FrostType::INT)
     }
 
-    // A SpecialFloat is an Opaque; any other Opaque fails in deserializing.
     fn deserialize_f32<V: Visitor<'de>>(self, _: V) -> Result<V::Value, Probed> {
-        Self::accepts(FrostType::NUMERIC.or(FrostType::Opaque))
+        Self::accepts(FrostType::NUMERIC)
     }
 
     fn deserialize_f64<V: Visitor<'de>>(self, _: V) -> Result<V::Value, Probed> {
-        Self::accepts(FrostType::NUMERIC.or(FrostType::Opaque))
+        Self::accepts(FrostType::NUMERIC)
     }
 
     fn deserialize_char<V: Visitor<'de>>(self, _: V) -> Result<V::Value, Probed> {
@@ -578,6 +608,19 @@ impl<'de> de::Deserializer<'de> for Probe {
         Self::accepts(FrostType::ARRAY)
     }
 
+    fn deserialize_tuple<V: Visitor<'de>>(self, _: usize, _: V) -> Result<V::Value, Probed> {
+        Self::accepts(FrostType::ARRAY)
+    }
+
+    fn deserialize_tuple_struct<V: Visitor<'de>>(
+        self,
+        _: &'static str,
+        _: usize,
+        _: V,
+    ) -> Result<V::Value, Probed> {
+        Self::accepts(FrostType::ARRAY)
+    }
+
     fn deserialize_map<V: Visitor<'de>>(self, _: V) -> Result<V::Value, Probed> {
         Self::accepts(FrostType::MAP)
     }
@@ -601,7 +644,7 @@ impl<'de> de::Deserializer<'de> for Probe {
     }
 
     serde::forward_to_deserialize_any! {
-        i128 u128 tuple tuple_struct identifier ignored_any
+        i128 u128 identifier ignored_any
     }
 }
 

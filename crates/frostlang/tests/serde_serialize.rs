@@ -8,7 +8,7 @@ use std::collections::HashMap;
 use serde::Serialize;
 
 use frostlang::bytecode::Bytecode;
-use frostlang::{FrostArray, FrostMap, MapKey, Value, frost_closure, to_value};
+use frostlang::{FrostArray, FrostFloat, FrostMap, MapKey, Value, frost_closure, to_value};
 
 fn str_key(s: &str) -> MapKey {
     MapKey::from(s)
@@ -69,14 +69,18 @@ fn serialize_u64_out_of_range() {
 
 #[test]
 fn serialize_f32() {
-    let v = to_value(&1.5f32).unwrap();
-    assert!(matches!(v, Value::Float(_)));
+    assert_eq!(
+        to_value(&1.5f32).unwrap(),
+        Value::Float(FrostFloat::new(1.5).unwrap())
+    );
 }
 
 #[test]
 fn serialize_f64() {
-    let v = to_value(&3.14f64).unwrap();
-    assert!(matches!(v, Value::Float(_)));
+    assert_eq!(
+        to_value(&3.14f64).unwrap(),
+        Value::Float(FrostFloat::new(3.14).unwrap())
+    );
 }
 
 #[test]

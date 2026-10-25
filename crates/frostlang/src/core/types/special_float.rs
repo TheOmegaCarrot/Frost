@@ -4,11 +4,20 @@ use crate::core::FrostOpaque;
 
 /// A NaN or infinite `f64`, which [`FrostFloat`](crate::FrostFloat) cannot hold.
 ///
-/// Converting into a [`Value`](crate::Value) with
-/// [`Value::from_f64`](crate::Value::from_f64) or [`to_value`](crate::to_value), or
-/// deserializing one from any format, turns a NaN or infinite float into an Opaque
-/// holding a `SpecialFloat`. It converts back out as the same float, bit for bit, so
-/// data passing through Frost keeps it.
+/// [`Value::from_f64`](crate::Value::from_f64), or deserializing a `Value` from any
+/// format, turns a NaN or infinite float into an Opaque holding a `SpecialFloat`. A
+/// `Value` serializes it back out as the same float, bit for bit, so data passing
+/// through Frost keeps it.
+///
+/// Anywhere else, an `f64` or `f32` is a finite number: [`to_value`](crate::to_value)
+/// and a native's result refuse a NaN or infinity, and
+/// [`from_value`](crate::from_value) and a native's argument refuse a `SpecialFloat`
+/// in place of one.
+///
+/// The exception is input that serde buffers while deserializing: untagged and
+/// internally or adjacently tagged enums, and `#[serde(flatten)]` fields. There, an
+/// `f64` or `f32` takes a `SpecialFloat` as the float it holds, and an `f32` rounds a
+/// Float beyond its range to an infinity.
 #[derive(Clone, Copy, Debug)]
 pub struct SpecialFloat(f64);
 

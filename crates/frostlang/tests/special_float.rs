@@ -1,15 +1,19 @@
 //! [`SpecialFloat`]: the Opaque that carries a NaN or infinite float through Frost.
 //!
-//! Every way serde brings a float into a `Value` makes a non-finite one a
-//! `SpecialFloat`, and every way out turns it back into the same float, bit for bit.
+//! A `Value` takes a non-finite float as a `SpecialFloat` and gives it back as the
+//! same float, bit for bit. To the serde bridge an `f64` is finite, so a non-finite
+//! float crosses it only inside a `Value`.
 
 use crate::script;
 
-use serde::de::IntoDeserializer;
+use std::collections::BTreeMap;
+use std::fmt::Debug;
+
 use serde::de::value::{Error as PlainError, F64Deserializer};
+use serde::de::{DeserializeOwned, IntoDeserializer};
 use serde::{Deserialize, Serialize};
 
-use frostlang::{SpecialFloat, Value, from_value, to_value};
+use frostlang::{FrostFloat, Nullable, SpecialFloat, Value, from_value, to_value};
 use script::{Script, run};
 
 /// A NaN with a payload, and with the sign bit set: neither is `f64::NAN`'s bits.
@@ -121,25 +125,6 @@ fn from_f64_keeps_a_finite_float_a_float() {
 }
 
 #[test]
-fn to_value_makes_a_non_finite_float_a_special_float() {
-    for f in NON_FINITE {
-        assert_same_bits(held(&to_value(&f).unwrap()), f);
-    }
-}
-
-#[test]
-fn to_value_makes_a_non_finite_f32_a_special_float() {
-    for f in [f32::NAN, f32::INFINITY, f32::NEG_INFINITY] {
-        assert_same_bits(held(&to_value(&f).unwrap()), f64::from(f));
-    }
-}
-
-#[test]
-fn to_value_keeps_a_finite_float_a_float() {
-    assert!(matches!(to_value(&1.5f64).unwrap(), Value::Float(_)));
-}
-
-#[test]
 fn deserializing_a_non_finite_float_makes_a_special_float() {
     // A foreign deserializer presenting a float, as a format decoder would.
     for f in NON_FINITE {
@@ -148,49 +133,7 @@ fn deserializing_a_non_finite_float_makes_a_special_float() {
     }
 }
 
-#[test]
-fn a_nested_non_finite_float_becomes_a_special_float() {
-    let value = to_value(&vec![1.0, f64::INFINITY]).unwrap();
-    let elements = value.as_array().expect("a Vec is an Array");
-    assert!(matches!(elements[0], Value::Float(_)));
-    assert_same_bits(held(&elements[1]), f64::INFINITY);
-}
-
 // -- Out of a Value --
-
-#[test]
-fn from_value_returns_the_float_it_holds() {
-    for f in NON_FINITE {
-        assert_same_bits(from_value::<f64>(special(f)).unwrap(), f);
-    }
-}
-
-#[test]
-fn from_value_returns_it_to_a_self_describing_target() {
-    // An untagged enum reads its input through `deserialize_any`.
-    #[derive(Deserialize)]
-    #[serde(untagged)]
-    enum Number {
-        Float(f64),
-    }
-
-    let Number::Float(f) = from_value(special(f64::NEG_INFINITY)).unwrap();
-    assert_same_bits(f, f64::NEG_INFINITY);
-}
-
-#[test]
-fn a_struct_field_round_trips_through_a_value() {
-    #[derive(Serialize, Deserialize)]
-    struct Reading {
-        level: f64,
-    }
-
-    for f in NON_FINITE {
-        let value = to_value(&Reading { level: f }).unwrap();
-        let reading: Reading = from_value(value).unwrap();
-        assert_same_bits(reading.level, f);
-    }
-}
 
 #[test]
 fn a_foreign_serializer_gets_the_float() {
@@ -201,4 +144,237 @@ fn a_foreign_serializer_gets_the_float() {
             "{f} serializes as the float it is"
         );
     }
+}
+
+// -- Through the serde bridge --
+
+/// The error message of serializing `value`, which must fail.
+fn serialize_error<T: Serialize>(value: &T) -> String {
+    to_value(value)
+        .expect_err("serializing fails")
+        .message()
+        .into_owned()
+}
+
+/// The error message of deserializing `value` as `T`, which must fail.
+fn deserialize_error<T: DeserializeOwned + Debug>(value: Value) -> String {
+    from_value::<T>(value)
+        .expect_err("deserializing fails")
+        .message()
+        .into_owned()
+}
+
+#[test]
+fn to_value_refuses_a_non_finite_float() {
+    for f in NON_FINITE {
+        assert_eq!(serialize_error(&f), format!("{f} is not finite"));
+    }
+    for f in [f32::NAN, f32::INFINITY, f32::NEG_INFINITY] {
+        assert_eq!(serialize_error(&f), format!("{f} is not finite"), "an f32");
+    }
+}
+
+#[test]
+fn to_value_refuses_a_nested_non_finite_float() {
+    #[derive(Serialize)]
+    struct Fields {
+        level: f64,
+    }
+    for (case, message) in [
+        ("an element", serialize_error(&vec![1.0, f64::INFINITY])),
+        (
+            "a field",
+            serialize_error(&Fields {
+                level: f64::INFINITY,
+            }),
+        ),
+        (
+            "a Map entry",
+            serialize_error(&BTreeMap::from([("level", f64::INFINITY)])),
+        ),
+        ("an Option", serialize_error(&Some(f64::INFINITY))),
+        (
+            "a Nullable",
+            serialize_error(&Nullable(Some(f64::INFINITY))),
+        ),
+    ] {
+        assert_eq!(message, "inf is not finite", "{case}");
+    }
+}
+
+#[test]
+fn to_value_keeps_a_finite_float_a_float() {
+    for f in [0.0, -0.0, 1.5, f64::MAX, f64::MIN, 5e-324] {
+        match to_value(&f).unwrap() {
+            Value::Float(float) => assert_same_bits(float.get(), f),
+            other => panic!("{f} should be a Float, got {other:?}"),
+        }
+    }
+}
+
+#[test]
+fn from_value_refuses_it_for_a_float() {
+    for f in NON_FINITE {
+        assert_eq!(
+            deserialize_error::<f64>(special(f)),
+            "expected Numeric, got Opaque",
+            "{f}"
+        );
+        assert_eq!(
+            deserialize_error::<f32>(special(f)),
+            "expected Numeric, got Opaque",
+            "{f} for an f32"
+        );
+    }
+}
+
+#[test]
+fn from_value_refuses_it_for_a_nested_float() {
+    // An `Option` and a `Nullable` each reach the float by a route of their own.
+    #[derive(Deserialize, Debug)]
+    #[allow(dead_code)]
+    struct Fields {
+        level: f64,
+    }
+    #[derive(Deserialize, Debug)]
+    #[allow(dead_code)]
+    struct OptionalFields {
+        level: Option<f64>,
+    }
+    #[derive(Deserialize, Debug)]
+    #[allow(dead_code)]
+    struct NullableFields {
+        level: Nullable<f64>,
+    }
+    let infinity = || special(f64::INFINITY);
+    let fields = || Value::map([("level", infinity())]);
+    for (case, message, expected) in [
+        (
+            "an element",
+            deserialize_error::<Vec<f64>>(Value::array([Value::Int(1), infinity()])),
+            "expected Numeric, got Opaque (at `[1]`)",
+        ),
+        (
+            "a field",
+            deserialize_error::<Fields>(fields()),
+            "expected Numeric, got Opaque (at `level`)",
+        ),
+        (
+            "an Option field",
+            deserialize_error::<OptionalFields>(fields()),
+            "expected Numeric, got Opaque (at `level`)",
+        ),
+        (
+            "a Nullable field",
+            deserialize_error::<NullableFields>(fields()),
+            "expected Numeric, got Opaque (at `level`)",
+        ),
+        (
+            "a Map entry",
+            deserialize_error::<BTreeMap<String, f64>>(fields()),
+            "expected Numeric, got Opaque (at `level`)",
+        ),
+        (
+            "a tuple's element",
+            deserialize_error::<(f64, f64)>(Value::array([Value::Int(1), infinity()])),
+            "expected Numeric, got Opaque (at `[1]`)",
+        ),
+    ] {
+        assert_eq!(message, expected, "{case}");
+    }
+}
+
+#[test]
+fn a_tuple_target_refuses_it_as_an_opaque() {
+    // Not as the float it holds: only an Array is a tuple.
+    assert_eq!(
+        deserialize_error::<(f64, f64)>(special(f64::INFINITY)),
+        "expected Array, got Opaque"
+    );
+}
+
+#[test]
+fn a_value_carries_it_through_the_bridge() {
+    #[derive(Serialize, Deserialize)]
+    struct Reading {
+        level: Value,
+    }
+    for f in NON_FINITE {
+        assert_same_bits(held(&to_value(&special(f)).unwrap()), f);
+        assert_same_bits(held(&from_value::<Value>(special(f)).unwrap()), f);
+
+        let value = to_value(&Reading { level: special(f) }).unwrap();
+        let reading: Reading = from_value(value).unwrap();
+        assert_same_bits(held(&reading.level), f);
+    }
+}
+
+// -- serde's buffered representations --
+//
+// serde reads these into a buffer of its own, which holds a SpecialFloat as the
+// float it carries, as a foreign serializer sees it. A `Value` read back out of
+// the buffer is the SpecialFloat again, and an `f64` takes the float.
+
+#[test]
+fn a_value_in_a_buffered_representation_keeps_it() {
+    #[derive(Deserialize)]
+    #[serde(untagged)]
+    enum Untagged {
+        Reading { level: Value },
+    }
+    let level = Value::map([("level", special(f64::NEG_INFINITY))]);
+    let Untagged::Reading { level } = from_value(level).unwrap();
+    assert_same_bits(held(&level), f64::NEG_INFINITY);
+}
+
+#[test]
+fn a_float_in_a_buffered_representation_takes_the_float() {
+    #[derive(Deserialize)]
+    #[serde(untagged)]
+    enum Untagged {
+        Float(f64),
+    }
+    let Untagged::Float(f) = from_value(special(f64::NEG_INFINITY)).unwrap();
+    assert_same_bits(f, f64::NEG_INFINITY);
+
+    #[derive(Deserialize)]
+    #[serde(tag = "type")]
+    enum Tagged {
+        Fields { level: f64 },
+    }
+    let Tagged::Fields { level } = from_value(Value::map([
+        ("type", Value::from("Fields")),
+        ("level", special(f64::NEG_INFINITY)),
+    ]))
+    .unwrap();
+    assert_same_bits(level, f64::NEG_INFINITY);
+
+    #[derive(Deserialize)]
+    struct Flattened {
+        #[serde(flatten)]
+        inner: Inner,
+    }
+    #[derive(Deserialize)]
+    struct Inner {
+        level: f64,
+    }
+    let flattened: Flattened =
+        from_value(Value::map([("level", special(f64::NEG_INFINITY))])).unwrap();
+    assert_same_bits(flattened.inner.level, f64::NEG_INFINITY);
+}
+
+#[test]
+fn an_f32_in_a_buffered_representation_rounds_a_float_beyond_its_range() {
+    #[derive(Deserialize)]
+    #[serde(untagged)]
+    enum Untagged {
+        Float(f32),
+    }
+    let huge = Value::Float(FrostFloat::new(1e39).unwrap());
+    let Untagged::Float(f) = from_value(huge).unwrap();
+    assert_eq!(
+        f,
+        f32::INFINITY,
+        "1e39 rounds to an infinity, as a cast does"
+    );
 }

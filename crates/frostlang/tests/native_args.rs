@@ -370,6 +370,15 @@ fn de_rejects_what_does_not_deserialize_with_the_reason() {
     }
 }
 
+#[test]
+fn de_reports_a_float_beyond_an_f32_as_invalid() {
+    assert_eq!(
+        rejection::<De<f32>>(Value::Float(FrostFloat::new(1e39).unwrap())),
+        "Function f requires argument 1 (x) to be valid: \
+         expected Numeric from -3.4028235e38 to 3.4028235e38, got 1e39"
+    );
+}
+
 #[derive(Debug, Deserialize, PartialEq)]
 enum Shape {
     Dot,
@@ -422,7 +431,21 @@ fn de_rejects_a_type_its_target_never_deserializes_from_as_a_wrong_type() {
         ),
         (
             rejection::<De<f64>>(Value::from("1")),
-            wrong_type("Int or Float or Opaque", "String"),
+            wrong_type("Numeric", "String"),
+        ),
+        // A SpecialFloat is an Opaque, which no float takes.
+        (
+            rejection::<De<f64>>(Value::opaque(SpecialFloat::new(f64::INFINITY).unwrap())),
+            wrong_type("Numeric", "Opaque"),
+        ),
+        (
+            rejection::<De<f32>>(Value::opaque(SpecialFloat::new(f64::INFINITY).unwrap())),
+            wrong_type("Numeric", "Opaque"),
+        ),
+        // A tuple takes only an Array.
+        (
+            rejection::<De<(i64, i64)>>(Value::Int(1)),
+            wrong_type("Array", "Int"),
         ),
         (
             rejection::<De<bool>>(Value::Null),
@@ -460,8 +483,6 @@ fn de_rejects_a_type_its_target_never_deserializes_from_as_a_wrong_type() {
 #[test]
 fn de_takes_every_type_its_target_deserializes_from() {
     assert_eq!(taken::<De<f64>>(Value::Int(2)), De(2.0));
-    let infinity = SpecialFloat::new(f64::INFINITY).expect("infinity is special");
-    assert_eq!(taken::<De<f64>>(Value::opaque(infinity)), De(f64::INFINITY));
     assert_eq!(
         taken::<De<Nullable<Options>>>(Value::Null),
         De(Nullable(None))

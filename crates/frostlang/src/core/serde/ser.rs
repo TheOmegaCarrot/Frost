@@ -4,7 +4,7 @@ use std::fmt;
 use serde::ser::{self, Serialize};
 
 use crate::core::serde::special_float;
-use crate::core::{FrostArray, MapKey, Value, ValueMap};
+use crate::core::{FrostArray, FrostFloat, MapKey, Value, ValueMap};
 
 thread_local! {
     /// Set while our own serializer is lifting a `Value` out of a [`ValueCarrier`], so the
@@ -39,7 +39,8 @@ impl ser::Error for SerError {
 /// Serializes any `Serialize` type into a Frost `Value`.
 ///
 /// An `Option` is presence: see [`Nullable`](crate::Nullable) for how `None`
-/// and Null serialize.
+/// and Null serialize. An `f64` or `f32` is finite: see
+/// [`SpecialFloat`](crate::SpecialFloat).
 pub fn to_value<T: Serialize>(value: &T) -> Result<Value, crate::core::FrostError> {
     value
         .serialize(ValueSerializer::Required)
@@ -117,8 +118,12 @@ impl ser::Serializer for ValueSerializer {
         self.serialize_f64(v as f64)
     }
 
+    /// A Float is finite, so a NaN or infinity is an error. A `Value` holding a
+    /// [`SpecialFloat`](crate::SpecialFloat) never reaches here: it crosses whole.
     fn serialize_f64(self, v: f64) -> Result<Value, SerError> {
-        Ok(Value::from_f64(v))
+        FrostFloat::new(v)
+            .map(Value::Float)
+            .map_err(|_| ser::Error::custom(format!("{v} is not finite")))
     }
 
     fn serialize_char(self, v: char) -> Result<Value, SerError> {
