@@ -4,7 +4,7 @@
 
 use std::collections::BTreeMap;
 
-use frostlang::native::{IntoNativeResult, Nullable, Ser};
+use frostlang::native::{IntoNativeResult, Nullable, Opaque, Ser};
 use frostlang::{
     FrostArray, FrostBytes, FrostError, FrostFloat, FrostMap, FrostString, SpecialFloat, Value,
     ValueMap,
@@ -100,6 +100,13 @@ fn an_integer_outside_the_int_range_is_rejected() {
 }
 
 #[test]
+fn a_char_returns_a_string_of_it() {
+    assert_eq!(returned('a'), Value::from("a"));
+    assert_eq!(returned('\u{1F600}'), Value::from("\u{1F600}"));
+    assert_eq!(returned(Ser('a')), Value::from("a"), "through the bridge");
+}
+
+#[test]
 fn a_finite_f64_returns_a_float() {
     assert_eq!(returned(2.5), Value::Float(FrostFloat::new(2.5).unwrap()));
     assert_eq!(returned(-0.0), Value::Float(FrostFloat::new(-0.0).unwrap()));
@@ -184,6 +191,46 @@ fn ser_rejects_a_result_that_does_not_serialize() {
         message.starts_with("Function f has a result no value can hold: "),
         "{message:?}"
     );
+}
+
+#[test]
+fn ser_returns_any_integer_an_int_holds() {
+    assert_eq!(returned(Ser(i128::from(i64::MIN))), Value::Int(i64::MIN));
+    assert_eq!(returned(Ser(i64::MAX as u128)), Value::Int(i64::MAX));
+}
+
+#[test]
+fn ser_rejects_an_integer_outside_the_int_range() {
+    assert_eq!(
+        rejection(Ser(u64::MAX)),
+        "Function f has a result no value can hold: \
+         integer 18446744073709551615 is beyond the Int range"
+    );
+    assert_eq!(
+        rejection(Ser(u128::MAX)),
+        "Function f has a result no value can hold: \
+         integer 340282366920938463463374607431768211455 is beyond the Int range"
+    );
+}
+
+#[test]
+fn ser_returns_an_opaque_as_the_same_handle() {
+    #[derive(Debug)]
+    struct Token;
+
+    impl frostlang::FrostOpaque for Token {
+        fn type_name() -> &'static str {
+            "Token"
+        }
+
+        fn try_to_string(&self) -> Option<String> {
+            None
+        }
+    }
+
+    // A Token compares by identity, so an equal Value is the same handle.
+    let token = Opaque::new(Token);
+    assert_eq!(returned(Ser(token.clone())), Value::from(token));
 }
 
 #[test]

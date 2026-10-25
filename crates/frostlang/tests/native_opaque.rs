@@ -1,8 +1,17 @@
-//! `native::Opaque<T>`: host data of one payload type taken as an argument and
-//! returned as a result, without copying the payload.
+//! `native::Opaque<T>`: host data of one payload type taken as an argument,
+//! returned as a result, and converted through the serde bridge, without
+//! copying the payload.
 
-use frostlang::native::{Args, FrostArg, Nullable, Opaque, Optional};
-use frostlang::{FrostOpaque, FrostType, Params, SpecialFloat, Value, frost_fn};
+use std::fmt::Debug;
+
+use serde::de::value::{Error as PlainError, F64Deserializer};
+use serde::de::{DeserializeOwned, IntoDeserializer};
+use serde::{Deserialize, Serialize};
+
+use frostlang::native::{Args, De, FrostArg, Nullable, Opaque, Optional};
+use frostlang::{
+    FrostError, FrostOpaque, FrostType, Params, SpecialFloat, Value, from_value, frost_fn, to_value,
+};
 
 use crate::script::Script;
 
@@ -170,6 +179,161 @@ fn an_opaque_with_its_own_equals_compares_by_it_under_every_optimization() {
         script("[true, true, true]").run(),
         "two handles compare by the payloads' own `equals`"
     );
+}
+
+// --- Through the serde bridge ---
+
+/// A struct of Opaque fields, as a host would take or give options.
+#[derive(Debug, Serialize, Deserialize)]
+struct Shape {
+    origin: Opaque<Point>,
+    corner: Option<Opaque<Point>>,
+    center: Nullable<Opaque<Point>>,
+}
+
+/// The error message of deserializing `value` as `T`, which must fail.
+fn deserialize_error<T: DeserializeOwned + Debug>(value: Value) -> String {
+    from_value::<T>(value)
+        .expect_err("deserializing fails")
+        .message()
+        .into_owned()
+}
+
+/// An Opaque of a `Point` at `x`, `y`.
+fn point_of(x: i64, y: i64) -> Opaque<Point> {
+    Opaque::new(Point(x, y))
+}
+
+#[test]
+fn from_value_takes_an_opaque_sharing_its_payload() {
+    let held = point_of(1, 2);
+    let taken = from_value::<Opaque<Point>>(Value::from(held.clone())).unwrap();
+    let taken = taken
+        .try_into_inner()
+        .expect_err("the payload is shared with `held`");
+    assert_eq!(*taken, Point(1, 2));
+}
+
+#[test]
+fn an_opaque_field_round_trips_as_the_same_handle() {
+    let (origin, center) = (Value::from(point_of(1, 2)), Value::from(point_of(3, 4)));
+    let value = Value::map([("origin", origin.clone()), ("center", center)]);
+    let shape = from_value::<Shape>(value.clone()).unwrap();
+    assert!(shape.corner.is_none(), "an absent field is None");
+    let back = to_value(&shape).unwrap();
+    // A Point compares by identity, so equal Values hold the same handles.
+    assert_eq!(back, value);
+
+    let null_center = Value::map([("origin", origin), ("center", Value::Null)]);
+    let shape = from_value::<Shape>(null_center.clone()).unwrap();
+    assert!(shape.center.0.is_none(), "a Nullable takes Null");
+    assert_eq!(to_value(&shape).unwrap(), null_center);
+}
+
+#[test]
+fn from_value_refuses_an_opaque_of_another_payload_type_naming_both() {
+    let special = Value::opaque(SpecialFloat::new(f64::NAN).unwrap());
+    assert_eq!(
+        deserialize_error::<Opaque<Point>>(special.clone()),
+        "expected an Opaque Point, got an Opaque SpecialFloat"
+    );
+    assert_eq!(
+        deserialize_error::<Shape>(Value::map([("origin", special)])),
+        "expected an Opaque Point, got an Opaque SpecialFloat (at `origin`)"
+    );
+}
+
+#[test]
+fn from_value_refuses_another_type() {
+    assert_eq!(
+        deserialize_error::<Opaque<Point>>(Value::Int(1)),
+        "expected Opaque, got Int"
+    );
+    assert_eq!(
+        deserialize_error::<Opaque<Point>>(Value::Null),
+        "expected Opaque, got Null",
+        "only a Nullable takes Null"
+    );
+}
+
+/// `value` taken as a `T`, the sole parameter of `f`, named `x`.
+fn take_as<T: FrostArg>(value: Value) -> Result<T, FrostError> {
+    let params = Params::new(const { &[<T as FrostArg>::PARAM.named("x")] });
+    Args::new("f", params, &mut [value]).take()
+}
+
+/// The error message of taking `value` as a `T`, which must fail.
+fn take_error<T: FrostArg + Debug>(value: Value) -> String {
+    take_as::<T>(value)
+        .expect_err("taking fails")
+        .message()
+        .into_owned()
+}
+
+#[test]
+fn de_takes_an_opaque() {
+    let De(taken) = take_as::<De<Opaque<Point>>>(Value::from(point_of(5, 6))).unwrap();
+    assert_eq!(*taken, Point(5, 6));
+    let De(Nullable(taken)) = take_as::<De<Nullable<Opaque<Point>>>>(Value::Null).unwrap();
+    assert!(taken.is_none(), "a Nullable takes Null");
+}
+
+#[test]
+fn de_refuses_another_type_as_a_wrong_argument_type() {
+    assert_eq!(
+        take_error::<De<Opaque<Point>>>(Value::Int(1)),
+        "Function f requires Opaque as argument 1 (x), got Int"
+    );
+    assert_eq!(
+        take_error::<De<Nullable<Opaque<Point>>>>(Value::Int(1)),
+        "Function f requires Null or Opaque as argument 1 (x), got Int"
+    );
+}
+
+#[test]
+fn de_refuses_an_opaque_of_another_payload_type_as_invalid() {
+    let special = Value::opaque(SpecialFloat::new(f64::NAN).unwrap());
+    assert_eq!(
+        take_error::<De<Opaque<Point>>>(special.clone()),
+        "Function f requires argument 1 (x) to be valid: \
+         expected an Opaque Point, got an Opaque SpecialFloat"
+    );
+    assert_eq!(
+        take_error::<De<Vec<Opaque<Point>>>>(Value::array([special])),
+        "Function f requires argument 1 (x) to be valid: \
+         expected an Opaque Point, got an Opaque SpecialFloat (at `[0]`)"
+    );
+}
+
+#[test]
+fn a_foreign_format_refuses_an_opaque() {
+    assert_eq!(
+        serde_json::to_string(&point_of(1, 2))
+            .expect_err("refused")
+            .to_string(),
+        "cannot serialize Opaque"
+    );
+    assert_eq!(
+        serde_json::from_str::<Opaque<Point>>("1")
+            .expect_err("refused")
+            .to_string(),
+        "expected Opaque, got Int"
+    );
+}
+
+#[test]
+fn an_opaque_special_float_crosses_a_foreign_format_as_its_float() {
+    // Both ways, as a Value holding a SpecialFloat does.
+    let infinity = Opaque::new(SpecialFloat::new(f64::INFINITY).unwrap());
+    assert_eq!(
+        postcard::to_allocvec(&infinity).unwrap(),
+        postcard::to_allocvec(&f64::INFINITY).unwrap(),
+        "it serializes as its float"
+    );
+    // A format's decoder presenting the float.
+    let decoder: F64Deserializer<PlainError> = f64::INFINITY.into_deserializer();
+    let back = Opaque::<SpecialFloat>::deserialize(decoder).unwrap();
+    assert_eq!(back.get(), f64::INFINITY);
 }
 
 #[test]

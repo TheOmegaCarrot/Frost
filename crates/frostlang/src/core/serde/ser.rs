@@ -3,7 +3,7 @@ use std::fmt;
 
 use serde::ser::{self, Serialize};
 
-use crate::core::serde::special_float;
+use crate::core::serde::{int_value, special_float};
 use crate::core::{FrostArray, FrostFloat, MapKey, Value, ValueMap};
 
 thread_local! {
@@ -109,9 +109,15 @@ impl ser::Serializer for ValueSerializer {
     }
 
     fn serialize_u64(self, v: u64) -> Result<Value, SerError> {
-        i64::try_from(v)
-            .map(Value::from)
-            .map_err(|_| ser::Error::custom("u64 value exceeds i64 range"))
+        int_value(v).map_err(SerError::Message)
+    }
+
+    fn serialize_i128(self, v: i128) -> Result<Value, SerError> {
+        int_value(v).map_err(SerError::Message)
+    }
+
+    fn serialize_u128(self, v: u128) -> Result<Value, SerError> {
+        int_value(v).map_err(SerError::Message)
     }
 
     fn serialize_f32(self, v: f32) -> Result<Value, SerError> {

@@ -9,7 +9,9 @@
 use std::collections::BTreeMap;
 use std::fmt::Debug;
 
-use frostlang::native::{Args, De, FromArg, FrostArg, Function, Nullable, Optional, Rest};
+use frostlang::native::{
+    Args, De, FromArg, FrostArg, Function, Nonnull, Nullable, Numeric, Optional, Rest,
+};
 use frostlang::{
     FrostArray, FrostBytes, FrostError, FrostFloat, FrostMap, FrostString, FrostType, MapKey,
     Param, Params, SpecialFloat, Value,
@@ -51,6 +53,7 @@ fn each_argument_type_declares_its_types() {
         (<i64 as FrostArg>::PARAM, FrostType::INT),
         (<u8 as FrostArg>::PARAM, FrostType::INT),
         (<f64 as FrostArg>::PARAM, FrostType::NUMERIC),
+        (<char as FrostArg>::PARAM, FrostType::STRING),
         (<FrostFloat as FrostArg>::PARAM, FrostType::FLOAT),
         (<String as FrostArg>::PARAM, FrostType::STRING),
         (<FrostString as FrostArg>::PARAM, FrostType::STRING),
@@ -239,6 +242,77 @@ fn an_int_out_of_range_is_rejected_with_the_range() {
     }
 }
 
+#[test]
+fn de_words_an_int_out_of_range_as_an_integer_argument_does() {
+    // The bridge states the range as an integer argument does, and `De` wraps
+    // its message as an invalid argument.
+    let cases = [
+        (
+            rejection::<De<u8>>(Value::Int(256)),
+            "from 0 to 255, got 256",
+        ),
+        (rejection::<De<u64>>(Value::Int(-1)), "at least 0, got -1"),
+        (rejection::<De<u128>>(Value::Int(-1)), "at least 0, got -1"),
+    ];
+    for (message, range) in cases {
+        assert_eq!(
+            message,
+            format!("Function f requires argument 1 (x) to be valid: expected Int {range}")
+        );
+    }
+    assert_eq!(
+        taken::<De<i128>>(Value::Int(i64::MIN)),
+        De(i128::from(i64::MIN)),
+        "an i128 takes the least Int"
+    );
+    assert_eq!(
+        taken::<De<u128>>(Value::Int(i64::MAX)),
+        De(i64::MAX as u128),
+        "a u128 takes the greatest Int"
+    );
+}
+
+// --- char ---
+
+#[test]
+fn char_takes_a_string_of_one_code_point() {
+    assert_eq!(taken::<char>(Value::from("a")), 'a');
+    assert_eq!(
+        taken::<char>(Value::from("\u{1F600}")),
+        '\u{1F600}',
+        "one code point, however many bytes"
+    );
+    assert_eq!(
+        taken::<De<char>>(Value::from("a")),
+        De('a'),
+        "through the bridge"
+    );
+}
+
+#[test]
+fn char_rejects_any_other_string() {
+    // A letter and a combining accent are two code points, though they render
+    // as one character.
+    for (text, rendered) in [
+        ("ab", r#""ab""#),
+        ("", r#""""#),
+        ("e\u{301}", "\"e\u{301}\""),
+    ] {
+        assert_eq!(
+            rejection::<char>(Value::from(text)),
+            format!("Function f requires argument 1 (x) to be one code point, got {rendered}")
+        );
+        assert_eq!(
+            rejection::<De<char>>(Value::from(text)),
+            format!(
+                "Function f requires argument 1 (x) to be valid: \
+                 expected String of one code point, got {rendered}"
+            ),
+            "through the bridge"
+        );
+    }
+}
+
 // --- Optional and Nullable ---
 
 #[test]
@@ -408,6 +482,19 @@ fn de_rejects_a_type_its_target_never_deserializes_from_as_a_wrong_type() {
             rejection::<De<Options>>(Value::Int(1)),
             wrong_type("Map", "Int"),
         ),
+        // A category type takes its category's types.
+        (
+            rejection::<De<Function>>(Value::from("f")),
+            wrong_type("Function", "String"),
+        ),
+        (
+            rejection::<De<Numeric>>(Value::from("1")),
+            wrong_type("Numeric", "String"),
+        ),
+        (
+            rejection::<De<Nonnull>>(Value::Null),
+            wrong_type("Nonnull", "Null"),
+        ),
         (
             rejection::<De<BTreeMap<String, i64>>>(Value::array([1])),
             wrong_type("Map", "Array"),
@@ -441,6 +528,18 @@ fn de_rejects_a_type_its_target_never_deserializes_from_as_a_wrong_type() {
         (
             rejection::<De<f32>>(Value::opaque(SpecialFloat::new(f64::INFINITY).unwrap())),
             wrong_type("Numeric", "Opaque"),
+        ),
+        (
+            rejection::<De<i128>>(Value::from("1")),
+            wrong_type("Int", "String"),
+        ),
+        (
+            rejection::<De<u128>>(Value::from("1")),
+            wrong_type("Int", "String"),
+        ),
+        (
+            rejection::<De<char>>(Value::Int(1)),
+            wrong_type("String", "Int"),
         ),
         // A tuple takes only an Array.
         (

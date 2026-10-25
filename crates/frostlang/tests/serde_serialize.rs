@@ -63,8 +63,35 @@ fn serialize_u64_in_range() {
 }
 
 #[test]
-fn serialize_u64_out_of_range() {
-    assert!(to_value(&u64::MAX).is_err());
+fn serialize_i128_and_u128_in_the_int_range() {
+    for int in [i64::MIN, -1, 0, i64::MAX] {
+        assert_eq!(to_value(&i128::from(int)).unwrap(), Value::Int(int));
+    }
+    assert_eq!(to_value(&0u128).unwrap(), Value::Int(0));
+    assert_eq!(to_value(&(i64::MAX as u128)).unwrap(), Value::Int(i64::MAX));
+}
+
+#[test]
+fn serialize_integer_out_of_int_range() {
+    let cases = [
+        (to_value(&(i64::MAX as u64 + 1)), "9223372036854775808"),
+        (to_value(&u64::MAX), "18446744073709551615"),
+        (
+            to_value(&(i128::from(i64::MIN) - 1)),
+            "-9223372036854775809",
+        ),
+        (to_value(&(i128::from(i64::MAX) + 1)), "9223372036854775808"),
+        (
+            to_value(&u128::MAX),
+            "340282366920938463463374607431768211455",
+        ),
+    ];
+    for (result, int) in cases {
+        assert_eq!(
+            result.expect_err("refused").message(),
+            format!("integer {int} is beyond the Int range")
+        );
+    }
 }
 
 #[test]
@@ -98,8 +125,8 @@ fn serialize_string() {
 
 #[test]
 fn serialize_char() {
-    let v = to_value(&'a').unwrap();
-    assert_eq!(v, Value::from("a"));
+    assert_eq!(to_value(&'a').unwrap(), Value::from("a"));
+    assert_eq!(to_value(&'\u{1F600}').unwrap(), Value::from("\u{1F600}"));
 }
 
 // ---- Unit ----

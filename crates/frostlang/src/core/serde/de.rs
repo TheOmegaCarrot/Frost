@@ -4,9 +4,12 @@ use std::fmt;
 use serde::de::{self, DeserializeOwned, IntoDeserializer, Visitor};
 use serde::{Deserialize, Deserializer};
 
-use crate::core::serde::special_float;
+use crate::core::serde::{int_value, special_float};
 use crate::core::util::identifier::is_identifier_like_and_not_keyword;
+use crate::core::util::int_range::int_range;
+use crate::core::util::sole_char::sole_char;
 use crate::core::{FrostArray, FrostType, MapKey, TypeSet, Value, ValueMap};
+use crate::vm::expected_types;
 
 thread_local! {
     /// Carries a whole `Value` from our own [`ValueDeserializer::deserialize_newtype_struct`]
@@ -14,6 +17,9 @@ thread_local! {
     /// Functions and Opaques that the serde data model cannot express. Set and taken within
     /// one call, with no foreign code in between.
     static INCOMING_VALUE: Cell<Option<Value>> = const { Cell::new(None) };
+    /// The types [`deserialize_of_types`] asks for, for the probe to report: a
+    /// newtype's name is all a `Deserialize` can tell its deserializer.
+    static EXPECTED_TYPES: Cell<Option<TypeSet>> = const { Cell::new(None) };
 }
 
 /// Clears [`INCOMING_VALUE`] on drop, so a value deposited for the token path leaves no
@@ -23,6 +29,15 @@ struct IncomingGuard;
 impl Drop for IncomingGuard {
     fn drop(&mut self) {
         INCOMING_VALUE.with(|slot| drop(slot.take()));
+    }
+}
+
+/// Restores [`EXPECTED_TYPES`] to what it held before, on drop.
+struct ExpectedTypesGuard(Option<TypeSet>);
+
+impl Drop for ExpectedTypesGuard {
+    fn drop(&mut self) {
+        EXPECTED_TYPES.with(|slot| slot.set(self.0));
     }
 }
 
@@ -118,8 +133,10 @@ impl de::Error for DeError {
         ))
     }
 
-    /// A value of the right type, but not one the target accepts, such as an Int
-    /// out of a narrower integer's range.
+    /// A value of the right type, but not one the target accepts, such as zero
+    /// for a nonzero integer.
+    // TODO: `expected` is the target's own words, which may name its Rust type
+    // ("a nonzero u8").
     fn invalid_value(unexpected: de::Unexpected, expected: &dyn de::Expected) -> Self {
         let found = match unexpected {
             de::Unexpected::Bool(b) => b.to_string(),
@@ -164,6 +181,27 @@ pub fn from_value<'de, T: serde::Deserialize<'de>>(
 }
 
 // -- Deserializer --
+
+/// Implements the `Deserializer` method of each integer type narrower than `i64`
+/// and of `u64`: it reads an Int within that type's range.
+/// The bridge checks the range itself, wording a refusal as a native argument's
+/// range is, where the target's visitor would name its Rust type.
+macro_rules! deserialize_int {
+    ($($method:ident: $int:ty => $visit:ident,)*) => {$(
+        fn $method<V: Visitor<'de>>(self, visitor: V) -> Result<V::Value, DeError> {
+            let Value::Int(int) = self.0 else {
+                return Err(DeError::mismatch("Int", &self.0));
+            };
+            match <$int>::try_from(int) {
+                Ok(narrowed) => visitor.$visit(narrowed),
+                Err(_) => Err(DeError::new(format!(
+                    "expected Int {}, got {int}",
+                    int_range(<$int>::MIN, <$int>::MAX)
+                ))),
+            }
+        }
+    )*};
+}
 
 struct ValueDeserializer(Value);
 
@@ -250,8 +288,8 @@ impl<'de> de::Deserializer<'de> for ValueDeserializer {
         }
     }
 
-    /// Every integer target reads an Int; one narrower than an Int rejects a value
-    /// outside its range itself.
+    /// Every integer target reads an Int; [`deserialize_int`] implements those
+    /// with a narrower range.
     fn deserialize_i64<V: Visitor<'de>>(self, visitor: V) -> Result<V::Value, DeError> {
         match self.0 {
             Value::Int(i) => visitor.visit_i64(i),
@@ -269,8 +307,19 @@ impl<'de> de::Deserializer<'de> for ValueDeserializer {
         }
     }
 
+    /// Reads a String of one code point. The bridge checks that itself, as
+    /// [`deserialize_int`] checks a range, to word a refusal in Frost's terms.
     fn deserialize_char<V: Visitor<'de>>(self, visitor: V) -> Result<V::Value, DeError> {
-        self.deserialize_str(visitor)
+        let Value::String(ref text) = self.0 else {
+            return Err(DeError::mismatch("String", &self.0));
+        };
+        match sole_char(text) {
+            Some(c) => visitor.visit_char(c),
+            None => Err(DeError::new(format!(
+                "expected String of one code point, got {}",
+                self.0.to_debug_string()
+            ))),
+        }
     }
 
     fn deserialize_unit<V: Visitor<'de>>(self, visitor: V) -> Result<V::Value, DeError> {
@@ -288,32 +337,27 @@ impl<'de> de::Deserializer<'de> for ValueDeserializer {
         self.deserialize_unit(visitor)
     }
 
-    fn deserialize_i8<V: Visitor<'de>>(self, visitor: V) -> Result<V::Value, DeError> {
+    deserialize_int! {
+        deserialize_i8: i8 => visit_i8,
+        deserialize_i16: i16 => visit_i16,
+        deserialize_i32: i32 => visit_i32,
+        deserialize_u8: u8 => visit_u8,
+        deserialize_u16: u16 => visit_u16,
+        deserialize_u32: u32 => visit_u32,
+        deserialize_u64: u64 => visit_u64,
+    }
+
+    /// Gives the Int as an `i64`, as a format gives any integer that fits one.
+    /// Serde's own 128-bit visitors accept that, and so does a visitor written
+    /// only for 64-bit integers, which would refuse `visit_i128`.
+    fn deserialize_i128<V: Visitor<'de>>(self, visitor: V) -> Result<V::Value, DeError> {
         self.deserialize_i64(visitor)
     }
 
-    fn deserialize_i16<V: Visitor<'de>>(self, visitor: V) -> Result<V::Value, DeError> {
-        self.deserialize_i64(visitor)
-    }
-
-    fn deserialize_i32<V: Visitor<'de>>(self, visitor: V) -> Result<V::Value, DeError> {
-        self.deserialize_i64(visitor)
-    }
-
-    fn deserialize_u8<V: Visitor<'de>>(self, visitor: V) -> Result<V::Value, DeError> {
-        self.deserialize_i64(visitor)
-    }
-
-    fn deserialize_u16<V: Visitor<'de>>(self, visitor: V) -> Result<V::Value, DeError> {
-        self.deserialize_i64(visitor)
-    }
-
-    fn deserialize_u32<V: Visitor<'de>>(self, visitor: V) -> Result<V::Value, DeError> {
-        self.deserialize_i64(visitor)
-    }
-
-    fn deserialize_u64<V: Visitor<'de>>(self, visitor: V) -> Result<V::Value, DeError> {
-        self.deserialize_i64(visitor)
+    /// As [`deserialize_i128`](Self::deserialize_i128), but refusing a negative
+    /// Int and giving the rest as a `u64`.
+    fn deserialize_u128<V: Visitor<'de>>(self, visitor: V) -> Result<V::Value, DeError> {
+        self.deserialize_u64(visitor)
     }
 
     /// As [`deserialize_f64`](Self::deserialize_f64), refusing a Float beyond
@@ -435,8 +479,9 @@ impl<'de> de::Deserializer<'de> for ValueDeserializer {
         name: &'static str,
         visitor: V,
     ) -> Result<V::Value, DeError> {
-        if name == super::VALUE_NEWTYPE_TOKEN {
-            // Our own `Value::deserialize` is asking for the value whole.
+        if name == super::VALUE_NEWTYPE_TOKEN || name == super::TYPED_NEWTYPE_TOKEN {
+            // Our own `Value::deserialize` or `deserialize_of_types` is asking for the
+            // value whole.
             // Deposit it in the slot for `ValueVisitor::visit_newtype_struct` to lift out;
             // the dummy deserializer is consulted only if the visitor is not ours.
             let _guard = IncomingGuard;
@@ -541,6 +586,14 @@ impl<'de> de::Deserializer<'de> for Probe {
         Self::accepts(FrostType::INT)
     }
 
+    fn deserialize_i128<V: Visitor<'de>>(self, _: V) -> Result<V::Value, Probed> {
+        Self::accepts(FrostType::INT)
+    }
+
+    fn deserialize_u128<V: Visitor<'de>>(self, _: V) -> Result<V::Value, Probed> {
+        Self::accepts(FrostType::INT)
+    }
+
     fn deserialize_f32<V: Visitor<'de>>(self, _: V) -> Result<V::Value, Probed> {
         Self::accepts(FrostType::NUMERIC)
     }
@@ -596,6 +649,10 @@ impl<'de> de::Deserializer<'de> for Probe {
         if name == super::VALUE_NEWTYPE_TOKEN {
             return Self::accepts(FrostType::ANY);
         }
+        if name == super::TYPED_NEWTYPE_TOKEN {
+            let types = EXPECTED_TYPES.with(Cell::get);
+            return Self::accepts(types.unwrap_or(FrostType::ANY));
+        }
         if name == super::NULLABLE_NEWTYPE_TOKEN {
             return visitor
                 .visit_some(Probe)
@@ -644,7 +701,7 @@ impl<'de> de::Deserializer<'de> for Probe {
     }
 
     serde::forward_to_deserialize_any! {
-        i128 u128 identifier ignored_any
+        identifier ignored_any
     }
 }
 
@@ -804,6 +861,26 @@ impl<'de> serde::Deserialize<'de> for Value {
     }
 }
 
+/// A value of `types`, deserialized as [`Value`]'s own `Deserialize` does, failing
+/// on a value of any other type. The probe reports `types` as the ones it takes
+/// (see [`TYPED_NEWTYPE_TOKEN`](super::TYPED_NEWTYPE_TOKEN)).
+pub(crate) fn deserialize_of_types<'de, D: de::Deserializer<'de>>(
+    deserializer: D,
+    types: TypeSet,
+) -> Result<Value, D::Error> {
+    let _guard = ExpectedTypesGuard(EXPECTED_TYPES.with(|slot| slot.replace(Some(types))));
+    let value =
+        deserializer.deserialize_newtype_struct(super::TYPED_NEWTYPE_TOKEN, ValueVisitor)?;
+    if !value.fits(types) {
+        return Err(de::Error::custom(format_args!(
+            "expected {}, got {}",
+            expected_types(types),
+            value.type_name()
+        )));
+    }
+    Ok(value)
+}
+
 struct ValueVisitor;
 
 impl<'de> Visitor<'de> for ValueVisitor {
@@ -830,9 +907,15 @@ impl<'de> Visitor<'de> for ValueVisitor {
     }
 
     fn visit_u64<E: de::Error>(self, v: u64) -> Result<Value, E> {
-        i64::try_from(v)
-            .map(Value::from)
-            .map_err(|_| de::Error::custom("u64 value exceeds i64 range"))
+        int_value(v).map_err(E::custom)
+    }
+
+    fn visit_i128<E: de::Error>(self, v: i128) -> Result<Value, E> {
+        int_value(v).map_err(E::custom)
+    }
+
+    fn visit_u128<E: de::Error>(self, v: u128) -> Result<Value, E> {
+        int_value(v).map_err(E::custom)
     }
 
     fn visit_f64<E>(self, v: f64) -> Result<Value, E> {

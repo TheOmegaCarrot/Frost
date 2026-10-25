@@ -1,15 +1,24 @@
 mod de;
 mod ser;
 
-pub(crate) use de::accepted_types;
 pub use de::from_value;
+pub(crate) use de::{accepted_types, deserialize_of_types};
 pub use ser::to_value;
+
+use std::fmt::Display;
 
 use crate::core::{SpecialFloat, Value};
 
 /// The float a [`SpecialFloat`] Opaque leaves serde as, or `None` for any other value.
 fn special_float(value: &Value) -> Option<f64> {
     value.downcast_opaque::<SpecialFloat>().map(|s| s.get())
+}
+
+/// `int` as an Int, or the message saying no Int can hold it.
+fn int_value<I: TryInto<i64> + Display + Copy>(int: I) -> Result<Value, String> {
+    int.try_into()
+        .map(Value::Int)
+        .map_err(|_| format!("integer {int} is beyond the Int range"))
 }
 
 /// The newtype-struct name that `Value`'s own `Serialize`/`Deserialize` use to recognize
@@ -25,3 +34,8 @@ pub(crate) const VALUE_NEWTYPE_TOKEN: &str = "$frost::core::Value";
 /// [`VALUE_NEWTYPE_TOKEN`], the `$` keeps it from colliding, and a foreign (de)serializer
 /// sees an ordinary newtype.
 pub(crate) const NULLABLE_NEWTYPE_TOKEN: &str = "$frost::core::Nullable";
+
+/// The newtype-struct name [`deserialize_of_types`] deserializes through. Our own
+/// deserializer passes the value across whole, as for [`VALUE_NEWTYPE_TOKEN`]; the
+/// probe reports the types that call asks for.
+pub(crate) const TYPED_NEWTYPE_TOKEN: &str = "$frost::core::Typed";

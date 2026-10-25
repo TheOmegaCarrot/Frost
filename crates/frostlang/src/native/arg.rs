@@ -7,6 +7,8 @@ use serde::de::DeserializeOwned;
 
 use crate::core::accepted_types;
 use crate::core::util::count::counted;
+use crate::core::util::int_range::int_range;
+use crate::core::util::sole_char::sole_char;
 use crate::vm::{Binder, expected_types};
 use crate::{
     FrostArray, FrostBytes, FrostError, FrostFloat, FrostMap, FrostString, FrostType, MapKey,
@@ -395,16 +397,20 @@ impl FromArg for f64 {
     }
 }
 
-/// The Ints from `min` to `max`, the bounds of a Rust integer type, as an
-/// [`ArgSite::requires`] requirement: as much of that range as an Int covers.
-fn int_range(min: i128, max: i128) -> String {
-    let (min, max) = (min.max(i64::MIN.into()), max.min(i64::MAX.into()));
-    if max == i64::MAX.into() {
-        format!("at least {min}")
-    } else if min == i64::MIN.into() {
-        format!("at most {max}")
-    } else {
-        format!("from {min} to {max}")
+/// A String of one code point.
+impl FromArg for char {
+    const TYPES: TypeSet = FrostType::STRING;
+
+    fn from_arg(value: Value, site: &ArgSite<'_>) -> Result<Self, FrostError> {
+        let Value::String(text) = &value else {
+            mismatch(site, &value)
+        };
+        sole_char(text).ok_or_else(|| {
+            site.requires(format_args!(
+                "one code point, got {}",
+                value.to_debug_string()
+            ))
+        })
     }
 }
 
@@ -417,10 +423,7 @@ macro_rules! from_int {
             fn from_arg(value: Value, site: &ArgSite<'_>) -> Result<Self, FrostError> {
                 let Value::Int(int) = value else { mismatch(site, &value) };
                 <$int>::try_from(int).map_err(|_| {
-                    let range = int_range(
-                        <$int>::MIN.try_into().unwrap_or(i128::MIN),
-                        <$int>::MAX.try_into().unwrap_or(i128::MAX),
-                    );
+                    let range = int_range(<$int>::MIN, <$int>::MAX);
                     site.requires(format_args!("{range}, got {int}"))
                 })
             }

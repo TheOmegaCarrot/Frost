@@ -5,6 +5,8 @@
 
 use crate::common;
 
+use serde::de::IntoDeserializer;
+use serde::de::value::{Error as PlainError, I128Deserializer, U64Deserializer, U128Deserializer};
 use serde::{Deserialize, Serialize};
 
 use frostlang::{FrostOpaque, Value, from_value, frost_closure, to_value};
@@ -132,7 +134,7 @@ fn deny_unknown_fields_rejects_an_extra_function_field() {
     assert!(from_value::<StrictData>(map).is_err());
 }
 
-// -- A foreign format is unaffected, and still refuses Functions --
+// -- A foreign format is unaffected --
 
 #[test]
 fn foreign_format_serializes_data_transparently() {
@@ -143,6 +145,50 @@ fn foreign_format_serializes_data_transparently() {
         Value::array([Value::Int(1), Value::Int(2), Value::Int(3)])
     );
 }
+
+// -- A foreign format's integer of any width is an Int if one can hold it --
+
+#[test]
+fn foreign_format_gives_a_value_any_integer_an_int_holds() {
+    let u64_greatest_int: U64Deserializer<PlainError> = (i64::MAX as u64).into_deserializer();
+    assert_eq!(
+        Value::deserialize(u64_greatest_int).unwrap(),
+        Value::Int(i64::MAX)
+    );
+    let i128_least_int: I128Deserializer<PlainError> = i128::from(i64::MIN).into_deserializer();
+    assert_eq!(
+        Value::deserialize(i128_least_int).unwrap(),
+        Value::Int(i64::MIN)
+    );
+    let u128_zero: U128Deserializer<PlainError> = 0u128.into_deserializer();
+    assert_eq!(Value::deserialize(u128_zero).unwrap(), Value::Int(0));
+}
+
+#[test]
+fn foreign_format_refuses_an_integer_no_int_holds() {
+    let u64_max: U64Deserializer<PlainError> = u64::MAX.into_deserializer();
+    let i128_below_least_int: I128Deserializer<PlainError> =
+        (i128::from(i64::MIN) - 1).into_deserializer();
+    let u128_max: U128Deserializer<PlainError> = u128::MAX.into_deserializer();
+    for (result, int) in [
+        (Value::deserialize(u64_max), "18446744073709551615"),
+        (
+            Value::deserialize(i128_below_least_int),
+            "-9223372036854775809",
+        ),
+        (
+            Value::deserialize(u128_max),
+            "340282366920938463463374607431768211455",
+        ),
+    ] {
+        assert_eq!(
+            result.expect_err("refused").to_string(),
+            format!("integer {int} is beyond the Int range")
+        );
+    }
+}
+
+// -- A foreign format still refuses Functions --
 
 #[test]
 fn foreign_format_refuses_a_function() {

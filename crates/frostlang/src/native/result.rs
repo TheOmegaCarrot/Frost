@@ -79,6 +79,13 @@ into_value!(
     Function
 );
 
+/// A String of the one code point.
+impl IntoNativeResult for char {
+    fn into_result(self, _: &str) -> FrostResult {
+        Ok(Value::from(self.encode_utf8(&mut [0; 4]) as &str))
+    }
+}
+
 /// A non-finite `f64` is an error: a Float is always finite.
 impl IntoNativeResult for f64 {
     fn into_result(self, function: &str) -> FrostResult {

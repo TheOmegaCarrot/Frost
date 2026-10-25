@@ -4,11 +4,17 @@ use std::fmt;
 use std::ops::Deref;
 use std::sync::Arc;
 
+use serde::de::Error as _;
+use serde::{Deserialize, Deserializer, Serialize, Serializer};
+
+use crate::core::deserialize_of_types;
 use crate::native::arg::mismatch;
 use crate::native::{ArgSite, FromArg, IntoNativeResult};
 use crate::{FrostError, FrostOpaque, FrostResult, FrostType, OpaqueHandle, TypeSet, Value};
 
-/// An Opaque argument whose payload is a `T`, or a result returning one.
+/// An Opaque whose payload is a `T`, wherever values convert: as a native's
+/// argument or result, and through [`from_value`](crate::from_value) and
+/// [`to_value`](crate::to_value).
 ///
 /// Its parameter accepts Opaque. An Opaque of another payload type fails,
 /// naming both types by their [`FrostOpaque::type_name`]. Taking the argument
@@ -103,5 +109,28 @@ impl<T: FrostOpaque> From<Opaque<T>> for Value {
 impl<T: FrostOpaque> IntoNativeResult for Opaque<T> {
     fn into_result(self, _: &str) -> FrostResult {
         Ok(Value::from(self))
+    }
+}
+
+/// Serializes as the [`Value`] it converts into.
+impl<T: FrostOpaque> Serialize for Opaque<T> {
+    fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        Value::from(self.clone()).serialize(serializer)
+    }
+}
+
+/// Deserializes an Opaque whose payload is a `T`, failing on any other value.
+impl<'de, T: FrostOpaque> Deserialize<'de> for Opaque<T> {
+    fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        let Value::Opaque(handle) = deserialize_of_types(deserializer, FrostType::OPAQUE)? else {
+            unreachable!("a value of the Opaque type is an Opaque")
+        };
+        handle.downcast_arc().map(Self).map_err(|other| {
+            D::Error::custom(format_args!(
+                "expected an Opaque {}, got an Opaque {}",
+                T::type_name(),
+                other.type_name()
+            ))
+        })
     }
 }

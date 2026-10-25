@@ -8,6 +8,7 @@
 
 use std::io::Cursor;
 
+use crate::core::util::sole_char::sole_char;
 use crate::native::{Flat, Optional};
 use crate::stdlib::stream::{self, Buffer, Kind};
 use crate::{
@@ -264,19 +265,16 @@ fn padder(name: &'static str, side: Side) -> Value {
             let width = usize::try_from(width).unwrap_or(usize::MAX);
             let fill = match fill {
                 Optional(None) => ' ',
-                Optional(Some(fill)) => {
-                    let mut chars = fill.chars();
-                    match (chars.next(), chars.next()) {
-                        (Some(c), None) => c,
-                        _ => {
-                            return Err(FrostError::from_string(format!(
-                                "Function {name} requires a single character as argument 3 \
-                                 (fill), got {}",
-                                Value::String(fill).to_debug_string()
-                            )));
-                        }
+                Optional(Some(fill)) => match sole_char(&fill) {
+                    Some(c) => c,
+                    None => {
+                        return Err(FrostError::from_string(format!(
+                            "Function {name} requires a single character as argument 3 \
+                             (fill), got {}",
+                            Value::String(fill).to_debug_string()
+                        )));
                     }
-                }
+                },
             };
 
             let padding = width.saturating_sub(text.chars().count());

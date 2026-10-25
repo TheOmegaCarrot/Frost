@@ -669,6 +669,19 @@ fn a_primitive_target_names_the_type_it_requires() {
     );
     assert_eq!(error_of::<u8>(Value::Null), "expected Int, got Null");
     assert_eq!(
+        error_of::<u8>(float(1.0)),
+        "expected Int, got Float",
+        "not even a Float equal to an Int"
+    );
+    assert_eq!(
+        error_of::<i128>(Value::from("1")),
+        "expected Int, got String"
+    );
+    assert_eq!(
+        error_of::<u128>(Value::from("1")),
+        "expected Int, got String"
+    );
+    assert_eq!(
         error_of::<f64>(Value::from("1.5")),
         "expected Numeric, got String"
     );
@@ -760,13 +773,153 @@ fn an_f32_refuses_a_float_beyond_its_range() {
 }
 
 #[test]
-fn a_value_outside_a_targets_range_is_named() {
-    assert_eq!(error_of::<u8>(Value::from(300i64)), "expected u8, got 300");
-    assert_eq!(error_of::<u32>(Value::from(-1i64)), "expected u32, got -1");
-    assert_eq!(
-        error_of::<char>(Value::from("ab")),
-        r#"expected a character, got "ab""#
+fn an_integer_target_takes_every_int_in_its_range() {
+    // Each type's bounds, clamped to the Int range, and zero.
+    macro_rules! assert_takes_its_bounds {
+        ($($int:ty),*) => {$(
+            let min = i64::try_from(<$int>::MIN).unwrap_or(i64::MIN);
+            let max = i64::try_from(<$int>::MAX).unwrap_or(i64::MAX);
+            for int in [min, 0, max] {
+                assert_eq!(
+                    from_value::<$int>(Value::Int(int)).unwrap(),
+                    <$int>::try_from(int).unwrap(),
+                    "{} takes {int}",
+                    stringify!($int)
+                );
+            }
+        )*};
+    }
+    assert_takes_its_bounds!(
+        i8, i16, i32, i64, i128, isize, u8, u16, u32, u64, u128, usize
     );
+}
+
+#[test]
+fn a_128_bit_target_is_given_its_int_as_a_64_bit_integer() {
+    // As a format gives an integer that fits 64 bits, so a visitor written only
+    // for 64-bit integers serves a 128-bit hint.
+
+    /// A visitor of 64-bit integers only, refusing a 128-bit visit.
+    struct SixtyFourBitVisitor;
+
+    impl serde::de::Visitor<'_> for SixtyFourBitVisitor {
+        type Value = i128;
+
+        fn expecting(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+            f.write_str("an integer")
+        }
+
+        fn visit_i64<E>(self, v: i64) -> Result<i128, E> {
+            Ok(v.into())
+        }
+
+        fn visit_u64<E>(self, v: u64) -> Result<i128, E> {
+            Ok(v.into())
+        }
+    }
+
+    /// Deserialized with an `i128` hint.
+    #[derive(Debug)]
+    struct Signed(i128);
+
+    impl<'de> Deserialize<'de> for Signed {
+        fn deserialize<D: serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+            deserializer
+                .deserialize_i128(SixtyFourBitVisitor)
+                .map(Signed)
+        }
+    }
+
+    /// Deserialized with a `u128` hint.
+    #[derive(Debug)]
+    struct Unsigned(i128);
+
+    impl<'de> Deserialize<'de> for Unsigned {
+        fn deserialize<D: serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+            deserializer
+                .deserialize_u128(SixtyFourBitVisitor)
+                .map(Unsigned)
+        }
+    }
+
+    assert_eq!(
+        from_value::<Signed>(Value::Int(-5)).unwrap().0,
+        -5,
+        "an i128 hint gives a negative Int"
+    );
+    assert_eq!(
+        from_value::<Unsigned>(Value::Int(5)).unwrap().0,
+        5,
+        "a u128 hint gives a nonnegative Int"
+    );
+    assert_eq!(
+        error_of::<Unsigned>(Value::Int(-5)),
+        "expected Int at least 0, got -5",
+        "a u128 hint refuses a negative Int"
+    );
+}
+
+#[test]
+fn an_int_outside_an_integer_targets_range_is_refused_with_the_range() {
+    // Worded in Ints, as an argument's range is, never naming the Rust type.
+    let cases = [
+        (error_of::<u8>(Value::Int(256)), "from 0 to 255, got 256"),
+        (error_of::<u8>(Value::Int(-1)), "from 0 to 255, got -1"),
+        (error_of::<i8>(Value::Int(128)), "from -128 to 127, got 128"),
+        (
+            error_of::<i8>(Value::Int(-129)),
+            "from -128 to 127, got -129",
+        ),
+        (
+            error_of::<u16>(Value::Int(65_536)),
+            "from 0 to 65535, got 65536",
+        ),
+        (
+            error_of::<i16>(Value::Int(-32_769)),
+            "from -32768 to 32767, got -32769",
+        ),
+        (
+            error_of::<u32>(Value::Int(4_294_967_296)),
+            "from 0 to 4294967295, got 4294967296",
+        ),
+        (
+            error_of::<i32>(Value::Int(2_147_483_648)),
+            "from -2147483648 to 2147483647, got 2147483648",
+        ),
+        // The upper bound is beyond any Int, so it goes unsaid.
+        (error_of::<u64>(Value::Int(-1)), "at least 0, got -1"),
+        (error_of::<usize>(Value::Int(-1)), "at least 0, got -1"),
+        (error_of::<u128>(Value::Int(-1)), "at least 0, got -1"),
+    ];
+    for (message, range) in cases {
+        assert_eq!(message, format!("expected Int {range}"));
+    }
+}
+
+#[test]
+fn a_char_target_takes_a_string_of_one_code_point() {
+    assert_eq!(from_value::<char>(Value::from("a")).unwrap(), 'a');
+    assert_eq!(
+        from_value::<char>(Value::from("\u{1F600}")).unwrap(),
+        '\u{1F600}',
+        "one code point, however many bytes"
+    );
+}
+
+#[test]
+fn a_char_target_refuses_any_other_string() {
+    // A letter and a combining accent are two code points, though they render
+    // as one character.
+    for (text, rendered) in [
+        ("ab", r#""ab""#),
+        ("", r#""""#),
+        ("e\u{301}", "\"e\u{301}\""),
+    ] {
+        assert_eq!(
+            error_of::<char>(Value::from(text)),
+            format!("expected String of one code point, got {rendered}")
+        );
+    }
 }
 
 #[derive(Debug, Deserialize)]

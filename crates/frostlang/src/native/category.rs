@@ -1,8 +1,9 @@
 //! Argument types for Frost's type categories, and for Function: each accepts
 //! exactly its category's types, as [`FrostType`]'s constants define them.
 
-use serde::{Deserialize, Deserializer, Serialize, Serializer, de};
+use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
+use crate::core::deserialize_of_types;
 use crate::native::{ArgSite, FromArg};
 use crate::vm::expected_types;
 use crate::{
@@ -42,15 +43,7 @@ macro_rules! category {
         /// Deserializes a value of its category's types, failing for any other.
         impl<'de> Deserialize<'de> for $category {
             fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
-                let value = Value::deserialize(deserializer)?;
-                if !value.fits($types) {
-                    // Worded as the serde bridge words its own type mismatches.
-                    return Err(de::Error::custom(format_args!(
-                        "expected {}, got {}",
-                        expected_types($types),
-                        value.type_name()
-                    )));
-                }
+                let value = deserialize_of_types(deserializer, $types)?;
                 Ok(Self::try_from(value).expect("a value of the category's types converts"))
             }
         }
