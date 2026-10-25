@@ -20,6 +20,7 @@ pub use types::float::FrostFloat;
 pub use types::frost_type::FrostType;
 pub use types::map::FrostMap;
 pub use types::map_key::MapKey;
+pub use types::nullable::Nullable;
 pub use types::opaque::{FrostOpaque, OpaqueHandle};
 pub use types::special_float::SpecialFloat;
 pub use types::string::FrostString;

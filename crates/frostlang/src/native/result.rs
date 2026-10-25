@@ -4,8 +4,8 @@ use serde::Serialize;
 
 use crate::native::{Flat, Function, Nonnull, Numeric, Primitive, Structured};
 use crate::{
-    FrostArray, FrostBytes, FrostError, FrostFloat, FrostMap, FrostResult, FrostString, Value,
-    to_value,
+    FrostArray, FrostBytes, FrostError, FrostFloat, FrostMap, FrostResult, FrostString, Nullable,
+    Value, to_value,
 };
 
 /// A Rust type a native can return, converted to the value the native
@@ -18,7 +18,8 @@ use crate::{
 #[diagnostic::on_unimplemented(
     message = "`{Self}` cannot be returned to Frost",
     label = "not a native's result type",
-    note = "a native's result type implements `IntoNativeResult`"
+    note = "a native's result type implements `IntoNativeResult`",
+    note = "to return Null or a value, return a `Nullable`, not an `Option`"
 )]
 pub trait IntoNativeResult {
     /// This result as the value returned by the native named `function`, or
@@ -33,10 +34,11 @@ impl<T: IntoNativeResult> IntoNativeResult for Result<T, FrostError> {
     }
 }
 
-/// `None` returns Null.
-impl<T: IntoNativeResult> IntoNativeResult for Option<T> {
+/// `Nullable(None)` returns Null.
+impl<T: IntoNativeResult> IntoNativeResult for Nullable<T> {
     fn into_result(self, function: &str) -> FrostResult {
-        self.map_or(Ok(Value::Null), |result| result.into_result(function))
+        self.0
+            .map_or(Ok(Value::Null), |result| result.into_result(function))
     }
 }
 

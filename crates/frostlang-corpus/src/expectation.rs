@@ -2,7 +2,7 @@ use std::collections::BTreeMap;
 
 use frostlang::compile::{CompilerOptions, compile_program};
 use frostlang::{Value, Vm, from_value, is_identifier_like_and_not_keyword};
-use serde::{Deserialize, Deserializer};
+use serde::Deserialize;
 
 /// The prefix of each line of a script's expectation block.
 const PREFIX: &str = "#=";
@@ -169,7 +169,7 @@ fn evaluate(text: &str) -> Result<Value, String> {
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
 struct Fields {
-    #[serde(default, deserialize_with = "present")]
+    /// Null is a result to expect.
     result: Option<Value>,
     exports: Option<BTreeMap<String, Value>>,
     printed: Option<Vec<String>>,
@@ -194,12 +194,6 @@ const BENCH_FORMS: &str = "`bench` is `true` or `{inputs: {...}}`";
 #[serde(deny_unknown_fields)]
 struct BenchInputs {
     inputs: BTreeMap<String, Value>,
-}
-
-/// Deserializes a field that is present, even as Null, to `Some`; an absent
-/// field is left to `#[serde(default)]`.
-fn present<'de, D: Deserializer<'de>>(deserializer: D) -> Result<Option<Value>, D::Error> {
-    Value::deserialize(deserializer).map(Some)
 }
 
 /// One error-message fragment, or several that must all appear.

@@ -289,6 +289,10 @@ mod run {
                 "os.run('true', [], {stdin: 1})",
                 "Function std.os.run requires String or Bytes for option `stdin`, got Int",
             ),
+            (
+                "os.run('true', [], {stdin: null})",
+                "Function std.os.run requires String or Bytes for option `stdin`, got Null",
+            ),
         ]);
     }
 
@@ -302,6 +306,9 @@ mod run {
             ),
             ("{[1]: 2}", "expected field identifier, got Int (at a key)"),
             ("{cwd: x'2f'}", "expected String, got Bytes (at `cwd`)"),
+            // An option given as Null is given, not left out.
+            ("{cwd: null}", "expected String, got Null (at `cwd`)"),
+            ("{env: null}", "expected Map, got Null (at `env`)"),
             ("{binary: 'yes'}", "expected Bool, got String (at `binary`)"),
             ("{env: ['A=b']}", "expected Map, got Array (at `env`)"),
             (

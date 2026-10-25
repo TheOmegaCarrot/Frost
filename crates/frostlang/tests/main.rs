@@ -81,6 +81,7 @@ mod parse_errors;
 mod render_styles;
 mod serde_deserialize;
 mod serde_host_bridge;
+mod serde_option_nullable;
 mod serde_serialize;
 mod serialize;
 mod special_float;

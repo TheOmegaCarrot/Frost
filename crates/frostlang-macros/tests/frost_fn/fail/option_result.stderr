@@ -1,0 +1,19 @@
+error[E0277]: `Option<i64>` cannot be returned to Frost
+ --> tests/frost_fn/fail/option_result.rs:7:21
+  |
+7 | fn f(some: bool) -> Option<i64> {
+  |                     ^^^^^^ not a native's result type
+  |
+  = help: the trait `IntoNativeResult` is not implemented for `Option<i64>`
+  = note: a native's result type implements `IntoNativeResult`
+  = note: to return Null or a value, return a `Nullable`, not an `Option`
+  = help: the following other types implement trait `IntoNativeResult`:
+            &str
+            ()
+            Flat
+            FrostArray
+            FrostBytes
+            FrostFloat
+            FrostMap
+            FrostString
+          and $N others

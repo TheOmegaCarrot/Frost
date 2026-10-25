@@ -1,3 +1,6 @@
+//! Deserializing values into Rust types with `from_value`. `Option` and
+//! `Nullable` are tested in `serde_option_nullable.rs`.
+
 use std::collections::HashMap;
 
 use serde::{Deserialize, Serialize};
@@ -42,26 +45,6 @@ fn deserialize_f64() {
 #[test]
 fn deserialize_string() {
     assert_eq!(from_value::<String>(Value::from("hello")).unwrap(), "hello");
-}
-
-// ---- Option ----
-
-#[test]
-fn deserialize_none_from_null() {
-    let v: Option<i64> = from_value(Value::Null).unwrap();
-    assert_eq!(v, None);
-}
-
-#[test]
-fn deserialize_some_from_value() {
-    let v: Option<i64> = from_value(Value::from(42i64)).unwrap();
-    assert_eq!(v, Some(42));
-}
-
-#[test]
-fn deserialize_some_string() {
-    let v: Option<String> = from_value(Value::from("hi")).unwrap();
-    assert_eq!(v, Some("hi".to_owned()));
 }
 
 // ---- Sequences ----
@@ -183,24 +166,6 @@ fn deserialize_struct_with_some() {
         WithOptional {
             required: 1,
             optional: Some("yes".into()),
-        }
-    );
-}
-
-#[test]
-fn deserialize_struct_with_null_option() {
-    let map: FrostMap = vec![
-        (str_key("required"), Value::from(1i64)),
-        (str_key("optional"), Value::Null),
-    ]
-    .into_iter()
-    .collect();
-    let s: WithOptional = from_value(Value::from(map)).unwrap();
-    assert_eq!(
-        s,
-        WithOptional {
-            required: 1,
-            optional: None,
         }
     );
 }

@@ -153,6 +153,9 @@ fn frost_type_name(unexpected: &de::Unexpected) -> std::borrow::Cow<'static, str
 // -- Public API --
 
 /// Deserializes a Frost `Value` into any `Deserialize` type.
+///
+/// An `Option` is presence: see [`Nullable`](crate::Nullable) for how absence
+/// and Null deserialize.
 pub fn from_value<'de, T: serde::Deserialize<'de>>(
     value: Value,
 ) -> Result<T, crate::core::FrostError> {
@@ -307,11 +310,11 @@ impl<'de> de::Deserializer<'de> for ValueDeserializer {
         self.deserialize_map(visitor)
     }
 
+    /// Whatever value is present is `Some`, Null included, for the inner type to take
+    /// or refuse; see [`Nullable`](crate::Nullable). serde makes an absent field `None`
+    /// itself.
     fn deserialize_option<V: Visitor<'de>>(self, visitor: V) -> Result<V::Value, DeError> {
-        match self.0 {
-            Value::Null => visitor.visit_none(),
-            _ => visitor.visit_some(self),
-        }
+        visitor.visit_some(self)
     }
 
     fn deserialize_enum<V: Visitor<'de>>(
@@ -407,6 +410,13 @@ impl<'de> de::Deserializer<'de> for ValueDeserializer {
             // fail loudly in debug, overwrite (identical effect) in release.
             debug_assert!(stale.is_none(), "Value deposit found the slot occupied");
             return visitor.visit_newtype_struct(ValueDeserializer(Value::Null));
+        }
+        if name == super::NULLABLE_NEWTYPE_TOKEN {
+            // A `Nullable` asking whether the value is Null.
+            return match self.0 {
+                Value::Null => visitor.visit_none(),
+                _ => visitor.visit_some(self),
+            };
         }
         visitor.visit_newtype_struct(self)
     }
@@ -529,11 +539,9 @@ impl<'de> de::Deserializer<'de> for Probe {
         Self::accepts(FrostType::BYTES)
     }
 
-    /// The types of what the option holds, and Null.
+    /// The types of what the option holds: Null only if that takes it.
     fn deserialize_option<V: Visitor<'de>>(self, visitor: V) -> Result<V::Value, Probed> {
-        visitor
-            .visit_some(Probe)
-            .map_err(|Probed(types)| Probed(types.or(FrostType::Null)))
+        visitor.visit_some(Probe)
     }
 
     fn deserialize_unit<V: Visitor<'de>>(self, _: V) -> Result<V::Value, Probed> {
@@ -548,7 +556,8 @@ impl<'de> de::Deserializer<'de> for Probe {
         Self::accepts(FrostType::NULL)
     }
 
-    /// The types of what the newtype holds. A `Value` takes any.
+    /// The types of what the newtype holds. A `Value` takes any, and a `Nullable`
+    /// takes Null besides what it holds.
     fn deserialize_newtype_struct<V: Visitor<'de>>(
         self,
         name: &'static str,
@@ -556,6 +565,11 @@ impl<'de> de::Deserializer<'de> for Probe {
     ) -> Result<V::Value, Probed> {
         if name == super::VALUE_NEWTYPE_TOKEN {
             return Self::accepts(FrostType::ANY);
+        }
+        if name == super::NULLABLE_NEWTYPE_TOKEN {
+            return visitor
+                .visit_some(Probe)
+                .map_err(|Probed(types)| Probed(types.or(FrostType::Null)));
         }
         visitor.visit_newtype_struct(Probe)
     }

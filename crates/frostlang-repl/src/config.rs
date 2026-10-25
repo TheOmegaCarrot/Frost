@@ -9,7 +9,7 @@ use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
 use frostlang::compile::{CompilerOptions, Diagnostics, compile_in_scope};
-use frostlang::{FrostError, Value, from_value};
+use frostlang::{FrostError, Nullable, Value, from_value};
 use serde::Deserialize;
 
 use crate::config_runner::{ConfigRunner, ScriptFailure};
@@ -49,10 +49,10 @@ impl Repl {
             SessionSettings::default()
         });
         let section = frontend.config_key().and_then(take);
-        self.config_results_kept = settings.results_kept;
+        self.config_results_kept = chosen(settings.results_kept);
         self.forget_excess_results();
         if reading == Reading::Start {
-            for (Name(name), path) in settings.preload.unwrap_or_default() {
+            for (Name(name), path) in chosen(settings.preload).unwrap_or_default() {
                 if let Err(error) = self.preload(&name, &path) {
                     problems.push(Problem::PreloadFailed { name, error }.into());
                 }
@@ -121,13 +121,21 @@ fn load(path: &Path, color: bool) -> Result<Vec<(String, Value)>, ConfigError> {
         })
 }
 
-/// What the `session` section sets.
+/// What the `session` section sets. Read each setting through [`chosen`].
 #[derive(Debug, Default, Deserialize)]
 #[serde(deny_unknown_fields)]
 struct SessionSettings {
-    results_kept: Option<usize>,
+    results_kept: Option<Nullable<usize>>,
     /// Each name to bind, and the path to import it from.
-    preload: Option<BTreeMap<Name, String>>,
+    preload: Option<Nullable<BTreeMap<Name, String>>>,
+}
+
+/// The value a setting of the config file chooses: none if it is left out or
+/// Null, either of which keeps the default. The serde bridge tells the two
+/// apart; the config takes them alike, so that a script can leave a setting
+/// to its default with a Null.
+pub(crate) fn chosen<T>(setting: Option<Nullable<T>>) -> Option<T> {
+    setting.and_then(Option::from)
 }
 
 impl SessionSettings {

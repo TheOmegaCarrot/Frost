@@ -4,7 +4,7 @@
 
 use std::collections::BTreeMap;
 
-use frostlang::native::{IntoNativeResult, Ser};
+use frostlang::native::{IntoNativeResult, Nullable, Ser};
 use frostlang::{
     FrostArray, FrostBytes, FrostError, FrostFloat, FrostMap, FrostString, Value, ValueMap,
 };
@@ -112,11 +112,14 @@ fn a_non_finite_f64_is_rejected() {
 }
 
 #[test]
-fn option_returns_null_for_none() {
-    assert_eq!(returned(None::<i64>), Value::Null);
-    assert_eq!(returned(Some(5i64)), Value::Int(5));
-    assert_eq!(returned(Some(Value::Null)), Value::Null);
-    assert_eq!(rejection(Some(f64::NAN)), "Function f has no finite result");
+fn nullable_returns_null_for_none() {
+    assert_eq!(returned(Nullable(None::<i64>)), Value::Null);
+    assert_eq!(returned(Nullable(Some(5i64))), Value::Int(5));
+    assert_eq!(returned(Nullable(Some(Value::Null))), Value::Null);
+    assert_eq!(
+        rejection(Nullable(Some(f64::NAN))),
+        "Function f has no finite result"
+    );
 }
 
 #[test]
@@ -179,5 +182,14 @@ fn ser_rejects_a_result_that_does_not_serialize() {
     assert!(
         message.starts_with("Function f has a result no value can hold: "),
         "{message:?}"
+    );
+}
+
+#[test]
+fn ser_rejects_a_none_outside_an_entry() {
+    assert_eq!(
+        rejection(Ser(None::<i64>)),
+        "Function f has a result no value can hold: `None` can only leave out a struct \
+         field or Map entry; for Null, use `Nullable`"
     );
 }

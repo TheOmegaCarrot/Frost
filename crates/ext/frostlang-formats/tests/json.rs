@@ -609,6 +609,12 @@ fn options_are_checked() {
             "Function ext.formats.json.encode requires argument 2 (options) to be valid: \
              expected Int, got Float (at `indent`)",
         ),
+        // An option given as Null is given, not left out.
+        (
+            "json.encode(1, {pretty: false, indent: null})",
+            "Function ext.formats.json.encode requires argument 2 (options) to be valid: \
+             expected Int, got Null (at `indent`)",
+        ),
         (
             "json.encode(1, {color: true})",
             "Function ext.formats.json.encode requires argument 2 (options) to be valid: \

@@ -432,9 +432,19 @@ fn de_rejects_a_type_its_target_never_deserializes_from_as_a_wrong_type() {
             rejection::<De<()>>(Value::Int(0)),
             wrong_type("Null", "Int"),
         ),
-        // An Option takes Null and what it holds.
+        // A Nullable takes Null and what it holds.
         (
-            rejection::<De<Option<Options>>>(Value::Int(1)),
+            rejection::<De<Nullable<Options>>>(Value::Int(1)),
+            wrong_type("Null or Map", "Int"),
+        ),
+        // An Option, being presence, takes only what it holds.
+        (
+            rejection::<De<Option<Options>>>(Value::Null),
+            wrong_type("Map", "Null"),
+        ),
+        // An optional Nullable takes Null as well.
+        (
+            rejection::<De<Option<Nullable<Options>>>>(Value::Int(1)),
             wrong_type("Null or Map", "Int"),
         ),
         (
@@ -452,7 +462,19 @@ fn de_takes_every_type_its_target_deserializes_from() {
     assert_eq!(taken::<De<f64>>(Value::Int(2)), De(2.0));
     let infinity = SpecialFloat::new(f64::INFINITY).expect("infinity is special");
     assert_eq!(taken::<De<f64>>(Value::opaque(infinity)), De(f64::INFINITY));
-    assert_eq!(taken::<De<Option<Options>>>(Value::Null), De(None));
+    assert_eq!(
+        taken::<De<Nullable<Options>>>(Value::Null),
+        De(Nullable(None))
+    );
+    // An Option holds a value given; an optional Nullable, Null too.
+    assert_eq!(
+        taken::<De<Option<Options>>>(Value::map::<&str, 0>([])),
+        De(Some(Options::default()))
+    );
+    assert_eq!(
+        taken::<De<Option<Nullable<Options>>>>(Value::Null),
+        De(Some(Nullable(None)))
+    );
     assert_eq!(taken::<De<Shape>>(Value::from("Dot")), De(Shape::Dot));
     assert_eq!(
         taken::<De<Shape>>(Value::map([("Line", Value::Int(2))])),

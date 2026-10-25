@@ -2,7 +2,7 @@
 // default features, so without the compiler. Captures, a runtime name, a
 // generic factory, untyped parameters, and an untyped context.
 
-use frostlang::native::{FromArg, Function, IntoNativeResult, Optional, Rest};
+use frostlang::native::{FromArg, Function, IntoNativeResult, Nullable, Optional, Rest};
 use frostlang::{Value, frost_closure};
 
 fn scaler(name: &'static str, factor: i64) -> Value {
@@ -14,7 +14,7 @@ fn scaler(name: &'static str, factor: i64) -> Value {
 }
 
 fn first<T: FromArg + IntoNativeResult + 'static>(name: &'static str) -> Value {
-    frost_closure!(name, |items: Vec<T>| items.into_iter().next())
+    frost_closure!(name, |items: Vec<T>| Nullable(items.into_iter().next()))
 }
 
 fn main() {

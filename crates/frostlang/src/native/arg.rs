@@ -10,7 +10,7 @@ use crate::core::util::count::counted;
 use crate::vm::{Binder, expected_types};
 use crate::{
     FrostArray, FrostBytes, FrostError, FrostFloat, FrostMap, FrostString, FrostType, MapKey,
-    Param, Params, TypeSet, Value, from_value,
+    Nullable, Param, Params, TypeSet, Value, from_value,
 };
 
 /// A Rust type a native can take one argument as.
@@ -120,11 +120,6 @@ impl<T: FromArg> sealed::TakeArg for Rest<T> {
             .map(Rest)
     }
 }
-
-/// An argument that may be Null as well as one of `T`'s types:
-/// `Nullable(None)` when it is Null.
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash)]
-pub struct Nullable<T>(pub Option<T>);
 
 impl<T: FromArg> FromArg for Nullable<T> {
     const TYPES: TypeSet = T::TYPES.or(FrostType::Null);

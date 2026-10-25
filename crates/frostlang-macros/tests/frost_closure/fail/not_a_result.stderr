@@ -10,6 +10,7 @@ help: the trait `IntoNativeResult` is not implemented for `Opaque`
 6 | struct Opaque;
   | ^^^^^^^^^^^^^
   = note: a native's result type implements `IntoNativeResult`
+  = note: to return Null or a value, return a `Nullable`, not an `Option`
   = help: the following other types implement trait `IntoNativeResult`:
             &str
             ()
@@ -33,6 +34,7 @@ help: the trait `IntoNativeResult` is not implemented for `Opaque`
  6 | struct Opaque;
    | ^^^^^^^^^^^^^
    = note: a native's result type implements `IntoNativeResult`
+   = note: to return Null or a value, return a `Nullable`, not an `Option`
    = help: the following other types implement trait `IntoNativeResult`:
              &str
              ()

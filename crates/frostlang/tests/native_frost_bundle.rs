@@ -11,7 +11,8 @@ use std::panic::{AssertUnwindSafe, catch_unwind};
 use std::sync::Arc;
 
 use frostlang::native::{
-    Bundle, BundleCtx, Function, MutableBundle, MutableBundleCtx, PoisonedState, StateLock,
+    Bundle, BundleCtx, Function, MutableBundle, MutableBundleCtx, Nullable, PoisonedState,
+    StateLock,
 };
 use frostlang::{Arity, FrostError, MapKey, NativeCtx, Value, frost_bundle, frost_mutable_bundle};
 
@@ -61,8 +62,8 @@ struct Table(Vec<i64>);
 
 #[frost_bundle(prefix = "table")]
 impl Table {
-    fn get(&self, index: usize) -> Option<i64> {
-        self.0.get(index).copied()
+    fn get(&self, index: usize) -> Nullable<i64> {
+        Nullable(self.0.get(index).copied())
     }
 
     fn len(&self) -> usize {

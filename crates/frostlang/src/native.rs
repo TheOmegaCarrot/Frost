@@ -42,7 +42,10 @@ mod mutable_bundle;
 mod opaque;
 mod result;
 
-pub use arg::{ArgSite, Args, De, FromArg, FrostArg, Nullable, Optional, Rest};
+// Defined in the core, as `from_value` and `to_value` use it too; re-exported
+// here beside the other argument types.
+pub use crate::Nullable;
+pub use arg::{ArgSite, Args, De, FromArg, FrostArg, Optional, Rest};
 pub use bundle::{Bundle, BundleCtx};
 pub use category::{Flat, Function, Nonnull, Numeric, Primitive, Structured};
 pub use caught::caught;

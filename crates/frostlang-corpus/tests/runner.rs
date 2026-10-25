@@ -667,10 +667,35 @@ f(1)
 }
 
 #[test]
-fn a_null_bench_is_no_bench() {
-    // As with the other optional fields, Null reads as absent.
+fn a_null_bench_is_malformed() {
+    // As with the other optional fields, Null is given, not left out.
     let source = r"#= {result: 1, bench: null}
 1
+";
+    assert_eq!(
+        report("area/good/script", source),
+        Report::Malformed("`bench` is `true` or `{inputs: {...}}`, not Null".to_string())
+    );
+}
+
+#[test]
+fn a_null_optional_field_is_malformed() {
+    let source = r"#= {result: 1, known_issue: null}
+1
+";
+    assert_eq!(
+        report("area/good/script", source),
+        Report::Malformed(
+            "the expectation is malformed: expected String, got Null (at `known_issue`)"
+                .to_string()
+        )
+    );
+}
+
+#[test]
+fn a_null_result_is_a_result() {
+    let source = r"#= {result: null}
+null
 ";
     assert_eq!(report("area/good/script", source), Report::Passed);
 }

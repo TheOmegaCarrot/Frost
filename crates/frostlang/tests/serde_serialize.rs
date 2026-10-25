@@ -1,3 +1,6 @@
+//! Serializing Rust types into values with `to_value`. `Option` and
+//! `Nullable` are tested in `serde_option_nullable.rs`.
+
 use crate::common;
 
 use std::collections::HashMap;
@@ -95,19 +98,7 @@ fn serialize_char() {
     assert_eq!(v, Value::from("a"));
 }
 
-// ---- Option / Null ----
-
-#[test]
-fn serialize_none() {
-    let v: Option<i32> = None;
-    assert_eq!(to_value(&v).unwrap(), Value::Null);
-}
-
-#[test]
-fn serialize_some() {
-    let v: Option<i32> = Some(42);
-    assert_eq!(to_value(&v).unwrap(), Value::from(42i64));
-}
+// ---- Unit ----
 
 #[test]
 fn serialize_unit() {
@@ -238,20 +229,6 @@ fn serialize_struct_with_some() {
     let v = to_value(&s).unwrap();
     if let Value::Map(map) = v {
         assert_eq!(map.get_str("optional"), Some(&Value::from("yes")));
-    } else {
-        panic!("expected Map");
-    }
-}
-
-#[test]
-fn serialize_struct_with_none() {
-    let s = WithOptional {
-        required: 1,
-        optional: None,
-    };
-    let v = to_value(&s).unwrap();
-    if let Value::Map(map) = v {
-        assert_eq!(map.get_str("optional"), Some(&Value::Null));
     } else {
         panic!("expected Map");
     }

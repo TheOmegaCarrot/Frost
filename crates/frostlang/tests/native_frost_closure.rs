@@ -328,7 +328,7 @@ fn first<T>(name: &'static str) -> Value
 where
     T: FromArg + IntoNativeResult + 'static,
 {
-    frost_closure!(name, |items: Vec<T>| items.into_iter().next())
+    frost_closure!(name, |items: Vec<T>| Nullable(items.into_iter().next()))
 }
 
 #[test]
@@ -359,7 +359,7 @@ fn a_trailing_comma_is_accepted() {
 #[test]
 fn the_result_converts_through_into_native_result() {
     let unit = frost_closure!("unit", || {});
-    let maybe = frost_closure!("maybe", |some: bool| some.then_some(1));
+    let maybe = frost_closure!("maybe", |some: bool| Nullable(some.then_some(1)));
     let ratio = frost_closure!("ratio", |a: f64, b: f64| a / b);
     assert_eq!(run(unit, "f()"), Value::Null, "nothing is Null");
     assert_eq!(run(maybe.clone(), "f(true)"), Value::Int(1));

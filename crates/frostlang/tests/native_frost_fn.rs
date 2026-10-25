@@ -425,8 +425,8 @@ fn a_types_constraint_rejects_other_types_as_its_parameter_s_types() {
 fn unit() {}
 
 #[frost_fn]
-fn maybe(some: bool) -> Option<i64> {
-    some.then_some(1)
+fn maybe(some: bool) -> Nullable<i64> {
+    Nullable(some.then_some(1))
 }
 
 #[frost_fn]

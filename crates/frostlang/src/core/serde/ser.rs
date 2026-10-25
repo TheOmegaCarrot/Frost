@@ -19,25 +19,49 @@ thread_local! {
 // -- Error --
 
 #[derive(Debug, thiserror::Error)]
-#[error("{0}")]
-pub(super) struct SerError(String);
+pub(super) enum SerError {
+    #[error("{0}")]
+    Message(String),
+    /// An entry's `None`, which [`insert_if_present`] leaves out rather than
+    /// failing on. It never leaves [`to_value`].
+    #[error("an absent entry, which should have been left out")]
+    AbsentEntry,
+}
 
 impl ser::Error for SerError {
     fn custom<T: fmt::Display>(msg: T) -> Self {
-        SerError(msg.to_string())
+        SerError::Message(msg.to_string())
     }
 }
 
 // -- Public API --
 
 /// Serializes any `Serialize` type into a Frost `Value`.
+///
+/// An `Option` is presence: see [`Nullable`](crate::Nullable) for how `None`
+/// and Null serialize.
 pub fn to_value<T: Serialize>(value: &T) -> Result<Value, crate::core::FrostError> {
-    value.serialize(ValueSerializer).map_err(|e| e.0.into())
+    value
+        .serialize(ValueSerializer::Required)
+        .map_err(|e| e.to_string().into())
 }
 
 // -- Serializer --
 
-struct ValueSerializer;
+/// Serializes into a `Value`. The variant is where the value sits, which
+/// decides what its `None` becomes.
+#[derive(Clone, Copy)]
+enum ValueSerializer {
+    /// Anything not directly an entry's or a `Nullable`'s value: the top
+    /// level, an element, a key, or what a `Some` or a newtype holds. Its
+    /// `None` is an error.
+    Required,
+    /// A struct field's or Map entry's value: its `None` leaves the entry
+    /// out.
+    Entry,
+    /// What a [`Nullable`](crate::Nullable) holds: its `None` is Null.
+    InNullable,
+}
 
 impl ser::Serializer for ValueSerializer {
     type Ok = Value;
@@ -111,12 +135,19 @@ impl ser::Serializer for ValueSerializer {
         Ok(Value::from(v))
     }
 
+    /// What `None` is where it sits; see [`Nullable`](crate::Nullable).
     fn serialize_none(self) -> Result<Value, SerError> {
-        Ok(Value::Null)
+        match self {
+            Self::Required => Err(ser::Error::custom(
+                "`None` can only leave out a struct field or Map entry; for Null, use `Nullable`",
+            )),
+            Self::Entry => Err(SerError::AbsentEntry),
+            Self::InNullable => Ok(Value::Null),
+        }
     }
 
     fn serialize_some<T: ?Sized + Serialize>(self, value: &T) -> Result<Value, SerError> {
-        value.serialize(self)
+        value.serialize(Self::Required)
     }
 
     fn serialize_unit(self) -> Result<Value, SerError> {
@@ -151,7 +182,10 @@ impl ser::Serializer for ValueSerializer {
                 .with(std::cell::Cell::take)
                 .ok_or_else(|| ser::Error::custom("expected a Frost Value newtype payload"));
         }
-        value.serialize(self)
+        if name == super::NULLABLE_NEWTYPE_TOKEN {
+            return value.serialize(Self::InNullable);
+        }
+        value.serialize(Self::Required)
     }
 
     fn serialize_newtype_variant<T: ?Sized + Serialize>(
@@ -161,7 +195,7 @@ impl ser::Serializer for ValueSerializer {
         variant: &'static str,
         value: &T,
     ) -> Result<Value, SerError> {
-        let inner = value.serialize(ValueSerializer)?;
+        let inner = value.serialize(Self::Required)?;
         Ok(Value::map([(variant, inner)]))
     }
 
@@ -238,7 +272,8 @@ impl ser::SerializeSeq for SerializeArray {
     type Error = SerError;
 
     fn serialize_element<T: ?Sized + Serialize>(&mut self, value: &T) -> Result<(), SerError> {
-        self.elements.push(value.serialize(ValueSerializer)?);
+        self.elements
+            .push(value.serialize(ValueSerializer::Required)?);
         Ok(())
     }
 
@@ -283,7 +318,8 @@ impl ser::SerializeTupleVariant for SerializeTupleVariant {
     type Error = SerError;
 
     fn serialize_field<T: ?Sized + Serialize>(&mut self, value: &T) -> Result<(), SerError> {
-        self.elements.push(value.serialize(ValueSerializer)?);
+        self.elements
+            .push(value.serialize(ValueSerializer::Required)?);
         Ok(())
     }
 
@@ -303,7 +339,7 @@ impl ser::SerializeMap for SerializeMap {
     type Error = SerError;
 
     fn serialize_key<T: ?Sized + Serialize>(&mut self, key: &T) -> Result<(), SerError> {
-        let key_value = key.serialize(ValueSerializer)?;
+        let key_value = key.serialize(ValueSerializer::Required)?;
         let map_key = MapKey::try_from(key_value).map_err(ser::Error::custom)?;
         self.pending_key = Some(map_key);
         Ok(())
@@ -314,12 +350,28 @@ impl ser::SerializeMap for SerializeMap {
             .pending_key
             .take()
             .expect("serialize_value called before serialize_key");
-        self.entries.insert(key, value.serialize(ValueSerializer)?);
-        Ok(())
+        insert_if_present(&mut self.entries, key, value)
     }
 
     fn end(self) -> Result<Value, SerError> {
         Ok(Value::from(self.entries))
+    }
+}
+
+/// Serializes `value` into `entries` under `key`, leaving the entry out if
+/// `value` serializes as `None`.
+fn insert_if_present<T: ?Sized + Serialize>(
+    entries: &mut ValueMap,
+    key: impl Into<MapKey>,
+    value: &T,
+) -> Result<(), SerError> {
+    match value.serialize(ValueSerializer::Entry) {
+        Ok(serialized) => {
+            entries.insert(key.into(), serialized);
+            Ok(())
+        }
+        Err(SerError::AbsentEntry) => Ok(()),
+        Err(err) => Err(err),
     }
 }
 
@@ -336,9 +388,7 @@ impl ser::SerializeStruct for SerializeStruct {
         key: &'static str,
         value: &T,
     ) -> Result<(), SerError> {
-        self.entries
-            .insert(MapKey::from(key), value.serialize(ValueSerializer)?);
-        Ok(())
+        insert_if_present(&mut self.entries, key, value)
     }
 
     fn end(self) -> Result<Value, SerError> {
@@ -360,9 +410,7 @@ impl ser::SerializeStructVariant for SerializeStructVariant {
         key: &'static str,
         value: &T,
     ) -> Result<(), SerError> {
-        self.entries
-            .insert(MapKey::from(key), value.serialize(ValueSerializer)?);
-        Ok(())
+        insert_if_present(&mut self.entries, key, value)
     }
 
     fn end(self) -> Result<Value, SerError> {

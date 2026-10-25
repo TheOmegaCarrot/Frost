@@ -5,9 +5,10 @@ use std::fmt;
 use std::sync::Arc;
 
 use frostlang::native::Function;
-use frostlang::{Closure, FrostError, MapKey, Value, from_value};
+use frostlang::{Closure, FrostError, MapKey, Nullable, Value, from_value};
 use serde::{Deserialize, Deserializer, de};
 
+use crate::config::chosen;
 use crate::config_runner::ConfigRunner;
 
 #[cfg(test)]
@@ -16,14 +17,14 @@ mod tests;
 /// The export the frontend takes its settings from.
 pub(crate) const KEY: &str = "terminal";
 
-/// The section, as written.
+/// The section, as written. Read each setting through [`chosen`].
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
 struct Section {
-    prompt: Option<PromptSetting>,
-    continuation_prompt: Option<PromptSetting>,
-    right_prompt: Option<PromptSetting>,
-    edit_mode: Option<EditMode>,
+    prompt: Option<Nullable<PromptSetting>>,
+    continuation_prompt: Option<Nullable<PromptSetting>>,
+    right_prompt: Option<Nullable<PromptSetting>>,
+    edit_mode: Option<Nullable<EditMode>>,
 }
 
 /// A prompt, as written: a String, or a Function computing one.
@@ -165,11 +166,11 @@ impl Settings {
             Ok(section) => section,
             Err(error) => return (settings, vec![Problem::Invalid(error)]),
         };
-        settings.edit_mode = section.edit_mode.unwrap_or_default();
+        settings.edit_mode = chosen(section.edit_mode).unwrap_or_default();
         let prompts = [
-            section.prompt,
-            section.continuation_prompt,
-            section.right_prompt,
+            chosen(section.prompt),
+            chosen(section.continuation_prompt),
+            chosen(section.right_prompt),
         ];
         let mut problems = Vec::new();
         for (setting, written) in Setting::ALL.into_iter().zip(prompts) {
