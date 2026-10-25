@@ -5,6 +5,7 @@ use serde::de::{self, DeserializeOwned, IntoDeserializer, Visitor};
 use serde::{Deserialize, Deserializer};
 
 use crate::core::serde::{int_value, special_float};
+use crate::core::util::count::counted;
 use crate::core::util::identifier::is_identifier_like_and_not_keyword;
 use crate::core::util::int_range::int_range;
 use crate::core::util::sole_char::sole_char;
@@ -134,9 +135,8 @@ impl de::Error for DeError {
     }
 
     /// A value of the right type, but not one the target accepts, such as zero
-    /// for a nonzero integer.
-    // TODO: `expected` is the target's own words, which may name its Rust type
-    // ("a nonzero u8").
+    /// for a nonzero integer. As in [`invalid_type`](Self::invalid_type), what
+    /// was expected is the target's own description.
     fn invalid_value(unexpected: de::Unexpected, expected: &dyn de::Expected) -> Self {
         let found = match unexpected {
             de::Unexpected::Bool(b) => b.to_string(),
@@ -147,6 +147,16 @@ impl de::Error for DeError {
             other => frost_type_name(&other).to_string(),
         };
         DeError::new(format!("expected {expected}, got {found}"))
+    }
+
+    /// A length the target refuses, such as an Array short of a tuple's length.
+    /// As in [`invalid_type`](Self::invalid_type), what was expected is
+    /// the target's own description.
+    fn invalid_length(len: usize, expected: &dyn de::Expected) -> Self {
+        DeError::new(format!(
+            "expected {expected}, got {}",
+            counted(len, "element")
+        ))
     }
 }
 
@@ -174,6 +184,14 @@ fn frost_type_name(unexpected: &de::Unexpected) -> std::borrow::Cow<'static, str
 /// An `Option` is presence: see [`Nullable`](crate::Nullable) for how absence
 /// and Null deserialize. An `f64` or `f32` is finite: see
 /// [`SpecialFloat`](crate::SpecialFloat).
+///
+/// An error names what was found in Frost's terms, and where in `value`. Where
+/// this function judges the value, such as its type, a numeric range, or an
+/// Array too long for a tuple, what was expected is in Frost's terms too. Where
+/// the target type judges it, the target describes what it expected in its own
+/// words, such as "a nonzero u8" or "a tuple of size 2". To word that for script
+/// authors, give your own types a description with serde's
+/// `#[serde(expecting = "...")]`.
 pub fn from_value<'de, T: serde::Deserialize<'de>>(
     value: Value,
 ) -> Result<T, crate::core::FrostError> {
@@ -204,6 +222,30 @@ macro_rules! deserialize_int {
 }
 
 struct ValueDeserializer(Value);
+
+impl ValueDeserializer {
+    /// Deserializes an Array of at most `len` elements, for a target that reads
+    /// a fixed number of them, such as a tuple. A longer Array is refused here,
+    /// since the target would read only the first `len` and ignore the rest. A
+    /// shorter one is the target's to judge: a field with a serde `default` may
+    /// stand in for a missing element.
+    fn deserialize_array_of_at_most<'de, V: Visitor<'de>>(
+        self,
+        len: usize,
+        visitor: V,
+    ) -> Result<V::Value, DeError> {
+        if let Value::Array(ref array) = self.0
+            && array.len() > len
+        {
+            return Err(DeError::new(format!(
+                "expected Array of at most {}, got {}",
+                counted(len, "element"),
+                counted(array.len(), "element")
+            )));
+        }
+        self.deserialize_seq(visitor)
+    }
+}
 
 impl<'de> de::Deserializer<'de> for ValueDeserializer {
     type Error = DeError;
@@ -248,19 +290,19 @@ impl<'de> de::Deserializer<'de> for ValueDeserializer {
 
     fn deserialize_tuple<V: Visitor<'de>>(
         self,
-        _len: usize,
+        len: usize,
         visitor: V,
     ) -> Result<V::Value, DeError> {
-        self.deserialize_seq(visitor)
+        self.deserialize_array_of_at_most(len, visitor)
     }
 
     fn deserialize_tuple_struct<V: Visitor<'de>>(
         self,
         _name: &'static str,
-        _len: usize,
+        len: usize,
         visitor: V,
     ) -> Result<V::Value, DeError> {
-        self.deserialize_seq(visitor)
+        self.deserialize_array_of_at_most(len, visitor)
     }
 
     fn deserialize_map<V: Visitor<'de>>(self, visitor: V) -> Result<V::Value, DeError> {
@@ -827,12 +869,12 @@ impl<'de> de::VariantAccess<'de> for VariantAccess {
             .map_err(Self::within(self.variant))
     }
 
-    fn tuple_variant<V>(self, _len: usize, visitor: V) -> Result<V::Value, DeError>
+    fn tuple_variant<V>(self, len: usize, visitor: V) -> Result<V::Value, DeError>
     where
         V: Visitor<'de>,
     {
         ValueDeserializer(self.value)
-            .deserialize_seq(visitor)
+            .deserialize_array_of_at_most(len, visitor)
             .map_err(Self::within(self.variant))
     }
 

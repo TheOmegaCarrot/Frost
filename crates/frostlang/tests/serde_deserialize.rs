@@ -371,6 +371,96 @@ fn deserialize_tuple_variant() {
     assert_eq!(v, Expr::Pair(1, "hello".into()));
 }
 
+// ---- Array length ----
+
+/// A tuple struct of two Ints.
+#[derive(Deserialize, Debug, PartialEq)]
+struct Point(i64, i64);
+
+#[test]
+fn a_target_of_fixed_length_takes_an_array_of_that_length() {
+    let pair = || Value::array([1, 2]);
+    assert_eq!(from_value::<(i64, i64)>(pair()).unwrap(), (1, 2));
+    assert_eq!(from_value::<[i64; 2]>(pair()).unwrap(), [1, 2]);
+    assert_eq!(from_value::<Point>(pair()).unwrap(), Point(1, 2));
+    assert_eq!(
+        from_value::<[i64; 0]>(Value::array::<i64, 0>([])).unwrap(),
+        [0i64; 0]
+    );
+}
+
+#[test]
+fn a_target_of_fixed_length_refuses_a_longer_array() {
+    // The target would read only its own length and ignore the rest.
+    let expected = "expected Array of at most 2 elements, got 3 elements";
+    let triple = || Value::array([1, 2, 3]);
+    assert_eq!(error_of::<(i64, i64)>(triple()), expected, "a tuple");
+    assert_eq!(error_of::<[i64; 2]>(triple()), expected, "an array");
+    assert_eq!(error_of::<Point>(triple()), expected, "a tuple struct");
+    assert_eq!(
+        error_of::<Expr>(Value::map([("Pair", triple())])),
+        format!("{expected} (at `Pair`)"),
+        "a tuple variant"
+    );
+    assert_eq!(
+        error_of::<Vec<(i64, i64)>>(Value::array([triple()])),
+        format!("{expected} (at `[0]`)"),
+        "nested, with the path"
+    );
+}
+
+#[test]
+fn a_target_of_fixed_length_refuses_a_shorter_array_in_its_own_words() {
+    // What it expected is the target's description; what it got is a count.
+    let cases = [
+        (
+            error_of::<(i64, i64)>(Value::array([1])),
+            "a tuple of size 2, got 1 element",
+        ),
+        (
+            error_of::<[i64; 2]>(Value::array::<i64, 0>([])),
+            "an array of length 2, got 0 elements",
+        ),
+        (
+            error_of::<Point>(Value::array([1])),
+            "tuple struct Point with 2 elements, got 1 element",
+        ),
+    ];
+    for (message, rest) in cases {
+        assert_eq!(message, format!("expected {rest}"));
+    }
+}
+
+#[test]
+fn a_tuple_like_target_with_a_default_takes_a_shorter_array() {
+    // serde fills a field with a `default` when the Array runs out, so the
+    // length a tuple-like target announces is a maximum, not an exact count.
+    #[derive(Deserialize, Debug, PartialEq)]
+    struct FieldDefault(i64, #[serde(default)] i64);
+
+    #[derive(Deserialize, Debug, PartialEq, Default)]
+    #[serde(default)]
+    struct ContainerDefault(i64, i64);
+
+    #[derive(Deserialize, Debug, PartialEq)]
+    enum Variant {
+        Pair(i64, #[serde(default)] i64),
+    }
+
+    assert_eq!(
+        from_value::<FieldDefault>(Value::array([1])).unwrap(),
+        FieldDefault(1, 0)
+    );
+    assert_eq!(
+        from_value::<ContainerDefault>(Value::array([1])).unwrap(),
+        ContainerDefault(1, 0)
+    );
+    assert_eq!(
+        from_value::<Variant>(Value::map([("Pair", Value::array([1]))])).unwrap(),
+        Variant::Pair(1, 0)
+    );
+}
+
 // ---- Nested struct ----
 
 #[derive(Deserialize, Debug, PartialEq)]
@@ -856,6 +946,48 @@ fn a_128_bit_target_is_given_its_int_as_a_64_bit_integer() {
         error_of::<Unsigned>(Value::Int(-5)),
         "expected Int at least 0, got -5",
         "a u128 hint refuses a negative Int"
+    );
+}
+
+#[test]
+fn a_target_refusing_a_value_describes_what_it_expected_in_its_own_words() {
+    // The found value is in Frost's terms; the expectation is the target's own.
+    assert_eq!(
+        error_of::<std::num::NonZeroU8>(Value::Int(0)),
+        "expected a nonzero u8, got 0"
+    );
+
+    /// Refuses any String but "on", described for script authors.
+    #[derive(Debug)]
+    struct On;
+
+    impl<'de> Deserialize<'de> for On {
+        fn deserialize<D: serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+            struct OnVisitor;
+
+            impl serde::de::Visitor<'_> for OnVisitor {
+                type Value = On;
+
+                fn expecting(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+                    f.write_str(r#"the String "on""#)
+                }
+
+                fn visit_str<E: serde::de::Error>(self, v: &str) -> Result<On, E> {
+                    if v == "on" {
+                        Ok(On)
+                    } else {
+                        Err(E::invalid_value(serde::de::Unexpected::Str(v), &self))
+                    }
+                }
+            }
+
+            deserializer.deserialize_str(OnVisitor)
+        }
+    }
+
+    assert_eq!(
+        error_of::<On>(Value::from("off")),
+        r#"expected the String "on", got "off""#
     );
 }
 

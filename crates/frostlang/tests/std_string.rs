@@ -404,8 +404,8 @@ fn padding_leaves_a_string_already_wide_enough() {
         assert_raises(&[(
             &format!("str.{function}('hello', 3, 'ab')"),
             &format!(
-                "Function std.string.{function} requires a single character as argument 3 \
-                 (fill), got \"ab\""
+                "Function std.string.{function} requires argument 3 (fill) to be one code \
+                 point, got \"ab\""
             ),
         )]);
     }
@@ -448,15 +448,24 @@ fn padding_checks_its_arguments() {
             (
                 &format!("str.{function}('a', 3, '')"),
                 &format!(
-                    "Function std.string.{function} requires a single character as argument 3 \
-                     (fill), got \"\""
+                    "Function std.string.{function} requires argument 3 (fill) to be one code \
+                     point, got \"\""
                 ),
             ),
             (
                 &format!("str.{function}('a', 3, 'ab')"),
                 &format!(
-                    "Function std.string.{function} requires a single character as argument 3 \
-                     (fill), got \"ab\""
+                    "Function std.string.{function} requires argument 3 (fill) to be one code \
+                     point, got \"ab\""
+                ),
+            ),
+            // `e` and a combining accent: one character to a reader, but two
+            // code points.
+            (
+                &format!(r"str.{function}('a', 3, 'e\u{{301}}')"),
+                &format!(
+                    "Function std.string.{function} requires argument 3 (fill) to be one code \
+                     point, got \"e\u{301}\""
                 ),
             ),
             (
@@ -473,6 +482,13 @@ fn padding_checks_its_arguments() {
                 &format!("str.{function}('a', 3, 0)"),
                 &format!(
                     "Function std.string.{function} requires String as argument 3 (fill), got Int"
+                ),
+            ),
+            // An omitted fill is a space; a Null one is not omitted.
+            (
+                &format!("str.{function}('a', 3, null)"),
+                &format!(
+                    "Function std.string.{function} requires String as argument 3 (fill), got Null"
                 ),
             ),
         ]);

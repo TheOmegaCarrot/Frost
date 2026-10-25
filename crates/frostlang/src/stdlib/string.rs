@@ -8,7 +8,6 @@
 
 use std::io::Cursor;
 
-use crate::core::util::sole_char::sole_char;
 use crate::native::{Flat, Optional};
 use crate::stdlib::stream::{self, Buffer, Kind};
 use crate::{
@@ -252,55 +251,35 @@ enum Side {
 }
 
 fn padder(name: &'static str, side: Side) -> Value {
-    frost_closure!(
-        name,
-        move |#[frost(unnamed)] text: FrostString, width: i64, fill: Optional<FrostString>| {
-            if width < 0 {
-                return Err(FrostError::from_string(format!(
-                    "Function {name} requires argument 2 (width) to be at least 0, got {width}"
-                )));
-            }
-            // A width past `usize::MAX`, possible where `usize` is narrower than
-            // an Int, is too long to make, as `usize::MAX` itself is.
-            let width = usize::try_from(width).unwrap_or(usize::MAX);
-            let fill = match fill {
-                Optional(None) => ' ',
-                Optional(Some(fill)) => match sole_char(&fill) {
-                    Some(c) => c,
-                    None => {
-                        return Err(FrostError::from_string(format!(
-                            "Function {name} requires a single character as argument 3 \
-                             (fill), got {}",
-                            Value::String(fill).to_debug_string()
-                        )));
-                    }
-                },
-            };
+    frost_closure!(name, move |#[frost(unnamed)] text: FrostString,
+                               width: u64,
+                               fill: Optional<char>| {
+        // A width past `usize::MAX`, possible where `usize` is narrower than
+        // 64 bits, is too long to make, as `usize::MAX` itself is.
+        let width = usize::try_from(width).unwrap_or(usize::MAX);
+        let fill = fill.0.unwrap_or(' ');
 
-            let padding = width.saturating_sub(text.chars().count());
-            if padding == 0 {
-                return Ok(Value::String(text));
-            }
-            let (left, right) = match side {
-                Side::Left => (padding, 0),
-                Side::Right => (0, padding),
-                Side::Both => (padding / 2, padding - padding / 2),
-            };
-            // Past `isize::MAX` bytes, allocating the result would panic.
-            let size = padding
-                .checked_mul(fill.len_utf8())
-                .and_then(|filled| filled.checked_add(text.len()))
-                .filter(|&size| isize::try_from(size).is_ok())
-                .ok_or_else(|| {
-                    FrostError::from_string(format!(
-                        "Function {name} cannot make a String that long"
-                    ))
-                })?;
-            let mut padded = String::with_capacity(size);
-            padded.extend(std::iter::repeat_n(fill, left));
-            padded.push_str(&text);
-            padded.extend(std::iter::repeat_n(fill, right));
-            Ok(Value::from(padded))
+        let padding = width.saturating_sub(text.chars().count());
+        if padding == 0 {
+            return Ok(Value::String(text));
         }
-    )
+        let (left, right) = match side {
+            Side::Left => (padding, 0),
+            Side::Right => (0, padding),
+            Side::Both => (padding / 2, padding - padding / 2),
+        };
+        // Past `isize::MAX` bytes, allocating the result would panic.
+        let size = padding
+            .checked_mul(fill.len_utf8())
+            .and_then(|filled| filled.checked_add(text.len()))
+            .filter(|&size| isize::try_from(size).is_ok())
+            .ok_or_else(|| {
+                FrostError::from_string(format!("Function {name} cannot make a String that long"))
+            })?;
+        let mut padded = String::with_capacity(size);
+        padded.extend(std::iter::repeat_n(fill, left));
+        padded.push_str(&text);
+        padded.extend(std::iter::repeat_n(fill, right));
+        Ok(Value::from(padded))
+    })
 }
