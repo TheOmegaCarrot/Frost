@@ -21,6 +21,8 @@ path = "tests/main.rs"
 frostlang-driver = { workspace = true, features = ["graphical-diagnostics"] }
 frostlang-fs-resolver = { workspace = true, features = ["graphical-diagnostics"] }
 frostlang.workspace = true
+# Every format.
+frostlang-formats = { workspace = true, features = ["json"] }
 frostlang-uuid.workspace = true
 # Bundled, so `frost` needs no SQLite installed.
 frostlang-sqlite = { workspace = true, features = ["bundled"] }

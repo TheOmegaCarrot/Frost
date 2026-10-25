@@ -7,6 +7,7 @@ use std::sync::Arc;
 
 use frostlang::{Importer, ImporterBuilder, Stdlib, VmRuntimeConfiguration, stdlib::StdlibConfig};
 use frostlang_driver::{Driver, Exit};
+use frostlang_formats::Formats;
 use frostlang_fs_resolver::{DiagnosticStyle, FsResolver};
 
 /// How deeply imports may nest: far deeper than a sound module tree needs, and
@@ -53,6 +54,7 @@ fn importer(script: Option<&Path>) -> Arc<Importer> {
         .with_stdlib(Stdlib::complete(StdlibConfig::default()))
         .with_extension(frostlang_uuid::extension())
         .and_then(|importer| importer.with_extension(frostlang_sqlite::extension()))
+        .and_then(|importer| importer.with_extension(frostlang_formats::extension(Formats::all())))
         .expect("each extension has its own name");
     match FsResolver::new(roots) {
         Ok(resolver) => importer.append_resolver(Arc::new(

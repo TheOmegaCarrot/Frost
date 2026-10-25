@@ -13,6 +13,9 @@ members = [
     "crates/ext/*",
     # Checks each way `frostlang-sqlite` can link SQLite. Unpublished.
     "crates/ext/frostlang-sqlite/linkage",
+    # Runs `frostlang-formats`'s tests with a `serde_json` feature a host may
+    # enable; a plain `cargo test` skips them. Unpublished.
+    "crates/ext/frostlang-formats/arbitrary-precision",
 ]
 resolver = "3"
 
@@ -29,6 +32,7 @@ rust-version = "1.95"
 # our `rust-version`.
 frostlang = { path = "crates/frostlang", version = "0.0.1" }
 frostlang-driver = { path = "crates/frostlang-driver", version = "0.0.1" }
+frostlang-formats = { path = "crates/ext/frostlang-formats", version = "0.0.1" }
 frostlang-fs-resolver = { path = "crates/frostlang-fs-resolver", version = "0.0.1" }
 frostlang-macros = { path = "crates/frostlang-macros", version = "0.0.1" }
 frostlang-parse = { path = "crates/frostlang-parse", version = "0.0.1" }

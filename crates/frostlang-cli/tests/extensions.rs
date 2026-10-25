@@ -25,6 +25,23 @@ fn uuid_is_installed() {
     assert_eq!(eval(code), "4\n");
 }
 
+#[test]
+fn formats_is_installed_with_every_format() {
+    let code = r"
+        print(sorted(keys(import('ext.formats'))) == ['json'])
+    ";
+    assert_eq!(eval(code), "true\n");
+}
+
+#[test]
+fn formats_json_round_trips() {
+    let code = r#"
+        def json = import('ext.formats.json')
+        print(json.encode(json.decode('{"a": [1]}')) == '{"a":[1]}')
+    "#;
+    assert_eq!(eval(code), "true\n");
+}
+
 /// `frost` links the bundled SQLite, whose header the bindings were built
 /// from.
 #[test]

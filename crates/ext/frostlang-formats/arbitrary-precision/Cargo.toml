@@ -1,0 +1,34 @@
+[package]
+name = "frostlang-formats-arbitrary-precision"
+version = "0.0.0"
+edition.workspace = true
+rust-version.workspace = true
+description = "Runs the tests of `frostlang-formats` with `serde_json`'s `arbitrary_precision` feature, which any crate in a host's build may enable."
+publish = false
+autotests = false
+
+# Off by default, so a plain `cargo test` skips these tests: Cargo enables a
+# dependency's features for every crate built together, so turning this on in
+# a test of the whole workspace would change `serde_json` for every crate's
+# tests. Run them on their own:
+#
+#     cargo test -p frostlang-formats-arbitrary-precision --features arbitrary-precision
+[features]
+arbitrary-precision = ["dep:serde_json", "serde_json/arbitrary_precision"]
+
+[dependencies]
+# Only to enable its feature.
+serde_json = { version = "1", optional = true }
+
+[dev-dependencies]
+frostlang.workspace = true
+frostlang-formats = { workspace = true, features = ["json"] }
+
+# The tests of `frostlang-formats` itself.
+[[test]]
+name = "integration"
+path = "../tests/main.rs"
+required-features = ["arbitrary-precision"]
+
+[lints]
+workspace = true

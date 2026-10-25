@@ -649,6 +649,7 @@ version = "0.0.1"
 dependencies = [
  "frostlang",
  "frostlang-driver",
+ "frostlang-formats",
  "frostlang-fs-resolver",
  "frostlang-sqlite",
  "frostlang-uuid",
@@ -674,6 +675,26 @@ dependencies = [
  "frostlang-driver",
  "frostlang-parse",
  "frostlang-repl",
+]
+
+[[package]]
+name = "frostlang-formats"
+version = "0.0.1"
+dependencies = [
+ "frostlang",
+ "frostlang-formats",
+ "serde",
+ "serde_json",
+ "thiserror",
+]
+
+[[package]]
+name = "frostlang-formats-arbitrary-precision"
+version = "0.0.0"
+dependencies = [
+ "frostlang",
+ "frostlang-formats",
+ "serde_json",
 ]
 
 [[package]]
