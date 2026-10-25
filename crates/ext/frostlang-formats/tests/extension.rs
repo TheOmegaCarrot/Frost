@@ -36,6 +36,7 @@ fn every_format_is_a_module_holding_encode_and_decode() {
         ("sorted(keys(json))", "['decode', 'encode']"),
         ("sorted(keys(msgpack))", "['decode', 'encode']"),
         ("sorted(keys(toml))", "['datetime', 'decode', 'encode']"),
+        ("sorted(keys(yaml))", "['decode', 'encode']"),
     ]);
 }
 
@@ -50,7 +51,13 @@ fn the_u64_module_holds_its_functions() {
 #[test]
 fn the_default_is_every_format() {
     assert_eq!(Formats::default(), Formats::all());
-    for format in [Format::Cbor, Format::Json, Format::Msgpack, Format::Toml] {
+    for format in [
+        Format::Cbor,
+        Format::Json,
+        Format::Msgpack,
+        Format::Toml,
+        Format::Yaml,
+    ] {
         assert!(Formats::all().contains(format), "{format:?} is compiled in");
     }
 }
@@ -66,13 +73,15 @@ fn with_and_without_choose_formats() {
             .without(Format::Cbor)
             .without(Format::Msgpack)
             .without(Format::Toml)
+            .without(Format::Yaml)
     );
     assert_eq!(
         json_only
             .clone()
             .with(Format::Cbor)
             .with(Format::Msgpack)
-            .with(Format::Toml),
+            .with(Format::Toml)
+            .with(Format::Yaml),
         Formats::all()
     );
     assert!(!Formats::none().contains(Format::Json));
@@ -93,15 +102,15 @@ fn only_the_chosen_formats_are_modules() {
     // `u64` comes with any format that has unsigned 64-bit integers.
     assert_eq!(
         module_names(Formats::all()),
-        strings(&["cbor", "json", "msgpack", "toml", "u64"])
+        strings(&["cbor", "json", "msgpack", "toml", "u64", "yaml"])
     );
     assert_eq!(
         module_names(Formats::all().without(Format::Toml)),
-        strings(&["cbor", "json", "msgpack", "u64"])
+        strings(&["cbor", "json", "msgpack", "u64", "yaml"])
     );
     assert_eq!(
         module_names(Formats::all().without(Format::Msgpack)),
-        strings(&["cbor", "json", "toml", "u64"])
+        strings(&["cbor", "json", "toml", "u64", "yaml"])
     );
     assert_eq!(
         module_names(
@@ -109,7 +118,7 @@ fn only_the_chosen_formats_are_modules() {
                 .without(Format::Cbor)
                 .without(Format::Msgpack)
         ),
-        strings(&["json", "toml"])
+        strings(&["json", "toml", "yaml"])
     );
     assert_eq!(
         module_names(Formats::none().with(Format::Cbor)),
@@ -123,6 +132,10 @@ fn only_the_chosen_formats_are_modules() {
         module_names(Formats::none().with(Format::Toml)),
         strings(&["toml"])
     );
+    assert_eq!(
+        module_names(Formats::none().with(Format::Yaml)),
+        strings(&["yaml"])
+    );
     assert_eq!(module_names(Formats::none()), strings(&[]));
 }
 
@@ -134,6 +147,7 @@ fn a_format_left_out_cannot_be_imported() {
         (Formats::all().without(Format::Json), "json"),
         (Formats::all().without(Format::Msgpack), "msgpack"),
         (Formats::all().without(Format::Toml), "toml"),
+        (Formats::all().without(Format::Yaml), "yaml"),
     ] {
         let path = format!("ext.formats.{left_out}");
         let error = run_with(&format!("import('{path}')"), formats.clone())

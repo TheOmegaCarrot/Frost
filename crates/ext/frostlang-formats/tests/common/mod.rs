@@ -69,6 +69,7 @@ fn run(expression: &str) -> Result<Value, FrostError> {
         def msgpack = import('ext.formats.msgpack')
         def toml = import('ext.formats.toml')
         def u64 = import('ext.formats.u64')
+        def yaml = import('ext.formats.yaml')
         def math = import('std.math')
         def test = import('test')
         {expression}

@@ -18,3 +18,5 @@ mod toml;
 mod toml_api;
 mod uint64;
 mod uint64_api;
+mod yaml;
+mod yaml_api;

@@ -254,6 +254,8 @@ each([1, 2, 3], fn x -> print(x))              # for effects
 
 - Inspect every third-party dependency before use.
 - Every direct dependency must be actively maintained and well-reputed.
+- A widely used crate of small, settled scope that is not a security surface may release rarely
+  and still count as maintained: it is feature-complete, and its releases are fixes.
 
 ### Prose (comments, error strings, docs)
 

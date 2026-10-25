@@ -56,7 +56,8 @@
         feature = "cbor",
         feature = "json",
         feature = "msgpack",
-        feature = "toml"
+        feature = "toml",
+        feature = "yaml"
     )),
     allow(dead_code, unused_imports, unused_variables)
 )]
@@ -73,6 +74,8 @@ pub mod msgpack;
 #[cfg(feature = "toml")]
 pub mod toml;
 pub mod uint64;
+#[cfg(feature = "yaml")]
+pub mod yaml;
 
 use std::collections::BTreeSet;
 
@@ -115,6 +118,9 @@ pub enum Format {
     /// TOML, as the module `toml`; see [`toml`].
     #[cfg(feature = "toml")]
     Toml,
+    /// YAML, as the module `yaml`; see [`yaml`].
+    #[cfg(feature = "yaml")]
+    Yaml,
 }
 
 impl Format {
@@ -128,6 +134,8 @@ impl Format {
         Format::Msgpack,
         #[cfg(feature = "toml")]
         Format::Toml,
+        #[cfg(feature = "yaml")]
+        Format::Yaml,
     ];
 
     /// How the format's data maps to Frost values.
@@ -141,6 +149,8 @@ impl Format {
             Format::Msgpack => &msgpack::MSGPACK,
             #[cfg(feature = "toml")]
             Format::Toml => &toml::TOML,
+            #[cfg(feature = "yaml")]
+            Format::Yaml => &yaml::YAML,
         }
     }
 
@@ -163,6 +173,8 @@ impl Format {
             Format::Msgpack => extension.module("msgpack", msgpack::module),
             #[cfg(feature = "toml")]
             Format::Toml => extension.module("toml", toml::module),
+            #[cfg(feature = "yaml")]
+            Format::Yaml => extension.module("yaml", yaml::module),
         }
     }
 }

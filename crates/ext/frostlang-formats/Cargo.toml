@@ -12,6 +12,7 @@ cbor = ["dep:minicbor-serde"]
 json = ["dep:serde_json"]
 msgpack = ["dep:rmp-serde"]
 toml = ["dep:toml"]
+yaml = ["dep:serde-saphyr"]
 
 [dependencies]
 frostlang = { path = "../../frostlang", version = "0.0.1", default-features = false }
@@ -21,6 +22,11 @@ frostlang = { path = "../../frostlang", version = "0.0.1", default-features = fa
 minicbor-serde = { version = "0.7", optional = true, features = ["alloc", "half"] }
 rmp-serde = { version = "1.3", optional = true }
 serde = "1"
+# Its default features add comment capture, which nothing here reads.
+serde-saphyr = { version = "2", optional = true, default-features = false, features = [
+    "serialize",
+    "deserialize",
+] }
 thiserror = "2"
 # `float_roundtrip`: read each float exactly, so every Float round-trips; by
 # default, the last digit may be off.
@@ -31,7 +37,7 @@ toml = { version = "1.1", optional = true }
 # The tests compile Frost source.
 frostlang.workspace = true
 # The tests cover every format.
-frostlang-formats = { path = ".", features = ["cbor", "json", "msgpack", "toml"] }
+frostlang-formats = { path = ".", features = ["cbor", "json", "msgpack", "toml", "yaml"] }
 
 # One binary for every integration test, rather than one per file, to save the
 # build time and disk of linking each separately. Each file in `tests/` is a
@@ -41,7 +47,7 @@ name = "integration"
 path = "tests/main.rs"
 # The dev-dependency above enables every format. A published package drops
 # that dependency, so its tests are then skipped rather than failing to build.
-required-features = ["cbor", "json", "msgpack", "toml"]
+required-features = ["cbor", "json", "msgpack", "toml", "yaml"]
 
 # Every format's documentation is on an item that exists only when the format
 # is compiled in.
