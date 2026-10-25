@@ -3,7 +3,7 @@ use std::fmt;
 
 use serde::ser::{self, Serialize};
 
-use crate::core::serde::{int_value, special_float};
+use crate::core::serde::{ErrorPath, PathSegment, int_value, special_float};
 use crate::core::{FrostArray, FrostFloat, MapKey, Value, ValueMap};
 
 thread_local! {
@@ -20,17 +20,44 @@ thread_local! {
 
 #[derive(Debug, thiserror::Error)]
 pub(super) enum SerError {
-    #[error("{0}")]
-    Message(String),
+    /// A serialization failure, and where in the value it happened.
+    #[error("{message}{path}")]
+    Message { message: String, path: ErrorPath },
     /// An entry's `None`, which [`insert_if_present`] leaves out rather than
     /// failing on. It never leaves [`to_value`].
     #[error("an absent entry, which should have been left out")]
     AbsentEntry,
 }
 
+impl SerError {
+    fn new(message: impl Into<String>) -> Self {
+        SerError::Message {
+            message: message.into(),
+            path: ErrorPath::default(),
+        }
+    }
+
+    /// This error, as having happened in serializing a key of the enclosing
+    /// Map.
+    fn in_key(mut self) -> Self {
+        if let SerError::Message { path, .. } = &mut self {
+            path.mark_in_key();
+        }
+        self
+    }
+
+    /// This error, as having happened within `segment` of the enclosing value.
+    fn within(mut self, segment: PathSegment) -> Self {
+        if let SerError::Message { path, .. } = &mut self {
+            path.push(segment);
+        }
+        self
+    }
+}
+
 impl ser::Error for SerError {
     fn custom<T: fmt::Display>(msg: T) -> Self {
-        SerError::Message(msg.to_string())
+        SerError::new(msg.to_string())
     }
 }
 
@@ -107,15 +134,15 @@ impl ser::Serializer for ValueSerializer {
     }
 
     fn serialize_u64(self, v: u64) -> Result<Value, SerError> {
-        int_value(v).map_err(SerError::Message)
+        int_value(v).map_err(SerError::new)
     }
 
     fn serialize_i128(self, v: i128) -> Result<Value, SerError> {
-        int_value(v).map_err(SerError::Message)
+        int_value(v).map_err(SerError::new)
     }
 
     fn serialize_u128(self, v: u128) -> Result<Value, SerError> {
-        int_value(v).map_err(SerError::Message)
+        int_value(v).map_err(SerError::new)
     }
 
     fn serialize_f32(self, v: f32) -> Result<Value, SerError> {
@@ -204,7 +231,9 @@ impl ser::Serializer for ValueSerializer {
         variant: &'static str,
         value: &T,
     ) -> Result<Value, SerError> {
-        let inner = value.serialize(Self::Required)?;
+        let inner = value
+            .serialize(Self::Required)
+            .map_err(|err| err.within(PathSegment::Key(variant.into())))?;
         Ok(Value::map([(variant, inner)]))
     }
 
@@ -281,8 +310,10 @@ impl ser::SerializeSeq for SerializeArray {
     type Error = SerError;
 
     fn serialize_element<T: ?Sized + Serialize>(&mut self, value: &T) -> Result<(), SerError> {
-        self.elements
-            .push(value.serialize(ValueSerializer::Required)?);
+        let element = value
+            .serialize(ValueSerializer::Required)
+            .map_err(|err| err.within(PathSegment::Index(self.elements.len())))?;
+        self.elements.push(element);
         Ok(())
     }
 
@@ -327,8 +358,11 @@ impl ser::SerializeTupleVariant for SerializeTupleVariant {
     type Error = SerError;
 
     fn serialize_field<T: ?Sized + Serialize>(&mut self, value: &T) -> Result<(), SerError> {
-        self.elements
-            .push(value.serialize(ValueSerializer::Required)?);
+        let element = value.serialize(ValueSerializer::Required).map_err(|err| {
+            err.within(PathSegment::Index(self.elements.len()))
+                .within(PathSegment::Key(self.variant.into()))
+        })?;
+        self.elements.push(element);
         Ok(())
     }
 
@@ -348,8 +382,11 @@ impl ser::SerializeMap for SerializeMap {
     type Error = SerError;
 
     fn serialize_key<T: ?Sized + Serialize>(&mut self, key: &T) -> Result<(), SerError> {
-        let key_value = key.serialize(ValueSerializer::Required)?;
-        let map_key = MapKey::try_from(key_value).map_err(ser::Error::custom)?;
+        let key_value = key
+            .serialize(ValueSerializer::Required)
+            .map_err(SerError::in_key)?;
+        let map_key =
+            MapKey::try_from(key_value).map_err(|err| SerError::new(err.to_string()).in_key())?;
         self.pending_key = Some(map_key);
         Ok(())
     }
@@ -374,13 +411,14 @@ fn insert_if_present<T: ?Sized + Serialize>(
     key: impl Into<MapKey>,
     value: &T,
 ) -> Result<(), SerError> {
+    let key = key.into();
     match value.serialize(ValueSerializer::Entry) {
         Ok(serialized) => {
-            entries.insert(key.into(), serialized);
+            entries.insert(key, serialized);
             Ok(())
         }
         Err(SerError::AbsentEntry) => Ok(()),
-        Err(err) => Err(err),
+        Err(err) => Err(err.within(PathSegment::Key(key))),
     }
 }
 
@@ -420,6 +458,7 @@ impl ser::SerializeStructVariant for SerializeStructVariant {
         value: &T,
     ) -> Result<(), SerError> {
         insert_if_present(&mut self.entries, key, value)
+            .map_err(|err| err.within(PathSegment::Key(self.variant.into())))
     }
 
     fn end(self) -> Result<Value, SerError> {

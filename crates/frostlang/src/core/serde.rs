@@ -5,9 +5,72 @@ pub use de::from_value;
 pub(crate) use de::{accepted_types, deserialize_of_types};
 pub use ser::to_value;
 
-use std::fmt::Display;
+use std::fmt::{self, Display};
 
-use crate::core::{SpecialFloat, Value};
+use crate::core::util::identifier::is_identifier_like_and_not_keyword;
+use crate::core::{MapKey, SpecialFloat, Value};
+
+/// Where in a value an error happened, which an error gains as it passes back
+/// out through each enclosing level.
+#[derive(Debug, Default)]
+struct ErrorPath {
+    /// Whether the error was in a Map key, rather than a value.
+    in_key: bool,
+    /// The Map keys and Array indices leading to the error, innermost first.
+    segments: Vec<PathSegment>,
+}
+
+/// One step into a value: a Map entry or an Array element.
+#[derive(Debug)]
+enum PathSegment {
+    Key(MapKey),
+    Index(usize),
+}
+
+impl ErrorPath {
+    /// Records that the error happened within `segment` of the enclosing value.
+    fn push(&mut self, segment: PathSegment) {
+        self.segments.push(segment);
+    }
+
+    /// Records that the error happened in a key of the enclosing Map. Any place
+    /// within the key is dropped: no Frost index reaches inside a key.
+    fn mark_in_key(&mut self) {
+        self.in_key = true;
+        self.segments.clear();
+    }
+}
+
+/// Renders as a suffix for the error's message, writing the path as Frost
+/// would index it, such as `` (at `name.inner`)``, `` (at `items[2]`)``, or
+/// `` (at `["my-key"]`)``. At the top level it renders as nothing.
+impl Display for ErrorPath {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match (self.in_key, self.segments.is_empty()) {
+            (false, true) => return Ok(()),
+            (true, true) => return f.write_str(" (at a key)"),
+            (true, false) => f.write_str(" (at a key of `")?,
+            (false, false) => f.write_str(" (at `")?,
+        }
+        for (i, segment) in self.segments.iter().rev().enumerate() {
+            match segment {
+                PathSegment::Key(MapKey::String(name))
+                    if is_identifier_like_and_not_keyword(name) =>
+                {
+                    if i > 0 {
+                        f.write_str(".")?;
+                    }
+                    f.write_str(name)?;
+                }
+                PathSegment::Key(key) => {
+                    write!(f, "[{}]", Value::from(key.clone()).to_debug_string())?;
+                }
+                PathSegment::Index(index) => write!(f, "[{index}]")?,
+            }
+        }
+        f.write_str("`)")
+    }
+}
 
 /// The float a [`SpecialFloat`] Opaque leaves serde as, or `None` for any other value.
 fn special_float(value: &Value) -> Option<f64> {

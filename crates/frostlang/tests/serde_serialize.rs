@@ -3,7 +3,7 @@
 
 use crate::common;
 
-use std::collections::HashMap;
+use std::collections::{BTreeMap, HashMap};
 
 use serde::Serialize;
 
@@ -355,6 +355,179 @@ fn serialize_value_map() {
 }
 
 // ---- Errors ----
+
+/// The error message of serializing `value`, which must fail.
+fn error_of<T: Serialize>(value: &T) -> String {
+    to_value(value)
+        .expect_err("serializing fails")
+        .message()
+        .into_owned()
+}
+
+#[derive(Serialize)]
+struct Reading {
+    level: f64,
+}
+
+#[derive(Serialize)]
+enum Event {
+    Newtype(f64),
+    Tuple(i64, f64),
+    Fields { level: f64 },
+}
+
+#[test]
+fn an_error_at_the_top_level_names_no_place() {
+    assert_eq!(error_of(&f64::NAN), "NaN is not finite");
+}
+
+#[test]
+fn an_error_names_where_in_the_value_it_happened() {
+    // Written as Frost would index the value, as `from_value` writes it.
+    #[derive(Serialize)]
+    struct Pair(f64, f64);
+
+    let cases = [
+        (
+            "a struct field",
+            error_of(&Reading { level: f64::NAN }),
+            "level",
+        ),
+        ("an element", error_of(&vec![1.0, f64::NAN]), "[1]"),
+        ("a tuple's element", error_of(&(1.0, f64::NAN)), "[1]"),
+        (
+            "a tuple struct's field",
+            error_of(&Pair(1.0, f64::NAN)),
+            "[1]",
+        ),
+        (
+            "an entry not keyed by a name",
+            error_of(&HashMap::from([("my-key", f64::NAN)])),
+            r#"["my-key"]"#,
+        ),
+        (
+            "an entry keyed by an Int",
+            error_of(&HashMap::from([(7, f64::NAN)])),
+            "[7]",
+        ),
+        (
+            "a newtype variant",
+            error_of(&Event::Newtype(f64::NAN)),
+            "Newtype",
+        ),
+        (
+            "a tuple variant",
+            error_of(&Event::Tuple(1, f64::NAN)),
+            "Tuple[1]",
+        ),
+        (
+            "a struct variant",
+            error_of(&Event::Fields { level: f64::NAN }),
+            "Fields.level",
+        ),
+        (
+            "nested",
+            error_of(&HashMap::from([(
+                "readings",
+                vec![Reading { level: 1.0 }, Reading { level: f64::NAN }],
+            )])),
+            "readings[1].level",
+        ),
+    ];
+    for (case, message, place) in cases {
+        assert_eq!(
+            message,
+            format!("NaN is not finite (at `{place}`)"),
+            "{case}"
+        );
+    }
+}
+
+#[test]
+fn an_error_names_its_place_in_the_value_serde_writes() {
+    // The place follows the value's shape, which serde's attributes decide,
+    // rather than the Rust type's.
+    #[derive(Serialize)]
+    #[serde(tag = "type")]
+    enum Tagged {
+        Fields { level: f64 },
+    }
+    #[derive(Serialize)]
+    #[serde(tag = "type", content = "content")]
+    enum Adjacent {
+        Fields { level: f64 },
+    }
+    #[derive(Serialize)]
+    enum Renamed {
+        #[serde(rename = "my-variant")]
+        Fields { level: f64 },
+    }
+    let cases = [
+        (
+            "an internally tagged variant's field",
+            error_of(&Tagged::Fields { level: f64::NAN }),
+            "level",
+        ),
+        (
+            "an adjacently tagged variant's field",
+            error_of(&Adjacent::Fields { level: f64::NAN }),
+            "content.level",
+        ),
+        (
+            "a variant whose name is not identifier-like",
+            error_of(&Renamed::Fields { level: f64::NAN }),
+            r#"["my-variant"].level"#,
+        ),
+    ];
+    for (case, message, place) in cases {
+        assert_eq!(
+            message,
+            format!("NaN is not finite (at `{place}`)"),
+            "{case}"
+        );
+    }
+}
+
+#[test]
+fn an_error_in_a_flattened_field_names_the_field() {
+    // serde writes a flattened field's entries into the enclosing Map.
+    #[derive(Serialize)]
+    struct Outer {
+        #[serde(flatten)]
+        inner: Reading,
+    }
+    assert_eq!(
+        error_of(&Outer {
+            inner: Reading { level: f64::NAN }
+        }),
+        "NaN is not finite (at `level`)",
+        "the flattened struct adds no level of its own"
+    );
+}
+
+#[test]
+fn an_error_in_a_key_says_so() {
+    let unkeyable = || BTreeMap::from([(vec![1], 2)]);
+    assert_eq!(
+        error_of(&unkeyable()),
+        "Type Array is not a valid Map key (at a key)",
+        "at the top level"
+    );
+    assert_eq!(
+        error_of(&HashMap::from([("outer", unkeyable())])),
+        "Type Array is not a valid Map key (at a key of `outer`)",
+        "nested, with the path"
+    );
+    // No Frost index reaches inside a key, so the place within one goes unsaid.
+    assert_eq!(
+        error_of(&HashMap::from([(
+            "outer",
+            BTreeMap::from([((1, u64::MAX), 1)])
+        )])),
+        "integer 18446744073709551615 is beyond the Int range (at a key of `outer`)",
+        "an error inside a key"
+    );
+}
 
 /// Both kinds of Function value refuse a foreign serializer.
 #[test]

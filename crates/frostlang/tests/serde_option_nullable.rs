@@ -215,31 +215,43 @@ fn a_flattened_none_field_is_left_out() {
 
 #[test]
 fn a_none_outside_an_entry_is_an_error() {
-    for (case, message) in [
-        ("at the top level", serialize_error(&None::<i64>)),
-        ("an element", serialize_error(&vec![Some(1), None])),
-        ("in a tuple", serialize_error(&(1, None::<i64>))),
+    for (case, message, place) in [
+        ("at the top level", serialize_error(&None::<i64>), ""),
+        (
+            "an element",
+            serialize_error(&vec![Some(1), None]),
+            " (at `[1]`)",
+        ),
+        (
+            "in a tuple",
+            serialize_error(&(1, None::<i64>)),
+            " (at `[1]`)",
+        ),
         (
             "in a tuple variant",
             serialize_error(&Variants::Tuple(1, None)),
+            " (at `Tuple[1]`)",
         ),
         (
             "in a newtype variant",
             serialize_error(&Variants::Newtype(None)),
+            " (at `Newtype`)",
         ),
-        ("in a Some", serialize_error(&Some(None::<i64>))),
+        ("in a Some", serialize_error(&Some(None::<i64>)), ""),
         // A `None` nested in a `Some` or a `Nullable` is not itself an
         // entry, even inside one.
         (
             "in a Some, in an entry",
             serialize_error(&HashMap::from([("a", Some(None::<i64>))])),
+            " (at `a`)",
         ),
         (
             "in a Nullable",
             serialize_error(&Nullable(Some(None::<i64>))),
+            "",
         ),
     ] {
-        assert_eq!(message, NONE_OUTSIDE_AN_ENTRY, "{case}");
+        assert_eq!(message, format!("{NONE_OUTSIDE_AN_ENTRY}{place}"), "{case}");
     }
 }
 

@@ -239,6 +239,11 @@ fn ser_rejects_a_non_finite_float() {
         rejection(Ser(f64::NAN)),
         "Function f has a result no value can hold: NaN is not finite"
     );
+    assert_eq!(
+        rejection(Ser(vec![1.0, f64::NAN])),
+        "Function f has a result no value can hold: NaN is not finite (at `[1]`)",
+        "naming where in the result"
+    );
 }
 
 #[test]

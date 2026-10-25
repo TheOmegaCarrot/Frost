@@ -180,25 +180,32 @@ fn to_value_refuses_a_nested_non_finite_float() {
     struct Fields {
         level: f64,
     }
-    for (case, message) in [
-        ("an element", serialize_error(&vec![1.0, f64::INFINITY])),
+    for (case, message, place) in [
+        (
+            "an element",
+            serialize_error(&vec![1.0, f64::INFINITY]),
+            " (at `[1]`)",
+        ),
         (
             "a field",
             serialize_error(&Fields {
                 level: f64::INFINITY,
             }),
+            " (at `level`)",
         ),
         (
             "a Map entry",
             serialize_error(&BTreeMap::from([("level", f64::INFINITY)])),
+            " (at `level`)",
         ),
-        ("an Option", serialize_error(&Some(f64::INFINITY))),
+        ("an Option", serialize_error(&Some(f64::INFINITY)), ""),
         (
             "a Nullable",
             serialize_error(&Nullable(Some(f64::INFINITY))),
+            "",
         ),
     ] {
-        assert_eq!(message, "inf is not finite", "{case}");
+        assert_eq!(message, format!("inf is not finite{place}"), "{case}");
     }
 }
 

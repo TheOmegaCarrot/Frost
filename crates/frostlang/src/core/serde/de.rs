@@ -4,9 +4,8 @@ use std::fmt;
 use serde::de::{self, DeserializeOwned, IntoDeserializer, Visitor};
 use serde::{Deserialize, Deserializer};
 
-use crate::core::serde::{int_value, special_float};
+use crate::core::serde::{ErrorPath, PathSegment, int_value, special_float};
 use crate::core::util::count::counted;
-use crate::core::util::identifier::is_identifier_like_and_not_keyword;
 use crate::core::util::int_range::int_range;
 use crate::core::util::sole_char::sole_char;
 use crate::core::{FrostArray, FrostType, MapKey, TypeSet, Value, ValueMap};
@@ -48,31 +47,20 @@ impl Drop for ExpectedTypesGuard {
 #[derive(Debug)]
 pub(super) struct DeError {
     message: String,
-    /// Whether the failure was in reading a Map key, rather than a value.
-    in_key: bool,
-    /// The Map keys and Array indices leading to the failure, innermost first:
-    /// each level adds its own as the error passes back out through it.
-    path: Vec<PathSegment>,
-}
-
-#[derive(Debug)]
-enum PathSegment {
-    Key(MapKey),
-    Index(usize),
+    path: ErrorPath,
 }
 
 impl DeError {
     fn new(message: impl Into<String>) -> Self {
         DeError {
             message: message.into(),
-            in_key: false,
-            path: Vec::new(),
+            path: ErrorPath::default(),
         }
     }
 
     /// This error, as having happened in reading a key of the enclosing Map.
     fn in_key(mut self) -> Self {
-        self.in_key = true;
+        self.path.mark_in_key();
         self
     }
 
@@ -88,33 +76,9 @@ impl DeError {
     }
 }
 
-/// The path renders as Frost would index it: `name.inner`, `items[2]`, `["my-key"]`.
 impl fmt::Display for DeError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        f.write_str(&self.message)?;
-        match (self.in_key, self.path.is_empty()) {
-            (false, true) => return Ok(()),
-            (true, true) => return f.write_str(" (at a key)"),
-            (true, false) => f.write_str(" (at a key of `")?,
-            (false, false) => f.write_str(" (at `")?,
-        }
-        for (i, segment) in self.path.iter().rev().enumerate() {
-            match segment {
-                PathSegment::Key(MapKey::String(name))
-                    if is_identifier_like_and_not_keyword(name) =>
-                {
-                    if i > 0 {
-                        f.write_str(".")?;
-                    }
-                    f.write_str(name)?;
-                }
-                PathSegment::Key(key) => {
-                    write!(f, "[{}]", Value::from(key.clone()).to_debug_string())?;
-                }
-                PathSegment::Index(index) => write!(f, "[{index}]")?,
-            }
-        }
-        f.write_str("`)")
+        write!(f, "{}{}", self.message, self.path)
     }
 }
 
