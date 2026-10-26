@@ -30,10 +30,10 @@ const CLASSIFIERS: [&str; 7] = [
 fn the_module_holds_its_functions() {
     assert_values(&[(
         "sorted(keys(str))",
-        "['center', 'chars', 'count', 'index_of', 'is_alpha', 'is_alphanumeric', 'is_ascii', \
-         'is_digit', 'is_empty', 'is_lowercase', 'is_uppercase', 'is_whitespace', \
-         'last_index_of', 'pad_left', 'pad_right', 'reader', 'strip_prefix', \
-         'strip_suffix', 'writer']",
+        "['center', 'chars', 'count', 'from_code_points', 'index_of', 'is_alpha', \
+         'is_alphanumeric', 'is_ascii', 'is_digit', 'is_empty', 'is_lowercase', \
+         'is_uppercase', 'is_whitespace', 'last_index_of', 'pad_left', 'pad_right', 'reader', \
+         'strip_prefix', 'strip_suffix', 'to_code_points', 'writer']",
     )]);
 }
 
@@ -278,6 +278,123 @@ fn chars_splits_into_code_points() {
     ]);
 }
 
+// --- to_code_points, from_code_points ---
+
+#[test]
+fn to_code_points_lists_each_code_point() {
+    assert_values(&[
+        ("str.to_code_points('Hi')", "[72, 105]"),
+        ("str.to_code_points('')", "[]"),
+        // A code point is not a byte: each is one Int, however many bytes it takes.
+        (r"str.to_code_points('\u{e9}\u{1f600}')", "[0xe9, 0x1f600]"),
+        // A combining accent is a code point of its own.
+        (r"str.to_code_points('e\u{301}')", "[0x65, 0x301]"),
+        // The first and last scalar values.
+        (r"str.to_code_points('\u{0}\u{10ffff}')", "[0, 0x10ffff]"),
+    ]);
+}
+
+#[test]
+fn from_code_points_makes_a_string() {
+    assert_values(&[
+        ("str.from_code_points([72, 105])", "'Hi'"),
+        ("str.from_code_points([])", "''"),
+        (
+            "str.from_code_points([0xe9, 0x1f600])",
+            r"'\u{e9}\u{1f600}'",
+        ),
+        ("str.from_code_points([0x65, 0x301])", r"'e\u{301}'"),
+        // The scalar values either side of the surrogates.
+        (
+            "str.from_code_points([0xd7ff, 0xe000])",
+            r"'\u{d7ff}\u{e000}'",
+        ),
+        // The first and last scalar values.
+        ("str.from_code_points([0, 0x10ffff])", r"'\u{0}\u{10ffff}'"),
+    ]);
+}
+
+#[test]
+fn code_points_round_trip() {
+    for text in [
+        "''",
+        "'plain ASCII'",
+        // The first and last code point of each UTF-8 width.
+        r"'\u{0}\u{7f}\u{80}\u{7ff}\u{800}\u{ffff}\u{10000}\u{10ffff}'",
+        // A combining accent and a joined emoji sequence.
+        r"'e\u{301} \u{1f468}\u{200d}\u{1f469}'",
+    ] {
+        assert_values(&[(
+            &format!("str.from_code_points(str.to_code_points({text}))"),
+            text,
+        )]);
+    }
+    // And scalar values through a String.
+    for code_points in ["[]", "[0, 0x7f, 0x80, 0xd7ff, 0xe000, 0x10ffff]"] {
+        assert_values(&[(
+            &format!("str.to_code_points(str.from_code_points({code_points}))"),
+            code_points,
+        )]);
+    }
+}
+
+/// An Int that is no Unicode scalar value (negative, a surrogate, or past 0x10FFFF)
+/// makes the whole result Null, wherever it is in the Array,
+/// as an Int outside a byte's range does for `encoding.from_ints`.
+#[test]
+fn from_code_points_is_null_for_an_int_that_is_no_scalar_value() {
+    for invalid in [
+        "-1",
+        // The first and last high and low surrogates.
+        "0xd800",
+        "0xdbff",
+        "0xdc00",
+        "0xdfff",
+        // Past the last scalar value, past 32 bits, and the Int extremes.
+        "0x110000",
+        "0x100000000",
+        "0x7fffffffffffffff",
+        "-0x7fffffffffffffff - 1",
+    ] {
+        assert_values(&[
+            (&format!("str.from_code_points([65, {invalid}])"), "null"),
+            (&format!("str.from_code_points([{invalid}, 65])"), "null"),
+        ]);
+    }
+}
+
+#[test]
+fn from_code_points_requires_ints_before_it_checks_their_values() {
+    assert_raises(&[
+        (
+            "str.from_code_points([65, 'a'])",
+            "Function std.string.from_code_points requires Int as element 1 of argument 1 \
+             (code_points), got String",
+        ),
+        (
+            "str.from_code_points([65.0])",
+            "Function std.string.from_code_points requires Int as element 0 of argument 1 \
+             (code_points), got Float",
+        ),
+        // An Int that is no scalar value before it does not make this Null.
+        (
+            "str.from_code_points([-1, null])",
+            "Function std.string.from_code_points requires Int as element 1 of argument 1 \
+             (code_points), got Null",
+        ),
+    ]);
+}
+
+#[test]
+fn from_code_points_checks_its_argument() {
+    assert_raises(&[(
+        "str.from_code_points('Hi')",
+        "Function std.string.from_code_points requires Array as argument 1 (code_points), \
+         got String",
+    )]);
+    assert_arity("from_code_points", "1", &[0, 2]);
+}
+
 // --- Classifiers ---
 
 #[test]
@@ -364,7 +481,7 @@ fn a_title_case_character_is_neither_upper_nor_lower_case() {
 
 #[test]
 fn text_functions_take_only_a_string() {
-    for function in CLASSIFIERS.iter().chain(&["chars"]) {
+    for function in CLASSIFIERS.iter().chain(&["chars", "to_code_points"]) {
         assert_raises(&[(
             &format!("str.{function}(x'61')"),
             &format!("Function std.string.{function} requires String as argument 1, got Bytes"),

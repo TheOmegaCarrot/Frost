@@ -1,6 +1,4 @@
-//! `std.string`: searching, stripping affixes, splitting into characters,
-//! classifying, and padding text, and reading and writing in-memory buffers as
-//! streams.
+//! `std.string`, the [`string`] module.
 //!
 //! Positions and widths count code points. The searching and stripping functions
 //! and `is_empty` also take Bytes, in any mix with a String, as the global
@@ -15,9 +13,8 @@ use crate::{
     frost_closure, frost_fn,
 };
 
-/// The `std.string` module: finding and counting substrings, stripping a prefix
-/// or suffix, splitting into characters, classifying characters, padding and
-/// centering text, and in-memory buffers read and written as streams.
+/// The `std.string` module: working with text, and in-memory buffers read and
+/// written as streams.
 ///
 /// It reaches nothing outside the script.
 pub fn string() -> StdlibModule {
@@ -26,6 +23,8 @@ pub fn string() -> StdlibModule {
         .value("last_index_of", index_of("std.string.last_index_of", Last))
         .function(count_frost())
         .function(chars_frost())
+        .function(to_code_points_frost())
+        .function(from_code_points_frost())
         .function(is_empty_frost())
         .function(strip_prefix_frost())
         .function(strip_suffix_frost())
@@ -196,6 +195,22 @@ fn strip_suffix(#[frost(unnamed)] text: Flat, suffix: Flat) -> Value {
 #[frost_fn]
 fn chars(#[frost(unnamed)] text: FrostString) -> Value {
     text.chars().map(|c| Value::from(c.to_string())).collect()
+}
+
+#[frost_fn]
+fn to_code_points(#[frost(unnamed)] text: FrostString) -> Value {
+    text.chars()
+        .map(|c| Value::Int(i64::from(u32::from(c))))
+        .collect()
+}
+
+#[frost_fn]
+fn from_code_points(code_points: Vec<i64>) -> Value {
+    code_points
+        .into_iter()
+        .map(|code_point| u32::try_from(code_point).ok().and_then(char::from_u32))
+        .collect::<Option<String>>()
+        .map_or(Value::Null, Value::from)
 }
 
 /// `is_ascii(text)`: whether a String holds nothing outside ASCII. Unlike the
