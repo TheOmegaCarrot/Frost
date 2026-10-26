@@ -1,0 +1,3 @@
+# With no entries there is nothing to wrap: the result is an empty Map.
+#= {result: {}}
+mutual({})

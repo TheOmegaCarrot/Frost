@@ -1,0 +1,3 @@
+# Every entry must be a Function; the error names the key.
+#= {raises: ['mutual', 'Function as the value at key "b"', 'got Int']}
+mutual({a: fn r -> r, b: 2})

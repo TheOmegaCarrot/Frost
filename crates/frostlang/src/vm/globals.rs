@@ -216,6 +216,7 @@ define_globals! {
     "tap"                   [Pure]   => tap_global(),
     "const"                 [Pure]   => const_global(),
     "compose"               [Pure]   => compose_global(),
+    "mutual"                [Pure]   => mutual_global(),
 
     // --- Debug ---
     "assert"                [Pure]   => assert_frost().build(),

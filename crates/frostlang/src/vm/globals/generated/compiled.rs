@@ -453,6 +453,111 @@
 //        6  Call          2
 //        7  TailCall      1
 //
+// function mutual
+//   arity 1, 0 captures
+//   slots
+//        0  functions
+//   constants
+//        0  "Function mutual requires Map as argument 1, got "
+//   children
+//        0  <lambda> (child 0)
+//        1  <lambda> (child 1)
+//   code
+//        0  DefLocal       0    ; functions
+//        1  Pop
+//        2  LoadGlobal     7    ; is_map
+//        3  LoadLocal      0    ; functions
+//        4  Call           1
+//        5  LogicalNot
+//        6  JumpIfFalse    L0   ; +8
+//        7  LoadGlobal     110  ; error
+//        8  LoadConst      0    ; "Function mutual requires Map as argu...
+//        9  LoadGlobal     15   ; type
+//       10  LoadLocal      0    ; functions
+//       11  Call           1
+//       12  Concat         2
+//       13  Call           1
+//       14  Jump           L1   ; +1
+//   L0:
+//       15  PushNull
+//   L1:
+//       16  Pop
+//       17  LoadGlobal     104  ; each
+//       18  LoadLocal      0    ; functions
+//       19  CreateClosure  0    ; <lambda>, 0 captures
+//       20  Call           2
+//       21  Pop
+//       22  LoadGlobal     49   ; map_values
+//       23  LoadLocal      0    ; functions
+//       24  ConsumeLocal   0    ; functions
+//       25  CreateClosure  1    ; <lambda>, 1 capture
+//       26  TailCall       2
+//
+// function <lambda> (child 0)
+//   arity 2, 0 captures
+//   slots
+//        0  f
+//        1  key
+//   constants
+//        0  "Function mutual requires Function as the value at key "
+//        1  " of argument 1, got "
+//   code
+//        0  DefLocal      0    ; f
+//        1  DefLocal      1    ; key
+//        2  Pop
+//        3  LoadGlobal    8    ; is_function
+//        4  LoadLocal     0    ; f
+//        5  Call          1
+//        6  LogicalNot
+//        7  JumpIfFalse   L0   ; +12
+//        8  LoadGlobal    110  ; error
+//        9  LoadConst     0    ; "Function mutual requires Function as...
+//       10  LoadGlobal    124  ; debug_dump
+//       11  ConsumeLocal  1    ; key
+//       12  Call          1
+//       13  LoadConst     1    ; " of argument 1, got "
+//       14  LoadGlobal    15   ; type
+//       15  ConsumeLocal  0    ; f
+//       16  Call          1
+//       17  Concat        4
+//       18  TailCall      1
+//       19  Jump          L1   ; +1
+//   L0:
+//       20  PushNull
+//   L1:
+//       21  (end)
+//
+// function <lambda> (child 1)
+//   arity 1, 1 capture
+//   slots
+//        0  functions  capture
+//        1  f
+//   children
+//        0  mutual_fn (child 1.0)
+//   code
+//        0  DefLocal       1  ; f
+//        1  Pop
+//        2  ConsumeLocal   1  ; f
+//        3  ConsumeLocal   0  ; functions
+//        4  CreateClosure  0  ; mutual_fn, 2 captures
+//
+// function mutual_fn (child 1.0)
+//   arity 0 or more, 2 captures
+//   slots
+//        0  f          capture
+//        1  functions  capture
+//        2  args
+//   code
+//        0  DefLocal      2    ; args
+//        1  Pop
+//        2  LoadGlobal    108  ; call
+//        3  ConsumeLocal  0    ; f
+//        4  ConsumeLocal  1    ; functions
+//        5  MakeArray     1
+//        6  ConsumeLocal  2    ; args
+//        7  Add
+//        8  TailCall      2
+//
 // function index
 //   arity 1, 0 captures
 //   slots
@@ -1059,6 +1164,157 @@ pub(super) fn functions() -> Value {
             (string("key_constants"), array([])),
             (string("name"), string("inv")),
             (string("name_table"), array([map([(string("exported"), boolean(false)), (string("name"), string("f"))])])),
+            (string("num_captures"), int(0)),
+            (string("version"), string("0.0.1")),
+        ])),
+        (string("mutual"), map([
+            (string("arity"), map([(string("Exact"), int(1))])),
+            (string("child_fns"), array([
+                map([
+                    (string("arity"), map([(string("Exact"), int(2))])),
+                    (string("child_fns"), array([])),
+                    (string("code"), array([
+                        map([(string("DefLocal"), int(0))]),
+                        map([(string("DefLocal"), int(1))]),
+                        map([(string("DropBelow"), int(0))]),
+                        map([(string("LoadGlobal"), int(8))]),
+                        map([(string("LoadLocal"), int(0))]),
+                        map([(string("Call"), int(1))]),
+                        string("LogicalNot"),
+                        map([(string("JumpIfFalse"), int(12))]),
+                        map([(string("LoadGlobal"), int(110))]),
+                        map([(string("LoadConst"), int(0))]),
+                        map([(string("LoadGlobal"), int(124))]),
+                        map([(string("ConsumeLocal"), int(1))]),
+                        map([(string("Call"), int(1))]),
+                        map([(string("LoadConst"), int(1))]),
+                        map([(string("LoadGlobal"), int(15))]),
+                        map([(string("ConsumeLocal"), int(0))]),
+                        map([(string("Call"), int(1))]),
+                        map([(string("Concat"), int(4))]),
+                        map([(string("TailCall"), int(1))]),
+                        map([(string("Jump"), int(1))]),
+                        string("PushNull"),
+                    ])),
+                    (string("constants"), array([
+                        map([
+                            (string("String"), string("Function mutual requires Function as the value at key ")),
+                        ]),
+                        map([(string("String"), string(" of argument 1, got "))]),
+                    ])),
+                    (string("key_constants"), array([])),
+                    (string("name"), string("<lambda>")),
+                    (string("name_table"), array([
+                        map([(string("exported"), boolean(false)), (string("name"), string("f"))]),
+                        map([(string("exported"), boolean(false)), (string("name"), string("key"))]),
+                    ])),
+                    (string("num_captures"), int(0)),
+                    (string("version"), string("0.0.1")),
+                ]),
+                map([
+                    (string("arity"), map([(string("Exact"), int(1))])),
+                    (string("child_fns"), array([
+                        map([
+                            (string("arity"), map([(string("AtLeast"), int(0))])),
+                            (string("child_fns"), array([])),
+                            (string("code"), array([
+                                map([(string("DefLocal"), int(2))]),
+                                map([(string("DropBelow"), int(0))]),
+                                map([(string("LoadGlobal"), int(108))]),
+                                map([(string("ConsumeLocal"), int(0))]),
+                                map([(string("ConsumeLocal"), int(1))]),
+                                map([(string("MakeArray"), int(1))]),
+                                map([(string("ConsumeLocal"), int(2))]),
+                                string("Add"),
+                                map([(string("TailCall"), int(2))]),
+                            ])),
+                            (string("constants"), array([])),
+                            (string("key_constants"), array([])),
+                            (string("name"), string("mutual_fn")),
+                            (string("name_table"), array([
+                                map([
+                                    (string("exported"), boolean(false)),
+                                    (string("name"), string("f")),
+                                ]),
+                                map([
+                                    (string("exported"), boolean(false)),
+                                    (string("name"), string("functions")),
+                                ]),
+                                map([
+                                    (string("exported"), boolean(false)),
+                                    (string("name"), string("args")),
+                                ]),
+                            ])),
+                            (string("num_captures"), int(2)),
+                            (string("version"), string("0.0.1")),
+                        ]),
+                    ])),
+                    (string("code"), array([
+                        map([(string("DefLocal"), int(1))]),
+                        map([(string("DropBelow"), int(0))]),
+                        map([(string("ConsumeLocal"), int(1))]),
+                        map([(string("ConsumeLocal"), int(0))]),
+                        map([
+                            (string("CreateClosure"), map([(string("captures"), int(2)), (string("child"), int(0))])),
+                        ]),
+                    ])),
+                    (string("constants"), array([])),
+                    (string("key_constants"), array([])),
+                    (string("name"), string("<lambda>")),
+                    (string("name_table"), array([
+                        map([
+                            (string("exported"), boolean(false)),
+                            (string("name"), string("functions")),
+                        ]),
+                        map([(string("exported"), boolean(false)), (string("name"), string("f"))]),
+                    ])),
+                    (string("num_captures"), int(1)),
+                    (string("version"), string("0.0.1")),
+                ]),
+            ])),
+            (string("code"), array([
+                map([(string("DefLocal"), int(0))]),
+                map([(string("DropBelow"), int(0))]),
+                map([(string("LoadGlobal"), int(7))]),
+                map([(string("LoadLocal"), int(0))]),
+                map([(string("Call"), int(1))]),
+                string("LogicalNot"),
+                map([(string("JumpIfFalse"), int(8))]),
+                map([(string("LoadGlobal"), int(110))]),
+                map([(string("LoadConst"), int(0))]),
+                map([(string("LoadGlobal"), int(15))]),
+                map([(string("LoadLocal"), int(0))]),
+                map([(string("Call"), int(1))]),
+                map([(string("Concat"), int(2))]),
+                map([(string("Call"), int(1))]),
+                map([(string("Jump"), int(1))]),
+                string("PushNull"),
+                map([(string("DropBelow"), int(0))]),
+                map([(string("LoadGlobal"), int(104))]),
+                map([(string("LoadLocal"), int(0))]),
+                map([
+                    (string("CreateClosure"), map([(string("captures"), int(0)), (string("child"), int(0))])),
+                ]),
+                map([(string("Call"), int(2))]),
+                map([(string("DropBelow"), int(0))]),
+                map([(string("LoadGlobal"), int(49))]),
+                map([(string("LoadLocal"), int(0))]),
+                map([(string("ConsumeLocal"), int(0))]),
+                map([
+                    (string("CreateClosure"), map([(string("captures"), int(1)), (string("child"), int(1))])),
+                ]),
+                map([(string("TailCall"), int(2))]),
+            ])),
+            (string("constants"), array([
+                map([
+                    (string("String"), string("Function mutual requires Map as argument 1, got ")),
+                ]),
+            ])),
+            (string("key_constants"), array([])),
+            (string("name"), string("mutual")),
+            (string("name_table"), array([
+                map([(string("exported"), boolean(false)), (string("name"), string("functions"))]),
+            ])),
             (string("num_captures"), int(0)),
             (string("version"), string("0.0.1")),
         ])),

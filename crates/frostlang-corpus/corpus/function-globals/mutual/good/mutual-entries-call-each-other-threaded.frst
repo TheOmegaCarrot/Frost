@@ -1,0 +1,8 @@
+# Entries reach one another through their first argument, here with the
+# threading operator.
+#= {result: [true, false, false, true]}
+def {even, odd} = mutual({
+    even: fn r, n -> if n == 0: true else: r @ r.odd(n - 1),
+    odd: fn r, n -> if n == 0: false else: r @ r.even(n - 1),
+})
+[even(10), even(7), odd(10), odd(7)]

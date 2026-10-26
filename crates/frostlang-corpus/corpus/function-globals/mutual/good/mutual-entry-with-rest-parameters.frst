@@ -1,0 +1,5 @@
+# The wrapper forwards any number of arguments, which an entry's rest
+# parameter gathers after the entries Map.
+#= {result: [[], [1], [1, 2, 3]]}
+def {gather} = mutual({gather: fn r, ...rest -> rest})
+[gather(), gather(1), gather(1, 2, 3)]

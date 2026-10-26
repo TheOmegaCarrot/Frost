@@ -1,0 +1,7 @@
+# A wrapper calls its entry in tail position, so recursing through a wrapper
+# keeps no frames: the backtrace from the bottom does not grow with the depth.
+#= {result: 0, inputs: {deep: 500, shallow: 5}}
+def {deep, shallow} = import('inputs')
+defn down(n) -> if n == 0: error('bottom') else: mutual({step: fn r, k -> down(k - 1)}).step(n)
+defn frames(n) -> len(try_call(down, [n]).trace)
+frames(deep) - frames(shallow)

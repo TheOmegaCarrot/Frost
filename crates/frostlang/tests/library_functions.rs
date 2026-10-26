@@ -1,10 +1,8 @@
-//! The Functions globals, from Frost source: calling and error handling with
-//! `call`, `try_call`, and `error`; the Null combinators `and_then` and
-//! `or_else`; and the generated `inv`, `curry`, `bcurry`, `collect`, `spread`,
-//! `rev_args`, `tap`, `const`, and `compose`.
+//! The Functions globals, from Frost source: calling, error handling, the Null
+//! combinators, and the generated globals.
 //!
 //! The generated globals are written in Frost (see the runtime's `generated`
-//! module), so the function each returns tail-calls the function it wraps,
+//! module), so each function a generated global returns tail-calls the function it wraps,
 //! wherever that call is the last thing it does. The tail-call cases check that
 //! under a small call-depth limit, with recursion far deeper than the limit.
 //!
@@ -642,6 +640,154 @@ fn composed_calls_end_in_a_tail_call() {
         countdown(1000)
     ";
     assert_eq!(run_deep(source), Value::from("done"));
+}
+
+// --- mutual ---
+
+/// `even` and `odd`, each defined through the other.
+const EVEN_AND_ODD: &str = r"
+    def {even, odd} = mutual({
+        even: fn r, n -> if n == 0: true else: r @ r.odd(n - 1),
+        odd: fn r, n -> if n == 0: false else: r @ r.even(n - 1),
+    })
+";
+
+#[test]
+fn mutual_entries_call_one_another() {
+    for (call, expected) in [
+        ("even(0)", "true"),
+        ("odd(0)", "false"),
+        ("even(10)", "true"),
+        ("odd(10)", "false"),
+        ("even(7)", "false"),
+        ("odd(7)", "true"),
+    ] {
+        assert_values(&[(&format!("{EVEN_AND_ODD}\n{call}"), expected)]);
+    }
+}
+
+#[test]
+fn mutual_wraps_each_entry_under_its_key() {
+    assert_values(&[
+        ("mutual({})", "{}"),
+        ("keys(mutual({a: fn r -> 1, b: fn r -> 2}))", "['a', 'b']"),
+        // Each wrapper calls its own entry.
+        (
+            "map_values(mutual({a: fn r -> 1, b: fn r -> 2}), fn f -> f())",
+            "{a: 1, b: 2}",
+        ),
+        ("mutual({[1]: fn r -> 'one'})[1]()", "'one'"),
+        (
+            "map_values(mutual({a: fn r -> 1}), is_function)",
+            "{a: true}",
+        ),
+    ]);
+}
+
+#[test]
+fn a_mutual_entry_gets_the_entries_then_its_arguments() {
+    // The first argument is the Map passed to `mutual`, not the wrappers.
+    let source = r"
+        def entries = {f: fn r, ...rest -> [r, rest]}
+        def [r, rest] = mutual(entries).f(1, 'two', [3])
+        [r == entries, rest]
+    ";
+    assert_values(&[(source, "[true, [1, 'two', [3]]]")]);
+}
+
+#[test]
+fn mutual_entries_may_call_one_another_threaded_or_not() {
+    let source = r"
+        def {f} = mutual({
+            f: fn r, x -> r.g(r, x) + (r @ r.g(x)),
+            g: fn r, x -> x * 10,
+        })
+        f(2)
+    ";
+    assert_values(&[(source, "40")]);
+}
+
+#[test]
+fn mutual_recursion_ends_in_tail_calls() {
+    // Far deeper than the call-depth limit: each entry's call through the
+    // entries is a tail call.
+    let source = format!("{EVEN_AND_ODD}\n[even(100000), odd(1001)]");
+    assert_eq!(run_deep(&source), Value::array([true, true]));
+    let unthreaded = r"
+        def {even} = mutual({
+            even: fn r, n -> if n == 0: true else: r.odd(r, n - 1),
+            odd: fn r, n -> if n == 0: false else: r.even(r, n - 1),
+        })
+        even(1000)
+    ";
+    assert_eq!(run_deep(unthreaded), Value::from(true));
+    // Recursing through a wrapper: the wrapper's call to its entry is a tail call.
+    let through_wrapper = r"
+        defn countdown(n) -> if n == 0: 'done' else: mutual({step: fn r, k -> countdown(k - 1)}).step(n)
+        countdown(1000)
+    ";
+    assert_eq!(run_deep(through_wrapper), Value::from("done"));
+}
+
+#[test]
+fn a_mutual_wrapper_leaves_its_arity_to_the_entry() {
+    // The wrapper takes any arguments; the entry, given the entries too, checks them.
+    assert_raises(&[
+        (
+            "mutual({f: fn f(r, x) -> x}).f()",
+            "Function f expects 2 arguments, but was called with 1",
+        ),
+        (
+            "mutual({f: fn f(r, x) -> x}).f(1, 2)",
+            "Function f expects 2 arguments, but was called with 3",
+        ),
+    ]);
+    assert_values(&[("mutual({f: fn r -> 'none'}).f()", "'none'")]);
+}
+
+#[test]
+fn a_mutual_entry_raises_as_it_would_alone() {
+    assert_raises_as(&[("mutual({f: fn r, x -> x + 'a'}).f(1)", "1 + 'a'")]);
+}
+
+#[test]
+fn mutual_requires_a_map_of_functions() {
+    for (source, message) in [
+        ("mutual(1)", "requires Map as argument 1, got Int"),
+        ("mutual(null)", "requires Map as argument 1, got Null"),
+        (
+            "mutual([fn r -> 1])",
+            "requires Map as argument 1, got Array",
+        ),
+        (
+            "mutual(fn r -> 1)",
+            "requires Map as argument 1, got Function",
+        ),
+        (
+            "mutual({a: fn r -> 1, b: 2})",
+            r#"requires Function as the value at key "b" of argument 1, got Int"#,
+        ),
+        (
+            "mutual({[1]: null})",
+            "requires Function as the value at key 1 of argument 1, got Null",
+        ),
+        // The first in key order names the error.
+        (
+            "mutual({b: 'x', a: [1]})",
+            r#"requires Function as the value at key "a" of argument 1, got Array"#,
+        ),
+    ] {
+        assert_eq!(
+            raises(source),
+            format!("Function mutual {message}"),
+            "{source:?}"
+        );
+    }
+}
+
+#[test]
+fn mutual_takes_exactly_one_argument() {
+    assert_arity("mutual", 1, &[0, 2]);
 }
 
 // --- Generated functions as values ---

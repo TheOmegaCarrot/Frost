@@ -59,6 +59,18 @@ defn compose(f, g, ...rest) -> {
     }
 }
 
+# Each wrapper calls its entry with the Map of entries before its own arguments,
+# so entries call one another through it, as `r.odd(r, n)` or `r @ r.odd(n)`.
+# Entries reach one another through this argument rather than by capture, so no
+# reference cycle forms.
+defn mutual(functions) -> {
+    if not is_map(functions): error($'Function mutual requires Map as argument 1, got ${type(functions)}')
+    each(functions, fn key, f -> {
+        if not is_function(f): error($'Function mutual requires Function as the value at key ${debug_dump(key)} of argument 1, got ${type(f)}')
+    })
+    map_values(functions, fn f -> fn mutual_fn(...args) -> f @ call([functions] + args))
+}
+
 defn index(key) -> fn index_fn(structure) -> structure[key]
 
 # Each step indexes as `structure[key]` does, but a Null stays Null.

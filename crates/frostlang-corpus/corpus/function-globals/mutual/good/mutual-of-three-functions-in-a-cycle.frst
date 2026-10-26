@@ -1,0 +1,9 @@
+# Three entries form a cycle a -> b -> c -> a, each reaching the next through
+# the entries Map it receives.
+#= {result: ['a', 'b', 'c', 'a', 'b', 'c']}
+def {a} = mutual({
+    a: fn r, n, trail -> if n == 0: trail + ['a'] else: r @ r.b(n - 1, trail + ['a']),
+    b: fn r, n, trail -> if n == 0: trail + ['b'] else: r @ r.c(n - 1, trail + ['b']),
+    c: fn r, n, trail -> if n == 0: trail + ['c'] else: r @ r.a(n - 1, trail + ['c']),
+})
+a(5, [])

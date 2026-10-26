@@ -1,0 +1,7 @@
+# An error raised deep in the cycle ends the whole call.
+#= {raises: 'bottom reached'}
+def {ping} = mutual({
+    ping: fn r, n -> if n == 0: error('bottom reached') else: r @ r.pong(n - 1),
+    pong: fn r, n -> r @ r.ping(n),
+})
+ping(3)

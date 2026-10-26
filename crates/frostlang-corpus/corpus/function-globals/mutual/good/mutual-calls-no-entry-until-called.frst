@@ -1,0 +1,4 @@
+# `mutual` calls no entry: each runs only when its wrapper is called.
+#= {result: 'built', lints: [['unused binding', '`never`']]}
+def never = mutual({f: fn r -> error('called')})
+'built'

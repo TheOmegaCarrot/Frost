@@ -1,0 +1,3 @@
+# `mutual` takes exactly one argument.
+#= {raises: ['mutual', 'expects 1', 'called with 0']}
+mutual()

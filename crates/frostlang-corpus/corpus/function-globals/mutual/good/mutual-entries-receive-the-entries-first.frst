@@ -1,0 +1,5 @@
+# A wrapper calls its entry with the entries Map first, then its own
+# arguments in order.
+#= {result: [['probe'], 1, 2, 3]}
+def {probe} = mutual({probe: fn r, x, y, z -> [keys(r), x, y, z]})
+probe(1, 2, 3)

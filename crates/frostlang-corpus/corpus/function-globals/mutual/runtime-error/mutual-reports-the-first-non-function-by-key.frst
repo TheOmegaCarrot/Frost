@@ -1,0 +1,4 @@
+# With several offenders, the first in key order is reported, whatever the
+# order they were written in.
+#= {raises: ['mutual', 'Function as the value at key "a"', 'got String']}
+mutual({c: 3, a: 'x', b: null})

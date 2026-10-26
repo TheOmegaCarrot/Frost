@@ -1,0 +1,4 @@
+# A wrapper adds only the entries Map to its arguments, so an entry expecting
+# one more gets too few when its wrapper is called with none.
+#= {raises: ['expects 2', 'called with 1']}
+mutual({f: fn f(r, x) -> x}).f()

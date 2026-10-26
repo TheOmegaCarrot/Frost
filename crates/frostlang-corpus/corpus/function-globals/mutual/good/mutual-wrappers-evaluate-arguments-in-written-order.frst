@@ -1,0 +1,23 @@
+# Arguments to a wrapper are evaluated once each, in the order written, before
+# the entry runs.
+#= {result: [1, 2, 3], printed: ['first', 'second', 'third', 'entry']}
+def {echo} = mutual({
+    echo: fn r, ...xs -> {
+        print('entry')
+        xs
+    },
+})
+echo(
+    do {
+        print('first')
+        1
+    },
+    do {
+        print('second')
+        2
+    },
+    do {
+        print('third')
+        3
+    },
+)

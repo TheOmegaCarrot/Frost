@@ -1,0 +1,8 @@
+# The Map of entries is evaluated once, when `mutual` is called, not again on
+# each call of a wrapper.
+#= {result: [1, 1, 1], printed: ['made']}
+def {one} = mutual(do {
+    print('made')
+    {one: fn r -> 1}
+})
+[one(), one(), one()]

@@ -1,0 +1,4 @@
+# The Function check happens at run time on a value the compiler cannot see.
+#= {raises: ['mutual', 'Function as the value at key "g"', 'got Float'], inputs: {g: 2.5}}
+def {g} = import('inputs')
+mutual({f: len, g})

@@ -1,0 +1,12 @@
+# Entries known only at run time are wrapped and called just the same.
+#= {
+#=     result: [true, false],
+#=     inputs: {
+#=         even: fn r, n -> if n == 0: true else: r @ r.odd(n - 1),
+#=         odd: fn r, n -> if n == 0: false else: r @ r.even(n - 1),
+#=         n: 6,
+#=     },
+#= }
+def {even, odd, n} = import('inputs')
+def wrapped = mutual({even, odd})
+[wrapped.even(n), wrapped.odd(n)]

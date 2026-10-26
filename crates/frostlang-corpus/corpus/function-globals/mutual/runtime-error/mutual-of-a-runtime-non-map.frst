@@ -1,0 +1,4 @@
+# The Map check happens at run time on a value the compiler cannot see.
+#= {raises: ['mutual', 'Map as argument 1', 'got Array'], inputs: {xs: [1]}}
+def {xs} = import('inputs')
+mutual(xs)

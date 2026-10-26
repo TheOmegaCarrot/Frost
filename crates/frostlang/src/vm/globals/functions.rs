@@ -151,3 +151,7 @@ pub(super) fn const_global() -> Value {
 pub(super) fn compose_global() -> Value {
     super::generated::global("compose")
 }
+
+pub(super) fn mutual_global() -> Value {
+    super::generated::global("mutual")
+}

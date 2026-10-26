@@ -1,0 +1,9 @@
+# An entry keeps the variables it captured, while reaching its partner through
+# the entries Map.
+#= {result: [33, 11]}
+def base = 10
+def steps = mutual({
+    up: fn r, n -> if n == 0: base else: (r @ r.down(n - 1)) + 1,
+    down: fn r, n -> if n == 0: base * 3 else: (r @ r.up(n - 1)) + 1,
+})
+[steps.up(3), steps.down(1)]
