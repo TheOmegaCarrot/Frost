@@ -9,7 +9,7 @@ use crate::script;
 use std::time::{Duration, Instant};
 
 use frostlang::stdlib::StdlibConfig;
-use frostlang::{ImporterBuilder, Stdlib, Value, stdlib};
+use frostlang::{FrostMap, ImporterBuilder, MapKey, Stdlib, Value, stdlib};
 use script::assertions::{Library, library_assertions};
 use script::{Script, UNOPTIMIZED};
 
@@ -21,7 +21,7 @@ library_assertions!(Library::module(stdlib::os, "os"));
 fn the_module_holds_its_functions_and_values() {
     assert_values(&[(
         "sorted(keys(os))",
-        "['arch', 'getenv', 'pid', 'platform', 'run', 'sleep', 'stderr', 'stdin', 'stdout']",
+        "['arch', 'env', 'getenv', 'pid', 'platform', 'run', 'sleep', 'stderr', 'stdin', 'stdout']",
     )]);
 }
 
@@ -83,7 +83,7 @@ fn getenv_returns_null_for_a_variable_that_is_not_set() {
         script("os.getenv('FROST_TEST_SURELY_UNSET_9C1E')").run(),
         Value::Null
     );
-    // No variable can have these names.
+    // `getenv` reads no variable by these names.
     for name in ["''", "'A=B'", r"'A\u{0}B'"] {
         let expression = format!("os.getenv({name})");
         assert_eq!(script(&expression).run(), Value::Null, "{expression}");
@@ -97,6 +97,113 @@ fn getenv_checks_its_argument() {
         "Function std.os.getenv requires String as argument 1 (name), got Int",
     )]);
     assert_arity("getenv", "1", &[0, 2]);
+}
+
+// --- env ---
+
+/// Each variable `getenv` can read, by name:
+/// what `os.env()` gives for an environment with no duplicate names.
+fn readable_environment() -> FrostMap {
+    std::env::vars_os()
+        .filter_map(|(name, value)| Some((name.into_string().ok()?, value.into_string().ok()?)))
+        .filter(|(name, _)| !name.is_empty() && !name.contains(['=', '\0']))
+        .map(|(name, value)| (MapKey::from(name), Value::from(value)))
+        .collect()
+}
+
+#[test]
+fn env_reads_every_variable() {
+    assert_eq!(
+        script("os.env()").run(),
+        Value::from(readable_environment()),
+        "os.env() differs from the readable environment"
+    );
+    // A known variable, so an environment empty on both sides cannot pass.
+    let expected = std::env::var("CARGO_PKG_NAME").expect("cargo sets CARGO_PKG_NAME");
+    assert_eq!(
+        script("os.env().CARGO_PKG_NAME").run(),
+        Value::from(expected),
+        "os.env() misreads CARGO_PKG_NAME"
+    );
+}
+
+#[test]
+fn env_agrees_with_getenv() {
+    assert_values(&[(
+        r"
+        def vars = os.env()
+        vars @ keys() @ filter(fn name -> os.getenv(name) != vars[name])
+        ",
+        "[]",
+    )]);
+}
+
+#[test]
+fn env_takes_no_arguments() {
+    assert_arity("env", "0", &[1]);
+}
+
+/// `env` leaves out each variable `getenv` reads as Null:
+/// one whose name or value is not UTF-8, or whose name `getenv` refuses.
+/// Setting such variables in this process is unsafe,
+/// so the test runs itself again in a child process,
+/// with them set in an otherwise empty environment.
+#[cfg(unix)]
+#[test]
+fn env_and_getenv_agree_on_unreadable_variables() {
+    use std::ffi::OsStr;
+    use std::os::unix::ffi::OsStrExt;
+    use std::process::Command;
+
+    const TEST: &str = "std_os::env_and_getenv_agree_on_unreadable_variables";
+    const CHILD: &str = "FROST_TEST_ENV_CHILD";
+    let invalid_utf8 = OsStr::from_bytes(b"\xff");
+    let value_not_utf8 = "FROST_TEST_VALUE_NOT_UTF8";
+    let name_not_utf8 = OsStr::from_bytes(b"FROST_TEST_NAME_\xff");
+    let name_with_equals = "=FROST_TEST_NAME_WITH_EQUALS";
+
+    if std::env::var_os(CHILD).is_some() {
+        // Each unreadable variable reached the child,
+        // so its absence from `os.env()` is `os.env()`'s doing.
+        let seen: Vec<_> = std::env::vars_os().map(|(name, _)| name).collect();
+        for name in [
+            OsStr::new(value_not_utf8),
+            name_not_utf8,
+            OsStr::new(name_with_equals),
+        ] {
+            assert!(
+                seen.iter().any(|seen| seen == name),
+                "the child lacks {name:?}"
+            );
+        }
+        assert_values(&[
+            (
+                "os.env()",
+                "{FROST_TEST_ENV_CHILD: '1', FROST_TEST_READABLE: 'yes'}",
+            ),
+            ("os.getenv('FROST_TEST_READABLE')", "'yes'"),
+            (&format!("os.getenv('{value_not_utf8}')"), "null"),
+            (&format!("os.getenv('{name_with_equals}')"), "null"),
+        ]);
+        return;
+    }
+
+    let child = Command::new(std::env::current_exe().expect("the test binary has a path"))
+        .args([TEST, "--exact", "--test-threads=1"])
+        .env_clear()
+        .env(CHILD, "1")
+        .env("FROST_TEST_READABLE", "yes")
+        .env(value_not_utf8, invalid_utf8)
+        .env(name_not_utf8, "x")
+        .env(name_with_equals, "x")
+        .output()
+        .expect("the test binary runs");
+    let stdout = String::from_utf8_lossy(&child.stdout);
+    let stderr = String::from_utf8_lossy(&child.stderr);
+    assert!(
+        child.status.success() && stdout.contains("1 passed"),
+        "the child process failed or ran no test\nstdout:\n{stdout}\nstderr:\n{stderr}"
+    );
 }
 
 // --- pid ---

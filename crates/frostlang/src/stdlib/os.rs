@@ -6,11 +6,12 @@ use std::io::{self, BufReader, Write};
 use std::process::{Command, Stdio};
 use std::time::Duration;
 
+use itertools::Itertools;
 use serde::Deserialize;
 
 use crate::native::{De, Optional};
 use crate::stdlib::stream::{self, Kind};
-use crate::{FrostError, FrostString, NativeCtx, StdlibModule, Value, frost_fn};
+use crate::{FrostError, FrostMap, FrostString, MapKey, NativeCtx, StdlibModule, Value, frost_fn};
 
 /// The `std.os` module: reading environment variables, the process ID,
 /// the operating system and architecture it runs on,
@@ -23,6 +24,7 @@ use crate::{FrostError, FrostString, NativeCtx, StdlibModule, Value, frost_fn};
 pub fn os() -> StdlibModule {
     StdlibModule::builder("os")
         .function(getenv_frost())
+        .function(env_frost())
         .function(pid_frost())
         .function(sleep_frost())
         .function(run_frost())
@@ -46,14 +48,38 @@ fn platform() -> Value {
     }
 }
 
+/// Whether a variable named `name` can be read.
+/// std reads none whose name is empty or holds `=` or a NUL,
+/// and the platform may reject being asked.
+fn is_readable_name(name: &str) -> bool {
+    !name.is_empty() && !name.contains(['=', '\0'])
+}
+
 #[frost_fn]
 fn getenv(name: FrostString) -> Value {
-    // No variable has such a name, and the platform may reject asking.
-    if name.is_empty() || name.contains(['=', '\0']) {
+    if !is_readable_name(&name) {
         return Value::Null;
     }
     // An unset variable and one whose value is not UTF-8 are both Null.
     std::env::var(name.as_str()).map_or(Value::Null, Value::from)
+}
+
+#[frost_fn]
+fn env() -> FrostMap {
+    // This target has no environment,
+    // but std's `vars_os` panics on it rather than listing none.
+    if cfg!(all(target_family = "wasm", target_os = "unknown")) {
+        return FrostMap::empty();
+    }
+    // Each entry is what `getenv` reads for its name:
+    // a variable it reads as Null is left out,
+    // and a name the environment holds twice keeps its first value, the one `getenv` finds.
+    std::env::vars_os()
+        .filter_map(|(name, value)| Some((name.into_string().ok()?, value.into_string().ok()?)))
+        .filter(|(name, _)| is_readable_name(name))
+        .unique_by(|(name, _)| name.clone())
+        .map(|(name, value)| (MapKey::from(name), Value::from(value)))
+        .collect()
 }
 
 #[frost_fn]
