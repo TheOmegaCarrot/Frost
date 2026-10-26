@@ -126,8 +126,8 @@ const RESULTS: &str = "results";
 /// A session [`run`](Self::run) may start by reading a config file (see
 /// [`with_config_file`](Self::with_config_file) and
 /// [`with_default_config_file`](Self::with_default_config_file)), and reads it
-/// again at `:config reload`. It is a Frost script, run apart from the
-/// session, so its definitions are not bound in it. It runs under small
+/// again at `:config reload` and `:reset`. It is a Frost script, run apart
+/// from the session, so its definitions are not bound in it. It runs under small
 /// limits, and may import only `std.string`, `std.math`, and `repl`. `repl`'s
 /// `colors` and `style` hold functions that wrap a String in ANSI codes, or,
 /// if the frontend takes no [ANSI styling](Frontend::ansi_styling), return it
@@ -145,9 +145,9 @@ const RESULTS: &str = "results";
 ///
 /// - `results_kept`: how many [recent results](#recent-results) to keep, in
 ///   place of [`with_results_kept`](Self::with_results_kept)'s count.
-/// - `preload`: a Map from names to module paths. As the session starts, each
-///   name is bound to its module, as though the first input were
-///   `def name = import(path)`.
+/// - `preload`: a Map from names to module paths. As the session starts, and
+///   at each `:reset`, each name is bound to its module, as though the first
+///   input were `def name = import(path)`.
 ///
 /// ```frost
 /// export def session = {results_kept: 10, preload: {string: 'std.string'}}
@@ -160,14 +160,16 @@ const RESULTS: &str = "results";
 /// default.
 ///
 /// `:config reload` applies `results_kept` and the frontend's section again,
-/// but `preload` only applies as a session starts. If the file sets nothing,
-/// for one of those problems, the settings stay as they were.
+/// but not `preload`. If the file sets nothing, for one of those problems,
+/// the settings stay as they were.
 pub struct Repl {
     configuration: VmRuntimeConfiguration,
     importer: Arc<Importer>,
     optimization: OptimizationOptions,
     parse_limits: ParseLimits,
     bindings: BTreeMap<String, Value>,
+    // What `with_binding` bound, which `:reset` binds again.
+    seeded: BTreeMap<String, Value>,
     // `None` for no config file.
     config_file: Option<PathBuf>,
     results_kept: usize,
@@ -205,6 +207,7 @@ impl Repl {
             optimization: OptimizationOptions::ALL,
             parse_limits: ParseLimits::new(),
             bindings: BTreeMap::new(),
+            seeded: BTreeMap::new(),
             config_file: None,
             results_kept: 5,
             config_results_kept: None,
@@ -282,6 +285,8 @@ impl Repl {
     }
 
     /// Bind `name` to `value`, as though an earlier input had defined it.
+    /// Each `:reset` binds it to `value` again: the same value, so any state
+    /// it holds, such as a closure bundle's, is not reset.
     /// Fails if `name` is not one Frost source can refer to (see
     /// [`check_name`]).
     pub fn with_binding(
@@ -291,6 +296,7 @@ impl Repl {
     ) -> Result<Self, InvalidName> {
         let name = name.into();
         check_name(&name)?;
+        self.seeded.insert(name.clone(), value.clone());
         self.bindings.insert(name, value);
         Ok(self)
     }
@@ -434,8 +440,8 @@ impl Repl {
                 Ok(Reply::Text(text)) => frontend.render_text(&text)?,
                 Ok(Reply::Nothing) => {}
                 Ok(Reply::Quit) => break,
-                Ok(Reply::ReadConfig(path)) => {
-                    self.read_config(&path, frontend, Reading::Reload)?;
+                Ok(Reply::ReadConfig(path, reading)) => {
+                    self.read_config(&path, frontend, reading)?;
                 }
                 Err(error) => frontend.render(Err(&error))?,
             }

@@ -18,7 +18,8 @@ use crate::{Frontend, InvalidName, Repl, ReplError, check_name};
 /// The export the REPL takes its own settings from.
 const SESSION: &str = "session";
 
-/// Whether the config file is read as a session starts, or again.
+/// Whether the config file is read as a session starts or starts over (at
+/// `:reset`), or reloaded (at `:config reload`).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum Reading {
     Start,

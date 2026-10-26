@@ -265,6 +265,7 @@ fn a_frontend_may_not_replace_a_built_in_metacommand() {
         "bindings",
         "globals",
         "undef",
+        "reset",
         "disassemble",
         "ast",
         "optimize",

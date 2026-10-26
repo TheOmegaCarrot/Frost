@@ -249,6 +249,7 @@ pub(crate) enum Builtin {
     Bindings,
     Globals,
     Undef,
+    Reset,
     Disassemble,
     Ast,
     Optimize,
@@ -257,12 +258,13 @@ pub(crate) enum Builtin {
 
 impl Builtin {
     /// Every built-in, in the order `:help` lists them.
-    const ALL: [Self; 9] = [
+    const ALL: [Self; 10] = [
         Self::Help,
         Self::Quit,
         Self::Bindings,
         Self::Globals,
         Self::Undef,
+        Self::Reset,
         Self::Disassemble,
         Self::Ast,
         Self::Optimize,
@@ -276,6 +278,7 @@ impl Builtin {
             Self::Bindings => ("", "List the names bound, but not globals"),
             Self::Globals => ("", "List the globals"),
             Self::Undef => ("<name>...", "Remove bindings"),
+            Self::Reset => ("", "Start the session over, keeping its settings"),
             Self::Disassemble => (
                 "<source>",
                 "Show the bytecode source compiles to, without running it",
@@ -297,6 +300,7 @@ impl Builtin {
             Self::Bindings => "bindings",
             Self::Globals => "globals",
             Self::Undef => "undef",
+            Self::Reset => "reset",
             Self::Disassemble => "disassemble",
             Self::Ast => "ast",
             Self::Optimize => "optimize",

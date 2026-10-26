@@ -58,6 +58,8 @@ enum Step {
     /// Replace the config file with a directory, which cannot be read as a
     /// file, then go on to the next step.
     MakeUnreadable,
+    /// Remove the config file, then go on to the next step.
+    Remove,
 }
 
 /// One thing a `Probe` saw.
@@ -154,6 +156,7 @@ impl Frontend for Probe {
                     fs::remove_file(&self.config_path)?;
                     fs::create_dir(&self.config_path)?;
                 }
+                Some(Step::Remove) => fs::remove_file(&self.config_path)?,
                 None => return Ok(None),
             }
         }
@@ -1026,6 +1029,227 @@ fn a_reload_after_a_clean_reload_still_works() {
             Some(Value::Int(2)),
             Some(Value::Int(3))
         ]
+    );
+}
+
+// --- :reset ---
+
+#[test]
+fn reset_preloads_again_and_keeps_the_files_settings() {
+    let scratch = Scratch::new();
+    let path = scratch.config("export def session = {results_kept: 1, preload: {m: 'std.math'}}");
+    let probe = run(
+        math_repl(&path),
+        Probe::saying(
+            &["def m = 0", ":reset", "m.abs(-3)", "4", "5", "results"],
+            None,
+        ),
+    );
+    assert!(probe.problems().is_empty(), "{:?}", probe.problems());
+    assert!(
+        matches!(
+            probe.outcomes.as_slice(),
+            [
+                Ok(Value::Null),
+                Ok(Value::Int(3)),
+                Ok(Value::Int(4)),
+                Ok(Value::Int(5)),
+                Ok(results),
+            ] if *results == Value::array([5])
+        ),
+        "`m` is the preloaded module again, and the file's `results_kept` of 1 \
+         still applies: {:?}",
+        probe.outcomes
+    );
+}
+
+/// `:reset` reads the file as it now is, preloading and configuring the
+/// frontend as a session start does.
+#[test]
+fn reset_reads_the_file_again() {
+    let scratch = Scratch::new();
+    let path = scratch.config("export def session = {preload: {m: 'std.math'}}");
+    let probe = Probe::new(
+        &path,
+        [
+            Step::Write("export def session = {preload: {n: 'std.math'}}\nexport def mine = 2"),
+            Step::Say(":reset"),
+            Step::Say("n.abs(-3)"),
+            Step::Say("m"),
+        ],
+    )
+    .with_key(Some("mine"));
+    let probe = run(math_repl(&path), probe);
+    assert!(probe.problems().is_empty(), "{:?}", probe.problems());
+    assert!(
+        matches!(
+            probe.outcomes.as_slice(),
+            [Ok(Value::Int(3)), Err(ReplError::Compile(_))]
+        ),
+        "the file's new preload is bound, and its old one is not: {:?}",
+        probe.outcomes
+    );
+    assert_eq!(
+        probe.configured(),
+        [None, Some(Value::Int(2))],
+        "the frontend is configured at the start and again at `:reset`"
+    );
+}
+
+#[test]
+fn reset_preloads_over_a_seeded_binding_of_the_same_name() {
+    let scratch = Scratch::new();
+    let path = scratch.config("export def session = {preload: {m: 'std.math'}}");
+    let repl = math_repl(&path).with_binding("m", Value::Int(0)).unwrap();
+    let probe = run(
+        repl,
+        Probe::saying(&["def m = 1", ":reset", "m.abs(-3)"], None),
+    );
+    assert!(probe.problems().is_empty(), "{:?}", probe.problems());
+    assert_eq!(
+        probe.last_value(),
+        Value::Int(3),
+        "the preload replaces the seeded `m`, as at the start"
+    );
+}
+
+/// A file that no longer loads at `:reset` sets nothing, as at `:config reload`:
+/// its problem is shown, only the seeded bindings are bound again, and the
+/// earlier file's `results_kept` still applies.
+#[test]
+fn reset_with_a_file_that_no_longer_loads_shows_why_and_binds_only_seeded_bindings() {
+    for (what, step) in [
+        ("does not compile", Step::Write("export def = ")),
+        ("unreadable", Step::MakeUnreadable),
+    ] {
+        let scratch = Scratch::new();
+        let path =
+            scratch.config("export def session = {results_kept: 1, preload: {m: 'std.math'}}");
+        let repl = math_repl(&path)
+            .with_binding("seeded", Value::Int(7))
+            .unwrap();
+        let probe = Probe::new(
+            &path,
+            [
+                Step::Say("def mine = 1"),
+                step,
+                Step::Say(":reset"),
+                Step::Say("seeded"),
+                Step::Say("mine"),
+                Step::Say("m"),
+                Step::Say("2"),
+                Step::Say("results"),
+            ],
+        );
+        let probe = run(repl, probe);
+        assert_eq!(probe.problems().len(), 1, "{what}: {:?}", probe.problems());
+        assert!(
+            matches!(
+                probe.outcomes.as_slice(),
+                [
+                    Ok(Value::Null),
+                    Err(ReplError::Config(_)),
+                    Ok(Value::Int(7)),
+                    Err(ReplError::Compile(_)),
+                    Err(ReplError::Compile(_)),
+                    Ok(Value::Int(2)),
+                    Ok(results),
+                ] if *results == Value::array([2])
+            ),
+            "{what}: the problem shown at `:reset`, `seeded` bound again, `mine` and `m` \
+             not, and `results_kept` stays 1: {:?}",
+            probe.outcomes
+        );
+    }
+}
+
+/// A file gone at `:reset` is no problem, as at a session start without one:
+/// the seeded bindings are bound again, and the file's preloads are not.
+#[test]
+fn reset_with_the_file_gone_binds_only_seeded_bindings() {
+    let scratch = Scratch::new();
+    let path = scratch.config("export def session = {preload: {m: 'std.math'}}");
+    let repl = math_repl(&path)
+        .with_binding("seeded", Value::Int(7))
+        .unwrap();
+    let probe = Probe::new(
+        &path,
+        [
+            Step::Say("m.abs(-3)"),
+            Step::Remove,
+            Step::Say(":reset"),
+            Step::Say("seeded"),
+            Step::Say("m"),
+        ],
+    )
+    .with_key(Some("mine"));
+    let probe = run(repl, probe);
+    assert!(probe.problems().is_empty(), "{:?}", probe.problems());
+    assert!(
+        matches!(
+            probe.outcomes.as_slice(),
+            [
+                Ok(Value::Int(3)),
+                Ok(Value::Int(7)),
+                Err(ReplError::Compile(_))
+            ]
+        ),
+        "`m` was preloaded at the start, and is unbound after `:reset`: {:?}",
+        probe.outcomes
+    );
+    assert_eq!(
+        probe.configured(),
+        [None, None],
+        "the frontend is configured with no section again"
+    );
+}
+
+#[test]
+fn a_refused_reset_reads_no_file() {
+    let scratch = Scratch::new();
+    let path = scratch.config("export def session = {preload: {m: 'std.math'}}");
+    let probe = run(
+        math_repl(&path),
+        Probe::saying(&["def m = 1", ":reset please", "m"], Some("mine")),
+    );
+    assert_eq!(
+        probe.configured(),
+        [None],
+        "only the session start configured the frontend"
+    );
+    assert_eq!(
+        probe.last_value(),
+        Value::Int(1),
+        "`m` keeps its redefinition"
+    );
+}
+
+#[test]
+fn reset_shows_a_preload_that_now_fails_and_binds_the_rest() {
+    let scratch = Scratch::new();
+    let path = scratch.config("export def session = {preload: {m: 'std.math'}}");
+    let probe = Probe::new(
+        &path,
+        [
+            Step::Write("export def session = {preload: {gone: 'std.nonexistent', m: 'std.math'}}"),
+            Step::Say(":reset"),
+            Step::Say("m.abs(-3)"),
+            Step::Say("gone"),
+        ],
+    );
+    let probe = run(math_repl(&path), probe);
+    assert_one_problem(&probe, &["session.preload.gone", "failed to import"]);
+    let values: Vec<_> = probe
+        .outcomes
+        .iter()
+        .filter(|outcome| !matches!(outcome, Err(ReplError::Config(_))))
+        .collect();
+    assert!(
+        matches!(
+            values.as_slice(),
+            [Ok(Value::Int(3)), Err(ReplError::Compile(_))]
+        ),
+        "`m`, the other preload, still binds, and `gone` does not: {values:?}"
     );
 }
 

@@ -6,6 +6,7 @@ use frostlang::bytecode;
 use frostlang::compile::{Diagnostic, Diagnostics, Optimization};
 use frostlang_parse::parse_program_with_limits;
 
+use crate::config::Reading;
 use crate::metacommand::{Builtin, Registry};
 use crate::{INPUT_NAME, Invocation, MetacommandError, RESULTS, Repl, ReplError};
 
@@ -17,8 +18,8 @@ pub(crate) enum Reply {
     Nothing,
     /// The session is to end.
     Quit,
-    /// The config file at this path is to be read again.
-    ReadConfig(PathBuf),
+    /// The config file at this path is to be read, as the [`Reading`] says.
+    ReadConfig(PathBuf, Reading),
 }
 
 /// `builtin` refusing its argument, for `reason`.
@@ -58,6 +59,17 @@ impl Repl {
                 Ok(Reply::Text(list_globals()))
             }
             Builtin::Undef => self.undefine(builtin, argument),
+            Builtin::Reset => {
+                takes_no_argument(builtin, argument)?;
+                self.bindings.clone_from(&self.seeded);
+                self.results.clear();
+                // Read as at a session start, so the file's preloads are bound
+                // again.
+                Ok(match &self.config_file {
+                    Some(path) => Reply::ReadConfig(path.clone(), Reading::Start),
+                    None => Reply::Nothing,
+                })
+            }
             Builtin::Disassemble => {
                 let source = needs_argument(builtin, argument, "source to disassemble")?;
                 // A disassembly is for inspecting the code, so it shows debug info.
@@ -90,7 +102,7 @@ impl Repl {
                     return Err(invalid_argument(builtin, "takes `reload`"));
                 }
                 match &self.config_file {
-                    Some(path) => Ok(Reply::ReadConfig(path.clone())),
+                    Some(path) => Ok(Reply::ReadConfig(path.clone(), Reading::Reload)),
                     None => Err(ReplError::Metacommand(MetacommandError::Failed {
                         metacommand: builtin.name().to_string(),
                         reason: "this REPL reads no config file".to_string(),

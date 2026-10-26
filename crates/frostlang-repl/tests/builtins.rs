@@ -5,7 +5,7 @@ use std::sync::{Arc, Mutex};
 
 use frostlang::bytecode::GLOBAL_NAMES;
 use frostlang::compile::{Optimization, OptimizationOptions, ParseLimits};
-use frostlang::{Value, VmRuntimeConfiguration};
+use frostlang::{Extension, ImporterBuilder, Value, VmRuntimeConfiguration};
 use frostlang_repl::{Frontend, MetacommandError, Repl, ReplError, ScriptedFrontend, Transcript};
 
 /// The transcript of a session over `segments` on `repl`, with text unstyled.
@@ -80,7 +80,7 @@ fn a_metacommand_keeps_no_result() {
 
 #[test]
 fn a_metacommand_that_takes_no_argument_refuses_one() {
-    for name in ["help", "quit", "bindings", "globals"] {
+    for name in ["help", "quit", "bindings", "globals", "reset"] {
         assert_fails(
             &[&format!(":{name} please")],
             invalid(name, "takes no argument"),
@@ -98,6 +98,7 @@ fn help_lists_each_built_in_with_its_arguments_and_summary() {
 :bindings                   List the names bound, but not globals
 :globals                    List the globals
 :undef <name>...            Remove bindings
+:reset                      Start the session over, keeping its settings
 :disassemble <source>       Show the bytecode source compiles to, without running it
 :ast <source>               Show the syntax tree source parses to
 :optimize [<setting>, ...]  Show the optimizations, or set them: `<name>=true|false`, `all`, or `none`
@@ -340,6 +341,179 @@ fn results_shadowed_still_keeps_only_the_most_recent() {
     assert!(
         matches!(outcomes.last(), Some(Ok(results)) if *results == Value::array([3, 4])),
         "{outcomes:?}"
+    );
+}
+
+// --- :reset ---
+
+#[test]
+fn reset_removes_what_inputs_bound_and_every_recent_result() {
+    let transcript = session(&[
+        "def mine = 2",
+        "3",
+        ":reset",
+        ":bindings",
+        "mine",
+        "results",
+    ]);
+    assert_eq!(
+        only_text(&transcript),
+        "results  Array",
+        "`:reset` shows nothing, and only the REPL's own `results` is left"
+    );
+    let outcomes = transcript.outcomes();
+    assert!(
+        matches!(
+            outcomes.as_slice(),
+            [
+                Ok(Value::Null),
+                Ok(Value::Int(3)),
+                Err(ReplError::Compile(_)),
+                Ok(results),
+            ] if *results == Value::array([] as [Value; 0])
+        ),
+        "`mine` unbound, and `results` empty: {outcomes:?}"
+    );
+}
+
+#[test]
+fn reset_binds_each_seeded_binding_again() {
+    // One seeded binding is redefined by an input, and the other removed.
+    let repl = Repl::new()
+        .with_bindings([("kept", Value::Int(1)), ("gone", Value::Int(2))])
+        .expect("both are valid names");
+    let transcript = session_on(
+        repl,
+        &[
+            "def kept = 5",
+            ":undef gone",
+            ":reset",
+            "kept",
+            "gone",
+            ":bindings",
+        ],
+    );
+    let outcomes = transcript.outcomes();
+    assert!(
+        matches!(
+            outcomes.as_slice(),
+            [Ok(Value::Null), Ok(Value::Int(1)), Ok(Value::Int(2))]
+        ),
+        "each seeded binding has its seeded value: {outcomes:?}"
+    );
+    assert_eq!(
+        only_text(&transcript),
+        "gone     Int\nkept     Int\nresults  Array",
+        "both seeded bindings are listed again"
+    );
+}
+
+#[test]
+fn reset_binds_a_name_seeded_twice_to_its_last_value() {
+    let repl = Repl::new()
+        .with_bindings([("x", Value::Int(1)), ("x", Value::Int(2))])
+        .expect("`x` is a valid name");
+    let outcomes = session_on(repl, &["def x = 3", ":reset", "x"]).outcomes();
+    assert!(
+        matches!(outcomes.as_slice(), [Ok(Value::Null), Ok(Value::Int(2))]),
+        "{outcomes:?}"
+    );
+}
+
+#[test]
+fn reset_gives_back_results_an_input_had_taken() {
+    // The REPL records `1` while the input's binding hides `results`; `:reset`
+    // removes both.
+    let transcript = session(&["def results = 'mine'", "1", ":reset", "2", "results"]);
+    let outcomes = transcript.outcomes();
+    assert!(
+        matches!(
+            outcomes.as_slice(),
+            [Ok(Value::Null), Ok(Value::Int(1)), Ok(Value::Int(2)), Ok(results)]
+                if *results == Value::array([2])
+        ),
+        "`results` holds only what followed `:reset`: {outcomes:?}"
+    );
+}
+
+#[test]
+fn a_refused_reset_removes_nothing() {
+    let transcript = session(&["def x = 1", "2", ":reset please", "x", "results"]);
+    let outcomes = transcript.outcomes();
+    assert!(
+        matches!(
+            outcomes.as_slice(),
+            [
+                Ok(Value::Null),
+                Ok(Value::Int(2)),
+                Err(ReplError::Metacommand(_)),
+                Ok(Value::Int(1)),
+                Ok(results),
+            ] if *results == Value::array([2, 1])
+        ),
+        "`x` and the results survive: {outcomes:?}"
+    );
+}
+
+#[test]
+fn reset_keeps_the_optimizations() {
+    let before = optimizations_after(OptimizationOptions::ALL, &[":optimize preset = none"]);
+    let after = optimizations_after(
+        OptimizationOptions::ALL,
+        &[":optimize preset = none", ":reset"],
+    );
+    assert_eq!(after, before, "`preset = none` survives `:reset`");
+}
+
+#[test]
+fn reset_keeps_the_parse_limits() {
+    let three_levels = ParseLimits::UNLIMITED.with_max_recursion_depth(NonZeroU64::new(3));
+    let repl = Repl::new().with_parse_limits(three_levels);
+    let outcomes = session_on(repl, &[":reset", "[[1]]", "[[[1]]]"]).outcomes();
+    assert!(
+        matches!(outcomes.as_slice(), [Ok(_), Err(ReplError::Compile(_))]),
+        "the limit of 3 levels still applies: {outcomes:?}"
+    );
+}
+
+#[test]
+fn reset_keeps_how_many_results_are_kept() {
+    let transcript = session_on(
+        Repl::new().with_results_kept(2),
+        &["1", ":reset", "2", "3", "4", "results"],
+    );
+    let outcomes = transcript.outcomes();
+    assert!(
+        matches!(outcomes.last(), Some(Ok(results)) if *results == Value::array([3, 4])),
+        "two results kept: {outcomes:?}"
+    );
+}
+
+#[test]
+fn reset_keeps_the_configuration_and_importer() {
+    let printed = Arc::new(Mutex::new(Vec::new()));
+    let sink = {
+        let printed = Arc::clone(&printed);
+        move |text: &str| printed.lock().unwrap().push(text.to_string())
+    };
+    let configuration = VmRuntimeConfiguration::default().with_print_sink(Arc::new(sink));
+    let importer = ImporterBuilder::new()
+        .with_extension(Extension::new("answer", Value::Int(42)).unwrap())
+        .unwrap()
+        .build();
+    let repl = Repl::new()
+        .with_configuration(configuration)
+        .with_importer(importer);
+    let transcript = session_on(repl, &[":reset", "print('after')", "import('ext.answer')"]);
+    let outcomes = transcript.outcomes();
+    assert!(
+        matches!(outcomes.as_slice(), [Ok(Value::Null), Ok(Value::Int(42))]),
+        "the importer serves `ext.answer`: {outcomes:?}"
+    );
+    assert_eq!(
+        *printed.lock().unwrap(),
+        ["after"],
+        "`print` goes to the configuration's sink"
     );
 }
 
