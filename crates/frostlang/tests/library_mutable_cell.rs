@@ -2,8 +2,10 @@
 //! state.
 //!
 //! `mutable_cell(initial?)` returns a cell holding `initial`, or Null without
-//! one: a Map of two Functions over the same state. `get()` returns the value
-//! held, and `exchange(value)` holds `value` and returns the value it replaces.
+//! one: a Map of Functions over the same state. `get()` returns the value held,
+//! `exchange(value)` holds `value` and returns the value it replaces, and
+//! `take()` returns the value held and leaves Null in its place, so the value is
+//! no longer shared with the cell.
 //! A cell never holds a Function, nor an Opaque whose type has drop glue, even
 //! nested in an Array or Map.
 //!
@@ -11,6 +13,7 @@
 //! checked with and without folding the calls around a cell.
 
 use crate::script;
+use crate::unshared::unshared;
 
 use frostlang::{FrostOpaque, SpecialFloat, Value};
 use script::Script;
@@ -29,11 +32,15 @@ fn a_cell_holds_its_initial_value() {
 }
 
 #[test]
-fn a_cell_is_a_map_of_get_and_exchange() {
+fn a_cell_is_a_map_of_get_exchange_and_take() {
     assert_values(&[
-        ("sorted(keys(mutable_cell()))", "['exchange', 'get']"),
+        (
+            "sorted(keys(mutable_cell()))",
+            "['exchange', 'get', 'take']",
+        ),
         ("is_function(mutable_cell().get)", "true"),
         ("is_function(mutable_cell().exchange)", "true"),
+        ("is_function(mutable_cell().take)", "true"),
     ]);
 }
 
@@ -66,6 +73,58 @@ fn get_does_not_change_the_cell() {
 }
 
 #[test]
+fn take_returns_the_value_and_leaves_null() {
+    let source = r"
+        def cell = mutable_cell('held')
+        def taken = cell.take()
+        [taken, cell.get()]
+    ";
+    assert_values(&[
+        (source, "['held', null]"),
+        ("mutable_cell().take()", "null"),
+    ]);
+}
+
+#[test]
+fn a_cell_holds_values_again_after_a_take() {
+    let source = r"
+        def cell = mutable_cell(1)
+        [cell.take(), cell.take(), cell.exchange(2), cell.take(), cell.get()]
+    ";
+    assert_values(&[(source, "[1, null, null, 2, null]")]);
+}
+
+/// A value the cell alone holds is uniquely owned once taken, so it can be updated
+/// in place, where `get` leaves it shared with the cell.
+/// The Array holds the host's `n`, so it is built at runtime rather than shared
+/// with the constant pool.
+#[test]
+fn a_taken_value_is_no_longer_shared_with_the_cell() {
+    let source = r"
+        def cell = mutable_cell([n])
+        [unshared(cell.get()), unshared(cell.take())]
+    ";
+    let tail = Script::new(source)
+        .captures(&[("n", Value::from(1)), ("unshared", unshared())])
+        .run();
+    assert_eq!(
+        tail,
+        Value::array([false, true]),
+        "`get` should leave the Array shared with the cell, and `take` should leave it held by nothing else"
+    );
+}
+
+#[test]
+fn a_taken_value_can_be_updated_and_exchanged_back() {
+    let source = r"
+        def cell = mutable_cell([1])
+        cell.exchange(cell.take() + [2])
+        cell.get()
+    ";
+    assert_values(&[(source, "[1, 2]")]);
+}
+
+#[test]
 fn a_cell_holds_any_value_but_a_function() {
     for value in [
         "true",
@@ -95,9 +154,11 @@ fn every_copy_of_a_cell_shares_its_value() {
         def alias = cell
         def holder = {cell: cell}
         alias.exchange(1)
-        [cell.get(), holder.cell.get()]
+        def after_exchange = [cell.get(), holder.cell.get()]
+        holder.cell.take()
+        [after_exchange, [cell.get(), alias.get()]]
     ";
-    assert_values(&[(source, "[1, 1]")]);
+    assert_values(&[(source, "[[1, 1], [null, null]]")]);
 }
 
 #[test]
@@ -292,8 +353,9 @@ fn mutable_cell_takes_at_most_one_argument() {
 }
 
 #[test]
-fn get_takes_no_arguments_and_exchange_exactly_one() {
+fn the_cell_functions_check_their_arity() {
     assert_arity_of("mutable_cell().get", "mutable_cell.get", 0, &[1, 2]);
+    assert_arity_of("mutable_cell().take", "mutable_cell.take", 0, &[1, 2]);
     assert_arity_of(
         "mutable_cell().exchange",
         "mutable_cell.exchange",

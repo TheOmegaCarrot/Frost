@@ -11,20 +11,12 @@
 //! its reference, and every other optimization off, so their values are built at
 //! runtime rather than shared with the constant pool.
 
+use crate::unshared::unshared;
+
 use std::collections::BTreeMap;
 
 use frostlang::compile::{CompilerOptions, Optimization, OptimizationOptions, compile_in_scope};
-use frostlang::{RunError, Value, Vm, frost_closure};
-
-/// `unshared(structure)`: whether the Array or Map passed in is referenced by
-/// nothing but the argument itself.
-fn unshared() -> Value {
-    frost_closure!("unshared", |structure: Value| match structure {
-        Value::Array(array) => array.try_into_vec().is_ok(),
-        Value::Map(map) => map.try_into_map().is_ok(),
-        other => panic!("`unshared` takes an Array or Map, not {other:?}"),
-    })
-}
+use frostlang::{RunError, Value, Vm};
 
 /// Run `source`, with `unshared` in scope, to its tail value.
 fn run(source: &str) -> Value {

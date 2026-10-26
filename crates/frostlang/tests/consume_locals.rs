@@ -8,10 +8,11 @@
 //! options they are about.
 
 use crate::script;
+use crate::unshared::unshared;
 
+use frostlang::Value;
 use frostlang::bytecode::Bytecode;
 use frostlang::compile::{Optimization, OptimizationOptions};
-use frostlang::{Value, frost_closure};
 use script::{Emitted, Script, UNOPTIMIZED, run};
 
 const CONSUME: OptimizationOptions = UNOPTIMIZED.with(Optimization::ConsumeLocals, true);
@@ -198,16 +199,6 @@ fn a_last_read_in_each_match_arm_is_consumed() {
         [true, true, false, true],
         "{emitted:?}"
     );
-}
-
-/// `unshared(structure)`: whether the Array or Map passed in is referenced by
-/// nothing but the argument itself.
-fn unshared() -> Value {
-    frost_closure!("unshared", |structure: Value| match structure {
-        Value::Array(array) => array.try_into_vec().is_ok(),
-        Value::Map(map) => map.try_into_map().is_ok(),
-        other => panic!("`unshared` takes an Array or Map, not {other:?}"),
-    })
 }
 
 #[test]

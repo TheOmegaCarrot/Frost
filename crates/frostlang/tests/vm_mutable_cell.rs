@@ -1,7 +1,7 @@
 //! Tests for the `mutable_cell` global: Frost's only built-in mutable state.
 //!
-//! `mutable_cell()` / `mutable_cell(initial)` returns a Map of two closures over a
-//! shared `Arc<Mutex<Value>>`:
+//! `mutable_cell()` / `mutable_cell(initial)` returns a Map of closures over
+//! shared state. These tests cover two of them:
 //!   `.get()`          -> the current value
 //!   `.exchange(next)` -> sets the cell to `next`, returns the previous value
 //! Functions may not be stored (directly or nested inside a structure).
@@ -85,7 +85,8 @@ fn cell(initial: Option<Value>) -> Value {
 }
 
 /// Invoke `cell.<method>(arg?)`: indexes the Map for the closure and calls it.
-/// `get` passes `None`; `exchange` passes `Some(value)`.
+/// `arg` is `None` for a method taking no argument, such as `get`,
+/// and `Some(value)` for `exchange`.
 fn invoke(cell: &Value, method: &'static str, arg: Option<Value>) -> Result<Value, FrostError> {
     let mut caps = vec![("cell", cell.clone())];
     let mut body = vec![LoadLocal(0), HardIndexMap(0)]; // cell -> the method closure
@@ -197,7 +198,7 @@ fn successive_exchanges_chain() {
 #[test]
 fn handles_to_the_same_cell_share_state() {
     // Cloning the cell Value clones the Map (an Arc bump); both clones' closures
-    // capture the *same* `Arc<Mutex<Value>>`, so a write through one is seen by the other.
+    // share the *same* state, so a write through one is seen by the other.
     let c = cell(Some(Value::Int(1)));
     let alias = c.clone();
     exchange(&alias, Value::Int(99));

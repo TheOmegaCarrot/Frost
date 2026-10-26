@@ -4,6 +4,7 @@
 mod common;
 mod deep;
 mod script;
+mod unshared;
 
 mod array_destructuring;
 mod backtrace_origin;

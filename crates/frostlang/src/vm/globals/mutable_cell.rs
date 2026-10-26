@@ -45,4 +45,8 @@ impl Cell {
         forbid_cycle(&new_value)?;
         Ok(mem::replace(&mut self.0, new_value))
     }
+
+    fn take(&mut self) -> Value {
+        self.0.take()
+    }
 }
