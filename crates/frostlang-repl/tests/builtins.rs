@@ -102,7 +102,9 @@ fn help_lists_each_built_in_with_its_arguments_and_summary() {
 :disassemble <source>       Show the bytecode source compiles to, without running it
 :ast <source>               Show the syntax tree source parses to
 :optimize [<setting>, ...]  Show the optimizations, or set them: `<name>=true|false`, `all`, or `none`
-:config reload              Read the config file again";
+:config reload              Read the config file again
+
+A name may be shortened to any start of it that begins no other name.";
     assert_eq!(help, expected);
 }
 

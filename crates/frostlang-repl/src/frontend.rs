@@ -42,9 +42,12 @@ pub trait Frontend {
     }
 
     /// Run `invocation`, of one of the metacommands
-    /// [`metacommands`](Self::metacommands) lists. The frontend shows whatever
-    /// comes of it itself; it can show a failure as the REPL shows its own, as
-    /// a [`ReplError::Metacommand`]. An error ends the session.
+    /// [`metacommands`](Self::metacommands) lists.
+    /// Its [name](Invocation::name) is that metacommand's full name, even if
+    /// typed shortened.
+    /// The frontend shows whatever comes of it itself; it can show a failure as
+    /// the REPL shows its own, as a [`ReplError::Metacommand`].
+    /// An error ends the session.
     fn metacommand(&mut self, invocation: &Invocation) -> io::Result<()> {
         Err(io::Error::other(format!(
             "this frontend has no metacommand `:{}`",

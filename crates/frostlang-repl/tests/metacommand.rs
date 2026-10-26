@@ -214,6 +214,147 @@ fn a_frontends_metacommand_runs_on_the_frontend_with_its_argument() {
     );
 }
 
+// --- Shortened names ---
+
+/// The console offering `specs`, after a session over `segments`.
+fn console_after(specs: Vec<MetacommandSpec>, segments: &[&str]) -> Console {
+    let mut console = Console::new(specs, segments);
+    Repl::new().run(&mut console).unwrap();
+    console
+}
+
+#[test]
+fn a_start_of_one_builtins_name_runs_it_with_its_argument() {
+    let outcomes = console_after(Vec::new(), &["def x = 1", ":un x", "x"]).outcomes;
+    assert!(
+        matches!(
+            outcomes.as_slice(),
+            [Ok(Value::Null), Err(ReplError::Compile(_))]
+        ),
+        "`:un x` unbinds `x`: {outcomes:?}"
+    );
+    let outcomes = console_after(Vec::new(), &[":q", "1"]).outcomes;
+    assert!(outcomes.is_empty(), "`:q` ends the session: {outcomes:?}");
+}
+
+#[test]
+fn a_builtin_reached_by_a_start_of_its_name_fails_under_its_full_name() {
+    let outcomes = console_after(Vec::new(), &[":co x", ":un nope"]).outcomes;
+    let errors: Vec<String> = outcomes
+        .iter()
+        .map(|outcome| match outcome {
+            Err(ReplError::Metacommand(error)) => error.to_string(),
+            other => panic!("each should fail as a metacommand, but gave {other:?}"),
+        })
+        .collect();
+    assert_eq!(
+        errors,
+        ["`:config`: takes `reload`", "`:undef`: `nope` is not bound"]
+    );
+}
+
+#[test]
+fn a_start_of_one_frontend_metacommands_name_reaches_the_frontend_by_its_full_name() {
+    let console = console_after(console_specs(), &[":gr the world"]);
+    assert!(console.outcomes.is_empty(), "{:?}", console.outcomes);
+    let invoked: Vec<(&str, &str)> = console
+        .invoked
+        .iter()
+        .map(|invocation| (invocation.name(), invocation.argument()))
+        .collect();
+    assert_eq!(
+        invoked,
+        [("greet", "the world")],
+        "the frontend sees `greet`, not `gr`"
+    );
+}
+
+#[test]
+fn a_full_name_runs_its_metacommand_even_where_it_begins_others() {
+    let specs = vec![
+        MetacommandSpec::new("greet", "Greet someone"),
+        MetacommandSpec::new("greeting", "Show the greeting"),
+        MetacommandSpec::new("help-more", "More help"),
+        // A frontend's name that begins a built-in's.
+        MetacommandSpec::new("glob", "Match some files"),
+    ];
+    let console = console_after(specs, &[":greet", ":help", ":glob"]);
+    let invoked: Vec<&str> = console.invoked.iter().map(Invocation::name).collect();
+    assert_eq!(
+        invoked,
+        ["greet", "glob"],
+        "`:greet` is not `:greeting`, and `:glob` is not `:globals`"
+    );
+    let [help] = console.texts.as_slice() else {
+        panic!("`:help` should show one text, but gave {:?}", console.texts);
+    };
+    assert!(
+        help.contains(":help-more"),
+        "`:help` is the REPL's, listing `:help-more`: {help}"
+    );
+}
+
+#[test]
+fn a_start_of_several_names_fails_naming_each_and_the_session_carries_on() {
+    let specs = vec![
+        MetacommandSpec::new("greet", "Greet someone"),
+        MetacommandSpec::new("gremlin", "Summon a gremlin"),
+    ];
+    let console = console_after(specs, &[":gr x", ":g", "1"]);
+    assert!(
+        console.invoked.is_empty(),
+        "nothing runs: {:?}",
+        console.invoked
+    );
+    let outcomes = console.outcomes;
+    let [
+        Err(ReplError::Metacommand(gr)),
+        Err(ReplError::Metacommand(g)),
+        Ok(Value::Int(1)),
+    ] = outcomes.as_slice()
+    else {
+        panic!("both should fail, then the session carry on, but gave {outcomes:?}");
+    };
+    let ambiguous = |prefix: &str, candidates: &[&str]| MetacommandError::Ambiguous {
+        prefix: prefix.to_string(),
+        candidates: candidates.iter().map(ToString::to_string).collect(),
+    };
+    assert_eq!(*gr, ambiguous("gr", &["greet", "gremlin"]), "`:gr`");
+    // The built-ins come first, as `:help` lists them.
+    assert_eq!(*g, ambiguous("g", &["globals", "greet", "gremlin"]), "`:g`");
+    assert_eq!(
+        gr.to_string(),
+        "`:gr` could be `:greet` or `:gremlin`",
+        "two are joined by `or`"
+    );
+    assert_eq!(
+        g.to_string(),
+        "`:g` could be `:globals`, `:greet`, or `:gremlin`",
+        "three or more are listed, the last after `or`"
+    );
+}
+
+#[test]
+fn a_name_that_neither_is_nor_begins_one_is_unknown() {
+    // `(1)` is no name a metacommand could have, but is read as one.
+    for typed in ["nope", "quitter", "greets", "(1)"] {
+        let console = console_after(console_specs(), &[&format!(":{typed}")]);
+        assert!(
+            console.invoked.is_empty(),
+            "`:{typed}` should run nothing: {:?}",
+            console.invoked
+        );
+        assert!(
+            matches!(
+                console.outcomes.as_slice(),
+                [Err(ReplError::Metacommand(MetacommandError::Unknown(name)))] if name == typed
+            ),
+            "`:{typed}` should be unknown: {:?}",
+            console.outcomes
+        );
+    }
+}
+
 #[test]
 fn a_frontends_metacommand_failing_ends_the_session() {
     let mut console = Console::new(console_specs(), &[":explode", "1"]);
@@ -243,6 +384,8 @@ fn help_lists_a_frontends_metacommands_after_the_repls() {
     let explode = position(":explode ");
     assert!(quit < greet && greet < explode, "{help}");
     assert!(lines[greet].ends_with("  Greet someone"), "{help}");
+    let rule = position("A name may be shortened");
+    assert_eq!(rule, lines.len() - 1, "the rule comes last: {help}");
 }
 
 /// What a session refuses of a frontend offering `specs`, having read

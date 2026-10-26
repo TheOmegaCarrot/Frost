@@ -43,6 +43,14 @@ impl Invocation {
     pub fn argument(&self) -> &str {
         &self.argument
     }
+
+    /// This invocation, of the metacommand named `name` in full.
+    pub(crate) fn named(&self, name: &str) -> Self {
+        Self {
+            name: name.to_string(),
+            argument: self.argument.clone(),
+        }
+    }
 }
 
 /// A metacommand a [`Frontend`](crate::Frontend) adds: its name and how
@@ -220,9 +228,18 @@ impl MetacommandProblem {
 /// Why a metacommand failed, the REPL's own or a frontend's.
 #[derive(Debug, Clone, PartialEq, Eq, thiserror::Error)]
 pub enum MetacommandError {
-    /// No metacommand has this name.
+    /// No metacommand has this name, or a name it begins.
     #[error("there is no metacommand `:{0}`; `:help` lists them")]
     Unknown(String),
+    /// `prefix` begins the names of several metacommands, and is none of them
+    /// exactly.
+    #[error("`:{prefix}` could be {}", or_list(.candidates))]
+    Ambiguous {
+        /// The name as typed, without its `:`.
+        prefix: String,
+        /// Every name it begins, without their `:`, in the order `:help` lists them.
+        candidates: Vec<String>,
+    },
     /// The metacommand cannot take the argument it was given.
     #[error("`:{metacommand}`: {reason}")]
     InvalidArgument {
@@ -309,11 +326,33 @@ impl Builtin {
     }
 }
 
+/// `:name` for each of `names`, joined as "a, b, or c".
+fn or_list(names: &[String]) -> String {
+    let names: Vec<String> = names.iter().map(|name| format!("`:{name}`")).collect();
+    match names.as_slice() {
+        [] => String::new(),
+        [only] => only.clone(),
+        [first, second] => format!("{first} or {second}"),
+        [rest @ .., last] => format!("{}, or {last}", rest.join(", ")),
+    }
+}
+
 /// Who runs a metacommand.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(crate) enum Handler {
+pub(crate) enum Handler<'a> {
     Builtin(Builtin),
-    Frontend,
+    /// The frontend's metacommand of this name.
+    Frontend(&'a str),
+}
+
+impl<'a> Handler<'a> {
+    /// The full name of the metacommand it runs.
+    fn name(self) -> &'a str {
+        match self {
+            Self::Builtin(builtin) => builtin.name(),
+            Self::Frontend(name) => name,
+        }
+    }
 }
 
 /// Every metacommand a session knows: the REPL's own, then its frontend's.
@@ -351,22 +390,40 @@ impl Registry {
         Ok(Self { frontend: specs })
     }
 
-    /// Who runs the metacommand `name`, if anyone does.
-    pub(crate) fn find(&self, name: &str) -> Option<Handler> {
-        if let Some(builtin) = Builtin::ALL
+    /// Who runs the metacommand `typed` names: the one of that name, or else
+    /// the only one whose name it begins.
+    pub(crate) fn resolve(&self, typed: &str) -> Result<Handler<'_>, MetacommandError> {
+        let handlers: Vec<Handler> = Builtin::ALL
             .into_iter()
-            .find(|builtin| builtin.name() == name)
-        {
-            return Some(Handler::Builtin(builtin));
+            .map(Handler::Builtin)
+            .chain(
+                self.frontend
+                    .iter()
+                    .map(|spec| Handler::Frontend(spec.name())),
+            )
+            .collect();
+        if let Some(&exact) = handlers.iter().find(|handler| handler.name() == typed) {
+            return Ok(exact);
         }
-        self.frontend
-            .iter()
-            .any(|spec| spec.name() == name)
-            .then_some(Handler::Frontend)
+        let matches: Vec<Handler> = handlers
+            .into_iter()
+            .filter(|handler| handler.name().starts_with(typed))
+            .collect();
+        match matches.as_slice() {
+            [] => Err(MetacommandError::Unknown(typed.to_string())),
+            [only] => Ok(*only),
+            _ => Err(MetacommandError::Ambiguous {
+                prefix: typed.to_string(),
+                candidates: matches
+                    .iter()
+                    .map(|handler| handler.name().to_string())
+                    .collect(),
+            }),
+        }
     }
 
     /// Every metacommand, one to a line, with its arguments and summary in
-    /// aligned columns.
+    /// aligned columns, then the rule for shortening a name.
     pub(crate) fn help(&self) -> String {
         let specs: Vec<MetacommandSpec> = Builtin::ALL
             .into_iter()
@@ -381,12 +438,15 @@ impl Registry {
             })
             .collect();
         let width = usages.iter().map(String::len).max().unwrap_or(0);
-        usages
+        let lines: Vec<String> = usages
             .iter()
             .zip(&specs)
             .map(|(usage, spec)| format!("{usage:width$}  {}", spec.summary()))
-            .collect::<Vec<_>>()
-            .join("\n")
+            .collect();
+        format!(
+            "{}\n\nA name may be shortened to any start of it that begins no other name.",
+            lines.join("\n")
+        )
     }
 }
 

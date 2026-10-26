@@ -115,6 +115,10 @@ const RESULTS: &str = "results";
 /// name, as `:help` does, is a metacommand: an instruction to the REPL or its
 /// frontend, not Frost source. Whatever follows the name is its
 /// [argument](Invocation::argument).
+/// The name may be shortened to any start of it that begins no other
+/// metacommand's name, as `:q` for `:quit`;
+/// a name typed in full is always that metacommand, even where it begins
+/// others.
 ///
 /// `:help` lists the REPL's own metacommands, with any its frontend adds
 /// (see [`Frontend::metacommands`]).
@@ -424,17 +428,15 @@ impl Repl {
                 frontend.render(self.evaluate(&segment).as_ref())?;
                 continue;
             };
-            let reply = match registry.find(invocation.name()) {
-                Some(Handler::Builtin(builtin)) => {
+            let reply = match registry.resolve(invocation.name()) {
+                Ok(Handler::Builtin(builtin)) => {
                     self.run_builtin(builtin, &invocation, &registry, frontend.ansi_styling())
                 }
-                Some(Handler::Frontend) => {
-                    frontend.metacommand(&invocation)?;
+                Ok(Handler::Frontend(name)) => {
+                    frontend.metacommand(&invocation.named(name))?;
                     continue;
                 }
-                None => Err(ReplError::Metacommand(MetacommandError::Unknown(
-                    invocation.name().to_string(),
-                ))),
+                Err(error) => Err(ReplError::Metacommand(error)),
             };
             match reply {
                 Ok(Reply::Text(text)) => frontend.render_text(&text)?,
