@@ -1063,8 +1063,8 @@ fn reset_preloads_again_and_keeps_the_files_settings() {
     );
 }
 
-/// `:reset` reads the file as it now is, preloading and configuring the
-/// frontend as a session start does.
+/// `:reset` reads the file as it now is and preloads as a session start does,
+/// but leaves the frontend's settings as the session has them.
 #[test]
 fn reset_reads_the_file_again() {
     let scratch = Scratch::new();
@@ -1091,8 +1091,8 @@ fn reset_reads_the_file_again() {
     );
     assert_eq!(
         probe.configured(),
-        [None, Some(Value::Int(2))],
-        "the frontend is configured at the start and again at `:reset`"
+        [None],
+        "the frontend is configured at the start only, not at `:reset`"
     );
 }
 
@@ -1199,8 +1199,8 @@ fn reset_with_the_file_gone_binds_only_seeded_bindings() {
     );
     assert_eq!(
         probe.configured(),
-        [None, None],
-        "the frontend is configured with no section again"
+        [None],
+        "the frontend is configured at the start only, not at `:reset`"
     );
 }
 

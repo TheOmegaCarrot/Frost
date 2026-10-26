@@ -5,7 +5,9 @@
 use frostlang::Value;
 
 use crate::config_runner::ConfigRunner;
-use crate::terminal::settings::{Context, EditMode, Problem, Prompts, Setting, Settings};
+use crate::terminal::settings::{
+    Context, EditMode, Problem, Prompts, Setting, Settings, StringDisplay,
+};
 
 /// The `terminal` export of the script `source`, run with color on, which must
 /// run and export it.
@@ -502,11 +504,120 @@ fn a_null_edit_mode_is_no_opinion() {
     );
 }
 
+// -- How String results are shown --
+
+#[test]
+fn string_results_are_quoted_by_default() {
+    let settings = load_clean("export def terminal = {prompt: '> '}");
+    assert_eq!(
+        settings.strings(),
+        StringDisplay::Quoted,
+        "a section's default"
+    );
+    assert_eq!(
+        StringDisplay::default(),
+        StringDisplay::Quoted,
+        "`StringDisplay`'s default"
+    );
+}
+
+#[test]
+fn strings_names_how_string_results_are_shown() {
+    for (name, strings) in [
+        ("quoted", StringDisplay::Quoted),
+        ("plain", StringDisplay::Plain),
+    ] {
+        let source = format!("export def terminal = {{strings: '{name}'}}");
+        assert_eq!(load_clean(&source).strings(), strings, "{source}");
+        assert_eq!(strings.name(), name, "the name `:strings` shows");
+        assert_eq!(
+            StringDisplay::try_from(name.to_string()),
+            Ok(strings),
+            "the name `:strings` takes"
+        );
+    }
+}
+
+/// Only the exact names count. An invalid section sets nothing, so the valid
+/// prompt beside it is lost too.
+#[test]
+fn a_strings_setting_that_names_none_sets_nothing() {
+    for value in [
+        "'Plain'",
+        "'raw'",
+        "' plain'",
+        "''",
+        "true",
+        "1",
+        "['plain']",
+        "fn -> 'plain'",
+    ] {
+        let source = format!("export def terminal = {{strings: {value}, prompt: 'p> '}}");
+        let said = assert_sets_nothing(&source);
+        assert_says(&source, &said, &["sets nothing"]);
+    }
+    for name in ["Plain", "raw", ""] {
+        assert!(
+            StringDisplay::try_from(name.to_string()).is_err(),
+            "{name:?} names no way to show Strings"
+        );
+    }
+}
+
+/// Like the edit mode, a Null `strings` is no opinion: quoted stands, and it
+/// is not a problem.
+#[test]
+fn a_null_strings_setting_is_no_opinion() {
+    let settings = load_clean("export def terminal = {strings: null, edit_mode: 'vi'}");
+    assert_eq!(settings.strings(), StringDisplay::Quoted, "quoted stands");
+    assert_eq!(settings.edit_mode(), EditMode::Vi, "the edit mode applies");
+}
+
+/// Plain shows a String result as its text, lines and all; quoted shows it as
+/// Frost writes it. Anything else, a String inside a value included, shows the
+/// same either way.
+#[test]
+fn a_string_result_is_shown_quoted_or_as_its_text() {
+    let text = Value::from("two\nlines \"quoted\"");
+    assert_eq!(
+        StringDisplay::Quoted.render(&text),
+        r#""two\nlines \"quoted\"""#,
+        "quoted"
+    );
+    assert_eq!(
+        StringDisplay::Plain.render(&text),
+        "two\nlines \"quoted\"",
+        "plain"
+    );
+    assert_eq!(
+        StringDisplay::Plain.render(&Value::from("")),
+        "",
+        "an empty String, plain"
+    );
+    // The text is written as it is: control characters, escape sequences,
+    // and a trailing newline included.
+    let raw = "\u{1b}[31mred\u{7}\ttab\n";
+    assert_eq!(StringDisplay::Plain.render(&Value::from(raw)), raw);
+    for value in [
+        Value::array([Value::from("inner")]),
+        Value::map([("k", Value::from("v"))]),
+        Value::from(42),
+        // Bytes holding text: only a String is shown as its text.
+        Value::from(b"bytes".to_vec()),
+    ] {
+        assert_eq!(
+            StringDisplay::Plain.render(&value),
+            StringDisplay::Quoted.render(&value),
+            "{value:?}"
+        );
+    }
+}
+
 // -- Problems with the section --
 
 /// The settings the script `source` sets, which must be the defaults (no
-/// prompt, emacs editing) with exactly one problem, `Invalid`. Returns what
-/// that problem says.
+/// prompt, emacs editing, quoted Strings) with exactly one problem, `Invalid`.
+/// Returns what that problem says.
 #[track_caller]
 fn assert_sets_nothing(source: &str) -> String {
     let (mut settings, problems) = load(source);
@@ -515,6 +626,7 @@ fn assert_sets_nothing(source: &str) -> String {
         "{source:?}: {problems:?}"
     );
     assert_eq!(settings.edit_mode(), EditMode::Emacs, "{source:?}");
+    assert_eq!(settings.strings(), StringDisplay::Quoted, "{source:?}");
     assert_eq!(
         prompts(&mut settings, &first()),
         Prompts::default(),

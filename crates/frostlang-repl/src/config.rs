@@ -18,11 +18,13 @@ use crate::{Frontend, InvalidName, Repl, ReplError, check_name};
 /// The export the REPL takes its own settings from.
 const SESSION: &str = "session";
 
-/// Whether the config file is read as a session starts or starts over (at
-/// `:reset`), or reloaded (at `:config reload`).
+/// Why the config file is read: as a session starts, at `:reset`, or at
+/// `:config reload`.
+/// What each applies is set out on [`Repl`](crate::Repl#config-file).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum Reading {
     Start,
+    Reset,
     Reload,
 }
 
@@ -52,7 +54,7 @@ impl Repl {
         let section = frontend.config_key().and_then(take);
         self.config_results_kept = chosen(settings.results_kept);
         self.forget_excess_results();
-        if reading == Reading::Start {
+        if matches!(reading, Reading::Start | Reading::Reset) {
             for (Name(name), path) in chosen(settings.preload).unwrap_or_default() {
                 if let Err(error) = self.preload(&name, &path) {
                     problems.push(Problem::PreloadFailed { name, error }.into());
@@ -62,7 +64,10 @@ impl Repl {
         for problem in problems {
             frontend.render(Err(&ReplError::Config(problem)))?;
         }
-        frontend.configure(section)
+        match reading {
+            Reading::Start | Reading::Reload => frontend.configure(section),
+            Reading::Reset => Ok(()),
+        }
     }
 
     /// Bind `name` to the module at `path`, imported as an input imports it.

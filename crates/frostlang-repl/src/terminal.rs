@@ -19,12 +19,14 @@ use crate::edit_dir::EditDir;
 use crate::highlight::{self, Class};
 use crate::{
     CancelHandle, Frontend, Invocation, MetacommandError, MetacommandSpec, MetacommandTable,
-    ReplError, complete_segment, render_value,
+    ReplError, complete_segment,
 };
 
 mod settings;
+#[cfg(test)]
+mod tests;
 
-use settings::{Context, EditMode, Problem, Prompts, Settings};
+use settings::{Context, EditMode, Problem, Prompts, Settings, StringDisplay};
 
 /// A [`Frontend`] for a person at a terminal, with line editing, history, and
 /// syntax highlighting.
@@ -41,8 +43,10 @@ use settings::{Context, EditMode, Problem, Prompts, Settings};
 /// the frontend is dropped; if that directory cannot be made, Ctrl-O does
 /// nothing.
 ///
-/// Each value other than Null is written as [`render_value`] renders it, to
-/// standard output; a failure is written to standard error.
+/// Each value other than Null is written to standard output: a String as the
+/// `strings` setting below says, and anything else as
+/// [`render_value`](crate::render_value) renders it.
+/// A failure is written to standard error.
 ///
 /// # Configuration
 ///
@@ -59,6 +63,10 @@ use settings::{Context, EditMode, Problem, Prompts, Settings};
 /// - `edit_mode`: `'emacs'`, by default, or `'vi'`, for the keys lines are
 ///   edited with. Ctrl-C, Ctrl-D, and Ctrl-O work as described above in
 ///   either.
+/// - `strings`: `'quoted'`, by default, for a String result written quoted
+///   and escaped, or `'plain'`, for its text as it is. Only a String result
+///   itself is written plain, not one inside another value. `:strings` shows
+///   the setting, or sets it until `:config reload` takes the section again.
 ///
 /// Its functions run as the config file does, under the same limits and with
 /// the same imports:
@@ -100,6 +108,8 @@ pub struct TerminalFrontend {
     edit_dir: Option<EditDir>,
     // `None` until configured, or for a configuration with no section here.
     settings: Option<Settings>,
+    // As configured, or as `:strings` set it since.
+    strings: StringDisplay,
     segments_read: u64,
     // Whether the outcome rendered since the last segment was read is a failure.
     failed: bool,
@@ -130,6 +140,7 @@ impl TerminalFrontend {
             editor: None,
             edit_dir: None,
             settings: None,
+            strings: StringDisplay::default(),
             segments_read: 0,
             failed: false,
         }
@@ -274,7 +285,7 @@ impl Frontend for TerminalFrontend {
             Ok(Value::Null) => Ok(()),
             Ok(value) => {
                 let mut stdout = io::stdout().lock();
-                writeln!(stdout, "{}", render_value(value))?;
+                writeln!(stdout, "{}", self.strings.render(value))?;
                 stdout.flush()
             }
             #[cfg(feature = "graphical-diagnostics")]
@@ -332,6 +343,11 @@ impl Frontend for TerminalFrontend {
                 Vec::new()
             }
         };
+        self.strings = self
+            .settings
+            .as_ref()
+            .map(Settings::strings)
+            .unwrap_or_default();
         // An editor not yet built takes the edit mode as it is built.
         if let Some(editor) = self.editor.take() {
             self.editor = Some(editor.with_edit_mode(self.edit_mode()));
@@ -382,7 +398,31 @@ static METACOMMANDS: LazyLock<MetacommandTable<TerminalFrontend>> = LazyLock::ne
             ),
             clear_history,
         )
+        .with(
+            MetacommandSpec::new(
+                "strings",
+                "Show how String results are written, or set it: `quoted` or `plain`",
+            )
+            .with_arguments("[quoted|plain]"),
+            show_or_set_strings,
+        )
 });
+
+fn show_or_set_strings(frontend: &mut TerminalFrontend, invocation: &Invocation) -> io::Result<()> {
+    match invocation.argument() {
+        "" => frontend.render_text(frontend.strings.name()),
+        name => match StringDisplay::try_from(name.to_string()) {
+            Ok(strings) => {
+                frontend.strings = strings;
+                Ok(())
+            }
+            Err(_) => frontend.fail(MetacommandError::InvalidArgument {
+                metacommand: invocation.name().to_string(),
+                reason: "takes `quoted` or `plain`".to_string(),
+            }),
+        },
+    }
+}
 
 fn show_history(frontend: &mut TerminalFrontend, invocation: &Invocation) -> io::Result<()> {
     if !takes_no_argument(frontend, invocation)? {

@@ -63,10 +63,9 @@ impl Repl {
                 takes_no_argument(builtin, argument)?;
                 self.bindings.clone_from(&self.seeded);
                 self.results.clear();
-                // Read as at a session start, so the file's preloads are bound
-                // again.
+                // Read the file again, so its preloads are bound again.
                 Ok(match &self.config_file {
-                    Some(path) => Reply::ReadConfig(path.clone(), Reading::Start),
+                    Some(path) => Reply::ReadConfig(path.clone(), Reading::Reset),
                     None => Reply::Nothing,
                 })
             }

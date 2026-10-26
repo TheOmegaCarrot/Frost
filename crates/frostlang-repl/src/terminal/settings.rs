@@ -10,6 +10,7 @@ use serde::{Deserialize, Deserializer, de};
 
 use crate::config::chosen;
 use crate::config_runner::ConfigRunner;
+use crate::render_value;
 
 #[cfg(test)]
 mod tests;
@@ -25,6 +26,7 @@ struct Section {
     continuation_prompt: Option<Nullable<PromptSetting>>,
     right_prompt: Option<Nullable<PromptSetting>>,
     edit_mode: Option<Nullable<EditMode>>,
+    strings: Option<Nullable<StringDisplay>>,
 }
 
 /// A prompt, as written: a String, or a Function computing one.
@@ -100,6 +102,47 @@ impl TryFrom<String> for EditMode {
     }
 }
 
+/// How a String result is shown: quoted and escaped, or as its plain text.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Deserialize)]
+#[serde(try_from = "String")]
+pub(crate) enum StringDisplay {
+    #[default]
+    Quoted,
+    Plain,
+}
+
+impl StringDisplay {
+    /// Its name, as the section and `:strings` write it.
+    pub(crate) fn name(self) -> &'static str {
+        match self {
+            Self::Quoted => "quoted",
+            Self::Plain => "plain",
+        }
+    }
+
+    /// `value`, an input's result, as the frontend shows it: a String quoted or
+    /// plain, as this says, and anything else as [`render_value`] renders it.
+    pub(crate) fn render(self, value: &Value) -> String {
+        match (self, value) {
+            (Self::Plain, Value::String(text)) => text.as_str().to_owned(),
+            _ => render_value(value),
+        }
+    }
+}
+
+/// Fails for anything but the name of a way to show Strings.
+impl TryFrom<String> for StringDisplay {
+    type Error = String;
+
+    fn try_from(name: String) -> Result<Self, String> {
+        match name.as_str() {
+            "quoted" => Ok(Self::Quoted),
+            "plain" => Ok(Self::Plain),
+            _ => Err(format!(r#"expected "quoted" or "plain", got {name:?}"#)),
+        }
+    }
+}
+
 /// A prompt the section sets: as written, or computed by a function.
 enum Prompt {
     Text(String),
@@ -112,6 +155,7 @@ pub(crate) struct Settings {
     continuation_prompt: Option<Prompt>,
     right_prompt: Option<Prompt>,
     edit_mode: EditMode,
+    strings: StringDisplay,
     runner: ConfigRunner,
 }
 
@@ -160,6 +204,7 @@ impl Settings {
             continuation_prompt: None,
             right_prompt: None,
             edit_mode: EditMode::default(),
+            strings: StringDisplay::default(),
             runner: ConfigRunner::new(color),
         };
         let section: Section = match from_value(section) {
@@ -167,6 +212,7 @@ impl Settings {
             Err(error) => return (settings, vec![Problem::Invalid(error)]),
         };
         settings.edit_mode = chosen(section.edit_mode).unwrap_or_default();
+        settings.strings = chosen(section.strings).unwrap_or_default();
         let prompts = [
             chosen(section.prompt),
             chosen(section.continuation_prompt),
@@ -186,6 +232,11 @@ impl Settings {
     /// How lines are edited.
     pub(crate) fn edit_mode(&self) -> EditMode {
         self.edit_mode
+    }
+
+    /// How String results are shown.
+    pub(crate) fn strings(&self) -> StringDisplay {
+        self.strings
     }
 
     /// The prompts for the segment `context` describes, and the problems

@@ -164,8 +164,9 @@ const RESULTS: &str = "results";
 /// default.
 ///
 /// `:config reload` applies `results_kept` and the frontend's section again,
-/// but not `preload`. If the file sets nothing, for one of those problems,
-/// the settings stay as they were.
+/// but not `preload`; `:reset` applies all but the frontend's section.
+/// If the file sets nothing, for one of the problems above, the settings stay
+/// as they were.
 pub struct Repl {
     configuration: VmRuntimeConfiguration,
     importer: Arc<Importer>,

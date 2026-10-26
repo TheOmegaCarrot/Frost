@@ -73,10 +73,12 @@ pub trait Frontend {
     /// Take the settings in this frontend's section of the
     /// [config file](crate::Repl#config-file): the value exported under
     /// [`config_key`](Self::config_key), or `None` if nothing is, which asks
-    /// for the defaults. The REPL gives it each time it reads the config file
-    /// without error, or finds no file there. What the value means, and what to do
-    /// with a problem in it, is the frontend's to decide. An error ends the
-    /// session.
+    /// for the defaults.
+    /// The REPL gives it each time it reads the config file without error, or
+    /// finds no file there, as a session starts and at `:config reload`.
+    /// What the value means, and what to do with a problem in it, is the
+    /// frontend's to decide.
+    /// An error ends the session.
     ///
     /// By default, it is ignored.
     fn configure(&mut self, section: Option<Value>) -> io::Result<()> {
@@ -85,9 +87,9 @@ pub trait Frontend {
     }
 }
 
-/// `value` as the REPL's own frontends show an input's value: a String quoted
-/// and escaped, so that `"null"` is not mistaken for `null`, and anything else
-/// pretty-printed, as by [`Value::to_pretty_string`].
+/// `value` as the REPL's own frontends show an input's value by default: a
+/// String quoted and escaped, so that `"null"` is not mistaken for `null`, and
+/// anything else pretty-printed, as by [`Value::to_pretty_string`].
 pub fn render_value(value: &Value) -> String {
     match value {
         // Compact and pretty agree on a lone String.
