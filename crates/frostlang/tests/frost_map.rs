@@ -231,21 +231,20 @@ fn for_loop_borrows() {
 
 // -- Order --
 //
-// The iteration order is unspecified, but the same every time for a given Map.
+// A Map iterates in ascending key order.
 
 #[test]
-fn a_map_iterates_in_the_same_order_every_time() {
+fn a_map_iterates_in_key_order() {
+    // Sizes on both sides of the switch from the compact form.
     for size in [3, 30] {
         let map: FrostMap = (0..size)
             .rev()
             .map(|i| (str_key(&format!("k{i}")), Value::from(i)))
             .collect();
-        let first: Vec<_> = map.keys().collect();
-        let again: Vec<_> = map.keys().collect();
-        let shared = map.clone();
-        let through_clone: Vec<_> = shared.keys().collect();
-        assert_eq!(first, again, "size {size}");
-        assert_eq!(first, through_clone, "size {size}");
+        let keys: Vec<_> = map.keys().collect();
+        let mut sorted = keys.clone();
+        sorted.sort();
+        assert_eq!(keys, sorted, "size {size}: keys out of order");
     }
 }
 

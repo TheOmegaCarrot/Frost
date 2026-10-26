@@ -1,5 +1,5 @@
-//! `std.os`, from Frost source: environment variables, the process ID,
-//! sleeping, and running programs.
+//! `std.os`, from Frost source: environment variables, the process ID, the
+//! platform, sleeping, and running programs.
 //!
 //! Each case runs with only `std.os` installed, bound as `os`. The cases that
 //! run programs use POSIX tools, so they run only on Unix.
@@ -18,10 +18,10 @@ library_assertions!(Library::module(stdlib::os, "os"));
 // --- The module ---
 
 #[test]
-fn the_module_holds_its_functions_and_streams() {
+fn the_module_holds_its_functions_and_values() {
     assert_values(&[(
         "sorted(keys(os))",
-        "['getenv', 'pid', 'run', 'sleep', 'stderr', 'stdin', 'stdout']",
+        "['arch', 'getenv', 'pid', 'platform', 'run', 'sleep', 'stderr', 'stdin', 'stdout']",
     )]);
 }
 
@@ -108,6 +108,23 @@ fn pid_is_this_process() {
         Value::Int(i64::from(std::process::id()))
     );
     assert_arity("pid", "0", &[1]);
+}
+
+// --- platform and arch ---
+
+#[test]
+fn platform_and_arch_name_the_build_target() {
+    // Null where the target names no operating system.
+    let platform = match std::env::consts::OS {
+        "" => Value::Null,
+        os => Value::from(os),
+    };
+    assert_eq!(script("os.platform").run(), platform, "os.platform");
+    assert_eq!(
+        script("os.arch").run(),
+        Value::from(std::env::consts::ARCH),
+        "os.arch"
+    );
 }
 
 // --- sleep ---

@@ -1,5 +1,5 @@
-//! `std.os`: the process's environment variables, ID, and standard streams,
-//! pausing, and running other programs.
+//! `std.os`: the process's environment variables, ID, platform, and standard
+//! streams, pausing, and running other programs.
 
 use std::collections::BTreeMap;
 use std::io::{self, BufReader, Write};
@@ -13,6 +13,7 @@ use crate::stdlib::stream::{self, Kind};
 use crate::{FrostError, FrostString, NativeCtx, StdlibModule, Value, frost_fn};
 
 /// The `std.os` module: reading environment variables, the process ID,
+/// the operating system and architecture it runs on,
 /// the process's standard input, output, and error streams, sleeping, and
 /// running programs to completion.
 ///
@@ -31,7 +32,18 @@ pub fn os() -> StdlibModule {
         )
         .value("stdout", stream::writer(io::stdout(), Kind::Stream))
         .value("stderr", stream::writer(io::stderr(), Kind::Stream))
+        .value("platform", platform())
+        .value("arch", Value::from(std::env::consts::ARCH))
         .build()
+}
+
+/// The operating system's name,
+/// or Null on a target for which Rust names none, such as `wasm32-unknown-unknown`.
+fn platform() -> Value {
+    match std::env::consts::OS {
+        "" => Value::Null,
+        os => Value::from(os),
+    }
 }
 
 #[frost_fn]
