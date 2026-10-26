@@ -53,6 +53,10 @@ impl Repl {
                 takes_no_argument(builtin, argument)?;
                 Ok(self.list_bindings())
             }
+            Builtin::Globals => {
+                takes_no_argument(builtin, argument)?;
+                Ok(Reply::Text(list_globals()))
+            }
             Builtin::Undef => self.undefine(builtin, argument),
             Builtin::Disassemble => {
                 let source = needs_argument(builtin, argument, "source to disassemble")?;
@@ -157,6 +161,13 @@ impl Repl {
         }
         Ok(Reply::Nothing)
     }
+}
+
+/// Each global's name, in name order, whether or not a binding shadows it.
+fn list_globals() -> String {
+    let mut names = bytecode::GLOBAL_NAMES.to_vec();
+    names.sort_unstable();
+    names.join("\n")
 }
 
 fn takes_no_argument(builtin: Builtin, argument: &str) -> Result<(), ReplError> {

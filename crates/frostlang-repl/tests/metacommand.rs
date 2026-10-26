@@ -263,10 +263,12 @@ fn a_frontend_may_not_replace_a_built_in_metacommand() {
         "help",
         "quit",
         "bindings",
+        "globals",
         "undef",
         "disassemble",
         "ast",
         "optimize",
+        "config",
     ] {
         let specs = vec![MetacommandSpec::new(name, "Mine now")];
         assert_eq!(

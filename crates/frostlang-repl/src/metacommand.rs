@@ -247,6 +247,7 @@ pub(crate) enum Builtin {
     Help,
     Quit,
     Bindings,
+    Globals,
     Undef,
     Disassemble,
     Ast,
@@ -256,10 +257,11 @@ pub(crate) enum Builtin {
 
 impl Builtin {
     /// Every built-in, in the order `:help` lists them.
-    const ALL: [Self; 8] = [
+    const ALL: [Self; 9] = [
         Self::Help,
         Self::Quit,
         Self::Bindings,
+        Self::Globals,
         Self::Undef,
         Self::Disassemble,
         Self::Ast,
@@ -272,6 +274,7 @@ impl Builtin {
             Self::Help => ("", "List the metacommands"),
             Self::Quit => ("", "End the session"),
             Self::Bindings => ("", "List the names bound, but not globals"),
+            Self::Globals => ("", "List the globals"),
             Self::Undef => ("<name>...", "Remove bindings"),
             Self::Disassemble => (
                 "<source>",
@@ -292,6 +295,7 @@ impl Builtin {
             Self::Help => "help",
             Self::Quit => "quit",
             Self::Bindings => "bindings",
+            Self::Globals => "globals",
             Self::Undef => "undef",
             Self::Disassemble => "disassemble",
             Self::Ast => "ast",

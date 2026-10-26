@@ -3,6 +3,7 @@
 use std::num::NonZeroU64;
 use std::sync::{Arc, Mutex};
 
+use frostlang::bytecode::GLOBAL_NAMES;
 use frostlang::compile::{Optimization, OptimizationOptions, ParseLimits};
 use frostlang::{Value, VmRuntimeConfiguration};
 use frostlang_repl::{Frontend, MetacommandError, Repl, ReplError, ScriptedFrontend, Transcript};
@@ -79,7 +80,7 @@ fn a_metacommand_keeps_no_result() {
 
 #[test]
 fn a_metacommand_that_takes_no_argument_refuses_one() {
-    for name in ["help", "quit", "bindings"] {
+    for name in ["help", "quit", "bindings", "globals"] {
         assert_fails(
             &[&format!(":{name} please")],
             invalid(name, "takes no argument"),
@@ -95,6 +96,7 @@ fn help_lists_each_built_in_with_its_arguments_and_summary() {
     let expected = r":help                       List the metacommands
 :quit                       End the session
 :bindings                   List the names bound, but not globals
+:globals                    List the globals
 :undef <name>...            Remove bindings
 :disassemble <source>       Show the bytecode source compiles to, without running it
 :ast <source>               Show the syntax tree source parses to
@@ -163,6 +165,54 @@ fn bindings_leaves_out_globals() {
         &["def x = len([1])", ":bindings"],
     );
     assert_eq!(only_text(&transcript), "x  Int");
+}
+
+// --- :globals ---
+
+#[test]
+fn globals_lists_every_global_in_name_order() {
+    let listed = only_text(&session(&[":globals"]));
+    let listed: Vec<&str> = listed.lines().collect();
+    assert!(
+        listed.windows(2).all(|pair| pair[0] < pair[1]),
+        "not in name order: {listed:?}"
+    );
+    let mut every_global = GLOBAL_NAMES.to_vec();
+    every_global.sort_unstable();
+    assert_eq!(listed, every_global, "not exactly the globals");
+    for name in ["len", "map", "print", "import"] {
+        assert!(listed.contains(&name), "`{name}` is a global: {listed:?}");
+    }
+}
+
+#[test]
+fn globals_lists_a_global_even_when_a_binding_shadows_it() {
+    let transcript = session(&["def len = 1", ":globals", "len"]);
+    let outcomes = transcript.outcomes();
+    assert!(
+        matches!(outcomes.as_slice(), [Ok(Value::Null), Ok(Value::Int(1))]),
+        "the binding shadows `len`: {outcomes:?}"
+    );
+    let listed = only_text(&transcript);
+    assert!(
+        listed.lines().any(|name| name == "len"),
+        "`len` is still a global: {listed:?}"
+    );
+}
+
+#[test]
+fn globals_leaves_out_bindings() {
+    let repl = Repl::new()
+        .with_binding("seeded", Value::Int(1))
+        .expect("`seeded` is a valid name");
+    let transcript = session_on(repl, &["def mine = 1", ":globals"]);
+    let listed = only_text(&transcript);
+    assert!(
+        !listed
+            .lines()
+            .any(|name| ["seeded", "mine", "results"].contains(&name)),
+        "`:globals` lists only globals, not bindings: {listed:?}"
+    );
 }
 
 // --- :undef ---

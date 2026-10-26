@@ -116,10 +116,10 @@ const RESULTS: &str = "results";
 /// frontend, not Frost source. Whatever follows the name is its
 /// [argument](Invocation::argument).
 ///
-/// The REPL's own are `:help`, `:quit`, `:bindings`, `:undef`,
-/// `:disassemble`, `:ast`, `:optimize`, and `:config`. `:help` describes them, with any its frontend
-/// adds (see [`Frontend::metacommands`]). A failed metacommand is shown as a
-/// failed input is, and the session carries on.
+/// `:help` lists the REPL's own metacommands, with any its frontend adds
+/// (see [`Frontend::metacommands`]).
+/// A failed metacommand is shown as a failed input is, and the session
+/// carries on.
 ///
 /// # Config file
 ///
