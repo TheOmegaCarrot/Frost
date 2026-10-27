@@ -1,0 +1,104 @@
+# Snake: steer with the arrow keys, eat to grow, and keep off the walls and
+# yourself. `p` pauses.
+
+def draw_ops = import('lib.draw')
+def random = import('std.random')
+
+# The field, in cells. Each cell is drawn two characters wide, to look square.
+def cols = 24
+def rows = 16
+
+# Updates between steps at the start, and at the fastest.
+def slowest = 5
+def fastest = 2
+
+def moves = {up: [0, -1], down: [0, 1], left: [-1, 0], right: [1, 0]}
+def opposite = {up: 'down', down: 'up', left: 'right', right: 'left'}
+
+export def meta = {title: 'Snake', width: cols * 2 + 2, height: rows + 3, tick_rate: 30}
+
+defn place_food(seed, snake) -> {
+    def rng = random.seed(seed)
+    (
+        range(cols * rows)
+        @ map(fn i -> [i % cols, i / cols])
+        @ reject(fn cell -> contains(snake, cell))
+        @ rng.choice()
+    )
+}
+
+defn fresh(seed) -> {
+    def snake = [[6, 8], [5, 8], [4, 8]]
+    {
+        snake: snake,
+        heading: 'right',
+        dir: 'right',
+        food: place_food(seed, snake),
+        score: 0,
+        speed: slowest,
+        wait: slowest,
+        paused: false,
+        over: false,
+    }
+}
+
+export defn init(env) -> fresh(env.seed)
+
+defn steer(state, key) -> match key {
+    'p' => state + {paused: not state.paused},
+    'up' | 'down' | 'left' | 'right' if: key != opposite[state.heading] => state + {dir: key},
+    _ => state,
+}
+
+defn step(state, seed) -> {
+    def [dx, dy] = moves[state.dir]
+    def [hx, hy] = state.snake[0]
+    def head = [hx + dx, hy + dy]
+    def eating = head == state.food
+    def body = if eating: state.snake else: drop_tail(state.snake, 1)
+    def [x, y] = head
+    def crashed = x < 0 or x >= cols or y < 0 or y >= rows or contains(body, head)
+    if crashed: state + {over: true}
+    elif eating: do {
+        def snake = [head] + body
+        def speed = import('std.math').max(fastest, slowest - (state.score + 1) / 5)
+        state + {
+            snake: snake,
+            heading: state.dir,
+            food: place_food(seed, snake),
+            score: state.score + 1,
+            speed: speed,
+        }
+    }
+    else: state + {snake: [head] + body, heading: state.dir}
+}
+
+export defn update(state, input) -> {
+    def steered = reduce(input.keys, state, steer)
+    if steered.over: if contains(input.keys, 'space'): fresh(input.seed) else: steered
+    elif steered.paused: steered
+    elif steered.wait > 1: steered + {wait: steered.wait - 1}
+    else: step(steered + {wait: steered.speed}, input.seed)
+}
+
+# The draw ops for `glyph` in the field cell `cell`.
+defn at(cell, glyph, style) -> {
+    def [x, y] = cell
+    draw_ops.text(1 + x * 2, 2 + y, glyph, style)
+}
+
+export defn draw(state) -> {
+    def head = at(state.snake[0], '██', {fg: 'green'})
+    def body = drop(state.snake, 1) @ flat_map(fn cell -> at(cell, '▓▓', {fg: 'dark_green'}))
+    def banner = if state.over: draw_ops.centered(meta.width, rows / 2 + 1, ' GAME OVER: space to play again ', {fg: 'black', bg: 'red'})
+        elif state.paused: draw_ops.centered(meta.width, rows / 2 + 1, ' PAUSED ', {fg: 'black', bg: 'yellow'})
+        else: []
+    (
+        draw_ops.text(0, 0, $'score ${state.score}', {fg: 'white'})
+        + draw_ops.frame(0, 1, cols * 2 + 2, rows + 2, {fg: 'dark_grey'})
+        + at(state.food, '<>', {fg: 'red'})
+        + body
+        + head
+        + banner
+    )
+}

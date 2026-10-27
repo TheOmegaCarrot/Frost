@@ -1,0 +1,32 @@
+[package]
+name = "frostlang-canary-arcade"
+version = "0.0.1"
+edition.workspace = true
+rust-version.workspace = true
+publish = false
+# See `[[test]]`.
+autotests = false
+
+[[bin]]
+name = "frost-arcade"
+path = "src/main.rs"
+
+[dependencies]
+# The terminal: raw mode, the alternate screen, key events, and drawing.
+crossterm = "0.29"
+frostlang.workspace = true
+# Watching the games directory for edits.
+notify = "8.2"
+# Reading what games hand the host, through the serde bridge.
+serde = { version = "1", features = ["derive"] }
+thiserror = "2"
+
+# One binary for every integration test, rather than one per file, to save the
+# build time and disk of linking each separately. Each file in `tests/` is a
+# module of `tests/main.rs`, which must declare it.
+[[test]]
+name = "integration"
+path = "tests/main.rs"
+
+[lints]
+workspace = true

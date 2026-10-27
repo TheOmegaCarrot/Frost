@@ -1,0 +1,21 @@
+# Drawing helpers shared by the games. Each returns an Array of draw ops, so
+# a game's `draw` builds its picture by concatenating them. `style` is a Map
+# that may give `fg` and `bg`; pass `{}` for neither.
+
+# `words` from `x`, `y` rightward.
+export defn text(x, y, words, style) -> [{x: x, y: y, text: words} + style]
+
+# The `w` by `h` rectangle at `x`, `y`, every cell `glyph`.
+export defn fill(x, y, w, h, glyph, style) -> [{x: x, y: y, w: w, h: h, fill: glyph} + style]
+
+# A box-drawn frame whose outer edge is the `w` by `h` rectangle at `x`, `y`.
+export defn frame(x, y, w, h, style) -> {
+    def across = tile('─', w - 2)
+    def sides = range(y + 1, y + h - 1) @ flat_map(fn row -> {
+        text(x, row, '│', style) + text(x + w - 1, row, '│', style)
+    })
+    text(x, y, $'┌${across}┐', style) + text(x, y + h - 1, $'└${across}┘', style) + sides
+}
+
+# `words` centered on row `y` of an area `width` cells wide.
+export defn centered(width, y, words, style) -> text((width - len(words)) / 2, y, words, style)

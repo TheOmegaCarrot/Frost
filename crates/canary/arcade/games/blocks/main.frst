@@ -1,0 +1,204 @@
+# Blocks: falling pieces fill rows, and full rows clear. Left and right move,
+# up or `x` rotates clockwise, `z` anticlockwise, down drops a row, space drops
+# all the way, and `p` pauses.
+
+def draw_ops = import('lib.draw')
+def random = import('std.random')
+def math = import('std.math')
+
+# The well, in cells. Each cell is drawn two characters wide, to look square.
+def cols = 10
+def rows = 20
+
+# Where the side panel starts.
+def panel = cols * 2 + 4
+
+export def meta = {title: 'Blocks', width: panel + 12, height: rows + 2, tick_rate: 30}
+
+# Each piece's cells at rest, around the cell it turns about.
+def pieces = {
+    i: {color: 'cyan', cells: [[-1, 0], [0, 0], [1, 0], [2, 0]]},
+    o: {color: 'yellow', cells: [[0, 0], [1, 0], [0, 1], [1, 1]]},
+    t: {color: 'magenta', cells: [[-1, 0], [0, 0], [1, 0], [0, -1]]},
+    s: {color: 'green', cells: [[-1, 0], [0, 0], [0, -1], [1, -1]]},
+    z: {color: 'red', cells: [[-1, -1], [0, -1], [0, 0], [1, 0]]},
+    j: {color: 'blue', cells: [[-1, -1], [-1, 0], [0, 0], [1, 0]]},
+    l: {color: 'dark_yellow', cells: [[-1, 0], [0, 0], [1, 0], [1, -1]]},
+}
+
+# Points for clearing 0 to 4 rows at once, before the level multiplier.
+def points = [0, 100, 300, 500, 800]
+
+# A cell turned a quarter clockwise about the origin.
+defn turn(cell) -> {
+    def [x, y] = cell
+    [0 - y, x]
+}
+
+# The well cells `piece` covers.
+defn cells(piece) -> {
+    def shape = pieces[piece.kind].cells
+    def turned = if piece.kind == 'o': shape
+        else: reduce(range(piece.turns % 4), shape, fn acc, _ -> map(acc, turn))
+    turned @ map(fn cell -> {
+        def [x, y] = cell
+        [x + piece.x, y + piece.y]
+    })
+}
+
+defn empty_well() -> repeat(nulls(cols), rows)
+
+# Whether `cell` is inside the well and free. Cells above the top are free.
+defn free(well, cell) -> {
+    def [x, y] = cell
+    x >= 0 and x < cols and y < rows and (y < 0 or is_null(well[y][x]))
+}
+
+defn fits(well, piece) -> all(cells(piece), fn cell -> free(well, cell))
+
+# A shuffled bag of one of each piece.
+defn bag(seed) -> random.seed(seed).shuffle(keys(pieces))
+
+# The next piece from the bag, refilling the bag when it runs out.
+defn draw_piece(state) -> {
+    def bag_now = if len(state.bag) == 0: bag(state.seed) else: state.bag
+    def piece = {kind: bag_now[0], turns: 0, x: cols / 2 - 1, y: 1}
+    state + {piece: state.next, next: piece, bag: drop(bag_now, 1)}
+}
+
+# Ticks between falls at `level`.
+defn gravity(level) -> math.max(2, 30 - level * 3)
+
+# A new game. Like every state, it holds the seed of the current update.
+defn fresh(seed) -> {
+    def first = bag(seed)
+    def start = {
+        seed: seed,
+        well: empty_well(),
+        bag: drop(first, 1),
+        piece: null,
+        next: {kind: first[0], turns: 0, x: cols / 2 - 1, y: 1},
+        score: 0,
+        lines: 0,
+        level: 0,
+        wait: gravity(0),
+        paused: false,
+        over: false,
+    }
+    draw_piece(start)
+}
+
+export defn init(env) -> fresh(env.seed)
+
+# `state` with its piece moved by `change`, if it fits there.
+defn try_move(state, change) -> {
+    def moved = state.piece + change(state.piece)
+    if fits(state.well, moved): state + {piece: moved} else: state
+}
+
+# `state` with its piece turned `by` quarters clockwise, nudged sideways if it
+# must be to fit.
+defn try_turn(state, by) -> {
+    def turned = state.piece + {turns: state.piece.turns + by}
+    def placed = [0, -1, 1, -2, 2]
+        @ map(fn dx -> turned + {x: turned.x + dx})
+        @ find(fn piece -> fits(state.well, piece))
+    if placed: state + {piece: placed} else: state
+}
+
+# The well with every full row cleared, and how many there were.
+defn clear_rows(well) -> {
+    def kept = reject(well, fn row -> all(row, is_nonnull))
+    def cleared = rows - len(kept)
+    {well: repeat(nulls(cols), cleared) + kept, cleared: cleared}
+}
+
+# Fix the piece in the well, clear rows, and bring on the next piece.
+defn lock(state) -> {
+    def covered = cells(state.piece)
+    def color = pieces[state.piece.kind].color
+    def filled = range(rows) @ map(fn y -> range(cols) @ map(fn x -> {
+        if contains(covered, [x, y]): color else: state.well[y][x]
+    }))
+    def {well, cleared} = clear_rows(filled)
+    def lines = state.lines + cleared
+    def level = lines / 10
+    def next = draw_piece(state + {
+        well: well,
+        lines: lines,
+        level: level,
+        score: state.score + points[cleared] * (state.level + 1),
+    })
+    if fits(next.well, next.piece): next else: next + {over: true}
+}
+
+# The piece one row lower, or locked if it cannot fall.
+defn fall(state) -> {
+    def lower = state.piece + {y: state.piece.y + 1}
+    if fits(state.well, lower): state + {piece: lower} else: lock(state)
+}
+
+# The lowest the piece could fall.
+defn landing(well, piece) -> {
+    def lower = piece + {y: piece.y + 1}
+    if fits(well, lower): landing(well, lower) else: piece
+}
+
+defn press(state, key) -> if state.over or (state.paused and key != 'p'): state
+    else: match key {
+        'p' => state + {paused: not state.paused},
+        'left' => try_move(state, fn piece -> {x: piece.x - 1}),
+        'right' => try_move(state, fn piece -> {x: piece.x + 1}),
+        'up' | 'x' => try_turn(state, 1),
+        'z' => try_turn(state, 3),
+        'down' => fall(state) + {wait: gravity(state.level)},
+        'space' => lock(state + {piece: landing(state.well, state.piece)}),
+        _ => state,
+    }
+
+export defn update(state, input) -> {
+    def pressed = reduce(input.keys, state + {seed: input.seed}, press)
+    if pressed.over: if contains(input.keys, 'enter'): fresh(input.seed) else: pressed
+    elif pressed.paused: pressed
+    elif pressed.wait > 1: pressed + {wait: pressed.wait - 1}
+    else: fall(pressed) + {wait: gravity(pressed.level)}
+}
+
+# The draw ops for the well cell `cell` at the panel offset `dx`, `dy`.
+defn block(dx, dy, cell, glyph, color) -> {
+    def [x, y] = cell
+    if y < 0: [] else: draw_ops.text(dx + 1 + x * 2, dy + 1 + y, glyph, {fg: color})
+}
+
+export defn draw(state) -> {
+    def settled = range(rows) @ flat_map(fn y -> range(cols) @ flat_map(fn x -> {
+        def color = state.well[y][x]
+        if color: block(0, 0, [x, y], '██', color) else: []
+    }))
+    def color = pieces[state.piece.kind].color
+    def ghost = cells(landing(state.well, state.piece))
+        @ flat_map(fn cell -> block(0, 0, cell, '░░', 'dark_grey'))
+    def active = cells(state.piece) @ flat_map(fn cell -> block(0, 0, cell, '██', color))
+    def preview = cells(state.next + {x: 1, y: 1})
+        @ flat_map(fn cell -> block(panel, 5, cell, '██', pieces[state.next.kind].color))
+    def banner = if state.over: draw_ops.text(1, rows / 2, ' GAME OVER: enter ', {fg: 'black', bg: 'red'})
+        elif state.paused: draw_ops.text(6, rows / 2, ' PAUSED ', {fg: 'black', bg: 'yellow'})
+        else: []
+    def label = {fg: 'dark_grey'}
+    def value = {fg: 'white'}
+    (
+        draw_ops.frame(0, 0, cols * 2 + 2, rows + 2, label)
+        + settled
+        + ghost
+        + active
+        + draw_ops.text(panel, 1, 'score', label)
+        + draw_ops.text(panel, 2, to_string(state.score), value)
+        + draw_ops.text(panel, 4, 'next', label)
+        + preview
+        + draw_ops.text(panel, 10, 'lines', label)
+        + draw_ops.text(panel, 11, to_string(state.lines), value)
+        + draw_ops.text(panel, 13, 'level', label)
+        + draw_ops.text(panel, 14, to_string(state.level), value)
+        + banner
+    )
+}

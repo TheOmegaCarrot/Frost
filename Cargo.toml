@@ -16,6 +16,8 @@ members = [
     # Runs `frostlang-formats`'s tests with a `serde_json` feature a host may
     # enable; a plain `cargo test` skips them. Unpublished.
     "crates/ext/frostlang-formats/arbitrary-precision",
+    # Small applications trialling the embedding API. Unpublished.
+    "crates/canary/*",
 ]
 resolver = "3"
 
