@@ -1,13 +1,20 @@
 //! Slicing, grouping, sorting, searching, and transforming arrays and maps.
 
 use std::collections::{BTreeMap, BTreeSet};
+use std::sync::Arc;
 
 use crate::bytecode::Bytecode;
+use crate::core::path::{PathSegment, write_path};
+use crate::core::value_map;
 use crate::native::{Function, Optional, Rest, Structured};
 use crate::{
     Arity, FrostArray, FrostBytes, FrostError, FrostMap, FrostResult, FrostString, MapKey,
     NativeCtx, Value, ValueMap, frost_closure, frost_fn,
 };
+
+// White-box tests for editing in place.
+#[cfg(test)]
+mod in_place_tests;
 
 /// `n`, the argument at 1-based `position` of `function`, whose parameter is
 /// named `name`, as a count of at least `minimum`, which must not be negative.
@@ -145,6 +152,80 @@ pub(super) fn dissoc(#[frost(unnamed)] map: FrostMap, keys: Rest<MapKey>) -> Val
         map.remove(key);
     }
     map.into()
+}
+
+/// One level of a deep merge: the left Map so far, and the right Map's entries
+/// still to merge into it.
+struct Merge {
+    left: FrostMap,
+    right: value_map::IntoIter,
+}
+
+impl Merge {
+    fn new(left: FrostMap, right: FrostMap) -> Self {
+        Merge {
+            left,
+            right: right.into_map().into_iter(),
+        }
+    }
+
+    /// The Map the left Map holds at `key`, taken out, or None if it holds
+    /// anything else there, which stays where it is.
+    fn take_map(&mut self, key: &MapKey) -> Option<FrostMap> {
+        let place = Arc::make_mut(&mut self.left.inner).get_mut(key)?;
+        match place.take().try_into_map() {
+            Ok(map) => Some(map),
+            Err(other) => {
+                *place = other;
+                None
+            }
+        }
+    }
+
+    /// Puts `value` in the left Map at `key`.
+    fn insert(&mut self, key: MapKey, value: Value) {
+        Arc::make_mut(&mut self.left.inner).insert(key, value);
+    }
+}
+
+/// The merge under way at the deepest level.
+fn innermost<'a>(outermost: &'a mut Merge, nested: &'a mut [(MapKey, Merge)]) -> &'a mut Merge {
+    nested.last_mut().map_or(outermost, |(_, merge)| merge)
+}
+
+/// `left + right`, except that where both hold a Map at the same key, those
+/// merge by the same rule. A uniquely owned `left` is edited in place at every
+/// level it merges.
+fn merge_deeply(left: FrostMap, right: FrostMap) -> FrostMap {
+    // The merges under way wait on the heap rather than in native frames, so
+    // Maps nested to any depth merge within the stack. Each nested merge goes
+    // back into the one before it, at its key.
+    let mut outermost = Merge::new(left, right);
+    let mut nested: Vec<(MapKey, Merge)> = Vec::new();
+    loop {
+        let merge = innermost(&mut outermost, &mut nested);
+        match merge.right.next() {
+            Some((key, Value::Map(right))) => match merge.take_map(&key) {
+                Some(left) => nested.push((key, Merge::new(left, right))),
+                None => merge.insert(key, Value::Map(right)),
+            },
+            Some((key, right)) => merge.insert(key, right),
+            None => {
+                let Some((key, done)) = nested.pop() else {
+                    return outermost.left;
+                };
+                innermost(&mut outermost, &mut nested).insert(key, done.left.into());
+            }
+        }
+    }
+}
+
+#[frost_fn]
+pub(super) fn deep_merge(
+    #[frost(unnamed)] left: FrostMap,
+    #[frost(unnamed)] right: FrostMap,
+) -> Value {
+    merge_deeply(left, right).into()
 }
 
 // --- Measuring and building ---
@@ -333,6 +414,167 @@ pub(super) fn find_index(
         }
     }
     Ok(Value::Null)
+}
+
+// --- Editing along a path ---
+
+/// `keys` as a path, written as Frost indexes along it. An Int key writes as
+/// `[n]`, whether it indexed a Map or an Array.
+fn path_text(keys: &[MapKey]) -> String {
+    let segments: Vec<PathSegment> = keys.iter().cloned().map(PathSegment::Key).collect();
+    let mut text = String::new();
+    write_path(&mut text, &segments).expect("writing to a String cannot fail");
+    text
+}
+
+/// `` at `{path}` ``, naming where `path` leads from the structure a path edit
+/// began from, or nothing for an empty `path`.
+fn at_path(path: &[MapKey]) -> String {
+    if path.is_empty() {
+        String::new()
+    } else {
+        format!(" at `{}`", path_text(path))
+    }
+}
+
+/// The error for a path edit by `function` finding no value in `map` at the end
+/// of `to_child`, suggesting the key a mistyped String most likely meant.
+fn no_value_in_map(function: &str, map: &FrostMap, to_child: &[MapKey]) -> FrostError {
+    let (key, to_map) = to_child
+        .split_last()
+        .expect("a path to a child has a last step");
+    let missing = format!(
+        "Function {function} found no value at `{}`",
+        path_text(to_child)
+    );
+    FrostError::from_string(match map.closest_key(key) {
+        Some(similar) => {
+            let similar = [to_map, &[MapKey::from(similar)]].concat();
+            format!("{missing}; did you mean `{}`?", path_text(&similar))
+        }
+        None => missing,
+    })
+}
+
+/// A structure a path edit has taken a child out of, waiting for the edited
+/// child to go back in.
+enum Parent {
+    /// A Map, its child taken out at the key for its step in the path.
+    Map(FrostMap),
+    /// An Array, its child taken out at this position.
+    Array(FrostArray, usize),
+}
+
+impl Parent {
+    /// `structure` with its child at the last step of `to_child` taken out, for
+    /// a path edit by `function`. A Map lacking that key gives Null when the step
+    /// is the path's last, as the place to add it.
+    fn take_child(
+        function: &str,
+        structure: Value,
+        to_child: &[MapKey],
+        is_last: bool,
+    ) -> Result<(Parent, Value), FrostError> {
+        let (key, to_structure) = to_child
+            .split_last()
+            .expect("a path to a child has a last step");
+        match structure {
+            Value::Map(mut map) => {
+                let child = match Arc::make_mut(&mut map.inner).get_mut(key) {
+                    Some(child) => child.take(),
+                    None if is_last => Value::Null,
+                    None => return Err(no_value_in_map(function, &map, to_child)),
+                };
+                Ok((Parent::Map(map), child))
+            }
+            Value::Array(mut array) => {
+                let MapKey::Int(index) = *key else {
+                    return Err(FrostError::from_string(format!(
+                        "Function {function} cannot index Array{} by {}",
+                        at_path(to_structure),
+                        Value::from(key.clone()).type_name()
+                    )));
+                };
+                let Some(i) = array.resolve_index(index) else {
+                    return Err(FrostError::from_string(format!(
+                        "Function {function} found no value at `{}` in an Array of length {}",
+                        path_text(to_child),
+                        array.len()
+                    )));
+                };
+                let child = Arc::make_mut(&mut array.inner)[i].take();
+                Ok((Parent::Array(array, i), child))
+            }
+            other => Err(FrostError::from_string(format!(
+                "Function {function} cannot index {}{}",
+                other.type_name(),
+                at_path(to_structure)
+            ))),
+        }
+    }
+
+    /// The parent with `child` back in its place, at `key` for a Map.
+    fn put_back(self, key: &MapKey, child: Value) -> Value {
+        match self {
+            Parent::Map(mut map) => {
+                Arc::make_mut(&mut map.inner).insert(key.clone(), child);
+                map.into()
+            }
+            Parent::Array(mut array, i) => {
+                Arc::make_mut(&mut array.inner)[i] = child;
+                array.into()
+            }
+        }
+    }
+}
+
+/// `structure` with the value at the path `keys` replaced by `edit` of it.
+/// `edit` receives Null for a Map key the last step adds, and is called only
+/// once the whole path is known to lead somewhere. Errors name `function`.
+fn edit_path(
+    function: &str,
+    structure: Value,
+    keys: &[MapKey],
+    edit: impl FnOnce(Value) -> FrostResult,
+) -> FrostResult {
+    // Walking down, each step takes its child out rather than cloning it, so a
+    // uniquely owned structure stays uniquely owned at every level and is edited
+    // in place. The parents wait on the heap rather than in native frames, so a
+    // path of any length fits the stack.
+    let mut parents = Vec::with_capacity(keys.len());
+    let mut current = structure;
+    for depth in 0..keys.len() {
+        let is_last = depth + 1 == keys.len();
+        let (parent, child) = Parent::take_child(function, current, &keys[..=depth], is_last)?;
+        parents.push(parent);
+        current = child;
+    }
+    let mut edited = edit(current)?;
+    for (parent, key) in parents.into_iter().zip(keys).rev() {
+        edited = parent.put_back(key, edited);
+    }
+    Ok(edited)
+}
+
+#[frost_fn]
+pub(super) fn dig_set(
+    #[frost(unnamed)] structure: Value,
+    #[frost(unnamed)] value: Value,
+    keys: Rest<MapKey>,
+) -> FrostResult {
+    edit_path("dig_set", structure, &keys.0, |_| Ok(value))
+}
+
+#[frost_fn]
+pub(super) fn dig_update(
+    #[frost(ctx)] ctx: &mut NativeCtx<'_>,
+    #[frost(unnamed)] structure: Value,
+    #[frost(unnamed)] function: Function,
+    keys: Rest<MapKey>,
+) -> FrostResult {
+    edit_path("dig_update", structure, &keys.0, |found| {
+        ctx.invoke(&function, [found])
+    })
 }
 
 // --- Slicing ---

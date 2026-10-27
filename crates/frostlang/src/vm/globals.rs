@@ -149,6 +149,8 @@ define_globals! {
     "has"                   [Pure]   => has_frost().build(),
     "index"                 [Pure]   => index_global(),
     "dig"                   [Pure]   => dig_global(),
+    "dig_set"               [Pure]   => dig_set_frost().build(),
+    "dig_update"            [Pure]   => dig_update_frost().build(),
     "slice"                 [Pure]   => slice_frost().build(),
     "stride"                [Pure]   => stride_frost().build(),
     "take"                  [Pure]   => take_global(),
@@ -194,6 +196,7 @@ define_globals! {
     "to_entries"            [Pure]   => to_entries_frost().build(),
     "from_entries"          [Pure]   => from_entries_frost().build(),
     "dissoc"                [Pure]   => dissoc_frost().build(),
+    "deep_merge"            [Pure]   => deep_merge_frost().build(),
     "each"                  [Pure]   => each_frost().build(),
 
     // --- Output ---

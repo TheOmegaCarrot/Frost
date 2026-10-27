@@ -68,10 +68,14 @@ impl FrostMap {
         ValueMap::new().into()
     }
 
-    /// The String key most like `name`, if one is close enough to be what a
-    /// mistyped `name` meant: the fewest single-character edits away, a swap of
-    /// neighbouring characters counting as one.
-    pub(crate) fn closest_string_key(&self, name: &str) -> Option<&str> {
+    /// The String key most like `key`, if `key` is a String and one is close
+    /// enough to be what a mistyped `key` meant: the fewest single-character
+    /// edits away, a swap of neighbouring characters counting as one.
+    pub(crate) fn closest_key(&self, key: &MapKey) -> Option<&str> {
+        let MapKey::String(name) = key else {
+            return None;
+        };
+        let name = &**name;
         let length = name.chars().count();
         // As rustc suggests names: within a third of the name's length, at
         // least one edit.

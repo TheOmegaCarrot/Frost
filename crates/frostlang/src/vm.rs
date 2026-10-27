@@ -1586,10 +1586,7 @@ impl Vm {
 /// Each key renders as `to_string` renders it inside a collection,
 /// so keys of different types that print alike stay distinct.
 fn missing_key(map: &FrostMap, key: &MapKey) -> FrostError {
-    let similar = match key {
-        MapKey::String(name) => map.closest_string_key(name),
-        _ => None,
-    };
+    let similar = map.closest_key(key);
     let key = Value::from(key.clone()).to_debug_string();
     FrostError::from_string(match similar {
         Some(similar) => {

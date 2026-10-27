@@ -7,10 +7,11 @@
 //! over literals is checked both folded and at run time.
 
 use crate::script;
+use crate::unshared::unshared;
 
 use frostlang::{FrostOpaque, Value};
 use script::assertions::{Library, library_assertions};
-use script::{Script, raises};
+use script::{Script, raises, run};
 
 library_assertions!(Library::GLOBALS);
 
@@ -272,6 +273,79 @@ fn dissoc_checks_its_arguments() {
         ],
     );
     assert_arity("dissoc", "at least 1", &[0]);
+}
+
+// --- deep_merge ---
+
+#[test]
+fn deep_merge_merges_maps_at_every_level() {
+    assert_values(&[
+        (
+            "deep_merge({a: {x: 1, y: 2}}, {a: {y: 3, z: 4}})",
+            "{a: {x: 1, y: 3, z: 4}}",
+        ),
+        (
+            "deep_merge({a: {b: {c: 1, d: 2}}, e: 5}, {a: {b: {d: 3}}, f: 6})",
+            "{a: {b: {c: 1, d: 3}}, e: 5, f: 6}",
+        ),
+        ("deep_merge({a: {x: 1}}, {a: {}})", "{a: {x: 1}}"),
+        ("deep_merge({a: {}}, {a: {x: 1}})", "{a: {x: 1}}"),
+        (
+            "deep_merge({[1]: {x: 1}}, {[1]: {y: 2}})",
+            "{[1]: {x: 1, y: 2}}",
+        ),
+        ("{a: {x: 1}} @ deep_merge({a: {y: 2}})", "{a: {x: 1, y: 2}}"),
+    ]);
+}
+
+#[test]
+fn deep_merge_lets_the_right_side_win_any_other_collision() {
+    assert_values(&[
+        ("deep_merge({a: 1, b: 2}, {b: 3})", "{a: 1, b: 3}"),
+        // Arrays are values like any other: never concatenated or merged by index.
+        ("deep_merge({a: [1, 2]}, {a: [3]})", "{a: [3]}"),
+        ("deep_merge({a: [{x: 1}]}, {a: [{y: 2}]})", "{a: [{y: 2}]}"),
+        // A Map meeting anything but a Map is replaced, or replaces.
+        ("deep_merge({a: {x: 1}}, {a: 5})", "{a: 5}"),
+        ("deep_merge({a: 5}, {a: {x: 1}})", "{a: {x: 1}}"),
+        ("deep_merge({a: {x: 1}}, {a: [1]})", "{a: [1]}"),
+        ("deep_merge({a: {x: 1}}, {a: null})", "{a: null}"),
+        // Keys of different types are different keys.
+        (
+            "deep_merge({['1']: {x: 1}}, {[1]: {y: 2}})",
+            "{['1']: {x: 1}, [1]: {y: 2}}",
+        ),
+    ]);
+}
+
+#[test]
+fn deep_merge_is_plus_where_no_two_maps_collide() {
+    for (left, right) in [
+        ("{}", "{}"),
+        ("{a: 1}", "{}"),
+        ("{}", "{a: {x: 1}}"),
+        ("{a: 1, b: [1]}", "{b: [2], c: 3}"),
+        ("{a: {x: 1}}", "{a: 2}"),
+    ] {
+        assert_values(&[(
+            &format!("deep_merge({left}, {right})"),
+            &format!("{left} + {right}"),
+        )]);
+    }
+}
+
+#[test]
+fn deep_merge_checks_its_arguments() {
+    assert_type_errors(
+        "deep_merge",
+        &[
+            ("deep_merge([1], {})", "Map", "argument 1", "Array"),
+            ("deep_merge(null, {})", "Map", "argument 1", "Null"),
+            ("deep_merge({}, [1])", "Map", "argument 2", "Array"),
+            ("deep_merge({}, 5)", "Map", "argument 2", "Int"),
+        ],
+    );
+    assert_arity("deep_merge", "2", &[0, 1, 3]);
 }
 
 // --- len ---
@@ -634,6 +708,412 @@ fn dig_raises_as_indexing_does() {
         ("{a: 1} @ dig(null)", "{a: 1}[null]"),
     ]);
     assert_arity("dig", "at least 1", &[0]);
+}
+
+// --- dig_set, dig_update ---
+//
+// Both walk a path as `dig` does, but a write needs a place: every step before
+// the last must find an Array or Map, the last may add a key to a Map, and an
+// Array is never resized.
+
+#[test]
+fn dig_set_replaces_the_value_at_a_path() {
+    assert_values(&[
+        ("dig_set({a: {b: 1}}, 2, 'a', 'b')", "{a: {b: 2}}"),
+        (
+            "dig_set({a: {b: 1, c: 3}, d: 4}, 2, 'a', 'b')",
+            "{a: {b: 2, c: 3}, d: 4}",
+        ),
+        ("dig_set([[1, 2], [3]], 9, 0, 1)", "[[1, 9], [3]]"),
+        // A path through both Maps and Arrays.
+        (
+            "dig_set({items: [{name: 'alice'}, {name: 'bob'}]}, 'eve', 'items', 1, 'name')",
+            "{items: [{name: 'alice'}, {name: 'eve'}]}",
+        ),
+        ("dig_set([{a: [1, 2]}], 9, 0, 'a', 0)", "[{a: [9, 2]}]"),
+        // A Null or a structure is a value like any other.
+        ("dig_set({a: 1}, null, 'a')", "{a: null}"),
+        ("dig_set({a: null}, 1, 'a')", "{a: 1}"),
+        ("dig_set({a: 1}, {b: [2]}, 'a')", "{a: {b: [2]}}"),
+        ("{a: 1} @ dig_set(2, 'a')", "{a: 2}"),
+        // A Function is stored, never called.
+        ("dig_set({a: 1}, id, 'a').a == id", "true"),
+    ]);
+}
+
+#[test]
+fn dig_set_indexes_an_array_as_reading_does() {
+    assert_values(&[
+        ("dig_set([1, 2, 3], 9, 0)", "[9, 2, 3]"),
+        ("dig_set([1, 2, 3], 9, 2)", "[1, 2, 9]"),
+        // A negative index counts from the end.
+        ("dig_set([1, 2, 3], 9, -1)", "[1, 2, 9]"),
+        ("dig_set([1, 2, 3], 9, -3)", "[9, 2, 3]"),
+        ("dig_set([[1, 2], [3, 4]], 9, -1, -2)", "[[1, 2], [9, 4]]"),
+    ]);
+}
+
+#[test]
+fn dig_set_adds_a_key_to_a_map_at_the_end_of_the_path() {
+    assert_values(&[
+        ("dig_set({}, 1, 'a')", "{a: 1}"),
+        ("dig_set({a: {}}, 1, 'a', 'b')", "{a: {b: 1}}"),
+        ("dig_set([{}], 1, 0, 'b')", "[{b: 1}]"),
+        // The value added may itself be a structure, inserting structure deeply.
+        ("dig_set({a: {}}, {c: [1]}, 'a', 'b')", "{a: {b: {c: [1]}}}"),
+        // An Int key into a Map is a Map key: no Array is made.
+        ("dig_set({}, 'x', 0)", "{[0]: 'x'}"),
+        ("dig_set({[1]: 'a'}, 'b', 1)", "{[1]: 'b'}"),
+        // Keys of different types are different keys.
+        ("dig_set({['1']: 'a'}, 'b', 1)", "{['1']: 'a', [1]: 'b'}"),
+        ("dig_set({}, 'x', true)", "{[true]: 'x'}"),
+        ("dig_set({}, 'x', 1.5)", "{[1.5]: 'x'}"),
+        ("dig_set({}, 'x', x'ff')", "{[x'ff']: 'x'}"),
+        ("dig_set({[1]: 'a'}, 'b', 1.0)", "{[1]: 'a', [1.0]: 'b'}"),
+        (
+            "dig_set({[0.0]: 'a'}, 'b', -0.0)",
+            "{[0.0]: 'a', [-0.0]: 'b'}",
+        ),
+    ]);
+}
+
+#[test]
+fn dig_set_without_a_path_is_its_value() {
+    assert_values(&[
+        ("dig_set({a: 1}, 5)", "5"),
+        ("dig_set([1], {a: 1})", "{a: 1}"),
+        // With nothing to index, the first argument may be anything.
+        ("dig_set(null, 5)", "5"),
+        ("dig_set('text', 5)", "5"),
+    ]);
+}
+
+#[test]
+fn dig_set_takes_a_dynamic_path_through_call() {
+    let source = r"
+        def path = ['a', 1, 'b']
+        call(dig_set, [{a: [0, {b: 1}]}, 5] + path)
+    ";
+    assert_values(&[
+        (source, "{a: [0, {b: 5}]}"),
+        (
+            "call(dig_set, [{a: {b: 1}}, 2] + split('a.b', '.'))",
+            "{a: {b: 2}}",
+        ),
+        ("call(dig_set, [{a: 1}, 5] + [])", "5"),
+    ]);
+}
+
+#[test]
+fn dig_update_replaces_the_value_at_a_path_with_its_function_of_it() {
+    assert_values(&[
+        (
+            "dig_update({a: {n: 1}}, fn n -> n + 1, 'a', 'n')",
+            "{a: {n: 2}}",
+        ),
+        (
+            "dig_update([1, [2, 3]], fn x -> x * 10, 1, -1)",
+            "[1, [2, 30]]",
+        ),
+        (
+            "dig_update({items: [{tags: ['a']}]}, fn t -> t + ['b'], 'items', 0, 'tags')",
+            "{items: [{tags: ['a', 'b']}]}",
+        ),
+        ("dig_update({a: 1}, fn x -> null, 'a')", "{a: null}"),
+        ("dig_update({a: 1}, fn x -> id, 'a').a == id", "true"),
+        ("{a: 1} @ dig_update(fn x -> x + 1, 'a')", "{a: 2}"),
+        // Any Function will do, a native as well as a lambda.
+        ("dig_update({a: [1, 2]}, len, 'a')", "{a: 2}"),
+    ]);
+}
+
+#[test]
+fn dig_update_calls_its_function_with_one_argument() {
+    assert_values(&[("dig_update({a: 1}, $($$), 'a')", "{a: [1]}")]);
+    assert_raises(&[(
+        "dig_update({a: 1}, fn -> 5, 'a')",
+        "Function <lambda> expects 0 arguments, but was called with 1",
+    )]);
+}
+
+#[test]
+fn dig_update_passes_null_for_a_key_the_map_lacks() {
+    assert_values(&[
+        ("dig_update({}, fn x -> [x], 'k')", "{k: [null]}"),
+        (
+            "dig_update({a: {}}, fn n -> (n or 0) + 1, 'a', 'count')",
+            "{a: {count: 1}}",
+        ),
+        // A present Null is passed as it is.
+        ("dig_update({k: null}, fn x -> [x], 'k')", "{k: [null]}"),
+    ]);
+}
+
+#[test]
+fn dig_update_without_a_path_applies_its_function_to_the_whole() {
+    assert_values(&[
+        ("dig_update({a: 1}, fn m -> m + {b: 2})", "{a: 1, b: 2}"),
+        ("dig_update(5, fn x -> x + 1)", "6"),
+        ("dig_update(null, fn x -> [x])", "[null]"),
+    ]);
+}
+
+#[test]
+fn dig_update_takes_a_dynamic_path_through_call() {
+    let source = r"
+        def path = ['a', -1]
+        call(dig_update, [{a: [1, 2]}, fn x -> x * 10] + path)
+    ";
+    assert_values(&[(source, "{a: [1, 20]}")]);
+}
+
+#[test]
+fn dig_update_calls_its_function_once() {
+    assert_eq!(
+        printed("dig_update({a: [1]}, fn x -> { print(x); x }, 'a', 0)"),
+        ["1"],
+        "the function sees the value at the path, once"
+    );
+    assert_eq!(
+        printed("dig_update({}, fn x -> { print(x); x }, 'k')"),
+        ["null"],
+        "the function sees Null for an absent key, once"
+    );
+}
+
+#[test]
+fn dig_update_raises_what_its_function_raises() {
+    assert_raises(&[
+        ("dig_update({a: 1}, fn x -> error('boom'), 'a')", "boom"),
+        ("dig_update({}, fn x -> error('boom'), 'a')", "boom"),
+        ("dig_update(1, fn x -> error('boom'))", "boom"),
+    ]);
+}
+
+/// Each path-editing global, with a payload it accepts, for tests whose cases
+/// hold for both.
+const PATH_EDITS: [(&str, &str); 2] = [("dig_set", "1"), ("dig_update", "id")];
+
+/// A call of `function` with `payload` editing `structure` along `keys`, a
+/// comma-separated list of Frost expressions.
+fn path_edit(function: &str, payload: &str, structure: &str, keys: &str) -> String {
+    format!("{function}({structure}, {payload}, {keys})")
+}
+
+/// Assert each `(structure, keys, problem)` raises, for both path edits,
+/// `Function <name> <problem>`.
+fn assert_path_edits_raise(cases: &[(&str, &str, &str)]) {
+    for (function, payload) in PATH_EDITS {
+        for (structure, keys, problem) in cases {
+            assert_eq!(
+                raises(&path_edit(function, payload, structure, keys)),
+                format!("Function {function} {problem}"),
+                "{function} of {structure} along {keys}"
+            );
+        }
+    }
+}
+
+#[test]
+fn path_edits_index_only_a_map_or_array_at_every_step() {
+    assert_path_edits_raise(&[
+        ("null", "'a'", "cannot index Null"),
+        ("5", "0", "cannot index Int"),
+        // A String or Bytes has no places to write, though it may be read by index.
+        ("'abc'", "0", "cannot index String"),
+        ("x'00'", "0", "cannot index Bytes"),
+        // A Null is not replaced by a Map.
+        ("{a: null}", "'a', 'b'", "cannot index Null at `a`"),
+        ("{a: 5}", "'a', 'b'", "cannot index Int at `a`"),
+        ("{a: true}", "'a', 'b'", "cannot index Bool at `a`"),
+        ("{a: 1.5}", "'a', 'b'", "cannot index Float at `a`"),
+        ("{a: id}", "'a', 'b'", "cannot index Function at `a`"),
+        (
+            "[{a: [1, 'x']}]",
+            "0, 'a', 1, 0",
+            "cannot index String at `[0].a[1]`",
+        ),
+    ]);
+}
+
+#[test]
+fn path_edit_errors_write_the_path_as_frost_indexes_it() {
+    assert_path_edits_raise(&[
+        (
+            "{[1]: {[true]: 5}}",
+            "1, true, 'x'",
+            "cannot index Int at `[1][true]`",
+        ),
+        (
+            "{['my-key']: 5}",
+            "'my-key', 0",
+            r#"cannot index Int at `["my-key"]`"#,
+        ),
+        // A keyword is no identifier, so it cannot follow a dot.
+        ("{['if']: 5}", "'if', 0", r#"cannot index Int at `["if"]`"#),
+        ("{a: {b: 5}}", "'a', 'b', 0", "cannot index Int at `a.b`"),
+        (
+            "{[1.5]: {[x'ff']: 5}}",
+            "1.5, x'ff', 0",
+            "cannot index Int at `[1.5][x'ff']`",
+        ),
+    ]);
+}
+
+#[test]
+fn path_edits_create_no_intermediate_structure() {
+    assert_path_edits_raise(&[
+        ("{}", "'a', 'b'", "found no value at `a`"),
+        ("{a: {}}", "'a', 'b', 'c'", "found no value at `a.b`"),
+        ("{a: [{}]}", "'a', 0, 1, 'x'", "found no value at `a[0][1]`"),
+        // Keys of different types are different keys.
+        ("{['1']: {}}", "1, 'x'", "found no value at `[1]`"),
+        // A mistyped String key gets a suggestion, as indexing gives one.
+        (
+            "{name: {}}",
+            "'nmae', 'first'",
+            "found no value at `nmae`; did you mean `name`?",
+        ),
+        (
+            "{a: {name: {}}}",
+            "'a', 'nmae', 'first'",
+            "found no value at `a.nmae`; did you mean `a.name`?",
+        ),
+    ]);
+}
+
+#[test]
+fn path_edits_never_resize_an_array() {
+    assert_path_edits_raise(&[
+        (
+            "[1, 2]",
+            "2",
+            "found no value at `[2]` in an Array of length 2",
+        ),
+        (
+            "[1, 2]",
+            "-3",
+            "found no value at `[-3]` in an Array of length 2",
+        ),
+        ("[]", "0", "found no value at `[0]` in an Array of length 0"),
+        (
+            "{a: [[1]]}",
+            "'a', 0, 5",
+            "found no value at `a[0][5]` in an Array of length 1",
+        ),
+        (
+            "[1, 2]",
+            "9, 'a'",
+            "found no value at `[9]` in an Array of length 2",
+        ),
+        // The farthest indices are out of range, not an overflow.
+        (
+            "[1, 2]",
+            "9223372036854775807",
+            "found no value at `[9223372036854775807]` in an Array of length 2",
+        ),
+        (
+            "[1, 2]",
+            "-9223372036854775807 - 1",
+            "found no value at `[-9223372036854775808]` in an Array of length 2",
+        ),
+    ]);
+}
+
+#[test]
+fn path_edits_index_an_array_only_by_int() {
+    assert_path_edits_raise(&[
+        ("[1]", "'a'", "cannot index Array by String"),
+        ("[1]", "0.0", "cannot index Array by Float"),
+        ("[1]", "true", "cannot index Array by Bool"),
+        (
+            "{a: [1]}",
+            "'a', x'00'",
+            "cannot index Array at `a` by Bytes",
+        ),
+    ]);
+}
+
+#[test]
+fn path_edit_errors_are_the_same_however_called() {
+    assert_raises(&[
+        (
+            "{a: {}} @ dig_set(1, 'a', 'b', 'c')",
+            "Function dig_set found no value at `a.b`",
+        ),
+        (
+            "call(dig_set, [{a: {}}, 1] + split('a.b.c', '.'))",
+            "Function dig_set found no value at `a.b`",
+        ),
+        (
+            "{a: {}} @ dig_update(id, 'a', 'b', 'c')",
+            "Function dig_update found no value at `a.b`",
+        ),
+    ]);
+}
+
+#[test]
+fn dig_update_checks_the_path_before_calling_its_function() {
+    assert_raises(&[
+        (
+            "dig_update({a: {}}, fn x -> error('called'), 'a', 'b', 'c')",
+            "Function dig_update found no value at `a.b`",
+        ),
+        (
+            "dig_update([1], fn x -> error('called'), 1)",
+            "Function dig_update found no value at `[1]` in an Array of length 1",
+        ),
+        (
+            "dig_update([1], fn x -> error('called'), 'a')",
+            "Function dig_update cannot index Array by String",
+        ),
+        (
+            "dig_update(null, fn x -> error('called'), 'a')",
+            "Function dig_update cannot index Null",
+        ),
+    ]);
+}
+
+#[test]
+fn dig_set_and_dig_update_check_their_arguments() {
+    for (function, payload) in PATH_EDITS {
+        assert_type_errors(
+            function,
+            &[
+                (
+                    &path_edit(function, payload, "{}", "null"),
+                    MAP_KEY,
+                    "argument 3 (keys)",
+                    "Null",
+                ),
+                (
+                    &path_edit(function, payload, "{}", "'a', [1]"),
+                    MAP_KEY,
+                    "argument 4 (keys)",
+                    "Array",
+                ),
+                (
+                    &path_edit(function, payload, "{}", "'a', 'b', {}"),
+                    MAP_KEY,
+                    "argument 5 (keys)",
+                    "Map",
+                ),
+            ],
+        );
+        assert_arity(function, "at least 2", &[0, 1]);
+    }
+    assert_type_errors(
+        "dig_update",
+        &[
+            (
+                "dig_update({a: 1}, 1, 'a')",
+                "Function",
+                "argument 2",
+                "Int",
+            ),
+            ("dig_update({a: 1}, null)", "Function", "argument 2", "Null"),
+        ],
+    );
 }
 
 // --- any, all, none ---
@@ -2936,6 +3416,186 @@ fn map_globals_leave_a_shared_input_unchanged() {
     )]);
 }
 
+#[test]
+fn path_globals_leave_a_shared_input_unchanged() {
+    let source = r"
+        def s = {a: [{b: 1}, {b: 2}], c: {d: {e: 3}}}
+        [
+            dig_set(s, 9, 'a', 1, 'b'),
+            dig_set(s, 9, 'c', 'd', 'f'),
+            dig_update(s, fn x -> x + 1, 'a', 0, 'b'),
+            dig_update(s, fn d -> d + {f: 4}, 'c', 'd'),
+            deep_merge(s, {a: [], c: {d: {e: 4}}}),
+            s,
+        ]
+    ";
+    assert_values(&[(
+        source,
+        r"[
+            {a: [{b: 1}, {b: 9}], c: {d: {e: 3}}},
+            {a: [{b: 1}, {b: 2}], c: {d: {e: 3, f: 9}}},
+            {a: [{b: 2}, {b: 2}], c: {d: {e: 3}}},
+            {a: [{b: 1}, {b: 2}], c: {d: {e: 3, f: 4}}},
+            {a: [], c: {d: {e: 4}}},
+            {a: [{b: 1}, {b: 2}], c: {d: {e: 3}}},
+        ]",
+    )]);
+}
+
+#[test]
+fn a_shared_right_side_of_deep_merge_is_unchanged() {
+    let source = r"
+        def right = {a: {x: 2}}
+        [deep_merge({a: {y: 1}}, right), right]
+    ";
+    assert_values(&[(source, "[{a: {x: 2, y: 1}}, {a: {x: 2}}]")]);
+}
+
+#[test]
+fn deep_merge_of_a_map_with_itself_is_that_map() {
+    let source = r"
+        def m = {a: {x: 1}, b: [2]}
+        [deep_merge(m, m), m]
+    ";
+    assert_values(&[(source, "[{a: {x: 1}, b: [2]}, {a: {x: 1}, b: [2]}]")]);
+}
+
+#[test]
+fn path_edits_may_take_the_structure_they_edit_as_their_payload() {
+    let set = r"
+        def s = {a: 1}
+        dig_set(s, s, 'a')
+    ";
+    // The function sees the original whole, never one with a hole where its
+    // argument was taken out.
+    let update = r"
+        def s = {a: [1, 2]}
+        dig_update(s, fn x -> [x, s], 'a')
+    ";
+    assert_values(&[(set, "{a: {a: 1}}"), (update, "{a: [[1, 2], {a: [1, 2]}]}")]);
+}
+
+#[test]
+fn a_failed_path_edit_leaves_a_shared_input_unchanged() {
+    // Each fails partway, once the top level has been copied and a child taken
+    // out of the copy.
+    let source = r"
+        def s = {a: [1, 2], b: {c: 1}}
+        def failed = [
+            try_call(fn -> dig_update(s, fn x -> error('boom'), 'a', 0)).ok,
+            try_call(fn -> dig_set(s, 9, 'b', 'missing', 'x')).ok,
+        ]
+        [failed, s]
+    ";
+    assert_values(&[(source, "[[false, false], {a: [1, 2], b: {c: 1}}]")]);
+}
+
+// --- Editing in place ---
+//
+// `unshared` sees whether the value `dig_update` hands its function is shared,
+// as it is if any level above it was copied while the original still held it.
+// A level copied and the original then dropped is invisible to a script; the
+// runtime's white-box tests cover that.
+
+/// `source` run with `unshared` and a host Int `n`, which makes each structure
+/// holding it built at run time rather than shared with the constant pool.
+fn run_probing_sharing(source: &str) -> Value {
+    Script::new(source)
+        .captures(&[("n", Value::from(1)), ("unshared", unshared())])
+        .run()
+}
+
+#[test]
+fn dig_update_hands_its_function_an_unshared_value_at_every_depth() {
+    let source = r"
+        def make = fn -> {a: [{b: [n]}]}
+        [
+            dig_update(make(), unshared, 'a'),
+            dig_update(make(), unshared, 'a', 0),
+            dig_update(make(), unshared, 'a', 0, 'b'),
+        ]
+    ";
+    assert_eq!(
+        run_probing_sharing(source),
+        run("[{a: true}, {a: [true]}, {a: [{b: true}]}]"),
+        "a uniquely owned structure should be edited in place at every level"
+    );
+}
+
+#[test]
+fn dig_update_hands_its_function_a_shared_value_when_the_input_is_shared() {
+    // The probe can see sharing: the same edits over a structure still held
+    // elsewhere must copy, so the value at the end of the path is shared.
+    let source = r"
+        def s = {a: [{b: [n]}]}
+        [
+            dig_update(s, unshared, 'a'),
+            dig_update(s, unshared, 'a', 0),
+            dig_update(s, unshared, 'a', 0, 'b'),
+            s,
+        ]
+    ";
+    assert_eq!(
+        run_probing_sharing(source),
+        run("[{a: false}, {a: [false]}, {a: [{b: false}]}, {a: [{b: [1]}]}]"),
+        "a structure held elsewhere should be copied, not edited"
+    );
+}
+
+#[test]
+fn edits_copy_a_level_shared_below_a_unique_top() {
+    // Each top level is built for the edit and held by nothing else, but the
+    // level below it is also held by `inner`.
+    let update = r"
+        def inner = [n]
+        [dig_update({a: inner}, unshared, 'a'), inner]
+    ";
+    let set = r"
+        def inner = [n]
+        [dig_set({a: inner}, 9, 'a', 0), inner]
+    ";
+    let merge = r"
+        def inner = {x: n}
+        [deep_merge({a: inner}, {a: {y: 2}}), inner]
+    ";
+    for (source, expected) in [
+        (update, "[{a: false}, [1]]"),
+        (set, "[{a: [9]}, [1]]"),
+        (merge, "[{a: {x: 1, y: 2}}, {x: 1}]"),
+    ] {
+        assert_eq!(
+            run_probing_sharing(source),
+            run(expected),
+            "the shared level should be copied, leaving `inner` unchanged: {source}"
+        );
+    }
+}
+
+// --- Deep nesting ---
+
+/// Path edits and `deep_merge` through a structure nested `levels` deep, on a
+/// small stack (see [`deep`](crate::deep)). How deep comes from the host as
+/// `levels`, so that the structure is built when the script runs rather than by
+/// the compiler.
+#[test]
+fn edits_reach_through_deep_nesting() {
+    let source = r"
+        defn nest(v, n) -> if n == 0: v else: nest({k: v}, n - 1)
+        def path = map(range(levels), fn _ -> 'k')
+        [
+            call(dig_set, [nest(1, levels), 2] + path) == nest(2, levels),
+            call(dig_update, [nest(1, levels), fn x -> x + 1] + path) == nest(2, levels),
+            deep_merge(nest({a: 1}, levels), nest({b: 2}, levels)) == nest({a: 1, b: 2}, levels),
+        ]
+    ";
+    let tail = crate::deep::on_a_small_stack(|| {
+        Script::new(source)
+            .capture("levels", Value::from(10_000))
+            .run()
+    });
+    assert_eq!(tail, Value::from(vec![Value::from(true); 3]), "{source}");
+}
+
 // --- Maps past the compact form ---
 
 #[test]
@@ -2983,7 +3643,35 @@ fn large_maps_work_in_every_map_global() {
         ("each(m, fn k, v -> v)", LARGE_MAP),
         ("len(group_by(range(40), id))", "40"),
         ("count_by(range(40), id) @ values() @ sum()", "40"),
+        ("dig_set(m, 0, 39) @ len()", "40"),
+        ("dig_set(m, 0, 39)[39]", "0"),
+        ("dig_set(m, 'x', 40) @ len()", "41"),
+        ("dig_update(m, fn v -> v + 1, 39)[39]", "79"),
+        (
+            "dig_update({a: m}, fn v -> [v], 'a', 40)['a'][40]",
+            "[null]",
+        ),
+        ("deep_merge(m, {[0]: 'x'})[0]", "'x'"),
+        ("deep_merge({a: m}, {a: {[40]: 1}})['a'] @ len()", "41"),
+        ("deep_merge({a: m}, {a: m})", "{a: m}"),
     ] {
         assert_values(&[(&over_large_map(expression), &over_large_map(expected))]);
     }
+}
+
+#[test]
+fn edits_grow_a_map_past_the_compact_form() {
+    // 16 is `COMPACT_LIMIT` in value_map.rs, the most entries the compact form
+    // holds; a 17th moves a Map to the larger form.
+    let source = r"
+        def full = map_into(range(16), fn n -> {[n]: n})
+        def grown = map_into(range(17), fn n -> {[n]: n})
+        [
+            dig_set(full, 16, 16) == grown,
+            dig_update(full, fn x -> 16, 16) == grown,
+            dig_set({a: full}, 16, 'a', 16) == {a: grown},
+            deep_merge({a: full}, {a: {[16]: 16}}) == {a: grown},
+        ]
+    ";
+    assert_values(&[(source, "[true, true, true, true]")]);
 }

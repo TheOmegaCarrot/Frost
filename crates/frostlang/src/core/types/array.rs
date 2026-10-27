@@ -126,12 +126,18 @@ impl FrostArray {
     /// Frost-semantic indexing: negative indices count from the end,
     /// out-of-bounds returns None.
     pub fn frost_get(&self, index: i64) -> Option<&Value> {
+        self.resolve_index(index).map(|i| &self.inner[i])
+    }
+
+    /// The position Frost-semantic `index` names, as [`frost_get`](Self::frost_get)
+    /// reads it, or None when it is out of bounds.
+    pub(crate) fn resolve_index(&self, index: i64) -> Option<usize> {
         let len = self.inner.len() as i64;
         let resolved = if index < 0 { index + len } else { index };
         if resolved < 0 || resolved >= len {
             None
         } else {
-            Some(&self.inner[resolved as usize])
+            Some(resolved as usize)
         }
     }
 

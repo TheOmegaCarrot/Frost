@@ -7,8 +7,8 @@ pub use ser::to_value;
 
 use std::fmt::{self, Display};
 
-use crate::core::util::identifier::is_identifier_like_and_not_keyword;
-use crate::core::{MapKey, SpecialFloat, Value};
+use crate::core::path::{PathSegment, write_path};
+use crate::core::{SpecialFloat, Value};
 
 /// Where in a value an error happened, which an error gains as it passes back
 /// out through each enclosing level.
@@ -18,13 +18,6 @@ struct ErrorPath {
     in_key: bool,
     /// The Map keys and Array indices leading to the error, innermost first.
     segments: Vec<PathSegment>,
-}
-
-/// One step into a value: a Map entry or an Array element.
-#[derive(Debug)]
-enum PathSegment {
-    Key(MapKey),
-    Index(usize),
 }
 
 impl ErrorPath {
@@ -41,9 +34,9 @@ impl ErrorPath {
     }
 }
 
-/// Renders as a suffix for the error's message, writing the path as Frost
-/// would index it, such as `` (at `name.inner`)``, `` (at `items[2]`)``, or
-/// `` (at `["my-key"]`)``. At the top level it renders as nothing.
+/// Renders as a suffix for the error's message, such as `` (at `a.b`)``, the
+/// path written as [`write_path`] writes it. At the top level it renders as
+/// nothing.
 impl Display for ErrorPath {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match (self.in_key, self.segments.is_empty()) {
@@ -52,22 +45,7 @@ impl Display for ErrorPath {
             (true, false) => f.write_str(" (at a key of `")?,
             (false, false) => f.write_str(" (at `")?,
         }
-        for (i, segment) in self.segments.iter().rev().enumerate() {
-            match segment {
-                PathSegment::Key(MapKey::String(name))
-                    if is_identifier_like_and_not_keyword(name) =>
-                {
-                    if i > 0 {
-                        f.write_str(".")?;
-                    }
-                    f.write_str(name)?;
-                }
-                PathSegment::Key(key) => {
-                    write!(f, "[{}]", Value::from(key.clone()).to_debug_string())?;
-                }
-                PathSegment::Index(index) => write!(f, "[{index}]")?,
-            }
-        }
+        write_path(f, self.segments.iter().rev())?;
         f.write_str("`)")
     }
 }

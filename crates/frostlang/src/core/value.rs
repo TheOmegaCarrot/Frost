@@ -4,6 +4,7 @@ pub(crate) mod find;
 pub(crate) mod free;
 mod operators;
 mod ordering;
+pub(crate) mod path;
 mod render_limits;
 mod stringify;
 mod type_checks;
