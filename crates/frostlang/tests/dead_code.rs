@@ -33,6 +33,17 @@ fn store_count(code: &[Bytecode]) -> usize {
         .count()
 }
 
+/// Whether `code` loads any local.
+fn loads_a_local(code: &[Bytecode]) -> bool {
+    code.iter().any(|op| matches!(op, Bytecode::LoadLocal(_)))
+}
+
+/// Whether `code` creates any closure.
+fn creates_a_closure(code: &[Bytecode]) -> bool {
+    code.iter()
+        .any(|op| matches!(op, Bytecode::CreateClosure { .. }))
+}
+
 // Behavior, under every permutation.
 
 #[test]
@@ -188,7 +199,153 @@ fn a_discarded_statement_value_does_not_change_the_result() {
     assert_eq!(run(source), Value::Int(2));
 }
 
+#[test]
+fn an_unused_closure_with_captures_does_not_change_the_result() {
+    let source = r"
+        defn make(x) -> {
+            def y = x + 1
+            fn -> x + y
+            def unused = fn -> [x, y]
+            y
+        }
+        make(1)
+    ";
+    assert_eq!(run(source), Value::Int(2));
+}
+
+#[test]
+fn a_closure_kept_after_a_pruned_sibling_is_the_right_function() {
+    // Pruning the unused closure shifts the kept one's function from second to
+    // first among `make`'s nested functions; calling it must still run
+    // `fn -> [x]`.
+    let source = r"
+        defn make(x) -> {
+            fn -> x
+            fn -> [x]
+        }
+        make(1)()
+    ";
+    assert_eq!(run(source), Value::array([1]));
+}
+
 // Code shape, under pinned options.
+
+#[test]
+fn a_discarded_closure_with_captures_is_pruned_with_its_capture_loads() {
+    let make = Script::new(
+        r"
+        defn make(x, y) -> {
+            fn -> x + y
+            1
+        }
+    ",
+    )
+    .code(DISCARD)
+    .nested(0);
+    assert!(!creates_a_closure(&make.code), "{make:?}");
+    assert_eq!(
+        make.nested_count(),
+        0,
+        "the closure is no longer created, so not compiled in: {make:?}"
+    );
+    assert!(
+        !loads_a_local(&make.code),
+        "its captures are no longer loaded: {make:?}"
+    );
+}
+
+#[test]
+fn a_dead_closure_with_captures_frees_the_stores_it_read() {
+    let emitted = Script::new(
+        r"
+        def x = 1
+        def y = 2
+        def f = fn -> x + y
+        3
+    ",
+    )
+    .code(BOTH);
+    assert!(!creates_a_closure(&emitted.code), "{emitted:?}");
+    assert_eq!(emitted.nested_count(), 0, "{emitted:?}");
+    assert!(
+        !stores(&emitted.code),
+        "with the closure gone, nothing reads `x` or `y`: {emitted:?}"
+    );
+}
+
+#[test]
+fn a_closure_over_a_capture_is_pruned() {
+    // The innermost function captures `a` from the middle one's own captures,
+    // not from its parameters or bindings.
+    let middle = Script::new(
+        r"
+        fn a -> fn -> {
+            fn -> a
+            1
+        }
+    ",
+    )
+    .code(DISCARD)
+    .nested(0)
+    .nested(0);
+    assert!(!creates_a_closure(&middle.code), "{middle:?}");
+    assert_eq!(middle.nested_count(), 0, "{middle:?}");
+    assert!(
+        !loads_a_local(&middle.code),
+        "its capture is no longer loaded: {middle:?}"
+    );
+}
+
+#[test]
+fn only_the_unused_one_of_two_sibling_closures_is_pruned() {
+    let make = Script::new(
+        r"
+        defn make(x) -> {
+            fn -> x
+            fn -> [x]
+        }
+        make
+    ",
+    )
+    .code(DISCARD)
+    .nested(0);
+    assert_eq!(make.nested_count(), 1, "{make:?}");
+    let kept = make.nested(0);
+    assert!(
+        kept.code.contains(&Bytecode::MakeArray(1)),
+        "the kept function is the one building an Array: {kept:?}"
+    );
+}
+
+#[test]
+fn a_used_closure_with_captures_stays() {
+    let make = Script::new(
+        r"
+        defn make(x) -> fn -> x
+        make
+    ",
+    )
+    .code(BOTH)
+    .nested(0);
+    assert!(creates_a_closure(&make.code), "{make:?}");
+    assert_eq!(make.nested_count(), 1, "{make:?}");
+}
+
+#[test]
+fn a_discarded_closure_with_captures_stays_without_discard_elimination() {
+    let make = Script::new(
+        r"
+        defn make(x) -> {
+            fn -> x
+            1
+        }
+    ",
+    )
+    .code(DEAD_STORE)
+    .nested(0);
+    assert!(creates_a_closure(&make.code), "{make:?}");
+    assert_eq!(make.nested_count(), 1, "{make:?}");
+}
 
 #[test]
 fn a_dead_store_becomes_a_pop() {

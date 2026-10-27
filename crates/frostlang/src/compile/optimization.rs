@@ -46,11 +46,12 @@ pub struct OptimizationOptions {
     /// [`constant_fold`](Self::constant_fold) as well, an expression using a
     /// known value, such as a call to a known function, becomes its result.
     pub dead_store_eliminate: bool,
-    /// Skip loading a value that would only be discarded, when loading it takes
-    /// no computation: a constant, a binding's value, or a function that
-    /// captures nothing. Such a value is discarded when a statement's value goes
-    /// unused, or, with [`dead_store_eliminate`](Self::dead_store_eliminate),
-    /// when a binding is never read.
+    /// Skip producing a value that would only be discarded, when producing it
+    /// takes no computation: a constant, a binding's value, or a lambda. Such a
+    /// value is discarded when a statement's value goes unused, or, with
+    /// [`dead_store_eliminate`](Self::dead_store_eliminate), when a binding is
+    /// never read. An unused lambda's function is left out of the compiled
+    /// program.
     pub discard_eliminate: bool,
     /// Move a local's value out on its last use, rather than copying it, so a
     /// structure held only by that local can be updated in place.
