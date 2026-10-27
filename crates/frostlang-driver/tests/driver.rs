@@ -1106,6 +1106,180 @@ fn list_shows_an_images_bytecode_as_compiled() {
     );
 }
 
+// --- Listing and checking a script for an enclosing scope ---
+
+/// A script whose free names a host would supply.
+const CLOSES_OVER: &str = "outer + inner";
+
+/// The names of the slots the listing's first function marks as captures, in
+/// name order.
+fn captures(listing: &str) -> Vec<&str> {
+    let mut names: Vec<&str> = listing
+        .lines()
+        .skip_while(|line| *line != "  slots")
+        .skip(1)
+        .take_while(|line| line.starts_with("     "))
+        .filter_map(
+            |line| match line.split_whitespace().collect::<Vec<_>>()[..] {
+                [_, name, "capture"] => Some(name),
+                _ => None,
+            },
+        )
+        .collect();
+    names.sort_unstable();
+    names
+}
+
+#[test]
+fn list_without_scope_cannot_compile_a_script_with_free_names() {
+    let path = script("list-free.frst", CLOSES_OVER);
+    let ran = run(&["list", &path]);
+    assert_eq!(ran.exit, Exit::ScriptFailed, "{ran:?}");
+    assert!(ran.stderr.contains("`outer` is not defined"), "{ran:?}");
+    assert_eq!(ran.stdout, "", "nothing is listed");
+}
+
+#[test]
+fn list_with_scope_compiles_the_names_as_captures() {
+    let path = script("list-scope.frst", CLOSES_OVER);
+    for args in [
+        ["list", "--scope", "outer,inner", path.as_str()].as_slice(),
+        [
+            "list",
+            "--scope",
+            "outer",
+            "--scope",
+            "inner",
+            path.as_str(),
+        ]
+        .as_slice(),
+        // A name the script does not use is no capture.
+        ["list", "--scope", "outer,inner,unused", path.as_str()].as_slice(),
+    ] {
+        let ran = run(args);
+        assert_eq!(ran.exit, Exit::Success, "{args:?}: {ran:?}");
+        assert_eq!(
+            captures(&ran.stdout),
+            ["inner", "outer"],
+            "{args:?}: {}",
+            ran.stdout
+        );
+    }
+}
+
+#[test]
+fn list_with_scope_still_has_args_in_scope_unless_no_args() {
+    let path = script("list-scope-args.frst", "[outer, args]");
+    let ran = run(&["list", "--scope", "outer", &path]);
+    assert_eq!(ran.exit, Exit::Success, "{ran:?}");
+    assert_eq!(captures(&ran.stdout), ["args", "outer"], "{}", ran.stdout);
+    let ran = run(&["list", "--no-args", "--scope", "outer", &path]);
+    assert_eq!(
+        ran.exit,
+        Exit::ScriptFailed,
+        "`--no-args` leaves `args` free despite `--scope`: {ran:?}"
+    );
+    assert!(ran.stderr.contains("`args` is not defined"), "{ran:?}");
+    let ran = run(&["list", "--no-args", "--scope", "outer,args", &path]);
+    assert_eq!(
+        ran.exit,
+        Exit::Success,
+        "`--scope` may name `args` itself: {ran:?}"
+    );
+    assert_eq!(captures(&ran.stdout), ["args", "outer"], "{}", ran.stdout);
+}
+
+#[test]
+fn a_scope_name_shadows_the_global_of_that_name() {
+    // `print` is a global, but the host supplies its own.
+    let path = script("list-scope-shadow.frst", "print(1)");
+    let ran = run(&["list", "--scope", "print", &path]);
+    assert_eq!(ran.exit, Exit::Success, "{ran:?}");
+    assert_eq!(captures(&ran.stdout), ["print"], "{}", ran.stdout);
+    assert!(
+        !ran.stdout.contains("LoadGlobal"),
+        "`print` is the capture, not the global: {}",
+        ran.stdout
+    );
+}
+
+#[test]
+fn a_scope_name_source_cannot_refer_to_is_refused() {
+    let path = script("scope-invalid.frst", CLOSES_OVER);
+    for subcommand in ["list", "check"] {
+        // Names are split on commas only, so a space stays part of a name.
+        for (argument, name) in [
+            ("outer, inner", " inner"),
+            ("outer,,inner", ""),
+            ("", ""),
+            ("1x", "1x"),
+            ("if", "if"),
+        ] {
+            let ran = run(&[subcommand, &format!("--scope={argument}"), &path]);
+            let case = format!("{subcommand} --scope={argument:?}");
+            assert_eq!(ran.exit, Exit::UsageError, "{case}: {ran:?}");
+            assert!(
+                ran.stderr.contains(&format!(
+                    "`--scope`: `{name}` is not a name Frost source can refer to"
+                )),
+                "{case}: {ran:?}"
+            );
+            assert_eq!(ran.stdout, "", "{case}: nothing is listed");
+        }
+    }
+}
+
+#[test]
+fn check_with_scope_accepts_a_script_using_the_names() {
+    let path = script("check-scope.frst", CLOSES_OVER);
+    let ran = run(&["check", &path]);
+    assert_eq!(ran.exit, Exit::ScriptFailed, "without `--scope`: {ran:?}");
+    assert!(ran.stderr.contains("`outer` is not defined"), "{ran:?}");
+    let ran = run(&["check", "--scope", "outer,inner", &path]);
+    assert_eq!(ran.exit, Exit::Success, "{ran:?}");
+    assert_eq!(ran.stderr, "", "nothing to report");
+    let ran = run(&["check", "--scope", "outer", &path]);
+    assert_eq!(ran.exit, Exit::ScriptFailed, "{ran:?}");
+    assert!(
+        ran.stderr.contains("`inner` is not defined"),
+        "a name `--scope` leaves out is still unbound: {ran:?}"
+    );
+}
+
+#[test]
+fn list_with_scope_refuses_an_image() {
+    let image = image("list-scope-image", "1", &[]);
+    let ran = run(&["list", "--scope", "outer", &image]);
+    assert_eq!(ran.exit, Exit::UsageError, "{ran:?}");
+    assert!(
+        ran.stderr.contains(&format!(
+            "cannot list {image} with `--scope`: it is a compiled image"
+        )),
+        "{ran:?}"
+    );
+    assert_eq!(ran.stdout, "", "nothing is listed");
+}
+
+#[test]
+fn list_and_check_help_describe_scope() {
+    for subcommand in ["list", "check"] {
+        let ran = run(&[subcommand, "--help"]);
+        assert_eq!(ran.exit, Exit::Success, "{subcommand}: {ran:?}");
+        assert!(
+            ran.stdout
+                .contains("Advanced options:\n      --scope <NAMES>"),
+            "{subcommand}: an advanced option: {}",
+            ran.stdout
+        );
+        let ran = run(&[subcommand, "-h"]);
+        assert!(
+            !ran.stdout.contains("--scope"),
+            "{subcommand}: left out of the summary: {}",
+            ran.stdout
+        );
+    }
+}
+
 /// `listing` without its debug info: the code heading's column names, and each
 /// instruction's location and height columns.
 fn without_debug_columns(listing: &str) -> String {

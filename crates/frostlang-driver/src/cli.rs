@@ -88,7 +88,11 @@ enum Command {
         script_and_args: Vec<String>,
     },
     /// Compile a script and report its diagnostics, without running it
-    Check { script: String },
+    Check {
+        script: String,
+        #[command(flatten)]
+        scope: Scope,
+    },
     /// Compile a script to an image, which `run` runs without compiling again
     ///
     /// Only the same version of Frost can run the image.
@@ -108,9 +112,29 @@ enum Command {
         no_config: bool,
     },
     /// List the bytecode a script compiles to, or an image holds
-    List { script: String },
+    List {
+        script: String,
+        #[command(flatten)]
+        scope: Scope,
+    },
     /// Show the syntax tree a script parses to
     Ast { script: String },
+}
+
+/// The names a host supplies in a script's enclosing scope.
+#[derive(Debug, Args)]
+struct Scope {
+    /// Compile with NAMES, comma-separated, in the script's enclosing scope,
+    /// as a host supplying them would.
+    /// May be given more than once.
+    #[arg(
+        long = "scope",
+        value_name = "NAMES",
+        value_delimiter = ',',
+        hide_short_help = true,
+        help_heading = ADVANCED
+    )]
+    names: Vec<String>,
 }
 
 #[derive(Debug, Args)]
@@ -168,7 +192,11 @@ pub(crate) enum Action {
         code: String,
         args: Vec<String>,
     },
-    Check(Script),
+    Check {
+        script: Script,
+        /// The names `--scope` gave.
+        scope: Vec<String>,
+    },
     Compile {
         script: Script,
         output: PathBuf,
@@ -177,7 +205,11 @@ pub(crate) enum Action {
         basic: bool,
         no_config: bool,
     },
-    List(Script),
+    List {
+        script: Script,
+        /// The names `--scope` gave.
+        scope: Vec<String>,
+    },
     Ast(Script),
     /// No arguments at all: a session at a terminal, or else the script on
     /// standard input.
@@ -199,13 +231,19 @@ impl Cli {
                 Command::Run { script_and_args } => {
                     run(script_and_args).expect("clap requires `run`'s script")
                 }
-                Command::Check { script } => Action::Check(script.into()),
+                Command::Check { script, scope } => Action::Check {
+                    script: script.into(),
+                    scope: scope.names,
+                },
                 Command::Compile { script, output } => Action::Compile {
                     script: script.into(),
                     output,
                 },
                 Command::Repl { basic, no_config } => Action::Repl { basic, no_config },
-                Command::List { script } => Action::List(script.into()),
+                Command::List { script, scope } => Action::List {
+                    script: script.into(),
+                    scope: scope.names,
+                },
                 Command::Ast { script } => Action::Ast(script.into()),
             }),
             (None, Some(code)) => Ok(Action::Eval {

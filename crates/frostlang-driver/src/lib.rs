@@ -49,7 +49,7 @@ use frostlang::{
     FrostError, Importer, RunError, Value, Vm, VmRuntimeConfiguration, WellFormedProgram,
 };
 use frostlang_parse::parse_program_with_limits;
-use frostlang_repl::{Frontend, LineFrontend, Repl};
+use frostlang_repl::{Frontend, LineFrontend, Repl, check_name};
 
 use cli::{Action, Cli, Color, Script};
 
@@ -295,10 +295,10 @@ impl Driver {
         match action {
             Action::Run { script, args } => session.run_file(&script, args),
             Action::Eval { code, args } => session.run_source("<eval>", &code, args),
-            Action::Check(script) => session.check_file(&script),
+            Action::Check { script, scope } => session.check_file(&script, &scope),
             Action::Compile { script, output } => session.compile_file(&script, &output),
             Action::Repl { basic, no_config } => session.run_repl(&self.repl, basic, !no_config),
-            Action::List(script) => session.list_file(&script, &mut stdout),
+            Action::List { script, scope } => session.list_file(&script, &scope, &mut stdout),
             Action::Ast(script) => session.show_ast(&script, &mut stdout),
             Action::Nothing if terminals.stdin => session.run_repl(&self.repl, false, true),
             Action::Nothing => session.run_file(&Script::Stdin, Vec::new()),
@@ -418,12 +418,15 @@ impl Session<'_> {
         }
     }
 
-    fn check_file(mut self, script: &Script) -> Exit {
-        let source = match self.read_source(script) {
+    fn check_file(mut self, script: &Script, scope: &[String]) -> Exit {
+        let source = match self
+            .check_scope(scope)
+            .and_then(|()| self.read_source(script))
+        {
             Ok(source) => source,
             Err(exit) => return exit,
         };
-        match self.compile(&name(script), &source) {
+        match self.compile_in(&name(script), &source, scope) {
             Ok(_) => Exit::Success,
             Err(exit) => exit,
         }
@@ -443,12 +446,19 @@ impl Session<'_> {
         }
     }
 
-    fn list_file(mut self, script: &Script, output: &mut dyn Write) -> Exit {
-        let contents = match self.read(script) {
+    fn list_file(mut self, script: &Script, scope: &[String], output: &mut dyn Write) -> Exit {
+        let contents = match self.check_scope(scope).and_then(|()| self.read(script)) {
             Ok(contents) => contents,
             Err(exit) => return exit,
         };
         let function = if image::is_image(&contents) {
+            if !scope.is_empty() {
+                let message = format!(
+                    "cannot list {} with `--scope`: it is a compiled image",
+                    name(script)
+                );
+                return self.usage_error(&message);
+            }
             match image::decode(&contents) {
                 Ok(program) => bytecode::program_function(&program).clone(),
                 Err(error) => {
@@ -461,12 +471,16 @@ impl Session<'_> {
             self.options = self.options.with_debug_info(true);
             let program = match self
                 .source(script, contents)
-                .and_then(|source| self.compile(&name(script), &source))
+                .and_then(|source| self.compile_in(&name(script), &source, scope))
             {
                 Ok(program) => program,
                 Err(exit) => return exit,
             };
-            bytecode::closure_function(&close(program, Vec::new())).clone()
+            // A listing shows the code, not the values it closes over.
+            let closure = program
+                .close_with(|_| Some(Value::Null))
+                .expect("every capture is given a value");
+            bytecode::closure_function(&closure).clone()
         };
         let color = self.colors(self.terminals.stdout);
         match write!(output, "{}", function.disassemble().with_color(color)) {
@@ -543,11 +557,35 @@ impl Session<'_> {
         }
     }
 
+    /// The exit for the first name in `scope` that source cannot refer to, and
+    /// so could never capture, if there is one.
+    fn check_scope(&mut self, scope: &[String]) -> Result<(), Exit> {
+        scope
+            .iter()
+            .try_for_each(|name| check_name(name))
+            .map_err(|invalid| self.usage_error(&format!("`--scope`: {invalid}")))
+    }
+
     /// The program `source` compiles to, with `args` in scope unless
     /// `--no-args` says otherwise, or the exit for its diagnostics.
     fn compile(&mut self, filename: &str, source: &str) -> Result<WellFormedProgram, Exit> {
-        let scope: &[&str] = if self.no_args { &[] } else { &[ARGS] };
-        match compile_in_scope(filename, source, self.options, scope) {
+        self.compile_in(filename, source, &[])
+    }
+
+    /// [`compile`](Self::compile), with `scope`'s names in scope too.
+    fn compile_in(
+        &mut self,
+        filename: &str,
+        source: &str,
+        scope: &[String],
+    ) -> Result<WellFormedProgram, Exit> {
+        let args: &[&str] = if self.no_args { &[] } else { &[ARGS] };
+        let names: Vec<&str> = args
+            .iter()
+            .copied()
+            .chain(scope.iter().map(String::as_str))
+            .collect();
+        match compile_in_scope(filename, source, self.options, &names) {
             Ok(output) => {
                 if !output.lints.is_empty() {
                     let rendered = self.render_diagnostics(&output.lints);
