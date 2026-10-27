@@ -46,7 +46,8 @@ use frostlang::compile::{
 };
 use frostlang::image::{self, ImageError};
 use frostlang::{
-    FrostError, Importer, RunError, Value, Vm, VmRuntimeConfiguration, WellFormedProgram,
+    FrostError, Importer, MissingCaptures, RunError, Value, Vm, VmRuntimeConfiguration,
+    WellFormedProgram,
 };
 use frostlang_parse::parse_program_with_limits;
 use frostlang_repl::{Frontend, LineFrontend, Repl, check_name};
@@ -405,7 +406,7 @@ impl Session<'_> {
         if image::is_image(&contents) {
             return match image::decode(&contents) {
                 // The user chose to run this image; see `Command::Run`.
-                Ok(program) => self.run_program(program.assert_well_formed(), args),
+                Ok(program) => self.run_program(&name(script), program.assert_well_formed(), args),
                 Err(error) => {
                     let message = format!("cannot run {}: {}", name(script), unloadable(&error));
                     self.usage_error(&message)
@@ -536,19 +537,34 @@ impl Session<'_> {
 
     fn run_source(mut self, filename: &str, source: &str, args: Vec<String>) -> Exit {
         match self.compile(filename, source) {
-            Ok(program) => self.run_program(program, args),
+            Ok(program) => self.run_program(filename, program, args),
             Err(exit) => exit,
         }
     }
 
-    fn run_program(mut self, program: WellFormedProgram, args: Vec<String>) -> Exit {
+    /// Run `program` with `args` as its arguments, naming it `filename` in
+    /// messages.
+    fn run_program(
+        mut self,
+        filename: &str,
+        program: WellFormedProgram,
+        args: Vec<String>,
+    ) -> Exit {
         if self.no_args && !args.is_empty() {
             return self.usage_error("`--no-args` takes no arguments for the script");
         }
+        // An image a host compiled may capture names a run cannot supply.
+        let closure = match close(program, args) {
+            Ok(closure) => closure,
+            Err(missing) => {
+                let message = format!("cannot run {filename}: {}", unsupplied(missing));
+                return self.usage_error(&message);
+            }
+        };
         let outcome = Vm::factory()
             .configuration(self.configuration.clone())
             .with_importer(Arc::clone(self.importer))
-            .build(close(program, args))
+            .build(closure)
             .run()
             .map_err(RunError::into_error);
         match outcome {
@@ -671,6 +687,18 @@ impl Session<'_> {
     }
 }
 
+/// Why a program capturing `missing` cannot run, as the end of a sentence
+/// about it.
+fn unsupplied(missing: MissingCaptures) -> String {
+    let mut names = missing.names;
+    names.sort_unstable();
+    let names: Vec<String> = names.iter().map(|name| format!("`{name}`")).collect();
+    format!(
+        "it captures {}, but a run supplies only `{ARGS}`",
+        names.join(", ")
+    )
+}
+
 /// Why an image cannot load, as the end of a sentence about it.
 fn unloadable(error: &ImageError) -> String {
     match error {
@@ -690,12 +718,14 @@ fn name(script: &Script) -> String {
     }
 }
 
-/// `program`, ready to run with `args` as its arguments.
-fn close(program: WellFormedProgram, args: Vec<String>) -> Arc<frostlang::Closure> {
+/// `program`, ready to run with `args` as its arguments,
+/// or the names it captures besides `args`.
+fn close(
+    program: WellFormedProgram,
+    args: Vec<String>,
+) -> Result<Arc<frostlang::Closure>, MissingCaptures> {
     let args: Value = args.into_iter().map(Value::from).collect();
-    program
-        .close([(ARGS, args)])
-        .expect("a script captures nothing but its arguments")
+    program.close([(ARGS, args)])
 }
 
 /// Write `text` to `out`. A failure to write is ignored: there is nowhere

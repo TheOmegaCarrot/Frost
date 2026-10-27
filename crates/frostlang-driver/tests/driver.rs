@@ -7,8 +7,10 @@ use std::num::NonZeroU64;
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
 
-use frostlang::compile::{Optimization, OptimizationOptions, ParseLimits};
-use frostlang::{Extension, ImporterBuilder, Value, VmRuntimeConfiguration};
+use frostlang::compile::{
+    CompilerOptions, Optimization, OptimizationOptions, ParseLimits, compile_in_scope,
+};
+use frostlang::{Extension, ImporterBuilder, Value, VmRuntimeConfiguration, image};
 use frostlang_driver::{Driver, Exit, ReplSettings};
 use frostlang_repl::{
     Frontend, InvalidName, MetacommandSpec, ReplError, ScriptedFrontend, Transcript,
@@ -424,6 +426,73 @@ fn a_damaged_image_is_a_usage_error() {
     let ran = run(&[&path]);
     assert_eq!(ran.exit, Exit::UsageError, "{ran:?}");
     assert!(ran.stderr.contains("it is damaged"), "{}", ran.stderr);
+}
+
+/// Compile `source` to an image named `name` as a host can and the driver
+/// cannot, with `outer_scope` in its enclosing scope, returning the image's
+/// path.
+fn host_image(name: &str, source: &str, outer_scope: &[&str]) -> String {
+    let program = compile_in_scope(name, source, CompilerOptions::new(), outer_scope)
+        .expect("the script compiles in that scope")
+        .code;
+    let path = scratch_path(name);
+    fs::write(&path, image::encode(&program)).unwrap();
+    path
+}
+
+#[test]
+fn an_image_capturing_what_a_run_cannot_supply_is_a_usage_error() {
+    // Each prints first, so a run that started would show.
+    for (name, source, outer_scope, missing) in [
+        (
+            "image-host-one",
+            r"
+            print('ran')
+            outer + 1
+            ",
+            ["outer"].as_slice(),
+            "`outer`",
+        ),
+        // Missing names in name order; `args` is captured too but goes
+        // unnamed, since a run supplies it.
+        (
+            "image-host-two",
+            r"
+            print('ran')
+            [outer, inner, args]
+            ",
+            ["args", "outer", "inner"].as_slice(),
+            "`inner`, `outer`",
+        ),
+    ] {
+        let path = host_image(name, source, outer_scope);
+        for args in [
+            ["run", path.as_str(), "an-arg"].as_slice(),
+            &[path.as_str()],
+        ] {
+            let ran = run(args);
+            assert_eq!(ran.exit, Exit::UsageError, "{args:?}: {ran:?}");
+            assert!(
+                ran.stderr.contains(&format!(
+                    "cannot run {path}: it captures {missing}, but a run supplies only `args`"
+                )),
+                "{args:?}: {ran:?}"
+            );
+            assert_eq!(ran.stdout, "", "{args:?}: nothing runs");
+        }
+    }
+}
+
+#[test]
+fn an_image_capturing_only_args_or_nothing_runs() {
+    let path = host_image("image-host-args", "print(args[0])", &["args"]);
+    let ran = run(&["run", &path, "an-arg"]);
+    assert_eq!(ran.exit, Exit::Success, "{ran:?}");
+    assert_eq!(ran.stdout, "an-arg\n", "the image runs with its arguments");
+    let path = host_image("image-host-none", "print('alone')", &[]);
+    let ran = run(&["run", &path]);
+    assert_eq!(ran.exit, Exit::Success, "{ran:?}");
+    assert_eq!(ran.stdout, "alone\n", "an image capturing nothing runs");
 }
 
 #[test]
