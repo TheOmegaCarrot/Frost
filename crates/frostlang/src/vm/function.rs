@@ -278,6 +278,28 @@ pub struct Closure {
     pub(crate) captures: Vec<Value>,
 }
 
+impl Closure {
+    /// The function's name, as reported in errors and backtraces:
+    /// the name the script gave it, or that of the `def` that made it,
+    /// or else `<lambda>`.
+    /// A program's top level is `<main>`.
+    pub fn name(&self) -> &str {
+        &self.function.name
+    }
+
+    /// The number of arguments the function accepts.
+    pub fn arity(&self) -> Arity {
+        self.function.arity
+    }
+
+    /// The base name of the file the function was compiled from,
+    /// as [`BacktraceFrame::origin`](crate::BacktraceFrame::origin) reports it.
+    /// `None` when there is no such file.
+    pub fn origin(&self) -> Option<&str> {
+        self.function.origin.as_deref()
+    }
+}
+
 impl Drop for Closure {
     fn drop(&mut self) {
         free::free(std::mem::take(&mut self.captures), Vec::into_iter);

@@ -7,8 +7,8 @@ use crate::core::deserialize_of_types;
 use crate::native::{ArgSite, FromArg};
 use crate::vm::expected_types;
 use crate::{
-    FrostArray, FrostBytes, FrostError, FrostFloat, FrostMap, FrostString, FrostType, TypeSet,
-    Value,
+    Arity, FrostArray, FrostBytes, FrostError, FrostFloat, FrostMap, FrostString, FrostType,
+    TypeSet, Value,
 };
 
 /// The error converting `value`, which is not of `types`.
@@ -280,6 +280,26 @@ impl Function {
     /// The function, as a value, by ownership.
     pub fn into_value(self) -> Value {
         self.0
+    }
+
+    /// The function's name, as reported in errors and backtraces.
+    /// See [`NativeFunction::name`](crate::NativeFunction::name) and
+    /// [`Closure::name`](crate::Closure::name).
+    pub fn name(&self) -> &str {
+        match &self.0 {
+            Value::NativeFunction(native) => native.name(),
+            Value::Closure(closure) => closure.name(),
+            other => unreachable!("a Function holds a function, not {}", other.type_name()),
+        }
+    }
+
+    /// The number of arguments the function accepts.
+    pub fn arity(&self) -> Arity {
+        match &self.0 {
+            Value::NativeFunction(native) => native.arity(),
+            Value::Closure(closure) => closure.arity(),
+            other => unreachable!("a Function holds a function, not {}", other.type_name()),
+        }
     }
 }
 

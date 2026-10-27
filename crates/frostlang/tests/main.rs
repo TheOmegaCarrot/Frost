@@ -11,6 +11,7 @@ mod backtrace_origin;
 mod binary_operations;
 mod binary_operators;
 mod call_expressions;
+mod closure_inspection;
 mod compile_in_scope;
 mod compiled_program;
 mod compiler_options;
