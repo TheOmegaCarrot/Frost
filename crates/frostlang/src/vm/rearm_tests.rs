@@ -20,6 +20,7 @@ fn program(code: Vec<Bytecode>) -> Arc<Closure> {
         child_fns: Vec::new(),
         constants: Vec::new(),
         key_constants: Vec::new(),
+        patterns: Vec::new(),
         name_table: vec![NameEntry {
             name: "x".to_string(),
             exported: false,

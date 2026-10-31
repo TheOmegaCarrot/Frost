@@ -460,6 +460,7 @@ fn invoke(native: Value, args: Vec<Value>) -> Result<Value, FrostError> {
         child_fns: Vec::new(),
         constants: Vec::new(),
         key_constants: Vec::new(),
+        patterns: Vec::new(),
         name_table,
         num_captures,
         arity: Arity::Exact(0),

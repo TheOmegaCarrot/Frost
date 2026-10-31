@@ -14,11 +14,12 @@ use std::sync::Arc;
 
 use crate::common;
 
+use common::pattern::bind;
 use common::{Pop, func, run_fn};
 use frostlang::bytecode::{
     Bytecode, CompiledFunction, DebugInfo, FormatVersion, OpDebugInfo, SourceLines, Span,
 };
-use frostlang::{Arity, Vm};
+use frostlang::{Arity, Value, Vm};
 
 use Bytecode::*;
 
@@ -323,6 +324,23 @@ fn a_run_of_locals_reaching_past_the_slots_is_caught() {
     }
 }
 
+#[test]
+#[should_panic(expected = "a pattern of `<test>` binds capture 0")]
+fn a_pattern_binding_a_capture_is_caught() {
+    let function = common::func_with_captures(
+        vec![Pop, PushNull, MatchPattern(0)],
+        Arity::Exact(0),
+        vec![common::entry("captured", false)],
+        vec![],
+        1,
+    );
+    let closure = common::with_patterns(function, vec![bind(0)])
+        .assert_well_formed()
+        .close([("captured", Value::Null)])
+        .expect("the capture is supplied");
+    let _ = Vm::factory().build(closure).run();
+}
+
 // ============================================================
 // Debug info
 // ============================================================
@@ -355,6 +373,7 @@ fn run_with_heights(code: Vec<Bytecode>, heights: Vec<Option<u32>>) {
         child_fns: Vec::new(),
         constants: Vec::new(),
         key_constants: Vec::new(),
+        patterns: Vec::new(),
         name_table: Vec::new(),
         num_captures: 0,
         arity: Arity::Exact(0),

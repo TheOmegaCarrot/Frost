@@ -192,6 +192,7 @@ fn passed_unshared(load: &[Bytecode]) -> Value {
         child_fns: Vec::new(),
         constants: Vec::new(),
         key_constants: Vec::new(),
+        patterns: Vec::new(),
         name_table: vec![entry("probe", false), entry("xs", false)],
         num_captures: 1,
         arity: Arity::Exact(0),

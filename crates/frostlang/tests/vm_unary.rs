@@ -25,6 +25,7 @@ fn eval(constants: Vec<Value>, code: Vec<Bytecode>) -> Result<Value, FrostError>
         child_fns: Vec::new(),
         constants,
         key_constants: Vec::new(),
+        patterns: Vec::new(),
         name_table: Vec::new(),
         num_captures: 0,
         arity: Arity::Exact(0),

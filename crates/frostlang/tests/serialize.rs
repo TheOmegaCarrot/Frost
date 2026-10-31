@@ -7,13 +7,16 @@
 
 use std::sync::Arc;
 
-use frostlang::bytecode::{Bytecode, CompiledFunction, FormatVersion, NameEntry};
-use frostlang::{Arity, FrostArray, FrostMap, FrostType, MapKey, Value};
+use frostlang::bytecode::{
+    ArrayPatternLength, Bytecode, CompiledFunction, CompiledPattern, FormatVersion, NameEntry,
+    PatternComparand, PatternInput, PatternKey,
+};
+use frostlang::{Arity, FrostArray, FrostMap, FrostType, MapKey, Value, from_value, to_value};
 
 /// A function tree exercising every serialized shape: a child fn (recursion); constants
 /// covering a string, an int, a nested array with a null, and a map with a *non-string* key;
-/// key constants covering every `MapKey` variant; and code covering payload-bearing
-/// opcodes (a float, type sets, an alias).
+/// key constants covering every `MapKey` variant; patterns of every shape; and code covering
+/// payload-bearing opcodes (a float, type sets, an alias).
 fn sample() -> CompiledFunction {
     let child = Arc::new(CompiledFunction {
         version: FormatVersion,
@@ -23,6 +26,7 @@ fn sample() -> CompiledFunction {
         child_fns: Vec::new(),
         constants: Vec::new(),
         key_constants: Vec::new(),
+        patterns: Vec::new(),
         name_table: Vec::new(),
         num_captures: 0,
         arity: Arity::Exact(0),
@@ -70,6 +74,7 @@ fn sample() -> CompiledFunction {
             MapKey::Float(1.5.try_into().unwrap()),
             MapKey::from(vec![0xffu8]),
         ],
+        patterns: sample_patterns(),
         name_table: vec![NameEntry {
             name: "x".into(),
             exported: true,
@@ -80,6 +85,61 @@ fn sample() -> CompiledFunction {
     }
 }
 
+/// Patterns holding every kind of pattern, length, comparand, key, and input.
+fn sample_patterns() -> Vec<CompiledPattern> {
+    let comparand = |comparand| CompiledPattern::Value(comparand);
+    vec![
+        CompiledPattern::Map {
+            entries: [
+                (
+                    PatternKey::Constant(0),
+                    CompiledPattern::Binding {
+                        types: Some(FrostType::NUMERIC),
+                        local: Some(0),
+                    },
+                ),
+                (
+                    PatternKey::Input(PatternInput::Local(0)),
+                    comparand(PatternComparand::Input(PatternInput::EarlierBinding(0))),
+                ),
+                (
+                    PatternKey::Input(PatternInput::Global(1)),
+                    comparand(PatternComparand::Constant(2)),
+                ),
+            ]
+            .into(),
+            whole: Some(0),
+        },
+        CompiledPattern::Alternative(
+            [
+                CompiledPattern::Array {
+                    elements: [
+                        comparand(PatternComparand::Null),
+                        comparand(PatternComparand::Bool(true)),
+                        comparand(PatternComparand::Int(-3)),
+                        comparand(PatternComparand::Float(2.5.try_into().unwrap())),
+                    ]
+                    .into(),
+                    length: ArrayPatternLength::Exact,
+                },
+                CompiledPattern::Array {
+                    elements: [CompiledPattern::Binding {
+                        types: None,
+                        local: None,
+                    }]
+                    .into(),
+                    length: ArrayPatternLength::AtLeast { rest: Some(0) },
+                },
+                CompiledPattern::Array {
+                    elements: [].into(),
+                    length: ArrayPatternLength::AtLeast { rest: None },
+                },
+            ]
+            .into(),
+        ),
+    ]
+}
+
 fn assert_matches(original: &CompiledFunction, restored: &CompiledFunction) {
     assert_eq!(restored.name, original.name);
     assert_eq!(restored.code, original.code);
@@ -87,6 +147,7 @@ fn assert_matches(original: &CompiledFunction, restored: &CompiledFunction) {
     assert_eq!(restored.constants, original.constants);
     // The key pool serializes as plain `MapKey`s, needing no `ConstValue` guard.
     assert_eq!(restored.key_constants, original.key_constants);
+    assert_eq!(restored.patterns, original.patterns);
     assert_eq!(restored.arity, original.arity);
     assert_eq!(restored.num_captures, original.num_captures);
     assert_eq!(restored.child_fns.len(), original.child_fns.len());
@@ -102,6 +163,7 @@ fn a_closure_value() -> Value {
         child_fns: Vec::new(),
         constants: Vec::new(),
         key_constants: Vec::new(),
+        patterns: Vec::new(),
         name_table: Vec::new(),
         num_captures: 0,
         arity: Arity::Exact(0),
@@ -129,6 +191,15 @@ fn roundtrips_through_json() {
 }
 
 #[test]
+fn roundtrips_through_the_serde_bridge() {
+    // The form the Frost-written globals are embedded in.
+    let cf = sample();
+    let value = to_value(&cf).unwrap();
+    let restored: CompiledFunction = from_value(value).unwrap();
+    assert_matches(&cf, &restored);
+}
+
+#[test]
 fn a_version_mismatch_is_rejected() {
     let cf = sample();
     // Serialize, then rewrite the stamped version to one this runtime is not.
@@ -150,6 +221,7 @@ fn a_function_valued_constant_cannot_be_serialized() {
         child_fns: Vec::new(),
         constants: vec![a_closure_value()],
         key_constants: Vec::new(),
+        patterns: Vec::new(),
         name_table: Vec::new(),
         num_captures: 0,
         arity: Arity::Exact(0),

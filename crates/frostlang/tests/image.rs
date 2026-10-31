@@ -168,6 +168,7 @@ fn a_program_with_a_function_constant_cannot_be_saved() {
         child_fns: Vec::new(),
         constants: vec![frost_closure!("f", || Value::Null)],
         key_constants: Vec::new(),
+        patterns: Vec::new(),
         name_table: Vec::new(),
         num_captures: 0,
         arity: Arity::Exact(0),

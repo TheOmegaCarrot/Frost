@@ -39,6 +39,7 @@ fn program(constants: Vec<Value>, code: Vec<Bytecode>) -> Arc<CompiledFunction> 
         child_fns: Vec::new(),
         constants,
         key_constants: Vec::new(),
+        patterns: Vec::new(),
         name_table: Vec::new(),
         num_captures: 0,
         arity: Arity::Exact(0),

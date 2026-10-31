@@ -27,7 +27,10 @@
 use std::num::NonZeroU64;
 use std::sync::Arc;
 
-use frostlang::bytecode::{Bytecode, CompiledFunction, FormatVersion, NameEntry, StackEffect};
+use frostlang::bytecode::{
+    Bytecode, CompiledFunction, CompiledPattern, FormatVersion, NameEntry, PatternComparand,
+    StackEffect,
+};
 use frostlang::{
     Arity, FrostFloat, FrostType, HostComponent, ImporterBuilder, MapKey, RunError, Value, Vm,
 };
@@ -78,6 +81,12 @@ fn map_k() -> Value {
 /// The key constant every constant-keyed case uses: `"k"`, present in the [`MAP_K`] constant.
 const KEY_K: u64 = 0;
 
+// The patterns a case may test against.
+/// A pattern binding any value to the case's slot.
+const BIND_CASE: u64 = 0;
+/// A pattern matching only `null`, so never the Map the pattern cases test.
+const NOTHING_MATCHES: u64 = 1;
+
 // Child functions a case may close over or call.
 /// A closure of arity N, for N in 0..=2, that returns null.
 const RETURN_NULL_ARITY: [u32; 3] = [0, 1, 2];
@@ -116,6 +125,7 @@ fn function(
         child_fns: Vec::new(),
         constants: Vec::new(),
         key_constants: Vec::new(),
+        patterns: Vec::new(),
         name_table,
         num_captures,
         arity,
@@ -261,7 +271,9 @@ fn case(op: Bytecode) -> Option<Case> {
         }
 
         SoftIndexStructure => Case::new(op, [LoadConst(ARRAY_1_2), PushInt(0)]),
-        HardIndexMap(_) | TestConstKey(_) | ExtractConstKey(_) => Case::new(op, [LoadConst(MAP_K)]),
+        HardIndexMap(_) | TestConstKey(_) | ExtractConstKey(_) | MatchPattern(_) => {
+            Case::new(op, [LoadConst(MAP_K)])
+        }
         TestKey | ExtractKey => Case::new(op, [LoadConst(MAP_K), LoadConst(STRING_K)]),
 
         // Balance the marks, so the measurement's own rewind takes its own mark.
@@ -359,6 +371,8 @@ fn instances() -> Vec<Case> {
         cased(ExtractConstKey(KEY_K)).leaving(vec![map_k(), Value::from(1)]),
         cased(TestArrayLenExact(2)).leaving(vec![array_1_2.clone(), Value::from(true)]),
         cased(TestArrayLenAtLeast(1)).leaving(vec![array_1_2, Value::from(true)]),
+        cased(MatchPattern(BIND_CASE)).leaving(vec![map_k(), Value::from(true)]),
+        cased(MatchPattern(NOTHING_MATCHES)).leaving(vec![map_k(), Value::from(false)]),
     ];
 
     // A jump of 0 lands on the next instruction whether or not it is taken,
@@ -442,6 +456,13 @@ fn measure(case: &Case) -> (Value, Value) {
         child_fns: child_fns(),
         constants: constants(),
         key_constants: vec![MapKey::from("k")],
+        patterns: vec![
+            CompiledPattern::Binding {
+                types: None,
+                local: Some(CASE_SLOT as u32),
+            },
+            CompiledPattern::Value(PatternComparand::Null),
+        ],
         name_table: vec![slot("below"), slot("left"), slot("case")],
         num_captures: 0,
         arity: Arity::Exact(0),

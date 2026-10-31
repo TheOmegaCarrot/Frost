@@ -40,6 +40,7 @@ fn call_native(native: Value, argc: u64) -> Result<ProgramResult, FrostError> {
         child_fns: Vec::new(),
         constants: Vec::new(),
         key_constants: Vec::new(),
+        patterns: Vec::new(),
         name_table: vec![NameEntry {
             name: "f".to_string(),
             exported: false,
@@ -154,6 +155,7 @@ fn omitted_vs_present_probe() -> Arc<CompiledFunction> {
         child_fns: Vec::new(),
         constants: Vec::new(),
         key_constants: Vec::new(),
+        patterns: Vec::new(),
         name_table: vec![NameEntry {
             name: "x".to_string(),
             exported: false,
@@ -202,6 +204,7 @@ fn between_closure_seating_works_through_call() {
             child_fns: Vec::new(),
             constants: Vec::new(),
             key_constants: Vec::new(),
+            patterns: Vec::new(),
             name_table: vec![NameEntry {
                 name: "probe".to_string(),
                 exported: false,

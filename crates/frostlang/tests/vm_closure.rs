@@ -35,6 +35,7 @@ fn compiled(
         child_fns: Vec::new(),
         constants: Vec::new(),
         key_constants: Vec::new(),
+        patterns: Vec::new(),
         name_table: names
             .iter()
             .map(|n| NameEntry {

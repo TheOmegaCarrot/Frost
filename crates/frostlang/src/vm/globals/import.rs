@@ -23,6 +23,7 @@ pub(super) fn import_global() -> Value {
             name_table: Vec::new(),
             constants: vec![import_type_error()],
             key_constants: Vec::new(),
+            patterns: Vec::new(),
             child_fns: Vec::new(),
             debug_info: None,
             code: vec![

@@ -97,6 +97,7 @@ fn run_main(caps: Vec<(&str, Value)>, body: Vec<Bytecode>) -> Result<Value, Fros
         child_fns: Vec::new(),
         constants: Vec::new(),
         key_constants: Vec::new(),
+        patterns: Vec::new(),
         name_table: names,
         num_captures: caps.len(),
         arity: Arity::Exact(0),

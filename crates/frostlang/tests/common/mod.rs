@@ -3,10 +3,25 @@
 //! The bytecode-level tests of globals (`vm_*`) predate the compiler. New tests
 //! of globals are written from Frost source (`library_*`), with the `source` harness.
 
+pub(crate) mod pattern;
+
 use std::sync::Arc;
 
-use frostlang::bytecode::{Bytecode, CompiledFunction, FormatVersion, GLOBAL_NAMES, NameEntry};
+use frostlang::bytecode::{
+    Bytecode, CompiledFunction, CompiledPattern, FormatVersion, GLOBAL_NAMES, NameEntry,
+};
 use frostlang::{Arity, Closure, ProgramResult, Vm};
+
+/// `function`, holding `patterns` as its pattern pool.
+pub(crate) fn with_patterns(
+    function: Arc<CompiledFunction>,
+    patterns: Vec<CompiledPattern>,
+) -> Arc<CompiledFunction> {
+    Arc::new(CompiledFunction {
+        patterns,
+        ..Arc::unwrap_or_clone(function)
+    })
+}
 
 /// Free-const re-export of the `Bytecode::Pop` alias.
 /// The alias is an associated constant, which `use Bytecode::*` cannot import;
@@ -35,6 +50,7 @@ pub(crate) fn empty_fn(code: Vec<Bytecode>) -> Arc<CompiledFunction> {
         child_fns: Vec::new(),
         constants: Vec::new(),
         key_constants: Vec::new(),
+        patterns: Vec::new(),
         name_table: Vec::new(),
         num_captures: 0,
         arity: Arity::Exact(0),
@@ -54,6 +70,7 @@ pub(crate) fn fn_with_locals(code: Vec<Bytecode>, names: Vec<NameEntry>) -> Arc<
         child_fns: Vec::new(),
         constants: Vec::new(),
         key_constants: Vec::new(),
+        patterns: Vec::new(),
         name_table: names,
         num_captures: 0,
         arity: Arity::Exact(0),
@@ -92,6 +109,7 @@ pub(crate) fn func_with_captures(
         child_fns,
         constants: Vec::new(),
         key_constants: Vec::new(),
+        patterns: Vec::new(),
         name_table: names,
         num_captures,
         arity,
@@ -146,6 +164,7 @@ pub(crate) fn closure(code: Vec<Bytecode>, names: Vec<NameEntry>) -> Arc<Closure
         child_fns: Vec::new(),
         constants: Vec::new(),
         key_constants: Vec::new(),
+        patterns: Vec::new(),
         name_table: names,
         num_captures: 0,
         arity: Arity::Exact(0),

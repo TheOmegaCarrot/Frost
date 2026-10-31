@@ -51,6 +51,7 @@ fn run(
         child_fns: Vec::new(),
         constants: Vec::new(),
         key_constants,
+        patterns: Vec::new(),
         name_table,
         num_captures: caps.len(),
         arity: Arity::Exact(0),

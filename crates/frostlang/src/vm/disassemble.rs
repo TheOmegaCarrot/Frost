@@ -4,27 +4,30 @@
 use std::fmt::{self, Display, Formatter};
 
 use crate::bytecode::{
-    Bytecode, CompiledFunction, ListedFunction, ListedInstruction, Listing, Reference,
+    ArrayPatternLength, Bytecode, CompiledFunction, CompiledPattern, GLOBAL_NAMES, ListedFunction,
+    ListedInstruction, Listing, PatternComparand, PatternInput, PatternKey, Reference,
 };
 use crate::core::util::count::counted;
 use crate::core::util::identifier::is_identifier_like_and_not_keyword;
+use crate::vm::expected_types;
+use crate::vm::listing::entry;
 use crate::{Arity, MapKey, Value};
 
-/// The widest a constant shown beside an instruction may be before it is cut
-/// short. The constant pool itself shows each in full.
-const INLINE_CONSTANT_WIDTH: usize = 40;
+/// The widest a constant or pattern shown beside an instruction may be before
+/// it is cut short. The function's own list of each shows them in full.
+const INLINE_WIDTH: usize = 40;
 
 impl CompiledFunction {
     /// A readable listing of this function, then of each function nested in
     /// it, depth first. Print it with `{}`.
     ///
     /// Each listing shows the function's arity, its slots, constants, Map keys,
-    /// and nested functions, then its code. An instruction with an alias, such
-    /// as [`Bytecode::Dup`], lists by the alias. Jumps name labeled targets, and
-    /// each instruction that refers to a slot, constant, key, global, or
-    /// nested function is annotated with what it refers to. Where the function
-    /// has debug info, each instruction also shows its source location and its
-    /// entry stack height.
+    /// patterns, and nested functions, then its code. An instruction with an
+    /// alias, such as [`Bytecode::Dup`], lists by the alias. Jumps name labeled
+    /// targets, and each instruction that refers to a slot, constant, key,
+    /// pattern, global, or nested function is annotated with what it refers
+    /// to. Where the function has debug info, each instruction also shows its
+    /// source location and its entry stack height.
     ///
     /// The listing is meant for people, and its format may change; for the same
     /// information as data, see [`listing`](Self::listing). Malformed bytecode
@@ -128,6 +131,12 @@ fn list(f: &mut Formatter<'_>, function: &ListedFunction, paint: Paint) -> fmt::
             writeln!(f, "    {index:>4}  {}", key_value(key).to_debug_string())?;
         }
     }
+    if !function.patterns.is_empty() {
+        writeln!(f, "  patterns")?;
+        for (index, pattern) in function.patterns.iter().enumerate() {
+            writeln!(f, "    {index:>4}  {}", pattern_source(pattern, function))?;
+        }
+    }
     if !function.children.is_empty() {
         writeln!(f, "  children")?;
         for (index, name) in function.children.iter().enumerate() {
@@ -161,7 +170,7 @@ fn list_code(f: &mut Formatter<'_>, function: &ListedFunction, paint: Paint) -> 
     let rows: Vec<Row> = function
         .instructions
         .iter()
-        .map(|instruction| row(instruction, has_debug_info))
+        .map(|instruction| row(instruction, function, has_debug_info))
         .collect();
     // Columns as wide as this function needs.
     let width = |of: &dyn Fn(&Row) -> usize| rows.iter().map(of).max().unwrap_or(0);
@@ -208,9 +217,9 @@ fn list_code(f: &mut Formatter<'_>, function: &ListedFunction, paint: Paint) -> 
     Ok(())
 }
 
-/// How `instruction` lists; with debug columns if `has_debug_info`, empty
-/// where it has no entry and `-` for an unknown height.
-fn row(instruction: &ListedInstruction, has_debug_info: bool) -> Row {
+/// How `instruction`, of `function`, lists; with debug columns if
+/// `has_debug_info`, empty where it has no entry and `-` for an unknown height.
+fn row(instruction: &ListedInstruction, function: &ListedFunction, has_debug_info: bool) -> Row {
     let debug = has_debug_info.then(|| match instruction.debug {
         Some(debug) => (
             format!("{}:{}", debug.location.line(), debug.location.column()),
@@ -224,7 +233,7 @@ fn row(instruction: &ListedInstruction, has_debug_info: bool) -> Row {
     let (operand, comment) = match instruction.reference {
         Some(reference) => (
             reference_operand(reference),
-            Some(reference_comment(reference)),
+            Some(reference_comment(reference, function)),
         ),
         None => (operand(instruction.op), None),
     };
@@ -242,6 +251,7 @@ fn reference_operand(reference: Reference) -> String {
         Reference::Slot { index, .. }
         | Reference::Constant { index, .. }
         | Reference::Key { index, .. }
+        | Reference::Pattern { index, .. }
         | Reference::Global { index, .. } => index.to_string(),
         Reference::Child { index, .. } => index.to_string(),
         Reference::Slots { first, count, .. } => {
@@ -253,8 +263,8 @@ fn reference_operand(reference: Reference) -> String {
     }
 }
 
-/// What a referring instruction's operand refers to, as its comment.
-fn reference_comment(reference: Reference) -> String {
+/// What a referring instruction's operand refers to in `function`, as its comment.
+fn reference_comment(reference: Reference, function: &ListedFunction) -> String {
     match reference {
         Reference::Slot { name, .. } | Reference::Global { name, .. } => {
             name.unwrap_or("?").to_string()
@@ -265,8 +275,15 @@ fn reference_comment(reference: Reference) -> String {
         Reference::Slots {
             names: Some(names), ..
         } => names.iter().collect::<Vec<_>>().join(", "),
-        Reference::Constant { value, .. } => value.map_or_else(|| "?".to_string(), inline_constant),
+        Reference::Constant { value, .. } => value.map_or_else(
+            || "?".to_string(),
+            |value| cut_short(value.to_debug_string()),
+        ),
         Reference::Key { key, .. } => key.map_or_else(|| "?".to_string(), key_access),
+        Reference::Pattern { pattern, .. } => pattern.map_or_else(
+            || "?".to_string(),
+            |pattern| cut_short(pattern_source(pattern, function)),
+        ),
         Reference::Child { name, captures, .. } => {
             format!("{}, {}", name.unwrap_or("?"), counted(captures, "capture"))
         }
@@ -340,6 +357,7 @@ fn operand(op: Bytecode) -> String {
         | HardIndexMap(_)
         | TestConstKey(_)
         | ExtractConstKey(_)
+        | MatchPattern(_)
         | CreateClosure { .. }
         | Jump(_)
         | JumpIfTrue(_)
@@ -406,6 +424,7 @@ fn opcode_name(op: Bytecode) -> &'static str {
         TypeTest(_) => "TypeTest",
         TestArrayLenExact(_) => "TestArrayLenExact",
         TestArrayLenAtLeast(_) => "TestArrayLenAtLeast",
+        MatchPattern(_) => "MatchPattern",
         MarkStack => "MarkStack",
         DropMark => "DropMark",
         RewindToMark => "RewindToMark",
@@ -414,22 +433,131 @@ fn opcode_name(op: Bytecode) -> &'static str {
     }
 }
 
-/// A constant as shown beside an instruction: cut short if long.
-fn inline_constant(constant: &Value) -> String {
-    let shown = constant.to_debug_string();
-    if shown.chars().count() <= INLINE_CONSTANT_WIDTH {
+/// A constant or pattern as shown beside an instruction: cut short if long.
+fn cut_short(shown: String) -> String {
+    if shown.chars().count() <= INLINE_WIDTH {
         return shown;
     }
-    let cut: String = shown.chars().take(INLINE_CONSTANT_WIDTH - 3).collect();
+    let cut: String = shown.chars().take(INLINE_WIDTH - 3).collect();
     format!("{cut}...")
+}
+
+/// `pattern`, of `function`, written much as Frost source would write it, with
+/// what it refers to by name or value, and `?` for what it refers to that is
+/// not there.
+fn pattern_source(pattern: &CompiledPattern, function: &ListedFunction) -> String {
+    match pattern {
+        CompiledPattern::Binding { types, local } => {
+            let name = local.map_or("_", |local| slot_name(function, local));
+            match types {
+                None => name.to_string(),
+                Some(types) => format!("{name} is {}", expected_types(*types)),
+            }
+        }
+        CompiledPattern::Value(comparand) => comparand_source(comparand, function),
+        CompiledPattern::Array { elements, length } => {
+            let rest = match length {
+                ArrayPatternLength::Exact => None,
+                ArrayPatternLength::AtLeast { rest } => Some(format!(
+                    "...{}",
+                    rest.map_or("_", |rest| slot_name(function, rest))
+                )),
+            };
+            let parts: Vec<String> = elements
+                .iter()
+                .map(|element| pattern_source(element, function))
+                .chain(rest)
+                .collect();
+            format!("[{}]", parts.join(", "))
+        }
+        CompiledPattern::Map { entries, whole } => {
+            let entries: Vec<String> = entries
+                .iter()
+                .map(|(key, entry_pattern)| {
+                    format!(
+                        "{}: {}",
+                        key_source(key, function),
+                        pattern_source(entry_pattern, function)
+                    )
+                })
+                .collect();
+            let map = format!("{{{}}}", entries.join(", "));
+            match whole {
+                None => map,
+                Some(whole) => format!("{map} as {}", slot_name(function, *whole)),
+            }
+        }
+        // An Alternative that is a branch of another lists merged into its
+        // parent's branches, without parentheses; that matches the same, since
+        // the first branch to match commits.
+        CompiledPattern::Alternative(branches) => {
+            let branches: Vec<String> = branches
+                .iter()
+                .map(|branch| pattern_source(branch, function))
+                .collect();
+            branches.join(" | ")
+        }
+    }
+}
+
+/// A Map pattern's `key`, as it is written before the colon.
+fn key_source(key: &PatternKey, function: &ListedFunction) -> String {
+    match key {
+        PatternKey::Constant(key) => entry(function.keys, u64::from(*key)).map_or_else(
+            || "?".to_string(),
+            |key| bare_key(key).map_or_else(|| bracketed_key(key), str::to_string),
+        ),
+        PatternKey::Input(input) => format!("[{}]", input_name(input, function)),
+    }
+}
+
+/// What a value pattern compares against: a literal, or a pin.
+fn comparand_source(comparand: &PatternComparand, function: &ListedFunction) -> String {
+    match comparand {
+        PatternComparand::Null => Value::Null.to_debug_string(),
+        PatternComparand::Bool(bool) => Value::Bool(*bool).to_debug_string(),
+        PatternComparand::Int(int) => Value::Int(*int).to_debug_string(),
+        PatternComparand::Float(float) => Value::Float(*float).to_debug_string(),
+        PatternComparand::Constant(constant) => entry(function.constants, u64::from(*constant))
+            .map_or_else(|| "?".to_string(), Value::to_debug_string),
+        PatternComparand::Input(input) => format!("({})", input_name(input, function)),
+    }
+}
+
+/// The name of what a pattern takes from outside the value it tests.
+fn input_name<'a>(input: &PatternInput, function: &ListedFunction<'a>) -> &'a str {
+    match *input {
+        PatternInput::Local(local) | PatternInput::EarlierBinding(local) => {
+            slot_name(function, local)
+        }
+        PatternInput::Global(global) => entry(GLOBAL_NAMES, u64::from(global))
+            .copied()
+            .unwrap_or("?"),
+    }
+}
+
+/// The name of `function`'s slot `local`.
+fn slot_name<'a>(function: &ListedFunction<'a>, local: u32) -> &'a str {
+    entry(&function.slots, u64::from(local)).map_or("?", |slot| slot.name)
 }
 
 /// A key as Frost source would access it: `.name` where it can, else `[key]`.
 fn key_access(key: &MapKey) -> String {
+    bare_key(key).map_or_else(|| bracketed_key(key), |name| format!(".{name}"))
+}
+
+/// `key`'s name, if source can write it bare: `.name` to access it, or `name:`
+/// in a Map.
+fn bare_key(key: &MapKey) -> Option<&str> {
     match key {
-        MapKey::String(name) if is_identifier_like_and_not_keyword(name) => format!(".{name}"),
-        key => format!("[{}]", key_value(key).to_debug_string()),
+        MapKey::String(name) if is_identifier_like_and_not_keyword(name) => Some(name),
+        _ => None,
     }
+}
+
+/// `key` in brackets, as source writes a key it cannot write bare.
+fn bracketed_key(key: &MapKey) -> String {
+    format!("[{}]", key_value(key).to_debug_string())
 }
 
 fn key_value(key: &MapKey) -> Value {

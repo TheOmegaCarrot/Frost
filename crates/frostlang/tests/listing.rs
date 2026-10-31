@@ -14,6 +14,7 @@ use frostlang::compile::{CompilerOptions, OptimizationOptions, compile_program};
 use frostlang::{Arity, MapKey, Value};
 
 use crate::common::global_slot;
+use crate::common::pattern::bind;
 
 use Bytecode::*;
 
@@ -28,6 +29,7 @@ fn function(name: &str, code: Vec<Bytecode>) -> CompiledFunction {
         child_fns: Vec::new(),
         constants: Vec::new(),
         key_constants: Vec::new(),
+        patterns: Vec::new(),
         name_table: Vec::new(),
         num_captures: 0,
         arity: Arity::Exact(0),
@@ -93,6 +95,7 @@ fn a_function_lists_its_metadata_and_pools() {
     main.name_table = vec![slot("captured", false), slot("shown", true)];
     main.constants = vec![Value::from("text")];
     main.key_constants = vec![MapKey::from("key")];
+    main.patterns = vec![bind(1)];
 
     let listing = main.listing();
     let listed = &listing.functions[0];
@@ -110,6 +113,7 @@ fn a_function_lists_its_metadata_and_pools() {
     );
     assert_eq!(listed.constants, [Value::from("text")]);
     assert_eq!(listed.keys, [MapKey::from("key")]);
+    assert_eq!(listed.patterns, [bind(1)]);
 }
 
 #[test]
@@ -121,6 +125,7 @@ fn each_kind_of_operand_refers_to_what_it_indexes() {
             LoadLocal(0),
             LoadConst(0),
             HardIndexMap(0),
+            MatchPattern(0),
             LoadGlobal(print),
             CreateClosure {
                 child: 0,
@@ -130,14 +135,16 @@ fn each_kind_of_operand_refers_to_what_it_indexes() {
             PushInt(7),
         ],
     );
-    main.name_table = vec![slot("x", false)];
+    main.name_table = vec![slot("x", false), slot("shown", false)];
     main.constants = vec![Value::from("text")];
     main.key_constants = vec![MapKey::from("key")];
+    main.patterns = vec![bind(1)];
     main.child_fns = vec![Arc::new(function("child", vec![PushNull]))];
 
     let listing = main.listing();
     let text = Value::from("text");
     let key = MapKey::from("key");
+    let pattern = bind(1);
     let expected = [
         Some(Reference::Slot {
             index: 0,
@@ -151,6 +158,10 @@ fn each_kind_of_operand_refers_to_what_it_indexes() {
             index: 0,
             key: Some(&key),
         }),
+        Some(Reference::Pattern {
+            index: 0,
+            pattern: Some(&pattern),
+        }),
         Some(Reference::Global {
             index: print,
             name: Some("print"),
@@ -162,7 +173,7 @@ fn each_kind_of_operand_refers_to_what_it_indexes() {
         }),
         Some(Reference::Jump {
             offset: 0,
-            target: Some(JumpTarget { index: 6, label: 0 }),
+            target: Some(JumpTarget { index: 7, label: 0 }),
         }),
         None,
     ];
@@ -228,6 +239,7 @@ fn a_malformed_reference_gathers_as_absent() {
             },
             LoadConst(9),
             HardIndexMap(9),
+            MatchPattern(9),
             LoadGlobal(u64::MAX),
             CreateClosure {
                 child: 9,
@@ -237,7 +249,7 @@ fn a_malformed_reference_gathers_as_absent() {
         ],
     );
     let listing = main.listing();
-    let expected: [Option<Reference>; 8] = [
+    let expected: [Option<Reference>; 9] = [
         Some(Reference::Slot {
             index: 9,
             name: None,
@@ -259,6 +271,10 @@ fn a_malformed_reference_gathers_as_absent() {
         Some(Reference::Key {
             index: 9,
             key: None,
+        }),
+        Some(Reference::Pattern {
+            index: 9,
+            pattern: None,
         }),
         Some(Reference::Global {
             index: u64::MAX,

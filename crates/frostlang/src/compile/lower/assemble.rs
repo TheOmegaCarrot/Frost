@@ -197,6 +197,7 @@ pub(super) fn assemble_code(
         child_fns,
         constants: constants.into_entries(),
         key_constants: key_constants.into_entries(),
+        patterns: Vec::new(),
         num_captures: plan.num_captures(),
         name_table: plan.into_name_table(),
         arity,
@@ -225,6 +226,7 @@ fn is_symbolic_opcode(bytecode: &Bytecode) -> bool {
             | Bytecode::HardIndexMap(_)
             | Bytecode::TestConstKey(_)
             | Bytecode::ExtractConstKey(_)
+            | Bytecode::MatchPattern(_)
             | Bytecode::CreateClosure { .. }
             | Bytecode::Jump(_)
             | Bytecode::JumpIfTrue(_)

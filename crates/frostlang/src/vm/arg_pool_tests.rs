@@ -43,6 +43,7 @@ fn func(
         child_fns: children,
         constants: Vec::new(),
         key_constants: Vec::new(),
+        patterns: Vec::new(),
         name_table,
         num_captures,
         arity: Arity::Exact(0),

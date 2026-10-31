@@ -7,6 +7,7 @@ use crate::core::free;
 use crate::{MapKey, Value};
 
 use super::bytecode::Bytecode;
+use super::pattern::CompiledPattern;
 use super::serialize;
 use crate::vm::debug_info::DebugInfo;
 
@@ -38,6 +39,8 @@ pub struct CompiledFunction {
     // rather than build a `MapKey` per execution. `MapKey` cannot hold a function,
     // so unlike `constants` this needs no serialization guard.
     pub key_constants: Vec<MapKey>,
+    /// Patterns, indexed by [`Bytecode::MatchPattern`].
+    pub patterns: Vec<CompiledPattern>,
     /// The name of each slot, in slot order,
     /// so a binding can be looked up by name or a slot named in an error.
     pub name_table: Vec<NameEntry>,

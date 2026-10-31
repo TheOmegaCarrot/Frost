@@ -206,6 +206,12 @@ pub enum Bytecode {
     /// `b` is false if `x` is not an Array.
     TestArrayLenAtLeast(u64),
 
+    /// Test whether a value matches a pattern, keeping it: `( x -- x b )`.
+    /// The pattern is entry N of the current function's [`patterns`](crate::bytecode::CompiledFunction::patterns).
+    /// On a match, each local the pattern binds is defined; on a mismatch, none is.
+    /// Errors if a key taken from a [`PatternKey::Input`](crate::bytecode::PatternKey::Input) and looked up in a Map is not a valid Map key.
+    MatchPattern(u64),
+
     // Stack marking and truncation
     /// Mark the current stack height, with no stack effect.
     /// Marks belong to the current function call,
@@ -301,7 +307,8 @@ impl Bytecode {
             TestConstKey(_)
             | ExtractConstKey(_)
             | TestArrayLenExact(_)
-            | TestArrayLenAtLeast(_) => StackEffect {
+            | TestArrayLenAtLeast(_)
+            | MatchPattern(_) => StackEffect {
                 reads: 1,
                 pops: 0,
                 pushes: 1,

@@ -1,7 +1,9 @@
 //! [`Listing`]: what a [`CompiledFunction`] tree holds, gathered for display,
 //! such as by [`CompiledFunction::disassemble`].
 
-use crate::bytecode::{Bytecode, CompiledFunction, GLOBAL_NAMES, NameEntry, OpDebugInfo};
+use crate::bytecode::{
+    Bytecode, CompiledFunction, CompiledPattern, GLOBAL_NAMES, NameEntry, OpDebugInfo,
+};
 use crate::{Arity, MapKey, SourceLocation, Value};
 
 impl CompiledFunction {
@@ -43,6 +45,8 @@ pub struct ListedFunction<'a> {
     pub constants: &'a [Value],
     /// Its constant Map keys.
     pub keys: &'a [MapKey],
+    /// Its patterns.
+    pub patterns: &'a [CompiledPattern],
     /// The name of each function nested in it, in order; each is listed after
     /// this one, at this one's path plus its index.
     pub children: Vec<&'a str>,
@@ -113,6 +117,13 @@ pub enum Reference<'a> {
         index: u64,
         /// The key.
         key: Option<&'a MapKey>,
+    },
+    /// A pattern.
+    Pattern {
+        /// The pattern's index.
+        index: u64,
+        /// The pattern.
+        pattern: Option<&'a CompiledPattern>,
     },
     /// A global.
     Global {
@@ -219,6 +230,7 @@ fn gather<'a>(
         slots,
         constants: &function.constants,
         keys: &function.key_constants,
+        patterns: &function.patterns,
         children: function
             .child_fns
             .iter()
@@ -259,6 +271,10 @@ fn reference<'a>(
         HardIndexMap(key) | TestConstKey(key) | ExtractConstKey(key) => Reference::Key {
             index: key,
             key: entry(&function.key_constants, key),
+        },
+        MatchPattern(pattern) => Reference::Pattern {
+            index: pattern,
+            pattern: entry(&function.patterns, pattern),
         },
         LoadGlobal(global) => Reference::Global {
             index: global,
@@ -368,7 +384,7 @@ impl Labels {
 }
 
 /// The entry of `items` at the operand `index`, if there is one.
-fn entry<T>(items: &[T], index: u64) -> Option<&T> {
+pub(super) fn entry<T>(items: &[T], index: u64) -> Option<&T> {
     usize::try_from(index)
         .ok()
         .and_then(|index| items.get(index))

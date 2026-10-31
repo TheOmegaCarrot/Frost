@@ -146,6 +146,7 @@ mod vm_local_slots;
 mod vm_locals;
 mod vm_map;
 mod vm_marks;
+mod vm_match_pattern;
 mod vm_mutable_cell;
 mod vm_native_calls;
 mod vm_print_sink;

@@ -44,6 +44,7 @@ fn three_locals() -> Arc<CompiledFunction> {
         child_fns: Vec::new(),
         constants: Vec::new(),
         key_constants: Vec::new(),
+        patterns: Vec::new(),
         name_table: ["a", "b", "c"]
             .map(|name| NameEntry {
                 name: name.to_string(),
@@ -89,6 +90,7 @@ fn calls_then_probes(calls: usize, probe: Value) -> Arc<Closure> {
         child_fns: vec![three_locals()],
         constants: Vec::new(),
         key_constants: Vec::new(),
+        patterns: Vec::new(),
         name_table: vec![NameEntry {
             name: "probe".to_string(),
             exported: false,

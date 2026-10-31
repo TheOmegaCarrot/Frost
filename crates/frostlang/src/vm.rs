@@ -9,6 +9,7 @@ mod listing;
 mod native;
 mod outcome;
 mod params;
+mod pattern;
 mod print_sink;
 pub(crate) mod serialize;
 
@@ -38,6 +39,10 @@ pub use native::{NativeCtx, NativeFn, NativeFunction};
 pub use outcome::{AbortReason, IdleVm, ProgramParts, ProgramResult, RunError, RunErrorKind};
 pub(crate) use params::{Binder, expected_types};
 pub use params::{InvalidParams, Param, Params};
+pub use pattern::{
+    ArrayPatternLength, AssembledStage, CompiledPattern, PatternComparand, PatternInput,
+    PatternKey, PatternStage,
+};
 pub use print_sink::{PrintSink, StdoutSink};
 pub use serialize::FormatVersion;
 
@@ -533,6 +538,24 @@ impl Vm {
         }
     }
 
+    /// Test the value atop the stack against the running function's pattern
+    /// `index`, defining the locals it binds on a match.
+    fn match_pattern(&mut self, index: usize) -> Result<bool, FrostError> {
+        // Borrow the frame from `stack_frames` directly, not through `this_frame`,
+        // so `slots` can be borrowed mutably beside it.
+        let Some(StackFrame::VmFrame(frame)) = self.stack_frames.last() else {
+            panic!("IMPOSSIBLE: a pattern is tested outside a Frost frame");
+        };
+        let function = &frame.this_fn;
+        pattern::match_pattern(
+            &function.patterns[index],
+            self.stack.last().expect("FROST STACK UNDERFLOW"),
+            function,
+            &mut self.slots[frame.slot_base..][..function.name_table.len()],
+            &self.globals,
+        )
+    }
+
     /// `frame`'s local slots, in name-table order.
     fn frame_slots(&self, frame: &VmFrame) -> &[Option<Value>] {
         &self.slots[frame.slot_base..][..frame.this_fn.name_table.len()]
@@ -975,6 +998,10 @@ impl Vm {
                     Bytecode::TypeTest(types) => {
                         let operand = self.stack_pop();
                         self.stack.push(operand.fits(types).into());
+                    }
+                    Bytecode::MatchPattern(pattern) => {
+                        let matched = self.match_pattern(from_operand(pattern))?;
+                        self.stack.push(matched.into());
                     }
                     Bytecode::MarkStack => {
                         let len = self.stack.len();

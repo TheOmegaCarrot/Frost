@@ -7,9 +7,15 @@ use std::num::NonZeroU64;
 use std::sync::Arc;
 
 use frostlang::bytecode::{
-    Bytecode, CompiledFunction, DebugInfo, FormatVersion, NameEntry, OpDebugInfo, SourceLines, Span,
+    Bytecode, CompiledFunction, DebugInfo, FormatVersion, NameEntry, OpDebugInfo, PatternComparand,
+    PatternInput, SourceLines, Span,
 };
 use frostlang::{Arity, FrostFloat, FrostType, MapKey, Value};
+
+use crate::common::global_slot;
+use crate::common::pattern::{
+    at_least, bind, discard, either, exact, input_key, int, key, map, pin, typed, value,
+};
 
 use Bytecode::*;
 
@@ -24,6 +30,7 @@ fn function(name: &str, code: Vec<Bytecode>) -> CompiledFunction {
         child_fns: Vec::new(),
         constants: Vec::new(),
         key_constants: Vec::new(),
+        patterns: Vec::new(),
         name_table: Vec::new(),
         num_captures: 0,
         arity: Arity::Exact(0),
@@ -169,6 +176,125 @@ fn keys_are_shown_as_source_would_access_them() {
        2  ExtractConstKey  2  ; [1]
        3  HardIndexMap     3  ; ["if"]
 "#;
+    assert_eq!(listing(&main), expected);
+}
+
+#[test]
+fn patterns_are_listed_as_source_would_write_them_and_shown_beside_their_use_cut_short() {
+    let print = global_slot("print");
+    let mut main = function("<main>", (0..8).map(MatchPattern).collect());
+    main.name_table = ["kind", "lhs", "rhs", "rest", "whole", "y"]
+        .map(|name| slot(name, false))
+        .to_vec();
+    main.constants = vec![Value::from("add")];
+    main.key_constants = vec![
+        MapKey::from("kind"),
+        MapKey::from("lhs"),
+        MapKey::from("two words"),
+    ];
+    let print = PatternInput::Global(print as u32);
+    main.patterns = vec![
+        map(
+            [
+                (key(0), value(PatternComparand::Constant(0))),
+                (key(1), bind(1)),
+                (key(2), typed(FrostType::NUMERIC, Some(2))),
+            ],
+            Some(4),
+        ),
+        at_least(
+            [
+                value(PatternComparand::Null),
+                value(PatternComparand::Bool(true)),
+                int(1),
+                value(PatternComparand::Float(FrostFloat::new(1.5).unwrap())),
+                discard(),
+                typed(FrostType::STRING, None),
+                // A set no type constraint names.
+                typed(FrostType::INT | FrostType::STRING, None),
+            ],
+            Some(3),
+        ),
+        either([
+            exact([bind(5)]),
+            at_least([], None),
+            either([pin(PatternInput::Local(5)), pin(print.clone())]),
+        ]),
+        map(
+            [
+                (input_key(PatternInput::Local(5)), bind(1)),
+                (input_key(print), pin(PatternInput::EarlierBinding(1))),
+            ],
+            None,
+        ),
+        map([], None),
+        map([], Some(4)),
+        exact([]),
+        map([(key(0), either([int(1), int(2)]))], None),
+    ];
+    // An Alternative that is a branch of another lists merged into it.
+    let expected = r#"function <main>
+  arity 0, 0 captures
+  slots
+       0  kind
+       1  lhs
+       2  rhs
+       3  rest
+       4  whole
+       5  y
+  constants
+       0  "add"
+  keys
+       0  "kind"
+       1  "lhs"
+       2  "two words"
+  patterns
+       0  {kind: "add", lhs: lhs, ["two words"]: rhs is Numeric} as whole
+       1  [null, true, 1, 1.5, _, _ is String, _ is Int or String, ...rest]
+       2  [y] | [..._] | (y) | (print)
+       3  {[y]: lhs, [print]: (lhs)}
+       4  {}
+       5  {} as whole
+       6  []
+       7  {kind: 1 | 2}
+  code
+       0  MatchPattern  0  ; {kind: "add", lhs: lhs, ["two words"]...
+       1  MatchPattern  1  ; [null, true, 1, 1.5, _, _ is String, ...
+       2  MatchPattern  2  ; [y] | [..._] | (y) | (print)
+       3  MatchPattern  3  ; {[y]: lhs, [print]: (lhs)}
+       4  MatchPattern  4  ; {}
+       5  MatchPattern  5  ; {} as whole
+       6  MatchPattern  6  ; []
+       7  MatchPattern  7  ; {kind: 1 | 2}
+"#;
+    assert_eq!(listing(&main), expected);
+}
+
+#[test]
+fn a_pattern_referring_to_nothing_lists_it_as_unknown() {
+    // No slot, constant, key, or global is there to refer to.
+    let mut main = function("<main>", vec![MatchPattern(0)]);
+    main.patterns = vec![map(
+        [
+            (key(0), bind(0)),
+            (
+                input_key(PatternInput::Global(u32::MAX)),
+                value(PatternComparand::Constant(0)),
+            ),
+            (
+                input_key(PatternInput::Local(9)),
+                at_least([pin(PatternInput::EarlierBinding(9))], Some(9)),
+            ),
+        ],
+        Some(9),
+    )];
+    let expected = r"function <main>
+  arity 0, 0 captures
+  patterns
+       0  {?: ?, [?]: ?, [?]: [(?), ...?]} as ?
+  code
+       0  MatchPattern  0  ; {?: ?, [?]: ?, [?]: [(?), ...?]} as ?
+";
     assert_eq!(listing(&main), expected);
 }
 
@@ -344,7 +470,7 @@ function second (child 1)
 
 #[test]
 fn malformed_references_list_without_panicking() {
-    // Every operand here refers to nothing: no slot, constant, key, global,
+    // Every operand here refers to nothing: no slot, constant, key, pattern, global,
     // child, or instruction.
     let main = function(
         "<main>",
@@ -357,6 +483,7 @@ fn malformed_references_list_without_panicking() {
             },
             LoadConst(0),
             HardIndexMap(0),
+            MatchPattern(0),
             LoadGlobal(u64::MAX),
             CreateClosure {
                 child: 0,
@@ -373,9 +500,10 @@ fn malformed_references_list_without_panicking() {
        2  ClearLocals    4294967295..8589934590  ; ?
        3  LoadConst      0                       ; ?
        4  HardIndexMap   0                       ; ?
-       5  LoadGlobal     18446744073709551615    ; ?
-       6  CreateClosure  0                       ; ?, 0 captures
-       7  Jump           ?                       ; +99, past the end
+       5  MatchPattern   0                       ; ?
+       6  LoadGlobal     18446744073709551615    ; ?
+       7  CreateClosure  0                       ; ?, 0 captures
+       8  Jump           ?                       ; +99, past the end
 ";
     assert_eq!(listing(&main), expected);
 }

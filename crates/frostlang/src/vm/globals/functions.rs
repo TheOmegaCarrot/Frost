@@ -23,6 +23,7 @@ pub(super) fn call_global() -> Value {
             name_table: Vec::new(),
             constants: vec![call_type_error()],
             key_constants: Vec::new(),
+            patterns: Vec::new(),
             child_fns: Vec::new(),
             debug_info: None,
             code: vec![

@@ -379,9 +379,10 @@ pub mod __private {
 /// A host running Frost programs needs nothing here.
 pub mod bytecode {
     pub use crate::vm::{
-        Bytecode, CompiledFunction, DebugInfo, Disassembly, FormatVersion, GLOBAL_NAMES,
-        GLOBAL_PURITY, JumpTarget, ListedDebugInfo, ListedFunction, ListedInstruction, ListedSlot,
-        Listing, NameEntry, OpDebugInfo, Purity, Reference, SlotNames, SourceLines, Span,
-        StackEffect, closure_function, program_from_function, program_function,
+        ArrayPatternLength, AssembledStage, Bytecode, CompiledFunction, CompiledPattern, DebugInfo,
+        Disassembly, FormatVersion, GLOBAL_NAMES, GLOBAL_PURITY, JumpTarget, ListedDebugInfo,
+        ListedFunction, ListedInstruction, ListedSlot, Listing, NameEntry, OpDebugInfo,
+        PatternComparand, PatternInput, PatternKey, PatternStage, Purity, Reference, SlotNames,
+        SourceLines, Span, StackEffect, closure_function, program_from_function, program_function,
     };
 }
