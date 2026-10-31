@@ -494,9 +494,6 @@ impl FunctionBuilder<'_> {
 /// The IR releasing the values of the locals in `run`, derived from the source
 /// at `span`; `None` if the run is empty or `position` is [`Position::Tail`],
 /// where the frame's release follows.
-// TODO: A tail call to a native, or any tail call from the bottom frame, runs
-// before the calling frame is released, so a value the frame's locals still
-// hold stays shared while the callee runs (see FROST-234).
 fn clear_locals(run: LocalRun, position: Position, span: Span) -> Option<Ir> {
     (position == Position::Inner && !run.is_empty()).then(|| Op::ClearLocals(run).at(span))
 }

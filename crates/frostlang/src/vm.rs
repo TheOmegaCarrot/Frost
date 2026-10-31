@@ -82,7 +82,7 @@ pub struct Vm {
 
     // The call stack. Empty until `run`/`run_with_args` seats the top-level closure's frame;
     // a Frost call pushes a `VmFrame`, a native call a `NativeFrame` marker.
-    // After a run, `stack_frames[0]` is the top-level frame, whose locals are the script's bindings/exports.
+    // After a run, `stack_frames[0]` is the top-level frame, whose exported slots are the script's exports.
     stack_frames: Vec<StackFrame>,
 
     // Used to hold the args of a native function call.
@@ -509,6 +509,28 @@ impl Vm {
         );
         let first = frame.slot_base + first;
         first..first + count
+    }
+
+    /// Empty the running frame's local slots, releasing their values, for a tail call that keeps the frame while the callee runs.
+    /// Its function has made its last read of them, but the program's result reads the bottom frame's exported slots, which stay.
+    fn release_locals_for_tail_call(&mut self) {
+        let is_bottom = self.stack_frames.len() == 1;
+        // Borrow the frame from `stack_frames` directly, not through `this_frame`,
+        // so `slots` can be borrowed mutably beside it.
+        let Some(StackFrame::VmFrame(frame)) = self.stack_frames.last() else {
+            panic!("IMPOSSIBLE: a tail call's caller is not a Frost frame");
+        };
+        let names = &frame.this_fn.name_table;
+        let slots = &mut self.slots[frame.slot_base..][..names.len()];
+        if is_bottom {
+            for (slot, entry) in slots.iter_mut().zip(names) {
+                if !entry.exported {
+                    *slot = None;
+                }
+            }
+        } else {
+            slots.fill(None);
+        }
     }
 
     /// `frame`'s local slots, in name-table order.
@@ -1488,10 +1510,11 @@ impl Vm {
         self.debug_assert_own_operand(base, "TailCall");
 
         match &self.stack[base] {
-            // A native callee adds no VM frame: run it inline like a plain Call.
+            // A native callee adds no VM frame: it runs inline, as for a plain Call.
             // Its result is left on the stack; in tail position the enclosing
             // function returns it via the normal end-of-code path next turn.
             Value::NativeFunction(_) => {
+                self.release_locals_for_tail_call();
                 self.native_call(argc)?;
                 Ok(TailFlow::FellThrough)
             }
@@ -1503,6 +1526,7 @@ impl Vm {
                 // A tail call reuses the current frame, except the bottom frame,
                 // which is preserved (see the doc comment).
                 if self.stack_frames.len() == 1 {
+                    self.release_locals_for_tail_call();
                     self.push_closure_frame(base, return_address)?;
                 } else {
                     // The callee's operands are all on the operand stack, so the

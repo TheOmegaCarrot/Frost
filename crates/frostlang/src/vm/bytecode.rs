@@ -133,6 +133,8 @@ pub enum Bytecode {
     Call(u64),
     /// [`Call`](Self::Call) in tail position: the callee's result becomes the current function's result,
     /// and the call does not grow the call stack.
+    /// Before the callee runs, it empties the current function's local slots, releasing their values,
+    /// all but the top-level function's exported slots.
     /// Emit it only where the call's result is the function's result: the instructions after it may or may not run.
     TailCall(u64),
 

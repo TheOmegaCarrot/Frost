@@ -154,6 +154,7 @@ mod vm_reduce;
 mod vm_split_array;
 mod vm_stack;
 mod vm_structures;
+mod vm_tail_call_locals;
 mod vm_tail_calls;
 mod vm_test_const_key;
 mod vm_test_key;

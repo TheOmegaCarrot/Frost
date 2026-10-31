@@ -1,13 +1,14 @@
 //! A call's local slots are released the moment the call ends, however it ends:
-//! a return, a tail call, a return through a native, or an error. Within a call,
-//! the locals of a `do` block or a `match` arm are released once their scope is
-//! done with them.
+//! a return, a tail call, a return through a native, or an error. A tail call
+//! that keeps the calling frame, to a native or from the bottom frame, releases
+//! its locals before the callee runs. Within a call, the locals of a `do` block
+//! or a `match` arm are released once their scope is done with them.
 //!
 //! A slot left filled after its call or scope does not change any result, but it
 //! keeps a reference to its value, so a value it shares can no longer be updated
 //! in place. These tests watch for exactly that. Each script hands a value to a
-//! call or scope that keeps it in a local, then, once that is over, asks
-//! `unshared` whether anything else still holds the value.
+//! call or scope that keeps it in a local, then asks `unshared`, during or after
+//! it, whether anything else still holds the value.
 //!
 //! Scripts are compiled with consume-locals on, so a local's last read gives up
 //! its reference, and every other optimization off, so their values are built at
@@ -51,12 +52,13 @@ fn the_probe_sees_a_value_another_local_holds() {
     ";
     assert_eq!(run(alone), Value::Bool(true), "{alone}");
 
+    // Out of tail position, where the tail call would release `ys` itself.
     let held = r"
         def xs = [1, 2]
         def ys = xs
-        unshared(xs)
+        [unshared(xs)]
     ";
-    assert_eq!(run(held), Value::Bool(false), "{held}");
+    assert_eq!(run(held), run("[false]"), "{held}");
 }
 
 #[test]
@@ -145,8 +147,49 @@ fn a_call_returning_through_a_native_releases_its_locals() {
     );
 }
 
+// These pin from source the release `vm_tail_call_locals` pins at the opcode.
+
+#[test]
+fn a_tail_call_to_a_native_from_a_function_releases_its_locals() {
+    assert_released(
+        r"
+        defn probe(xs) -> {
+            def held = xs
+            unshared(xs)
+        }
+
+        probe([1, 2])
+        ",
+    );
+}
+
+#[test]
+fn a_tail_call_to_a_native_from_the_top_level_releases_its_locals() {
+    assert_released(
+        r"
+        def xs = [1, 2]
+        def held = xs
+        unshared(xs)
+        ",
+    );
+}
+
+#[test]
+fn a_tail_call_to_a_closure_from_the_top_level_releases_its_locals() {
+    // `check` calls the probe out of tail position, so its own frame stays out
+    // of the way: only the top level's tail call can release `held`.
+    let source = r"
+        defn check(v) -> [unshared(v)]
+
+        def xs = [1, 2]
+        def held = xs
+        check(xs)
+        ";
+    assert_eq!(run(source), run("[true]"), "{source}");
+}
+
 // In the error tests, `error` is not called in tail position: a tail call would
-// end the calling frame, releasing its locals, before the error is raised.
+// release the calling frame's locals before the error is raised.
 
 #[test]
 fn a_caught_error_releases_the_locals_of_the_frame_that_raised() {
@@ -222,7 +265,8 @@ fn locals_released_by_one_call_are_reused_by_the_next() {
 }
 
 // In the scope tests, no read of a local on the path taken is its last, so none
-// gives up its reference: only leaving its scope can.
+// gives up its reference: only leaving its scope can. Each probe is out of tail
+// position, where the tail call would release the calling frame's locals itself.
 
 #[test]
 fn a_do_block_releases_its_locals_after_its_value() {
@@ -233,10 +277,10 @@ fn a_do_block_releases_its_locals_after_its_value() {
                 def held = xs
                 if c: len(held) else: 0
             }
-            unshared(xs)
+            [unshared(xs)]
         }
 
-        probe(false, [1, 2])
+        probe(false, [1, 2]) == [true]
         ",
     );
 }
@@ -275,10 +319,10 @@ fn a_match_arm_failing_into_a_catch_all_releases_its_locals() {
         r"
         defn probe(c, xs) -> match [xs] {
             [held] if: c => 0,
-            _ => unshared(xs),
+            _ => [unshared(xs)],
         }
 
-        probe(false, [1, 2])
+        probe(false, [1, 2]) == [true]
         ",
     );
 }
@@ -306,10 +350,10 @@ fn a_taken_match_arm_releases_its_locals_after_its_result() {
             def n = match [xs] {
                 [held] => if c: len(held) else: 0,
             }
-            unshared(xs)
+            [unshared(xs)]
         }
 
-        probe(false, [1, 2])
+        probe(false, [1, 2]) == [true]
         ",
     );
 }
@@ -323,10 +367,10 @@ fn a_taken_catch_all_arm_releases_its_locals_after_its_result() {
                 [] => 0,
                 held => if c: len(held) else: 0,
             }
-            unshared(xs)
+            [unshared(xs)]
         }
 
-        probe(false, [1, 2])
+        probe(false, [1, 2]) == [true]
         ",
     );
 }
