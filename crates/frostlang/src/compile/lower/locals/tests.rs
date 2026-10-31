@@ -449,6 +449,78 @@ fn a_binding_the_code_never_defines_is_left_out_without_a_hole() {
     let _ = dropped;
 }
 
+#[test]
+fn a_run_holds_the_locals_allocated_since_its_point() {
+    let mut locals = Locals::new();
+    let before = bind(&mut locals, "before", span(0)).unwrap();
+    let point = locals.allocation_point();
+    assert!(
+        locals.allocated_since(point).is_empty(),
+        "nothing is allocated yet"
+    );
+    let a = bind(&mut locals, "a", span(1)).unwrap();
+    let b = bind(&mut locals, "b", span(2)).unwrap();
+    let run = locals.allocated_since(point);
+
+    let plan = locals.plan_slots(&[def(before), def(a), def(b)]);
+    assert_eq!(plan.slots_of(&run), Some(1..3), "`a` and `b`, not `before`");
+}
+
+#[test]
+fn a_run_spans_its_slots_whatever_order_the_code_defines_them() {
+    let mut locals = Locals::new();
+    let point = locals.allocation_point();
+    let a = bind(&mut locals, "a", span(0)).unwrap();
+    let b = bind(&mut locals, "b", span(1)).unwrap();
+    let run = locals.allocated_since(point);
+
+    let plan = locals.plan_slots(&[def(b), def(a)]);
+    assert_eq!(plan.slots_of(&run), Some(0..2));
+}
+
+#[test]
+fn a_run_spans_only_the_slots_its_defined_locals_occupy() {
+    let mut locals = Locals::new();
+    let point = locals.allocation_point();
+    let a = bind(&mut locals, "a", span(0)).unwrap();
+    let _dropped = bind(&mut locals, "dropped", span(1)).unwrap();
+    let c = bind(&mut locals, "c", span(2)).unwrap();
+    let run = locals.allocated_since(point);
+
+    // `dropped` is never defined, as if a dead store were removed.
+    let plan = locals.plan_slots(&[def(a), def(c)]);
+    assert_eq!(plan.slots_of(&run), Some(0..2));
+}
+
+#[test]
+fn a_run_none_of_whose_locals_is_defined_occupies_no_slots() {
+    let mut locals = Locals::new();
+    let point = locals.allocation_point();
+    let _a = bind(&mut locals, "a", span(0)).unwrap();
+    let run = locals.allocated_since(point);
+    assert!(!run.is_empty());
+
+    let plan = locals.plan_slots(&[]);
+    assert_eq!(plan.slots_of(&run), None);
+}
+
+#[test]
+#[should_panic(expected = "a run of locals occupies consecutive slots")]
+fn a_run_split_by_another_local_panics() {
+    let mut locals = Locals::new();
+    let outside = bind(&mut locals, "outside", span(0)).unwrap();
+    let point = locals.allocation_point();
+    let a = bind(&mut locals, "a", span(1)).unwrap();
+    let b = bind(&mut locals, "b", span(2)).unwrap();
+    let run = locals.allocated_since(point);
+
+    // Code the compiler never emits: a local from outside the run first
+    // defined between two of the run's own. Clearing the run's span would lose
+    // its value.
+    let plan = locals.plan_slots(&[def(a), def(outside), def(b)]);
+    plan.slots_of(&run);
+}
+
 /// Define a capture, the way a function's enclosing-scope names are seeded.
 fn capture(locals: &mut Locals, name: &str) -> LocalId {
     locals

@@ -174,11 +174,58 @@ fn each_kind_of_operand_refers_to_what_it_indexes() {
 }
 
 #[test]
+fn a_run_of_slots_refers_to_its_bindings_names() {
+    let mut main = function(
+        "<main>",
+        vec![
+            ClearLocals { first: 1, count: 2 },
+            ClearLocals { first: 2, count: 0 },
+            // In range at its start, past the name table at its end.
+            ClearLocals { first: 2, count: 9 },
+        ],
+    );
+    main.name_table = vec![slot("a", false), slot("b", true), slot("c", false)];
+    let listing = main.listing();
+    let names: Vec<(u32, u32, Option<Vec<&str>>)> = references(&listing.functions[0])
+        .into_iter()
+        .map(|reference| match reference {
+            Some(Reference::Slots {
+                first,
+                count,
+                names,
+            }) => (first, count, names.map(|names| names.iter().collect())),
+            other => panic!("not a run of slots: {other:?}"),
+        })
+        .collect();
+    assert_eq!(
+        names,
+        [
+            (1, 2, Some(vec!["b", "c"])),
+            (2, 0, Some(vec![])),
+            (2, 9, None),
+        ],
+        "a run names its bindings in slot order, and none past the name table"
+    );
+
+    let json = serde_json::to_value(&listing).expect("a listing serializes");
+    assert_eq!(
+        json["functions"][0]["instructions"][0]["reference"],
+        serde_json::json!({"Slots": {"first": 1, "count": 2, "names": ["b", "c"]}}),
+        "the names serialize as names alone"
+    );
+}
+
+#[test]
 fn a_malformed_reference_gathers_as_absent() {
     let main = function(
         "<main>",
         vec![
             LoadLocal(9),
+            ClearLocals { first: 9, count: 2 },
+            ClearLocals {
+                first: u32::MAX,
+                count: u32::MAX,
+            },
             LoadConst(9),
             HardIndexMap(9),
             LoadGlobal(u64::MAX),
@@ -190,10 +237,20 @@ fn a_malformed_reference_gathers_as_absent() {
         ],
     );
     let listing = main.listing();
-    let expected: [Option<Reference>; 6] = [
+    let expected: [Option<Reference>; 8] = [
         Some(Reference::Slot {
             index: 9,
             name: None,
+        }),
+        Some(Reference::Slots {
+            first: 9,
+            count: 2,
+            names: None,
+        }),
+        Some(Reference::Slots {
+            first: u32::MAX,
+            count: u32::MAX,
+            names: None,
         }),
         Some(Reference::Constant {
             index: 9,

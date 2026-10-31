@@ -244,6 +244,9 @@ fn reference_operand(reference: Reference) -> String {
         | Reference::Key { index, .. }
         | Reference::Global { index, .. } => index.to_string(),
         Reference::Child { index, .. } => index.to_string(),
+        Reference::Slots { first, count, .. } => {
+            format!("{first}..{}", u64::from(first) + u64::from(count))
+        }
         Reference::Jump { target, .. } => {
             target.map_or_else(|| "?".to_string(), |target| format!("L{}", target.label))
         }
@@ -256,6 +259,12 @@ fn reference_comment(reference: Reference) -> String {
         Reference::Slot { name, .. } | Reference::Global { name, .. } => {
             name.unwrap_or("?").to_string()
         }
+        // Before the empty run, so one past the name table lists as unknown.
+        Reference::Slots { names: None, .. } => "?".to_string(),
+        Reference::Slots { count: 0, .. } => "no slots".to_string(),
+        Reference::Slots {
+            names: Some(names), ..
+        } => names.iter().collect::<Vec<_>>().join(", "),
         Reference::Constant { value, .. } => value.map_or_else(|| "?".to_string(), inline_constant),
         Reference::Key { key, .. } => key.map_or_else(|| "?".to_string(), key_access),
         Reference::Child { name, captures, .. } => {
@@ -325,6 +334,7 @@ fn operand(op: Bytecode) -> String {
         | DefLocal(_)
         | LoadLocal(_)
         | ConsumeLocal(_)
+        | ClearLocals { .. }
         | LoadConst(_)
         | LoadGlobal(_)
         | HardIndexMap(_)
@@ -357,6 +367,7 @@ fn opcode_name(op: Bytecode) -> &'static str {
         DefLocal(_) => "DefLocal",
         LoadLocal(_) => "LoadLocal",
         ConsumeLocal(_) => "ConsumeLocal",
+        ClearLocals { .. } => "ClearLocals",
         LoadConst(_) => "LoadConst",
         LoadGlobal(_) => "LoadGlobal",
         Add => "Add",

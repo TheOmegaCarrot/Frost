@@ -42,6 +42,12 @@ fn sample() -> CompiledFunction {
             Bytecode::TypeTest(FrostType::NUMERIC),
             Bytecode::TypeTest(FrostType::Int | FrostType::String),
             Bytecode::Dup,
+            // Named operands.
+            Bytecode::ClearLocals { first: 0, count: 1 },
+            Bytecode::CreateClosure {
+                child: 0,
+                captures: 0,
+            },
         ],
         child_fns: vec![child],
         constants: vec![

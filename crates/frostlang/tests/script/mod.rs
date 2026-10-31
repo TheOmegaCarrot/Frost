@@ -439,6 +439,21 @@ impl Emitted {
             )
     }
 
+    /// The names of the slots each `ClearLocals` empties, in code order.
+    pub(crate) fn clears(&self) -> Vec<Vec<&str>> {
+        self.code
+            .iter()
+            .filter_map(|op| match *op {
+                Bytecode::ClearLocals { first, count } => {
+                    let first = first as usize;
+                    let entries = &self.function.name_table[first..first + count as usize];
+                    Some(entries.iter().map(|entry| entry.name.as_str()).collect())
+                }
+                _ => None,
+            })
+            .collect()
+    }
+
     /// How many captured values a closure over this function is created with.
     pub(crate) fn num_captures(&self) -> usize {
         self.function.num_captures

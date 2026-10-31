@@ -1,7 +1,7 @@
 //! [`Listing`]: what a [`CompiledFunction`] tree holds, gathered for display,
 //! such as by [`CompiledFunction::disassemble`].
 
-use crate::bytecode::{Bytecode, CompiledFunction, GLOBAL_NAMES, OpDebugInfo};
+use crate::bytecode::{Bytecode, CompiledFunction, GLOBAL_NAMES, NameEntry, OpDebugInfo};
 use crate::{Arity, MapKey, SourceLocation, Value};
 
 impl CompiledFunction {
@@ -91,6 +91,15 @@ pub enum Reference<'a> {
         /// The binding's name.
         name: Option<&'a str>,
     },
+    /// A run of consecutive local slots.
+    Slots {
+        /// The first slot's index.
+        first: u32,
+        /// How many slots.
+        count: u32,
+        /// The bindings' names, in slot order.
+        names: Option<SlotNames<'a>>,
+    },
     /// An entry of the constant pool.
     Constant {
         /// The constant's index.
@@ -128,6 +137,30 @@ pub enum Reference<'a> {
         /// Where it lands.
         target: Option<JumpTarget>,
     },
+}
+
+/// The names of the bindings in a run of slots, as a [`Reference::Slots`]
+/// carries them. It serializes as a sequence of the names.
+#[derive(Debug, Clone, Copy)]
+pub struct SlotNames<'a>(&'a [NameEntry]);
+
+impl<'a> SlotNames<'a> {
+    /// The names, in slot order.
+    pub fn iter(self) -> impl ExactSizeIterator<Item = &'a str> {
+        self.0.iter().map(|entry| entry.name.as_str())
+    }
+}
+
+impl PartialEq for SlotNames<'_> {
+    fn eq(&self, other: &Self) -> bool {
+        self.iter().eq(other.iter())
+    }
+}
+
+impl serde::Serialize for SlotNames<'_> {
+    fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        serializer.collect_seq(self.iter())
+    }
 }
 
 /// Where a jump lands, as a [`Reference::Jump`] carries it.
@@ -213,6 +246,11 @@ fn reference<'a>(
         DefLocal(slot) | LoadLocal(slot) | ConsumeLocal(slot) => Reference::Slot {
             index: slot,
             name: entry(&function.name_table, slot).map(|entry| entry.name.as_str()),
+        },
+        ClearLocals { first, count } => Reference::Slots {
+            first,
+            count,
+            names: entries(&function.name_table, first, count).map(SlotNames),
         },
         LoadConst(constant) => Reference::Constant {
             index: constant,
@@ -334,6 +372,13 @@ fn entry<T>(items: &[T], index: u64) -> Option<&T> {
     usize::try_from(index)
         .ok()
         .and_then(|index| items.get(index))
+}
+
+/// The `count` entries of `items` from the operand `first` on, if all are there.
+fn entries<T>(items: &[T], first: u32, count: u32) -> Option<&[T]> {
+    let first = usize::try_from(first).ok()?;
+    let end = first.checked_add(usize::try_from(count).ok()?)?;
+    items.get(first..end)
 }
 
 /// Where a jump at `index` skipping `offset` instructions lands,

@@ -33,7 +33,7 @@ use frostlang_parse::{
 };
 
 use fold::FoldVm;
-use locals::Locals;
+use locals::{LocalRun, Locals};
 
 /// A name as scope resolution sees it. `$` is shorthand for `$1`, so every use
 /// of `$` resolves as `$1`.
@@ -99,6 +99,9 @@ enum Op {
     /// `consume_locals` pass.
     ConsumeLocal(LocalId),
     DefLocal(LocalId),
+    /// Release the values of a nested scope's locals once the scope is done
+    /// with them. Assembly drops it if none of them occupies a slot.
+    ClearLocals(LocalRun),
     /// Create a closure over a nested function. Both forms are kept: `compiled`
     /// is what assembly pools, `lowered` is the IR it was assembled from.
     /// Build with [`Op::closure`] so the two always match.
@@ -488,6 +491,16 @@ impl FunctionBuilder<'_> {
     }
 }
 
+/// The IR releasing the values of the locals in `run`, derived from the source
+/// at `span`; `None` if the run is empty or `position` is [`Position::Tail`],
+/// where the frame's release follows.
+// TODO: A tail call to a native, or any tail call from the bottom frame, runs
+// before the calling frame is released, so a value the frame's locals still
+// hold stays shared while the callee runs (see FROST-234).
+fn clear_locals(run: LocalRun, position: Position, span: Span) -> Option<Ir> {
+    (position == Position::Inner && !run.is_empty()).then(|| Op::ClearLocals(run).at(span))
+}
+
 impl FunctionBuilder<'_> {
     /// Compile a statement to its complete code. Net-zero, except an expression
     /// statement in [`Position::Tail`], which is its function's last statement
@@ -547,7 +560,7 @@ impl FunctionBuilder<'_> {
                 consequent,
                 alternate,
             } => self.compile_if_expression(condition, consequent, alternate, position, span),
-            Expr::Do { body, value } => self.compile_do_expression(body, value, position),
+            Expr::Do { body, value } => self.compile_do_expression(body, value, position, span),
             Expr::Call { callee, args } => {
                 self.compile_call_expression(callee, args, position, span)
             }

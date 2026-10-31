@@ -32,6 +32,7 @@ pub use import::{
 };
 pub use listing::{
     JumpTarget, ListedDebugInfo, ListedFunction, ListedInstruction, ListedSlot, Listing, Reference,
+    SlotNames,
 };
 pub use native::{NativeCtx, NativeFn, NativeFunction};
 pub use outcome::{AbortReason, IdleVm, ProgramParts, ProgramResult, RunError, RunErrorKind};
@@ -43,6 +44,7 @@ pub use serialize::FormatVersion;
 use std::{
     cell::OnceCell,
     num::{NonZeroU64, NonZeroUsize},
+    ops::Range,
     sync::Arc,
 };
 
@@ -493,6 +495,22 @@ impl Vm {
         frame.slot_base + idx
     }
 
+    /// The indices in `slots` of the running frame's `count` locals from `first` on.
+    fn local_slots(&self, first: u32, count: u32) -> Range<usize> {
+        let first = from_operand(u64::from(first));
+        let count = from_operand(u64::from(count));
+        let frame = self.this_frame();
+        debug_assert!(
+            first + count <= frame.this_fn.name_table.len(),
+            "locals {first}..{} are outside `{}`'s {}",
+            first + count,
+            frame.this_fn.name,
+            counted(frame.this_fn.name_table.len(), "slot")
+        );
+        let first = frame.slot_base + first;
+        first..first + count
+    }
+
     /// `frame`'s local slots, in name-table order.
     fn frame_slots(&self, frame: &VmFrame) -> &[Option<Value>] {
         &self.slots[frame.slot_base..][..frame.this_fn.name_table.len()]
@@ -591,6 +609,10 @@ impl Vm {
                             .take()
                             .expect("IMPOSSIBLE: local value is undefined");
                         self.stack.push(value);
+                    }
+                    Bytecode::ClearLocals { first, count } => {
+                        let slots = self.local_slots(first, count);
+                        self.slots[slots].fill(None);
                     }
                     Bytecode::LoadConst(idx) => self
                         .stack

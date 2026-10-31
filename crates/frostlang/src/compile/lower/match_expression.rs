@@ -4,9 +4,11 @@
 //! The target stays on the stack while the arms are tried. An arm marks the
 //! stack, then tests a copy of the target. A mismatch anywhere jumps to the
 //! arm's failure label, which rewinds the stack to the mark, dropping whatever
-//! the pattern had laid out, and moves on to the next arm; the locals an
-//! abandoned arm bound are never read. A matched arm drops its mark and the
-//! target before its result, so the result is the last code its path runs.
+//! the pattern had laid out, and clears the locals the pattern and guard bound,
+//! releasing their values, before the next arm is tried. A matched arm drops
+//! its mark and the target before its result, so in tail position the result
+//! is the last code its path runs; elsewhere, a clear of all the arm's locals
+//! follows it.
 //!
 //! The catch-all, an arm with no guard whose pattern cannot fail, is never
 //! abandoned, so it needs no mark and no copy: its pattern takes the target
@@ -22,7 +24,7 @@ use frostlang_parse::ast::{Expr, MatchArm, Spanned};
 use crate::compile::{
     Diagnostics,
     lower::{
-        ExprFragment, FunctionBuilder, Ir, JumpType, Label, Op, Position, debug_span,
+        ExprFragment, FunctionBuilder, Ir, JumpType, Label, Op, Position, clear_locals, debug_span,
         pattern::{BindMode, Mismatch, PatternFragment, Unreachable, cannot_fail},
     },
 };
@@ -37,6 +39,11 @@ struct ArmFragment {
     pattern: PatternFragment,
     guard: Option<Guard>,
     result: ExprFragment,
+    /// The clear of the locals its pattern and guard bound, on its failure
+    /// path.
+    clear_on_failure: Option<Ir>,
+    /// The clear of all its locals, after its result.
+    clear_after_result: Option<Ir>,
     span: Span,
 }
 
@@ -64,6 +71,8 @@ impl ArmFragment {
             pattern,
             guard,
             result,
+            clear_on_failure,
+            clear_after_result,
             span,
         } = self;
         let guard = guard.into_iter().flat_map(move |guard| {
@@ -80,6 +89,7 @@ impl ArmFragment {
             .chain(guard)
             .chain([Bytecode::DropMark, Bytecode::Pop].map(|op| Op::Ready(op).at(span)))
             .chain(result.code)
+            .chain(clear_after_result)
             .chain([
                 Op::Jump {
                     kind: JumpType::Unconditional,
@@ -89,6 +99,7 @@ impl ArmFragment {
                 Op::Label(fail).at(span),
                 Op::Ready(Bytecode::RewindToMark).at(span),
             ])
+            .chain(clear_on_failure)
     }
 }
 
@@ -96,6 +107,8 @@ impl ArmFragment {
 struct CatchAllFragment {
     pattern: PatternFragment,
     result: ExprFragment,
+    /// The clear of its locals, after its result.
+    clear_after_result: Option<Ir>,
 }
 
 impl CatchAllFragment {
@@ -107,6 +120,7 @@ impl CatchAllFragment {
     fn code(self) -> Vec<Ir> {
         let mut code = self.pattern.code;
         code.extend(self.result.code);
+        code.extend(self.clear_after_result);
         code
     }
 }
@@ -218,6 +232,7 @@ impl FunctionBuilder<'_> {
         position: Position,
     ) -> Result<ArmFragment, Diagnostics> {
         let fail = self.next_label();
+        let start = self.locals.allocation_point();
         let pattern = self.compile_pattern(
             &arm.node.pattern,
             Mismatch::Jump(fail),
@@ -236,13 +251,22 @@ impl FunctionBuilder<'_> {
                     })
             })
             .transpose()?;
+        let span = debug_span(arm.span);
+        // The failure path goes on to another arm, or the error raised when
+        // none matches, so it is never the function's last code.
+        let clear_on_failure =
+            clear_locals(self.locals.allocated_since(start), Position::Inner, span);
         let result = self.compile_expression(&arm.node.result, position)?;
+        // Now also the locals the result bound.
+        let clear_after_result = clear_locals(self.locals.allocated_since(start), position, span);
         Ok(ArmFragment {
             fail,
             pattern,
             guard,
             result,
-            span: debug_span(arm.span),
+            clear_on_failure,
+            clear_after_result,
+            span,
         })
     }
 
@@ -256,6 +280,7 @@ impl FunctionBuilder<'_> {
         // The pattern cannot fail, so this label is never placed: assembly
         // panics on a jump to it.
         let never = self.next_label();
+        let start = self.locals.allocation_point();
         let pattern = self.compile_pattern(
             &arm.node.pattern,
             Mismatch::Jump(never),
@@ -263,7 +288,16 @@ impl FunctionBuilder<'_> {
             &mut Vec::new(),
         )?;
         let result = self.compile_expression(&arm.node.result, position)?;
-        Ok(CatchAllFragment { pattern, result })
+        let clear_after_result = clear_locals(
+            self.locals.allocated_since(start),
+            position,
+            debug_span(arm.span),
+        );
+        Ok(CatchAllFragment {
+            pattern,
+            result,
+            clear_after_result,
+        })
     }
 }
 

@@ -63,6 +63,14 @@ pub enum Bytecode {
     /// can then be updated in place. The slot must not be read again unless it is
     /// defined anew.
     ConsumeLocal(u64),
+    /// Empty `count` local slots from slot `first` on, releasing any values they hold, with no stack effect.
+    /// The slots must not be read again unless they are defined anew.
+    ClearLocals {
+        /// The first slot to empty, indexed as for [`DefLocal`](Self::DefLocal).
+        first: u32,
+        /// How many slots to empty.
+        count: u32,
+    },
     /// Copy entry N of the current function's [`constants`](crate::bytecode::CompiledFunction::constants) onto the stack.
     LoadConst(u64),
     /// Copy predefined global N onto the stack; [`GLOBAL_NAMES`](crate::bytecode::GLOBAL_NAMES) gives the slot order.
@@ -135,7 +143,6 @@ pub enum Bytecode {
 
     /// Create a closure over a child function: `( c1 ... cK -- f )`, where K is `captures`.
     /// The top K values become its captures, deepest first.
-    // `u32` operands keep `Bytecode` at 16 bytes.
     CreateClosure {
         /// The child's index in the current function's [`child_fns`](crate::bytecode::CompiledFunction::child_fns).
         child: u32,
@@ -220,6 +227,7 @@ pub enum Bytecode {
     Import,
 }
 
+// Two-operand variants take `u32` operands to stay within this.
 const _: () = assert!(size_of::<Bytecode>() == 16);
 
 // Operands are `u64` rather than `usize`, so bytecode is the same on every target, wasm32 included.
@@ -262,7 +270,7 @@ impl Bytecode {
         let effect = match *self {
             RewindToMark => return None,
 
-            Jump(_) | MarkStack | DropMark => StackEffect {
+            Jump(_) | ClearLocals { .. } | MarkStack | DropMark => StackEffect {
                 reads: 0,
                 pops: 0,
                 pushes: 0,

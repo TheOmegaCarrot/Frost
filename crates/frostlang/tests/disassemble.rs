@@ -79,6 +79,31 @@ fn slots_are_listed_with_what_kind_each_is() {
 }
 
 #[test]
+fn a_run_of_slots_lists_as_a_range_naming_each_slot() {
+    let mut main = function(
+        "<main>",
+        vec![
+            ClearLocals { first: 1, count: 2 },
+            ClearLocals { first: 0, count: 1 },
+            ClearLocals { first: 1, count: 0 },
+        ],
+    );
+    main.name_table = vec![slot("a", false), slot("b", false), slot("c", false)];
+    let expected = r"function <main>
+  arity 0, 0 captures
+  slots
+       0  a
+       1  b
+       2  c
+  code
+       0  ClearLocals  1..3  ; b, c
+       1  ClearLocals  0..1  ; a
+       2  ClearLocals  1..1  ; no slots
+";
+    assert_eq!(listing(&main), expected);
+}
+
+#[test]
 fn a_long_slot_name_stays_apart_from_its_markers() {
     let mut main = function("<main>", vec![PushNull]);
     main.name_table = vec![slot("continuation_prompt", true), slot("n", true)];
@@ -325,6 +350,11 @@ fn malformed_references_list_without_panicking() {
         "<main>",
         vec![
             LoadLocal(0),
+            ClearLocals { first: 0, count: 2 },
+            ClearLocals {
+                first: u32::MAX,
+                count: u32::MAX,
+            },
             LoadConst(0),
             HardIndexMap(0),
             LoadGlobal(u64::MAX),
@@ -338,12 +368,14 @@ fn malformed_references_list_without_panicking() {
     let expected = r"function <main>
   arity 0, 0 captures
   code
-       0  LoadLocal      0                     ; ?
-       1  LoadConst      0                     ; ?
-       2  HardIndexMap   0                     ; ?
-       3  LoadGlobal     18446744073709551615  ; ?
-       4  CreateClosure  0                     ; ?, 0 captures
-       5  Jump           ?                     ; +99, past the end
+       0  LoadLocal      0                       ; ?
+       1  ClearLocals    0..2                    ; ?
+       2  ClearLocals    4294967295..8589934590  ; ?
+       3  LoadConst      0                       ; ?
+       4  HardIndexMap   0                       ; ?
+       5  LoadGlobal     18446744073709551615    ; ?
+       6  CreateClosure  0                       ; ?, 0 captures
+       7  Jump           ?                       ; +99, past the end
 ";
     assert_eq!(listing(&main), expected);
 }

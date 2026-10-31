@@ -301,6 +301,28 @@ fn a_local_past_the_slots_is_caught() {
     );
 }
 
+#[test]
+fn a_run_of_locals_reaching_past_the_slots_is_caught() {
+    // Starting past the slots, and starting within them but ending past them.
+    for (first, count) in [(1, 1), (0, 2)] {
+        let program = func(
+            vec![PushNull, DefLocal(0), ClearLocals { first, count }],
+            Arity::Exact(0),
+            vec![common::entry("x", false)],
+            vec![],
+        );
+        // The program is not used after the panic, so nothing observes a broken state.
+        let panic = std::panic::catch_unwind(AssertUnwindSafe(|| run_fn(program)))
+            .expect_err("the run panics");
+        let end = first + count;
+        assert_eq!(
+            panic.downcast_ref::<String>().map(String::as_str),
+            Some(format!("locals {first}..{end} are outside `<test>`'s 1 slot").as_str()),
+            "the run {first}..{end}"
+        );
+    }
+}
+
 // ============================================================
 // Debug info
 // ============================================================

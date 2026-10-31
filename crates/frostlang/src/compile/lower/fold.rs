@@ -152,19 +152,24 @@ impl FunctionBuilder<'_> {
     pub(super) fn fold_if_eligible(&self, fragment: ExprFragment) -> ExprFragment {
         // Skip when disabled, ineligible, or already a single op: a one-op
         // fragment is already minimal, so folding it would only spend a VM run.
-        // Skip too a fragment ending in closure creation: every path ends by
-        // creating that closure, so its value is a Function, which can never be
-        // a constant.
+        // Skip too a fragment whose last op, past any clear of locals, creates
+        // a closure: every path makes that closure its value, a Function, which
+        // can never be a constant.
+        let last_computing = fragment
+            .code
+            .iter()
+            .rfind(|ir| !matches!(ir.op, Op::ClearLocals(_)));
+        let ends_in_closure = matches!(
+            last_computing,
+            Some(Ir {
+                op: Op::Closure { .. },
+                ..
+            })
+        );
         if !self.options.optimization_options.constant_fold
             || !fragment.foldable
             || fragment.code.len() <= 1
-            || matches!(
-                fragment.code.last(),
-                Some(Ir {
-                    op: Op::Closure { .. },
-                    ..
-                })
-            )
+            || ends_in_closure
         {
             return fragment;
         }

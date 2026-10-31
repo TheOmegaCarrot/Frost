@@ -707,3 +707,206 @@ fn without_folding_a_constant_block_is_kept() {
     let emitted = code("do { def y = 2; 5 }", UNOPTIMIZED);
     assert_eq!(definitions(&emitted), 1, "{emitted:?}");
 }
+
+// --- Releasing the block's locals ---
+
+#[test]
+fn a_block_clears_its_locals_after_its_value() {
+    let emitted = code(
+        r"
+        def r = do {
+            def a = x
+            def b = [a]
+            [a, b]
+        }
+        r
+        ",
+        UNOPTIMIZED,
+    );
+    assert_eq!(emitted.clears(), [["a", "b"]], "{emitted:?}");
+    let clear = emitted
+        .code
+        .iter()
+        .position(|op| matches!(op, Bytecode::ClearLocals { .. }))
+        .expect("a clear");
+    assert_eq!(
+        emitted.code[clear + 1],
+        Bytecode::DefLocal(emitted.slot_named("r")),
+        "the clear comes once the value is made, right before it is bound: {emitted:?}"
+    );
+}
+
+#[test]
+fn a_block_in_tail_position_clears_nothing() {
+    // The frame ends with the block, releasing its locals anyway: a script's,
+    // or a lambda's.
+    let script = code(
+        r"
+        do {
+            def a = x
+            [a]
+        }
+        ",
+        UNOPTIMIZED,
+    );
+    assert!(script.clears().is_empty(), "no clears: {script:?}");
+    let lambda = code(
+        r"
+        fn -> do {
+            def a = x
+            [a]
+        }
+        ",
+        UNOPTIMIZED,
+    )
+    .nested(0);
+    assert!(lambda.clears().is_empty(), "no clears: {lambda:?}");
+}
+
+#[test]
+fn tail_position_reaches_a_block_through_a_branch_or_an_or() {
+    for source in [
+        r"
+        fn c -> if c: do {
+            def a = [c]
+            a
+        }
+        else: 0
+        ",
+        r"
+        fn c -> null or do {
+            def a = [c]
+            a
+        }
+        ",
+    ] {
+        let lambda = code(source, UNOPTIMIZED).nested(0);
+        assert!(
+            lambda.clears().is_empty(),
+            "no clears: {source}: {lambda:?}"
+        );
+    }
+    let inner = r"
+        fn c -> [if c: do {
+            def a = [c]
+            a
+        }
+        else: 0]
+        ";
+    let lambda = code(inner, UNOPTIMIZED).nested(0);
+    assert_eq!(lambda.clears(), [["a"]], "out of tail position: {lambda:?}");
+}
+
+#[test]
+fn a_block_clears_around_a_local_never_stored() {
+    // `b` is known, so its store is dead and it has no slot; the clear covers
+    // `a` and `c`, whose slots are consecutive.
+    let emitted = code(
+        r"
+        def r = do {
+            def a = x
+            def b = 1
+            def c = [a, b]
+            [a, c]
+        }
+        r
+        ",
+        UNOPTIMIZED
+            .with(Optimization::ConstantPropagate, true)
+            .with(Optimization::DeadStoreEliminate, true),
+    );
+    assert_eq!(emitted.clears(), [["a", "c"]], "{emitted:?}");
+}
+
+#[test]
+fn a_block_binding_nothing_clears_nothing() {
+    let emitted = code(
+        r"
+        def r = do { [x] }
+        r
+        ",
+        UNOPTIMIZED,
+    );
+    assert!(emitted.clears().is_empty(), "no clears: {emitted:?}");
+}
+
+#[test]
+fn a_block_whose_locals_are_never_stored_clears_nothing() {
+    // A dead store leaves its local no slot to clear.
+    let emitted = code(
+        r"
+        def r = do {
+            def a = x
+            [1]
+        }
+        r
+        ",
+        UNOPTIMIZED.with(Optimization::DeadStoreEliminate, true),
+    );
+    assert_eq!(definitions(&emitted), 1, "only `r` is stored: {emitted:?}");
+    assert!(emitted.clears().is_empty(), "no clears: {emitted:?}");
+}
+
+#[test]
+fn a_nested_blocks_locals_are_cleared_by_each_enclosing_block() {
+    let emitted = code(
+        r"
+        def r = do {
+            def a = x
+            def s = do {
+                def b = [a]
+                [b]
+            }
+            [a, s]
+        }
+        r
+        ",
+        UNOPTIMIZED,
+    );
+    assert_eq!(
+        emitted.clears(),
+        [vec!["b"], vec!["a", "b", "s"]],
+        "{emitted:?}"
+    );
+}
+
+#[test]
+fn a_discarded_block_value_is_still_discarded_past_the_clear() {
+    // The block's value is a load its statement discards: the clear between
+    // them does not keep the pair from cancelling.
+    let emitted = code(
+        r"
+        do {
+            def a = x
+            a
+        }
+        x
+        ",
+        UNOPTIMIZED.with(Optimization::DiscardEliminate, true),
+    );
+    let a = emitted.slot_named("a");
+    assert_eq!(
+        emitted.count(&Bytecode::LoadLocal(a)),
+        0,
+        "the load of `a` is gone: {emitted:?}"
+    );
+    assert_eq!(
+        emitted.count(&Bytecode::Pop),
+        1,
+        "only the Pop every script starts with: {emitted:?}"
+    );
+    assert_eq!(emitted.clears(), [["a"]], "{emitted:?}");
+}
+
+#[test]
+fn tail_recursion_through_a_block_with_locals_runs_in_bounded_depth() {
+    let source = r#"
+        defn count(n) -> do {
+            def k = n - 1
+            if k < 0: "done" else: count(k)
+        }
+        count(100000)
+        "#;
+    let tail = Script::new(source).max_call_depth(100).run();
+    assert_eq!(tail, Value::from("done"));
+}

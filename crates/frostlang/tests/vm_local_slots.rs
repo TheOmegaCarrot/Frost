@@ -1,11 +1,13 @@
 //! A call's local slots are released the moment the call ends, however it ends:
-//! a return, a tail call, a return through a native, or an error.
+//! a return, a tail call, a return through a native, or an error. Within a call,
+//! the locals of a `do` block or a `match` arm are released once their scope is
+//! done with them.
 //!
-//! A slot left filled after its call does not change any result, but it keeps a
-//! reference to its value, so a value it shares can no longer be updated in
-//! place. These tests watch for exactly that. Each script hands a value to a call
-//! that keeps it in a local, then, once the call is over, asks `unshared` whether
-//! anything else still holds the value.
+//! A slot left filled after its call or scope does not change any result, but it
+//! keeps a reference to its value, so a value it shares can no longer be updated
+//! in place. These tests watch for exactly that. Each script hands a value to a
+//! call or scope that keeps it in a local, then, once that is over, asks
+//! `unshared` whether anything else still holds the value.
 //!
 //! Scripts are compiled with consume-locals on, so a local's last read gives up
 //! its reference, and every other optimization off, so their values are built at
@@ -216,5 +218,115 @@ fn locals_released_by_one_call_are_reused_by_the_next() {
         [first([0]), second([9]), first([5])]
         "),
         run(r"[[0, 1, 2], [[9]], [5, 1, 2]]"),
+    );
+}
+
+// In the scope tests, no read of a local on the path taken is its last, so none
+// gives up its reference: only leaving its scope can.
+
+#[test]
+fn a_do_block_releases_its_locals_after_its_value() {
+    assert_released(
+        r"
+        defn probe(c, xs) -> {
+            def n = do {
+                def held = xs
+                if c: len(held) else: 0
+            }
+            unshared(xs)
+        }
+
+        probe(false, [1, 2])
+        ",
+    );
+}
+
+#[test]
+fn a_match_arm_failing_its_guard_releases_its_locals() {
+    assert_released(
+        r"
+        defn probe(xs) -> match xs {
+            [held] if: len(held) > 5 => [held],
+            [held] => [unshared(held)],
+        }
+
+        probe([[1, 2]]) == [true]
+        ",
+    );
+}
+
+#[test]
+fn a_match_arm_failing_after_binding_releases_its_locals() {
+    assert_released(
+        r"
+        defn probe(xs) -> match xs {
+            [held, 0] => [held],
+            [held, _] => [unshared(held)],
+        }
+
+        probe([[1, 2], 1]) == [true]
+        ",
+    );
+}
+
+#[test]
+fn a_match_arm_failing_into_a_catch_all_releases_its_locals() {
+    assert_released(
+        r"
+        defn probe(c, xs) -> match [xs] {
+            [held] if: c => 0,
+            _ => unshared(xs),
+        }
+
+        probe(false, [1, 2])
+        ",
+    );
+}
+
+#[test]
+fn a_match_arm_failing_into_the_no_match_error_releases_its_locals() {
+    assert_released(
+        r"
+        defn fail(v) -> [match [v] {
+            [held] if: false => held,
+        }]
+
+        def xs = [1, 2]
+        try_call(fail, [xs])
+        unshared(xs)
+        ",
+    );
+}
+
+#[test]
+fn a_taken_match_arm_releases_its_locals_after_its_result() {
+    assert_released(
+        r"
+        defn probe(c, xs) -> {
+            def n = match [xs] {
+                [held] => if c: len(held) else: 0,
+            }
+            unshared(xs)
+        }
+
+        probe(false, [1, 2])
+        ",
+    );
+}
+
+#[test]
+fn a_taken_catch_all_arm_releases_its_locals_after_its_result() {
+    assert_released(
+        r"
+        defn probe(c, xs) -> {
+            def n = match [xs] {
+                [] => 0,
+                held => if c: len(held) else: 0,
+            }
+            unshared(xs)
+        }
+
+        probe(false, [1, 2])
+        ",
     );
 }

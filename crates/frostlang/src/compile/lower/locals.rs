@@ -14,6 +14,7 @@
 mod tests;
 
 use std::collections::{BTreeMap, HashSet};
+use std::ops::Range;
 
 use crate::Value;
 use crate::bytecode::NameEntry;
@@ -194,6 +195,20 @@ impl Locals {
         self.info(id).exported
     }
 
+    /// Where the next local will be allocated, to collect the locals allocated
+    /// from here on with [`allocated_since`](Self::allocated_since).
+    pub(super) fn allocation_point(&self) -> AllocationPoint {
+        AllocationPoint(self.infos.len())
+    }
+
+    /// Every local allocated since `point`, in or out of view.
+    pub(super) fn allocated_since(&self, point: AllocationPoint) -> LocalRun {
+        LocalRun {
+            start: point.0,
+            end: self.infos.len(),
+        }
+    }
+
     /// Whether the current scope is the function's outermost (no nested scope
     /// open), i.e. a binding defined now is a top-level one.
     pub(super) fn at_top_scope(&self) -> bool {
@@ -319,6 +334,32 @@ impl Locals {
 #[derive(Clone, Copy, Debug)]
 pub(super) struct Checkpoint(usize);
 
+/// Where the next local will be allocated, from [`Locals::allocation_point`].
+#[derive(Clone, Copy, Debug)]
+pub(super) struct AllocationPoint(usize);
+
+/// A run of locals allocated one after another, such as those of a nested
+/// scope, from [`Locals::allocated_since`].
+///
+/// The code compiled while a run was allocated is emitted in one stretch, and
+/// defines the run's locals and no others, so the slots of those it defines
+/// are consecutive (see [`Locals::plan_slots`]).
+#[derive(Clone, Debug)]
+pub(super) struct LocalRun {
+    start: usize,
+    end: usize,
+}
+
+impl LocalRun {
+    pub(super) fn is_empty(&self) -> bool {
+        self.start == self.end
+    }
+
+    fn ids(&self) -> impl Iterator<Item = LocalId> {
+        (self.start..self.end).map(LocalId)
+    }
+}
+
 /// A function's frame layout: the slot each local occupies and the parallel name
 /// table, derived together by [`Locals::plan_slots`].
 pub(super) struct SlotPlan {
@@ -347,6 +388,21 @@ impl SlotPlan {
     /// The frame slot of a local the code references.
     pub(super) fn slot_of(&self, id: LocalId) -> usize {
         self.slots[id.0].expect("a referenced local was assigned no slot")
+    }
+
+    /// The consecutive frame slots the locals of `run` occupy, or `None` if the
+    /// code defines none of them, such as when each one's store was dead.
+    pub(super) fn slots_of(&self, run: &LocalRun) -> Option<Range<usize>> {
+        let slots: Vec<usize> = run.ids().filter_map(|id| self.slots[id.0]).collect();
+        let first = *slots.iter().min()?;
+        let last = *slots.iter().max()?;
+        // Clearing the slots between would lose another local's value.
+        assert_eq!(
+            last - first + 1,
+            slots.len(),
+            "a run of locals occupies consecutive slots"
+        );
+        Some(first..last + 1)
     }
 
     pub(super) fn num_captures(&self) -> usize {

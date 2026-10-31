@@ -85,9 +85,90 @@ fn a_consumed_slot_may_be_defined_and_read_again() {
     assert_eq!(run_fn(program).tail(), &Value::Int(3));
 }
 
-/// Store an Array in a local, then pass it, loaded with `load`, to a native
+/// Define slots 0 and 1, clear both with one `ClearLocals`, then read `slot`.
+fn read_after_clearing_both(slot: u64) {
+    let program = fn_with_locals(
+        vec![
+            Bytecode::PushInt(1),
+            Bytecode::DefLocal(0),
+            Bytecode::PushInt(2),
+            Bytecode::DefLocal(1),
+            Bytecode::ClearLocals { first: 0, count: 2 },
+            Bytecode::LoadLocal(slot),
+        ],
+        vec![entry("x", false), entry("y", false)],
+    );
+    run_fn(program);
+}
+
+#[test]
+#[should_panic(expected = "local value is undefined")]
+fn clear_locals_empties_the_first_slot_of_its_run() {
+    read_after_clearing_both(0);
+}
+
+#[test]
+#[should_panic(expected = "local value is undefined")]
+fn clear_locals_empties_the_last_slot_of_its_run() {
+    read_after_clearing_both(1);
+}
+
+#[test]
+fn clear_locals_leaves_the_slots_around_its_run() {
+    // Slots 0 and 2 keep 1 and 3 when slot 1 alone is cleared.
+    let program = fn_with_locals(
+        vec![
+            Bytecode::PushInt(1),
+            Bytecode::DefLocal(0),
+            Bytecode::PushInt(2),
+            Bytecode::DefLocal(1),
+            Bytecode::PushInt(3),
+            Bytecode::DefLocal(2),
+            Bytecode::ClearLocals { first: 1, count: 1 },
+            Bytecode::LoadLocal(0),
+            Bytecode::LoadLocal(2),
+            Bytecode::Add,
+        ],
+        vec![entry("x", false), entry("y", false), entry("z", false)],
+    );
+    assert_eq!(run_fn(program).tail(), &Value::Int(4));
+}
+
+#[test]
+fn clear_locals_accepts_empty_slots_and_an_empty_run() {
+    // Slot 0 is never defined, and a run of none clears nothing.
+    let program = fn_with_locals(
+        vec![
+            Bytecode::ClearLocals { first: 0, count: 1 },
+            Bytecode::PushInt(5),
+            Bytecode::DefLocal(1),
+            Bytecode::ClearLocals { first: 1, count: 0 },
+            Bytecode::LoadLocal(1),
+        ],
+        vec![entry("x", false), entry("y", false)],
+    );
+    assert_eq!(run_fn(program).tail(), &Value::Int(5));
+}
+
+#[test]
+fn a_cleared_slot_may_be_defined_and_read_again() {
+    let program = fn_with_locals(
+        vec![
+            Bytecode::PushInt(1),
+            Bytecode::DefLocal(0),
+            Bytecode::ClearLocals { first: 0, count: 1 },
+            Bytecode::PushInt(2),
+            Bytecode::DefLocal(0),
+            Bytecode::LoadLocal(0),
+        ],
+        vec![entry("x", false)],
+    );
+    assert_eq!(run_fn(program).tail(), &Value::Int(2));
+}
+
+/// Store an Array in a local, then pass it, pushed by `load`, to a native
 /// that reports whether it holds the Array's only reference.
-fn passed_unshared(load: Bytecode) -> Value {
+fn passed_unshared(load: &[Bytecode]) -> Value {
     let probe = frost_closure!("probe", |array: Value| {
         let array = array.try_into_array().expect("an Array");
         array.try_into_vec().is_ok()
@@ -96,15 +177,18 @@ fn passed_unshared(load: Bytecode) -> Value {
         version: FormatVersion,
         name: "<test>".to_string(),
         origin: None,
-        code: vec![
-            Bytecode::Pop,
-            Bytecode::PushInt(1),
-            Bytecode::MakeArray(1),
-            Bytecode::DefLocal(1),
-            Bytecode::LoadLocal(0),
+        code: [
+            &[
+                Bytecode::Pop,
+                Bytecode::PushInt(1),
+                Bytecode::MakeArray(1),
+                Bytecode::DefLocal(1),
+                Bytecode::LoadLocal(0),
+            ][..],
             load,
-            Bytecode::Call(1),
-        ],
+            &[Bytecode::Call(1)],
+        ]
+        .concat(),
         child_fns: Vec::new(),
         constants: Vec::new(),
         key_constants: Vec::new(),
@@ -123,14 +207,27 @@ fn passed_unshared(load: Bytecode) -> Value {
 #[test]
 fn a_consumed_value_is_no_longer_shared_with_its_slot() {
     assert_eq!(
-        passed_unshared(Bytecode::ConsumeLocal(1)),
+        passed_unshared(&[Bytecode::ConsumeLocal(1)]),
         Value::Bool(true),
         "consumed: the slot gives up its reference"
     );
     assert_eq!(
-        passed_unshared(Bytecode::LoadLocal(1)),
+        passed_unshared(&[Bytecode::LoadLocal(1)]),
         Value::Bool(false),
         "loaded: the slot keeps its reference"
+    );
+}
+
+#[test]
+fn a_cleared_value_is_no_longer_shared_with_its_slot() {
+    let cleared = [
+        Bytecode::LoadLocal(1),
+        Bytecode::ClearLocals { first: 1, count: 1 },
+    ];
+    assert_eq!(
+        passed_unshared(&cleared),
+        Value::Bool(true),
+        "loaded, then the slot cleared: the slot gives up its reference"
     );
 }
 

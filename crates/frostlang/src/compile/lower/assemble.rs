@@ -9,7 +9,8 @@
 //!   [`deduplicate_constants`](crate::compile::OptimizationOptions::deduplicate_constants),
 //!   constants that are the same share a slot (see [`pool`]).
 //! - `LoadLocal`, `ConsumeLocal`, and `DefLocal` ids resolve to their frame
-//!   slots per the [`SlotPlan`].
+//!   slots per the [`SlotPlan`], and a `ClearLocals` run to its consecutive
+//!   slots; one whose locals occupy none emits nothing.
 //! - Each instruction's span goes to the function's debug info, beside the
 //!   stack height on entry to it (see [`heights`]), if the compilation keeps
 //!   debug info.
@@ -107,7 +108,13 @@ pub(super) fn assemble_code(
     plan: SlotPlan,
     options: AssemblyOptions,
 ) -> Arc<CompiledFunction> {
-    let label_positions = resolve_labels(code, num_labels);
+    // Left out before labels resolve, so jump offsets count only what is
+    // emitted.
+    let code: Vec<&Ir> = code
+        .iter()
+        .filter(|ir| !matches!(&ir.op, Op::ClearLocals(run) if plan.slots_of(run).is_none()))
+        .collect();
+    let label_positions = resolve_labels(&code, num_labels);
 
     let mut out = Vec::new();
     let mut spans = Vec::new();
@@ -138,15 +145,21 @@ pub(super) fn assemble_code(
             Op::LoadLocal(id) => Bytecode::LoadLocal(to_operand(plan.slot_of(*id))),
             Op::ConsumeLocal(id) => Bytecode::ConsumeLocal(to_operand(plan.slot_of(*id))),
             Op::DefLocal(id) => Bytecode::DefLocal(to_operand(plan.slot_of(*id))),
+            Op::ClearLocals(run) => {
+                let slots = plan
+                    .slots_of(run)
+                    .expect("a clear of no slots was left out");
+                Bytecode::ClearLocals {
+                    first: to_u32_operand(slots.start),
+                    count: to_u32_operand(slots.len()),
+                }
+            }
             Op::Closure { compiled, .. } => {
-                // Each child function and capture takes at least one byte of source,
-                // so a count past `u32` needs a source over 4 GiB.
-                let to_u32 = |n: usize| u32::try_from(n).expect("count exceeds u32");
-                let child = to_u32(child_fns.len());
+                let child = to_u32_operand(child_fns.len());
                 child_fns.push(Arc::clone(compiled));
                 Bytecode::CreateClosure {
                     child,
-                    captures: to_u32(compiled.num_captures),
+                    captures: to_u32_operand(compiled.num_captures),
                 }
             }
             Op::Jump { kind, label } => {
@@ -191,6 +204,13 @@ pub(super) fn assemble_code(
     })
 }
 
+/// `n`, a count or index of child functions, captures, or slots, as a `u32`
+/// operand. Each of these takes at least one byte of source, so exceeding `u32`
+/// needs a source over 4 GiB.
+fn to_u32_operand(n: usize) -> u32 {
+    u32::try_from(n).expect("operand exceeds u32")
+}
+
 /// Whether an opcode carries an index or offset that some other `Op` variant
 /// assigns at assembly. `Op::Ready` is for already-final opcodes, so it must
 /// never hold one of these.
@@ -200,6 +220,7 @@ fn is_symbolic_opcode(bytecode: &Bytecode) -> bool {
         Bytecode::LoadLocal(_)
             | Bytecode::ConsumeLocal(_)
             | Bytecode::DefLocal(_)
+            | Bytecode::ClearLocals { .. }
             | Bytecode::LoadConst(_)
             | Bytecode::HardIndexMap(_)
             | Bytecode::TestConstKey(_)
@@ -218,7 +239,7 @@ fn is_symbolic_opcode(bytecode: &Bytecode) -> bool {
 /// A label is zero-width, so its position is the number of real instructions
 /// emitted ahead of it. `num_labels` sizes the table; every minted label id is a
 /// valid index into it.
-fn resolve_labels(code: &[Ir], num_labels: usize) -> Vec<Option<usize>> {
+fn resolve_labels(code: &[&Ir], num_labels: usize) -> Vec<Option<usize>> {
     let mut positions = vec![None; num_labels];
     let mut index = 0;
     for ir in code {

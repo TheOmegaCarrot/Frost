@@ -1641,3 +1641,198 @@ fn a_key_not_known_as_a_valid_key_is_looked_up_dynamically() {
     )]);
     assert_values(&[("match 5 { {[null]: v} => v, _ => 0 }", "0")]);
 }
+
+// --- Releasing the arms' locals ---
+
+/// Assert the clears in the code of the lambda `source` defines, under
+/// `optimization`, empty the slots named in `expected`, clear by clear in code
+/// order.
+fn assert_lambda_clears(source: &str, optimization: OptimizationOptions, expected: &[&[&str]]) {
+    let lambda = Script::new(source).code(optimization).nested(0);
+    assert_eq!(lambda.clears(), expected, "{source}\n{lambda:?}");
+}
+
+#[test]
+fn an_arm_clears_its_locals_after_its_result_and_on_failure() {
+    // The first clear follows the result, the second the rewind. The
+    // catch-all binds nothing, so has nothing to clear.
+    assert_lambda_clears(
+        r"
+        fn v -> [match v {
+            [a, b] => a,
+            _ => 0,
+        }]
+        ",
+        UNOPTIMIZED,
+        &[&["a", "b"], &["a", "b"]],
+    );
+}
+
+#[test]
+fn an_arms_clears_on_failure_leave_out_its_results_locals() {
+    // The result's block clears its own `r` first; the failure path never
+    // reaches the result.
+    assert_lambda_clears(
+        r"
+        fn v -> [match v {
+            [a] => do {
+                def r = [a]
+                r
+            },
+            _ => 0,
+        }]
+        ",
+        UNOPTIMIZED,
+        &[&["r"], &["a", "r"], &["a"]],
+    );
+}
+
+#[test]
+fn an_arms_clears_take_in_what_its_guard_bound() {
+    // The guard's block clears its own `g` first, so the arm's clears never
+    // find it holding a value; they cover it as one of the arm's locals.
+    assert_lambda_clears(
+        r"
+        fn v -> [match v {
+            [a] if: do {
+                def g = a
+                g > 0
+            } => a,
+            _ => 0,
+        }]
+        ",
+        UNOPTIMIZED,
+        &[&["g"], &["a", "g"], &["a", "g"]],
+    );
+}
+
+#[test]
+fn every_arm_clears_on_failure_even_into_the_no_match_error() {
+    assert_lambda_clears(
+        r"
+        fn v -> [match v {
+            [a] => a,
+            {b} => b,
+        }]
+        ",
+        UNOPTIMIZED,
+        &[&["a"], &["a"], &["b"], &["b"]],
+    );
+}
+
+#[test]
+fn a_catch_all_arm_clears_its_locals_after_its_result() {
+    assert_lambda_clears(
+        r"
+        fn v -> [match v {
+            [a] => a,
+            w => w,
+        }]
+        ",
+        UNOPTIMIZED,
+        &[&["a"], &["a"], &["w"]],
+    );
+}
+
+#[test]
+fn arms_binding_nothing_clear_nothing() {
+    assert_lambda_clears(
+        r"
+        fn v -> [match v {
+            1 => 2,
+            [_] => 3,
+            _ => 0,
+        }]
+        ",
+        UNOPTIMIZED,
+        &[],
+    );
+}
+
+#[test]
+fn an_arm_in_tail_position_clears_only_on_failure() {
+    // A result in tail position makes the function's result, so no clear
+    // follows it; a failed arm's locals are still released before the next
+    // arm. Tail position reaches the match through an `if` or an `or`, and an
+    // arm's result through its block, whose own clear is left out too.
+    for source in [
+        r"
+        fn v -> match v {
+            [a] => a,
+            w => w,
+        }
+        ",
+        r"
+        fn v -> if v: match v {
+            [a] => a,
+            _ => 0,
+        }
+        else: 0
+        ",
+        r"
+        fn v -> null or match v {
+            [a] => a,
+            _ => 0,
+        }
+        ",
+        r"
+        fn v -> match v {
+            [a] => do {
+                def b = [a]
+                b
+            },
+            _ => 0,
+        }
+        ",
+    ] {
+        assert_lambda_clears(source, UNOPTIMIZED, &[&["a"]]);
+    }
+    // Out of tail position, the taken arm clears too.
+    assert_lambda_clears(
+        r"
+        fn v -> [if v: match v {
+            [a] => a,
+            _ => 0,
+        }
+        else: 0]
+        ",
+        UNOPTIMIZED,
+        &[&["a"], &["a"]],
+    );
+}
+
+#[test]
+fn a_clear_of_locals_never_stored_is_left_out_without_moving_a_jump() {
+    // `k` is known, so its store is dead and it has no slot: its block's clear
+    // is left out of code with jumps after it, which must still land right.
+    let options = UNOPTIMIZED
+        .with(Optimization::ConstantPropagate, true)
+        .with(Optimization::DeadStoreEliminate, true);
+    let source = r"
+        defn f(v) -> [match v {
+            [n] if: do {
+                def k = 2
+                n > k
+            } => 'big',
+            [n] => n,
+            _ => 'other',
+        }]
+        [f([5]), f([1]), f(3)]
+        ";
+    let lambda = Script::new(source).code(options).nested(0);
+    assert!(
+        lambda.clears().iter().all(|names| !names.contains(&"k")),
+        "`k` is never cleared: {lambda:?}"
+    );
+    assert!(
+        !lambda.clears().is_empty(),
+        "the arms still clear `n`: {lambda:?}"
+    );
+    let expected = run(r"[['big'], [1], ['other']]");
+    assert_eq!(
+        Script::new(source).run_under(options),
+        expected,
+        "{lambda:?}"
+    );
+    assert_eq!(Script::new(source).run(), expected);
+}

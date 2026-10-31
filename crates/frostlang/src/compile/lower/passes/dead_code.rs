@@ -17,7 +17,9 @@
 //! local is no read of it, which can make an earlier store dead, and a dead
 //! store's `Pop` can remove the load of its value. Walking backward, each `Pop`
 //! is held back as pending, and is emitted only on meeting an instruction it
-//! cannot remove. A dead store's `Pop` keeps the store's span.
+//! cannot remove. A dead store's `Pop` keeps the store's span. A clear of
+//! locals is no read, and touches no stack value, so a pending `Pop` passes it
+//! to reach the value it pops.
 
 #[cfg(test)]
 mod tests;
@@ -55,6 +57,8 @@ pub(super) fn eliminate_dead_code(
             for _ in 0..inputs {
                 pending_pops.push_front(pop.clone());
             }
+        } else if matches!(ir.op, Op::ClearLocals(_)) {
+            reversed.push(ir);
         } else {
             reversed.extend(pending_pops.drain(..).rev());
             if let Op::LoadLocal(id) | Op::ConsumeLocal(id) = ir.op {
@@ -91,8 +95,11 @@ fn droppable_input_count(op: &Op) -> Option<usize> {
         // Creating a closure pops its captures. An unused closure is
         // unobservable, so dropping it respects function identity.
         Op::Closure { compiled, .. } => Some(compiled.num_captures),
-        Op::Ready(_) | Op::ConstKey { .. } | Op::DefLocal(_) | Op::Label(_) | Op::Jump { .. } => {
-            None
-        }
+        Op::Ready(_)
+        | Op::ConstKey { .. }
+        | Op::DefLocal(_)
+        | Op::ClearLocals(_)
+        | Op::Label(_)
+        | Op::Jump { .. } => None,
     }
 }

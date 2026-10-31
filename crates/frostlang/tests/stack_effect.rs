@@ -218,8 +218,8 @@ fn case(op: Bytecode) -> Option<Case> {
     let case = match op {
         PushNull | PushTrue | PushFalse | PushInt(_) | PushFloat(_) | LoadConst(_)
         | LoadGlobal(_) | Jump(_) => Case::new(op, []),
-        // Define the slot first, so it holds a value to load.
-        LoadLocal(_) | ConsumeLocal(_) => {
+        // Define the slot first, so it holds a value to read or release.
+        LoadLocal(_) | ConsumeLocal(_) | ClearLocals { .. } => {
             Case::new(op, []).with_prelude([PushInt(7), DefLocal(CASE_SLOT)])
         }
         DefLocal(_) | LogicalNot | Negate | TypeTest(_) => Case::new(op, ints(1)),
@@ -290,6 +290,14 @@ fn instances() -> Vec<Case> {
         DefLocal(CASE_SLOT),
         LoadLocal(CASE_SLOT),
         ConsumeLocal(CASE_SLOT),
+        ClearLocals {
+            first: CASE_SLOT as u32,
+            count: 1,
+        },
+        ClearLocals {
+            first: CASE_SLOT as u32,
+            count: 0,
+        },
         LoadConst(STRING_K),
         LoadGlobal(global_slot("type")),
         Add,
