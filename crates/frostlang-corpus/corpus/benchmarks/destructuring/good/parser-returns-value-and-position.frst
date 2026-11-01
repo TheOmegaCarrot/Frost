@@ -1,0 +1,93 @@
+# A tokenizer and recursive-descent evaluator for arithmetic over Strings.
+# Every step that consumes input returns a fresh pair, `[value, position]`,
+# which its caller takes apart with `def [value, next] = ...`: the number
+# reader for each literal, and each grammar rule at every level of nesting.
+# Since a top-level function cannot call one defined after it, the mutually
+# recursive rules are arms of one `parse` function dispatching on the rule's
+# name. Operators of one level associate left, and Int division truncates.
+# Focus: pair returns destructured by `def`.
+#= {
+#=     result: [12, 3, 100, 6, 9, 17],
+#=     inputs: {
+#=         sources: [
+#=             '2*(3+4)-10/5',
+#=             '8-3-2',
+#=             '100',
+#=             '7/2*2',
+#=             '-(1+2)*-3',
+#=             ' 12 + 30 / ( 2 * 3 ) ',
+#=         ],
+#=     },
+#=     bench: {
+#=         inputs: {
+#=             sources: map(range(150), fn i -> join(map(range(6), fn j ->
+#=                 $'${(i + j) % 17}*(${j + 1}+-${i % 5})-${i * j % 90}/(${j % 3 + 1}*2)'), ' + ')),
+#=         },
+#=     },
+#= }
+def {sources} = import('inputs')
+def digits = {
+    ['0']: 0, ['1']: 1, ['2']: 2, ['3']: 3, ['4']: 4,
+    ['5']: 5, ['6']: 6, ['7']: 7, ['8']: 8, ['9']: 9,
+}
+
+defn read_number(chars, i, value) -> if i < len(chars) and has(digits, chars[i]):
+    read_number(chars, i + 1, value * 10 + digits[chars[i]])
+else: [value, i]
+
+defn scan(chars, i, tokens) -> if i == len(chars): tokens
+elif chars[i] == ' ': scan(chars, i + 1, tokens)
+elif has(digits, chars[i]): do {
+    def [value, next] = read_number(chars, i, 0)
+    scan(chars, next, tokens + [value])
+}
+else: scan(chars, i + 1, tokens + [chars[i]])
+
+defn apply(op, a, b) -> match op {
+    '+' => a + b,
+    '-' => a - b,
+    '*' => a * b,
+    '/' => a / b,
+}
+
+defn at_operator(tokens, i, first, second) -> i < len(tokens) and (tokens[i] == first or tokens[i] == second)
+
+defn parse(rule, tokens, i, left) -> match rule {
+    'expr' => do {
+        def [first, next] = parse('term', tokens, i, null)
+        parse('more terms', tokens, next, first)
+    },
+    'more terms' => if at_operator(tokens, i, '+', '-'): do {
+        def [right, next] = parse('term', tokens, i + 1, null)
+        parse('more terms', tokens, next, apply(tokens[i], left, right))
+    }
+    else: [left, i],
+    'term' => do {
+        def [first, next] = parse('factor', tokens, i, null)
+        parse('more factors', tokens, next, first)
+    },
+    'more factors' => if at_operator(tokens, i, '*', '/'): do {
+        def [right, next] = parse('factor', tokens, i + 1, null)
+        parse('more factors', tokens, next, apply(tokens[i], left, right))
+    }
+    else: [left, i],
+    'factor' => match tokens[i] {
+        '(' => do {
+            def [value, close] = parse('expr', tokens, i + 1, null)
+            if tokens[close] == ')': [value, close + 1] else: error('expected )')
+        },
+        '-' => do {
+            def [value, next] = parse('factor', tokens, i + 1, null)
+            [-value, next]
+        },
+        n is Int => [n, i + 1],
+    },
+}
+
+defn calculate(source) -> {
+    def tokens = scan(split(source, ''), 0, [])
+    def [value, end] = parse('expr', tokens, 0, null)
+    if end == len(tokens): value else: error($'unexpected ${tokens[end]}')
+}
+
+map(sources, calculate)

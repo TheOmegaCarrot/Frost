@@ -1,0 +1,77 @@
+# Three small jobs whose hot `def`s are all ones that test their patterns
+# by their own instructions rather than in one with the whole pattern. Each
+# item's frame must carry the tag its kind names, checked by
+# `def [(tag_of(kind)), payload] = frame`, a pin calling a function; rows
+# are summed over columns named by `column_name(i)`, a computed key calling
+# a function; and samples are described by a mean and variance whose steps
+# bind lone untyped names. This is the control for the other destructuring
+# benchmarks.
+# Focus: `def` patterns whose pins and keys call functions, and lone names.
+#= {
+#=     result: {
+#=         net: 4,
+#=         sums: [3, 30],
+#=         descriptions: [{mean: 5, variance: 4}, {mean: 1, variance: 0}],
+#=     },
+#=     inputs: {
+#=         tags: {add: 'A', remove: 'R', touch: 'T'},
+#=         items: [
+#=             {kind: 'add', frame: ['A', 5]},
+#=             {kind: 'remove', frame: ['R', 2]},
+#=             {kind: 'touch', frame: ['T', 0]},
+#=             {kind: 'add', frame: ['A', 1]},
+#=         ],
+#=         columns: ['a', 'b'],
+#=         rows: [{a: 1, b: 2}, {a: 10, b: 20, c: 5}],
+#=         samples: [[2, 4, 4, 4, 5, 5, 7, 9], [1, 1]],
+#=     },
+#=     bench: {
+#=         inputs: {
+#=             tags: {add: 'A', remove: 'R', touch: 'T'},
+#=             items: map(range(15000), fn i -> match i % 3 {
+#=                 0 => {kind: 'add', frame: ['A', i % 13]},
+#=                 1 => {kind: 'remove', frame: ['R', i % 7]},
+#=                 _ => {kind: 'touch', frame: ['T', 0]},
+#=             }),
+#=             columns: ['a', 'b', 'c', 'd'],
+#=             rows: map(range(4000), fn i -> {a: i % 9, b: i % 5, c: 1, d: i % 3, e: i}),
+#=             samples: map(range(200), fn i -> map(range(50), fn j -> (i + j * j) % 23)),
+#=         },
+#=     },
+#= }
+def {tags, items, columns, rows, samples} = import('inputs')
+
+defn tag_of(kind) -> tags[kind]
+
+defn apply(net, item) -> {
+    def [(tag_of(item.kind)), payload] = item.frame
+    if item.kind == 'add': net + payload
+    elif item.kind == 'remove': net - payload
+    else: net
+}
+
+defn column_name(i) -> columns[i]
+
+defn row_sum(row) -> reduce(range(len(columns)), 0, fn total, i -> {
+    def {[column_name(i)]: value} = row
+    total + value
+})
+
+defn describe(xs) -> {
+    def count = len(xs)
+    def mean = sum(xs) / count
+    def squares = reduce(xs, 0, fn total, x -> {
+        def deviation = x - mean
+        def square = deviation * deviation
+        def running = total + square
+        running
+    })
+    def variance = squares / count
+    {mean, variance}
+}
+
+{
+    net: reduce(items, 0, apply),
+    sums: map(rows, row_sum),
+    descriptions: map(samples, describe),
+}

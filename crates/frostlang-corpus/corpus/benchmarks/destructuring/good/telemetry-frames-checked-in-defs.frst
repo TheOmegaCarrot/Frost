@@ -1,0 +1,49 @@
+# A telemetry receiver checking each channel's frames as it totals them.
+# Each frame is `[sequence number, reading]`, and the receiver insists on
+# the numbers arriving in order with `def [(expected), reading] = frame`,
+# pinning the number it expects next. A reading is a level or an annotated
+# `[level, note]`, taken either way by `def [value, _] | value = reading`;
+# the decoder requires an Int level with `def level is Int = value`, and
+# the receiver asserts that decoding succeeded with
+# `def ['ok', scaled] = decode(reading)`. A frame breaking any of these
+# would stop the run with a mismatch; these channels are well formed.
+# Focus: literal elements, pins of locals, typed bindings, and alternatives in `def`.
+#= {
+#=     result: [
+#=         {frames: 3, total: 150, peak: 70},
+#=         {frames: 0, total: 0, peak: 0},
+#=         {frames: 1, total: 20, peak: 20},
+#=     ],
+#=     inputs: {
+#=         channels: [
+#=             [[0, 5], [1, [7, 'spike']], [2, 3]],
+#=             [],
+#=             [[0, [2, 'calibrated']]],
+#=         ],
+#=         scale: 10,
+#=     },
+#=     bench: {
+#=         inputs: {
+#=             channels: map(range(100), fn c -> map(range(400), fn i ->
+#=                 [i, if i % 4 == 0: [i % 50, 'note'] else: i * c % 97])),
+#=             scale: 3,
+#=         },
+#=     },
+#= }
+def {channels, scale} = import('inputs')
+
+defn decode(reading) -> {
+    def [value, _] | value = reading
+    def level is Int = value
+    if level < 0: ['error', $'negative level ${level}'] else: ['ok', level * scale]
+}
+
+defn receive(frames, expected, total, peak) -> if expected == len(frames):
+    {frames: expected, total, peak}
+else: do {
+    def [(expected), reading] = frames[expected]
+    def ['ok', scaled] = decode(reading)
+    receive(frames, expected + 1, total + scaled, if scaled > peak: scaled else: peak)
+}
+
+map(channels, fn frames -> receive(frames, 0, 0, 0))

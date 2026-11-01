@@ -1,0 +1,55 @@
+# A survey report whose fields are chosen at runtime: it groups the rows by
+# one named field and takes a weighted mean of another, weighted by a third.
+# Each row is taken apart by `def` with keys computed from the field names,
+# and each group's running totals by a nested pattern keyed by the group
+# just read. A group no row falls in has no mean.
+# Focus: computed keys from names in `def` Map patterns.
+#= {
+#=     result: [
+#=         {group: 'north', count: 2, mean: 6},
+#=         {group: 'south', count: 2, mean: 5},
+#=         {group: 'east', count: 0, mean: null},
+#=     ],
+#=     inputs: {
+#=         group_field: 'region',
+#=         value_field: 'score',
+#=         weight_field: 'responses',
+#=         groups: ['north', 'south', 'east'],
+#=         rows: [
+#=             {id: 1, region: 'north', score: 8, responses: 2},
+#=             {id: 2, region: 'south', score: 5, responses: 4},
+#=             {id: 3, region: 'north', score: 2, responses: 1},
+#=             {id: 4, region: 'south', score: 9, responses: 0},
+#=         ],
+#=     },
+#=     bench: {
+#=         inputs: {
+#=             group_field: 'region',
+#=             value_field: 'score',
+#=             weight_field: 'responses',
+#=             groups: ['north', 'south', 'east', 'west', 'central', 'islands'],
+#=             rows: map(range(20000), fn i -> {
+#=                 id: i,
+#=                 region: ['north', 'south', 'east', 'west', 'central'][i * 7 % 5],
+#=                 score: i % 11,
+#=                 responses: i * 3 % 8,
+#=             }),
+#=         },
+#=     },
+#= }
+def {group_field, value_field, weight_field, groups, rows} = import('inputs')
+
+def empty = reduce(groups, {}, fn totals, group ->
+    totals + {[group]: {count: 0, weighted: 0, weight: 0}})
+
+defn tally(totals, row) -> {
+    def {[group_field]: group, [value_field]: value, [weight_field]: weight} = row
+    def {[group]: {count, weighted, weight: so_far}} = totals
+    totals + {[group]: {count: count + 1, weighted: weighted + value * weight, weight: so_far + weight}}
+}
+
+def totals = reduce(rows, empty, tally)
+map(groups, fn group -> {
+    def {[group]: {count, weighted, weight}} = totals
+    {group, count, mean: if weight == 0: null else: weighted / weight}
+})

@@ -1,0 +1,80 @@
+# A particle simulation in Int arithmetic. Each particle is a position and a
+# velocity, each an `[x, y, z]` vector; every step adds the velocity to the
+# position and gravity to the velocity, and a particle that falls below the
+# floor bounces, losing a quarter of its vertical speed. Afterwards the
+# particles' bounding box and total kinetic energy are gathered by `reduce`.
+# Every vector operation takes its operands apart with `def [x, y, z] = v`,
+# and particles and boxes are taken apart by nested patterns.
+# Focus: fixed-size Array patterns in `def` in arithmetic-heavy code.
+#= {
+#=     result: {
+#=         positions: [[4, 0, 4], [-2, 8, 6], [0, 0, 9]],
+#=         box: [[-2, 0, 4], [4, 8, 9]],
+#=         energy: 9,
+#=     },
+#=     inputs: {
+#=         particles: [
+#=             [[0, 0, 10], [1, 0, 0]],
+#=             [[2, 4, 0], [-1, 1, 3]],
+#=             [[0, 0, 0], [0, 0, -3]],
+#=         ],
+#=         gravity: [0, 0, -1],
+#=         steps: 4,
+#=     },
+#=     bench: {
+#=         inputs: {
+#=             particles: map(range(400), fn i -> [
+#=                 [i % 17 - 8, i % 11 - 5, i % 23],
+#=                 [i % 5 - 2, i % 7 - 3, i % 9 - 4],
+#=             ]),
+#=             gravity: [0, 0, -1],
+#=             steps: 80,
+#=         },
+#=     },
+#= }
+def {particles, gravity, steps} = import('inputs')
+
+defn plus(a, b) -> {
+    def [ax, ay, az] = a
+    def [bx, by, bz] = b
+    [ax + bx, ay + by, az + bz]
+}
+
+defn lesser(a, b) -> if a < b: a else: b
+defn greater(a, b) -> if a > b: a else: b
+
+defn bounce(position, velocity) -> {
+    def [x, y, z] = position
+    def [vx, vy, vz] = velocity
+    if z >= 0: [position, velocity]
+    else: [[x, y, -z], [vx, vy, -vz * 3 / 4]]
+}
+
+defn advance(particle) -> {
+    def [position, velocity] = particle
+    bounce(plus(position, velocity), plus(velocity, gravity))
+}
+
+defn simulate(ps, n) -> if n == 0: ps else: simulate(map(ps, advance), n - 1)
+
+defn widen(box, particle) -> {
+    def [[lx, ly, lz], [hx, hy, hz]] = box
+    def [[x, y, z], _] = particle
+    [
+        [lesser(lx, x), lesser(ly, y), lesser(lz, z)],
+        [greater(hx, x), greater(hy, y), greater(hz, z)],
+    ]
+}
+
+defn energy(total, particle) -> {
+    def [_, [vx, vy, vz]] = particle
+    total + (vx * vx + vy * vy + vz * vz) / 2
+}
+
+def finals = simulate(particles, steps)
+def [start, _] = finals[0]
+{
+    positions: map(finals, fn particle -> particle[0]),
+    box: reduce(finals, [start, start], widen),
+    energy: reduce(finals, 0, energy),
+}

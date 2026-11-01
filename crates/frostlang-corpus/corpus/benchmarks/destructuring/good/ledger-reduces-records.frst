@@ -1,0 +1,74 @@
+# A ledger posting transactions to accounts. Every step of each `reduce`
+# takes its records apart with `def` Map patterns: each transaction's fields,
+# the account's entry with its nested statistics, and the running totals the
+# reduce carries, which it rebuilds at every step and so owns uniquely.
+# Focus: flat and nested Map patterns in `def`, per element of a `reduce`.
+#= {
+#=     result: {
+#=         report: [
+#=             {name: 'Alice', count: 3, balance: 70, average: 23},
+#=             {name: 'Bob', count: 2, balance: -15, average: -7},
+#=             {name: 'Carol', count: 0, balance: 0, average: 0},
+#=         ],
+#=         totals: {deposits: 135, withdrawals: 80, largest: 100, posted: 5},
+#=     },
+#=     inputs: {
+#=         accounts: [
+#=             {id: 'a', name: 'Alice'},
+#=             {id: 'b', name: 'Bob'},
+#=             {id: 'c', name: 'Carol'},
+#=         ],
+#=         transactions: [
+#=             {account: 'a', kind: 'deposit', amount: 100},
+#=             {account: 'b', kind: 'deposit', amount: 35},
+#=             {account: 'a', kind: 'withdrawal', amount: 30},
+#=             {account: 'b', kind: 'withdrawal', amount: 50},
+#=             {account: 'a', kind: 'withdrawal', amount: 0},
+#=         ],
+#=     },
+#=     bench: {
+#=         inputs: {
+#=             accounts: map(range(40), fn i -> {id: $'id${i}', name: $'Name ${i}'}),
+#=             transactions: map(range(20000), fn i -> {
+#=                 account: $'id${i * 7 % 37}',
+#=                 kind: if i % 3 == 0: 'withdrawal' else: 'deposit',
+#=                 amount: i * 13 % 101,
+#=             }),
+#=         },
+#=     },
+#= }
+def {accounts, transactions} = import('inputs')
+
+def opened = reduce(accounts, {}, fn book, account -> {
+    def {id, name} = account
+    book + {[id]: {name, stats: {count: 0, balance: 0}}}
+})
+
+defn post(book, transaction) -> {
+    def {account, kind, amount} = transaction
+    def {name, stats: {count, balance}} = book[account]
+    def change = if kind == 'deposit': amount else: -amount
+    book + {[account]: {name, stats: {count: count + 1, balance: balance + change}}}
+}
+
+defn tally(totals, transaction) -> {
+    def {deposits, withdrawals, largest, posted} = totals
+    def {kind, amount} = transaction
+    {
+        deposits: if kind == 'deposit': deposits + amount else: deposits,
+        withdrawals: if kind == 'withdrawal': withdrawals + amount else: withdrawals,
+        largest: if amount > largest: amount else: largest,
+        posted: posted + 1,
+    }
+}
+
+defn summarize(entry) -> {
+    def {name, stats: {count, balance}} = entry
+    {name, count, balance, average: if count == 0: 0 else: balance / count}
+}
+
+def book = reduce(transactions, opened, post)
+{
+    report: map(accounts, fn account -> summarize(book[account.id])),
+    totals: reduce(transactions, {deposits: 0, withdrawals: 0, largest: 0, posted: 0}, tally),
+}

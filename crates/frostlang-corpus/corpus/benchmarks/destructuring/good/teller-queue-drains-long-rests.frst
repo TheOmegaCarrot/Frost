@@ -1,0 +1,48 @@
+# A single teller serving each day's customers in order of arrival. The
+# sign-in log lists each customer as `[arrival, service time]` in sign-in
+# order, so the day's queue is the log sorted; the teller then takes one
+# customer at a time off the front with
+# `def [[arrival, service], ...waiting] = queue`. The queues are long and
+# uniquely owned, so every step's rest is a long tail: moved out of the queue
+# or copied from it, the cost of each step grows with the queue's length.
+# Focus: Array rest patterns in `def` over long, uniquely owned Arrays.
+#= {
+#=     result: [
+#=         {served: 4, total_wait: 9, longest_wait: 6, closed: 13},
+#=         {served: 0, total_wait: 0, longest_wait: 0, closed: 0},
+#=         {served: 1, total_wait: 0, longest_wait: 0, closed: 7},
+#=         {served: 3, total_wait: 9, longest_wait: 6, closed: 10},
+#=     ],
+#=     inputs: {
+#=         days: [
+#=             [[0, 5], [10, 3], [2, 4], [3, 1]],
+#=             [],
+#=             [[5, 2]],
+#=             [[1, 3], [1, 3], [1, 3]],
+#=         ],
+#=     },
+#=     bench: {
+#=         inputs: {
+#=             days: map(range(24), fn d -> map(range(500), fn i ->
+#=                 [(i * 37 + d * 11) % 1200, 1 + (i * 7 + d) % 5])),
+#=         },
+#=     },
+#= }
+def {days} = import('inputs')
+
+defn serve(queue, clock, served, total_wait, longest_wait) -> if queue == []:
+    {served, total_wait, longest_wait, closed: clock}
+else: do {
+    def [[arrival, service], ...waiting] = queue
+    def start = if clock > arrival: clock else: arrival
+    def wait = start - arrival
+    serve(
+        waiting,
+        start + service,
+        served + 1,
+        total_wait + wait,
+        if wait > longest_wait: wait else: longest_wait,
+    )
+}
+
+map(days, fn log -> serve(sorted(log), 0, 0, 0, 0))

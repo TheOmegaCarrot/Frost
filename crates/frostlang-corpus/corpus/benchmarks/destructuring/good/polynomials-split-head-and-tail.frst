@@ -1,0 +1,60 @@
+# Arithmetic on polynomials held as short Arrays of Int coefficients, lowest
+# degree first. Each operation recurs on a head and tail taken apart by
+# `def [c, ...higher] = p`; past the first step every tail it recurs on is
+# one the step before made, so it is uniquely owned. The polynomials are
+# short, so the work is the destructuring rather than copying long tails.
+# Focus: Array rest patterns in `def` over short, uniquely owned Arrays.
+#= {
+#=     result: [
+#=         {product: [-1, 1, -1, 1], values: [-4, -1, 0, 5]},
+#=         {product: [6, -5, 1], values: [12, 6, 2, 0]},
+#=         {product: [], values: [0, 0, 0, 0]},
+#=         {product: [0, 0, 6, 12], values: [-6, 0, 18, 120]},
+#=     ],
+#=     inputs: {
+#=         pairs: [
+#=             [[-1, 1], [1, 0, 1]],
+#=             [[2, -1], [3, -1]],
+#=             [[], [4, 5]],
+#=             [[0, 2], [0, 3, 6]],
+#=         ],
+#=         points: [-1, 0, 1, 2],
+#=     },
+#=     bench: {
+#=         inputs: {
+#=             pairs: map(range(1000), fn i -> [
+#=                 map(range(4 + i % 5), fn j -> (i + j * 3) % 9 - 4),
+#=                 map(range(3 + i % 4), fn j -> (i * 5 + j) % 7 - 3),
+#=             ]),
+#=             points: [-2, -1, 0, 1, 2, 3],
+#=         },
+#=     },
+#= }
+def {pairs, points} = import('inputs')
+
+defn evaluate(p, x) -> if p == []: 0 else: do {
+    def [c, ...higher] = p
+    c + x * evaluate(higher, x)
+}
+
+defn add(p, q) -> if p == []: q elif q == []: p else: do {
+    def [a, ...ps] = p
+    def [b, ...qs] = q
+    [a + b] + add(ps, qs)
+}
+
+defn scale(p, k) -> if p == []: [] else: do {
+    def [c, ...higher] = p
+    [c * k] + scale(higher, k)
+}
+
+defn multiply(p, q) -> if p == []: [] else: do {
+    def [a, ...higher] = p
+    add(scale(q, a), [0] + multiply(higher, q))
+}
+
+map(pairs, fn pair -> {
+    def [p, q] = pair
+    def product = multiply(p, q)
+    {product, values: map(points, fn x -> evaluate(product, x))}
+})
