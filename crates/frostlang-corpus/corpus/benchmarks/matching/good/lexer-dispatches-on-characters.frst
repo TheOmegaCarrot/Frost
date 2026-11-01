@@ -1,0 +1,115 @@
+# A lexer for a small C-like language, over each line's characters. Each
+# step matches the remaining characters: whitespace and the two-character
+# operators by Array patterns of literals, then a single character by
+# alternatives of literals. Digits are valued by a table of literal arms, and
+# a finished word is told apart as a keyword, a Bool, or a name.
+# Focus: dispatch on String literals and alternatives of them.
+#= {
+#=     result: [
+#=         [['kw', 'let'], ['name', 'x1'], ['op', '='], ['int', 42], ['op', '+'], ['name', 'y'], ['punct', ';']],
+#=         [
+#=             ['kw', 'if'], ['punct', '('], ['name', 'a'], ['op', '=='], ['name', 'b'], ['punct', ')'],
+#=             ['kw', 'return'], ['string', 'hi\n'], ['punct', ';'],
+#=         ],
+#=         [['name', 'x'], ['op', '<='], ['int', 10], ['punct', ','], ['name', 'y'], ['op', '>='], ['int', 0]],
+#=         [],
+#=         [
+#=             ['kw', 'while'], ['punct', '('], ['bool', false], ['punct', ')'], ['punct', '{'], ['name', 'x'],
+#=             ['op', '='], ['name', 'x'], ['op', '-'], ['int', 1], ['punct', '}'],
+#=         ],
+#=         [['name', 'a_b'], ['op', '!='], ['string', 'q"'], ['op', '%'], ['int', 7]],
+#=     ],
+#=     inputs: {
+#=         lines: [
+#=             'let x1 = 42 + y;',
+#=             'if (a == b) return "hi\\n";',
+#=             'x <= 10, y >= 0',
+#=             '',
+#=             'while(false){x=x-1}',
+#=             '  a_b != "q\\"" % 7',
+#=         ],
+#=     },
+#=     bench: {
+#=         inputs: {
+#=             lines: map(range(1200), fn i -> [
+#=                 'let x1 = 42 + y;',
+#=                 'if (a == b) return "hi\\n";',
+#=                 'x <= 10, y >= 0',
+#=                 '',
+#=                 'while(false){x=x-1}',
+#=                 '  a_b != "q\\"" % 7',
+#=                 $'total{i} = total + {i * 7919} * rate;',
+#=                 $'if (n{i % 10} >= 0) return true;',
+#=             ][i % 8]),
+#=         },
+#=     },
+#= }
+def {lines} = import('inputs')
+
+defn digit(c) -> match c {
+    '0' => 0,
+    '1' => 1,
+    '2' => 2,
+    '3' => 3,
+    '4' => 4,
+    '5' => 5,
+    '6' => 6,
+    '7' => 7,
+    '8' => 8,
+    '9' => 9,
+    _ => null,
+}
+
+defn is_word_char(c) -> (c >= 'a' and c <= 'z') or c == '_' or digit(c) != null
+
+# Each reader takes the characters at the start of a token and returns the
+# token with the characters after it.
+defn read_number(cs, n) -> match cs {
+    [c, ...rest] if: digit(c) != null => read_number(rest, n * 10 + digit(c)),
+    _ => [['int', n], cs],
+}
+
+defn read_word(cs, text) -> match cs {
+    [c, ...rest] if: is_word_char(c) => read_word(rest, text + c),
+    _ => [
+        match text {
+            'let' | 'if' | 'else' | 'fn' | 'return' | 'while' => ['kw', text],
+            'true' => ['bool', true],
+            'false' => ['bool', false],
+            _ => ['name', text],
+        },
+        cs,
+    ],
+}
+
+defn read_string(cs, text) -> match cs {
+    ['"', ...rest] => [['string', text], rest],
+    ['\\', 'n', ...rest] => read_string(rest, text + '\n'),
+    ['\\', c, ...rest] => read_string(rest, text + c),
+    [c, ...rest] => read_string(rest, text + c),
+    [] => error('unterminated string'),
+}
+
+defn lex(cs, tokens) -> match cs {
+    [] => tokens,
+    [' ' | '\t', ...rest] => lex(rest, tokens),
+    ['=', '=', ...rest] => lex(rest, tokens + [['op', '==']]),
+    ['!', '=', ...rest] => lex(rest, tokens + [['op', '!=']]),
+    ['<', '=', ...rest] => lex(rest, tokens + [['op', '<=']]),
+    ['>', '=', ...rest] => lex(rest, tokens + [['op', '>=']]),
+    [c, ...rest] => match c {
+        '+' | '-' | '*' | '/' | '%' | '<' | '>' | '=' => lex(rest, tokens + [['op', c]]),
+        '(' | ')' | '{' | '}' | ';' | ',' => lex(rest, tokens + [['punct', c]]),
+        _ => do {
+            def [token, after] = match c {
+                '"' => read_string(rest, ''),
+                '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9' => read_number(cs, 0),
+                _ if: is_word_char(c) => read_word(cs, ''),
+                _ => error($'unexpected character ${c}'),
+            }
+            lex(after, tokens + [token])
+        },
+    },
+}
+
+map(lines, fn line -> lex(split(line, ''), []))

@@ -1,0 +1,55 @@
+# Two small jobs whose hot arms compute a pin or a key by calling a function.
+# Sorted Ints are compressed into inclusive ranges, a run going on while the
+# next element equals `successor(last)`; and rows are summed over columns
+# named by `column_name(i)`, a missing column adding nothing. A pin or key
+# that calls a function is checked by its own instructions rather than in one
+# with the rest of its pattern, so this is the control for the other
+# matching benchmarks.
+# Focus: pins and computed keys that call functions.
+#= {
+#=     result: {
+#=         ranges: [[[1, 3], [5, 6], [9, 9]], [], [[4, 4]], [[7, 10]]],
+#=         sums: [6, 40, 0, 5],
+#=     },
+#=     inputs: {
+#=         step: 1,
+#=         sequences: [[1, 2, 3, 5, 6, 9], [], [4], [7, 8, 9, 10]],
+#=         columns: ['a', 'b', 'c'],
+#=         rows: [{a: 1, b: 2, c: 3}, {a: 10, c: 30}, {}, {b: 5, d: 100}],
+#=     },
+#=     bench: {
+#=         inputs: {
+#=             step: 1,
+#=             sequences: map(range(800), fn i -> filter(range(40), fn j -> (i + j) % 13 != 0)),
+#=             columns: ['a', 'b', 'c', 'd'],
+#=             rows: map(range(5000), fn i -> match i % 3 {
+#=                 0 => {a: i, b: i % 7, c: 1, d: 2},
+#=                 1 => {a: i, c: 3, e: 4},
+#=                 _ => {b: i % 5, d: 6},
+#=             }),
+#=         },
+#=     },
+#= }
+def {step, sequences, columns, rows} = import('inputs')
+
+defn successor(n) -> n + step
+
+defn ranges_from(xs, first, last, ranges) -> match xs {
+    [(successor(last)), ...rest] => ranges_from(rest, first, successor(last), ranges),
+    [next, ...rest] => ranges_from(rest, next, next, ranges + [[first, last]]),
+    [] => ranges + [[first, last]],
+}
+
+defn to_ranges(xs) -> match xs {
+    [first, ...rest] => ranges_from(rest, first, first, []),
+    [] => [],
+}
+
+defn column_name(i) -> columns[i]
+
+defn row_sum(row) -> reduce(range(len(columns)), 0, fn total, i -> match row {
+    {[column_name(i)]: value} => total + value,
+    _ => total,
+})
+
+{ranges: map(sequences, to_ranges), sums: map(rows, row_sum)}

@@ -1,0 +1,70 @@
+# A firewall classifies packets by an ordered rule list, the first rule that
+# applies giving the verdict, and tallies the verdicts. Most rules pair a
+# record pattern with a guard on ranges a pattern cannot state, and most
+# packets fail several guards before one applies, so matching goes on to
+# the later arms.
+# Focus: arms whose `if:` guards often fail.
+#= {
+#=     result: {
+#=         oversize: 1,
+#=         internal_ssh: 1,
+#=         external_ssh: 1,
+#=         dns: 1,
+#=         large_udp: 1,
+#=         ephemeral: 1,
+#=         web: 2,
+#=         dev: 1,
+#=         ping: 1,
+#=         lan: 1,
+#=         internal_small: 1,
+#=         default: 1,
+#=     },
+#=     inputs: {
+#=         packets: [
+#=             {proto: 'tcp', port: 443, size: 1500, src: [8, 8, 8, 8]},
+#=             {proto: 'tcp', port: 22, size: 100, src: [10, 0, 0, 5]},
+#=             {proto: 'tcp', port: 22, size: 100, src: [8, 8, 4, 4]},
+#=             {proto: 'udp', port: 53, size: 80, src: [1, 1, 1, 1]},
+#=             {proto: 'udp', port: 5000, size: 900, src: [1, 1, 1, 1]},
+#=             {proto: 'udp', port: 50000, size: 100, src: [1, 1, 1, 1]},
+#=             {proto: 'tcp', port: 80, size: 600, src: [3, 3, 3, 3]},
+#=             {proto: 'tcp', port: 8080, size: 600, src: [3, 3, 3, 3]},
+#=             {proto: 'icmp', size: 64, src: [192, 168, 0, 9]},
+#=             {proto: 'icmp', size: 1000, src: [192, 168, 0, 9]},
+#=             {proto: 'tcp', port: 9999, size: 200, src: [10, 1, 1, 1]},
+#=             {proto: 'gre', size: 2000, src: [10, 1, 1, 1]},
+#=             {proto: 'tcp', port: 443, size: 200, src: [5, 5, 5, 5]},
+#=         ],
+#=     },
+#=     bench: {
+#=         inputs: {
+#=             packets: map(range(15000), fn i -> {
+#=                 proto: ['tcp', 'udp', 'icmp', 'tcp', 'gre'][i % 5],
+#=                 port: [22, 53, 80, 443, 8080, 50000, 9999, 5000][i % 8],
+#=                 size: i * 37 % 1600,
+#=                 src: [[10, 0, 0, 1], [192, 168, 1, 2], [8, 8, 8, 8]][i % 3],
+#=             }),
+#=         },
+#=     },
+#= }
+def {packets} = import('inputs')
+
+defn verdict(packet) -> match packet {
+    {proto: 'tcp', port, size} if: port < 1024 and size > 1400 => 'oversize',
+    {proto: 'tcp', port: 22, src: [10, ..._]} => 'internal_ssh',
+    {proto: 'tcp', port: 22} => 'external_ssh',
+    {proto: 'udp', port: 53} => 'dns',
+    {proto: 'udp', size} if: size > 512 => 'large_udp',
+    {proto: 'tcp' | 'udp', port} if: port >= 49152 => 'ephemeral',
+    {proto: 'tcp', port: 80 | 443} => 'web',
+    {proto: 'tcp', port} if: port >= 8000 and port < 9000 => 'dev',
+    {proto: 'icmp', size} if: size <= 64 => 'ping',
+    {src: [a, b, ..._]} if: a == 192 and b == 168 => 'lan',
+    {src: [a, ..._], size} if: a == 10 and size < 1000 => 'internal_small',
+    _ => 'default',
+}
+
+reduce(packets, {}, fn tally, packet -> {
+    def rule = verdict(packet)
+    tally + {[rule]: (tally[rule] or 0) + 1}
+})

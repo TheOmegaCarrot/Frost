@@ -1,0 +1,93 @@
+# A query over a log of envelopes, each naming its kind and carrying its
+# payload under that name: `{kind: k, [k]: payload}`, a computed key from a
+# binding earlier in the same pattern. The record kind, the conditions, the
+# selected columns, and the grouping field all arrive as inputs, so every
+# field is read by a computed key from a name: `{[field]: (wanted)}`,
+# `{[column]: value}`, `{[group_field]: group}`. An envelope missing its
+# payload is malformed; one of another kind is counted and skipped.
+# Focus: computed keys from names.
+#= {
+#=     result: {
+#=         rows: [{name: 'ada', age: 36}, {name: 'ed', age: 52}],
+#=         groups: {eng: 4, ops: 1},
+#=         other: 1,
+#=         malformed: 1,
+#=     },
+#=     inputs: {
+#=         record_kind: 'person',
+#=         conditions: [
+#=             {field: 'dept', equals: 'eng'},
+#=             {field: 'age', at_least: 30},
+#=             {field: 'retired', missing: true},
+#=         ],
+#=         columns: ['name', 'age', 'email'],
+#=         group_field: 'dept',
+#=         envelopes: [
+#=             {kind: 'person', person: {name: 'ada', dept: 'eng', age: 36}},
+#=             {kind: 'person', person: {name: 'bob', dept: 'ops', age: 41, retired: true}},
+#=             {kind: 'note', note: {text: 'hi'}},
+#=             {kind: 'person', person: {name: 'cy', dept: 'eng', age: 29}},
+#=             {kind: 'person'},
+#=             {kind: 'person', person: {name: 'di', dept: 'eng', age: 'unknown'}},
+#=             {kind: 'person', person: {name: 'ed', dept: 'eng', age: 52}},
+#=         ],
+#=     },
+#=     bench: {
+#=         inputs: {
+#=             record_kind: 'person',
+#=             conditions: [
+#=                 {field: 'dept', equals: 'eng'},
+#=                 {field: 'age', at_least: 30},
+#=                 {field: 'retired', missing: true},
+#=             ],
+#=             columns: ['name', 'age', 'email'],
+#=             group_field: 'dept',
+#=             envelopes: map(range(8000), fn i -> match i % 10 {
+#=                 0 => {kind: 'note', note: {text: 'hi'}},
+#=                 1 => {kind: 'person'},
+#=                 2 => {kind: 'person', person: {name: $'p${i}', dept: 'ops', age: i % 60, retired: true}},
+#=                 3 => {kind: 'person', person: {name: $'p${i}', dept: 'eng', age: 'unknown'}},
+#=                 4 => {kind: 'person', person: {name: $'p${i}', dept: 'eng', age: i % 60, email: $'p${i}@x'}},
+#=                 _ => {kind: 'person', person: {name: $'p${i}', dept: ['eng', 'ops', 'qa'][i % 3], age: i % 70}},
+#=             }),
+#=         },
+#=     },
+#= }
+def {record_kind, conditions, columns, group_field, envelopes} = import('inputs')
+
+defn holds(row, condition) -> match condition {
+    {field, equals: wanted} => match row {
+        {[field]: (wanted)} => true,
+        _ => false,
+    },
+    {field, at_least: low} => match row {
+        {[field]: value is Int} => value >= low,
+        _ => false,
+    },
+    {field, missing: true} => match row {
+        {[field]: _} => false,
+        _ => true,
+    },
+}
+
+defn project(row) -> reduce(columns, {}, fn out, column -> match row {
+    {[column]: value} => out + {[column]: value},
+    _ => out,
+})
+
+defn tally(acc, envelope) -> match envelope {
+    {kind: (record_kind), [record_kind]: row} => acc + {
+        rows: if reduce(conditions, true, fn ok, condition -> ok and holds(row, condition)):
+            acc.rows + [project(row)]
+        else:
+            acc.rows,
+        groups: match row {
+            {[group_field]: group} => acc.groups + {[group]: (acc.groups[group] or 0) + 1},
+            _ => acc.groups,
+        },
+    },
+    {kind: k, [k]: _} => acc + {other: acc.other + 1},
+    _ => acc + {malformed: acc.malformed + 1},
+}
+
+reduce(envelopes, {rows: [], groups: {}, other: 0, malformed: 0}, tally)

@@ -1,0 +1,74 @@
+# An accumulator machine. A program written as mnemonic Strings and Int
+# operands is assembled to a flat Int Array, then run by a tail-recursive loop
+# that dispatches each opcode through a table of literal arms. The loops run
+# the opcodes listed last, so the later arms are the ones hit most.
+# Focus: dispatch on literal Int and String values.
+#= {
+#=     result: [
+#=         {acc: 55, x: 0, y: 10, steps: 53},
+#=         {acc: 21, x: 0, y: 6, steps: 22},
+#=         {acc: 15, x: 3, y: 0, steps: 7},
+#=     ],
+#=     inputs: {
+#=         programs: [
+#=             ['load_x', 10, 'load_acc', 0, 'load_y', 0, 'inc_y', 'add_y', 'mod', 1000003, 'dec_x', 'jnz_x', 6, 'halt'],
+#=             ['load_x', 3, 'load_acc', 1, 'load_y', 3, 'mul_x', 'add_y', 'mod', 9973, 'inc_y', 'dec_x', 'jnz_x', 6, 'nop', 'halt'],
+#=             ['load_acc', 5, 'load_x', 2, 'sub_x', 'swap', 'add', 10, 'jmp', 12, 'load_acc', 999, 'add_x', 'halt'],
+#=         ],
+#=     },
+#=     bench: {
+#=         inputs: {
+#=             programs: [
+#=                 ['load_x', 4000, 'load_acc', 0, 'load_y', 0, 'inc_y', 'add_y', 'mod', 1000003, 'dec_x', 'jnz_x', 6, 'halt'],
+#=                 ['load_x', 4000, 'load_acc', 1, 'load_y', 3, 'mul_x', 'add_y', 'mod', 9973, 'inc_y', 'dec_x', 'jnz_x', 6, 'nop', 'halt'],
+#=                 ['load_acc', 5, 'load_x', 2, 'sub_x', 'swap', 'add', 10, 'jmp', 12, 'load_acc', 999, 'add_x', 'halt'],
+#=                 ['load_acc', 0, 'load_x', 1]
+#=                     + flat_map(range(2000), fn i -> ['add', i % 7, 'mod', 1009, 'swap', 'add_x', 'nop'])
+#=                     + ['halt'],
+#=             ],
+#=         },
+#=     },
+#= }
+def {programs} = import('inputs')
+
+defn assemble(source) -> map(source, fn word -> match word {
+    'halt' => 0,
+    'nop' => 1,
+    'load_acc' => 2,
+    'load_x' => 3,
+    'load_y' => 4,
+    'add' => 5,
+    'add_x' => 6,
+    'add_y' => 7,
+    'sub_x' => 8,
+    'mul_x' => 9,
+    'mod' => 10,
+    'swap' => 11,
+    'inc_y' => 12,
+    'dec_x' => 13,
+    'jmp' => 14,
+    'jnz_x' => 15,
+    operand is Int => operand,
+    other => error($'unknown mnemonic ${other}'),
+})
+
+defn run(code, pc, acc, x, y, steps) -> match code[pc] {
+    0 => {acc, x, y, steps},
+    1 => run(code, pc + 1, acc, x, y, steps + 1),
+    2 => run(code, pc + 2, code[pc + 1], x, y, steps + 1),
+    3 => run(code, pc + 2, acc, code[pc + 1], y, steps + 1),
+    4 => run(code, pc + 2, acc, x, code[pc + 1], steps + 1),
+    5 => run(code, pc + 2, acc + code[pc + 1], x, y, steps + 1),
+    6 => run(code, pc + 1, acc + x, x, y, steps + 1),
+    7 => run(code, pc + 1, acc + y, x, y, steps + 1),
+    8 => run(code, pc + 1, acc - x, x, y, steps + 1),
+    9 => run(code, pc + 1, acc * x, x, y, steps + 1),
+    10 => run(code, pc + 2, acc % code[pc + 1], x, y, steps + 1),
+    11 => run(code, pc + 1, x, acc, y, steps + 1),
+    12 => run(code, pc + 1, acc, x, y + 1, steps + 1),
+    13 => run(code, pc + 1, acc, x - 1, y, steps + 1),
+    14 => run(code, code[pc + 1], acc, x, y, steps + 1),
+    15 => run(code, if x != 0: code[pc + 1] else: pc + 2, acc, x, y, steps + 1),
+}
+
+map(programs, fn source -> run(assemble(source), 0, 0, 0, 0, 0))

@@ -1,0 +1,112 @@
+# Scenes of shapes as tagged records: primitives (`square`, `rect`,
+# `triangle`) and wrappers (`moved`, `scaled`, `group`) nesting other shapes.
+# A normalizing pass rewrites them by nested record patterns, rebuilding a
+# wrapper from its `as` binding; then twice each scene's area (to stay in
+# Ints) and its count of primitives are read off the normal form.
+# Focus: Map patterns with constant keys, nested records, and `as` bindings.
+#= {
+#=     result: [
+#=         {area2: 18, primitives: 1, normal: {kind: 'square', side: 3}},
+#=         {area2: 20, primitives: 1, normal: {kind: 'triangle', base: 4, height: 5}},
+#=         {
+#=             area2: 160,
+#=             primitives: 3,
+#=             normal: {
+#=                 kind: 'group',
+#=                 items: [
+#=                     {kind: 'scaled', by: 6, shape: {kind: 'rect', w: 1, h: 2}},
+#=                     {kind: 'square', side: 2},
+#=                     {kind: 'moved', dx: 5, dy: 0, shape: {kind: 'square', side: 2}},
+#=                 ],
+#=             },
+#=         },
+#=         {area2: 20, primitives: 1, normal: {kind: 'rect', w: 2, h: 5}},
+#=     ],
+#=     inputs: {
+#=         scenes: [
+#=             {kind: 'rect', w: 3, h: 3},
+#=             {
+#=                 kind: 'moved',
+#=                 dx: 1,
+#=                 dy: 2,
+#=                 shape: {kind: 'moved', dx: -1, dy: -2, shape: {kind: 'triangle', base: 4, height: 5}},
+#=             },
+#=             {
+#=                 kind: 'group',
+#=                 items: [
+#=                     {kind: 'scaled', by: 2, shape: {kind: 'scaled', by: 3, shape: {kind: 'rect', w: 1, h: 2}}},
+#=                     {kind: 'group', items: [{kind: 'scaled', by: 1, shape: {kind: 'square', side: 2}}]},
+#=                     {kind: 'moved', dx: 5, dy: 0, shape: {kind: 'rect', w: 2, h: 2}},
+#=                 ],
+#=             },
+#=             {
+#=                 kind: 'scaled',
+#=                 by: 1,
+#=                 shape: {kind: 'moved', dx: 0, dy: 0, shape: {kind: 'rect', w: 2, h: 5}},
+#=             },
+#=         ],
+#=     },
+#=     bench: {
+#=         inputs: {
+#=             scenes: map(range(900), fn i -> {
+#=                 kind: 'group',
+#=                 items: map(range(8), fn j -> match (i + j) % 6 {
+#=                     0 => {kind: 'rect', w: j, h: j},
+#=                     1 => {
+#=                         kind: 'moved',
+#=                         dx: i % 3,
+#=                         dy: 0,
+#=                         shape: {kind: 'moved', dx: 0, dy: j % 2, shape: {kind: 'triangle', base: j, height: i % 7}},
+#=                     },
+#=                     2 => {
+#=                         kind: 'scaled',
+#=                         by: 1 + j % 2,
+#=                         shape: {kind: 'scaled', by: 2, shape: {kind: 'rect', w: i % 5, h: 3}},
+#=                     },
+#=                     3 => {kind: 'group', items: [{kind: 'square', side: j}]},
+#=                     4 => {
+#=                         kind: 'scaled',
+#=                         by: 1,
+#=                         shape: {kind: 'moved', dx: 0, dy: 0, shape: {kind: 'rect', w: 2, h: i % 4}},
+#=                     },
+#=                     _ => {kind: 'group', items: [{kind: 'square', side: 1}, {kind: 'rect', w: j, h: 1}]},
+#=                 }),
+#=             }),
+#=         },
+#=     },
+#= }
+def {scenes} = import('inputs')
+
+defn normalize(shape) -> match shape {
+    {kind: 'rect', w, h: (w)} => {kind: 'square', side: w},
+    {kind: 'scaled', by: 1, shape: inner} => normalize(inner),
+    {kind: 'scaled', by: k, shape: {kind: 'scaled', by: j, shape: inner}} =>
+        normalize({kind: 'scaled', by: k * j, shape: inner}),
+    {kind: 'moved', dx: 0, dy: 0, shape: inner} => normalize(inner),
+    {kind: 'moved', dx, dy, shape: {kind: 'moved', dx: dx2, dy: dy2, shape: inner}} =>
+        normalize({kind: 'moved', dx: dx + dx2, dy: dy + dy2, shape: inner}),
+    {kind: 'moved' | 'scaled', shape: inner} as wrapper => wrapper + {shape: normalize(inner)},
+    {kind: 'group', items: [only]} => normalize(only),
+    {kind: 'group', items} as group => group + {items: map(items, normalize)},
+    {kind: _} as primitive => primitive,
+}
+
+defn area2(shape) -> match shape {
+    {kind: 'square', side} => 2 * side * side,
+    {kind: 'rect', w, h} => 2 * w * h,
+    {kind: 'triangle', base, height} => base * height,
+    {kind: 'moved', shape: inner} => area2(inner),
+    {kind: 'scaled', by, shape: inner} => by * by * area2(inner),
+    {kind: 'group', items} => reduce(items, 0, fn total, item -> total + area2(item)),
+}
+
+defn primitives(shape) -> match shape {
+    {kind: 'group', items} => reduce(items, 0, fn total, item -> total + primitives(item)),
+    {kind: 'moved' | 'scaled', shape: inner} => primitives(inner),
+    {kind: _} => 1,
+}
+
+map(scenes, fn scene -> {
+    def normal = normalize(scene)
+    {area2: area2(normal), primitives: primitives(normal), normal}
+})

@@ -1,0 +1,71 @@
+# An algebraic simplifier over expression trees: an operator node is an
+# Array, `[op, left, right]` or `['neg', operand]`, and a leaf is an Int or a
+# variable's name. It simplifies bottom up, rewriting each node by rules
+# written as nested patterns: identities with alternatives such as
+# `['+', 0, e] | ['+', e, 0]`, constant folding under type constraints, and
+# rules for repeated operands that pin an earlier binding, `['-', a, (a)]`.
+# Focus: nested Array patterns combining literals, alternatives, type
+# constraints, and pins of earlier bindings.
+#= {
+#=     result: [
+#=         'x',
+#=         ['*', 2, 'y'],
+#=         0,
+#=         ['+', ['*', 2, ['*', 'x', 'y']], 7],
+#=         'z',
+#=         ['*', 4, ['+', 'x', 1]],
+#=         ['-', 'x', 'y'],
+#=         -6,
+#=     ],
+#=     inputs: {
+#=         expressions: [
+#=             ['+', ['*', 1, 'x'], 0],
+#=             ['+', 'y', ['*', 'y', ['-', 3, 2]]],
+#=             ['-', ['+', 'x', 'y'], ['+', 'x', ['*', 'y', 1]]],
+#=             ['+', ['+', ['*', 'x', 'y'], ['*', 'x', 'y']], ['+', 3, 4]],
+#=             ['neg', ['neg', ['+', ['*', 0, 'w'], 'z']]],
+#=             ['+', ['*', 2, ['+', 'x', 1]], ['*', 2, ['+', 'x', 1]]],
+#=             ['+', 'x', ['neg', 'y']],
+#=             ['-', ['neg', ['*', 2, 3]], 0],
+#=         ],
+#=     },
+#=     bench: {
+#=         inputs: {
+#=             expressions: map(range(7000), fn i -> [
+#=                 ['+', ['*', 1, 'x'], 0],
+#=                 ['+', 'y', ['*', 'y', ['-', 3, 2]]],
+#=                 ['-', ['+', 'x', 'y'], ['+', 'x', ['*', 'y', 1]]],
+#=                 ['+', ['+', ['*', 'x', 'y'], ['*', 'x', 'y']], ['+', 3, 4]],
+#=                 ['neg', ['neg', ['+', ['*', 0, 'w'], 'z']]],
+#=                 ['+', ['*', 2, ['+', 'x', 1]], ['*', 2, ['+', 'x', 1]]],
+#=                 ['+', 'x', ['neg', 'y']],
+#=                 ['-', ['neg', ['*', 2, 3]], 0],
+#=                 ['*', ['+', ['-', 'a', 'a'], i], ['+', ['neg', ['neg', 'b']], ['*', i % 3, 'c']]],
+#=             ][i % 9]),
+#=         },
+#=     },
+#= }
+def {expressions} = import('inputs')
+
+defn rewrite(e) -> match e {
+    ['+', 0, x] | ['+', x, 0] | ['*', 1, x] | ['*', x, 1] | ['-', x, 0] => x,
+    ['*', 0, _] | ['*', _, 0] => 0,
+    ['-', a, (a)] => 0,
+    ['+', a is Int, b is Int] => a + b,
+    ['-', a is Int, b is Int] => a - b,
+    ['*', a is Int, b is Int] => a * b,
+    ['+', ['*', k is Int, a], ['*', j is Int, (a)]] => rewrite(['*', k + j, a]),
+    ['+', a, (a)] => ['*', 2, a],
+    ['+', x, ['neg', y]] => ['-', x, y],
+    ['neg', ['neg', x]] => x,
+    ['neg', n is Int] => -n,
+    _ => e,
+}
+
+defn simplify(e) -> match e {
+    [op, left, right] => rewrite([op, simplify(left), simplify(right)]),
+    ['neg', operand] => rewrite(['neg', simplify(operand)]),
+    _ => e,
+}
+
+map(expressions, simplify)

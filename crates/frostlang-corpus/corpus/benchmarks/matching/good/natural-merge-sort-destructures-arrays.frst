@@ -1,0 +1,62 @@
+# A natural merge sort. It splits each Array into its ascending runs, then
+# merges adjacent runs pairwise until one is left. Every step takes its
+# Arrays apart with patterns: `[]`, `[a]`, `[a, b, ...rest]`, and a pair of
+# Arrays each split into its head and tail. The Arrays are short, so the work
+# is the matching rather than copying long tails.
+# Focus: Array destructuring with rest.
+#= {
+#=     result: [
+#=         [1, 2, 3, 4, 5, 6, 7, 8],
+#=         [],
+#=         [7],
+#=         [-2, 0, 0, 3, 3, 9],
+#=         [1, 1, 2, 2, 3, 3],
+#=     ],
+#=     inputs: {
+#=         lists: [
+#=             [5, 6, 1, 7, 2, 8, 3, 4],
+#=             [],
+#=             [7],
+#=             [3, 0, 9, -2, 3, 0],
+#=             [3, 2, 1, 1, 2, 3],
+#=         ],
+#=     },
+#=     bench: {
+#=         inputs: {
+#=             lists: map(range(400), fn i -> map(range(24), fn j -> (i * 31 + j * j * 17) % 97 - 40)),
+#=         },
+#=     },
+#= }
+def {lists} = import('inputs')
+
+defn ascending_runs(xs, run, runs) -> match xs {
+    [] => runs,
+    [a] => runs + [run + [a]],
+    [a, b, ...rest] => if a <= b:
+        ascending_runs([b] + rest, run + [a], runs)
+    else:
+        ascending_runs([b] + rest, [], runs + [run + [a]]),
+}
+
+defn merge(xs, ys, merged) -> match [xs, ys] {
+    [[], _] => merged + ys,
+    [_, []] => merged + xs,
+    [[x, ...xt], [y, ...yt]] => if x <= y:
+        merge(xt, ys, merged + [x])
+    else:
+        merge(xs, yt, merged + [y]),
+}
+
+defn merge_pairs(runs, merged) -> match runs {
+    [a, b, ...rest] => merge_pairs(rest, merged + [merge(a, b, [])]),
+    [a] => merged + [a],
+    [] => merged,
+}
+
+defn merge_all(runs) -> match runs {
+    [] => [],
+    [sorted] => sorted,
+    _ => merge_all(merge_pairs(runs, [])),
+}
+
+map(lists, fn xs -> merge_all(ascending_runs(xs, [], [])))

@@ -1,0 +1,61 @@
+# The size in bytes of JSON-like values in a compact binary encoding. Each
+# value is classified by alternatives and type constraints: one byte for
+# Null, a Bool, or a small Int; nine for any other number; a length prefix
+# for a String. Some shapes have a short form: a reference `['ref', n]`, an
+# optional `[0 | 1, x]` (absent or present), and a point or vector whose
+# coordinates are numbers. Anything else is encoded generically.
+# Focus: alternatives, nested alternatives, and type constraints.
+#= {
+#=     result: [1, 36, 66, 20, 1, 1, 2, 1],
+#=     inputs: {
+#=         documents: [
+#=             null,
+#=             [true, 0, 7, 8, -1, 2.5, '', 'abc'],
+#=             {
+#=                 name: 'ada',
+#=                 tags: ['x', 'yz'],
+#=                 origin: {type: 'point', x: 1, y: 2.0},
+#=                 maybe: [1, 'here'],
+#=                 none: [0, null],
+#=                 link: ['ref', 12],
+#=             },
+#=             {type: 'vector', x: 'a', y: 1},
+#=             [],
+#=             {},
+#=             [0, 1],
+#=             false,
+#=         ],
+#=     },
+#=     bench: {
+#=         inputs: {
+#=             documents: map(range(800), fn i -> {
+#=                 id: i,
+#=                 name: $'n${i}',
+#=                 score: i * 1.5,
+#=                 flags: [i % 2 == 0, null, i % 9, ''],
+#=                 position: {type: 'point', x: i % 8, y: 0.5},
+#=                 label: {type: 'vector', x: 'a', y: i},
+#=                 option: [i % 2, {k: 'v'}],
+#=                 link: ['ref', i],
+#=                 items: map(range(6), fn j -> [j, $'s${j}', {type: 'vector', x: j, y: i}, [], {}]),
+#=             }),
+#=         },
+#=     },
+#= }
+def {documents} = import('inputs')
+
+defn size(value) -> match value {
+    null | true | false => 1,
+    0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 => 1,
+    _ is Int | _ is Float => 9,
+    '' => 1,
+    text is String => 1 + len(text),
+    [] => 1,
+    ['ref', _ is Int] => 3,
+    [0 | 1, inner] => 1 + size(inner),
+    items is Array => reduce(items, 1, fn total, item -> total + size(item)),
+    {type: 'point' | 'vector', x: x is Numeric, y: y is Numeric} => 1 + size(x) + size(y),
+    fields is Map => reduce(keys(fields), 1, fn total, key -> total + size(key) + size(fields[key])),
+}
+
+map(documents, size)

@@ -1,0 +1,68 @@
+# Run-length encoding and repetition counts over short Arrays of symbols.
+# The encoder pins the run's current symbol, a local; the stutter and echo
+# counts pin an element bound earlier in the same pattern, `[a, (a), ...]`
+# and `[a, b, (a), ...]`; and the target counts pin a captured target. A pin
+# compares by `==`, so `1` and `1.0` are different symbols.
+# Focus: pins of locals, captures, and earlier bindings of the same pattern.
+#= {
+#=     result: [
+#=         {runs: [['a', 2], ['b', 3], ['a', 1], ['c', 2]], stutters: 4, echoes: 1, counts: [3, 2, 0]},
+#=         {runs: [], stutters: 0, echoes: 0, counts: [0, 0, 0]},
+#=         {runs: [[1, 4]], stutters: 3, echoes: 2, counts: [0, 0, 4]},
+#=         {runs: [['x', 1], ['y', 1], ['x', 1], ['y', 1], ['x', 1]], stutters: 0, echoes: 3, counts: [0, 0, 0]},
+#=         {runs: [[1, 1], [1.0, 1], [1, 1]], stutters: 0, echoes: 1, counts: [0, 0, 2]},
+#=     ],
+#=     inputs: {
+#=         sequences: [
+#=             ['a', 'a', 'b', 'b', 'b', 'a', 'c', 'c'],
+#=             [],
+#=             [1, 1, 1, 1],
+#=             ['x', 'y', 'x', 'y', 'x'],
+#=             [1, 1.0, 1],
+#=         ],
+#=         targets: ['a', 'c', 1],
+#=     },
+#=     bench: {
+#=         inputs: {
+#=             sequences: map(range(500), fn i -> map(range(30), fn j ->
+#=                 ['a', 'b', 'a', 'c', 1, 1.0][(j - j % (1 + i % 4) + i) % 6])),
+#=             targets: ['a', 'c', 1],
+#=         },
+#=     },
+#= }
+def {sequences, targets} = import('inputs')
+
+defn encode_from(xs, current, count, runs) -> match xs {
+    [(current), ...rest] => encode_from(rest, current, count + 1, runs),
+    [next, ...rest] => encode_from(rest, next, 1, runs + [[current, count]]),
+    [] => runs + [[current, count]],
+}
+
+defn encode(xs) -> match xs {
+    [first, ...rest] => encode_from(rest, first, 1, []),
+    [] => [],
+}
+
+defn stutters(xs, count) -> match xs {
+    [a, (a), ...rest] => stutters([a] + rest, count + 1),
+    [_, ...rest] => stutters(rest, count),
+    [] => count,
+}
+
+defn echoes(xs, count) -> match xs {
+    [a, b, (a), ...rest] => echoes([b, a] + rest, count + 1),
+    [_, ...rest] => echoes(rest, count),
+    [] => count,
+}
+
+defn occurrences(xs, target) -> reduce(xs, 0, fn count, x -> match x {
+    (target) => count + 1,
+    _ => count,
+})
+
+map(sequences, fn xs -> {
+    runs: encode(xs),
+    stutters: stutters(xs, 0),
+    echoes: echoes(xs, 0),
+    counts: map(targets, fn target -> occurrences(xs, target)),
+})
