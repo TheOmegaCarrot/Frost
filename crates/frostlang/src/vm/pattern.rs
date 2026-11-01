@@ -11,7 +11,7 @@ use serde::de::DeserializeOwned;
 use crate::bytecode::CompiledFunction;
 use crate::vm::from_operand;
 use crate::vm::globals::GlobalSet;
-use crate::{FrostArray, FrostError, FrostFloat, MapKey, TypeSet, Value};
+use crate::{FrostError, FrostFloat, MapKey, TypeSet, Value};
 
 /// A Frost pattern, such as a `match` arm's or a `def`'s, saved as data: what
 /// [`Bytecode::MatchPattern`](crate::bytecode::Bytecode::MatchPattern) tests a
@@ -139,32 +139,24 @@ impl PatternStage for AssembledStage {
 /// Test `value` against `pattern`, a pattern of `function`, whose running
 /// frame's slots are `slots`. On a match, define each local the pattern binds;
 /// on a mismatch, define none. Until the test is done, the values it binds are
-/// held in `pending`, which is empty before and after.
+/// only borrowed.
 pub(super) fn match_pattern(
     pattern: &CompiledPattern,
     value: &Value,
     function: &CompiledFunction,
     slots: &mut [Option<Value>],
     globals: &GlobalSet,
-    pending: &mut Vec<PendingBinding>,
 ) -> Result<bool, FrostError> {
-    debug_assert!(
-        pending.is_empty(),
-        "a pattern test starts with nothing bound"
-    );
     let mut test = PatternTest {
         function,
         slots,
         globals,
-        pending,
+        pending: Vec::new(),
     };
-    let matched = test.matches(pattern, value);
-    if !matches!(matched, Ok(true)) {
-        // Release what the test took, so no reference to the value outlives it.
-        pending.clear();
-        return matched;
+    if !test.matches(pattern, value)? {
+        return Ok(false);
     }
-    for PendingBinding { local, value } in pending.drain(..) {
+    for PendingBinding { local, value } in test.pending {
         let slot = index(local);
         debug_assert!(
             slot >= function.num_captures,
@@ -177,61 +169,50 @@ pub(super) fn match_pattern(
 }
 
 /// One test of a value against a pattern, collecting what it binds as it goes.
-struct PatternTest<'a> {
+struct PatternTest<'a, 'v> {
     function: &'a CompiledFunction,
     slots: &'a [Option<Value>],
     globals: &'a GlobalSet,
     /// What the test has bound so far, to be written to the locals on a match.
-    pending: &'a mut Vec<PendingBinding>,
+    pending: Vec<PendingBinding<'v>>,
 }
 
 /// A local a pattern binds, and the value it binds, not yet written to the
 /// local.
-#[derive(Debug)]
-pub(super) struct PendingBinding {
+struct PendingBinding<'v> {
     local: u32,
-    value: BoundValue,
+    value: BoundValue<'v>,
 }
 
-/// The value a local is bound to, sharing the tested value's parts.
-#[derive(Debug)]
-enum BoundValue {
-    Value(Value),
-    /// The elements of `array` from `from` on, which a rest binds as a new
-    /// Array, built when read: by a later part of the pattern, or once the
-    /// whole pattern matches.
-    Rest {
-        array: FrostArray,
-        from: usize,
-    },
+/// The value a local is bound to, borrowed from the tested value.
+enum BoundValue<'v> {
+    Value(&'v Value),
+    /// An Array's elements past those a pattern tested, which a rest binds as
+    /// a new Array.
+    Rest(&'v [Value]),
 }
 
-impl BoundValue {
-    fn value(&self) -> Cow<'_, Value> {
-        match self {
+impl<'v> BoundValue<'v> {
+    fn value(&self) -> Cow<'v, Value> {
+        match *self {
             BoundValue::Value(value) => Cow::Borrowed(value),
-            BoundValue::Rest { array, from } => {
-                Cow::Owned(Value::from(array.as_slice()[*from..].to_vec()))
-            }
+            BoundValue::Rest(elements) => Cow::Owned(Value::from(elements.to_vec())),
         }
     }
 
     fn into_value(self) -> Value {
-        match self {
-            BoundValue::Value(value) => value,
-            rest @ BoundValue::Rest { .. } => rest.value().into_owned(),
-        }
+        self.value().into_owned()
     }
 }
 
-impl PatternTest<'_> {
-    fn matches(&mut self, pattern: &CompiledPattern, value: &Value) -> Result<bool, FrostError> {
+impl<'a, 'v> PatternTest<'a, 'v> {
+    fn matches(&mut self, pattern: &CompiledPattern, value: &'v Value) -> Result<bool, FrostError> {
         match pattern {
             CompiledPattern::Binding { types, local } => {
                 if types.is_some_and(|types| !value.fits(types)) {
                     return Ok(false);
                 }
-                self.bind(*local, || BoundValue::Value(value.clone()));
+                self.bind(*local, BoundValue::Value(value));
                 Ok(true)
             }
             CompiledPattern::Value(comparand) => Ok(*value == *self.comparand(comparand)),
@@ -239,6 +220,7 @@ impl PatternTest<'_> {
                 let Some(array) = value.as_array() else {
                     return Ok(false);
                 };
+                let array = array.as_slice();
                 let fits = match length {
                     ArrayPatternLength::Exact => array.len() == elements.len(),
                     ArrayPatternLength::AtLeast { .. } => array.len() >= elements.len(),
@@ -252,10 +234,7 @@ impl PatternTest<'_> {
                     }
                 }
                 if let ArrayPatternLength::AtLeast { rest } = length {
-                    self.bind(*rest, || BoundValue::Rest {
-                        array: array.clone(),
-                        from: elements.len(),
-                    });
+                    self.bind(*rest, BoundValue::Rest(&array[elements.len()..]));
                 }
                 Ok(true)
             }
@@ -271,7 +250,7 @@ impl PatternTest<'_> {
                         return Ok(false);
                     }
                 }
-                self.bind(*whole, || BoundValue::Value(value.clone()));
+                self.bind(*whole, BoundValue::Value(value));
                 Ok(true)
             }
             CompiledPattern::Alternative(branches) => {
@@ -287,14 +266,10 @@ impl PatternTest<'_> {
         }
     }
 
-    /// Bind `local`, if any, to the value `bound` makes. `bound` runs only if
-    /// there is a local, so a part that binds nothing is never copied.
-    fn bind(&mut self, local: Option<u32>, bound: impl FnOnce() -> BoundValue) {
+    /// Bind `local`, if any, to `value`.
+    fn bind(&mut self, local: Option<u32>, value: BoundValue<'v>) {
         if let Some(local) = local {
-            self.pending.push(PendingBinding {
-                local,
-                value: bound(),
-            });
+            self.pending.push(PendingBinding { local, value });
         }
     }
 

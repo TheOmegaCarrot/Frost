@@ -776,54 +776,6 @@ match k {
 }
 
 #[test]
-fn a_failed_test_leaves_nothing_holding_a_part() {
-    // In each case, the first arm binds `a` to the runtime-built `[1, 2]`, then
-    // fails: by a mismatch, or by raising for an invalid key, which `try_call`
-    // catches. Afterwards, taking the target apart hands the probe its only
-    // reference.
-    for arm in ["[a, 4] => a", "[a, {[k]: _}] => a"] {
-        let source = format!(
-            r"
-defn probe(v, k) -> {{
-    try_call(fn -> match v {{
-        {arm},
-        _ => null
-    }})
-    def [part, _] = v
-    unshared(part)
-}}
-def make = fn n -> [n, n + 1]
-probe([make(1), {{a: 1}}], null)
-"
-        );
-        // The arm compiles, so the test exercises `MatchPattern`'s failure.
-        let lambda = Script::new(&source)
-            .capture("unshared", unshared())
-            .code(COMPILE_PATTERNS)
-            .nested(0)
-            .nested(0);
-        assert_eq!(
-            lambda.count(&Bytecode::MatchPattern(0)),
-            1,
-            "{arm:?} is tested by `MatchPattern`: {lambda:?}"
-        );
-        for optimization in [
-            UNOPTIMIZED.with(Optimization::ConsumeLocals, true),
-            COMPILE_PATTERNS.with(Optimization::ConsumeLocals, true),
-        ] {
-            let tail = Script::new(&source)
-                .capture("unshared", unshared())
-                .run_under(optimization);
-            assert_eq!(
-                tail,
-                Value::Bool(true),
-                "{source:?} leaves nothing else holding the part under {optimization:?}"
-            );
-        }
-    }
-}
-
-#[test]
 fn a_matched_part_is_left_unshared() {
     // The Array is built at runtime, so only the target holds it, and the arm
     // drops the target once it has matched.

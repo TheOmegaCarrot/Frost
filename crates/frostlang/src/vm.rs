@@ -39,7 +39,6 @@ pub use native::{NativeCtx, NativeFn, NativeFunction};
 pub use outcome::{AbortReason, IdleVm, ProgramParts, ProgramResult, RunError, RunErrorKind};
 pub(crate) use params::{Binder, expected_types};
 pub use params::{InvalidParams, Param, Params};
-use pattern::PendingBinding;
 pub use pattern::{
     ArrayPatternLength, AssembledStage, CompiledPattern, PatternComparand, PatternInput,
     PatternKey, PatternStage,
@@ -71,10 +70,6 @@ mod arg_pool_tests;
 #[cfg(test)]
 mod rearm_tests;
 
-// White-box tests for reuse of `MatchPattern`'s buffer of pending bindings.
-#[cfg(test)]
-mod pending_bindings_tests;
-
 // White-box tests for reuse of the local-slot allocation.
 #[cfg(test)]
 mod slot_reuse_tests;
@@ -99,11 +94,6 @@ pub struct Vm {
     // A native call acquires a Vec from this pool, moves args from the stack to that Vec (or makes a new one), then clears it and returns it.
     // This allows for re-use of allocations for native args, while allowing a native call to hold mutable references to their args AND the Vm separately.
     native_arg_pool: Vec<Vec<Value>>,
-
-    // The bindings a `MatchPattern` test has made so far. Empty between tests,
-    // but kept with its capacity, so that once it has grown a test allocates
-    // no buffer of its own.
-    pending_bindings: Vec<PendingBinding>,
 
     globals: Arc<GlobalSet>,
 
@@ -289,7 +279,6 @@ impl VmFactory {
             stack: Vec::new(),
             stack_frames: Vec::new(),
             native_arg_pool: Vec::new(),
-            pending_bindings: Vec::new(),
             globals: GlobalSet::defaults(),
             importer: self.importer.clone(),
             top_level: closure,
@@ -564,7 +553,6 @@ impl Vm {
             function,
             &mut self.slots[frame.slot_base..][..function.name_table.len()],
             &self.globals,
-            &mut self.pending_bindings,
         )
     }
 
