@@ -5,7 +5,10 @@
 //! code reads, becomes a `Pop`. Every jump goes forward, so any read a store
 //! reaches comes after it. Counting every later read, reachable or not, also
 //! keeps the store a read in unreachable code needs for its slot. An exported
-//! local is never dead: its slot is read once the function finishes.
+//! local is never dead: its slot is read once the function finishes. In a
+//! `MatchPattern`, a binding of a local no later code reads is dropped, though
+//! its part is still tested, unless the pattern itself reads it as an earlier
+//! binding.
 //!
 //! With `discard_eliminate`, a [load](droppable_input_count) followed by a `Pop`
 //! is removed along with the `Pop`. A load cannot raise, so the pair does
@@ -40,11 +43,10 @@ pub(super) fn eliminate_dead_code(
     let mut pending_pops: VecDeque<Ir> = VecDeque::new();
     // Built back to front.
     let mut reversed = Vec::with_capacity(function.code.len());
-    for ir in function.code.into_iter().rev() {
+    for mut ir in function.code.into_iter().rev() {
+        let stored_value_is_read = |id| read_later.contains(&id) || function.locals.is_exported(id);
         let is_dead_store = matches!(ir.op, Op::DefLocal(id)
-            if options.dead_store_eliminate
-                && !read_later.contains(&id)
-                && !function.locals.is_exported(id));
+            if options.dead_store_eliminate && !stored_value_is_read(id));
         if matches!(ir.op, Op::Ready(Bytecode::Pop)) || is_dead_store {
             pending_pops.push_front(Op::Ready(Bytecode::Pop).at(ir.span));
         } else if options.discard_eliminate
@@ -61,9 +63,12 @@ pub(super) fn eliminate_dead_code(
             reversed.push(ir);
         } else {
             reversed.extend(pending_pops.drain(..).rev());
-            if let Op::LoadLocal(id) | Op::ConsumeLocal(id) = ir.op {
-                read_later.insert(id);
+            if let Op::MatchPattern(pattern) = &mut ir.op
+                && options.dead_store_eliminate
+            {
+                pattern.discard_bindings(stored_value_is_read);
             }
+            read_later.extend(ir.op.reads());
             reversed.push(ir);
         }
     }
@@ -97,6 +102,7 @@ fn droppable_input_count(op: &Op) -> Option<usize> {
         Op::Closure { compiled, .. } => Some(compiled.num_captures),
         Op::Ready(_)
         | Op::ConstKey { .. }
+        | Op::MatchPattern(_)
         | Op::DefLocal(_)
         | Op::ClearLocals(_)
         | Op::Label(_)

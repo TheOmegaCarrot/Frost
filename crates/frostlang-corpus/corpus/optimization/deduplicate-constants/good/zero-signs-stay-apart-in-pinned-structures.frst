@@ -1,0 +1,10 @@
+# Pinned Arrays holding 0.0 and -0.0 stay distinct, so each runtime value
+# reaches its own arm.
+#= {result: ['positive', 'negative'], inputs: {pos: [0.0], neg: [-0.0]}}
+def {pos, neg} = import('inputs')
+defn which(v) -> match v {
+    ([0.0]) => 'positive',
+    ([-0.0]) => 'negative',
+    _ => 'neither',
+}
+[which(pos), which(neg)]

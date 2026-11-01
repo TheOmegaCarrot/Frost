@@ -19,6 +19,7 @@ fn fields_on(options: OptimizationOptions) -> Vec<&'static str> {
         consume_locals,
         deduplicate_constants,
         jump_retarget,
+        compile_patterns,
     } = options;
     [
         ("constant_fold", constant_fold),
@@ -30,6 +31,7 @@ fn fields_on(options: OptimizationOptions) -> Vec<&'static str> {
         ("consume_locals", consume_locals),
         ("deduplicate_constants", deduplicate_constants),
         ("jump_retarget", jump_retarget),
+        ("compile_patterns", compile_patterns),
     ]
     .into_iter()
     .filter(|(_, on)| *on)

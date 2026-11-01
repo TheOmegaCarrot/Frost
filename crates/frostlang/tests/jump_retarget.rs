@@ -21,6 +21,7 @@ const SOURCES: &[&str] = &[
     "[if a: (if b: (if c: 1 else: 2) else: 3) else: 4]",
     "[if a: 1 elif b: (if c: 2 else: 3) else: 4]",
     "[match a { 1 => (if b: 2 else: 3), _ => c }]",
+    "[match a { (b) if: c and b => 1, _ => 2 }]",
     "[a and b and c]",
     "[a or b or c]",
     "[(a and b) or c]",
@@ -150,8 +151,16 @@ fn no_jump_lands_on_a_jump_whose_outcome_it_knows() {
             !jumps_onto_jumps(&before.code).is_empty(),
             "{source:?} lands a jump on a jump when unoptimized: {before:?}"
         );
-        let after = function_code(RETARGET);
-        assert_eq!(retargetable_jumps(&after.code), [], "{source:?}: {after:?}");
+        // Also beside `MatchPattern`, whose arms lay out their jumps
+        // differently.
+        for optimization in [RETARGET, RETARGET.with(Optimization::CompilePatterns, true)] {
+            let after = function_code(optimization);
+            assert_eq!(
+                retargetable_jumps(&after.code),
+                [],
+                "{source:?} under {optimization:?}: {after:?}"
+            );
+        }
     }
 }
 

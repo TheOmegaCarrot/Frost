@@ -180,14 +180,10 @@ impl Locals {
     /// Whether `code` reads a pending local it does not define, so that it
     /// cannot be evaluated alone.
     pub(super) fn reads_pending(&self, code: &[Ir]) -> bool {
-        let defines = |id| {
-            code.iter()
-                .any(|ir| matches!(ir.op, Op::DefLocal(defined) if defined == id))
-        };
-        code.iter().any(|ir| match ir.op {
-            Op::LoadLocal(id) => self.is_pending(id) && !defines(id),
-            _ => false,
-        })
+        let defined: HashSet<LocalId> = code.iter().flat_map(|ir| ir.op.defines()).collect();
+        code.iter()
+            .flat_map(|ir| ir.op.reads())
+            .any(|id| self.is_pending(id) && !defined.contains(&id))
     }
 
     /// Whether a local is exported: its slot is read once the function finishes.
@@ -256,7 +252,7 @@ impl Locals {
     /// the VM seats the closure's captured values there. Every other local the
     /// code defines follows, in first-definition order; a local the optimized
     /// code no longer defines is simply left out, so removing one leaves no hole.
-    /// A `LoadLocal` of a local that is neither a capture nor defined here has no
+    /// A read of a local that is neither a capture nor defined here has no
     /// slot, and [`SlotPlan::slot_of`] will catch it.
     pub(super) fn plan_slots(&self, code: &[Ir]) -> SlotPlan {
         let mut plan = SlotPlan::sized(self.infos.len());
@@ -279,20 +275,11 @@ impl Locals {
     /// value is compile-time known, and that value is what is seated. The locals
     /// the fragment defines follow.
     pub(super) fn plan_fragment_slots(&self, code: &[Ir]) -> (SlotPlan, BTreeMap<String, Value>) {
-        let defined: HashSet<LocalId> = code
-            .iter()
-            .filter_map(|ir| match ir.op {
-                Op::DefLocal(id) => Some(id),
-                _ => None,
-            })
-            .collect();
+        let defined: HashSet<LocalId> = code.iter().flat_map(|ir| ir.op.defines()).collect();
         let mut plan = SlotPlan::sized(self.infos.len());
         let mut captures = BTreeMap::new();
-        for ir in code {
-            if let Op::LoadLocal(id) = ir.op
-                && !defined.contains(&id)
-                && plan.slots[id.0].is_none()
-            {
+        for id in code.iter().flat_map(|ir| ir.op.reads()) {
+            if !defined.contains(&id) && plan.slots[id.0].is_none() {
                 let info = self.info(id);
                 let value = info
                     .constant
@@ -316,10 +303,8 @@ impl Locals {
     /// Give each local `code` defines, and that has no slot yet, the next slot,
     /// in first-definition order.
     fn assign_defined(&self, plan: &mut SlotPlan, code: &[Ir]) {
-        for ir in code {
-            if let Op::DefLocal(id) = ir.op
-                && plan.slots[id.0].is_none()
-            {
+        for id in code.iter().flat_map(|ir| ir.op.defines()) {
+            if plan.slots[id.0].is_none() {
                 plan.assign(id, self.info(id));
             }
         }
@@ -353,6 +338,10 @@ pub(super) struct LocalRun {
 impl LocalRun {
     pub(super) fn is_empty(&self) -> bool {
         self.start == self.end
+    }
+
+    pub(super) fn contains(&self, id: LocalId) -> bool {
+        (self.start..self.end).contains(&id.0)
     }
 
     fn ids(&self) -> impl Iterator<Item = LocalId> {

@@ -1,0 +1,5 @@
+# A computed Map key read from a name matches a Map that has the key, misses
+# one that lacks it, and misses a non-Map.
+#= {result: [10, 'missing', 'missing', 'missing'], inputs: {k: 'a', vs: [{a: 10}, {b: 10}, [10], 7]}}
+def {k, vs} = import('inputs')
+map(vs, fn v -> match v { {[k]: n} => n, _ => 'missing' })

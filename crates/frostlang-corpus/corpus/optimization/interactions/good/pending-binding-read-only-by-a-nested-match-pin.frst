@@ -1,0 +1,6 @@
+# A `def` pattern's pin holds a nested match that pins the def's own earlier
+# binding, so the pending local is read only by the inner match's pattern.
+#= {result: [1, 2]}
+def [a, (match 1 { (a) => 'one', _ => error('never') })] = [1, 'one']
+def [b, (match 2 { (b) => 'two', _ => error('never') })] = [2, 'two']
+[a, b]

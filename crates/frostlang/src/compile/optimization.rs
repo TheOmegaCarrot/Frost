@@ -63,6 +63,13 @@ pub struct OptimizationOptions {
     /// `or`: where a branch leads only to another whose outcome is already
     /// known, go straight to where that one leads.
     pub jump_retarget: bool,
+    /// Test a `match` arm's pattern, and bind its names, with a single
+    /// instruction rather than one for each check and binding. This applies to
+    /// an arm only when each value its pattern compares against and each key it
+    /// looks up is a name or a constant: a literal or, with
+    /// [`constant_fold`](Self::constant_fold), an expression that folds to one.
+    /// A constant key must be a valid Map key.
+    pub compile_patterns: bool,
 }
 
 impl OptimizationOptions {
@@ -77,6 +84,7 @@ impl OptimizationOptions {
         consume_locals: false,
         deduplicate_constants: false,
         jump_retarget: false,
+        compile_patterns: false,
     };
 
     /// Every optimization on.
@@ -90,6 +98,7 @@ impl OptimizationOptions {
         consume_locals: true,
         deduplicate_constants: true,
         jump_retarget: true,
+        compile_patterns: true,
     };
 
     /// Whether `optimization` is on.
@@ -183,6 +192,7 @@ impl OptimizationOptions {
             Optimization::ConsumeLocals => &mut self.consume_locals,
             Optimization::DeduplicateConstants => &mut self.deduplicate_constants,
             Optimization::JumpRetarget => &mut self.jump_retarget,
+            Optimization::CompilePatterns => &mut self.compile_patterns,
         }
     }
 }
@@ -210,6 +220,8 @@ pub enum Optimization {
     DeduplicateConstants,
     /// [`OptimizationOptions::jump_retarget`].
     JumpRetarget,
+    /// [`OptimizationOptions::compile_patterns`].
+    CompilePatterns,
 }
 
 impl Optimization {
@@ -224,6 +236,7 @@ impl Optimization {
         Self::ConsumeLocals,
         Self::DeduplicateConstants,
         Self::JumpRetarget,
+        Self::CompilePatterns,
     ];
 
     /// The name tools give it: its field's name in kebab-case, as
@@ -239,6 +252,7 @@ impl Optimization {
             Self::ConsumeLocals => "consume-locals",
             Self::DeduplicateConstants => "deduplicate-constants",
             Self::JumpRetarget => "jump-retarget",
+            Self::CompilePatterns => "compile-patterns",
         }
     }
 

@@ -1,0 +1,5 @@
+# A pin in a later branch of an alternative reads a name the pattern bound
+# before the alternative, so it must see that binding.
+#= {result: [1, 'differ', 2, 'differ'], inputs: {vs: [[1, 0], [1, 2], [2, 2], [3, 4]]}}
+def {vs} = import('inputs')
+map(vs, fn v -> match v { [a, 0 | (a)] => a, _ => 'differ' })

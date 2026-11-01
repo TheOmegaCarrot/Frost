@@ -10,6 +10,7 @@ mod if_expression;
 mod index_expressions;
 mod lambda_expression;
 mod locals;
+mod lowered_pattern;
 mod match_expression;
 mod passes;
 mod pattern;
@@ -34,6 +35,7 @@ use frostlang_parse::{
 
 use fold::FoldVm;
 use locals::{LocalRun, Locals};
+use lowered_pattern::LoweredPattern;
 
 /// A name as scope resolution sees it. `$` is shorthand for `$1`, so every use
 /// of `$` resolves as `$1`.
@@ -68,7 +70,7 @@ enum ConstKeyOp {
 /// A local's identity within a function, assigned when it is defined. Concrete
 /// slots are assigned at assembly, so the IR refers to locals by id: a later
 /// pass can add or drop a local without renumbering the rest.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]
 struct LocalId(usize);
 
 /// One IR instruction, and the source it is derived from: the innermost AST node
@@ -102,6 +104,9 @@ enum Op {
     /// Release the values of a nested scope's locals once the scope is done
     /// with them. Assembly drops it if none of them occupies a slot.
     ClearLocals(LocalRun),
+    /// A [`Bytecode::MatchPattern`] of this pattern, which assembly places in
+    /// the function's patterns.
+    MatchPattern(Box<LoweredPattern>),
     /// Create a closure over a nested function. Both forms are kept: `compiled`
     /// is what assembly pools, `lowered` is the IR it was assembled from.
     /// Build with [`Op::closure`] so the two always match.
@@ -119,6 +124,28 @@ impl Op {
             lowered: Arc::new(lowered),
             compiled,
         }
+    }
+
+    /// The locals this op reads from their slots.
+    fn reads(&self) -> impl Iterator<Item = LocalId> {
+        // In two parts, so that the common op of one local allocates nothing.
+        let (direct, in_pattern) = match self {
+            Op::LoadLocal(id) | Op::ConsumeLocal(id) => (Some(*id), Vec::new()),
+            Op::MatchPattern(pattern) => (None, pattern.slot_reads()),
+            _ => (None, Vec::new()),
+        };
+        direct.into_iter().chain(in_pattern)
+    }
+
+    /// The locals this op defines; a pattern's, only on a match. See
+    /// [`reads`](Self::reads) for its shape.
+    fn defines(&self) -> impl Iterator<Item = LocalId> {
+        let (direct, in_pattern) = match self {
+            Op::DefLocal(id) => (Some(*id), Vec::new()),
+            Op::MatchPattern(pattern) => (None, pattern.bindings()),
+            _ => (None, Vec::new()),
+        };
+        direct.into_iter().chain(in_pattern)
     }
 
     /// This op, derived from the source at `span`.

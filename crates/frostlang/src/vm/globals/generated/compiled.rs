@@ -329,60 +329,57 @@
 //        3  compose
 //        4  functions
 //        5  compose2
+//   patterns
+//        0  []
 //   children
 //        0  <lambda> (child 0)
 //        1  compose2 (child 1)
 //   code
-//        0  DefLocal           0    ; rest
-//        1  DefLocal           1    ; g
-//        2  DefLocal           2    ; f
-//        3  DefLocal           3    ; compose
-//        4  LoadLocal          2    ; f
-//        5  LoadLocal          1    ; g
-//        6  MakeArray          2
-//        7  LoadLocal          0    ; rest
+//        0  DefLocal       0    ; rest
+//        1  DefLocal       1    ; g
+//        2  DefLocal       2    ; f
+//        3  DefLocal       3    ; compose
+//        4  LoadLocal      2    ; f
+//        5  LoadLocal      1    ; g
+//        6  MakeArray      2
+//        7  LoadLocal      0    ; rest
 //        8  Add
-//        9  DefLocal           4    ; functions
-//       10  LoadGlobal         107  ; each
-//       11  LoadGlobal         51   ; range
-//       12  LoadGlobal         50   ; len
-//       13  LoadLocal          4    ; functions
-//       14  Call               1
-//       15  Call               1
-//       16  ConsumeLocal       4    ; functions
-//       17  CreateClosure      0    ; <lambda>, 1 capture
-//       18  Call               2
+//        9  DefLocal       4    ; functions
+//       10  LoadGlobal     107  ; each
+//       11  LoadGlobal     51   ; range
+//       12  LoadGlobal     50   ; len
+//       13  LoadLocal      4    ; functions
+//       14  Call           1
+//       15  Call           1
+//       16  ConsumeLocal   4    ; functions
+//       17  CreateClosure  0    ; <lambda>, 1 capture
+//       18  Call           2
 //       19  Pop
-//       20  CreateClosure      1    ; compose2, 0 captures
-//       21  DefLocal           5    ; compose2
-//       22  LoadLocal          0    ; rest
-//       23  MarkStack
-//       24  Dup
-//       25  TestArrayLenExact  0
-//       26  JumpIfFalse        L0   ; +8
-//       27  ExplodeArray       0
-//       28  DropMark
-//       29  Pop
-//       30  ConsumeLocal       5    ; compose2
-//       31  ConsumeLocal       2    ; f
-//       32  ConsumeLocal       1    ; g
-//       33  TailCall           2
-//       34  Jump               L1   ; +12
+//       20  CreateClosure  1    ; compose2, 0 captures
+//       21  DefLocal       5    ; compose2
+//       22  LoadLocal      0    ; rest
+//       23  MatchPattern   0    ; []
+//       24  JumpIfFalse    L0   ; +6
+//       25  Pop
+//       26  ConsumeLocal   5    ; compose2
+//       27  ConsumeLocal   2    ; f
+//       28  ConsumeLocal   1    ; g
+//       29  TailCall       2
+//       30  Jump           L1   ; +11
 //   L0:
-//       35  RewindToMark
-//       36  Pop
-//       37  LoadGlobal         111  ; call
-//       38  ConsumeLocal       3    ; compose
-//       39  ConsumeLocal       5    ; compose2
-//       40  ConsumeLocal       2    ; f
-//       41  ConsumeLocal       1    ; g
-//       42  Call               2
-//       43  MakeArray          1
-//       44  ConsumeLocal       0    ; rest
-//       45  Add
-//       46  TailCall           2
+//       31  Pop
+//       32  LoadGlobal     111  ; call
+//       33  ConsumeLocal   3    ; compose
+//       34  ConsumeLocal   5    ; compose2
+//       35  ConsumeLocal   2    ; f
+//       36  ConsumeLocal   1    ; g
+//       37  Call           2
+//       38  MakeArray      1
+//       39  ConsumeLocal   0    ; rest
+//       40  Add
+//       41  TailCall       2
 //   L1:
-//       47  (end)
+//       42  (end)
 //
 // function <lambda> (child 0)
 //   arity 1, 1 capture
@@ -861,19 +858,14 @@ pub(super) fn functions() -> Value {
                 ]),
                 map([(string("DefLocal"), int(5))]),
                 map([(string("LoadLocal"), int(0))]),
-                string("MarkStack"),
-                map([(string("PeekDown"), int(0))]),
-                map([(string("TestArrayLenExact"), int(0))]),
-                map([(string("JumpIfFalse"), int(8))]),
-                map([(string("ExplodeArray"), int(0))]),
-                string("DropMark"),
+                map([(string("MatchPattern"), int(0))]),
+                map([(string("JumpIfFalse"), int(6))]),
                 map([(string("DropBelow"), int(0))]),
                 map([(string("ConsumeLocal"), int(5))]),
                 map([(string("ConsumeLocal"), int(2))]),
                 map([(string("ConsumeLocal"), int(1))]),
                 map([(string("TailCall"), int(2))]),
-                map([(string("Jump"), int(12))]),
-                string("RewindToMark"),
+                map([(string("Jump"), int(11))]),
                 map([(string("DropBelow"), int(0))]),
                 map([(string("LoadGlobal"), int(111))]),
                 map([(string("ConsumeLocal"), int(3))]),
@@ -898,7 +890,11 @@ pub(super) fn functions() -> Value {
                 map([(string("exported"), boolean(false)), (string("name"), string("compose2"))]),
             ])),
             (string("num_captures"), int(0)),
-            (string("patterns"), array([])),
+            (string("patterns"), array([
+                map([
+                    (string("Array"), map([(string("elements"), array([])), (string("length"), string("Exact"))])),
+                ]),
+            ])),
             (string("version"), string("0.0.1")),
         ])),
         (string("const"), map([

@@ -10,6 +10,12 @@
 //! is the last code its path runs; elsewhere, a clear of all the arm's locals
 //! follows it.
 //!
+//! With [`compile_patterns`](crate::compile::OptimizationOptions::compile_patterns),
+//! an arm whose pattern can be held as data instead tests the target in place
+//! with one `MatchPattern`. That lays nothing out on the stack, so the arm
+//! needs no mark and no copy: a matched arm drops only the target, and a
+//! failed one only clears its locals.
+//!
 //! The catch-all, an arm with no guard whose pattern cannot fail, is never
 //! abandoned, so it needs no mark and no copy: its pattern takes the target
 //! itself. Any arm after it is an error, so it is always the last, and it ends
@@ -25,7 +31,8 @@ use crate::compile::{
     Diagnostics,
     lower::{
         ExprFragment, FunctionBuilder, Ir, JumpType, Label, Op, Position, clear_locals, debug_span,
-        pattern::{BindMode, Mismatch, PatternFragment, Unreachable, cannot_fail},
+        lowered_pattern::LoweredPattern,
+        pattern::{BindMode, Mismatch, PatternBindings, PatternFragment, Unreachable, cannot_fail},
     },
 };
 
@@ -36,7 +43,9 @@ const NO_MATCH: &str = "No match arm matches the value: ";
 /// trying the arm is derived from.
 struct ArmFragment {
     fail: Label,
-    pattern: PatternFragment,
+    test: ArmTest,
+    /// See [`PatternFragment::foldable`].
+    pattern_foldable: bool,
     guard: Option<Guard>,
     result: ExprFragment,
     /// The clear of the locals its pattern and guard bound, on its failure
@@ -47,6 +56,16 @@ struct ArmFragment {
     span: Span,
 }
 
+/// How an arm tests the target against its pattern.
+enum ArmTest {
+    /// The pattern's own instructions, testing a copy of the target under a
+    /// mark.
+    Instructions(Vec<Ir>),
+    /// `MatchPattern`, testing the target in place, derived from the pattern
+    /// at `span`.
+    MatchPattern { pattern: LoweredPattern, span: Span },
+}
+
 /// A compiled guard, and its span, which its check is derived from.
 struct Guard {
     fragment: ExprFragment,
@@ -55,7 +74,7 @@ struct Guard {
 
 impl ArmFragment {
     fn foldable(&self) -> bool {
-        self.pattern.foldable
+        self.pattern_foldable
             && self
                 .guard
                 .as_ref()
@@ -68,13 +87,43 @@ impl ArmFragment {
     fn code(self, end: Label) -> impl Iterator<Item = Ir> {
         let Self {
             fail,
-            pattern,
+            test,
+            pattern_foldable: _,
             guard,
             result,
             clear_on_failure,
             clear_after_result,
             span,
         } = self;
+        let ready = |ops: &[Bytecode]| -> Vec<Ir> {
+            ops.iter().map(|&op| Op::Ready(op).at(span)).collect()
+        };
+        let (test_code, on_match, on_failure) = match test {
+            ArmTest::Instructions(instructions) => {
+                let mut test_code = ready(&[Bytecode::MarkStack, Bytecode::Dup]);
+                test_code.extend(instructions);
+                (
+                    test_code,
+                    ready(&[Bytecode::DropMark, Bytecode::Pop]),
+                    ready(&[Bytecode::RewindToMark]),
+                )
+            }
+            ArmTest::MatchPattern {
+                pattern,
+                span: pattern_span,
+            } => (
+                vec![
+                    Op::MatchPattern(Box::new(pattern)).at(pattern_span),
+                    Op::Jump {
+                        kind: JumpType::IfFalse,
+                        label: fail,
+                    }
+                    .at(pattern_span),
+                ],
+                ready(&[Bytecode::Pop]),
+                Vec::new(),
+            ),
+        };
         let guard = guard.into_iter().flat_map(move |guard| {
             guard.fragment.code.into_iter().chain([Op::Jump {
                 kind: JumpType::IfFalse,
@@ -82,12 +131,10 @@ impl ArmFragment {
             }
             .at(guard.span)])
         });
-        [Bytecode::MarkStack, Bytecode::Dup]
-            .map(|op| Op::Ready(op).at(span))
+        test_code
             .into_iter()
-            .chain(pattern.code)
             .chain(guard)
-            .chain([Bytecode::DropMark, Bytecode::Pop].map(|op| Op::Ready(op).at(span)))
+            .chain(on_match)
             .chain(result.code)
             .chain(clear_after_result)
             .chain([
@@ -97,8 +144,8 @@ impl ArmFragment {
                 }
                 .at(span),
                 Op::Label(fail).at(span),
-                Op::Ready(Bytecode::RewindToMark).at(span),
             ])
+            .chain(on_failure)
             .chain(clear_on_failure)
     }
 }
@@ -237,8 +284,17 @@ impl FunctionBuilder<'_> {
             &arm.node.pattern,
             Mismatch::Jump(fail),
             BindMode::Arm,
-            &mut Vec::new(),
+            &mut PatternBindings::new(start),
         )?;
+        let test = match pattern.match_pattern {
+            Some(match_pattern) if self.options.optimization_options.compile_patterns => {
+                ArmTest::MatchPattern {
+                    pattern: match_pattern,
+                    span: debug_span(arm.node.pattern.span),
+                }
+            }
+            _ => ArmTest::Instructions(pattern.code),
+        };
         let guard = arm
             .node
             .guard
@@ -261,7 +317,8 @@ impl FunctionBuilder<'_> {
         let clear_after_result = clear_locals(self.locals.allocated_since(start), position, span);
         Ok(ArmFragment {
             fail,
-            pattern,
+            test,
+            pattern_foldable: pattern.foldable,
             guard,
             result,
             clear_on_failure,
@@ -285,7 +342,7 @@ impl FunctionBuilder<'_> {
             &arm.node.pattern,
             Mismatch::Jump(never),
             BindMode::Arm,
-            &mut Vec::new(),
+            &mut PatternBindings::new(start),
         )?;
         let result = self.compile_expression(&arm.node.result, position)?;
         let clear_after_result = clear_locals(

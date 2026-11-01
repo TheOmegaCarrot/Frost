@@ -4,8 +4,10 @@
 //! This is the single pass that turns symbolic IR into final bytecode:
 //! - `Label` markers are zero-width; each `Jump` resolves to a forward relative
 //!   offset (the VM only ever jumps forward).
-//! - Inline payloads (`Const`, `ConstKey`, `Closure`) are drained into their
-//!   pools, and the op is rewritten to reference the assigned pool slot. With
+//! - Inline payloads (`Const`, `ConstKey`, `MatchPattern`, `Closure`) are
+//!   drained into their pools, and the op is rewritten to reference the
+//!   assigned pool slot; a pattern's own constants and keys join the
+//!   function's, and its locals resolve to slots as below. With
 //!   [`deduplicate_constants`](crate::compile::OptimizationOptions::deduplicate_constants),
 //!   constants that are the same share a slot (see [`pool`]).
 //! - `LoadLocal`, `ConsumeLocal`, and `DefLocal` ids resolve to their frame
@@ -24,16 +26,19 @@ mod pool;
 
 use std::sync::Arc;
 
-use crate::Arity;
 use crate::bytecode::{
-    Bytecode, CompiledFunction, DebugInfo, FormatVersion, OpDebugInfo, SourceLines,
+    AssembledStage, Bytecode, CompiledFunction, DebugInfo, FormatVersion, OpDebugInfo, SourceLines,
 };
+use crate::{Arity, MapKey, Value};
 
 use crate::compile::Diagnostic;
 use crate::compile::lower::assemble::pool::Pool;
 use crate::compile::lower::locals::SlotPlan;
+use crate::compile::lower::lowered_pattern::StageMap;
 use crate::compile::lower::passes::run_passes;
-use crate::compile::lower::{ConstKeyOp, FunctionBuilder, Ir, JumpType, LoweredFunction, Op};
+use crate::compile::lower::{
+    ConstKeyOp, FunctionBuilder, Ir, JumpType, LocalId, LoweredFunction, Op,
+};
 use crate::vm::to_operand;
 
 impl FunctionBuilder<'_> {
@@ -121,6 +126,7 @@ pub(super) fn assemble_code(
     let mut constants = Pool::new(options.deduplicate_constants);
     let mut key_constants = Pool::new(options.deduplicate_constants);
     let mut child_fns = Vec::new();
+    let mut patterns = Vec::new();
 
     for ir in code {
         let bytecode = match &ir.op {
@@ -153,6 +159,15 @@ pub(super) fn assemble_code(
                     first: to_u32_operand(slots.start),
                     count: to_u32_operand(slots.len()),
                 }
+            }
+            Op::MatchPattern(pattern) => {
+                let index = to_operand(patterns.len());
+                patterns.push(pattern.map_stage(&mut PatternAssembler {
+                    plan: &plan,
+                    constants: &mut constants,
+                    keys: &mut key_constants,
+                }));
+                Bytecode::MatchPattern(index)
             }
             Op::Closure { compiled, .. } => {
                 let child = to_u32_operand(child_fns.len());
@@ -197,7 +212,7 @@ pub(super) fn assemble_code(
         child_fns,
         constants: constants.into_entries(),
         key_constants: key_constants.into_entries(),
-        patterns: Vec::new(),
+        patterns,
         num_captures: plan.num_captures(),
         name_table: plan.into_name_table(),
         arity,
@@ -205,11 +220,33 @@ pub(super) fn assemble_code(
     })
 }
 
-/// `n`, a count or index of child functions, captures, or slots, as a `u32`
-/// operand. Each of these takes at least one byte of source, so exceeding `u32`
-/// needs a source over 4 GiB.
+/// `n`, a count or index of child functions, captures, slots, or pool entries,
+/// as a `u32` operand. Each of these takes at least one byte of source, so
+/// exceeding `u32` needs a source over 4 GiB.
 fn to_u32_operand(n: usize) -> u32 {
     u32::try_from(n).expect("operand exceeds u32")
+}
+
+/// Places a lowered pattern's locals at their slots, and its constants and keys
+/// in their pools.
+struct PatternAssembler<'a> {
+    plan: &'a SlotPlan,
+    constants: &'a mut Pool<Value>,
+    keys: &'a mut Pool<MapKey>,
+}
+
+impl StageMap<AssembledStage> for PatternAssembler<'_> {
+    fn local(&mut self, local: &LocalId) -> u32 {
+        to_u32_operand(self.plan.slot_of(*local))
+    }
+
+    fn constant(&mut self, constant: &Value) -> u32 {
+        to_u32_operand(self.constants.add(constant))
+    }
+
+    fn key(&mut self, key: &MapKey) -> u32 {
+        to_u32_operand(self.keys.add(key))
+    }
 }
 
 /// Whether an opcode carries an index or offset that some other `Op` variant

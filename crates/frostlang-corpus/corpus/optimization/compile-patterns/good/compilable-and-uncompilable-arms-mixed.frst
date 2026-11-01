@@ -1,0 +1,12 @@
+# Arms whose pins are plain loads sit beside an arm whose pin calls a
+# function; each arm is reached for its own input.
+#= {result: ['local', 'call', 'literal', 'none'], inputs: {x: 1, y: 2, vs: [1, 3, 5, 9]}}
+def {x, y, vs} = import('inputs')
+defn three() -> x + y
+def five = 5
+map(vs, fn v -> match v {
+    (x) => 'local',
+    (three()) => 'call',
+    (five) => 'literal',
+    _ => 'none',
+})

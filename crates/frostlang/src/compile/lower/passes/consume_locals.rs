@@ -11,7 +11,7 @@
 //! after the label is known by the time each jump is met.
 //!
 //! An exported local is never consumed: its slot is read once the function
-//! finishes.
+//! finishes. Nor is a pattern's read: `MatchPattern` only borrows its inputs.
 
 use std::collections::HashSet;
 
@@ -47,7 +47,10 @@ pub(super) fn consume_locals(mut function: LoweredFunction) -> LoweredFunction {
             Op::DefLocal(id) => {
                 read_later.remove(id);
             }
-            _ => {}
+            // A pattern's reads count as later reads, though none is consumed.
+            // Its bindings are no kill: it writes them only on a match, and
+            // counting fewer definitions as kills only consumes less.
+            op => read_later.extend(op.reads()),
         }
     }
     function

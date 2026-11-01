@@ -488,6 +488,43 @@ f([1, 2])
 }
 
 #[test]
+fn a_match_pattern_check_is_attributed_to_its_pattern() {
+    let source = r"
+defn f(x) -> match x {
+    [1, b] => b,
+    y is Int => y,
+}
+f([1, 2])
+";
+    let whole = spanning(source, "match", "}");
+    assert_nested(
+        source,
+        UNOPTIMIZED.with(Optimization::CompilePatterns, true),
+        &[
+            (DefLocal(0), "x", Some(2)),
+            (DefLocal(1), "f", Some(1)),
+            (LoadLocal(0), "x", Some(0)),
+            (MatchPattern(0), "[1, b]", Some(1)),
+            (JumpIfFalse(3), "[1, b]", Some(2)),
+            (Pop, "[1, b] => b", Some(1)),
+            (LoadLocal(2), "b", Some(0)),
+            (Jump(11), "[1, b] => b", Some(1)),
+            (ClearLocals { first: 2, count: 1 }, "[1, b] => b", Some(1)),
+            (MatchPattern(1), "y is Int", Some(1)),
+            (JumpIfFalse(3), "y is Int", Some(2)),
+            (Pop, "y is Int => y", Some(1)),
+            (LoadLocal(3), "y", Some(0)),
+            (Jump(5), "y is Int => y", Some(1)),
+            (ClearLocals { first: 3, count: 1 }, "y is Int => y", Some(1)),
+            (LoadConst(0), whole, Some(1)),
+            (PeekDown(1), whole, Some(2)),
+            (Concat(count(2)), whole, Some(3)),
+            (ProduceError, whole, Some(2)),
+        ],
+    );
+}
+
+#[test]
 fn a_value_pattern_and_a_guard_are_each_their_own_check() {
     let source = r"
 defn f(x, k) -> match x {
@@ -510,6 +547,33 @@ f(1, 2)
             (JumpIfFalse(4), "n > 0", Some(2)),
         ],
         "a pinned value is checked as its pattern, parentheses included, and a guard as the guard"
+    );
+}
+
+#[test]
+fn a_guard_after_match_pattern_is_its_own_check() {
+    let source = r"
+defn f(x, k) -> match x {
+    [(k), n] if: n > 0 => n,
+    _ => 0,
+}
+f([2, 1], 2)
+";
+    let emitted = Script::new(source)
+        .code(UNOPTIMIZED.with(Optimization::CompilePatterns, true))
+        .nested(0);
+    let checks: Vec<Row> = rows(source, &emitted)
+        .into_iter()
+        .filter(|(op, ..)| matches!(op, MatchPattern(_) | JumpIfFalse(_)))
+        .collect();
+    assert_eq!(
+        checks,
+        [
+            (MatchPattern(0), "[(k), n]", Some(1)),
+            (JumpIfFalse(7), "[(k), n]", Some(2)),
+            (JumpIfFalse(3), "n > 0", Some(2)),
+        ],
+        "the whole pattern is checked as the pattern, and the guard as the guard"
     );
 }
 

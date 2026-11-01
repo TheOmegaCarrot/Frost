@@ -5,7 +5,7 @@ use crate::compile::{
     lower::{
         FunctionBuilder, Op, Position, StatementFragment, debug_span,
         fold::value_to_op,
-        pattern::{BindMode, Mismatch},
+        pattern::{BindMode, Mismatch, PatternBindings},
     },
 };
 
@@ -64,13 +64,14 @@ impl FunctionBuilder<'_> {
                 .into());
         }
         let pending = known.is_some() && !plain && (fold || propagate);
-        let mut bound = Vec::new();
+        let mut bindings = PatternBindings::new(self.locals.allocation_point());
         let pattern_fragment = self.compile_pattern(
             pattern,
             Mismatch::Raise,
             BindMode::Def { exported, pending },
-            &mut bound,
+            &mut bindings,
         )?;
+        let bound = bindings.bound;
 
         let ids: Vec<_> = bound.iter().map(|bound| bound.id).collect();
         let matched = match known {
