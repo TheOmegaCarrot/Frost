@@ -578,6 +578,44 @@ f([2, 1], 2)
 }
 
 #[test]
+fn a_guarded_bare_bindings_copy_is_its_pattern() {
+    let source = r"
+defn f(x, k) -> match x {
+    _ if: k > 0 => 0,
+    n if: n > k => n,
+    _ => 1,
+}
+f(2, 1)
+";
+    let emitted = Script::new(source)
+        .code(UNOPTIMIZED.with(Optimization::CompilePatterns, true))
+        .nested(0);
+    let n = emitted.slot_named("n");
+    let ops: Vec<Row> = rows(source, &emitted)
+        .into_iter()
+        .filter(|(op, ..)| {
+            matches!(op, JumpIfFalse(_)) || *op == DUP || *op == DefLocal(n) || *op == Pop
+        })
+        .collect();
+    assert_eq!(
+        ops,
+        [
+            (DUP, "_", Some(1)),
+            (Pop, "_", Some(2)),
+            (JumpIfFalse(3), "k > 0", Some(2)),
+            (Pop, "_ if: k > 0 => 0", Some(1)),
+            (DUP, "n", Some(1)),
+            (DefLocal(n), "n", Some(2)),
+            (JumpIfFalse(3), "n > k", Some(2)),
+            (Pop, "n if: n > k => n", Some(1)),
+            (Pop, "_", Some(1)),
+        ],
+        "the copy and its store are the pattern's, the guard's check the guard's, \
+         and the drop of the target the arm's"
+    );
+}
+
+#[test]
 fn a_map_patterns_lookups_are_each_its_entrys_and_a_whole_binding_its_binding() {
     let source = r"
 defn f(m, k) -> match m {

@@ -113,16 +113,35 @@ fn assert_each_compiles(
     }
 }
 
+/// Assert `emitted` tests its one tried arm's pattern neither with
+/// `MatchPattern` nor under a mark.
+fn assert_untested(emitted: &Emitted, source: &str) {
+    assert!(
+        emitted.patterns().is_empty(),
+        "{source:?} compiles no pattern under {:?}: {:?}",
+        emitted.optimization,
+        emitted.patterns()
+    );
+    assert_eq!(
+        emitted.count(&Bytecode::MarkStack),
+        0,
+        "{source:?} lays no mark under {:?}: {emitted:?}",
+        emitted.optimization
+    );
+}
+
 /// Assert `emitted` keeps its one tried arm's instructions.
 fn assert_not_compiled(emitted: &Emitted, source: &str) {
     assert!(
         emitted.patterns().is_empty(),
-        "{source:?} compiles no pattern: {:?}",
+        "{source:?} compiles no pattern under {:?}: {:?}",
+        emitted.optimization,
         emitted.patterns()
     );
     assert!(
         emitted.count(&Bytecode::MarkStack) > 0,
-        "{source:?} tries its arm under a mark: {emitted:?}"
+        "{source:?} tries its arm under a mark under {:?}: {emitted:?}",
+        emitted.optimization
     );
 }
 
@@ -186,8 +205,6 @@ fn each_kind_of_pattern_compiles() {
             ("[1, [2]]", |_| exact([int(1), exact([int(2)])])),
             ("n is Int", |e| typed(FrostType::INT, Some(slot(e, "n")))),
             ("_ is Numeric", |_| typed(FrostType::NUMERIC, None)),
-            // A guard makes even a pattern that cannot fail a tried arm's.
-            ("n if: n > 0", |e| bind(slot(e, "n"))),
             ("[]", |_| exact([])),
             ("[a, _, ...rest]", |e| {
                 at_least([bind(slot(e, "a")), discard()], Some(slot(e, "rest")))
@@ -452,6 +469,83 @@ match x {
 }
 
 #[test]
+fn a_guarded_bare_binding_is_not_tested() {
+    // The arm is tried only for its guard, and its pattern's own store takes a
+    // copy of the target.
+    let source = one_arm("", "n if: n > 0");
+    let emitted = code_with_x(&source, COMPILE_PATTERNS);
+    let n = emitted.slot_named("n");
+    assert_untested(&emitted, &source);
+    assert!(
+        emitted
+            .code
+            .windows(2)
+            .any(|ops| ops == [Bytecode::Dup, Bytecode::DefLocal(n)]),
+        "{source:?} stores a copy of the target to `n`: {emitted:?}"
+    );
+
+    // `_` stores nothing: its copy is popped, and with discard elimination
+    // never made.
+    let source = one_arm("", "_ if: x > 0");
+    let emitted = code_with_x(&source, COMPILE_PATTERNS);
+    assert_untested(&emitted, &source);
+    let emitted = code_with_x(
+        &source,
+        COMPILE_PATTERNS.with(Optimization::DiscardEliminate, true),
+    );
+    assert_eq!(
+        emitted.count(&Bytecode::Dup),
+        0,
+        "{source:?} makes no copy of the target: {emitted:?}"
+    );
+}
+
+#[test]
+fn a_typed_binding_or_an_alternative_is_still_tested() {
+    // A typed binding can fail. An alternative can match every value, but
+    // which branch matches decides its bindings.
+    assert_each_compiles(
+        "",
+        COMPILE_PATTERNS,
+        &[
+            ("n is Int if: n > 0", |e| {
+                typed(FrostType::INT, Some(slot(e, "n")))
+            }),
+            ("[n] | n if: n != 0", |e| {
+                let n = slot(e, "n");
+                either([exact([bind(n)]), bind(n)])
+            }),
+        ],
+    );
+}
+
+#[test]
+fn every_permutation_tests_a_guarded_bare_binding_exactly_when_the_optimization_is_off() {
+    for source in [
+        r"
+match x {
+    n if: n > 0 => n,
+    _ => 0
+}
+",
+        r"
+match x {
+    _ if: x > 0 => 1,
+    _ => 0
+}
+",
+    ] {
+        let script = Script::new(source).capture("x", Value::Null);
+        for emitted in script.code_where(|options| options.compile_patterns) {
+            assert_untested(&emitted, source);
+        }
+        for emitted in script.code_where(|options| !options.compile_patterns) {
+            assert_not_compiled(&emitted, source);
+        }
+    }
+}
+
+#[test]
 fn a_catch_all_and_a_def_keep_their_instructions() {
     // A catch-all cannot fail, so it tests nothing.
     let source = r"
@@ -623,6 +717,41 @@ match x {
 }
 
 #[test]
+fn an_unread_bare_name_is_not_stored() {
+    let dead_stores = COMPILE_PATTERNS
+        .with(Optimization::DeadStoreEliminate, true)
+        .with(Optimization::DiscardEliminate, true);
+    let source = one_arm("", "n if: x > 0");
+    let emitted = code_with_x(&source, dead_stores);
+    assert_eq!(
+        emitted.count(&Bytecode::Dup),
+        0,
+        "{source:?} makes no copy of the target: {emitted:?}"
+    );
+    assert!(
+        !emitted
+            .code
+            .iter()
+            .any(|op| matches!(op, Bytecode::DefLocal(_))),
+        "{source:?} stores nothing: {emitted:?}"
+    );
+
+    // Read only by the result, it is still stored.
+    let source = r"
+match x {
+    n if: x > 0 => [n],
+    _ => 0
+}
+";
+    let emitted = code_with_x(source, dead_stores);
+    assert_eq!(
+        emitted.count(&Bytecode::DefLocal(emitted.slot_named("n"))),
+        1,
+        "{source:?} stores `n`, which its result reads: {emitted:?}"
+    );
+}
+
+#[test]
 fn a_pins_read_is_never_consumed_and_keeps_earlier_reads() {
     let consume = COMPILE_PATTERNS.with(Optimization::ConsumeLocals, true);
     // The target's read of `k` comes before the pin's, so is not the last.
@@ -667,6 +796,16 @@ defn probe(v) -> match v {
 def make = fn n -> [n]
 probe([make(1)])
 ",
+        // A bare name binds a copy of the whole target; the arm drops the
+        // target once it has matched, leaving the copy unshared.
+        r"
+defn probe(v) -> match v {
+    a if: len(a) > 0 => unshared(a),
+    _ => null
+}
+def make = fn n -> [n]
+probe(make(1))
+",
     ] {
         for optimization in [
             UNOPTIMIZED.with(Optimization::ConsumeLocals, true),
@@ -695,34 +834,86 @@ fn an_arm_clears_its_locals_as_its_instructions_do() {
             .map(|names| names.join(" "))
             .collect::<Vec<_>>()
     };
-    // After the result, and on failure, as when the guard fails.
-    let source = r"
+    // After the result, and on failure, as when the guard fails; in tail
+    // position, the frame's release stands in for the clear after the result.
+    for (source, expected) in [
+        (
+            r"
 fn v -> [match v {
     [a] if: a > 0 => a,
     [b] => b,
     _ => 0
 }]
-";
-    assert_eq!(
-        clears(source, COMPILE_PATTERNS),
-        ["a", "a", "b", "b"],
-        "{source:?} clears each arm's binding after its result and on its failure"
-    );
+",
+            &["a", "a", "b", "b"][..],
+        ),
+        (
+            r"
+fn v -> [match v {
+    n if: n > 0 => n,
+    _ => 0
+}]
+",
+            &["n", "n"][..],
+        ),
+        (
+            r"
+fn v -> [match v {
+    _ if: v > 0 => 1,
+    _ => 0
+}]
+",
+            &[][..],
+        ),
+        (
+            r"
+fn v -> match v {
+    n if: n > 0 => n,
+    _ => 0
+}
+",
+            &["n"][..],
+        ),
+    ] {
+        let compiled = clears(source, COMPILE_PATTERNS);
+        assert_eq!(compiled, expected, "{source:?} clears {expected:?}");
+        assert_eq!(
+            compiled,
+            clears(source, UNOPTIMIZED),
+            "{source:?} clears as its instructions do"
+        );
+    }
+
     // A dropped binding has no slot to clear.
-    let source = r"
+    let dead_stores = COMPILE_PATTERNS
+        .with(Optimization::DeadStoreEliminate, true)
+        .with(Optimization::DiscardEliminate, true);
+    for (source, expected) in [
+        (
+            r"
 fn v -> [match v {
     [a, b] if: b > 0 => b,
     _ => 0
 }]
-";
-    assert_eq!(
-        clears(
-            source,
-            COMPILE_PATTERNS.with(Optimization::DeadStoreEliminate, true)
+",
+            &["b", "b"][..],
         ),
-        ["b", "b"],
-        "{source:?} clears only the binding it keeps"
-    );
+        (
+            r"
+fn v -> [match v {
+    n if: v > 0 => 0,
+    _ => 1
+}]
+",
+            &[][..],
+        ),
+    ] {
+        assert_eq!(
+            clears(source, dead_stores),
+            expected,
+            "{source:?} clears only the bindings it keeps"
+        );
+    }
 }
 
 #[test]
@@ -1204,6 +1395,43 @@ match x {
 }
 ",
         &[("[1, 2]", "[2]"), ("[2, 2]", "0")],
+    );
+}
+
+#[test]
+fn a_guarded_bare_binding_matches_as_its_instructions_do() {
+    assert_outcomes(
+        r"
+match x {
+    _ if: x == 0 => 'zero',
+    n if: n == 11 => n * 2,
+    n if: n == 12 => [n],
+    [n] | n if: n == 5 => 'five',
+    m => [m]
+}
+",
+        &[
+            ("0", "'zero'"),
+            ("11", "22"),
+            ("12", "[12]"),
+            ("[5]", "'five'"),
+            ("5", "'five'"),
+            ("3", "[3]"),
+        ],
+    );
+
+    // With no catch-all, a failed guard leaves no arm to match, so the match
+    // raises.
+    let source = r"
+match x {
+    n if: n > 0 => n
+}
+";
+    assert_outcomes(source, &[("3", "3")]);
+    let raised = Script::new(source).capture("x", run("-1")).raises();
+    assert!(
+        raised.contains("No match arm matches the value: -1"),
+        "raised: {raised}"
     );
 }
 

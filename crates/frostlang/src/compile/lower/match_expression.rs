@@ -14,7 +14,9 @@
 //! an arm whose pattern can be held as data instead tests the target in place
 //! with one `MatchPattern`. That lays nothing out on the stack, so the arm
 //! needs no mark and no copy: a matched arm drops only the target, and a
-//! failed one only clears its locals.
+//! failed one only clears its locals. An arm whose pattern is a lone name or
+//! `_`, tried only for its guard, needs no test at all, only the copy of the
+//! target that its name binds.
 //!
 //! The catch-all, an arm with no guard whose pattern cannot fail, is never
 //! abandoned, so it needs no mark and no copy: its pattern takes the target
@@ -24,7 +26,7 @@
 use std::num::NonZeroU64;
 
 use crate::Value;
-use crate::bytecode::{Bytecode, Span};
+use crate::bytecode::{Bytecode, CompiledPattern, Span};
 use frostlang_parse::ast::{Expr, MatchArm, Spanned};
 
 use crate::compile::{
@@ -56,7 +58,7 @@ struct ArmFragment {
     span: Span,
 }
 
-/// How an arm tests the target against its pattern.
+/// How a tried arm tests the target against its pattern, if at all.
 enum ArmTest {
     /// The pattern's own instructions, testing a copy of the target under a
     /// mark.
@@ -64,6 +66,11 @@ enum ArmTest {
     /// `MatchPattern`, testing the target in place, derived from the pattern
     /// at `span`.
     MatchPattern { pattern: LoweredPattern, span: Span },
+    /// No test, for the pattern at `span` that is a name or `_` with no type
+    /// constraint: it matches every value, so the arm is tried only for its
+    /// guard. A copy of the target, then the pattern's own `store` of it,
+    /// leave the stack as they found it, so the arm needs no mark.
+    Untested { store: Vec<Ir>, span: Span },
 }
 
 /// A compiled guard, and its span, which its check is derived from.
@@ -123,6 +130,14 @@ impl ArmFragment {
                 ready(&[Bytecode::Pop]),
                 Vec::new(),
             ),
+            ArmTest::Untested {
+                store,
+                span: pattern_span,
+            } => {
+                let mut test_code = vec![Op::Ready(Bytecode::Dup).at(pattern_span)];
+                test_code.extend(store);
+                (test_code, ready(&[Bytecode::Pop]), Vec::new())
+            }
         };
         let guard = guard.into_iter().flat_map(move |guard| {
             guard.fragment.code.into_iter().chain([Op::Jump {
@@ -286,14 +301,18 @@ impl FunctionBuilder<'_> {
             BindMode::Arm,
             &mut PatternBindings::new(start),
         )?;
-        let test = match pattern.match_pattern {
-            Some(match_pattern) if self.options.optimization_options.compile_patterns => {
-                ArmTest::MatchPattern {
-                    pattern: match_pattern,
-                    span: debug_span(arm.node.pattern.span),
-                }
-            }
-            _ => ArmTest::Instructions(pattern.code),
+        let pattern_span = debug_span(arm.node.pattern.span);
+        let compile_patterns = self.options.optimization_options.compile_patterns;
+        let test = match (compile_patterns, pattern.match_pattern) {
+            (true, Some(CompiledPattern::Binding { types: None, .. })) => ArmTest::Untested {
+                store: pattern.code,
+                span: pattern_span,
+            },
+            (true, Some(match_pattern)) => ArmTest::MatchPattern {
+                pattern: match_pattern,
+                span: pattern_span,
+            },
+            (false, _) | (_, None) => ArmTest::Instructions(pattern.code),
         };
         let guard = arm
             .node

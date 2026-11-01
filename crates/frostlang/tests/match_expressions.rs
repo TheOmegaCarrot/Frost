@@ -1329,6 +1329,13 @@ fn tail_recursion_through_a_match_runs_in_bounded_depth() {
         defn count(n) -> match {n: n} { {n: 0} => "done", {n} as m => count(m.n - 1) }
         count(100000)
         "#,
+        r#"
+        defn count(n) -> match n {
+            k if: k > 0 => count(k - 1),
+            _ => "done"
+        }
+        count(100000)
+        "#,
     ] {
         let tail = Script::new(source).max_call_depth(100).run();
         assert_eq!(tail, Value::from("done"), "{source}");

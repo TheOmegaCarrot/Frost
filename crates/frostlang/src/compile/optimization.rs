@@ -68,7 +68,9 @@ pub struct OptimizationOptions {
     /// an arm only when each value its pattern compares against and each key it
     /// looks up is a name or a constant: a literal or, with
     /// [`constant_fold`](Self::constant_fold), an expression that folds to one.
-    /// A constant key must be a valid Map key.
+    /// A constant key must be a valid Map key. A guarded arm whose pattern is
+    /// only a name or `_` is not tested at all: its guard alone decides whether
+    /// it matches.
     pub compile_patterns: bool,
 }
 
