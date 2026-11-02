@@ -121,6 +121,7 @@ fn sample_patterns() -> Vec<CompiledPattern> {
                     ]
                     .into(),
                     length: ArrayPatternLength::Exact,
+                    whole: None,
                 },
                 CompiledPattern::Array {
                     elements: [CompiledPattern::Binding {
@@ -129,10 +130,12 @@ fn sample_patterns() -> Vec<CompiledPattern> {
                     }]
                     .into(),
                     length: ArrayPatternLength::AtLeast { rest: Some(0) },
+                    whole: Some(1),
                 },
                 CompiledPattern::Array {
                     elements: [].into(),
                     length: ArrayPatternLength::AtLeast { rest: None },
+                    whole: None,
                 },
             ]
             .into(),

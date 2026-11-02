@@ -10,7 +10,7 @@
 use std::sync::Arc;
 
 use crate::common::pattern::{
-    at_least, bind, discard, either, exact, input_key, int, key, map, pin, typed, value,
+    array_as, at_least, bind, discard, either, exact, input_key, int, key, map, pin, typed, value,
 };
 use crate::common::{self, Pop, entry, func_with_captures, global_slot, with_patterns};
 use crate::unshared::unshared;
@@ -409,6 +409,21 @@ fn an_earlier_rest_binding_compares_as_the_array_it_binds() {
 }
 
 #[test]
+fn an_earlier_whole_array_binding_compares_as_the_array() {
+    // `[[..._] as a, (a)]`
+    let pattern = exact([
+        array_as(at_least([], None), A),
+        pin(PatternInput::EarlierBinding(A)),
+    ]);
+    assert_binds(
+        &pattern,
+        &Value::array([ints(&[1, 2]), ints(&[1, 2])]),
+        [Some(ints(&[1, 2])), None, None],
+    );
+    assert_mismatch(&pattern, &Value::array([ints(&[1, 2]), ints(&[1])]));
+}
+
+#[test]
 fn an_earlier_whole_map_binding_compares_as_the_map() {
     // `[{} as a, (a)]`
     let pattern = exact([map([], Some(A)), pin(PatternInput::EarlierBinding(A))]);
@@ -489,6 +504,47 @@ fn an_element_mismatch_after_a_binding_binds_nothing() {
     assert_mismatch(
         &exact([at_least([discard()], Some(A)), int(4)]),
         &Value::array([ints(&[1, 2, 3]), Value::from(3)]),
+    );
+}
+
+#[test]
+fn an_array_pattern_binds_the_whole_array() {
+    // `[a, b] as c`
+    let pattern = array_as(exact([bind(A), bind(B)]), C);
+    assert_binds(
+        &pattern,
+        &ints(&[1, 2]),
+        [one(1), one(2), Some(ints(&[1, 2]))],
+    );
+    for tested in [ints(&[1]), ints(&[1, 2, 3]), Value::Null] {
+        assert_mismatch(&pattern, &tested);
+    }
+}
+
+#[test]
+fn an_array_pattern_binds_its_rest_and_the_whole_array() {
+    // `[a, ...b] as c`
+    assert_binds(
+        &array_as(at_least([bind(A)], Some(B)), C),
+        &ints(&[1, 2, 3]),
+        [one(1), Some(ints(&[2, 3])), Some(ints(&[1, 2, 3]))],
+    );
+    // `[..._] as a`
+    let pattern = array_as(at_least([], None), A);
+    for tested in [ints(&[]), ints(&[1, 2])] {
+        assert_binds(&pattern, &tested, [Some(tested.clone()), None, None]);
+    }
+    assert_mismatch(&pattern, &Value::map([("k", Value::from(1))]));
+}
+
+#[test]
+fn an_element_mismatch_binds_no_whole_array() {
+    // `[a, 2] as b`
+    assert_mismatch(&array_as(exact([bind(A), int(2)]), B), &ints(&[1, 3]));
+    // `[[] as a, 4]`: the whole Array `a` is bound before `4` fails.
+    assert_mismatch(
+        &exact([array_as(exact([]), A), int(4)]),
+        &Value::array([ints(&[]), Value::from(3)]),
     );
 }
 
@@ -878,6 +934,24 @@ fn a_bound_whole_map_is_left_held_by_its_local_alone() {
         PushInt(1),
         PushInt(2),
         MakeMap(1),
+        MatchPattern(0),
+        Pop,
+        Pop,
+        LoadLocal(UNSHARED.into()),
+        ConsumeLocal(PROBED.into()),
+        Call(1),
+    ];
+    assert_eq!(run_probed(pattern, code), Value::from(true));
+}
+
+#[test]
+fn a_bound_whole_array_is_left_held_by_its_local_alone() {
+    // `[_, _] as a`, against an Array built at runtime.
+    let pattern = array_as(exact([discard(), discard()]), PROBED);
+    let code = vec![
+        PushInt(1),
+        PushInt(2),
+        MakeArray(2),
         MatchPattern(0),
         Pop,
         Pop,

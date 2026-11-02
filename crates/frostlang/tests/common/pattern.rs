@@ -49,6 +49,7 @@ pub(crate) fn exact(elements: impl Into<Box<[CompiledPattern]>>) -> CompiledPatt
     CompiledPattern::Array {
         elements: elements.into(),
         length: ArrayPatternLength::Exact,
+        whole: None,
     }
 }
 
@@ -61,6 +62,23 @@ pub(crate) fn at_least(
     CompiledPattern::Array {
         elements: elements.into(),
         length: ArrayPatternLength::AtLeast { rest },
+        whole: None,
+    }
+}
+
+/// `array as whole`: the Array pattern `array`, from [`exact`] or
+/// [`at_least`], binding the whole Array to local `whole`.
+pub(crate) fn array_as(array: CompiledPattern, whole: u32) -> CompiledPattern {
+    let CompiledPattern::Array {
+        elements, length, ..
+    } = array
+    else {
+        panic!("`array_as` takes an Array pattern, not {array:?}");
+    };
+    CompiledPattern::Array {
+        elements,
+        length,
+        whole: Some(whole),
     }
 }
 

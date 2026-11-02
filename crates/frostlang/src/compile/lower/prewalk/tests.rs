@@ -194,6 +194,7 @@ fn array_destructuring() {
     assert_free("fn -> { def [a, b] = pair; a + b + c }", &["c", "pair"]);
     assert_free("fn -> { def [a, [b, c]] = x; a + b + c }", &["x"]);
     assert_free("fn -> { def [a, ...rest] = x; a + rest }", &["x"]);
+    assert_free("fn -> { def [a] as whole = x; a + whole }", &["x"]);
 }
 
 #[test]
@@ -247,6 +248,7 @@ fn match_array_pattern() {
         "fn -> match t { [a, ...rest] => a + rest, _ => z }",
         &["t", "z"],
     );
+    assert_free("fn -> match t { [a] as w => a + w, _ => z }", &["t", "z"]);
 }
 
 #[test]
@@ -369,6 +371,15 @@ fn a_whole_map_binding_is_introduced_after_the_subpatterns() {
     // `[whole]` precedes the `as whole` binding, so it captures.
     assert_free(
         "fn -> match m { {[whole]: node} as whole => node, _ => 0 }",
+        &["m", "whole"],
+    );
+}
+
+#[test]
+fn a_whole_array_binding_is_introduced_after_the_elements() {
+    // `(whole)` precedes the `as whole` binding, so it captures.
+    assert_free(
+        "fn -> match m { [(whole)] as whole => 0, _ => 1 }",
         &["m", "whole"],
     );
 }

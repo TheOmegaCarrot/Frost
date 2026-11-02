@@ -131,7 +131,11 @@ impl LoweredPattern {
                 }
                 PatternComparand::Input(input) => PatternComparand::Input(map_input(input, map)),
             }),
-            Self::Array { elements, length } => CompiledPattern::Array {
+            Self::Array {
+                elements,
+                length,
+                whole,
+            } => CompiledPattern::Array {
                 elements: elements
                     .iter()
                     .map(|element| element.map_stage(map))
@@ -142,6 +146,7 @@ impl LoweredPattern {
                         rest: rest.and_then(|rest| map.binding(&rest)),
                     },
                 },
+                whole: whole.and_then(|whole| map.binding(&whole)),
             },
             Self::Map { entries, whole } => CompiledPattern::Map {
                 entries: entries
@@ -179,12 +184,19 @@ impl LoweredPattern {
                     visit(PatternReference::Input(input));
                 }
             }
-            Self::Array { elements, length } => {
+            Self::Array {
+                elements,
+                length,
+                whole,
+            } => {
                 for element in elements {
                     element.for_each_reference(visit);
                 }
                 if let ArrayPatternLength::AtLeast { rest: Some(rest) } = length {
                     visit(PatternReference::Binding(*rest));
+                }
+                if let Some(whole) = whole {
+                    visit(PatternReference::Binding(*whole));
                 }
             }
             Self::Map { entries, whole } => {

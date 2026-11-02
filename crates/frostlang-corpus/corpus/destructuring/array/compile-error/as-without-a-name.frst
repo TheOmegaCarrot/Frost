@@ -1,0 +1,4 @@
+# `as` after an Array pattern must be followed by a name or `_`.
+#= {rejects: 'expected a name after `as`'}
+def [a] as = [1]
+a

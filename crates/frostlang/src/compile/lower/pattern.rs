@@ -115,15 +115,31 @@ pub(super) enum BindMode<'a> {
     },
 }
 
+/// How a pattern, or a part of one, is compiled: what its failed checks do,
+/// and where the names it binds go and are recorded.
+pub(super) struct PatternContext<'a> {
+    pub(super) mismatch: Mismatch,
+    pub(super) mode: BindMode<'a>,
+    pub(super) bindings: &'a mut PatternBindings,
+}
+
+impl PatternContext<'_> {
+    /// This context, its failed checks handled per `mismatch` instead.
+    fn with_mismatch(&mut self, mismatch: Mismatch) -> PatternContext<'_> {
+        PatternContext {
+            mismatch,
+            mode: self.mode,
+            bindings: self.bindings,
+        }
+    }
+}
+
 impl FunctionBuilder<'_> {
-    /// Compile `pattern`, `( x -- )`, handling a failed check per `mismatch`.
-    /// Each name it binds is bound per `mode` and recorded in `bindings`.
+    /// Compile `pattern`, `( x -- )`, per `ctx`.
     pub(super) fn compile_pattern(
         &mut self,
         pattern: &Spanned<Pattern>,
-        mismatch: Mismatch,
-        mode: BindMode,
-        bindings: &mut PatternBindings,
+        ctx: &mut PatternContext,
     ) -> Result<PatternFragment, Diagnostics> {
         let span = debug_span(pattern.span);
         match &pattern.node {
@@ -140,7 +156,7 @@ impl FunctionBuilder<'_> {
                                 Op::Ready(Bytecode::Dup).at(constraint_span),
                                 Op::Ready(Bytecode::TypeTest(ty)).at(constraint_span),
                             ],
-                            mismatch,
+                            ctx.mismatch,
                             constraint_span,
                             || format!("expected {described}"),
                         );
@@ -148,8 +164,7 @@ impl FunctionBuilder<'_> {
                     }
                     None => (Vec::new(), None),
                 };
-                let local = self.bind(name, mode, bindings)?;
-                code.push(store(local, name));
+                let local = self.bind_and_store(name, ctx, &mut code)?;
                 Ok(PatternFragment {
                     code,
                     foldable: true,
@@ -161,7 +176,7 @@ impl FunctionBuilder<'_> {
                 let value = self.compile_expression(expr, Position::Inner)?;
                 let value = self.fold_if_eligible(value);
                 let match_pattern =
-                    pattern_comparand_of(&value.code, &self.allocated_in_pattern(bindings))
+                    pattern_comparand_of(&value.code, &self.allocated_in_pattern(ctx.bindings))
                         .map(CompiledPattern::Value);
                 let source = self.source;
                 let foldable = value.foldable;
@@ -170,7 +185,7 @@ impl FunctionBuilder<'_> {
                         .code
                         .into_iter()
                         .chain([Op::Ready(Bytecode::CompareEqual).at(span)]),
-                    mismatch,
+                    ctx.mismatch,
                     span,
                     || expected_value(source, pattern.span, expr.span),
                 );
@@ -180,23 +195,18 @@ impl FunctionBuilder<'_> {
                     match_pattern,
                 })
             }
-            Pattern::Array { elements, rest } => {
-                self.compile_array_pattern(elements, rest.as_ref(), mismatch, mode, bindings, span)
+            Pattern::Array {
+                elements,
+                rest,
+                bind_whole,
+            } => {
+                self.compile_array_pattern(elements, rest.as_ref(), bind_whole.as_ref(), ctx, span)
             }
             Pattern::Map {
                 entries,
                 bind_whole,
-            } => self.compile_map_pattern(
-                entries,
-                bind_whole.as_ref(),
-                mismatch,
-                mode,
-                bindings,
-                span,
-            ),
-            Pattern::Alternative(branches) => {
-                self.compile_alternative(branches, mismatch, mode, bindings, span)
-            }
+            } => self.compile_map_pattern(entries, bind_whole.as_ref(), ctx, span),
+            Pattern::Alternative(branches) => self.compile_alternative(branches, ctx, span),
         }
     }
 
@@ -245,34 +255,43 @@ impl FunctionBuilder<'_> {
         .collect()
     }
 
-    /// `[element, ..., ...rest]`: check the value's shape (see
+    /// `[element, ..., ...rest] as whole`: check the value's shape (see
     /// [`array_layout`](Self::array_layout)), then test each element against
-    /// its pattern in order, and bind the rest, if any.
+    /// its pattern in order, and bind the rest, if any. To be bound whole, the
+    /// Array is copied beneath its layout first, and bound last.
+    /// `( a -- )`, through `( a? rest? aN ... a1 a0 )`.
     fn compile_array_pattern(
         &mut self,
         elements: &[Spanned<Pattern>],
         rest: Option<&Spanned<Binding>>,
-        mismatch: Mismatch,
-        mode: BindMode,
-        bindings: &mut PatternBindings,
+        bind_whole: Option<&Spanned<Binding>>,
+        ctx: &mut PatternContext,
         span: Span,
     ) -> Result<PatternFragment, Diagnostics> {
-        let mut code = self.array_layout(elements.len(), rest.is_some(), mismatch, span);
+        let mut code = Vec::new();
+        if bind_whole.is_some() {
+            // `( a -- a a )`: the layout takes the copy on top.
+            code.push(Op::Ready(Bytecode::Dup).at(span));
+        }
+        code.extend(self.array_layout(elements.len(), rest.is_some(), ctx.mismatch, span));
         let mut foldable = true;
         let mut match_elements = Vec::new();
         for element in elements {
-            let part = self.compile_pattern(element, mismatch, mode, bindings)?;
+            let part = self.compile_pattern(element, ctx)?;
             code.extend(part.code);
             foldable &= part.foldable;
             match_elements.push(part.match_pattern);
         }
         let length = match rest {
-            Some(rest) => {
-                let local = self.bind(rest, mode, bindings)?;
-                code.push(store(local, rest));
-                ArrayPatternLength::AtLeast { rest: local }
-            }
+            Some(rest) => ArrayPatternLength::AtLeast {
+                rest: self.bind_and_store(rest, ctx, &mut code)?,
+            },
             None => ArrayPatternLength::Exact,
+        };
+        // Only the copy is left: the rest, beneath the elements, is stored first.
+        let whole = match bind_whole {
+            Some(binding) => self.bind_and_store(binding, ctx, &mut code)?,
+            None => None,
         };
         Ok(PatternFragment {
             code,
@@ -280,7 +299,11 @@ impl FunctionBuilder<'_> {
             match_pattern: match_elements
                 .into_iter()
                 .collect::<Option<_>>()
-                .map(|elements| CompiledPattern::Array { elements, length }),
+                .map(|elements| CompiledPattern::Array {
+                    elements,
+                    length,
+                    whole,
+                }),
         })
     }
 
@@ -322,9 +345,7 @@ impl FunctionBuilder<'_> {
         &mut self,
         entries: &[Spanned<MapPatternEntry>],
         bind_whole: Option<&Spanned<Binding>>,
-        mismatch: Mismatch,
-        mode: BindMode,
-        bindings: &mut PatternBindings,
+        ctx: &mut PatternContext,
         span: Span,
     ) -> Result<PatternFragment, Diagnostics> {
         let mut code = self.check(
@@ -332,7 +353,7 @@ impl FunctionBuilder<'_> {
                 Op::Ready(Bytecode::Dup).at(span),
                 Op::Ready(Bytecode::TypeTest(FrostType::MAP)).at(span),
             ],
-            mismatch,
+            ctx.mismatch,
             span,
             || "expected a Map".to_string(),
         );
@@ -344,8 +365,8 @@ impl FunctionBuilder<'_> {
             // is looked up directly.
             let key = self.compile_expression(&entry.node.key, Position::Inner)?;
             let key = self.fold_if_eligible(key);
-            let match_key = pattern_key_of(&key.code, &self.allocated_in_pattern(bindings));
-            let part = self.compile_pattern(&entry.node.pattern, mismatch, mode, bindings)?;
+            let match_key = pattern_key_of(&key.code, &self.allocated_in_pattern(ctx.bindings));
+            let part = self.compile_pattern(&entry.node.pattern, ctx)?;
             foldable &= key.foldable && part.foldable;
             match_entries.push(match_key.zip(part.match_pattern));
             // The entry's own lookup.
@@ -369,21 +390,19 @@ impl FunctionBuilder<'_> {
                     )
                 }
             };
-            if !matches!(mismatch, Mismatch::Raise) {
-                code.extend(self.check([test.at(entry_span)], mismatch, entry_span, || {
-                    unreachable!("only `Mismatch::Raise` says what a check expected")
-                }));
+            if !matches!(ctx.mismatch, Mismatch::Raise) {
+                code.extend(
+                    self.check([test.at(entry_span)], ctx.mismatch, entry_span, || {
+                        unreachable!("only `Mismatch::Raise` says what a check expected")
+                    }),
+                );
             }
             code.push(extract.at(entry_span));
             code.extend(part.code);
         }
 
         let whole = match bind_whole {
-            Some(binding) => {
-                let local = self.bind(binding, mode, bindings)?;
-                code.push(store(local, binding));
-                local
-            }
+            Some(binding) => self.bind_and_store(binding, ctx, &mut code)?,
             None => {
                 code.push(Op::Ready(Bytecode::Pop).at(span));
                 None
@@ -403,15 +422,13 @@ impl FunctionBuilder<'_> {
     /// `p1 | p2 | ...`: try each branch in turn under its own mark, but the
     /// last, which needs none: it fails as the alternative does, straight to
     /// the enclosing label, or raising in place. The first branch binds per
-    /// `mode`; every later one must bind the same names, and binds them into
+    /// `ctx`; every later one must bind the same names, and binds them into
     /// the first's locals. Each branch sees only the names in view before the
     /// alternative, and those it has bound itself.
     fn compile_alternative(
         &mut self,
         branches: &[Spanned<Pattern>],
-        mismatch: Mismatch,
-        mode: BindMode,
-        bindings: &mut PatternBindings,
+        ctx: &mut PatternContext,
         span: Span,
     ) -> Result<PatternFragment, Diagnostics> {
         let catch_all = branches.iter().position(|branch| cannot_fail(&branch.node));
@@ -424,7 +441,7 @@ impl FunctionBuilder<'_> {
             .expect("an alternative has at least one branch");
         let last = branches.len() - 1;
         let matched = self.next_label();
-        let bound_before = bindings.bound.len();
+        let bound_before = ctx.bindings.bound.len();
         let before = self.locals.checkpoint();
         let mut first_bound = Vec::new();
         let mut code = Vec::new();
@@ -432,27 +449,31 @@ impl FunctionBuilder<'_> {
         let mut match_branches = Vec::new();
         // An alternative nested in the last branch of another raises as that
         // outer one.
-        let last_mismatch = match mismatch {
+        let last_mismatch = match ctx.mismatch {
             Mismatch::Raise => Mismatch::RaiseNoAlternative(span),
-            Mismatch::RaiseNoAlternative(_) | Mismatch::Jump(_) => mismatch,
+            Mismatch::RaiseNoAlternative(_) | Mismatch::Jump(_) => ctx.mismatch,
         };
 
         for (index, branch) in reachable.iter().enumerate() {
             let branch_fail = (index != last).then(|| self.next_label());
             let branch_mismatch = branch_fail.map_or(last_mismatch, Mismatch::Jump);
             let fragment = if index == 0 {
-                let fragment = self.compile_pattern(branch, branch_mismatch, mode, bindings)?;
-                first_bound = bindings.bound[bound_before..].to_vec();
+                let fragment =
+                    self.compile_pattern(branch, &mut ctx.with_mismatch(branch_mismatch))?;
+                first_bound = ctx.bindings.bound[bound_before..].to_vec();
                 fragment
             } else {
                 self.locals.rewind(before);
-                let mode = BindMode::Reuse {
-                    first: &first_bound,
-                    span: first.span,
+                let mut branch_bindings = ctx.bindings.for_branch();
+                let mut branch_ctx = PatternContext {
+                    mismatch: branch_mismatch,
+                    mode: BindMode::Reuse {
+                        first: &first_bound,
+                        span: first.span,
+                    },
+                    bindings: &mut branch_bindings,
                 };
-                let mut branch_bindings = bindings.for_branch();
-                let fragment =
-                    self.compile_pattern(branch, branch_mismatch, mode, &mut branch_bindings)?;
+                let fragment = self.compile_pattern(branch, &mut branch_ctx)?;
                 self.check_binds_all(&first_bound, &branch_bindings.bound, branch.span)?;
                 fragment
             };
@@ -501,19 +522,36 @@ impl FunctionBuilder<'_> {
         })
     }
 
-    /// Bind `binding` per `mode`, recording it in `bindings`, and return its
-    /// local; `None` for `_`, which binds nothing. [`store`] makes the code.
+    /// Bind `binding` per `ctx`, and append to `code` the store of the value
+    /// atop the stack to its local, `( x -- )`. Returns the local; `None` for
+    /// `_`, which binds nothing and drops the value.
+    fn bind_and_store(
+        &mut self,
+        binding: &Spanned<Binding>,
+        ctx: &mut PatternContext,
+        code: &mut Vec<Ir>,
+    ) -> Result<Option<LocalId>, Diagnostics> {
+        let local = self.bind(binding, ctx)?;
+        code.push(
+            local
+                .map_or(Op::Ready(Bytecode::Pop), Op::DefLocal)
+                .at(debug_span(binding.span)),
+        );
+        Ok(local)
+    }
+
+    /// Bind `binding` per `ctx`'s mode, recording it in its bindings, and
+    /// return its local, as [`bind_and_store`](Self::bind_and_store) says.
     fn bind(
         &mut self,
         binding: &Spanned<Binding>,
-        mode: BindMode,
-        bindings: &mut PatternBindings,
+        ctx: &mut PatternContext,
     ) -> Result<Option<LocalId>, Diagnostics> {
         let Binding::Named(name) = &binding.node else {
             return Ok(None);
         };
-        let bound = &mut bindings.bound;
-        let id = match mode {
+        let bound = &mut ctx.bindings.bound;
+        let id = match ctx.mode {
             BindMode::Arm => self.define_binding(binding, name, false)?,
             BindMode::Def { exported, pending } => {
                 let id = self.define_binding(binding, name, exported)?;
@@ -688,14 +726,6 @@ impl Unreachable {
             Self::Branch => "unreachable alternative branch",
         }
     }
-}
-
-/// Store the value atop the stack to `local`, or drop it for `_`, at
-/// `binding`'s span. `( x -- )`
-fn store(local: Option<LocalId>, binding: &Spanned<Binding>) -> Ir {
-    local
-        .map_or(Op::Ready(Bytecode::Pop), Op::DefLocal)
-        .at(debug_span(binding.span))
 }
 
 /// Whether `pattern` matches every value: a name or `_` with no type

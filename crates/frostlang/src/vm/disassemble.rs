@@ -455,7 +455,11 @@ fn pattern_source(pattern: &CompiledPattern, function: &ListedFunction) -> Strin
             }
         }
         CompiledPattern::Value(comparand) => comparand_source(comparand, function),
-        CompiledPattern::Array { elements, length } => {
+        CompiledPattern::Array {
+            elements,
+            length,
+            whole,
+        } => {
             let rest = match length {
                 ArrayPatternLength::Exact => None,
                 ArrayPatternLength::AtLeast { rest } => Some(format!(
@@ -468,7 +472,7 @@ fn pattern_source(pattern: &CompiledPattern, function: &ListedFunction) -> Strin
                 .map(|element| pattern_source(element, function))
                 .chain(rest)
                 .collect();
-            format!("[{}]", parts.join(", "))
+            with_whole(format!("[{}]", parts.join(", ")), *whole, function)
         }
         CompiledPattern::Map { entries, whole } => {
             let entries: Vec<String> = entries
@@ -481,11 +485,7 @@ fn pattern_source(pattern: &CompiledPattern, function: &ListedFunction) -> Strin
                     )
                 })
                 .collect();
-            let map = format!("{{{}}}", entries.join(", "));
-            match whole {
-                None => map,
-                Some(whole) => format!("{map} as {}", slot_name(function, *whole)),
-            }
+            with_whole(format!("{{{}}}", entries.join(", ")), *whole, function)
         }
         // An Alternative that is a branch of another lists merged into its
         // parent's branches, without parentheses; that matches the same, since
@@ -497,6 +497,15 @@ fn pattern_source(pattern: &CompiledPattern, function: &ListedFunction) -> Strin
                 .collect();
             branches.join(" | ")
         }
+    }
+}
+
+/// `pattern`, an Array or Map pattern's source, followed by its `as` binding
+/// to `whole`, if any.
+fn with_whole(pattern: String, whole: Option<u32>, function: &ListedFunction) -> String {
+    match whole {
+        None => pattern,
+        Some(whole) => format!("{pattern} as {}", slot_name(function, whole)),
     }
 }
 

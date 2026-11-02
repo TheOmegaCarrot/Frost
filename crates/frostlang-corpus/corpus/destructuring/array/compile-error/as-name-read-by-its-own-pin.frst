@@ -1,0 +1,4 @@
+# The `as` name is bound after the elements, so its own pins cannot read it.
+#= {rejects: '`xs` is not defined'}
+def [(xs)] as xs = [1]
+xs

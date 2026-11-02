@@ -1,0 +1,5 @@
+# `as` does not relax the Array pattern: a non-Array still raises.
+#= {raises: 'Array', inputs: {x: 1}}
+def {x} = import('inputs')
+def [_] as pair = x
+pair

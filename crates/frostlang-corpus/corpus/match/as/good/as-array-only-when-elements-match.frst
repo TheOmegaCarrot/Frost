@@ -1,0 +1,8 @@
+# `as` after an Array pattern binds only when the pattern matches; otherwise
+# the next arm is tried.
+#= {result: [[1, 2], 'other', 'other'], inputs: {xs: [[1, 2], [1], 5]}}
+def {xs} = import('inputs')
+map(xs, fn v -> match v {
+    [_, _] as all => all,
+    _ => 'other',
+})

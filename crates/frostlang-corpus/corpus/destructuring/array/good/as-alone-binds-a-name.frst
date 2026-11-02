@@ -1,0 +1,5 @@
+# A pattern of only discards still binds a name through `as`.
+#= {result: [1, 2], inputs: {xs: [1, 2]}}
+def {xs} = import('inputs')
+def [_, _] as all = xs
+all

@@ -385,6 +385,107 @@ def [a] | a = v
                       (identifier))))))))))))
 
 ==================
+def array with rest and whole binding
+==================
+
+def [a, ...r] as all = xs
+
+---
+
+(source_file
+  (definition
+    (kw_def)
+    (pattern
+      (pattern_atom
+        (array_pattern
+          (array_pattern_elements
+            (pattern
+              (pattern_atom
+                (binding_pattern
+                  (identifier))))
+            (rest_pattern
+              (identifier)))
+          (kw_as)
+          (identifier))))
+    (or_expression
+      (and_expression
+        (equality_expression
+          (comparison_expression
+            (sum_expression
+              (product_expression
+                (unary_expression
+                  (postfix_expression
+                    (primary_expression
+                      (identifier))))))))))))
+
+==================
+match array with whole binding in alternatives
+==================
+
+match x { [a] as xs | [a, _] as xs => xs }
+
+---
+
+(source_file
+  (expression_statement
+    (or_expression
+      (and_expression
+        (equality_expression
+          (comparison_expression
+            (sum_expression
+              (product_expression
+                (unary_expression
+                  (postfix_expression
+                    (primary_expression
+                      (match_expression
+                        (kw_match)
+                        (or_expression
+                          (and_expression
+                            (equality_expression
+                              (comparison_expression
+                                (sum_expression
+                                  (product_expression
+                                    (unary_expression
+                                      (postfix_expression
+                                        (primary_expression
+                                          (identifier))))))))))
+                        (match_arm_list
+                          (match_arm
+                            (pattern
+                              (pattern_atom
+                                (array_pattern
+                                  (array_pattern_elements
+                                    (pattern
+                                      (pattern_atom
+                                        (binding_pattern
+                                          (identifier)))))
+                                  (kw_as)
+                                  (identifier)))
+                              (pattern_atom
+                                (array_pattern
+                                  (array_pattern_elements
+                                    (pattern
+                                      (pattern_atom
+                                        (binding_pattern
+                                          (identifier))))
+                                    (pattern
+                                      (pattern_atom
+                                        (binding_pattern
+                                          (identifier)))))
+                                  (kw_as)
+                                  (identifier))))
+                            (or_expression
+                              (and_expression
+                                (equality_expression
+                                  (comparison_expression
+                                    (sum_expression
+                                      (product_expression
+                                        (unary_expression
+                                          (postfix_expression
+                                            (primary_expression
+                                              (identifier))))))))))))))))))))))))
+
+==================
 def nested map with whole binding
 ==================
 

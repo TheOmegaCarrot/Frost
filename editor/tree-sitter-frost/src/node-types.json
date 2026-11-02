@@ -205,6 +205,16 @@
     "type": "array_pattern",
     "named": true,
     "fields": {
+      "as": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "identifier",
+            "named": true
+          }
+        ]
+      },
       "elements": {
         "multiple": false,
         "required": false,
@@ -215,6 +225,16 @@
           }
         ]
       }
+    },
+    "children": {
+      "multiple": false,
+      "required": false,
+      "types": [
+        {
+          "type": "kw_as",
+          "named": true
+        }
+      ]
     }
   },
   {

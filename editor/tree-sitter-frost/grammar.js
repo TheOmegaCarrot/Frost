@@ -410,6 +410,7 @@ module.exports = grammar({
       '[',
       optional(field('elements', $.array_pattern_elements)),
       ']',
+      optional(seq($.kw_as, field('as', $.identifier))),
     ),
 
     array_pattern_elements: $ => choice(

@@ -9,7 +9,7 @@ use std::collections::BTreeMap;
 
 use crate::common::global_slot;
 use crate::common::pattern::{
-    at_least, bind, discard, either, exact, input_key, int, key, map, pin, typed, value,
+    array_as, at_least, bind, discard, either, exact, input_key, int, key, map, pin, typed, value,
 };
 use crate::script::{Emitted, Script, UNOPTIMIZED, raises, run};
 use crate::unshared::unshared;
@@ -210,6 +210,13 @@ fn each_kind_of_pattern_compiles() {
                 at_least([bind(slot(e, "a")), discard()], Some(slot(e, "rest")))
             }),
             ("[...rest]", |e| at_least([], Some(slot(e, "rest")))),
+            ("[a] as all", |e| {
+                array_as(exact([bind(slot(e, "a"))]), slot(e, "all"))
+            }),
+            ("[_, ...rest] as all", |e| {
+                array_as(at_least([discard()], Some(slot(e, "rest"))), slot(e, "all"))
+            }),
+            ("[] as _", |_| exact([])),
             ("{}", |_| map([], None)),
             ("{name: n} as m", |e| {
                 map(
@@ -680,6 +687,10 @@ fn a_binding_nothing_reads_is_not_kept() {
                     None,
                 )
             }),
+            ("[a, ...rest] as all", |_| at_least([discard()], None)),
+            ("[a] as all if: len(all) > 0", |e| {
+                array_as(exact([discard()]), slot(e, "all"))
+            }),
             // The pattern's own read keeps a binding.
             ("[a, (a)]", |e| {
                 let a = slot(e, "a");
@@ -801,6 +812,15 @@ probe([make(1)])
         r"
 defn probe(v) -> match v {
     a if: len(a) > 0 => unshared(a),
+    _ => null
+}
+def make = fn n -> [n]
+probe(make(1))
+",
+        // Likewise a whole Array, once its element is no longer read.
+        r"
+defn probe(v) -> match v {
+    [_] as all => unshared(all),
     _ => null
 }
 def make = fn n -> [n]
@@ -1120,6 +1140,23 @@ match x {
         (
             r"
 match x {
+    [a] as one => [a, one],
+    [a, ...r] as all | {all: [a, ...r] as all} => [a, r, all],
+    _ => 'other'
+}
+",
+            &[
+                ("[1]", "[1, [1]]"),
+                ("[1, 2, 3]", "[1, [2, 3], [1, 2, 3]]"),
+                ("{all: [4, 5]}", "[4, [5], [4, 5]]"),
+                ("{all: []}", "'other'"),
+                ("[]", "'other'"),
+                ("{a: 1}", "'other'"),
+            ],
+        ),
+        (
+            r"
+match x {
     {[1]: a, [true]: b, [x'6b']: c} => [a, b, c],
     _ => 'other'
 }
@@ -1325,6 +1362,20 @@ match x {
 }
 ",
         &[("[{a: 1}, {a: 1}]", "'same'"), ("[{a: 1}, {a: 2}]", "'no'")],
+    );
+    // A whole Array, likewise.
+    assert_outcomes(
+        r"
+match x {
+    [[_, ...r] as all, (all), (r)] => all,
+    _ => 'no'
+}
+",
+        &[
+            ("[[1, 2], [1, 2], [2]]", "[1, 2]"),
+            ("[[1, 2], [1, 3], [2]]", "'no'"),
+            ("[[1, 2], [1, 2], [3]]", "'no'"),
+        ],
     );
 }
 

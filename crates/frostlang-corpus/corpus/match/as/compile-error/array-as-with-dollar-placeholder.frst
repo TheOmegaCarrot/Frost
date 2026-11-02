@@ -1,0 +1,5 @@
+# A `$` placeholder cannot be an `as` name after an Array pattern either.
+#= {rejects: 'expected a name after `as`'}
+match [1] {
+    [a] as $ => a,
+}

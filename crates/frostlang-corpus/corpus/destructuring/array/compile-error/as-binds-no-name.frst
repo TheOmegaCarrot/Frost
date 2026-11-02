@@ -1,0 +1,4 @@
+# `as _` binds nothing, so a `def` of only discards still binds no name.
+#= {rejects: 'binds no name'}
+def [_] as _ = [1]
+1

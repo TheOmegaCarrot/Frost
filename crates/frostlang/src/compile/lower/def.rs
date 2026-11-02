@@ -5,7 +5,7 @@ use crate::compile::{
     lower::{
         FunctionBuilder, Op, Position, StatementFragment, debug_span,
         fold::value_to_op,
-        pattern::{BindMode, Mismatch, PatternBindings},
+        pattern::{BindMode, Mismatch, PatternBindings, PatternContext},
     },
 };
 
@@ -67,9 +67,11 @@ impl FunctionBuilder<'_> {
         let mut bindings = PatternBindings::new(self.locals.allocation_point());
         let pattern_fragment = self.compile_pattern(
             pattern,
-            Mismatch::Raise,
-            BindMode::Def { exported, pending },
-            &mut bindings,
+            &mut PatternContext {
+                mismatch: Mismatch::Raise,
+                mode: BindMode::Def { exported, pending },
+                bindings: &mut bindings,
+            },
         )?;
         let bound = bindings.bound;
 
@@ -138,9 +140,14 @@ fn binds_a_name(pattern: &Pattern) -> bool {
     match pattern {
         Pattern::Binding { name, .. } => named(name),
         Pattern::Value(_) => false,
-        Pattern::Array { elements, rest } => {
+        Pattern::Array {
+            elements,
+            rest,
+            bind_whole,
+        } => {
             elements.iter().any(|element| binds_a_name(&element.node))
                 || rest.as_ref().is_some_and(named)
+                || bind_whole.as_ref().is_some_and(named)
         }
         Pattern::Map {
             entries,

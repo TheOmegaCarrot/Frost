@@ -331,11 +331,18 @@ impl<'a> Walker<'a> {
                 let inner = self.expr(expr);
                 self.ranged("Value".to_string(), p.span, vec![inner])
             }
-            Pattern::Array { elements, rest } => {
+            Pattern::Array {
+                elements,
+                rest,
+                bind_whole,
+            } => {
                 let children = elements.iter().map(|el| self.pattern(el)).collect();
                 let mut label = "Array".to_string();
                 if let Some(rest) = rest {
                     label.push_str(&format!(" ...{}", binding_str(rest)));
+                }
+                if let Some(whole) = bind_whole {
+                    label.push_str(&format!(" as {}", binding_str(whole)));
                 }
                 self.ranged(label, p.span, children)
             }

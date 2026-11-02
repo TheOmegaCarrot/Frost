@@ -1,0 +1,8 @@
+# `as _` after an Array pattern binds nothing, matching exactly as the Array
+# pattern alone does.
+#= {result: [1, 'other'], inputs: {xs: [[1], [1, 2]]}}
+def {xs} = import('inputs')
+map(xs, fn v -> match v {
+    [a] as _ => a,
+    _ => 'other',
+})

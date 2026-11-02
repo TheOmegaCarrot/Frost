@@ -74,10 +74,25 @@ fn constrained_name(p: &Spanned<Pattern>) -> (&str, TypeConstraint) {
     }
 }
 
-/// The elements and rest binding of an Array pattern.
+/// The elements and rest binding of an Array pattern with no `as` binding.
 fn array(p: &Spanned<Pattern>) -> (&[Spanned<Pattern>], Option<&Binding>) {
+    let (elements, rest, bind_whole) = array_as(p);
+    assert_eq!(bind_whole, None, "expected no `as` binding on {p:?}");
+    (elements, rest)
+}
+
+/// The elements, rest binding, and `as` binding of an Array pattern.
+fn array_as(p: &Spanned<Pattern>) -> (&[Spanned<Pattern>], Option<&Binding>, Option<&Binding>) {
     match &p.node {
-        Pattern::Array { elements, rest } => (elements, rest.as_ref().map(|b| &b.node)),
+        Pattern::Array {
+            elements,
+            rest,
+            bind_whole,
+        } => (
+            elements,
+            rest.as_ref().map(|b| &b.node),
+            bind_whole.as_ref().map(|b| &b.node),
+        ),
         other => panic!("expected Array, got {other:?}"),
     }
 }
@@ -109,8 +124,9 @@ fn alternatives(p: &Spanned<Pattern>) -> &[Spanned<Pattern>] {
     }
 }
 
-fn is_named_rest(rest: Option<&Binding>, expected: &str) -> bool {
-    matches!(rest, Some(Binding::Named(n)) if n == expected)
+/// Whether `binding`, such as a rest or `as` binding, is present and binds `expected`.
+fn is_named(binding: Option<&Binding>, expected: &str) -> bool {
+    matches!(binding, Some(Binding::Named(n)) if n == expected)
 }
 
 // -- Simple bindings --
@@ -170,7 +186,7 @@ fn rest_binding() {
     let d = def_pattern("def [a, b, ...rest] = 1");
     let (elements, rest) = array(&d);
     assert_eq!(elements.len(), 2);
-    assert!(is_named_rest(rest, "rest"), "rest was {rest:?}");
+    assert!(is_named(rest, "rest"), "rest was {rest:?}");
 }
 
 #[test]
@@ -186,7 +202,7 @@ fn rest_only() {
     let d = def_pattern("def [...xs] = 1");
     let (elements, rest) = array(&d);
     assert!(elements.is_empty());
-    assert!(is_named_rest(rest, "xs"), "rest was {rest:?}");
+    assert!(is_named(rest, "xs"), "rest was {rest:?}");
 }
 
 // -- Nested arrays --
@@ -229,7 +245,7 @@ fn nested_with_rest() {
     let (inner, inner_rest) = array(&elements[1]);
     assert_eq!(inner.len(), 1);
     assert_eq!(named(&inner[0]), "first");
-    assert!(is_named_rest(inner_rest, "tail"), "rest was {inner_rest:?}");
+    assert!(is_named(inner_rest, "tail"), "rest was {inner_rest:?}");
     assert!(rest.is_none());
 }
 
@@ -444,7 +460,7 @@ fn map_as_binding() {
     let d = def_pattern("def {foo, bar} as whole = 1");
     let (entries, bind_whole) = map(&d);
     assert_eq!(entries.len(), 2);
-    assert!(is_named_rest(bind_whole, "whole"), "as was {bind_whole:?}");
+    assert!(is_named(bind_whole, "whole"), "as was {bind_whole:?}");
 }
 
 #[test]
@@ -516,8 +532,110 @@ fn map_as_nested_in_array() {
     let (entries, bind_whole) = map(&elements[0]);
     assert_eq!(entries.len(), 1);
     assert_eq!(str_key(&entries[0]), "name");
-    assert!(is_named_rest(bind_whole, "person"), "as was {bind_whole:?}");
-    assert!(is_named_rest(rest, "rest"), "rest was {rest:?}");
+    assert!(is_named(bind_whole, "person"), "as was {bind_whole:?}");
+    assert!(is_named(rest, "rest"), "rest was {rest:?}");
+}
+
+// -- `as` on an Array pattern --
+
+#[test]
+fn array_as_binding() {
+    let d = def_pattern("def [a, b] as pair = 1");
+    let (elements, rest, bind_whole) = array_as(&d);
+    assert_eq!(elements.len(), 2);
+    assert_eq!(rest, None);
+    assert!(is_named(bind_whole, "pair"), "as was {bind_whole:?}");
+}
+
+#[test]
+fn array_as_discard() {
+    let d = def_pattern("def [a] as _ = 1");
+    let (_, _, bind_whole) = array_as(&d);
+    assert_eq!(bind_whole, Some(&Binding::Discarded));
+}
+
+#[test]
+fn array_as_after_rest() {
+    let d = def_pattern("def [first, ...others] as all = 1");
+    let (elements, rest, bind_whole) = array_as(&d);
+    assert_eq!(elements.len(), 1);
+    assert!(is_named(rest, "others"), "rest was {rest:?}");
+    assert!(is_named(bind_whole, "all"), "as was {bind_whole:?}");
+}
+
+#[test]
+fn empty_array_with_as() {
+    let d = def_pattern("def [] as empty = 1");
+    let (elements, rest, bind_whole) = array_as(&d);
+    assert!(elements.is_empty());
+    assert_eq!(rest, None);
+    assert!(is_named(bind_whole, "empty"), "as was {bind_whole:?}");
+}
+
+#[test]
+fn array_as_nested_in_array() {
+    let d = def_pattern("def [[a] as inner, b] as outer = 1");
+    let (elements, _, outer) = array_as(&d);
+    assert!(is_named(outer, "outer"), "outer as was {outer:?}");
+    let (inner_elements, _, inner) = array_as(&elements[0]);
+    assert_eq!(inner_elements.len(), 1);
+    assert!(is_named(inner, "inner"), "inner as was {inner:?}");
+    assert!(matches!(&elements[1].node, Pattern::Binding { .. }));
+}
+
+#[test]
+fn array_as_nested_in_map() {
+    let d = def_pattern("def {pair: [a, b] as p} as m = 1");
+    let (entries, map_whole) = map(&d);
+    assert!(is_named(map_whole, "m"), "Map as was {map_whole:?}");
+    let (_, _, array_whole) = array_as(&entries[0].node.pattern);
+    assert!(is_named(array_whole, "p"), "Array as was {array_whole:?}");
+}
+
+#[test]
+fn array_as_binding_after_multiline_brackets() {
+    let d = def_pattern(
+        r"def [x
+] as whole = 1",
+    );
+    let (_, _, bind_whole) = array_as(&d);
+    assert!(is_named(bind_whole, "whole"), "as was {bind_whole:?}");
+}
+
+/// `as` binds tighter than `|`: each branch takes its own.
+#[test]
+fn array_as_in_each_alternative_branch() {
+    let d = def_pattern("def [a] as xs | [a, _] as xs = 1");
+    let branches = alternatives(&d);
+    assert_eq!(branches.len(), 2);
+    for branch in branches {
+        let (_, _, bind_whole) = array_as(branch);
+        assert!(is_named(bind_whole, "xs"), "as was {bind_whole:?}");
+    }
+}
+
+#[test]
+fn error_array_as_without_name() {
+    assert_eq!(
+        parse_err_message("def [a] as = 1"),
+        "expected a name after `as`, but found `=`"
+    );
+}
+
+#[test]
+fn error_array_as_with_pattern() {
+    assert_eq!(
+        parse_err_message("def [a] as [b] = 1"),
+        "expected a name after `as`, but found `[`"
+    );
+}
+
+#[test]
+fn error_array_as_twice() {
+    assert_eq!(
+        parse_err_message("def [a] as b as c = 1"),
+        "expected `=`, but found `as`"
+    );
 }
 
 // -- Statement separation --
@@ -591,7 +709,7 @@ fn empty_map_with_as() {
     let d = def_pattern("def {} as m = 1");
     let (entries, bind_whole) = map(&d);
     assert!(entries.is_empty());
-    assert!(is_named_rest(bind_whole, "m"), "as was {bind_whole:?}");
+    assert!(is_named(bind_whole, "m"), "as was {bind_whole:?}");
 }
 
 // -- Additional error cases --
@@ -713,7 +831,7 @@ fn array_rest_on_its_own_line() {
     );
     let (elements, rest) = array(&d);
     assert_eq!(elements.len(), 1);
-    assert!(is_named_rest(rest, "rest"), "rest was {rest:?}");
+    assert!(is_named(rest, "rest"), "rest was {rest:?}");
 }
 
 #[test]
@@ -810,7 +928,7 @@ fn map_as_binding_after_multiline_braces() {
 } as whole = 1",
     );
     let (_, bind_whole) = map(&d);
-    assert!(is_named_rest(bind_whole, "whole"), "as was {bind_whole:?}");
+    assert!(is_named(bind_whole, "whole"), "as was {bind_whole:?}");
 }
 
 #[test]
@@ -1269,10 +1387,7 @@ fn as_on_nested_map() {
     let (inner, inner_whole) = map(&entries[0].node.pattern);
     assert_eq!(inner.len(), 1);
     assert_eq!(str_key(&inner[0]), "a");
-    assert!(
-        is_named_rest(inner_whole, "whole"),
-        "as was {inner_whole:?}"
-    );
+    assert!(is_named(inner_whole, "whole"), "as was {inner_whole:?}");
 }
 
 #[test]
@@ -1280,7 +1395,7 @@ fn as_on_top_level_map_with_constrained_entry() {
     let d = def_pattern("def {host is String} as config = c");
     let (entries, whole) = map(&d);
     assert_eq!(entries.len(), 1);
-    assert!(is_named_rest(whole, "config"), "as was {whole:?}");
+    assert!(is_named(whole, "config"), "as was {whole:?}");
 }
 
 // -- A `def` that binds no names still parses --
@@ -1412,6 +1527,11 @@ fn placeholders_are_rejected_in_every_def_pattern_position() {
             "def {a} as $ = m",
             "expected a name after `as`, but found `$`",
         ),
+        // The whole-Array binding.
+        (
+            "def [a] as $ = m",
+            "expected a name after `as`, but found `$`",
+        ),
         // The rest placeholder as an element.
         ("def [a, $$] = x", "expected a pattern, but found `$$`"),
         // A Map shorthand key.
@@ -1472,6 +1592,14 @@ fn a_map_pattern_with_a_whole_binding_ends_at_the_binding() {
     let pattern = def_pattern(src);
     assert_eq!(span_of(&pattern), (4, 12));
     assert_eq!(&src[4..12], "{a} as m");
+}
+
+#[test]
+fn an_array_pattern_with_a_whole_binding_ends_at_the_binding() {
+    let src = "def [a] as m = q";
+    let pattern = def_pattern(src);
+    assert_eq!(span_of(&pattern), (4, 12));
+    assert_eq!(&src[4..12], "[a] as m");
 }
 
 #[test]

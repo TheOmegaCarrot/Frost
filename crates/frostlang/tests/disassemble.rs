@@ -14,7 +14,7 @@ use frostlang::{Arity, FrostFloat, FrostType, MapKey, Value};
 
 use crate::common::global_slot;
 use crate::common::pattern::{
-    at_least, bind, discard, either, exact, input_key, int, key, map, pin, typed, value,
+    array_as, at_least, bind, discard, either, exact, input_key, int, key, map, pin, typed, value,
 };
 
 use Bytecode::*;
@@ -182,7 +182,7 @@ fn keys_are_shown_as_source_would_access_them() {
 #[test]
 fn patterns_are_listed_as_source_would_write_them_and_shown_beside_their_use_cut_short() {
     let print = global_slot("print");
-    let mut main = function("<main>", (0..8).map(MatchPattern).collect());
+    let mut main = function("<main>", (0..9).map(MatchPattern).collect());
     main.name_table = ["kind", "lhs", "rhs", "rest", "whole", "y"]
         .map(|name| slot(name, false))
         .to_vec();
@@ -231,6 +231,7 @@ fn patterns_are_listed_as_source_would_write_them_and_shown_beside_their_use_cut
         map([], Some(4)),
         exact([]),
         map([(key(0), either([int(1), int(2)]))], None),
+        array_as(at_least([array_as(exact([]), 5)], Some(3)), 4),
     ];
     // An Alternative that is a branch of another lists merged into it.
     let expected = r#"function <main>
@@ -257,6 +258,7 @@ fn patterns_are_listed_as_source_would_write_them_and_shown_beside_their_use_cut
        5  {} as whole
        6  []
        7  {kind: 1 | 2}
+       8  [[] as y, ...rest] as whole
   code
        0  MatchPattern  0  ; {kind: "add", lhs: lhs, ["two words"]...
        1  MatchPattern  1  ; [null, true, 1, 1.5, _, _ is String, ...
@@ -266,6 +268,7 @@ fn patterns_are_listed_as_source_would_write_them_and_shown_beside_their_use_cut
        5  MatchPattern  5  ; {} as whole
        6  MatchPattern  6  ; []
        7  MatchPattern  7  ; {kind: 1 | 2}
+       8  MatchPattern  8  ; [[] as y, ...rest] as whole
 "#;
     assert_eq!(listing(&main), expected);
 }
@@ -283,7 +286,7 @@ fn a_pattern_referring_to_nothing_lists_it_as_unknown() {
             ),
             (
                 input_key(PatternInput::Local(9)),
-                at_least([pin(PatternInput::EarlierBinding(9))], Some(9)),
+                array_as(at_least([pin(PatternInput::EarlierBinding(9))], Some(9)), 9),
             ),
         ],
         Some(9),
@@ -291,9 +294,9 @@ fn a_pattern_referring_to_nothing_lists_it_as_unknown() {
     let expected = r"function <main>
   arity 0, 0 captures
   patterns
-       0  {?: ?, [?]: ?, [?]: [(?), ...?]} as ?
+       0  {?: ?, [?]: ?, [?]: [(?), ...?] as ?} as ?
   code
-       0  MatchPattern  0  ; {?: ?, [?]: ?, [?]: [(?), ...?]} as ?
+       0  MatchPattern  0  ; {?: ?, [?]: ?, [?]: [(?), ...?] as ?}...
 ";
     assert_eq!(listing(&main), expected);
 }

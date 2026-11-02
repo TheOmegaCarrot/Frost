@@ -1,0 +1,4 @@
+# The `as` name of an Array pattern may not reuse the rest's name.
+#= {rejects: ['`r`', 'already bound']}
+def [...r] as r = [1]
+r

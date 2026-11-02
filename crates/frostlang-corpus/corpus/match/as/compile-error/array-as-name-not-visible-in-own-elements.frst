@@ -1,0 +1,7 @@
+# An `as` name is bound after its Array pattern's elements, so a pin among
+# them cannot compare against it.
+#= {rejects: '`m` is not defined'}
+match [1] {
+    [(m)] as m => m,
+    _ => 0,
+}

@@ -1,0 +1,4 @@
+# `as` after an Array pattern binds the whole Array.
+#= {result: [1, 2], inputs: {x: [1, 2]}, lints: ['`a` is never used', '`b` is never used']}
+def {x} = import('inputs')
+match x { [a, b] as m => m }

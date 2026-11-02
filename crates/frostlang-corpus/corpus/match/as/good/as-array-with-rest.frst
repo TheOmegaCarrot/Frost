@@ -1,0 +1,7 @@
+# An Array pattern with a rest may take `as`: the whole Array includes the
+# elements the rest took.
+#= {result: [[1, 2, 3], 1, [2, 3]], inputs: {v: [1, 2, 3]}}
+def {v} = import('inputs')
+match v {
+    [first, ...rest] as all => [all, first, rest],
+}

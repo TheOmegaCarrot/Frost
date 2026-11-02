@@ -1,0 +1,4 @@
+# The `as` name may not reuse a name bound by a nested `as`.
+#= {rejects: ['`m`', 'already bound']}
+def [[a] as m] as m = [[1]]
+m

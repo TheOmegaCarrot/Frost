@@ -1,0 +1,6 @@
+# `as` after an Array pattern binds the whole Array, here on a value the
+# optimizer can see ahead of time.
+#= {result: [1], lints: ['`a` is never used']}
+match [1] {
+    [a] as all => all,
+}

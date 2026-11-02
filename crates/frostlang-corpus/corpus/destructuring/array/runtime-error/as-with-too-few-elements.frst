@@ -1,0 +1,5 @@
+# `as` does not relax the Array pattern: a length mismatch still raises.
+#= {raises: 'exactly 2 elements', inputs: {xs: [1]}}
+def {xs} = import('inputs')
+def [_, _] as pair = xs
+pair

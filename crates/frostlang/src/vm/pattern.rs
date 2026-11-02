@@ -18,7 +18,8 @@ use crate::{FrostError, FrostFloat, MapKey, TypeSet, Value};
 /// value against, and the locals it binds to the value's parts.
 ///
 /// Parts are tested in order, depth first, and a mismatch ends the test. A
-/// Map's `whole` and an Array's `rest` are bound after the parts within them.
+/// `whole` and an Array's `rest` are bound after the parts within them, and
+/// an Array's `whole` after its `rest`.
 ///
 /// A pattern binds only locals, never captures, and binds no local twice in
 /// one match; the branches of an [`Alternative`](Self::Alternative) bind the
@@ -36,12 +37,14 @@ pub enum CompiledPattern<S: PatternStage = AssembledStage> {
     /// Matches a value equal to the comparand.
     Value(PatternComparand<S>),
     /// Matches an Array whose elements, in order, match `elements`, and whose
-    /// length is as `length` says.
+    /// length is as `length` says, and binds the Array to `whole`, if any.
     Array {
         /// The patterns of the leading elements.
         elements: Box<[CompiledPattern<S>]>,
         /// The Array's length, relative to `elements`.
         length: ArrayPatternLength<S>,
+        /// The local bound to the Array.
+        whole: Option<S::Local>,
     },
     /// Matches a Map holding every key of `entries`, the value of each
     /// matching its pattern, and binds the Map to `whole`, if any.
@@ -216,7 +219,11 @@ impl<'a, 'v> PatternTest<'a, 'v> {
                 Ok(true)
             }
             CompiledPattern::Value(comparand) => Ok(*value == *self.comparand(comparand)),
-            CompiledPattern::Array { elements, length } => {
+            CompiledPattern::Array {
+                elements,
+                length,
+                whole,
+            } => {
                 let Some(array) = value.as_array() else {
                     return Ok(false);
                 };
@@ -236,6 +243,7 @@ impl<'a, 'v> PatternTest<'a, 'v> {
                 if let ArrayPatternLength::AtLeast { rest } = length {
                     self.bind(*rest, BoundValue::Rest(&array[elements.len()..]));
                 }
+                self.bind(*whole, BoundValue::Value(value));
                 Ok(true)
             }
             CompiledPattern::Map { entries, whole } => {

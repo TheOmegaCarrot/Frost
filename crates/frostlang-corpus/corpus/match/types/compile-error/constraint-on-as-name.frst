@@ -1,4 +1,4 @@
-# An `as` name takes no type constraint: it always binds a Map.
+# An `as` name takes no type constraint: its pattern already fixes the type.
 #= {rejects: ['expected `=>`', 'found `is`']}
 match {a: 1} {
     {a} as m is Map => m,

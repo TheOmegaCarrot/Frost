@@ -1,0 +1,7 @@
+# The empty Array pattern may take `as`, binding the empty Array.
+#= {result: [[], 'other'], inputs: {xs: [[], [1]]}}
+def {xs} = import('inputs')
+map(xs, fn v -> match v {
+    [] as empty => empty,
+    _ => 'other',
+})

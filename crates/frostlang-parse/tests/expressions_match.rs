@@ -27,9 +27,27 @@ fn assert_value_pattern(pat: &Spanned<Pattern>) -> &Spanned<Expr> {
     }
 }
 
+/// The elements and rest binding of an Array pattern with no `as` binding.
 fn assert_array_pattern(pat: &Spanned<Pattern>) -> (&[Spanned<Pattern>], Option<&Binding>) {
+    let (elements, rest, bind_whole) = assert_array_pattern_as(pat);
+    assert_eq!(bind_whole, None, "expected no `as` binding on {pat:?}");
+    (elements, rest)
+}
+
+/// The elements, rest binding, and `as` binding of an Array pattern.
+fn assert_array_pattern_as(
+    pat: &Spanned<Pattern>,
+) -> (&[Spanned<Pattern>], Option<&Binding>, Option<&Binding>) {
     match &pat.node {
-        Pattern::Array { elements, rest } => (elements, rest.as_ref().map(|b| &b.node)),
+        Pattern::Array {
+            elements,
+            rest,
+            bind_whole,
+        } => (
+            elements,
+            rest.as_ref().map(|b| &b.node),
+            bind_whole.as_ref().map(|b| &b.node),
+        ),
         other => panic!("expected Array pattern, got {other:?}"),
     }
 }
@@ -609,6 +627,44 @@ mod array_patterns {
         let (_, arms) = assert_match(&expr);
         let (elements, _) = assert_array_pattern(&arms[0].node.pattern);
         assert_eq!(elements.len(), 2);
+    }
+
+    #[test]
+    fn as_binding() {
+        let expr = parse_expr("match x { [a, ...r] as all => all }");
+        let (_, arms) = assert_match(&expr);
+        let (elements, rest, bind_whole) = assert_array_pattern_as(&arms[0].node.pattern);
+        assert_eq!(elements.len(), 1);
+        assert_eq!(*rest.expect("rest binding"), Binding::Named("r".into()));
+        assert_eq!(
+            *bind_whole.expect("as binding"),
+            Binding::Named("all".into())
+        );
+    }
+
+    #[test]
+    fn as_discard() {
+        let expr = parse_expr("match x { [a] as _ => a }");
+        let (_, arms) = assert_match(&expr);
+        let (_, _, bind_whole) = assert_array_pattern_as(&arms[0].node.pattern);
+        assert_eq!(*bind_whole.expect("as binding"), Binding::Discarded);
+    }
+
+    /// `as` binds tighter than `|`, and a guard follows the whole pattern.
+    #[test]
+    fn as_in_alternatives_before_a_guard() {
+        let expr = parse_expr("match x { [a] as xs | [a, _] as xs if: a => xs }");
+        let (_, arms) = assert_match(&expr);
+        assert!(arms[0].node.guard.is_some(), "the arm keeps its guard");
+        let branches = assert_alternative(&arms[0].node.pattern);
+        assert_eq!(branches.len(), 2);
+        for branch in branches {
+            let (_, _, bind_whole) = assert_array_pattern_as(branch);
+            assert_eq!(
+                *bind_whole.expect("as binding"),
+                Binding::Named("xs".into())
+            );
+        }
     }
 }
 

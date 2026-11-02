@@ -1,0 +1,5 @@
+# `as` after a `def` Array pattern binds the whole Array, here on a value the
+# optimizer can see ahead of time.
+#= {result: [1, 2, [1, 2]]}
+def [a, b] as pair = [1, 2]
+[a, b, pair]

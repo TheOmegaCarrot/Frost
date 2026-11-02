@@ -1,0 +1,7 @@
+# An Array pattern of only a discarded rest matches any Array, and `as` binds
+# the whole of it.
+#= {result: [[1, 2, 3], []], inputs: {xs: [[1, 2, 3], []]}}
+def {xs} = import('inputs')
+map(xs, fn v -> match v {
+    [..._] as all => all,
+})

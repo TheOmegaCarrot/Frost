@@ -1386,12 +1386,13 @@ fn a_match_without_its_value() {
 }
 
 #[test]
-fn as_outside_a_map_pattern() {
-    let as_help = "`as` binds a whole Map pattern, like `{name} as person`";
+fn as_outside_an_array_or_map_pattern() {
+    let as_help = "`as` binds a whole Array or Map pattern, like `{name} as person`";
     assert_help(&[
-        ("match x { [a, b] as m => m }", as_help),
         ("match x { n as m => m }", as_help),
-        ("def [a, b] as m = xs", as_help),
+        ("match x { 1 as m => m }", as_help),
+        ("def n as m = xs", as_help),
+        ("def (n) as m = xs", as_help),
         (
             "match m { {a as b} => b }",
             "rename a Map entry with `key: name`, like `{a: b}`",

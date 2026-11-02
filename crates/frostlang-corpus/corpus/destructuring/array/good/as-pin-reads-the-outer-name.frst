@@ -1,0 +1,9 @@
+# The `as` name is bound after the elements, so a pin among them reads the
+# outer binding of the same name.
+#= {result: [[1], 1], inputs: {x: [1], n: 1}}
+def {x, n} = import('inputs')
+def all = n
+do {
+    def [(all)] as all = x
+    [all, n]
+}

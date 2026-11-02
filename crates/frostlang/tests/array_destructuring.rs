@@ -876,6 +876,153 @@ fn destructuring_leaves_the_value_intact() {
     assert_eq!(tail, run("[[1, 2], 1, [2]]"), "the capture is intact");
 }
 
+// --- Binding the whole Array ---
+
+#[test]
+fn as_binds_the_whole_array() {
+    assert_values(&[
+        (
+            r"
+            def [a, b] as pair = [1, 2]
+            [a, b, pair]
+            ",
+            "[1, 2, [1, 2]]",
+        ),
+        (
+            r"
+            def [first, ...others] as all = [1, 2, 3]
+            [first, others, all]
+            ",
+            "[1, [2, 3], [1, 2, 3]]",
+        ),
+        (
+            r"
+            def [..._] as all = [1, 2]
+            all
+            ",
+            "[1, 2]",
+        ),
+        (
+            r"
+            def [] as empty = []
+            empty
+            ",
+            "[]",
+        ),
+        // `as _` binds nothing, but the other parts still bind.
+        (
+            r"
+            def [a] as _ = [1]
+            a
+            ",
+            "1",
+        ),
+    ]);
+}
+
+#[test]
+fn as_binds_at_every_level() {
+    assert_values(&[
+        (
+            r"
+            def [[a] as inner, ...rest] as outer = [[1], 2]
+            [a, inner, rest, outer]
+            ",
+            "[1, [1], [2], [[1], 2]]",
+        ),
+        (
+            r"
+            def {pair: [a, b] as p} as m = {pair: [1, 2]}
+            [a, b, p, m]
+            ",
+            "[1, 2, [1, 2], {pair: [1, 2]}]",
+        ),
+        (
+            r"
+            def [{k} as m] as all = [{k: 1}]
+            [k, m, all]
+            ",
+            "[1, {k: 1}, [{k: 1}]]",
+        ),
+    ]);
+}
+
+#[test]
+fn a_whole_array_binding_needs_a_matching_array() {
+    assert_raises(&[
+        (
+            "def [a, b] as pair = [1]",
+            "expected an Array of exactly 2 elements",
+        ),
+        (
+            "def [a, ...r] as all = []",
+            "expected an Array of at least 1 element",
+        ),
+        (
+            "def [] as empty = {}",
+            "expected an Array of exactly 0 elements",
+        ),
+        ("def [[a] as inner] as all = [2]", "expected an Array"),
+    ]);
+}
+
+#[test]
+fn a_whole_array_name_bound_elsewhere_in_the_pattern_is_a_compile_error() {
+    assert_compile_errors(&[
+        ("def [a] as a = [1]", "`a` is already bound"),
+        ("def [...r] as r = [1]", "`r` is already bound"),
+        ("def [[a] as m] as m = [[1]]", "`m` is already bound"),
+        ("def [{a} as m] as m = [{a: 1}]", "`m` is already bound"),
+    ]);
+}
+
+#[test]
+fn a_whole_array_name_is_bound_after_the_parts() {
+    // A pin in the pattern cannot read the name, which binds last.
+    assert_compile_errors(&[("def [(xs)] as xs = [1]", "`xs` is not defined")]);
+    // Where an outer `xs` is in view, the pin reads that one.
+    assert_values(&[(
+        r"
+        def xs = 1
+        def [(xs)] as ys = [1]
+        ys
+        ",
+        "[1]",
+    )]);
+}
+
+#[test]
+fn a_whole_array_binding_counts_as_binding_a_name() {
+    assert_values(&[(
+        r"
+        def [_] as all = [1]
+        all
+        ",
+        "[1]",
+    )]);
+    assert_compile_errors(&[("def [_] as _ = [1]", "this `def` binds no name")]);
+}
+
+#[test]
+fn an_exported_pattern_exports_its_whole_array() {
+    let finished = Script::new(
+        r"
+        export def [a, ...r] as all = [1, 2]
+        def [b] as other = [3]
+        0
+        ",
+    )
+    .finish();
+    assert_eq!(
+        finished.exports,
+        [("a", run("1")), ("all", run("[1, 2]")), ("r", run("[2]"))]
+            .into_iter()
+            .map(|(name, value)| (name.to_string(), value))
+            .collect(),
+        "{finished:?}"
+    );
+}
+
 // --- Scope ---
 
 #[test]

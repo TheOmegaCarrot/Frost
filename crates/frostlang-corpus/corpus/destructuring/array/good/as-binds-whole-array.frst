@@ -1,0 +1,5 @@
+# `as` after a `def` Array pattern binds the whole Array too.
+#= {result: [[1, 2, 3], 1, [2, 3]], inputs: {xs: [1, 2, 3]}}
+def {xs} = import('inputs')
+def [a, ...rest] as all = xs
+[all, a, rest]

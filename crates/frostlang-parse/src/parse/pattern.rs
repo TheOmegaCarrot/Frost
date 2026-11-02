@@ -243,35 +243,45 @@ impl<'src> ParseCtx<'src> {
             }
         })?;
 
-        Ok(Spanned::new(Pattern::Array { elements, rest }, span))
+        let (bind_whole, span) = self.parse_bind_whole(span)?;
+        Ok(Spanned::new(
+            Pattern::Array {
+                elements,
+                rest,
+                bind_whole,
+            },
+            span,
+        ))
     }
 
     #[inline(never)] // See `parse_single_pattern`.
     fn parse_map_pattern(&mut self) -> ParseResult<Spanned<Pattern>> {
         let (entries, span) =
             self.parse_comma_separated(Bracket::MapPattern, Self::parse_map_pattern_entry)?;
-        let start = span.start;
-        let mut end = span.end;
-
-        self.maybe_skip_nl();
-        let bind_whole = if matches!(self.peek().map(|t| &t.token), Some(Token::KwAs)) {
-            self.advance(1).maybe_skip_nl();
-            let binding = self.parse_binding("a name after `as`")?;
-            if let Some(t) = self.get(self.here() - 1) {
-                end = t.span.end;
-            }
-            Some(binding)
-        } else {
-            None
-        };
-
+        let (bind_whole, span) = self.parse_bind_whole(span)?;
         Ok(Spanned::new(
             Pattern::Map {
                 entries,
                 bind_whole,
             },
-            (start..end).into(),
+            span,
         ))
+    }
+
+    /// The `as name` that may follow an Array or Map pattern spanning `span`,
+    /// and the span of the pattern with it.
+    fn parse_bind_whole(
+        &mut self,
+        span: SourceSpan,
+    ) -> ParseResult<(Option<Spanned<Binding>>, SourceSpan)> {
+        self.maybe_skip_nl();
+        if !matches!(self.peek().map(|t| &t.token), Some(Token::KwAs)) {
+            return Ok((None, span));
+        }
+        self.advance(1).maybe_skip_nl();
+        let binding = self.parse_binding("a name after `as`")?;
+        let span = (span.start..binding.span.end).into();
+        Ok((Some(binding), span))
     }
 
     fn parse_map_pattern_entry(&mut self) -> ParseResult<Spanned<MapPatternEntry>> {

@@ -358,12 +358,14 @@ pub enum Pattern {
     },
     /// `(expr)`, a literal, or a format string: compare by value.
     Value(Spanned<Expr>),
-    /// `[p1, p2, ...rest]`
+    /// `[p1, p2, ...rest] as name?`
     Array {
         /// The element patterns, before any rest.
         elements: Vec<Spanned<Pattern>>,
         /// The `...rest` binding; `None` when omitted.
         rest: Option<Spanned<Binding>>,
+        /// The `as` binding for the whole Array; `None` when omitted.
+        bind_whole: Option<Spanned<Binding>>,
     },
     /// `{key: pattern, ...} as name?`
     Map {

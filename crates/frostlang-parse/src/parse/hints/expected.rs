@@ -12,7 +12,7 @@ use crate::parse::hints::{
 
 const ARM_HELP: &str = "a `match` arm is written `pattern => result`";
 
-const AS_HELP: &str = "`as` binds a whole Map pattern, like `{name} as person`";
+const AS_HELP: &str = "`as` binds a whole Array or Map pattern, like `{name} as person`";
 
 impl Site<'_, '_> {
     /// Help for the error, given the one token that was expected there.

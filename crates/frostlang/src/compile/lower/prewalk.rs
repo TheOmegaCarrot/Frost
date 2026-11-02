@@ -243,12 +243,19 @@ impl Scanner {
             Pattern::Binding { name, .. } => self.define_binding(&name.node),
             // A value pattern compares against an expression, e.g. `(existing)`.
             Pattern::Value(expr) => self.expr(expr),
-            Pattern::Array { elements, rest } => {
+            Pattern::Array {
+                elements,
+                rest,
+                bind_whole,
+            } => {
                 for element in elements {
                     self.pattern(element);
                 }
                 if let Some(rest) = rest {
                     self.define_binding(&rest.node);
+                }
+                if let Some(whole) = bind_whole {
+                    self.define_binding(&whole.node);
                 }
             }
             Pattern::Map {

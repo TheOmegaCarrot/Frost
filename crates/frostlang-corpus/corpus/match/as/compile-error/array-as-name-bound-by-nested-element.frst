@@ -1,0 +1,5 @@
+# An Array pattern's `as` name cannot reuse a name bound inside it.
+#= {rejects: '`x` is already bound'}
+match [[1]] {
+    [[x]] as x => x,
+}

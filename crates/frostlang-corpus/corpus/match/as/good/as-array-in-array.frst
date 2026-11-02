@@ -1,0 +1,6 @@
+# Nested Array patterns may each bind their own whole Array with `as`.
+#= {result: [[[1, 2], 3], [1, 2], 1], inputs: {v: [[1, 2], 3]}}
+def {v} = import('inputs')
+match v {
+    [[x, _] as inner, _] as outer => [outer, inner, x],
+}

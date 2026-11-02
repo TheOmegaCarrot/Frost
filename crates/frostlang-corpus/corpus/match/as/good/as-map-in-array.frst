@@ -1,0 +1,6 @@
+# A Map pattern inside an Array pattern may take `as`, and so may the Array.
+#= {result: [[{a: 1}], {a: 1}, 1], inputs: {v: [{a: 1}]}}
+def {v} = import('inputs')
+match v {
+    [{a} as m] as all => [all, m, a],
+}
