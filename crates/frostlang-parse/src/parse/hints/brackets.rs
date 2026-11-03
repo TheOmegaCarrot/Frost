@@ -9,7 +9,7 @@ use crate::parse::hints::site::{
 };
 use crate::parse::hints::{
     BLOCK_HELP, CATCH_ALL_HELP, DEF_GUARD_HELP, LAMBDA_HELP, MAP_ENTRY_HELP, MAP_REST_HELP,
-    REST_HELP, SPREAD_HELP, Site, destructure_help,
+    NULLARY_LAMBDA_HELP, REST_HELP, SPREAD_HELP, Site, destructure_help,
 };
 
 const NESTED_GUARD_HELP: &str =
@@ -269,7 +269,7 @@ impl<'src> Site<'_, 'src> {
         let is_empty_parameters = open.kind == Bracket::Group
             && open.pos + 1 == self.found
             && self.holds_parameters(open);
-        is_empty_parameters.then(|| LAMBDA_HELP.to_owned())
+        is_empty_parameters.then(|| NULLARY_LAMBDA_HELP.to_owned())
     }
 
     /// Whether the parentheses opened at `open`, the innermost bracket, hold a lambda's

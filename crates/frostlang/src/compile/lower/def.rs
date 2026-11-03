@@ -60,7 +60,6 @@ impl FunctionBuilder<'_> {
                 .error("this `def` binds no name".to_owned())
                 .code("binds nothing".into())
                 .label_primary(pattern.span, "no name bound here".into())
-                .help("to check a value without binding it, use `assert` or `match`".into())
                 .into());
         }
         let pending = known.is_some() && !plain && (fold || propagate);

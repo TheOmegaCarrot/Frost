@@ -118,7 +118,7 @@ impl<'src> ParseCtx<'src> {
             return Err(Diagnostic::at(
                 "comparison operators cannot chain or mix",
                 next.span.clone().into(),
-                "wrap one comparison in parentheses",
+                "join comparisons with `and`, like `a < b and b < c`",
             ));
         }
         Ok(node)

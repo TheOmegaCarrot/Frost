@@ -232,7 +232,8 @@ impl<'src> ParseCtx<'src> {
             )
             .with_label(outer, "in this abbreviated lambda")
             .with_help(Some(
-                "to call the argument, write `$1(...)`; to nest a function, write it with `fn`"
+                "to call the argument, write `$1(...)`; to nest a function, write the outer \
+                 one as a `fn` lambda"
                     .to_owned(),
             )));
         }

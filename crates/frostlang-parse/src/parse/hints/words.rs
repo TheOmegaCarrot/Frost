@@ -75,13 +75,11 @@ impl<'src> Site<'_, 'src> {
     }
 
     /// Help for a statement started by another language's loop, `switch`, or `unless`,
-    /// with or without a parenthesized header.
+    /// with or without a parenthesized header. A loop gets no advice: what replaces it,
+    /// whether a collection function or recursion, depends on what it does.
     pub(super) fn header_word_help(&self) -> Option<String> {
         if let Some(word) = self.header_word(LOOP_WORDS) {
-            return Some(format!(
-                "Frost has no `{word}` loop; use `map`, `filter`, `reduce`, or `each` \
-                 with a function, like `each(xs, fn x -> ...)`"
-            ));
+            return Some(format!("Frost has no `{word}` loop"));
         }
         let help = match self.header_word(&["switch", "unless"])? {
             "switch" => "Frost has no `switch`; use `match x { ... }`",
@@ -113,7 +111,8 @@ impl<'src> Site<'_, 'src> {
             "import" => return self.import_help(),
             "try" => {
                 return Some(
-                    "Frost has no `try`; to catch an error, call a function with `try_call(f)`"
+                    "Frost has no `try`; to catch an error, call a function with `try_call`, \
+                     like `try_call(fn -> ...)`"
                         .to_owned(),
                 );
             }
@@ -202,24 +201,31 @@ impl<'src> Site<'_, 'src> {
             Token::SingleQuoteStringLiteral(path) | Token::DoubleQuoteStringLiteral(path) => path,
             _ => return None,
         };
+        // A file path, as in `import "./utils.frst"`, has no certain module name to
+        // suggest in its place.
+        let is_dotted_name = path.split('.').all(|part| {
+            part.starts_with(|c: char| c.is_ascii_alphabetic() || c == '_')
+                && part.chars().all(|c| c.is_ascii_alphanumeric() || c == '_')
+        });
+        if !is_dotted_name {
+            return Some(
+                "load a module by calling `import` with its dotted name, like \
+                 `def math = import('std.math')`"
+                    .to_owned(),
+            );
+        }
         let name = match (self.ctx.get(last + 1), self.ctx.get(last + 2)) {
             // `import numpy as np`
             (Some(as_word), Some(name)) if as_word.token == Token::KwAs => match name.token {
                 Token::Identifier(name) => Some(name),
                 _ => None,
             },
-            _ => path.rsplit(['.', '/']).next().filter(|name| {
-                name.starts_with(|c: char| c.is_ascii_alphabetic() || c == '_')
-                    && name.chars().all(|c| c.is_ascii_alphanumeric() || c == '_')
-            }),
+            _ => path.rsplit('.').next(),
         }
         .unwrap_or("module");
-        let quote = if path.contains('\'') { '"' } else { '\'' };
-        let help = format!(
-            "load a module by calling `import`: `def {name} = import({quote}{path}{quote})`"
-        );
+        let help = format!("load a module by calling `import`: `def {name} = import('{path}')`");
         // `import math`: the host's module, or Frost's own, which is under `std.`
-        if path.contains(['.', '/']) {
+        if path.contains('.') {
             return Some(help);
         }
         Some(format!(

@@ -9,16 +9,17 @@ use crate::parse::hints::{
     ALTERNATIVES_HELP, ANNOTATION_HELP, BITWISE_OR_HELP, BLOCK_HELP, CALL_HELP, CATCH_ALL_HELP,
     DEFAULTS_HELP, EQUALITY_HELP, FORMAT_STRING_HELP, INEQUALITY_HELP, LAMBDA_HELP,
     LINE_CONTINUATION_HELP, LOGICAL_OR_HELP, MAP_ENTRY_HELP, MAP_REST_HELP, NAMED_ARGUMENTS_HELP,
-    POWER_HELP, REST_HELP, SLICE_HELP, SPREAD_HELP, Site, define_function_help, destructure_help,
-    float_point_help, raw_string_help, rebind_help, walrus_help,
+    NULLARY_LAMBDA_HELP, POWER_HELP, REST_HELP, SLICE_HELP, SPREAD_HELP, Site,
+    define_function_help, destructure_help, float_point_help, raw_string_help, rebind_help,
+    walrus_help,
 };
 
 const PATH_HELP: &str = "Frost has no `::`; reach a module's entries with `.`, like `math.sqrt(x)`";
 
 const THREAD_HELP: &str = "Frost threads a value into a call with `@`: `x @ f()`";
 
-const RANGE_HELP: &str =
-    "Frost has no range operator; for a range of Ints, use `range(start, stop)`";
+const RANGE_HELP: &str = "Frost has no range operator; for a range of Ints, use \
+                          `range(start, stop)`, which stops before `stop`";
 
 const COMMENT_HELP: &str = "a comment starts with `#`";
 
@@ -130,7 +131,10 @@ impl Site<'_, '_> {
                 self.token_at(0),
                 Some(Token::Identifier(_) | Token::FloatLiteral(_))
             );
-        is_point_without_digits.then(|| float_point_help("1.0"))
+        is_point_without_digits.then(|| {
+            let int = self.ctx.source_text(int.span.clone().into());
+            float_point_help(&format!("{int}.0"))
+        })
     }
 
     /// Help for `x--`, read as `x - -` with nothing after it, so that the error is past
@@ -294,7 +298,25 @@ impl Site<'_, '_> {
             if let Some(pattern) = self.pattern_starting_statement() {
                 return Some(destructure_help(pattern));
             }
-            return Some(IMMUTABLE_HELP.to_owned());
+            let indexes = self
+                .matching_open(self.found - 1)
+                .and_then(|open| open.checked_sub(1))
+                .and_then(|before| self.ctx.get(before))
+                .is_some_and(|before| ends_an_expression(&before.token));
+            let help = match (self.token_at(-2), self.token_at(-1)) {
+                // `xs[0] = 1`, but not `[k] = 1`
+                (_, Some(Token::CloseBracket)) if indexes => {
+                    "Frost values are immutable; bind an updated value to a new name, like \
+                     `def xs2 = dig_set(xs, value, i)`"
+                }
+                // `m.k = 1`
+                (Some(Token::OpDot), Some(Token::Identifier(_))) => {
+                    "Frost values are immutable; bind an updated value to a new name, like \
+                     `def m2 = m + {k: v}`"
+                }
+                _ => IMMUTABLE_HELP,
+            };
+            return Some(help.to_owned());
         }
         let open = open?;
         let help = match open.kind {
@@ -486,8 +508,7 @@ impl Site<'_, '_> {
             return Some(format!("{LOGICAL_OR_HELP}; {LINE_CONTINUATION_HELP}"));
         }
         // `|| 1`, with no operand before it
-        (!self.binds_names())
-            .then(|| "a lambda without parameters is written `fn -> ...`".to_owned())
+        (!self.binds_names()).then(|| NULLARY_LAMBDA_HELP.to_owned())
     }
 
     /// Whether the innermost bracket holds an expression where `|` could be a bitwise
@@ -509,17 +530,19 @@ impl Site<'_, '_> {
     /// Help for `:` where Frost takes none.
     pub(super) fn colon_help(&self) -> Option<String> {
         let previous = self.token_at(-1);
+        // `obj:method(x)`, Lua's method call
+        if let (Some(Token::Identifier(value)), Some(Token::Identifier(method))) =
+            (self.abutting_previous(), self.abutting_next())
+            && self.token_at(2) == Some(&Token::OpenParen)
+        {
+            return Some(format!(
+                "Frost values have no methods; pass the value first, like \
+                 `{method}({value}, ...)` or `{value} @ {method}(...)`"
+            ));
+        }
         let help = match self.innermost_kind() {
             // `Foo::bar()`
             _ if self.abutting_next() == Some(&Token::Colon) => PATH_HELP,
-            // `obj:method(x)`, Lua's method call
-            _ if matches!(self.abutting_previous(), Some(Token::Identifier(_)))
-                && matches!(self.abutting_next(), Some(Token::Identifier(_)))
-                && self.token_at(2) == Some(&Token::OpenParen) =>
-            {
-                "Frost values have no methods; call a function with the value first, \
-                 like `f(x)` or `x @ f()`"
-            }
             // `x := 1`
             _ if self.abutting_next() == Some(&Token::Assign) => {
                 return Some(walrus_help(self.statement_word()?));
@@ -698,14 +721,26 @@ impl Site<'_, '_> {
             };
             return Some(help.to_owned());
         }
-        // `(+ 1)` or `(*)`, but not `(+1)`, which writes a sign
+        // `(+ 1)`, `(*)`, or `(+)`, but not `(+1)`, which writes a sign
         let is_operator_function = is_binary_operator(found)
             && self.token_at(-1) == Some(&Token::OpenParen)
             && matches!(self.innermost_kind(), Some(Bracket::Group | Bracket::Call))
             && (self.token_at(1) == Some(&Token::CloseParen)
                 || self.token_at(2) == Some(&Token::CloseParen))
-            && !(*found == Token::OpPlus && self.abutting_next().is_some());
+            && !(*found == Token::OpPlus
+                && self
+                    .abutting_next()
+                    .is_some_and(|next| *next != Token::CloseParen));
         is_operator_function.then(|| {
+            // `(*)`, an operator with a function of its own
+            if self.token_at(1) == Some(&Token::CloseParen)
+                && let Some(function) = operator_function(found)
+            {
+                return format!(
+                    "Frost cannot use an operator as a function; `{found}` is the function \
+                     `{function}`"
+                );
+            }
             // Abbreviated lambdas do not nest.
             if self.ctx.in_abbreviated_lambda() {
                 "Frost cannot use an operator as a function; write a lambda, like `fn x -> x + 1`"
@@ -717,6 +752,24 @@ impl Site<'_, '_> {
             }
         })
     }
+}
+
+/// The global function computing the binary operator `token`, if any.
+fn operator_function(token: &Token) -> Option<&'static str> {
+    Some(match token {
+        Token::OpPlus => "plus",
+        Token::OpMinus => "minus",
+        Token::OpTimes => "times",
+        Token::OpDiv => "divide",
+        Token::OpMod => "mod",
+        Token::OpEq => "equal",
+        Token::OpNeq => "not_equal",
+        Token::OpLt => "less_than",
+        Token::OpLte => "less_than_or_equal",
+        Token::OpGt => "greater_than",
+        Token::OpGte => "greater_than_or_equal",
+        _ => return None,
+    })
 }
 
 /// Whether `token` is a String literal of any kind.

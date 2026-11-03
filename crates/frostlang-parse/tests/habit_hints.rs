@@ -40,14 +40,14 @@ const MAP_ENTRY_HELP: &str = "a Map entry is written `key: value`";
 
 const LAMBDA_HELP: &str = "a lambda is written `fn x -> ...`";
 
-const RANGE_HELP: &str =
-    "Frost has no range operator; for a range of Ints, use `range(start, stop)`";
+const EMPTY_LAMBDA_HELP: &str = "a lambda without parameters is written `fn -> ...`";
 
-const LOOP_HELP_FOR: &str = "Frost has no `for` loop; use `map`, `filter`, `reduce`, or \
-                             `each` with a function, like `each(xs, fn x -> ...)`";
+const RANGE_HELP: &str = "Frost has no range operator; for a range of Ints, use \
+                          `range(start, stop)`, which stops before `stop`";
 
-const LOOP_HELP_WHILE: &str = "Frost has no `while` loop; use `map`, `filter`, `reduce`, or \
-                               `each` with a function, like `each(xs, fn x -> ...)`";
+const LOOP_HELP_FOR: &str = "Frost has no `for` loop";
+
+const LOOP_HELP_WHILE: &str = "Frost has no `while` loop";
 
 const PLACEHOLDER_HELP: &str = "`$` placeholders work only inside `$( ... )`, like `$($ * 2)`";
 
@@ -73,7 +73,8 @@ const GUARD_HELP: &str = "a guard is written `if:` before its condition, like `n
 
 const CATCH_ALL_HELP: &str = "a catch-all arm is `_ => ...`";
 
-const SLICE_HELP: &str = "Frost has no slice syntax; use `slice(xs, start, end)`";
+const SLICE_HELP: &str =
+    "Frost has no slice syntax; use `slice(xs, start, end)`, or `take` and `drop`";
 
 const PATTERN_RANGE_HELP: &str =
     "a pattern cannot be a range; use a guard, like `n if: n >= 1 and n <= 3 => ...`";
@@ -141,6 +142,10 @@ fn assignment() {
             x
         }
     ";
+    let index_help = "Frost values are immutable; bind an updated value to a new name, \
+                      like `def xs2 = dig_set(xs, value, i)`";
+    let field_help = "Frost values are immutable; bind an updated value to a new name, \
+                      like `def m2 = m + {k: v}`";
     assert_help(&[
         (
             "x = 42",
@@ -150,18 +155,12 @@ fn assignment() {
             in_a_block,
             "Frost has no assignment; bind a new name with `def`: `def x = ...`",
         ),
-        (
-            "xs[0] = 1",
-            "Frost values are immutable; bind an updated value to a new name with `def`",
-        ),
-        (
-            "m.k = 1",
-            "Frost values are immutable; bind an updated value to a new name with `def`",
-        ),
-        (
-            "f(x).y = 1",
-            "Frost values are immutable; bind an updated value to a new name with `def`",
-        ),
+        ("xs[0] = 1", index_help),
+        ("f(x)[0] = 1", index_help),
+        ("m.k = 1", field_help),
+        ("f(x).y = 1", field_help),
+        // A bracketed key alone is no index after an expression.
+        ("[k] = 1", IMMUTABLE_HELP),
     ]);
 }
 
@@ -367,7 +366,7 @@ fn statement_words_where_an_expression_begins() {
 
 #[test]
 fn errors_from_other_languages() {
-    let try_help = "Frost has no `try`; to catch an error, call a function with `try_call(f)`";
+    let try_help = "Frost has no `try`; to catch an error, call a function with `try_call`, like `try_call(fn -> ...)`";
     let python_try = r"
         try:
             risky()
@@ -412,6 +411,31 @@ fn import_statements() {
     ]);
     // JavaScript's import names no module path to suggest.
     assert_help_or_none(&[("import * as m from 'x'", None)]);
+}
+
+// A path that is no dotted name gets the generic form, not an echo of the path.
+#[test]
+fn import_statements_with_a_path() {
+    let help = "load a module by calling `import` with its dotted name, \
+                like `def math = import('std.math')`";
+    assert_help(&[("import \"./utils.frst\"", help)]);
+}
+
+// Lua's method call passes the receiver first in Frost.
+#[test]
+fn lua_method_calls() {
+    assert_help(&[
+        (
+            "obj:method(x)",
+            "Frost values have no methods; pass the value first, \
+             like `method(obj, ...)` or `obj @ method(...)`",
+        ),
+        (
+            "player:heal(5)",
+            "Frost values have no methods; pass the value first, \
+             like `heal(player, ...)` or `player @ heal(...)`",
+        ),
+    ]);
 }
 
 // A call needs parentheses; a function is defined with `defn`.
@@ -530,7 +554,7 @@ fn other_operators() {
         ),
         (
             "a ?? b",
-            "for a fallback when a value is null, use `or`: `a or b`",
+            "for a fallback, use `or`: `a or b` is `b` when `a` is null or false",
         ),
         (
             "a ? b : c",
@@ -547,8 +571,9 @@ fn other_operators() {
 #[test]
 fn question_and_exclamation_marks() {
     let ternary = "Frost's conditional is written `if a: b else: c`";
-    let fallback = "for a fallback when a value is null, use `or`: `a or b`";
-    let chaining = "Frost has no optional chaining; use `x and x.k`";
+    let fallback = "for a fallback, use `or`: `a or b` is `b` when `a` is null or false";
+    let chaining = "Frost has no optional chaining; to look up a path that may be missing, \
+                    use `dig`, like `dig(x, 'a', 'b')`";
     let names = "Frost names cannot contain `?` or `!`";
     assert_help_or_none(&[
         ("a?b:c", Some(ternary)),
@@ -558,6 +583,7 @@ fn question_and_exclamation_marks() {
         ("{a: 1}?.a", Some(chaining)),
         ("print(p?.a)", Some(chaining)),
         ("xs[0]?[1]", Some(chaining)),
+        ("x?[0]", Some(chaining)),
         ("xs.empty?", Some(names)),
         ("def done? = true", Some(names)),
         (r#"println!("x")"#, Some(names)),
@@ -565,7 +591,10 @@ fn question_and_exclamation_marks() {
         ("def v = done? and {a: 1}", Some(names)),
         (
             "match x { n is Int? => 1 }",
-            Some("Frost has no optional types; match `null` in an arm of its own"),
+            Some(
+                "Frost has no optional types; match either with alternatives, \
+                 like `n is Int | n is Null => ...`",
+            ),
         ),
         // Unwrapping a result has no Frost counterpart to suggest.
         ("f()?", None),
@@ -723,7 +752,7 @@ fn a_missing_operand_gets_no_line_break_help() {
 fn bitwise_operators() {
     let and = "Frost's logical \"and\" is `and`; for bitwise and, the `std.bits` module has `band`";
     let or = "Frost's logical \"or\" is `or`; for bitwise or, the `std.bits` module has `bor`";
-    let not = "for bitwise not, the `std.bits` module has `bnot`";
+    let not = "for bitwise not or exclusive or, the `std.bits` module has `bnot` and `bxor`";
     assert_help(&[
         ("a & b", and),
         ("a | b", or),
@@ -810,8 +839,22 @@ fn an_operator_used_as_a_function() {
     assert_help(&[
         ("(+ 1)", help),
         ("def inc = (+ 1)", help),
-        ("(*)", help),
         ("xs @ map(* 2)", help),
+    ]);
+    // A bare operator names the global function that does its job.
+    assert_help(&[
+        (
+            "(*)",
+            "Frost cannot use an operator as a function; `*` is the function `times`",
+        ),
+        (
+            "(+)",
+            "Frost cannot use an operator as a function; `+` is the function `plus`",
+        ),
+        (
+            "(<)",
+            "Frost cannot use an operator as a function; `<` is the function `less_than`",
+        ),
     ]);
     // `+1` writes a sign, and `(+ 1 2)` is Lisp's call, not an operator alone.
     assert_help_or_none(&[("(+1)", None), ("(+ 1 2)", None)]);
@@ -869,11 +912,7 @@ fn control_words_from_other_languages() {
         ),
         ("switch x {}", switch_help),
         ("switch (x) { case 1: 2 }", switch_help),
-        (
-            "until x: 1",
-            "Frost has no `until` loop; use `map`, `filter`, `reduce`, or `each` with a \
-             function, like `each(xs, fn x -> ...)`",
-        ),
+        ("until x: 1", "Frost has no `until` loop"),
         ("fn x -> x end", "Frost has no `end`; delete it"),
         ("if a: 1 else: 2 end", "Frost has no `end`; delete it"),
         ("do { 1 } end", "Frost has no `end`; delete it"),
@@ -1602,8 +1641,8 @@ fn arrow_lambdas_with_parameter_lists() {
     assert_help(&[
         ("(a, b) => a + b", LAMBDA_HELP),
         ("(a, b) -> a + b", LAMBDA_HELP),
-        ("() => 1", LAMBDA_HELP),
-        ("def f = () -> 1", LAMBDA_HELP),
+        ("() => 1", EMPTY_LAMBDA_HELP),
+        ("def f = () -> 1", EMPTY_LAMBDA_HELP),
         ("x, y -> x", LAMBDA_HELP),
         ("x, y => x", LAMBDA_HELP),
         ("def add = (x, y) => x + y", LAMBDA_HELP),
@@ -1646,8 +1685,11 @@ fn a_trailing_comma_in_bare_parameters() {
 
 #[test]
 fn slices() {
-    let help = "Frost has no slice syntax; use `slice(xs, start, end)`";
-    assert_help(&[("xs[1:2]", help), ("xs[:2]", help), ("xs[1:]", help)]);
+    assert_help(&[
+        ("xs[1:2]", SLICE_HELP),
+        ("xs[:2]", SLICE_HELP),
+        ("xs[1:]", SLICE_HELP),
+    ]);
 }
 
 #[test]
@@ -2179,7 +2221,7 @@ fn unreadable_source() {
         (
             "1 ~ 2",
             "unexpected character `~`",
-            Some("for bitwise not, the `std.bits` module has `bnot`"),
+            Some("for bitwise not or exclusive or, the `std.bits` module has `bnot` and `bxor`"),
         ),
         // A backtick in backticks would read as noise.
         (
@@ -2376,6 +2418,7 @@ fn spaced_operators_get_no_operator_help() {
 fn number_forms_frost_lacks() {
     assert_help(&[
         ("1.", "a Float needs digits after its point, like `1.0`"),
+        ("5.", "a Float needs digits after its point, like `5.0`"),
         ("1e", "an exponent needs digits, like `1e3`"),
         ("1e+", "an exponent needs digits, like `1e3`"),
         ("def x = 2E", "an exponent needs digits, like `2E3`"),

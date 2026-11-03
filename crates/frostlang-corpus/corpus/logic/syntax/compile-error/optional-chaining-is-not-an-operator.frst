@@ -1,0 +1,4 @@
+# Frost has no optional chaining `?.`.
+#= {rejects: ['`?`', 'optional chaining']}
+def a = null
+a?.k

@@ -27,6 +27,8 @@ use crate::parse::ctx::{Bracket, ParseCtx};
 
 const LAMBDA_HELP: &str = "a lambda is written `fn x -> ...`";
 
+const NULLARY_LAMBDA_HELP: &str = "a lambda without parameters is written `fn -> ...`";
+
 const REST_HELP: &str = "a rest binding is written `...name`";
 
 const FORMAT_STRING_HELP: &str = "a format String is written `$'...${x}...'`";
@@ -66,7 +68,8 @@ const MAP_REST_HELP: &str = "a Map pattern takes no rest binding; it ignores key
 
 const ALTERNATIVES_HELP: &str = "pattern alternatives are separated by `|`, like `1 | 2 => ...`";
 
-const SLICE_HELP: &str = "Frost has no slice syntax; use `slice(xs, start, end)`";
+const SLICE_HELP: &str =
+    "Frost has no slice syntax; use `slice(xs, start, end)`, or `take` and `drop`";
 
 const CALL_HELP: &str = "call a function with parentheses: `f(x)`";
 
@@ -81,8 +84,6 @@ const BITWISE_AND_HELP: &str = "for bitwise and, the `std.bits` module has `band
 const BITWISE_OR_HELP: &str = "for bitwise or, the `std.bits` module has `bor`";
 
 const BITWISE_XOR_HELP: &str = "for exclusive or, the `std.bits` module has `bxor`";
-
-const BITWISE_NOT_HELP: &str = "for bitwise not, the `std.bits` module has `bnot`";
 
 const LINE_CONTINUATION_HELP: &str = "a line continues only when the next line starts with `.`, \
                                       `@`, or `->`; otherwise, wrap the expression in parentheses";

@@ -8,13 +8,13 @@ use crate::lex::{FormatStringEnd, IntBase, UnclosedInterpolation, scan_format_st
 use crate::parse::Diagnostic;
 use crate::parse::ctx::{Limit, too_deep};
 use crate::parse::hints::{
-    BITWISE_AND_HELP, BITWISE_NOT_HELP, BITWISE_XOR_HELP, CONDITIONAL_HELP, FORMAT_STRING_HELP,
-    GUARD_HELP, INEQUALITY_HELP, LAMBDA_HELP, LINE_CONTINUATION_HELP, LOGICAL_AND_HELP, POWER_HELP,
+    BITWISE_AND_HELP, BITWISE_XOR_HELP, CONDITIONAL_HELP, FORMAT_STRING_HELP, GUARD_HELP,
+    INEQUALITY_HELP, LAMBDA_HELP, LINE_CONTINUATION_HELP, LOGICAL_AND_HELP, POWER_HELP,
     float_point_help, raw_string_help,
 };
 use crate::parse::strings::{ESCAPES, closer_not_on_its_own_line};
 
-const FALLBACK_HELP: &str = "for a fallback when a value is null, use `or`: `a or b`";
+const FALLBACK_HELP: &str = "for a fallback, use `or`: `a or b` is `b` when `a` is null or false";
 
 /// The error for source the lexer cannot read at `span`, a range of `src`, which
 /// starts at `base_offset` in the whole source and is parsed under `limits`.
@@ -436,11 +436,17 @@ fn unreadable_on_line(
         // Lua's `~=`
         ('~', Some('=')) => Some(INEQUALITY_HELP.to_owned()),
         // `~a` or `a ~ b`, but not the pattern match `=~` or `!~`
-        ('~', _) if !before.ends_with(['=', '!']) => Some(BITWISE_NOT_HELP.to_owned()),
+        // Unary bitwise not, or Lua's binary exclusive or
+        ('~', _) if !before.ends_with(['=', '!']) => Some(
+            "for bitwise not or exclusive or, the `std.bits` module has `bnot` and `bxor`"
+                .to_owned(),
+        ),
         ('?', Some('?' | ':')) => Some(FALLBACK_HELP.to_owned()),
-        ('?', Some('.' | '[')) => {
-            Some("Frost has no optional chaining; use `x and x.k`".to_owned())
-        }
+        ('?', Some('.' | '[')) => Some(
+            "Frost has no optional chaining; to look up a path that may be missing, use \
+             `dig`, like `dig(x, 'a', 'b')`"
+                .to_owned(),
+        ),
         // `a ? b : c`, or `a?b:c`
         ('?', _)
             if follows_operand
@@ -453,7 +459,10 @@ fn unreadable_on_line(
                 .iter()
                 .any(|(type_name, _)| *type_name == touched_word) =>
         {
-            Some("Frost has no optional types; match `null` in an arm of its own".to_owned())
+            Some(format!(
+                "Frost has no optional types; match either with alternatives, like \
+                 `n is {touched_word} | n is Null => ...`"
+            ))
         }
         ('?' | '!', _) if touches_word => Some("Frost names cannot contain `?` or `!`".to_owned()),
         // `f()?` or `f()!`, which unwrap a result in other languages

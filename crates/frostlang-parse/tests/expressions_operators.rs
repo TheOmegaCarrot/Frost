@@ -504,6 +504,25 @@ fn error_chained_comparison() {
     assert!(err.contains("cannot chain"), "error was: {err}");
 }
 
+/// The label points to `and`: parenthesizing one comparison would compare a Bool
+/// with the next operand, and fail at runtime.
+#[test]
+fn a_chained_comparison_is_labeled_to_join_with_and() {
+    for src in ["1 < x < 3", "a == b == c"] {
+        let err = parse_program("test.frst", src).expect_err(src);
+        let labels: Vec<&str> = err
+            .labels()
+            .iter()
+            .map(|label| label.text.as_str())
+            .collect();
+        assert_eq!(
+            labels,
+            ["join comparisons with `and`, like `a < b and b < c`"],
+            "{src}"
+        );
+    }
+}
+
 #[test]
 fn error_chained_equality() {
     let err = parse_err("a == b == c");

@@ -903,8 +903,8 @@ fn a_def_that_binds_no_name_is_a_compile_error() {
 }
 
 /// Assert `script` fails to compile with exactly one diagnostic, the
-/// `binds nothing` one, and that its code, message, label, and help are each
-/// present as an exact line of the rendering.
+/// `binds nothing` one, that its code, message, and label are each present as an
+/// exact line of the rendering, and that it has no help.
 fn assert_binds_nothing(script: Script) {
     let errors = script.compile_errors();
     assert_eq!(errors.len(), 1, "exactly one diagnostic");
@@ -926,8 +926,10 @@ fn assert_binds_nothing(script: Script) {
         "the label is exact:\n{rendered}"
     );
     assert!(
-        lines.contains(&"  help: to check a value without binding it, use `assert` or `match`"),
-        "the help is exact:\n{rendered}"
+        !lines
+            .iter()
+            .any(|line| line.trim_start().starts_with("help:")),
+        "there is no help:\n{rendered}"
     );
 }
 
