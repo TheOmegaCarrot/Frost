@@ -6,10 +6,10 @@ use crate::parse::hints::site::{
     ArmPart, ends_an_expression, is_binary_operator, is_literal, starts_an_expression,
 };
 use crate::parse::hints::{
-    ALTERNATIVES_HELP, ANNOTATION_HELP, BITWISE_HELP, BLOCK_HELP, CALL_HELP, CATCH_ALL_HELP,
+    ALTERNATIVES_HELP, ANNOTATION_HELP, BITWISE_OR_HELP, BLOCK_HELP, CALL_HELP, CATCH_ALL_HELP,
     DEFAULTS_HELP, EQUALITY_HELP, FORMAT_STRING_HELP, INEQUALITY_HELP, LAMBDA_HELP,
-    LINE_CONTINUATION_HELP, MAP_ENTRY_HELP, MAP_REST_HELP, NAMED_ARGUMENTS_HELP, POWER_HELP,
-    REST_HELP, SLICE_HELP, SPREAD_HELP, Site, define_function_help, destructure_help,
+    LINE_CONTINUATION_HELP, LOGICAL_OR_HELP, MAP_ENTRY_HELP, MAP_REST_HELP, NAMED_ARGUMENTS_HELP,
+    POWER_HELP, REST_HELP, SLICE_HELP, SPREAD_HELP, Site, define_function_help, destructure_help,
     float_point_help, raw_string_help, rebind_help, walrus_help,
 };
 
@@ -21,8 +21,6 @@ const RANGE_HELP: &str =
     "Frost has no range operator; for a range of Ints, use `range(start, stop)`";
 
 const COMMENT_HELP: &str = "a comment starts with `#`";
-
-const OR_HELP: &str = "Frost's \"or\" is `or`";
 
 const LESS_OR_EQUAL_HELP: &str = "Frost's less-than-or-equal is `<=`";
 
@@ -198,8 +196,12 @@ impl Site<'_, '_> {
             (Token::OpPlus, Token::OpPlus) if self.follows_an_operand(-1) => {
                 return Some(rebind_help("++"));
             }
-            (Token::OpLt, Token::OpLt) | (Token::OpGt, Token::OpGt) => {
-                "Frost has no shift operators"
+            (Token::OpLt, Token::OpLt) => {
+                "for a left shift, the `std.bits` module has `shift_left`"
+            }
+            (Token::OpGt, Token::OpGt) => {
+                "for a right shift, the `std.bits` module has `shift_right_arithmetic` and \
+                 `shift_right_logical`"
             }
             (Token::DollarIdentifier(_), Token::IntLiteral(_)) => {
                 "the placeholders are `$`, `$1` to `$9`, and `$$`"
@@ -462,7 +464,7 @@ impl Site<'_, '_> {
                 && self.holds_expressions()
                 && self.token_at(1).is_some_and(starts_an_expression) =>
             {
-                return Some(format!("{BITWISE_HELP}; its \"or\" is `or`"));
+                return Some(format!("{LOGICAL_OR_HELP}; {BITWISE_OR_HELP}"));
             }
             _ => return None,
         };
@@ -473,7 +475,7 @@ impl Site<'_, '_> {
     fn double_pipe_help(&self) -> Option<String> {
         // `a || b`
         if self.follows_an_operand(0) {
-            return Some(OR_HELP.to_owned());
+            return Some(LOGICAL_OR_HELP.to_owned());
         }
         // `def x = a`, then `|| b` on the next line
         if self.token_at(-1) == Some(&Token::Newline)
@@ -481,7 +483,7 @@ impl Site<'_, '_> {
                 .token_before(self.found)
                 .is_some_and(ends_an_expression)
         {
-            return Some(format!("{OR_HELP}; {LINE_CONTINUATION_HELP}"));
+            return Some(format!("{LOGICAL_OR_HELP}; {LINE_CONTINUATION_HELP}"));
         }
         // `|| 1`, with no operand before it
         (!self.binds_names())

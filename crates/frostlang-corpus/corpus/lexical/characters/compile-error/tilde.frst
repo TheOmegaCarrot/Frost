@@ -1,4 +1,4 @@
 # `~` is a character Frost does not use; as a bitwise operator elsewhere, it
-# gets help saying Frost has none.
-#= {rejects: ['unexpected character', 'no bitwise operators']}
+# gets help naming the function for bitwise not.
+#= {rejects: ['unexpected character', '`std.bits` module has `bnot`']}
 1 ~ 2

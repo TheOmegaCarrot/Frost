@@ -1,4 +1,5 @@
-# Frost has no bitwise operators; a lone `&` gets help naming `and`.
-#= {rejects: 'no bitwise operators', inputs: {a: 1, b: 2}}
+# Frost has no bitwise operators; a lone `&` gets help naming `and`, and the
+# function for bitwise and.
+#= {rejects: ['"and" is `and`', '`std.bits` module has `band`'], inputs: {a: 1, b: 2}}
 def {a, b} = import('inputs')
 a & b

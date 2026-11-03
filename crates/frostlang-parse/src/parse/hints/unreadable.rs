@@ -8,8 +8,9 @@ use crate::lex::{FormatStringEnd, IntBase, UnclosedInterpolation, scan_format_st
 use crate::parse::Diagnostic;
 use crate::parse::ctx::{Limit, too_deep};
 use crate::parse::hints::{
-    BITWISE_HELP, CONDITIONAL_HELP, FORMAT_STRING_HELP, GUARD_HELP, INEQUALITY_HELP, LAMBDA_HELP,
-    LINE_CONTINUATION_HELP, POWER_HELP, float_point_help, raw_string_help,
+    BITWISE_AND_HELP, BITWISE_NOT_HELP, BITWISE_XOR_HELP, CONDITIONAL_HELP, FORMAT_STRING_HELP,
+    GUARD_HELP, INEQUALITY_HELP, LAMBDA_HELP, LINE_CONTINUATION_HELP, LOGICAL_AND_HELP, POWER_HELP,
+    float_point_help, raw_string_help,
 };
 use crate::parse::strings::{ESCAPES, closer_not_on_its_own_line};
 
@@ -425,17 +426,17 @@ fn unreadable_on_line(
     let help = match (first, second) {
         // `n is Int && n > 1 => 2`, a guard written as a condition
         ('&', Some('&')) if writes_a_guard(before, rest) => Some(GUARD_HELP.to_owned()),
-        ('&', Some('&')) => Some("Frost's \"and\" is `and`".to_owned()),
+        ('&', Some('&')) => Some(LOGICAL_AND_HELP.to_owned()),
         // `a & b`; a `&` before its operand alone, as in `&x`, is no bitwise operator.
         // In a pattern's type test, as in `n is Int & Float`, no operator would serve.
         ('&', _) if follows_operand && !follows_a_type_test(before) => {
-            Some(format!("{BITWISE_HELP}; its \"and\" is `and`"))
+            Some(format!("{LOGICAL_AND_HELP}; {BITWISE_AND_HELP}"))
         }
-        ('^', _) if follows_operand => Some(format!("{BITWISE_HELP}; {POWER_HELP}")),
+        ('^', _) if follows_operand => Some(format!("{POWER_HELP}; {BITWISE_XOR_HELP}")),
         // Lua's `~=`
         ('~', Some('=')) => Some(INEQUALITY_HELP.to_owned()),
         // `~a` or `a ~ b`, but not the pattern match `=~` or `!~`
-        ('~', _) if !before.ends_with(['=', '!']) => Some(BITWISE_HELP.to_owned()),
+        ('~', _) if !before.ends_with(['=', '!']) => Some(BITWISE_NOT_HELP.to_owned()),
         ('?', Some('?' | ':')) => Some(FALLBACK_HELP.to_owned()),
         ('?', Some('.' | '[')) => {
             Some("Frost has no optional chaining; use `x and x.k`".to_owned())

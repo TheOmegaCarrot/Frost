@@ -72,7 +72,17 @@ const CALL_HELP: &str = "call a function with parentheses: `f(x)`";
 
 const POWER_HELP: &str = "for powers, the `std.math` module has `pow`";
 
-const BITWISE_HELP: &str = "Frost has no bitwise operators";
+const LOGICAL_AND_HELP: &str = "Frost's logical \"and\" is `and`";
+
+const LOGICAL_OR_HELP: &str = "Frost's logical \"or\" is `or`";
+
+const BITWISE_AND_HELP: &str = "for bitwise and, the `std.bits` module has `band`";
+
+const BITWISE_OR_HELP: &str = "for bitwise or, the `std.bits` module has `bor`";
+
+const BITWISE_XOR_HELP: &str = "for exclusive or, the `std.bits` module has `bxor`";
+
+const BITWISE_NOT_HELP: &str = "for bitwise not, the `std.bits` module has `bnot`";
 
 const LINE_CONTINUATION_HELP: &str = "a line continues only when the next line starts with `.`, \
                                       `@`, or `->`; otherwise, wrap the expression in parentheses";

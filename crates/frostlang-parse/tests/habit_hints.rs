@@ -475,10 +475,10 @@ fn multiple_assignment() {
 #[test]
 fn logical_operators() {
     assert_help(&[
-        ("a && b", "Frost's \"and\" is `and`"),
-        ("a || b", "Frost's \"or\" is `or`"),
+        ("a && b", "Frost's logical \"and\" is `and`"),
+        ("a || b", "Frost's logical \"or\" is `or`"),
         ("!a", "Frost's \"not\" is `not`"),
-        ("if a && b: 1", "Frost's \"and\" is `and`"),
+        ("if a && b: 1", "Frost's logical \"and\" is `and`"),
     ]);
 }
 
@@ -494,7 +494,7 @@ fn double_pipe_without_an_operand_before_it() {
     assert_help(&[
         (
             on_the_next_line,
-            "Frost's \"or\" is `or`; a line continues only when the next line starts with `.`, \
+            "Frost's logical \"or\" is `or`; a line continues only when the next line starts with `.`, \
              `@`, or `->`; otherwise, wrap the expression in parentheses",
         ),
         ("|| 1", NO_PARAMETERS_HELP),
@@ -510,10 +510,13 @@ fn double_ampersand_in_a_pattern() {
         ("match x { n is Int && n > 1 => 2 }", GUARD_HELP),
         ("match v { x && y => 1 }", GUARD_HELP),
         // In the guard, or outside a `match`, it is a condition's "and".
-        ("match v { x if: x && y => 1 }", "Frost's \"and\" is `and`"),
+        (
+            "match v { x if: x && y => 1 }",
+            "Frost's logical \"and\" is `and`",
+        ),
         (
             "def f = fn x -> { x && y => 1 }",
-            "Frost's \"and\" is `and`",
+            "Frost's logical \"and\" is `and`",
         ),
     ]);
 }
@@ -718,29 +721,21 @@ fn a_missing_operand_gets_no_line_break_help() {
 
 #[test]
 fn bitwise_operators() {
+    let and = "Frost's logical \"and\" is `and`; for bitwise and, the `std.bits` module has `band`";
+    let or = "Frost's logical \"or\" is `or`; for bitwise or, the `std.bits` module has `bor`";
+    let not = "for bitwise not, the `std.bits` module has `bnot`";
     assert_help(&[
-        (
-            "a & b",
-            "Frost has no bitwise operators; its \"and\" is `and`",
-        ),
-        (
-            "a | b",
-            "Frost has no bitwise operators; its \"or\" is `or`",
-        ),
-        (
-            "1 | 2",
-            "Frost has no bitwise operators; its \"or\" is `or`",
-        ),
-        (
-            "def x = a | b",
-            "Frost has no bitwise operators; its \"or\" is `or`",
-        ),
+        ("a & b", and),
+        ("a | b", or),
+        ("1 | 2", or),
+        ("def x = a | b", or),
         (
             "a ^ b",
-            "Frost has no bitwise operators; for powers, the `std.math` module has `pow`",
+            "for powers, the `std.math` module has `pow`; \
+             for exclusive or, the `std.bits` module has `bxor`",
         ),
-        ("~a", "Frost has no bitwise operators"),
-        ("a ~ b", "Frost has no bitwise operators"),
+        ("~a", not),
+        ("a ~ b", not),
     ]);
     // A `&` before its operand alone is a reference; `=~` matches a pattern; and in a
     // pattern or another language's list syntax, `|` is no operator.
@@ -2184,7 +2179,7 @@ fn unreadable_source() {
         (
             "1 ~ 2",
             "unexpected character `~`",
-            Some("Frost has no bitwise operators"),
+            Some("for bitwise not, the `std.bits` module has `bnot`"),
         ),
         // A backtick in backticks would read as noise.
         (
@@ -2294,8 +2289,21 @@ fn multi_character_operators() {
         ),
         ("1 === 1", "Frost's equality is `==`"),
         ("1 !== 1", "Frost's inequality is `!=`"),
-        ("1 << 2", "Frost has no shift operators"),
-        ("8 >> 1", "Frost has no shift operators"),
+        (
+            "1 << 2",
+            "for a left shift, the `std.bits` module has `shift_left`",
+        ),
+        (
+            "8 >> 1",
+            "for a right shift, the `std.bits` module has `shift_right_arithmetic` and \
+             `shift_right_logical`",
+        ),
+        // JavaScript's unsigned right shift.
+        (
+            "8 >>> 1",
+            "for a right shift, the `std.bits` module has `shift_right_arithmetic` and \
+             `shift_right_logical`",
+        ),
     ]);
 }
 
