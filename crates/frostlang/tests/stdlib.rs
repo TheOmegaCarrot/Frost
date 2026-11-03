@@ -140,7 +140,7 @@ fn with_random_sets_the_random_configuration() {
 fn the_contained_preset_holds_the_contained_modules() {
     assert_eq!(
         names(&Stdlib::contained(StdlibConfig::default())),
-        ["encoding", "math", "random", "regex", "string"]
+        ["bits", "encoding", "math", "random", "regex", "string"]
     );
 }
 
@@ -148,7 +148,9 @@ fn the_contained_preset_holds_the_contained_modules() {
 fn the_complete_preset_holds_every_module() {
     assert_eq!(
         names(&Stdlib::complete(StdlibConfig::default())),
-        ["encoding", "fs", "math", "os", "random", "regex", "string"]
+        [
+            "bits", "encoding", "fs", "math", "os", "random", "regex", "string"
+        ]
     );
 }
 
@@ -159,7 +161,9 @@ fn a_preset_still_takes_modules_but_not_ones_it_holds() {
         .expect("`contained` does not hold `fs`");
     assert_eq!(
         names(&contained),
-        ["encoding", "fs", "math", "random", "regex", "string"]
+        [
+            "bits", "encoding", "fs", "math", "random", "regex", "string"
+        ]
     );
 
     let presets = [

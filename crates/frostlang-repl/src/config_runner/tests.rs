@@ -317,6 +317,7 @@ fn the_configuration_may_import_only_its_modules() {
         "std.random",
         "std.regex",
         "std.encoding",
+        "std.bits",
         "ext.anything",
         "nonexistent",
     ] {

@@ -22,6 +22,7 @@
 //! # Ok::<(), frostlang::StdlibError>(())
 //! ```
 
+mod bits;
 mod encoding;
 mod fs;
 mod math;
@@ -31,6 +32,7 @@ mod regex;
 mod stream;
 mod string;
 
+pub use bits::bits;
 pub use encoding::encoding;
 pub use fs::fs;
 pub use math::math;
@@ -69,9 +71,17 @@ impl Stdlib {
     /// Containment is not a security boundary: a contained script can still
     /// exhaust memory or run forever.
     ///
-    /// Includes [`encoding`], [`math`], [`random`], [`regex`], and [`string`].
+    /// Includes [`bits`], [`encoding`], [`math`], [`random`], [`regex`], and
+    /// [`string`].
     pub fn contained(config: StdlibConfig) -> Self {
-        Self::new().with_modules([encoding(), math(), random(config.random), regex(), string()])
+        Self::new().with_modules([
+            bits(),
+            encoding(),
+            math(),
+            random(config.random),
+            regex(),
+            string(),
+        ])
     }
 
     /// Every module, including those that reach outside the script. Each

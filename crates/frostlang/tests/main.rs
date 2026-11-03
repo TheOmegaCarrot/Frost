@@ -90,6 +90,7 @@ mod serde_serialize;
 mod serialize;
 mod special_float;
 mod stack_effect;
+mod std_bits;
 mod std_encoding;
 mod std_fs;
 mod std_math;
