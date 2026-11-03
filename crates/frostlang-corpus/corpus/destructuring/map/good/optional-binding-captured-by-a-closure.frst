@@ -1,0 +1,9 @@
+# A closure captures an optional binding like any other: the value when the
+# key was present, Null when it was absent.
+#= {result: [1, null], inputs: {full: {a: 1}, empty: {}}}
+def {full, empty} = import('inputs')
+defn reader(m) -> {
+    def {a?} = m
+    fn -> a
+}
+[reader(full)(), reader(empty)()]

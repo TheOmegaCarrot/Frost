@@ -1,0 +1,4 @@
+# An optional key in a `def` of a literal Map, known at compile time.
+#= {result: [1, null, 2, 3]}
+def {a?, b?, c?: d, e?: f} = {a: 1, c: 2, e: 3}
+[a, b, d, f]

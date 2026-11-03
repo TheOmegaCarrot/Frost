@@ -744,6 +744,23 @@ mod map_patterns {
     }
 
     #[test]
+    fn optional_keys_in_an_arm_and_its_alternatives() {
+        let expr =
+            parse_expr("match x { {name, age? is Int} | {name?: name, age?} if: age => name }");
+        let (_, arms) = assert_match(&expr);
+        assert!(arms[0].node.guard.is_some(), "the arm keeps its guard");
+        let branches = assert_alternative(&arms[0].node.pattern);
+        let flags: Vec<Vec<bool>> = branches
+            .iter()
+            .map(|branch| {
+                let (entries, _) = assert_map_pattern(branch);
+                entries.iter().map(|entry| entry.node.optional).collect()
+            })
+            .collect();
+        assert_eq!(flags, [[false, true], [true, true]]);
+    }
+
+    #[test]
     fn computed_key() {
         let expr = parse_expr("match x { {[1 + 2]: p} => p }");
         let (_, arms) = assert_match(&expr);

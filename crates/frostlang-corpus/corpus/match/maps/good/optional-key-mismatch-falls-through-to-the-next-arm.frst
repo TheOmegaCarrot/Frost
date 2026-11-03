@@ -1,0 +1,12 @@
+# A present optional key whose value fails its sub-pattern fails the arm, and
+# matching continues with the next one; an absent key matches the first.
+#= {
+#=     result: [['array', 1], ['other', 's'], ['array', null]],
+#=     inputs: {a: {n: [1]}, b: {n: 's'}, c: {}},
+#= }
+def {a, b, c} = import('inputs')
+defn read(m) -> match m {
+    {n?: [x]} => ['array', x],
+    {n?} => ['other', n],
+}
+[read(a), read(b), read(c)]

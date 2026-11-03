@@ -486,6 +486,65 @@ match x { [a] as xs | [a, _] as xs => xs }
                                               (identifier))))))))))))))))))))))))
 
 ==================
+def map with optional keys in every entry form
+==================
+
+def {host, port?, tls? is Bool, [k]?: v, opts ?: {debug?}} = cfg
+
+---
+
+(source_file
+  (definition
+    (kw_def)
+    (pattern
+      (pattern_atom
+        (map_pattern
+          (map_pattern_entry_list
+            (map_pattern_entry
+              (identifier))
+            (map_pattern_entry
+              (identifier))
+            (map_pattern_entry
+              (identifier)
+              (type_constraint
+                (kw_is)
+                (identifier)))
+            (map_pattern_entry
+              (map_key_expression
+                (or_expression
+                  (and_expression
+                    (equality_expression
+                      (comparison_expression
+                        (sum_expression
+                          (product_expression
+                            (unary_expression
+                              (postfix_expression
+                                (primary_expression
+                                  (identifier)))))))))))
+              (pattern
+                (pattern_atom
+                  (binding_pattern
+                    (identifier)))))
+            (map_pattern_entry
+              (identifier)
+              (pattern
+                (pattern_atom
+                  (map_pattern
+                    (map_pattern_entry_list
+                      (map_pattern_entry
+                        (identifier)))))))))))
+    (or_expression
+      (and_expression
+        (equality_expression
+          (comparison_expression
+            (sum_expression
+              (product_expression
+                (unary_expression
+                  (postfix_expression
+                    (primary_expression
+                      (identifier))))))))))))
+
+==================
 def nested map with whole binding
 ==================
 

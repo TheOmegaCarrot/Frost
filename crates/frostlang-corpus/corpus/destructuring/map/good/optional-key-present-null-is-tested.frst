@@ -1,0 +1,10 @@
+# A key present with the value Null is present, not absent: its sub-pattern is
+# tested, so a pin inside it is evaluated.
+#= {result: 1, printed: ['tested'], inputs: {m: {k: null, j: 1}}}
+def {m} = import('inputs')
+defn noisy(value) -> {
+    print('tested')
+    value
+}
+def {j, k?: (noisy(null))} = m
+j

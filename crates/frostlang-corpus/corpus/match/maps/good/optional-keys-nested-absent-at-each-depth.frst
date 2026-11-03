@@ -1,0 +1,12 @@
+# Optional keys nest: the innermost name is Null when the key at any depth is
+# absent, and bound only when every key is present. A present value that is
+# not a Map still fails the pattern, at any depth.
+#= {
+#=     result: [null, null, null, 1, 'no match', 'no match'],
+#=     inputs: {values: [{}, {a: {}}, {a: {b: {}}}, {a: {b: {c: 1}}}, {a: 1}, {a: {b: 2}}]},
+#= }
+def {values} = import('inputs')
+values @ map(fn v -> match v {
+    {a?: {b?: {c?}}} => c,
+    _ => 'no match',
+})

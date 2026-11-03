@@ -1,0 +1,4 @@
+# The same on a literal Array known at compile time.
+#= {raises: 'expected a Map'}
+def {a?} = [1]
+a

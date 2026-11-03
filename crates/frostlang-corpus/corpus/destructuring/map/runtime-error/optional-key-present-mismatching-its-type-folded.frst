@@ -1,0 +1,4 @@
+# The same mismatch on a literal Map known at compile time.
+#= {raises: 'expected an Int'}
+def {age? is Int} = {age: 's'}
+age

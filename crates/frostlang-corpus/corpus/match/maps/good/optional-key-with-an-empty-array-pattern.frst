@@ -1,0 +1,11 @@
+# `{k?: []}` matches when the key is absent or holds an empty Array, and not
+# when it holds anything else, Null included.
+#= {
+#=     result: ['yes', 'yes', 'no', 'no', 'no'],
+#=     inputs: {values: [{}, {k: []}, {k: [1]}, {k: {}}, {k: null}]},
+#= }
+def {values} = import('inputs')
+values @ map(fn v -> match v {
+    {k?: []} => 'yes',
+    _ => 'no',
+})

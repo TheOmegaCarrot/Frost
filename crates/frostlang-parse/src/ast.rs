@@ -358,7 +358,7 @@ pub enum Pattern {
     },
     /// `(expr)`, a literal, or a format string: compare by value.
     Value(Spanned<Expr>),
-    /// `[p1, p2, ...rest] as name?`
+    /// `[p1, p2, ...rest] as name`, the rest and the `as` each optional.
     Array {
         /// The element patterns, before any rest.
         elements: Vec<Spanned<Pattern>>,
@@ -367,7 +367,7 @@ pub enum Pattern {
         /// The `as` binding for the whole Array; `None` when omitted.
         bind_whole: Option<Spanned<Binding>>,
     },
-    /// `{key: pattern, ...} as name?`
+    /// `{key: pattern, key?: pattern, ...} as name`, the `as` optional.
     Map {
         /// The entries.
         entries: Vec<Spanned<MapPatternEntry>>,
@@ -378,7 +378,7 @@ pub enum Pattern {
     Alternative(Vec<Spanned<Pattern>>),
 }
 
-/// One `key: pattern` entry of a [`Pattern::Map`].
+/// One `key: pattern` or `key?: pattern` entry of a [`Pattern::Map`].
 ///
 /// The shorthand `name` (or `name is Type`) is represented as the String key `"name"`
 /// with a [`Pattern::Binding`] of `name`.
@@ -386,6 +386,9 @@ pub enum Pattern {
 pub struct MapPatternEntry {
     /// The key; a bare `name` key is a String literal.
     pub key: Spanned<Expr>,
+    /// Whether the key is marked `?`: it may be absent, binding `null` to every name
+    /// in `pattern` without testing it.
+    pub optional: bool,
     /// The pattern the entry's value must match.
     pub pattern: Spanned<Pattern>,
 }

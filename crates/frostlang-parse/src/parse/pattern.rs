@@ -288,7 +288,11 @@ impl<'src> ParseCtx<'src> {
         let entry_start = self.must_peek("a name or `[`")?.span.start;
         // The key is parsed apart, so that this frame, on the path through nested Map
         // patterns, holds none of its locals.
-        let (key, shorthand) = self.parse_map_pattern_key()?;
+        let MapPatternKey {
+            key,
+            question,
+            shorthand,
+        } = self.parse_map_pattern_key()?;
         let pattern = match shorthand {
             Some(binding) => binding,
             None => {
@@ -297,20 +301,35 @@ impl<'src> ParseCtx<'src> {
                 self.parse_pattern()?
             }
         };
-        let span = (entry_start..pattern.span.end).into();
-        Ok(Spanned::new(MapPatternEntry { key, pattern }, span))
+        // The `?` of `{name?}` ends the entry, past its shorthand binding.
+        let end = question.map_or(pattern.span.end, |question| {
+            question.end.max(pattern.span.end)
+        });
+        let span = (entry_start..end).into();
+        Ok(Spanned::new(
+            MapPatternEntry {
+                key,
+                optional: question.is_some(),
+                pattern,
+            },
+            span,
+        ))
     }
 
-    /// A Map pattern entry's key, and for the shorthand `name`, which binds the value at
-    /// the key `name`, that binding. Otherwise a `:` and the entry's pattern follow.
-    fn parse_map_pattern_key(&mut self) -> ParseResult<(Spanned<Expr>, Option<Spanned<Pattern>>)> {
+    /// A Map pattern entry's key; unless a shorthand, a `:` and the entry's pattern
+    /// follow.
+    fn parse_map_pattern_key(&mut self) -> ParseResult<MapPatternKey> {
         const EXPECTED: &str = "a name or `[`";
         let peek = self.must_peek(EXPECTED)?;
 
         match peek.token {
             Token::OpenBracket => {
                 let (key, _) = self.delimited(Bracket::ComputedKey, Self::parse_expression)?;
-                Ok((key, None))
+                Ok(MapPatternKey {
+                    key,
+                    question: self.parse_optional_mark(),
+                    shorthand: None,
+                })
             }
 
             Token::Identifier(name) => {
@@ -318,6 +337,7 @@ impl<'src> ParseCtx<'src> {
                 let start = peek.span.start;
                 let end = peek.span.end;
                 self.advance(1);
+                let question = self.parse_optional_mark();
 
                 self.must_peek("`:`, `,`, or `}`")?;
                 // A `:` on a later line is still this key's, misplaced.
@@ -329,12 +349,33 @@ impl<'src> ParseCtx<'src> {
                 } else {
                     Some(self.parse_binding_pattern(name.clone(), start, end)?)
                 };
-                Ok((string_key_expr(name, start, end), shorthand))
+                Ok(MapPatternKey {
+                    key: string_key_expr(name, start, end),
+                    question,
+                    shorthand,
+                })
             }
 
             _ => Err(self.expected_in_list(EXPECTED, peek)),
         }
     }
+
+    /// The `?` marking a Map pattern key optional, if one follows; its span.
+    fn parse_optional_mark(&mut self) -> Option<SourceSpan> {
+        let question = self.peek().filter(|t| t.token == Token::Question)?;
+        let span = question.span.clone().into();
+        self.advance(1);
+        Some(span)
+    }
+}
+
+/// What [`ParseCtx::parse_map_pattern_key`] reads.
+struct MapPatternKey {
+    key: Spanned<Expr>,
+    /// The `?` marking the key optional, if any.
+    question: Option<SourceSpan>,
+    /// For the shorthand `name`, the binding of the value at the key `name`.
+    shorthand: Option<Spanned<Pattern>>,
 }
 
 fn value_pattern(expr: Spanned<Expr>) -> Spanned<Pattern> {

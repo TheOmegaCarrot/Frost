@@ -1,0 +1,4 @@
+# Optional entries still may not bind the same name twice.
+#= {rejects: '`a` is already bound'}
+def {a?, a?} = {}
+a

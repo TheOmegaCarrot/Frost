@@ -85,6 +85,9 @@ impl<'src> ParseCtx<'src> {
     /// The error for the token after `statement`, which is neither a line break nor `;`.
     fn statement_not_ended(&self, statement: SourceSpan) -> Diagnostic {
         let peek = self.peek().expect("a token follows the statement");
+        if let Some(diagnostic) = self.question_outside_map_pattern(peek) {
+            return diagnostic;
+        }
         // A token touching the statement's last name or literal, as `b101` touches the
         // `0` of `0b101`, makes one malformed token with it, not a statement after a
         // complete one. After a closer, as in `print("a")print("b")`, it is the next

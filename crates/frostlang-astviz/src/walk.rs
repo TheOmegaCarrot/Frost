@@ -355,7 +355,12 @@ impl<'a> Walker<'a> {
                     let k = self.expr(&ent.node.key);
                     let k = self.wrap("key", vec![k]);
                     let pat = self.pattern(&ent.node.pattern);
-                    children.push(self.wrap("entry", vec![k, pat]));
+                    let label = if ent.node.optional {
+                        "optional entry"
+                    } else {
+                        "entry"
+                    };
+                    children.push(self.wrap(label, vec![k, pat]));
                 }
                 let mut label = "Map".to_string();
                 if let Some(whole) = bind_whole {

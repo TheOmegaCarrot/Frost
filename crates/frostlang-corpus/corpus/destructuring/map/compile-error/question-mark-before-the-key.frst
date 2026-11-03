@@ -1,0 +1,4 @@
+# The `?` follows the key; it cannot precede it.
+#= {rejects: ['expected a name or `[`, but found `?`', 'an optional key takes `?` right after it']}
+def {?a} = {}
+a

@@ -1,0 +1,12 @@
+# A required entry that fails stops the Map pattern before a later optional
+# entry: its computed key is not evaluated.
+#= {result: 'no match', inputs: {m: {z: 0}}}
+def {m} = import('inputs')
+defn noisy(label, value) -> {
+    print(label)
+    value
+}
+match m {
+    {z: 1, [noisy('key', 'k')]?: v} => 'match',
+    _ => 'no match',
+}

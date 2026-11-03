@@ -1,0 +1,6 @@
+# A `def` binding under an optional key, at any depth, is not linted when no
+# code reads it.
+#= {result: 1, inputs: {m: {a: 1}}}
+def {m} = import('inputs')
+def {a?, b?, c?: {d? is Int} as e} = m
+a

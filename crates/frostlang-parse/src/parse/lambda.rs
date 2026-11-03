@@ -144,7 +144,7 @@ impl<'src> ParseCtx<'src> {
                         let end = expr.span.end;
                         Ok((Vec::new(), expr, end))
                     }
-                    Err(error) if error.past_a_limit() => Err(error),
+                    Err(error) if error.is_committed() => Err(error),
                     Err(_) => {
                         self.restore(checkpoint);
                         self.record_failed_map_reading(bracket);

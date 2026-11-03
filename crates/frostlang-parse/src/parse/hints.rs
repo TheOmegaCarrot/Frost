@@ -156,6 +156,10 @@ impl Site<'_, '_> {
             {
                 "rename a Map entry with `key: name`, like `{a: b}`"
             }
+            // `{a is Int?}`, `{a: b?}`, or `{?a}`
+            Token::Question if kind == Some(Bracket::MapPattern) => {
+                "an optional key takes `?` right after it, like `{a?}`, `{a? is Int}`, or `{a?: b}`"
+            }
             // `def y = 1 => 2` as a pattern, where a bare name binds
             Token::KwDef | Token::KwDefn
                 if kind == Some(Bracket::MatchArms) && self.at_a_pattern_start() =>

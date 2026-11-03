@@ -1,0 +1,7 @@
+# Whitespace may separate an optional key from its `?`.
+#= {result: [[1, 2], [null, null]], inputs: {full: {a: 1, b: 2}, empty: {}}}
+def {full, empty} = import('inputs')
+defn read(m) -> match m {
+    {a ?, b ?: v} => [a, v],
+}
+[read(full), read(empty)]

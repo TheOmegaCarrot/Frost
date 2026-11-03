@@ -1,0 +1,7 @@
+# An optional entry combines with `as`: the whole Map is bound untouched,
+# without the absent key.
+#= {result: [null, {c: 3}], inputs: {m: {c: 3}}}
+def {m} = import('inputs')
+match m {
+    {a?} as whole => [a, whole],
+}

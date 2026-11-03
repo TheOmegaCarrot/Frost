@@ -1,0 +1,12 @@
+# An absent optional key's sub-pattern is not tested, so a pin inside it is
+# not evaluated; a present key's is.
+#= {result: ['absent', 'present'], printed: ['pin'], inputs: {absent: {}, present: {k: 7}}}
+def {absent, present} = import('inputs')
+defn noisy(value) -> {
+    print('pin')
+    value
+}
+[
+    match absent { {k?: (noisy(7))} => 'absent' },
+    match present { {k?: (noisy(7))} => 'present' },
+]

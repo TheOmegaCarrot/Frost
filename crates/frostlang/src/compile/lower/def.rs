@@ -67,11 +67,11 @@ impl FunctionBuilder<'_> {
         let mut bindings = PatternBindings::new(self.locals.allocation_point());
         let pattern_fragment = self.compile_pattern(
             pattern,
-            &mut PatternContext {
-                mismatch: Mismatch::Raise,
-                mode: BindMode::Def { exported, pending },
-                bindings: &mut bindings,
-            },
+            &mut PatternContext::new(
+                Mismatch::Raise,
+                BindMode::Def { exported, pending },
+                &mut bindings,
+            ),
         )?;
         let bound = bindings.bound;
 
@@ -89,7 +89,7 @@ impl FunctionBuilder<'_> {
             }
             _ => None,
         };
-        self.locals.settle(&ids);
+        self.locals.commit(&ids);
 
         let mut code = None;
         if let Some(values) = matched {

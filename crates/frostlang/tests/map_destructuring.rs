@@ -1,9 +1,10 @@
 //! Map destructuring, end to end: `def {key, key: name, [expr]: name} as whole = value`.
 //!
-//! The value must be a Map, and must hold every key the pattern names; other keys
-//! are allowed. A key is a name (shorthand for the String key and a binding of
-//! it), a name mapped to a part, or a computed expression; `as` binds the whole
-//! Map. Parts bind in source order and may nest: each entry's key is evaluated,
+//! The value must be a Map, and must hold every key the pattern names but those
+//! marked optional, `key?`, whose absence binds null to every name in their part;
+//! other keys are allowed. A key is a name (shorthand for the String key and a
+//! binding of it), a name mapped to a part, or a computed expression; `as` binds
+//! the whole Map. Parts bind in source order and may nest: each entry's key is evaluated,
 //! looked up, and its part destructured before the next entry's key, so a
 //! computed key may read the bindings before it. `as` binds last.
 //!
@@ -946,6 +947,153 @@ fn a_name_bound_twice_across_nesting_is_a_compile_error() {
             "`v` is already bound",
         ),
     ]);
+}
+
+// --- Optional keys ---
+
+#[test]
+fn an_optional_key_binds_its_value_or_null() {
+    assert_values(&[
+        (
+            r"
+            def {host, port?} = {host: 'h', port: 1}
+            [host, port]
+            ",
+            "['h', 1]",
+        ),
+        (
+            r"
+            def {host, port?} = {host: 'h'}
+            [host, port, port or 8080]
+            ",
+            "['h', null, 8080]",
+        ),
+        (
+            r"
+            def {p?: q, [1]?: one} = {[1]: 'one'}
+            [q, one]
+            ",
+            "[null, 'one']",
+        ),
+        (
+            r"
+            def k = 'key'
+            def {[k]?: v, [k + 's']?: vs} = {key: 1}
+            [v, vs]
+            ",
+            "[1, null]",
+        ),
+        // Present with Null is present: the value itself is bound.
+        (
+            r"
+            def {age? is Null} = {age: null}
+            age
+            ",
+            "null",
+        ),
+        (
+            r"
+            def {age? is Int} = {}
+            age
+            ",
+            "null",
+        ),
+    ]);
+}
+
+#[test]
+fn an_absent_optional_key_binds_null_to_every_name_in_its_part() {
+    assert_values(&[
+        (
+            r"
+            def {pos?: [x, ...more] as p} = {}
+            [x, more, p]
+            ",
+            "[null, null, null]",
+        ),
+        (
+            r"
+            def {opts?: {debug, level?} as o} = {}
+            [debug, level, o]
+            ",
+            "[null, null, null]",
+        ),
+        (
+            r"
+            def {pos?: [x, y] | {x, y}} = {}
+            [x, y]
+            ",
+            "[null, null]",
+        ),
+        // Present, the part binds as usual, its own optional keys included.
+        (
+            r"
+            def {opts?: {debug, level?} as o} = {opts: {debug: true}}
+            [debug, level, o]
+            ",
+            "[true, null, {debug: true}]",
+        ),
+    ]);
+}
+
+#[test]
+fn an_absent_optional_keys_part_is_never_evaluated() {
+    assert_values(&[(
+        &noting(
+            r#"
+            def {[note("k")]?: {[note("inner")]: v, w: (note("pin"))}} = {}
+            [v, log.get()]
+            "#,
+        ),
+        r#"[null, ["k"]]"#,
+    )]);
+}
+
+#[test]
+fn a_present_optional_key_must_match_its_part() {
+    assert_raises(&[
+        ("def {age? is Int} = {age: 's'}", "expected an Int"),
+        ("def {age? is Int} = {age: null}", "expected an Int"),
+        (
+            "def {pos?: [x, y]} = {pos: [1]}",
+            "expected an Array of exactly 2 elements",
+        ),
+        ("def {opts?: {debug}} = {opts: {}}", "debug"),
+    ]);
+}
+
+#[test]
+fn optional_keys_still_need_a_map() {
+    assert_raises(&[("def {a?} = [1]", "expected a Map")]);
+}
+
+#[test]
+fn an_optional_binding_counts_as_binding_a_name() {
+    assert_values(&[(
+        r"
+        def {a?} = {}
+        a
+        ",
+        "null",
+    )]);
+    assert_compile_errors(&[
+        ("def {a?: _} = {}", "this `def` binds no name"),
+        ("def {a?, a?} = {}", "`a` is already bound"),
+        ("def {a?, b: a} = {b: 1}", "`a` is already bound"),
+    ]);
+}
+
+#[test]
+fn an_exported_pattern_exports_its_optional_names() {
+    assert_exports(
+        Script::new(
+            r"
+            export def {a?, b?: [c]} = {a: 1}
+            0
+            ",
+        ),
+        &[("a", "1"), ("c", "null")],
+    );
 }
 
 // --- Nesting ---

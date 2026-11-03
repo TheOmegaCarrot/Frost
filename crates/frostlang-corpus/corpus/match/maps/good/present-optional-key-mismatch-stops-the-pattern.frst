@@ -1,0 +1,12 @@
+# A present optional key whose value fails its sub-pattern stops the Map
+# pattern: a later entry's computed key is not evaluated.
+#= {result: 'no match', inputs: {m: {a: 's', b: 1}}}
+def {m} = import('inputs')
+defn noisy(label, value) -> {
+    print(label)
+    value
+}
+match m {
+    {a?: [x], [noisy('key', 'b')]: y} => [x, y],
+    _ => 'no match',
+}

@@ -1,0 +1,5 @@
+# A computed optional key has no shorthand form: `?` is followed by `:` and
+# the pattern for its value.
+#= {rejects: 'expected `:`'}
+def {['k']?} = {k: 1}
+1

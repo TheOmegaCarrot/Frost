@@ -1,0 +1,12 @@
+# When an optional key holds an alternative and is absent, every name its
+# branches bind is bound to Null, whatever order each branch binds them in;
+# when present, the first matching branch binds as usual.
+#= {
+#=     result: [[null, null], [1, 2], [4, 3]],
+#=     inputs: {a: {}, b: {v: {x: 1, y: 2}}, c: {v: [3, 4]}},
+#= }
+def {a, b, c} = import('inputs')
+defn read(m) -> match m {
+    {v?: {x, y} | [y, x]} => [x, y],
+}
+[read(a), read(b), read(c)]

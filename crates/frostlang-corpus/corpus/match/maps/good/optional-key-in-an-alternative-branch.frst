@@ -1,0 +1,19 @@
+# An optional entry may sit in one branch of an alternative, written first or
+# last: its branch binds the name whether the key is present or absent.
+#= {
+#=     result: [[null, 1, 2, 'no match'], [null, 1, 2, 'no match']],
+#=     inputs: {empty: {}, full: {a: 1}, one: [2], two: [1, 2]},
+#= }
+def {empty, full, one, two} = import('inputs')
+defn map_first(v) -> match v {
+    {a?} | [a] => a,
+    _ => 'no match',
+}
+defn array_first(v) -> match v {
+    [a] | {a?} => a,
+    _ => 'no match',
+}
+[
+    [map_first(empty), map_first(full), map_first(one), map_first(two)],
+    [array_first(empty), array_first(full), array_first(one), array_first(two)],
+]

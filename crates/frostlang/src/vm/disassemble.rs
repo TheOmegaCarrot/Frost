@@ -477,11 +477,12 @@ fn pattern_source(pattern: &CompiledPattern, function: &ListedFunction) -> Strin
         CompiledPattern::Map { entries, whole } => {
             let entries: Vec<String> = entries
                 .iter()
-                .map(|(key, entry_pattern)| {
+                .map(|entry| {
                     format!(
-                        "{}: {}",
-                        key_source(key, function),
-                        pattern_source(entry_pattern, function)
+                        "{}{}: {}",
+                        key_source(&entry.key, function),
+                        if entry.optional { "?" } else { "" },
+                        pattern_source(&entry.pattern, function)
                     )
                 })
                 .collect();

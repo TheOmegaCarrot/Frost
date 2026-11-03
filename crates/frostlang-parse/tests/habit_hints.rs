@@ -570,6 +570,51 @@ fn question_and_exclamation_marks() {
         ("f(!a)", Some("Frost's \"not\" is `not`")),
         // A conditional needs a condition before its `?`.
         ("match x { ? => 1 }", None),
+        // `?` marks an optional key only in a Map pattern, not a Map literal.
+        ("def m = {a?}", Some(names)),
+        ("def m = {a?: 1}", Some(fallback)),
+        // Nested in a Map pattern, but not right inside one.
+        ("def {a: [b?]} = m", Some(names)),
+    ]);
+}
+
+/// A `?` outside a Map pattern is an unreadable character: its error labels the
+/// `?` alone, whatever was being parsed around it.
+#[test]
+fn a_question_mark_outside_a_map_pattern_is_labeled_alone() {
+    for src in [
+        "def v = a ? b : c",
+        "x ?: y",
+        "def f = fn x -> x ?: 1",
+        "do {\n  a ? b : c\n}",
+        "def xs = [\n  1,\n  a ? b : c\n]",
+        "f(\n  1,\n  x?\n)",
+        // A lambda body read as a Map fails at the `?`, which reading it as a
+        // block would only fail sooner at the `:` to hide.
+        "def f = fn -> {[x]: a ? b : c}",
+    ] {
+        let err = parse_program("test.frst", src).expect_err(src);
+        assert_eq!(err.message(), "unexpected character `?`", "{src}");
+        let labels: Vec<(&str, &str)> = err
+            .labels()
+            .iter()
+            .map(|label| (&src[label.span.start..label.span.end], label.text.as_str()))
+            .collect();
+        assert_eq!(labels, [("?", "unrecognized")], "{src}");
+    }
+}
+
+/// Right inside a Map pattern, `?` marks an optional key; out of place there, it
+/// is pointed to its place after the key.
+#[test]
+fn a_question_mark_out_of_place_in_a_map_pattern() {
+    let help = "an optional key takes `?` right after it, like `{a?}`, `{a? is Int}`, or `{a?: b}`";
+    assert_help(&[
+        ("def {a is Int?} = m", help),
+        ("def {a: b?} = m", help),
+        ("def {?a} = m", help),
+        ("def {a??} = m", help),
+        ("match m { {a: b?} => b }", help),
     ]);
 }
 

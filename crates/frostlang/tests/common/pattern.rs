@@ -2,7 +2,7 @@
 
 use frostlang::TypeSet;
 use frostlang::bytecode::{
-    ArrayPatternLength, CompiledPattern, PatternComparand, PatternInput, PatternKey,
+    ArrayPatternLength, CompiledPattern, PatternComparand, PatternEntry, PatternInput, PatternKey,
 };
 
 /// `local`: matches any value, binding it to `local`.
@@ -82,14 +82,45 @@ pub(crate) fn array_as(array: CompiledPattern, whole: u32) -> CompiledPattern {
     }
 }
 
-/// `{key: pattern, ...} as whole`, with `whole` if any.
+/// `{key: pattern, ...} as whole`, every key required, with `whole` if any.
 pub(crate) fn map(
     entries: impl IntoIterator<Item = (PatternKey, CompiledPattern)>,
+    whole: Option<u32>,
+) -> CompiledPattern {
+    map_of(
+        entries
+            .into_iter()
+            .map(|(key, pattern)| required(key, pattern)),
+        whole,
+    )
+}
+
+/// [`map`], of entries from [`required`] and [`optional`].
+pub(crate) fn map_of(
+    entries: impl IntoIterator<Item = PatternEntry>,
     whole: Option<u32>,
 ) -> CompiledPattern {
     CompiledPattern::Map {
         entries: entries.into_iter().collect(),
         whole,
+    }
+}
+
+/// `key: pattern`, an entry of a [`map_of`].
+pub(crate) fn required(key: PatternKey, pattern: CompiledPattern) -> PatternEntry {
+    PatternEntry {
+        key,
+        optional: false,
+        pattern,
+    }
+}
+
+/// `key?: pattern`, an entry of a [`map_of`].
+pub(crate) fn optional(key: PatternKey, pattern: CompiledPattern) -> PatternEntry {
+    PatternEntry {
+        key,
+        optional: true,
+        pattern,
     }
 }
 

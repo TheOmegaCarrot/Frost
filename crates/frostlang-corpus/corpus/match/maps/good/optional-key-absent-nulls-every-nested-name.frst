@@ -1,0 +1,13 @@
+# An absent optional key binds Null to every name its sub-pattern would bind,
+# however deeply nested: Array elements and rest, an `as` name, and a nested
+# Map's entries, optional or not.
+#= {
+#=     result: [[null, null, null], [null, null, null], null],
+#=     inputs: {empty: {}},
+#= }
+def {empty} = import('inputs')
+[
+    match empty { {xs?: [a, b, ...rest]} => [a, b, rest] },
+    match empty { {m?: {p, q?: r} as whole} => [p, r, whole] },
+    match empty { {n?: {deep?: {x}}} => x },
+]

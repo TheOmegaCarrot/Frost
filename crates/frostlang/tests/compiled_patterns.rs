@@ -9,7 +9,8 @@ use std::collections::BTreeMap;
 
 use crate::common::global_slot;
 use crate::common::pattern::{
-    array_as, at_least, bind, discard, either, exact, input_key, int, key, map, pin, typed, value,
+    array_as, at_least, bind, discard, either, exact, input_key, int, key, map, map_of, optional,
+    pin, typed, value,
 };
 use crate::script::{Emitted, Script, UNOPTIMIZED, raises, run};
 use crate::unshared::unshared;
@@ -217,6 +218,22 @@ fn each_kind_of_pattern_compiles() {
                 array_as(at_least([discard()], Some(slot(e, "rest"))), slot(e, "all"))
             }),
             ("[] as _", |_| exact([])),
+            ("{name?: n, [1]?: _, age? is Int}", |e| {
+                map_of(
+                    [
+                        optional(
+                            key(key_constant(e, &MapKey::from("name"))),
+                            bind(slot(e, "n")),
+                        ),
+                        optional(key(key_constant(e, &MapKey::Int(1))), discard()),
+                        optional(
+                            key(key_constant(e, &MapKey::from("age"))),
+                            typed(FrostType::INT, Some(slot(e, "age"))),
+                        ),
+                    ],
+                    None,
+                )
+            }),
             ("{}", |_| map([], None)),
             ("{name: n} as m", |e| {
                 map(
@@ -688,6 +705,15 @@ fn a_binding_nothing_reads_is_not_kept() {
                 )
             }),
             ("[a, ...rest] as all", |_| at_least([discard()], None)),
+            ("{a?: [v, w]} if: w", |e| {
+                map_of(
+                    [optional(
+                        key(key_constant(e, &MapKey::from("a"))),
+                        exact([discard(), bind(slot(e, "w"))]),
+                    )],
+                    None,
+                )
+            }),
             ("[a] as all if: len(all) > 0", |e| {
                 array_as(exact([discard()]), slot(e, "all"))
             }),
@@ -1157,6 +1183,31 @@ match x {
         (
             r"
 match x {
+    {kind: 'point', pos?: [px, py] | {x: px, y: py}, label? is String} => [px, py, label],
+    {kind?} as m => [kind, m],
+    _ => 'other'
+}
+",
+            &[
+                ("{kind: 'point'}", "[null, null, null]"),
+                ("{kind: 'point', pos: [1, 2], label: 'a'}", "[1, 2, 'a']"),
+                ("{kind: 'point', pos: {x: 1, y: 2}}", "[1, 2, null]"),
+                // Present with a value its pattern rejects, Null included.
+                (
+                    "{kind: 'point', label: 3}",
+                    "['point', {kind: 'point', label: 3}]",
+                ),
+                (
+                    "{kind: 'point', pos: null}",
+                    "['point', {kind: 'point', pos: null}]",
+                ),
+                ("{}", "[null, {}]"),
+                ("5", "'other'"),
+            ],
+        ),
+        (
+            r"
+match x {
     {[1]: a, [true]: b, [x'6b']: c} => [a, b, c],
     _ => 'other'
 }
@@ -1375,6 +1426,23 @@ match x {
             ("[[1, 2], [1, 2], [2]]", "[1, 2]"),
             ("[[1, 2], [1, 3], [2]]", "'no'"),
             ("[[1, 2], [1, 2], [3]]", "'no'"),
+        ],
+    );
+    // An optional key's binding, null if absent, and as a computed key.
+    assert_outcomes(
+        r"
+match x {
+    [{k?: a}, (a)] => a,
+    [k, {[k]?: v}] => v,
+    _ => 'no'
+}
+",
+        &[
+            ("[{}, null]", "null"),
+            ("[{k: 1}, 1]", "1"),
+            ("[{}, 1]", "'no'"),
+            ("['j', {j: 2}]", "2"),
+            ("['j', {}]", "null"),
         ],
     );
 }

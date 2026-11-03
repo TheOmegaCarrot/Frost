@@ -22,8 +22,9 @@ use frostlang_parse::ast::SourceSpan;
 
 use crate::compile::lower::{Ir, LocalId, Op};
 
-/// What role a local plays in its frame. Captures are seated by the VM into the
-/// leading slots; params and bindings are defined by the code itself.
+/// What role a local plays in its frame, and how the compiler treats it.
+/// Captures are seated by the VM into the leading slots; params and bindings are
+/// defined by the code itself.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(super) enum LocalKind {
     Capture,
@@ -33,6 +34,11 @@ pub(super) enum LocalKind {
     Hoisted,
     Param,
     Binding,
+    /// A pattern binding under an optional Map key, null when the key is absent.
+    /// Unlike a [`Binding`](Self::Binding), it is not linted when unused: the
+    /// lint's advice, to remove the name or bind `_` instead, does not fit a
+    /// name a Map may lack, which records what the Map may hold.
+    OptionalBinding,
 }
 
 impl LocalKind {
@@ -131,9 +137,8 @@ impl Locals {
         self.used[id.0] = true;
     }
 
-    /// Every binding, in or out of view, that the code never reads and that is
-    /// not exported, in definition order. Parameters and captures are not
-    /// bindings.
+    /// Every [`Binding`](LocalKind::Binding), in or out of view, that the code
+    /// never reads and that is not exported, in definition order.
     pub(super) fn unused_bindings(&self) -> impl Iterator<Item = &LocalInfo> {
         self.infos
             .iter()
@@ -173,7 +178,7 @@ impl Locals {
     }
 
     /// End the pending state of `ids`.
-    pub(super) fn settle(&mut self, ids: &[LocalId]) {
+    pub(super) fn commit(&mut self, ids: &[LocalId]) {
         self.pending.retain(|id| !ids.contains(id));
     }
 
@@ -243,6 +248,15 @@ impl Locals {
     /// defined again.
     pub(super) fn revive(&mut self, id: LocalId) {
         self.live.push(id);
+    }
+
+    /// Make the binding `id` an [`OptionalBinding`](LocalKind::OptionalBinding),
+    /// as a later alternative branch binds it under an optional Map key.
+    pub(super) fn mark_optional(&mut self, id: LocalId) {
+        let info = &mut self.infos[id.0];
+        if info.kind == LocalKind::Binding {
+            info.kind = LocalKind::OptionalBinding;
+        }
     }
 
     /// Assign each local a concrete frame slot and build the parallel name table,

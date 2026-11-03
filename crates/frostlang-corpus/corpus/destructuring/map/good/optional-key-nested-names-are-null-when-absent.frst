@@ -1,0 +1,6 @@
+# In a `def`, an absent optional key binds Null to every name in its
+# sub-pattern, nested ones included.
+#= {result: [null, null, null, null, null], inputs: {empty: {}}}
+def {empty} = import('inputs')
+def {xs?: [a, ...rest], m?: {p, q?: r} as inner} = empty
+[a, rest, p, r, inner]

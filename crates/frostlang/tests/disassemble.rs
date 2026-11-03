@@ -14,7 +14,8 @@ use frostlang::{Arity, FrostFloat, FrostType, MapKey, Value};
 
 use crate::common::global_slot;
 use crate::common::pattern::{
-    array_as, at_least, bind, discard, either, exact, input_key, int, key, map, pin, typed, value,
+    array_as, at_least, bind, discard, either, exact, input_key, int, key, map, map_of, optional,
+    pin, required, typed, value,
 };
 
 use Bytecode::*;
@@ -182,7 +183,7 @@ fn keys_are_shown_as_source_would_access_them() {
 #[test]
 fn patterns_are_listed_as_source_would_write_them_and_shown_beside_their_use_cut_short() {
     let print = global_slot("print");
-    let mut main = function("<main>", (0..9).map(MatchPattern).collect());
+    let mut main = function("<main>", (0..10).map(MatchPattern).collect());
     main.name_table = ["kind", "lhs", "rhs", "rest", "whole", "y"]
         .map(|name| slot(name, false))
         .to_vec();
@@ -232,6 +233,14 @@ fn patterns_are_listed_as_source_would_write_them_and_shown_beside_their_use_cut
         exact([]),
         map([(key(0), either([int(1), int(2)]))], None),
         array_as(at_least([array_as(exact([]), 5)], Some(3)), 4),
+        map_of(
+            [
+                optional(key(1), bind(1)),
+                required(key(0), discard()),
+                optional(input_key(PatternInput::Local(5)), discard()),
+            ],
+            None,
+        ),
     ];
     // An Alternative that is a branch of another lists merged into it.
     let expected = r#"function <main>
@@ -259,6 +268,7 @@ fn patterns_are_listed_as_source_would_write_them_and_shown_beside_their_use_cut
        6  []
        7  {kind: 1 | 2}
        8  [[] as y, ...rest] as whole
+       9  {lhs?: lhs, kind: _, [y]?: _}
   code
        0  MatchPattern  0  ; {kind: "add", lhs: lhs, ["two words"]...
        1  MatchPattern  1  ; [null, true, 1, 1.5, _, _ is String, ...
@@ -269,6 +279,7 @@ fn patterns_are_listed_as_source_would_write_them_and_shown_beside_their_use_cut
        6  MatchPattern  6  ; []
        7  MatchPattern  7  ; {kind: 1 | 2}
        8  MatchPattern  8  ; [[] as y, ...rest] as whole
+       9  MatchPattern  9  ; {lhs?: lhs, kind: _, [y]?: _}
 "#;
     assert_eq!(listing(&main), expected);
 }

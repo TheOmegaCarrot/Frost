@@ -1,0 +1,11 @@
+# `{k?: {}}` matches when the key is absent or holds any Map, empty or not,
+# and not when it holds anything else, Null included.
+#= {
+#=     result: ['yes', 'yes', 'yes', 'no', 'no'],
+#=     inputs: {values: [{}, {k: {}}, {k: {a: 1}}, {k: []}, {k: null}]},
+#= }
+def {values} = import('inputs')
+values @ map(fn v -> match v {
+    {k?: {}} => 'yes',
+    _ => 'no',
+})

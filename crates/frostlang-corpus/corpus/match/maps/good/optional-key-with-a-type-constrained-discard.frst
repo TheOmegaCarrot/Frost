@@ -1,0 +1,11 @@
+# `{k?: _ is Int}` checks without binding: it matches when the key is absent
+# or holds an Int, and not when it holds anything else, Null included.
+#= {
+#=     result: ['yes', 'yes', 'no', 'no'],
+#=     inputs: {values: [{}, {k: 1}, {k: 's'}, {k: null}]},
+#= }
+def {values} = import('inputs')
+values @ map(fn v -> match v {
+    {k?: _ is Int} => 'yes',
+    _ => 'no',
+})

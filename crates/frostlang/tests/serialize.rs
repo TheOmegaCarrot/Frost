@@ -9,7 +9,7 @@ use std::sync::Arc;
 
 use frostlang::bytecode::{
     ArrayPatternLength, Bytecode, CompiledFunction, CompiledPattern, FormatVersion, NameEntry,
-    PatternComparand, PatternInput, PatternKey,
+    PatternComparand, PatternEntry, PatternInput, PatternKey,
 };
 use frostlang::{Arity, FrostArray, FrostMap, FrostType, MapKey, Value, from_value, to_value};
 
@@ -91,21 +91,24 @@ fn sample_patterns() -> Vec<CompiledPattern> {
     vec![
         CompiledPattern::Map {
             entries: [
-                (
-                    PatternKey::Constant(0),
-                    CompiledPattern::Binding {
+                PatternEntry {
+                    key: PatternKey::Constant(0),
+                    optional: false,
+                    pattern: CompiledPattern::Binding {
                         types: Some(FrostType::NUMERIC),
                         local: Some(0),
                     },
-                ),
-                (
-                    PatternKey::Input(PatternInput::Local(0)),
-                    comparand(PatternComparand::Input(PatternInput::EarlierBinding(0))),
-                ),
-                (
-                    PatternKey::Input(PatternInput::Global(1)),
-                    comparand(PatternComparand::Constant(2)),
-                ),
+                },
+                PatternEntry {
+                    key: PatternKey::Input(PatternInput::Local(0)),
+                    optional: true,
+                    pattern: comparand(PatternComparand::Input(PatternInput::EarlierBinding(0))),
+                },
+                PatternEntry {
+                    key: PatternKey::Input(PatternInput::Global(1)),
+                    optional: false,
+                    pattern: comparand(PatternComparand::Constant(2)),
+                },
             ]
             .into(),
             whole: Some(0),

@@ -1,0 +1,9 @@
+# `{k?: 5}` binds nothing: it matches when the key is absent or holds 5, and
+# not when the key holds anything else.
+#= {result: ['yes', 'yes', 'no', 'no'], inputs: {a: {}, b: {k: 5}, c: {k: 6}, d: {k: null}}}
+def {a, b, c, d} = import('inputs')
+defn check(m) -> match m {
+    {k?: 5} => 'yes',
+    _ => 'no',
+}
+[check(a), check(b), check(c), check(d)]

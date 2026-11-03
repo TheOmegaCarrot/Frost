@@ -1,0 +1,5 @@
+# An optional entry whose pattern is a discard binds no name, so the `def`
+# binds none.
+#= {rejects: 'binds no name'}
+def {a?: _} = {}
+1

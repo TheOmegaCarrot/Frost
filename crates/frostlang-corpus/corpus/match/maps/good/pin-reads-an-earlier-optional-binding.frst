@@ -1,0 +1,9 @@
+# A pin may read the binding of an earlier optional entry: the value when the
+# key is present, Null when it is absent.
+#= {result: ['same', 'differ', 'same'], inputs: {a: {k: 1, j: 1}, b: {k: 1, j: 2}, c: {j: null}}}
+def {a, b, c} = import('inputs')
+defn check(m) -> match m {
+    {k?: first, j: (first)} => 'same',
+    _ => 'differ',
+}
+[check(a), check(b), check(c)]

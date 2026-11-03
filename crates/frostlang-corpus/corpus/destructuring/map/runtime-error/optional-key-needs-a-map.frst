@@ -1,0 +1,5 @@
+# Optional entries do not excuse a non-Map value.
+#= {raises: 'expected a Map', inputs: {v: [1]}}
+def {v} = import('inputs')
+def {a?} = v
+a

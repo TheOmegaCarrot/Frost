@@ -1,0 +1,7 @@
+# The `is` constraint on an optional key, resolved ahead of time on literals.
+#= {result: [['int', 3], ['int', null], ['other'], ['other'], ['other']]}
+defn read(m) -> match m {
+    {age? is Int} => ['int', age],
+    _ => ['other'],
+}
+[read({age: 3}), read({}), read({age: 's'}), read({age: null}), read(7)]

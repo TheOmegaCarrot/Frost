@@ -1,0 +1,9 @@
+# A key present with the value Null matches any sub-pattern that accepts
+# Null: a name, a `null` literal, or the constraint `is Null`.
+#= {result: [['bound', null], 'literal', ['typed', null]], inputs: {m: {k: null}}}
+def {m} = import('inputs')
+[
+    match m { {k?: v} => ['bound', v], _ => 'no match' },
+    match m { {k?: null} => 'literal', _ => 'no match' },
+    match m { {k? is Null} => ['typed', k], _ => 'no match' },
+]

@@ -300,11 +300,11 @@ impl FunctionBuilder<'_> {
         let start = self.locals.allocation_point();
         let pattern = self.compile_pattern(
             &arm.node.pattern,
-            &mut PatternContext {
-                mismatch: Mismatch::Jump(fail),
-                mode: BindMode::Arm,
-                bindings: &mut PatternBindings::new(start),
-            },
+            &mut PatternContext::new(
+                Mismatch::Jump(fail),
+                BindMode::Arm,
+                &mut PatternBindings::new(start),
+            ),
         )?;
         let pattern_span = debug_span(arm.node.pattern.span);
         let compile_patterns = self.options.optimization_options.compile_patterns;
@@ -364,11 +364,11 @@ impl FunctionBuilder<'_> {
         let start = self.locals.allocation_point();
         let pattern = self.compile_pattern(
             &arm.node.pattern,
-            &mut PatternContext {
-                mismatch: Mismatch::Jump(never),
-                mode: BindMode::Arm,
-                bindings: &mut PatternBindings::new(start),
-            },
+            &mut PatternContext::new(
+                Mismatch::Jump(never),
+                BindMode::Arm,
+                &mut PatternBindings::new(start),
+            ),
         )?;
         let result = self.compile_expression(&arm.node.result, position)?;
         let clear_after_result = clear_locals(

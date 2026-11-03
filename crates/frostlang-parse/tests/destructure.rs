@@ -638,6 +638,110 @@ fn error_array_as_twice() {
     );
 }
 
+// -- Optional Map keys --
+
+/// Whether each entry of the Map pattern `p` is optional, in order.
+fn optional_flags(p: &Spanned<Pattern>) -> Vec<bool> {
+    map(p).0.iter().map(|entry| entry.node.optional).collect()
+}
+
+#[test]
+fn an_entry_without_a_question_mark_is_required() {
+    let d = def_pattern("def {a, b: c, d is Int, [1]: e} = m");
+    assert_eq!(optional_flags(&d), [false, false, false, false]);
+}
+
+#[test]
+fn optional_shorthand() {
+    let d = def_pattern("def {host, port?} = m");
+    let (entries, _) = map(&d);
+    assert_eq!(optional_flags(&d), [false, true]);
+    assert_eq!(str_key(&entries[1]), "port");
+    assert_eq!(named(&entries[1].node.pattern), "port");
+}
+
+#[test]
+fn optional_shorthand_with_a_type_constraint() {
+    let d = def_pattern("def {age? is Int} = m");
+    let (entries, _) = map(&d);
+    assert_eq!(optional_flags(&d), [true]);
+    assert_eq!(
+        constrained_name(&entries[0].node.pattern),
+        ("age", TypeConstraint::Int)
+    );
+}
+
+#[test]
+fn optional_named_key_with_a_pattern() {
+    let d = def_pattern("def {pos?: [x, y]} = m");
+    let (entries, _) = map(&d);
+    assert_eq!(optional_flags(&d), [true]);
+    assert_eq!(str_key(&entries[0]), "pos");
+    let (elements, _) = array(&entries[0].node.pattern);
+    assert_eq!(elements.len(), 2);
+}
+
+#[test]
+fn optional_computed_key() {
+    let d = def_pattern("def {[k]?: v} = m");
+    let (entries, _) = map(&d);
+    assert_eq!(optional_flags(&d), [true]);
+    assert_eq!(named(&entries[0].node.pattern), "v");
+}
+
+#[test]
+fn optional_key_spaced_from_its_question_mark() {
+    for src in [
+        "def {a ?} = m",
+        "def {a ? is Int} = m",
+        "def {a ?: b} = m",
+        "def {[1] ?: b} = m",
+    ] {
+        assert_eq!(optional_flags(&def_pattern(src)), [true], "{src}");
+    }
+}
+
+#[test]
+fn optional_keys_nest_and_take_as() {
+    let d = def_pattern("def {opts?: {debug?} as o} as m = c");
+    let (entries, whole) = map(&d);
+    assert!(is_named(whole, "m"), "as was {whole:?}");
+    assert_eq!(optional_flags(&d), [true]);
+    let inner = &entries[0].node.pattern;
+    assert_eq!(optional_flags(inner), [true]);
+    assert!(is_named(map(inner).1, "o"));
+}
+
+#[test]
+fn an_optional_shorthand_entry_spans_its_question_mark() {
+    let src = "def {port?, b} = m";
+    let d = def_pattern(src);
+    let (entries, _) = map(&d);
+    let span = entries[0].span;
+    assert_eq!(&src[span.start..span.end], "port?");
+}
+
+#[test]
+fn error_question_mark_misplaced_in_a_map_pattern() {
+    assert_eq!(
+        parse_err_message("def {a??} = m"),
+        "expected `,` or `}`, but found `?`"
+    );
+    assert_eq!(
+        parse_err_message("def {?a} = m"),
+        "expected a name or `[`, but found `?`"
+    );
+    assert_eq!(
+        parse_err_message("def {a: b?} = m"),
+        "expected `,` or `}`, but found `?`"
+    );
+    // A computed key's entry needs its pattern.
+    assert_eq!(
+        parse_err_message("def {[k]?} = m"),
+        "expected `:`, but found `}`"
+    );
+}
+
 // -- Statement separation --
 
 #[test]

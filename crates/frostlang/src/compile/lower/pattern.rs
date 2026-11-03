@@ -20,7 +20,7 @@
 //! arm may test that instead; see
 //! [`match_expression`](crate::compile::lower::match_expression).
 
-use crate::bytecode::{ArrayPatternLength, Bytecode, CompiledPattern, Span};
+use crate::bytecode::{ArrayPatternLength, Bytecode, CompiledPattern, PatternEntry, Span};
 use crate::core::util::count::counted;
 use crate::vm::to_operand;
 use crate::{FrostType, TypeSet, Value};
@@ -118,18 +118,46 @@ pub(super) enum BindMode<'a> {
 /// How a pattern, or a part of one, is compiled: what its failed checks do,
 /// and where the names it binds go and are recorded.
 pub(super) struct PatternContext<'a> {
-    pub(super) mismatch: Mismatch,
-    pub(super) mode: BindMode<'a>,
-    pub(super) bindings: &'a mut PatternBindings,
+    mismatch: Mismatch,
+    mode: BindMode<'a>,
+    bindings: &'a mut PatternBindings,
+    /// Whether the part being compiled is under an optional Map key, so that the
+    /// names it binds are [`OptionalBinding`](LocalKind::OptionalBinding)s.
+    in_optional_entry: bool,
 }
 
-impl PatternContext<'_> {
+impl<'a> PatternContext<'a> {
+    /// For a whole pattern.
+    pub(super) fn new(
+        mismatch: Mismatch,
+        mode: BindMode<'a>,
+        bindings: &'a mut PatternBindings,
+    ) -> Self {
+        Self {
+            mismatch,
+            mode,
+            bindings,
+            in_optional_entry: false,
+        }
+    }
+
     /// This context, its failed checks handled per `mismatch` instead.
     fn with_mismatch(&mut self, mismatch: Mismatch) -> PatternContext<'_> {
         PatternContext {
             mismatch,
             mode: self.mode,
             bindings: self.bindings,
+            in_optional_entry: self.in_optional_entry,
+        }
+    }
+
+    /// This context, for the part of an optional Map key.
+    fn for_optional_entry(&mut self) -> PatternContext<'_> {
+        PatternContext {
+            mismatch: self.mismatch,
+            mode: self.mode,
+            bindings: self.bindings,
+            in_optional_entry: true,
         }
     }
 }
@@ -333,14 +361,14 @@ impl FunctionBuilder<'_> {
         .collect()
     }
 
-    /// `{key: part, ...} as whole`: check the value is a Map, then take each key
-    /// in source order, the Map staying beneath. A known key is looked up
-    /// directly, `( m -- m v )`; any other is evaluated in place first,
-    /// `( m -- m k )`, then looked up, `( m k -- m v )`. Its part consumes the
+    /// `{key: part, key?: part, ...} as whole`: check the value is a Map, then
+    /// take each entry in source order, the Map staying beneath: its key is
+    /// compiled and looked up (see [`KeyLookup`]), and its part consumes the
     /// value. The Map left at the end is bound whole, or dropped.
     ///
-    /// A missing key is a mismatch. Under [`Mismatch::Raise`], the lookup itself
-    /// raises, its error naming the key.
+    /// A missing key is a mismatch, unless optional (see
+    /// [`optional_entry`](Self::optional_entry)). Under [`Mismatch::Raise`], the
+    /// lookup itself raises, its error naming the key.
     fn compile_map_pattern(
         &mut self,
         entries: &[Spanned<MapPatternEntry>],
@@ -366,39 +394,23 @@ impl FunctionBuilder<'_> {
             let key = self.compile_expression(&entry.node.key, Position::Inner)?;
             let key = self.fold_if_eligible(key);
             let match_key = pattern_key_of(&key.code, &self.allocated_in_pattern(ctx.bindings));
-            let part = self.compile_pattern(&entry.node.pattern, ctx)?;
-            foldable &= key.foldable && part.foldable;
-            match_entries.push(match_key.zip(part.match_pattern));
-            // The entry's own lookup.
+            let lookup = key_lookup(key.code);
+            let part = &entry.node.pattern;
             let entry_span = debug_span(entry.span);
-            let (test, extract) = match constant_key_of(&key.code) {
-                Some(known_key) => (
-                    Op::ConstKey {
-                        op: ConstKeyOp::Test,
-                        key: known_key.clone(),
-                    },
-                    Op::ConstKey {
-                        op: ConstKeyOp::Extract,
-                        key: known_key,
-                    },
-                ),
-                None => {
-                    code.extend(key.code);
-                    (
-                        Op::Ready(Bytecode::TestKey),
-                        Op::Ready(Bytecode::ExtractKey),
-                    )
-                }
+            let fragment = if entry.node.optional {
+                self.optional_entry(lookup, part, ctx, entry_span)?
+            } else {
+                self.required_entry(lookup, part, ctx, entry_span)?
             };
-            if !matches!(ctx.mismatch, Mismatch::Raise) {
-                code.extend(
-                    self.check([test.at(entry_span)], ctx.mismatch, entry_span, || {
-                        unreachable!("only `Mismatch::Raise` says what a check expected")
-                    }),
-                );
-            }
-            code.push(extract.at(entry_span));
-            code.extend(part.code);
+            foldable &= key.foldable && fragment.foldable;
+            code.extend(fragment.code);
+            match_entries.push(match_key.zip(fragment.match_pattern).map(|(key, pattern)| {
+                PatternEntry {
+                    key,
+                    optional: entry.node.optional,
+                    pattern,
+                }
+            }));
         }
 
         let whole = match bind_whole {
@@ -417,6 +429,73 @@ impl FunctionBuilder<'_> {
                 .collect::<Option<_>>()
                 .map(|entries| CompiledPattern::Map { entries, whole }),
         })
+    }
+
+    /// A required Map entry at `span`, whose key `lookup` finds: check the key
+    /// is present, unless a missing key raises in the lookup itself, then look it
+    /// up and match its `part` against the value. The fragment's code is the
+    /// whole entry's, `( m -- m )`; the rest is its part's.
+    fn required_entry(
+        &mut self,
+        lookup: KeyLookup,
+        part: &Spanned<Pattern>,
+        ctx: &mut PatternContext,
+        span: Span,
+    ) -> Result<PatternFragment, Diagnostics> {
+        let mut part = self.compile_pattern(part, ctx)?;
+        let mut code = lookup.evaluate.unwrap_or_default();
+        if !matches!(ctx.mismatch, Mismatch::Raise) {
+            code.extend(self.check([lookup.test.at(span)], ctx.mismatch, span, || {
+                unreachable!("only `Mismatch::Raise` says what a check expected")
+            }));
+        }
+        code.push(lookup.extract.at(span));
+        code.append(&mut part.code);
+        part.code = code;
+        Ok(part)
+    }
+
+    /// An optional Map entry at `span`, whose key `lookup` finds: if the key is
+    /// present, look it up and match its `part` against the value; if absent,
+    /// define each local the part binds as null instead. The fragment's code is
+    /// the whole entry's, `( m -- m )`; the rest is its part's.
+    fn optional_entry(
+        &mut self,
+        lookup: KeyLookup,
+        part: &Spanned<Pattern>,
+        ctx: &mut PatternContext,
+        span: Span,
+    ) -> Result<PatternFragment, Diagnostics> {
+        let bound_before = ctx.bindings.bound.len();
+        let mut part = self.compile_pattern(part, &mut ctx.for_optional_entry())?;
+        let absent = self.next_label();
+        let done = self.next_label();
+        let jump = |kind, label| Op::Jump { kind, label }.at(span);
+
+        let key_on_stack = lookup.evaluate.is_some();
+        let mut code = lookup.evaluate.unwrap_or_default();
+        code.extend([
+            lookup.test.at(span),
+            jump(JumpType::IfFalse, absent),
+            lookup.extract.at(span),
+        ]);
+        code.append(&mut part.code);
+        code.extend([
+            jump(JumpType::Unconditional, done),
+            Op::Label(absent).at(span),
+        ]);
+        if key_on_stack {
+            code.push(Op::Ready(Bytecode::Pop).at(span));
+        }
+        for bound in &ctx.bindings.bound[bound_before..] {
+            code.extend([
+                Op::Ready(Bytecode::PushNull).at(span),
+                Op::DefLocal(bound.id).at(span),
+            ]);
+        }
+        code.push(Op::Label(done).at(span));
+        part.code = code;
+        Ok(part)
     }
 
     /// `p1 | p2 | ...`: try each branch in turn under its own mark, but the
@@ -472,6 +551,7 @@ impl FunctionBuilder<'_> {
                         span: first.span,
                     },
                     bindings: &mut branch_bindings,
+                    in_optional_entry: ctx.in_optional_entry,
                 };
                 let fragment = self.compile_pattern(branch, &mut branch_ctx)?;
                 self.check_binds_all(&first_bound, &branch_bindings.bound, branch.span)?;
@@ -550,11 +630,16 @@ impl FunctionBuilder<'_> {
         let Binding::Named(name) = &binding.node else {
             return Ok(None);
         };
+        let kind = if ctx.in_optional_entry {
+            LocalKind::OptionalBinding
+        } else {
+            LocalKind::Binding
+        };
         let bound = &mut ctx.bindings.bound;
         let id = match ctx.mode {
-            BindMode::Arm => self.define_binding(binding, name, false)?,
+            BindMode::Arm => self.define_binding(binding, name, false, kind)?,
             BindMode::Def { exported, pending } => {
-                let id = self.define_binding(binding, name, exported)?;
+                let id = self.define_binding(binding, name, exported, kind)?;
                 if pending {
                     self.locals.mark_pending(id);
                 }
@@ -569,6 +654,9 @@ impl FunctionBuilder<'_> {
                 match first.iter().find(|original| original.name == *name) {
                     Some(original) => {
                         self.locals.revive(original.id);
+                        if kind == LocalKind::OptionalBinding {
+                            self.locals.mark_optional(original.id);
+                        }
                         original.id
                     }
                     None => {
@@ -593,12 +681,14 @@ impl FunctionBuilder<'_> {
         Ok(Some(id))
     }
 
-    /// Define `name`, which `binding` binds, as a new local in the current scope.
+    /// Define `name`, which `binding` binds, as a new local of `kind` in the
+    /// current scope.
     fn define_binding(
         &mut self,
         binding: &Spanned<Binding>,
         name: &str,
         exported: bool,
+        kind: LocalKind,
     ) -> Result<LocalId, Diagnostics> {
         self.lint_type_name_binding(name, binding.span);
         self.locals
@@ -607,7 +697,7 @@ impl FunctionBuilder<'_> {
                 span: binding.span,
                 exported,
                 constant: None,
-                kind: LocalKind::Binding,
+                kind,
             })
             .map_err(|original| self.duplicate_binding(name, binding.span, original).into())
     }
@@ -725,6 +815,40 @@ impl Unreachable {
             Self::Arm => "unreachable match arm",
             Self::Branch => "unreachable alternative branch",
         }
+    }
+}
+
+/// How a Map pattern entry looks up its key, the Map beneath.
+struct KeyLookup {
+    /// Evaluates the key, `( m -- m k )`; `None` for a known key, which the
+    /// lookups hold, leaving no `k` on the stack.
+    evaluate: Option<Vec<Ir>>,
+    /// Tests whether the key is present, `( m k? -- m k? b )`.
+    test: Op,
+    /// Takes the key's value, `( m k? -- m v )`.
+    extract: Op,
+}
+
+/// The lookup of the key `key_code` evaluates: directly, if the code is a known
+/// key.
+fn key_lookup(key_code: Vec<Ir>) -> KeyLookup {
+    match constant_key_of(&key_code) {
+        Some(known_key) => KeyLookup {
+            evaluate: None,
+            test: Op::ConstKey {
+                op: ConstKeyOp::Test,
+                key: known_key.clone(),
+            },
+            extract: Op::ConstKey {
+                op: ConstKeyOp::Extract,
+                key: known_key,
+            },
+        },
+        None => KeyLookup {
+            evaluate: Some(key_code),
+            test: Op::Ready(Bytecode::TestKey),
+            extract: Op::Ready(Bytecode::ExtractKey),
+        },
     }
 }
 

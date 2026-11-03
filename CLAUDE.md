@@ -185,7 +185,8 @@ match value {
 - Arms are comma-separated, even across newlines; a trailing comma is permitted.
 - No matching arm is a runtime error, not null.
 - A bare identifier is a binding; `(expr)` and literals are value comparisons.
-- Map patterns require the key to be present; a missing key is a no-match.
+- Map patterns require the key to be present (a missing key is a no-match), unless marked
+  optional, `{k?}` or `{k?: p}`, which binds `null` to every name in `p` when absent.
 - Alternatives (`|`) work at any nesting level; all branches must bind the same set of names.
 - `as` whole-value binding follows an Array or Map pattern only: `[a, ...rest] as all`.
 - Type constraints: `Null`, `Int`, `Float`, `Bool`, `String`, `Bytes`, `Array`, `Map`,

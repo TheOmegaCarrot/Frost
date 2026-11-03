@@ -1,0 +1,7 @@
+# An optional key behaves the same when the optimizer matches a literal Map
+# ahead of time.
+#= {result: [[1, 2], [1, null]]}
+[
+    match {a: 1, b: 2} { {a, b?} => [a, b] },
+    match {a: 1} { {a, b?} => [a, b] },
+]

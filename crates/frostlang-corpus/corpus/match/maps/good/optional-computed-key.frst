@@ -1,0 +1,7 @@
+# A computed key may be optional: `{[expr]?: pattern}`.
+#= {result: [10, null], inputs: {k: 'size', has: {size: 10}, lacks: {other: 1}}}
+def {k, has, lacks} = import('inputs')
+defn read(m) -> match m {
+    {[k]?: v} => v,
+}
+[read(has), read(lacks)]

@@ -1,0 +1,13 @@
+# An optional key finds only an entry equal to it by `==`, so an Int key and
+# the equal Float key are distinct: each finds the other's entry absent.
+#= {
+#=     result: [null, null, 'int', 'float'],
+#=     inputs: {float_keyed: {[1.0]: 'float'}, int_keyed: {[1]: 'int'}},
+#= }
+def {float_keyed, int_keyed} = import('inputs')
+[
+    match float_keyed { {[1]?: v} => v },
+    match int_keyed { {[1.0]?: v} => v },
+    match int_keyed { {[1]?: v} => v },
+    match float_keyed { {[1.0]?: v} => v },
+]

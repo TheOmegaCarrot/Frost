@@ -1,8 +1,9 @@
 //! Lints: nonfatal diagnostics in `CompilerOutput::lints`.
 //!
-//! `unused binding`: a `def` or match name that its function never reads and
-//! that is not exported. `lambda in abbreviated lambda`: a `$(...)` that holds
-//! a lambda.
+//! `unused binding`: a `def` or match name that its function never reads, that
+//! is not exported, and that is not under an optional Map key.
+//!
+//! `lambda in abbreviated lambda`: a `$(...)` that holds a lambda.
 //!
 //! `type name binding`: a type or category name, such as `String`, bound as a
 //! name in any definition position. `consecutive minus`: a run of `-`
@@ -319,6 +320,28 @@ fn unread_match_pattern_names_are_linted() {
         ("match {k: 1} {\n{k: v} => 0,\n_ => 1,\n}", &["v"]),
         ("match {k: 1} {\n{k} as whole => k,\n_ => 1,\n}", &["whole"]),
         ("match 1 {\nn is Int => 0,\n_ => 1,\n}", &["n"]),
+    ]);
+}
+
+#[test]
+fn names_under_an_optional_map_key_are_never_linted() {
+    assert_unused_cases(&[
+        ("def {k?} = {}\n0", &[]),
+        ("def {k? is Int, j?: v} = {}\n0", &[]),
+        ("def {k?: [a, ...r] as all} = {}\n0", &[]),
+        ("def {k?: {j?: {i}} as m} = {}\n0", &[]),
+        ("match {} {\n{k?: v} => 0,\n_ => 1,\n}", &[]),
+        // Beside them, names under required keys are linted as ever.
+        ("def {k?, j} = {j: 1}\n0", &["j"]),
+        ("def {k?: v} as whole = {}\n0", &["whole"]),
+        // A name any alternative binds under an optional key, in either order.
+        ("match {} {\n{a: x} | {b?: x} => 0,\n_ => 1,\n}", &[]),
+        ("match {} {\n{b?: x} | {a: x} => 0,\n_ => 1,\n}", &[]),
+        (
+            "match {} {\n{a: x} | [x] | {b?: [x]} => 0,\n_ => 1,\n}",
+            &[],
+        ),
+        ("match {} {\n{a: x} | [x] => 0,\n_ => 1,\n}", &["x"]),
     ]);
 }
 

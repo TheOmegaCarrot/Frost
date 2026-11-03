@@ -1,0 +1,6 @@
+# A computed optional key must still be a valid Map key when looked up in a
+# Map.
+#= {raises: 'not a valid Map key', inputs: {m: {a: 1}, k: [1]}}
+def {m, k} = import('inputs')
+def {[k]?: v} = m
+v

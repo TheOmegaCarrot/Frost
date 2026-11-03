@@ -1,0 +1,11 @@
+# In a `def`, an absent optional key skips its sub-pattern: neither a pin nor
+# a computed key inside it is evaluated.
+#= {result: [0, null], inputs: {m: {z: 0}}}
+def {m} = import('inputs')
+defn noisy(value) -> {
+    print('evaluated')
+    value
+}
+def {z, a?: (noisy(1))} = m
+def {m?: {[noisy('k')]: v}} = m
+[z, v]

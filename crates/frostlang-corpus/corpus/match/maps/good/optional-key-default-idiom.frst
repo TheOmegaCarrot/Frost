@@ -1,0 +1,8 @@
+# The default idiom: an absent optional key binds Null, so `or` supplies the
+# default.
+#= {result: [['h', 8080], ['h', 9000]], inputs: {bare: {host: 'h'}, full: {host: 'h', port: 9000}}}
+def {bare, full} = import('inputs')
+defn endpoint(cfg) -> match cfg {
+    {host, port?} => [host, port or 8080],
+}
+[endpoint(bare), endpoint(full)]

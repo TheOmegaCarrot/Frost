@@ -1,0 +1,7 @@
+# A computed optional key may read an earlier entry's binding: the entry binds
+# the value when that key is present, and Null when it is absent.
+#= {result: ['a', 1, 'b', null], inputs: {has: {name: 'a', a: 1}, lacks: {name: 'b'}}}
+def {has, lacks} = import('inputs')
+def {name, [name]?: found} = has
+def {name: other, [other]?: missing} = lacks
+[name, found, other, missing]

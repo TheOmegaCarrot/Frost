@@ -10,7 +10,8 @@
 use std::sync::Arc;
 
 use crate::common::pattern::{
-    array_as, at_least, bind, discard, either, exact, input_key, int, key, map, pin, typed, value,
+    array_as, at_least, bind, discard, either, exact, input_key, int, key, map, map_of, optional,
+    pin, required, typed, value,
 };
 use crate::common::{self, Pop, entry, func_with_captures, global_slot, with_patterns};
 use crate::unshared::unshared;
@@ -778,6 +779,143 @@ fn an_invalid_input_key_is_never_looked_up_after_an_earlier_entry_fails() {
         &pattern,
         Setup::with_keys(&["k"]).with_input(Value::Null),
         &Value::map([("j", Value::from(1))]),
+    );
+}
+
+// ---- Optional Map keys ----
+
+#[test]
+fn a_present_optional_key_matches_its_pattern() {
+    // `{k?: a}`, a key present with Null too.
+    let pattern = map_of([optional(key(0), bind(A))], None);
+    let setup = Setup::with_keys(&["k"]);
+    for value in [Value::from(1), Value::Null] {
+        assert_binds_with(
+            &pattern,
+            setup.clone(),
+            &Value::map([("k", value.clone())]),
+            [Some(value), None, None],
+        );
+    }
+}
+
+#[test]
+fn an_absent_optional_key_binds_null_without_testing_its_pattern() {
+    // `{k?: a is Int}`: absent, or present and an Int.
+    let pattern = map_of([optional(key(0), typed(FrostType::INT, Some(A)))], None);
+    let setup = Setup::with_keys(&["k"]);
+    assert_binds_with(
+        &pattern,
+        setup.clone(),
+        &Value::map([("j", Value::from("s"))]),
+        [Some(Value::Null), None, None],
+    );
+    assert_binds_with(
+        &pattern,
+        setup.clone(),
+        &Value::map([("k", Value::from(2))]),
+        [one(2), None, None],
+    );
+    // A key present with Null is present, and Null is no Int.
+    for value in [Value::from("s"), Value::Null] {
+        assert_mismatch_with(&pattern, setup.clone(), &Value::map([("k", value)]));
+    }
+}
+
+#[test]
+fn an_absent_optional_key_binds_null_to_every_local_its_pattern_binds() {
+    let setup = Setup::with_keys(&["k", "j"]);
+    let empty = Value::from(FrostMap::default());
+    let all_null = [Some(Value::Null), Some(Value::Null), Some(Value::Null)];
+    // `{k?: [a, ...b] as c}`
+    let array = array_as(at_least([bind(A)], Some(B)), C);
+    // `{k?: {j: a} as b}`
+    let nested_map = map([(key(1), bind(A))], Some(B));
+    // `{k?: [a, b, c] | {j: [c, b, a]}}`: the first branch's locals, which every
+    // branch binds.
+    let alternative = either([
+        exact([bind(A), bind(B), bind(C)]),
+        map([(key(1), exact([bind(C), bind(B), bind(A)]))], None),
+    ]);
+    for (inner, locals) in [
+        (array, all_null.clone()),
+        (nested_map, [Some(Value::Null), Some(Value::Null), None]),
+        (alternative, all_null),
+    ] {
+        let pattern = map_of([optional(key(0), inner)], None);
+        assert_binds_with(&pattern, setup.clone(), &empty, locals);
+    }
+}
+
+#[test]
+fn an_absent_optional_key_whose_pattern_binds_nothing_just_matches() {
+    // `{k?: 5}`
+    let pattern = map_of([optional(key(0), int(5))], None);
+    let setup = Setup::with_keys(&["k"]);
+    let empty = Value::from(FrostMap::default());
+    assert_binds_with(&pattern, setup.clone(), &empty, [None, None, None]);
+    assert_mismatch_with(&pattern, setup, &Value::map([("k", Value::from(6))]));
+}
+
+#[test]
+fn an_optional_key_still_needs_a_map() {
+    let pattern = map_of([optional(key(0), bind(A))], None);
+    for tested in [ints(&[]), Value::Null, Value::from("k")] {
+        assert_mismatch_with(&pattern, Setup::with_keys(&["k"]), &tested);
+    }
+}
+
+#[test]
+fn entries_after_an_absent_optional_key_still_apply() {
+    // `{k?: a, j: b} as c`
+    let pattern = map_of(
+        [optional(key(0), bind(A)), required(key(1), bind(B))],
+        Some(C),
+    );
+    let setup = Setup::with_keys(&["k", "j"]);
+    let tested = Value::map([("j", Value::from(2))]);
+    assert_binds_with(
+        &pattern,
+        setup.clone(),
+        &tested,
+        [Some(Value::Null), one(2), Some(tested.clone())],
+    );
+    // The null bound to `a` is undone with the rest of the match.
+    assert_mismatch_with(&pattern, setup, &Value::from(FrostMap::default()));
+}
+
+#[test]
+fn a_null_bound_for_an_absent_key_compares_as_null() {
+    // `{k?: a, j: (a)}`
+    let pattern = map_of(
+        [
+            optional(key(0), bind(A)),
+            required(key(1), pin(PatternInput::EarlierBinding(A))),
+        ],
+        None,
+    );
+    let setup = Setup::with_keys(&["k", "j"]);
+    assert_binds_with(
+        &pattern,
+        setup.clone(),
+        &Value::map([("j", Value::Null)]),
+        [Some(Value::Null), None, None],
+    );
+    assert_mismatch_with(&pattern, setup, &Value::map([("j", Value::from(1))]));
+}
+
+#[test]
+fn an_invalid_optional_input_key_raises_when_looked_up_in_a_map() {
+    // `{[input]?: _}`: being optional does not excuse a key no Map can hold.
+    let pattern = map_of(
+        [optional(input_key(PatternInput::Local(INPUT)), discard())],
+        None,
+    );
+    assert_raises_with(
+        &pattern,
+        Setup::default().with_input(ints(&[1])),
+        &Value::map([("k", Value::from(1))]),
+        "Type Array is not a valid Map key",
     );
 }
 

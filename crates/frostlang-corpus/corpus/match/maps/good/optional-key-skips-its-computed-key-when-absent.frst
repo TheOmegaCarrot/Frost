@@ -1,0 +1,16 @@
+# An absent optional key's sub-pattern is not tested, so a computed key nested
+# inside it is not evaluated; a present key's is.
+#= {
+#=     result: [null, 1],
+#=     printed: ['inner'],
+#=     inputs: {absent: {}, present: {outer: {inner: 1}}},
+#= }
+def {absent, present} = import('inputs')
+defn noisy(label) -> {
+    print(label)
+    label
+}
+defn read(m) -> match m {
+    {outer?: {[noisy('inner')]: v}} => v,
+}
+[read(absent), read(present)]

@@ -1,0 +1,9 @@
+# A guard sees an optional binding: its value when present, Null when absent.
+#= {result: ['absent', 'big', 'small'], inputs: {a: {}, b: {n: 9}, c: {n: 1}}}
+def {a, b, c} = import('inputs')
+defn classify(m) -> match m {
+    {n?} if: n == null => 'absent',
+    {n?} if: n > 5 => 'big',
+    _ => 'small',
+}
+[classify(a), classify(b), classify(c)]

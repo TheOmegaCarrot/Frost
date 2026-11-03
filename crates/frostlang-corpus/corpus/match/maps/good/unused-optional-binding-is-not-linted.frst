@@ -1,0 +1,8 @@
+# A binding under an optional key, at any depth, is not linted when no code
+# reads it, unlike a binding under a required key.
+#= {result: 1, lints: [['unused binding', '`d`']], inputs: {m: {a: 1}}}
+def {m} = import('inputs')
+match m {
+    {a?, b?, c?: [_, ...rest], d} => a,
+    _ => 1,
+}

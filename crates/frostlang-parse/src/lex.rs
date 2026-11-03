@@ -144,6 +144,10 @@ pub enum Token<'src> {
     #[token("|")]
     Pipe,
 
+    /// `?`, marking an optional Map pattern key
+    #[token("?")]
+    Question,
+
     // -- Operators (including keyword operators) --
     /// `and`
     #[token("and")]
@@ -748,6 +752,7 @@ impl<'src> std::fmt::Display for Token<'src> {
             Token::Assign => write!(f, "="),
             Token::Newline => write!(f, "newline"),
             Token::Pipe => write!(f, "|"),
+            Token::Question => write!(f, "?"),
             Token::OpAnd => write!(f, "and"),
             Token::OpOr => write!(f, "or"),
             Token::OpNot => write!(f, "not"),

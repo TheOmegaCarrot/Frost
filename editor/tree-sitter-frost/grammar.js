@@ -443,22 +443,29 @@ module.exports = grammar({
     //   identifier: pattern     named key with explicit pattern
     //   identifier              shorthand: key name doubles as binding
     //   identifier is TYPE      shorthand with type constraint
+    // Each may mark its key optional with `?` after it, as in `name? is Int`.
     map_pattern_entry: $ => choice(
       seq(
         field('key', $.map_key_expression),
+        optional('?'),
         ':',
         field('pattern', $.pattern),
       ),
       seq(
         field('key', $.identifier),
+        optional('?'),
         ':',
         field('pattern', $.pattern),
       ),
       seq(
         field('key', $.identifier),
+        optional('?'),
         field('constraint', $.type_constraint),
       ),
-      field('key', $.identifier),
+      seq(
+        field('key', $.identifier),
+        optional('?'),
+      ),
     ),
 
     array_literal: $ => seq('[', optional(field('elements', $.array_elements)), ']'),

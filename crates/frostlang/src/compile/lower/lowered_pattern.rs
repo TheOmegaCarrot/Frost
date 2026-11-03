@@ -2,8 +2,8 @@
 //! whose constants and keys are held by value, until assembly places them.
 
 use crate::bytecode::{
-    ArrayPatternLength, Bytecode, CompiledPattern, PatternComparand, PatternInput, PatternKey,
-    PatternStage,
+    ArrayPatternLength, Bytecode, CompiledPattern, PatternComparand, PatternEntry, PatternInput,
+    PatternKey, PatternStage,
 };
 use crate::compile::lower::fold::constant_of;
 use crate::compile::lower::locals::LocalRun;
@@ -151,12 +151,13 @@ impl LoweredPattern {
             Self::Map { entries, whole } => CompiledPattern::Map {
                 entries: entries
                     .iter()
-                    .map(|(key, entry)| {
-                        let key = match key {
+                    .map(|entry| PatternEntry {
+                        key: match &entry.key {
                             PatternKey::Constant(key) => PatternKey::Constant(map.key(key)),
                             PatternKey::Input(input) => PatternKey::Input(map_input(input, map)),
-                        };
-                        (key, entry.map_stage(map))
+                        },
+                        optional: entry.optional,
+                        pattern: entry.pattern.map_stage(map),
                     })
                     .collect(),
                 whole: whole.and_then(|whole| map.binding(&whole)),
@@ -200,11 +201,11 @@ impl LoweredPattern {
                 }
             }
             Self::Map { entries, whole } => {
-                for (key, entry) in entries {
-                    if let PatternKey::Input(input) = key {
+                for entry in entries {
+                    if let PatternKey::Input(input) = &entry.key {
                         visit(PatternReference::Input(input));
                     }
-                    entry.for_each_reference(visit);
+                    entry.pattern.for_each_reference(visit);
                 }
                 if let Some(whole) = whole {
                     visit(PatternReference::Binding(*whole));

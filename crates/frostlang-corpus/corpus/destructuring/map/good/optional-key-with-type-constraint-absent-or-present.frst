@@ -1,0 +1,6 @@
+# `{age? is Int}` in a `def` accepts an absent key or a present Int.
+#= {result: [3, null], inputs: {a: {age: 3}, b: {}}}
+def {a, b} = import('inputs')
+def {age? is Int} = a
+def {age?: other is Int} = b
+[age, other]

@@ -1,0 +1,5 @@
+# A present optional key must satisfy its constraint; the `def` raises.
+#= {raises: 'expected an Int', inputs: {m: {age: 's'}}}
+def {m} = import('inputs')
+def {age? is Int} = m
+age

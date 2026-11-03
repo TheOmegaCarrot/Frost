@@ -1,0 +1,4 @@
+# A `$` placeholder cannot be an optional shorthand key either.
+#= {rejects: 'expected a name or `[`'}
+def {$?} = {}
+0

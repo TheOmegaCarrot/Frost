@@ -670,6 +670,27 @@ impl<'src> ParseCtx<'src> {
         self.expected_token(expected, found, None)
     }
 
+    /// The error for `found` if it is a `?` outside a Map pattern, the only place
+    /// `?` has a meaning: the unreadable-character error, with its hint for the
+    /// habit behind it (`a ? b : c`, `x?.k`). Callers return it undecorated.
+    ///
+    /// It is [committed](Diagnostic::is_committed): any other reading of the source
+    /// meets the same `?`.
+    pub(crate) fn question_outside_map_pattern(&self, found: &SrcToken) -> Option<Diagnostic> {
+        let in_map_pattern = self
+            .innermost_bracket()
+            .is_some_and(|open| open.kind == Bracket::MapPattern);
+        if found.token != Token::Question || in_map_pattern {
+            return None;
+        }
+        let start = found.span.start - self.base_offset;
+        let end = found.span.end - self.base_offset;
+        Some(
+            hints::unreadable(self.full_source, start..end, self.base_offset, self.limits)
+                .committed(),
+        )
+    }
+
     /// [`expected`](Self::expected), knowing the one `token` that was expected, if so.
     fn expected_token(
         &self,
@@ -677,6 +698,9 @@ impl<'src> ParseCtx<'src> {
         found: &SrcToken,
         token: Option<&Token>,
     ) -> Diagnostic {
+        if let Some(diagnostic) = self.question_outside_map_pattern(found) {
+            return diagnostic;
+        }
         let help = self
             .input
             .iter()
@@ -694,6 +718,9 @@ impl<'src> ParseCtx<'src> {
     /// When that bracket holds a list that runs across lines to `found`, its opener is
     /// labeled too, as "in this Map literal", so the error shows which list it is in.
     pub(crate) fn expected_in_list(&self, expected: &str, found: &SrcToken) -> Diagnostic {
+        if let Some(diagnostic) = self.question_outside_map_pattern(found) {
+            return diagnostic;
+        }
         let diagnostic = self.expected(expected, found);
         let Some(open) = self.innermost_bracket() else {
             return diagnostic;
@@ -782,7 +809,7 @@ pub(crate) fn too_deep(limit: Limit, max: u64, at: SourceSpan) -> Diagnostic {
     };
     Diagnostic::at(message, at, "past the limit here")
         .with_help(Some(help.to_owned()))
-        .for_a_limit()
+        .committed()
 }
 
 /// The Int an Int literal of `magnitude` denotes, negated if `negative`, or an

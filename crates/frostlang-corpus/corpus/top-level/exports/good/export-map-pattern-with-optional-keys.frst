@@ -1,0 +1,9 @@
+# An exported Map pattern exports every name its optional entries bind: the
+# value of a present key, and Null for each name under an absent one.
+#= {
+#=     result: null,
+#=     exports: {a: 1, b: null, first: null, rest: null},
+#=     inputs: {m: {a: 1}},
+#= }
+def {m} = import('inputs')
+export def {a?, b?, c?: [first, ...rest]} = m

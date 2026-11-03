@@ -46,11 +46,12 @@ pub enum CompiledPattern<S: PatternStage = AssembledStage> {
         /// The local bound to the Array.
         whole: Option<S::Local>,
     },
-    /// Matches a Map holding every key of `entries`, the value of each
-    /// matching its pattern, and binds the Map to `whole`, if any.
+    /// Matches a Map holding every key of `entries` that is not optional, the
+    /// value of each present key matching its pattern, and binds the Map to
+    /// `whole`, if any.
     Map {
-        /// Each key, and the pattern its value must match.
-        entries: Box<[(PatternKey<S>, CompiledPattern<S>)]>,
+        /// The entries, tested in order.
+        entries: Box<[PatternEntry<S>]>,
         /// The local bound to the Map.
         whole: Option<S::Local>,
     },
@@ -92,6 +93,19 @@ pub enum PatternComparand<S: PatternStage = AssembledStage> {
     Constant(S::Constant),
     /// A value taken from outside the pattern.
     Input(PatternInput<S>),
+}
+
+/// One entry of a [`CompiledPattern::Map`]: a key, and the pattern its value
+/// must match.
+#[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
+pub struct PatternEntry<S: PatternStage = AssembledStage> {
+    /// The key looked up.
+    pub key: PatternKey<S>,
+    /// Whether the key may be absent. An absent optional key matches without
+    /// testing `pattern`, and binds null to each local `pattern` binds.
+    pub optional: bool,
+    /// The pattern the key's value must match.
+    pub pattern: CompiledPattern<S>,
 }
 
 /// The key a [`CompiledPattern::Map`] entry looks up.
@@ -250,11 +264,15 @@ impl<'a, 'v> PatternTest<'a, 'v> {
                 let Some(map) = value.as_map() else {
                     return Ok(false);
                 };
-                for (key, entry_pattern) in entries {
-                    let Some(entry) = map.get(&*self.key(key)?) else {
-                        return Ok(false);
+                for entry in entries {
+                    let Some(found) = map.get(&*self.key(&entry.key)?) else {
+                        if !entry.optional {
+                            return Ok(false);
+                        }
+                        self.bind_null(&entry.pattern);
+                        continue;
                     };
-                    if !self.matches(entry_pattern, entry)? {
+                    if !self.matches(&entry.pattern, found)? {
                         return Ok(false);
                     }
                 }
@@ -278,6 +296,42 @@ impl<'a, 'v> PatternTest<'a, 'v> {
     fn bind(&mut self, local: Option<u32>, value: BoundValue<'v>) {
         if let Some(local) = local {
             self.pending.push(PendingBinding { local, value });
+        }
+    }
+
+    /// Bind null to each local `pattern` binds, in the order a match would
+    /// bind them, without testing it.
+    fn bind_null(&mut self, pattern: &CompiledPattern) {
+        static NULL: Value = Value::Null;
+        let null = || BoundValue::Value(&NULL);
+        match pattern {
+            CompiledPattern::Binding { local, .. } => self.bind(*local, null()),
+            CompiledPattern::Value(_) => {}
+            CompiledPattern::Array {
+                elements,
+                length,
+                whole,
+            } => {
+                for element in elements {
+                    self.bind_null(element);
+                }
+                if let ArrayPatternLength::AtLeast { rest } = length {
+                    self.bind(*rest, null());
+                }
+                self.bind(*whole, null());
+            }
+            CompiledPattern::Map { entries, whole } => {
+                for entry in entries {
+                    self.bind_null(&entry.pattern);
+                }
+                self.bind(*whole, null());
+            }
+            // Every branch binds the same locals.
+            CompiledPattern::Alternative(branches) => {
+                if let Some(first) = branches.first() {
+                    self.bind_null(first);
+                }
+            }
         }
     }
 

@@ -1,0 +1,6 @@
+# An optional entry whose sub-pattern binds nothing is accepted when the key
+# is absent, beside an entry that does bind a name.
+#= {result: 1, inputs: {m: {a: 1}}}
+def {m} = import('inputs')
+def {a, k?: 5} = m
+a

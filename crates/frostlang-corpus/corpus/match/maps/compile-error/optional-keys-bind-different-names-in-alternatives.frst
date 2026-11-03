@@ -1,0 +1,5 @@
+# Alternative branches must bind the same names, optional entries included.
+#= {rejects: 'same names'}
+match {} {
+    {a?} | {b?} => 1,
+}

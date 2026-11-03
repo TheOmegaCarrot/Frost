@@ -1,0 +1,6 @@
+# In a `def`, an optional key binds its value when present and Null when
+# absent, shorthand or with a pattern.
+#= {result: [1, null, 2, 3], inputs: {m: {a: 1, c: 2, e: 3}}}
+def {m} = import('inputs')
+def {a?, b?, c?: d, e?: f} = m
+[a, b, d, f]

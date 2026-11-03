@@ -1,0 +1,12 @@
+# An optional key finds only an entry equal to it by `==`, under which `-0.0`
+# differs from `0.0`: each zero finds the other's entry absent.
+#= {
+#=     result: [null, null, ['neg', 'zero']],
+#=     inputs: {zero: {[0.0]: 'zero'}, negative: {[-0.0]: 'neg'}, both: {[-0.0]: 'neg', [0.0]: 'zero'}},
+#= }
+def {zero, negative, both} = import('inputs')
+[
+    match zero { {[-0.0]?: v} => v },
+    match negative { {[0.0]?: v} => v },
+    match both { {[-0.0]?: n, [0.0]?: z} => [n, z] },
+]

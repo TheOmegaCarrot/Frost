@@ -1,0 +1,8 @@
+# An optional key binds its value when present and Null when absent; the arm
+# matches either way.
+#= {result: [[1, 2], [1, null]], inputs: {full: {a: 1, b: 2}, partial: {a: 1}}}
+def {full, partial} = import('inputs')
+defn read(m) -> match m {
+    {a, b?} => [a, b],
+}
+[read(full), read(partial)]

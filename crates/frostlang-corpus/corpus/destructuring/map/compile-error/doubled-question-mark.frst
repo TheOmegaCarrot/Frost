@@ -1,0 +1,4 @@
+# A key takes at most one `?`.
+#= {rejects: ['expected `,` or `}`, but found `?`', 'an optional key takes `?` right after it']}
+def {a??} = {}
+a

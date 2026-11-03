@@ -40,8 +40,8 @@ pub use outcome::{AbortReason, IdleVm, ProgramParts, ProgramResult, RunError, Ru
 pub(crate) use params::{Binder, expected_types};
 pub use params::{InvalidParams, Param, Params};
 pub use pattern::{
-    ArrayPatternLength, AssembledStage, CompiledPattern, PatternComparand, PatternInput,
-    PatternKey, PatternStage,
+    ArrayPatternLength, AssembledStage, CompiledPattern, PatternComparand, PatternEntry,
+    PatternInput, PatternKey, PatternStage,
 };
 pub use print_sink::{PrintSink, StdoutSink};
 pub use serialize::FormatVersion;

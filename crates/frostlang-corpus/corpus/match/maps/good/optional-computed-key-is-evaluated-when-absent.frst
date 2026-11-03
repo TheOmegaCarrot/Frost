@@ -1,0 +1,11 @@
+# A computed optional key's own expression is evaluated even when the key
+# turns out to be absent: only the sub-pattern for its value is skipped.
+#= {result: null, printed: ['key'], inputs: {m: {z: 0}}}
+def {m} = import('inputs')
+defn noisy(label, value) -> {
+    print(label)
+    value
+}
+match m {
+    {[noisy('key', 'k')]?: v} => v,
+}

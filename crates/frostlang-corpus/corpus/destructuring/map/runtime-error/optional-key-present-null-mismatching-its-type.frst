@@ -1,0 +1,6 @@
+# A key present with the value Null is not absent, so `{age? is Int}` rejects
+# it.
+#= {raises: 'expected an Int', inputs: {m: {age: null}}}
+def {m} = import('inputs')
+def {age? is Int} = m
+age
