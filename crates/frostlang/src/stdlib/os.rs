@@ -1,31 +1,37 @@
 //! `std.os`: the process's environment variables, ID, platform, and standard
-//! streams, pausing, and running other programs.
+//! streams, the clock, pausing, and running other programs.
 
 use std::collections::BTreeMap;
 use std::io::{self, BufReader, Write};
 use std::process::{Command, Stdio};
-use std::time::Duration;
+use std::sync::OnceLock;
+use std::time::{Duration, Instant, SystemTime};
 
 use itertools::Itertools;
 use serde::Deserialize;
 
 use crate::native::{De, Optional};
 use crate::stdlib::stream::{self, Kind};
-use crate::{FrostError, FrostMap, FrostString, MapKey, NativeCtx, StdlibModule, Value, frost_fn};
+use crate::stdlib::time::unix_micros;
+use crate::{
+    FrostError, FrostMap, FrostString, MapKey, NativeCtx, Nullable, StdlibModule, Value, frost_fn,
+};
 
 /// The `std.os` module: reading environment variables, the process ID,
 /// the operating system and architecture it runs on,
-/// the process's standard input, output, and error streams, sleeping, and
-/// running programs to completion.
+/// the process's standard input, output, and error streams, reading the clock,
+/// sleeping, and running programs to completion.
 ///
-/// It reaches outside the script: a script with it can read the environment,
-/// use the process's standard streams, and run any program the host process
-/// could.
+/// It reaches outside the script: a script with it can read the environment
+/// and the clock, use the process's standard streams, and run any program the
+/// host process could.
 pub fn os() -> StdlibModule {
     StdlibModule::builder("os")
         .function(getenv_frost())
         .function(env_frost())
         .function(pid_frost())
+        .function(now_frost())
+        .function(monotonic_frost())
         .function(sleep_frost())
         .function(run_frost())
         .value(
@@ -87,9 +93,32 @@ fn pid() -> i64 {
     i64::from(std::process::id())
 }
 
+/// Whether this target has no clock: std's clocks panic on it rather than
+/// reporting none.
+const NO_CLOCK: bool = cfg!(all(target_family = "wasm", target_os = "unknown"));
+
 #[frost_fn]
-fn sleep(ms: u64) {
-    std::thread::sleep(Duration::from_millis(ms));
+fn now() -> Nullable<i64> {
+    if NO_CLOCK {
+        return Nullable(None);
+    }
+    Nullable(unix_micros(SystemTime::now()))
+}
+
+#[frost_fn]
+fn monotonic() -> Nullable<i64> {
+    if NO_CLOCK {
+        return Nullable(None);
+    }
+    // The fixed point the readings count from: the first reading.
+    static START: OnceLock<Instant> = OnceLock::new();
+    let start = *START.get_or_init(Instant::now);
+    Nullable(i64::try_from(start.elapsed().as_micros()).ok())
+}
+
+#[frost_fn]
+fn sleep(us: u64) {
+    std::thread::sleep(Duration::from_micros(us));
 }
 
 // --- run ---

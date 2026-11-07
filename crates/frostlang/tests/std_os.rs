@@ -1,12 +1,12 @@
 //! `std.os`, from Frost source: environment variables, the process ID, the
-//! platform, sleeping, and running programs.
+//! platform, the clock, sleeping, and running programs.
 //!
 //! Each case runs with only `std.os` installed, bound as `os`. The cases that
 //! run programs use POSIX tools, so they run only on Unix.
 
 use crate::script;
 
-use std::time::{Duration, Instant};
+use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 
 use frostlang::stdlib::StdlibConfig;
 use frostlang::{FrostMap, ImporterBuilder, MapKey, Stdlib, Value, stdlib};
@@ -21,7 +21,7 @@ library_assertions!(Library::module(stdlib::os, "os"));
 fn the_module_holds_its_functions_and_values() {
     assert_values(&[(
         "sorted(keys(os))",
-        "['arch', 'env', 'getenv', 'pid', 'platform', 'run', 'sleep', 'stderr', 'stdin', 'stdout']",
+        "['arch', 'env', 'getenv', 'monotonic', 'now', 'pid', 'platform', 'run', 'sleep', 'stderr', 'stdin', 'stdout']",
     )]);
 }
 
@@ -234,17 +234,94 @@ fn platform_and_arch_name_the_build_target() {
     );
 }
 
+// --- The clock ---
+//
+// Clock readings differ from run to run, so these cases run once, unoptimized,
+// rather than once per optimization permutation.
+
+/// The current time as Int microseconds since the Unix epoch.
+fn unix_micros_now() -> i64 {
+    let since = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .expect("the clock is past the epoch");
+    since.as_micros().try_into().expect("a time within range")
+}
+
+/// The Int `value`, or a failure naming `what` it should be.
+fn int(value: Value, what: &str) -> i64 {
+    match value {
+        Value::Int(int) => int,
+        other => panic!("{what} should be an Int, got {other:?}"),
+    }
+}
+
+#[test]
+fn now_is_unix_microseconds() {
+    let before = unix_micros_now();
+    let now = int(script("os.now()").run_under(UNOPTIMIZED), "os.now()");
+    let after = unix_micros_now();
+    assert!(
+        (before..=after).contains(&now),
+        "os.now() gave {now}, outside the {before}..={after} read around it"
+    );
+}
+
+#[test]
+fn monotonic_never_decreases() {
+    let readings = script("map(range(1000), fn _ -> os.monotonic())").run_under(UNOPTIMIZED);
+    let readings: Vec<i64> = match readings {
+        Value::Array(readings) => readings
+            .iter()
+            .map(|reading| int(reading.clone(), "os.monotonic()"))
+            .collect(),
+        other => panic!("an Array of readings, got {other:?}"),
+    };
+    assert!(
+        readings.is_sorted(),
+        "the readings never decrease: {readings:?}"
+    );
+    assert!(readings[0] >= 0, "readings count up from a fixed point");
+}
+
+#[test]
+fn monotonic_measures_a_sleep_in_microseconds() {
+    let elapsed = script(
+        r"
+        do {
+            def start = os.monotonic()
+            os.sleep(20000)
+            os.monotonic() - start
+        }
+        ",
+    )
+    .run_under(UNOPTIMIZED);
+    let elapsed = int(elapsed, "the elapsed time");
+    assert!(
+        elapsed >= 20_000,
+        "a 20000 microsecond sleep measured {elapsed}"
+    );
+}
+
+#[test]
+fn the_clocks_take_no_arguments() {
+    assert_arity("now", "0", &[1]);
+    assert_arity("monotonic", "0", &[1]);
+}
+
 // --- sleep ---
 
 #[test]
-fn sleep_pauses_then_returns_null() {
+fn sleep_pauses_for_microseconds_then_returns_null() {
     assert_eq!(script("os.sleep(0)").run(), Value::Null);
     // One run, so the elapsed time bounds a single sleep.
     let started = Instant::now();
-    assert_eq!(script("os.sleep(50)").run_under(UNOPTIMIZED), Value::Null);
+    assert_eq!(
+        script("os.sleep(50000)").run_under(UNOPTIMIZED),
+        Value::Null
+    );
     assert!(
-        started.elapsed() >= Duration::from_millis(50),
-        "os.sleep(50) took {:?}",
+        started.elapsed() >= Duration::from_micros(50_000),
+        "os.sleep(50000) took {:?}",
         started.elapsed()
     );
 }
@@ -254,11 +331,15 @@ fn sleep_checks_its_argument() {
     assert_raises(&[
         (
             "os.sleep(-1)",
-            "Function std.os.sleep requires argument 1 (ms) to be at least 0, got -1",
+            "Function std.os.sleep requires argument 1 (us) to be at least 0, got -1",
         ),
         (
             "os.sleep(1.5)",
-            "Function std.os.sleep requires Int as argument 1 (ms), got Float",
+            "Function std.os.sleep requires Int as argument 1 (us), got Float",
+        ),
+        (
+            "os.sleep(null)",
+            "Function std.os.sleep requires Int as argument 1 (us), got Null",
         ),
     ]);
     assert_arity("sleep", "1", &[0, 2]);

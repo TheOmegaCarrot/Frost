@@ -9,12 +9,13 @@ use std::ffi::OsStr;
 use std::fs::{self, File, Metadata, OpenOptions};
 use std::io::{self, BufReader, BufWriter, Write};
 use std::path::{Path, PathBuf};
-use std::time::{SystemTime, UNIX_EPOCH};
+use std::time::SystemTime;
 
 use serde::Deserialize;
 
 use crate::native::{Flat, Optional};
 use crate::stdlib::stream::{self, Kind};
+use crate::stdlib::time::unix_micros;
 use crate::{
     FrostError, FrostMap, FrostResult, FrostString, NativeCtx, StdlibModule, Value, from_value,
     frost_closure, frost_fn,
@@ -398,20 +399,12 @@ fn permissions(metadata: &Metadata) -> Value {
     ])
 }
 
-/// A file time as `stat` reports it: Int microseconds since the Unix epoch,
-/// rounded toward the past, or Null where the platform or filesystem does not
-/// record it or the time is beyond an Int's range.
+/// A file time as `stat` reports it: its [`unix_micros`], or Null where the
+/// platform or filesystem does not record it or it is beyond an Int's range.
 fn timestamp(time: io::Result<SystemTime>) -> Value {
-    let Ok(time) = time else {
-        return Value::Null;
-    };
-    let micros = match time.duration_since(UNIX_EPOCH) {
-        Ok(since) => i64::try_from(since.as_micros()).ok(),
-        Err(before) => i64::try_from(before.duration().as_nanos().div_ceil(1000))
-            .ok()
-            .map(|micros| -micros),
-    };
-    micros.map_or(Value::Null, Value::Int)
+    time.ok()
+        .and_then(unix_micros)
+        .map_or(Value::Null, Value::Int)
 }
 
 /// A file's owner and group IDs, inode, device, and link count, as `stat`

@@ -31,6 +31,7 @@ mod random;
 mod regex;
 mod stream;
 mod string;
+mod time;
 
 pub use bits::bits;
 pub use encoding::encoding;
