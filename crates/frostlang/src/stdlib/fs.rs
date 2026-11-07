@@ -9,6 +9,7 @@ use std::ffi::OsStr;
 use std::fs::{self, File, Metadata, OpenOptions};
 use std::io::{self, BufReader, BufWriter, Write};
 use std::path::{Path, PathBuf};
+use std::time::{SystemTime, UNIX_EPOCH};
 
 use serde::Deserialize;
 
@@ -397,13 +398,93 @@ fn permissions(metadata: &Metadata) -> Value {
     ])
 }
 
+/// A file time as `stat` reports it: Int microseconds since the Unix epoch,
+/// rounded toward the past, or Null where the platform or filesystem does not
+/// record it or the time is beyond an Int's range.
+fn timestamp(time: io::Result<SystemTime>) -> Value {
+    let Ok(time) = time else {
+        return Value::Null;
+    };
+    let micros = match time.duration_since(UNIX_EPOCH) {
+        Ok(since) => i64::try_from(since.as_micros()).ok(),
+        Err(before) => i64::try_from(before.duration().as_nanos().div_ceil(1000))
+            .ok()
+            .map(|micros| -micros),
+    };
+    micros.map_or(Value::Null, Value::Int)
+}
+
+/// A file's owner and group IDs, inode, device, and link count, as `stat`
+/// reports them: Ints on Unix, Null elsewhere.
+struct UnixFields {
+    uid: Value,
+    gid: Value,
+    inode: Value,
+    device: Value,
+    links: Value,
+}
+
+impl UnixFields {
+    /// The fields of the file `metadata` describes.
+    fn of(metadata: &Metadata) -> Self {
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::MetadataExt;
+            Self {
+                uid: Value::Int(metadata.uid().into()),
+                gid: Value::Int(metadata.gid().into()),
+                // Identities, compared but never computed with: every bit is kept,
+                // so one past the signed range reads as negative.
+                inode: Value::Int(metadata.ino().cast_signed()),
+                device: Value::Int(metadata.dev().cast_signed()),
+                links: Value::Int(
+                    i64::try_from(metadata.nlink()).expect("a link count fits in an Int"),
+                ),
+            }
+        }
+        #[cfg(not(unix))]
+        {
+            let _ = metadata;
+            Self {
+                uid: Value::Null,
+                gid: Value::Null,
+                inode: Value::Null,
+                device: Value::Null,
+                links: Value::Null,
+            }
+        }
+    }
+}
+
+/// What `stat` reports of `path`. A symlink is described itself, not followed:
+/// its `size` is the length of the path it holds, and its times are its own.
+/// Every key is always present, Null where unknown.
 fn stat(name: &str, path: &Path) -> FrostResult {
-    // The link itself, not what it points to.
     let metadata = fs::symlink_metadata(path).map_err(|err| io_error(name, path, &err))?;
+    let UnixFields {
+        uid,
+        gid,
+        inode,
+        device,
+        links,
+    } = UnixFields::of(&metadata);
     Ok(Value::map([
         ("type", Value::from(FileType::of(&metadata).name())),
         ("perms", permissions(&metadata)),
+        ("size", file_size(&metadata)),
+        ("modified", timestamp(metadata.modified())),
+        ("created", timestamp(metadata.created())),
+        ("uid", uid),
+        ("gid", gid),
+        ("inode", inode),
+        ("device", device),
+        ("links", links),
     ]))
+}
+
+/// `metadata`'s length in bytes.
+fn file_size(metadata: &Metadata) -> Value {
+    Value::Int(i64::try_from(metadata.len()).expect("a file size fits in an Int"))
 }
 
 fn size(name: &str, path: &Path) -> FrostResult {
@@ -415,9 +496,7 @@ fn size(name: &str, path: &Path) -> FrostResult {
             FileType::of(&metadata).phrase()
         )));
     }
-    Ok(Value::Int(
-        i64::try_from(metadata.len()).expect("a file size fits in an Int"),
-    ))
+    Ok(file_size(&metadata))
 }
 
 // --- Listing ---

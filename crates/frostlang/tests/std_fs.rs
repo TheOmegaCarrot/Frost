@@ -13,8 +13,9 @@
 use crate::script;
 
 use std::os::unix::ffi::OsStrExt;
-use std::os::unix::fs::PermissionsExt;
+use std::os::unix::fs::{MetadataExt, PermissionsExt};
 use std::path::{Path, PathBuf};
+use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use std::{env, fs, process};
 
 use frostlang::stdlib::StdlibConfig;
@@ -286,8 +287,14 @@ fn stat_describes_a_file_without_following_a_link() {
         .link("link", scratch.path("file"));
     fs::set_permissions(scratch.path("file"), fs::Permissions::from_mode(0o751))
         .expect("permissions set");
+    let type_and_perms = r"
+        do {
+            def stat = fs.stat(fs.concat(dir, 'file'))
+            {type: stat.type, perms: stat.perms}
+        }
+    ";
     assert_eq!(
-        scratch.run("fs.stat(fs.concat(dir, 'file'))"),
+        scratch.run(type_and_perms),
         frost(
             "{
                 type: 'regular',
@@ -310,6 +317,212 @@ fn stat_describes_a_file_without_following_a_link() {
         &scratch.raises("fs.stat(fs.concat(dir, 'missing'))"),
         "fs.stat",
         &scratch.text("missing"),
+    );
+}
+
+/// The whole microseconds from the Unix epoch to `time`, which follows it, as
+/// `stat` reports them.
+fn unix_micros(time: SystemTime) -> Value {
+    let since = time
+        .duration_since(UNIX_EPOCH)
+        .expect("a time after the epoch");
+    Value::Int(since.as_micros().try_into().expect("a time within range"))
+}
+
+/// Set the modification time of the file at `path` to `time`.
+fn set_modified(path: &Path, time: SystemTime) {
+    fs::File::options()
+        .write(true)
+        .open(path)
+        .and_then(|file| file.set_modified(time))
+        .expect("the modification time is set");
+}
+
+#[test]
+fn stat_reports_every_key_for_every_type() {
+    let scratch = Scratch::new("stat_keys");
+    scratch
+        .file("file", "x")
+        .dir("dir")
+        .link("link", scratch.path("file"))
+        .link("dangling", scratch.path("missing"));
+    let keys = r"
+        do {
+            def paths = map(['file', 'dir', 'link', 'dangling'], fn name -> fs.concat(dir, name))
+            map(paths + ['/dev/null'], fn path -> keys(fs.stat(path)))
+        }
+    ";
+    let all = "['created', 'device', 'gid', 'inode', 'links', 'modified', 'perms', 'size', 'type', 'uid']";
+    assert_eq!(
+        scratch.run(keys),
+        frost(&format!("[{all}, {all}, {all}, {all}, {all}]")),
+        "every key is present, whatever the file's type and whether or not it is known"
+    );
+}
+
+#[test]
+fn stat_size_is_the_raw_length_of_any_file() {
+    let scratch = Scratch::new("stat_size");
+    let target = scratch.path("five");
+    scratch
+        .file("five", "hello")
+        .file("empty", "")
+        .dir("dir")
+        .link("link", &target);
+    assert_eq!(
+        scratch.run("map(['five', 'empty'], fn name -> fs.stat(fs.concat(dir, name)).size)"),
+        frost("[5, 0]")
+    );
+    assert_eq!(
+        scratch.run("fs.stat(fs.concat(dir, 'link')).size"),
+        Value::Int(target.as_os_str().len().try_into().expect("a short path")),
+        "a link's size is the length of the path it holds, not its target's size"
+    );
+    let directory_size = fs::symlink_metadata(scratch.path("dir"))
+        .expect("the directory's metadata")
+        .len();
+    assert_eq!(
+        scratch.run("fs.stat(fs.concat(dir, 'dir')).size"),
+        Value::Int(directory_size.try_into().expect("a small size")),
+        "a directory has a size, unlike for `fs.size`"
+    );
+    assert_eq!(scratch.run("fs.stat('/dev/null').size"), Value::Int(0));
+}
+
+#[test]
+fn stat_modified_is_unix_microseconds_rounded_toward_the_past() {
+    let scratch = Scratch::new("stat_modified");
+    scratch.file("file", "x");
+    let file = scratch.path("file");
+    let modified = || scratch.run("fs.stat(fs.concat(dir, 'file')).modified");
+    let cases = [
+        (UNIX_EPOCH, 0, "the epoch itself"),
+        (
+            UNIX_EPOCH + Duration::from_micros(1_000_000_000_000_001),
+            1_000_000_000_000_001,
+            "a time after the epoch, to the microsecond",
+        ),
+        (
+            UNIX_EPOCH + Duration::from_nanos(1_999),
+            1,
+            "a fraction of a microsecond after the epoch is dropped",
+        ),
+        (
+            UNIX_EPOCH - Duration::from_micros(1_250_000),
+            -1_250_000,
+            "a time before the epoch is negative",
+        ),
+        (
+            UNIX_EPOCH - Duration::from_nanos(1_001),
+            -2,
+            "a fraction of a microsecond before the epoch rounds further back",
+        ),
+    ];
+    for (time, micros, case) in cases {
+        set_modified(&file, time);
+        let kept = fs::metadata(&file)
+            .and_then(|metadata| metadata.modified())
+            .expect("the file's modification time");
+        assert_eq!(kept, time, "the filesystem keeps nanoseconds ({case})");
+        assert_eq!(modified(), Value::Int(micros), "{case}");
+    }
+
+    fs::write(&file, "written").expect("the file is rewritten");
+    let written = fs::metadata(&file)
+        .and_then(|metadata| metadata.modified())
+        .expect("the file's modification time");
+    assert!(written > UNIX_EPOCH, "the write moved the time on");
+    assert_eq!(
+        modified(),
+        unix_micros(written),
+        "a write moves the time on"
+    );
+}
+
+#[test]
+fn stat_times_of_a_link_are_its_own() {
+    let scratch = Scratch::new("stat_link_times");
+    scratch.file("file", "x");
+    set_modified(&scratch.path("file"), UNIX_EPOCH);
+    scratch.link("link", scratch.path("file"));
+    let link_modified = fs::symlink_metadata(scratch.path("link"))
+        .and_then(|metadata| metadata.modified())
+        .expect("the link's modification time");
+    assert_ne!(
+        link_modified, UNIX_EPOCH,
+        "the link is newer than its target"
+    );
+    assert_eq!(
+        scratch.run("fs.stat(fs.concat(dir, 'link')).modified"),
+        unix_micros(link_modified),
+        "the link's time is reported, not its target's"
+    );
+}
+
+#[test]
+fn stat_created_is_a_time_where_recorded_else_null() {
+    let scratch = Scratch::new("stat_created");
+    scratch.file("file", "x");
+    let expected = fs::symlink_metadata(scratch.path("file"))
+        .and_then(|metadata| metadata.created())
+        .map_or(Value::Null, unix_micros);
+    assert_eq!(
+        scratch.run("fs.stat(fs.concat(dir, 'file')).created"),
+        expected,
+        "the birth time, or Null where the filesystem keeps none"
+    );
+}
+
+#[test]
+fn stat_reports_unix_ownership_and_identity() {
+    let scratch = Scratch::new("stat_unix");
+    scratch.file("file", "x").file("other", "x").dir("dir");
+    let file = scratch.path("file");
+    fs::hard_link(&file, scratch.path("hard")).expect("the hard link is made");
+    scratch.link("link", &file);
+
+    let metadata = fs::symlink_metadata(&file).expect("the file's metadata");
+    assert_eq!(
+        scratch.run(
+            r"
+            do {
+                def stat = fs.stat(fs.concat(dir, 'file'))
+                [stat.uid, stat.gid, stat.inode, stat.device, stat.links]
+            }
+            "
+        ),
+        Value::array([
+            Value::Int(metadata.uid().into()),
+            Value::Int(metadata.gid().into()),
+            Value::Int(metadata.ino().cast_signed()),
+            Value::Int(metadata.dev().cast_signed()),
+            Value::Int(2),
+        ]),
+        "the IDs and identity are the OS's, and the hard link makes two links"
+    );
+
+    let same_file = r"
+        do {
+            defn identity(name) -> do {
+                def stat = fs.stat(fs.concat(dir, name))
+                [stat.inode, stat.device]
+            }
+            map(['hard', 'other', 'link'], fn name -> identity(name) == identity('file'))
+        }
+    ";
+    assert_eq!(
+        scratch.run(same_file),
+        frost("[true, false, false]"),
+        "a hard link is the same file; another file or a symlink to it is not"
+    );
+    assert_eq!(
+        scratch.run("map(['other', 'link'], fn name -> fs.stat(fs.concat(dir, name)).links)"),
+        frost("[1, 1]")
+    );
+    assert_eq!(
+        scratch.run("fs.stat(fs.concat(dir, 'dir')).links >= 1"),
+        Value::Bool(true),
+        "a directory counts its links"
     );
 }
 
