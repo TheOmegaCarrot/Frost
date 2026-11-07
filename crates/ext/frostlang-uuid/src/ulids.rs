@@ -6,7 +6,7 @@ use frostlang::native::Flat;
 use frostlang::{FrostBytes, FrostString, Value, frost_fn};
 use ulid::{Generator, Overflow, Ulid};
 
-use crate::{id_arg, millis_value};
+use crate::{id_arg, timestamp_value};
 
 /// The one generator for the process, so that every ULID made is greater than
 /// the last, wherever it was made.
@@ -56,8 +56,8 @@ pub(crate) fn to_string(bytes: FrostBytes) -> Value {
     <[u8; 16]>::try_from(&bytes[..]).map_or(Value::Null, |bytes| text(Ulid::from_bytes(bytes)))
 }
 
-/// `timestamp(id)`: the Unix time in milliseconds that a ULID records.
+/// `timestamp(id)`: the Unix time that a ULID records.
 #[frost_fn]
 pub(crate) fn timestamp(id: Flat) -> Value {
-    ulid_arg(&id).map_or(Value::Null, |ulid| millis_value(ulid.timestamp_ms()))
+    ulid_arg(&id).map_or(Value::Null, |ulid| timestamp_value(ulid.timestamp_ms()))
 }

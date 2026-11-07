@@ -14,8 +14,8 @@ const EXAMPLE: &str = "01ARZ3NDEKTSV4RRFFQ69G5FAV";
 /// [`EXAMPLE`] as a Frost Bytes literal.
 const EXAMPLE_BYTES: &str = "x'01563e3ab5d3d6764c61efb99302bd5b'";
 
-/// The time [`EXAMPLE`] records.
-const EXAMPLE_MILLIS: i64 = 1_469_922_850_259;
+/// The time [`EXAMPLE`] records, in microseconds since the Unix epoch.
+const EXAMPLE_MICROS: i64 = 1_469_922_850_259_000;
 
 /// Crockford's base32 alphabet, which canonical ULID text is written in.
 const ALPHABET: &str = "0123456789ABCDEFGHJKMNPQRSTVWXYZ";
@@ -221,33 +221,33 @@ fn to_bytes_and_to_string_check_their_argument_types() {
 fn timestamp_reads_the_time_a_ulid_records() {
     assert_eq!(
         int(&format!("uuid.ulid.timestamp('{EXAMPLE}')")),
-        EXAMPLE_MILLIS
+        EXAMPLE_MICROS
     );
     assert_eq!(
         int(&format!("uuid.ulid.timestamp({EXAMPLE_BYTES})")),
-        EXAMPLE_MILLIS
+        EXAMPLE_MICROS
     );
     assert_eq!(
         int("uuid.ulid.timestamp('01arz3ndektsv4rrffq69g5fav')"),
-        EXAMPLE_MILLIS
+        EXAMPLE_MICROS
     );
     assert_eq!(int("uuid.ulid.timestamp('00000000000000000000000000')"), 0);
-    // The largest time 48 bits hold.
+    // The largest time 48 bits of milliseconds hold.
     assert_eq!(
         int("uuid.ulid.timestamp('7ZZZZZZZZZZZZZZZZZZZZZZZZZ')"),
-        (1 << 48) - 1
+        ((1 << 48) - 1) * 1000
     );
 }
 
 #[test]
 fn timestamp_reads_the_time_new_made() {
-    let before = now_millis();
+    let before = now_millis() * 1000;
     let recorded = int("uuid.ulid.timestamp(uuid.ulid.new())");
-    let after = now_millis();
+    let after = now_millis() * 1000;
     let recorded = u64::try_from(recorded).expect("a time after the epoch");
     assert!(
         (before..=after).contains(&recorded),
-        "{recorded} is from {before} to {after}"
+        "{recorded} microseconds is from {before} to {after}"
     );
 }
 
@@ -294,7 +294,7 @@ fn ulids_and_uuids_share_their_bytes() {
         // Both lay out their time in the same 48 bits.
         (
             "uuid.ulid.timestamp(uuid.to_bytes('017f22e2-79b0-7cc3-98c4-dc0c0c07398f'))",
-            "1645557742000",
+            "1645557742000000",
         ),
     ]);
 }

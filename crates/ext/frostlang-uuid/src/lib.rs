@@ -29,16 +29,16 @@ use frostlang::{Extension, Value};
 ///   a `urn:uuid:` URN, in any case, and gives its 16 Bytes.
 /// - `to_string(bytes)` gives the canonical text of 16 Bytes.
 /// - `version(id)` gives the version of a UUID in the RFC 9562 layout.
-/// - `timestamp(id)` gives the time a v7 UUID records, in milliseconds since
-///   the Unix epoch.
+/// - `timestamp(id)` gives the time a v7 UUID records, in microseconds since
+///   the Unix epoch: a whole millisecond, the UUID's precision.
 ///
 /// For ULIDs, under `ulid`:
 ///
 /// - `new()` generates a ULID, as 26 characters of uppercase Crockford base32.
 /// - `to_bytes(text)` reads a ULID's text, in any case, and gives its 16 Bytes.
 /// - `to_string(bytes)` gives the canonical text of 16 Bytes.
-/// - `timestamp(id)` gives the time a ULID records, in milliseconds since the
-///   Unix epoch.
+/// - `timestamp(id)` gives the time a ULID records, in microseconds since the
+///   Unix epoch: a whole millisecond, the ULID's precision.
 ///
 /// Where a function takes an `id`, it may be text or 16 Bytes.
 /// A function given the right type, but content that is not an ID or lacks what
@@ -77,8 +77,9 @@ fn id_arg<T>(
     }
 }
 
-/// A millisecond count of at most 48 bits, which every ID's timestamp is, as an
-/// Int.
-fn millis_value(millis: u64) -> Value {
-    Value::Int(i64::try_from(millis).expect("48 bits fit an Int"))
+/// A Unix time in milliseconds of at most 48 bits, which every ID's timestamp
+/// is, as Int microseconds.
+fn timestamp_value(millis: u64) -> Value {
+    let millis = i64::try_from(millis).expect("48 bits fit an Int");
+    Value::Int(millis * 1000)
 }

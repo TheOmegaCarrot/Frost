@@ -4,7 +4,7 @@ use frostlang::native::Flat;
 use frostlang::{FrostBytes, FrostString, Value, frost_fn};
 use uuid::{Uuid, Variant, Version};
 
-use crate::{id_arg, millis_value};
+use crate::{id_arg, timestamp_value};
 
 /// The canonical text of `uuid`: lowercase hex, hyphenated.
 fn text(uuid: Uuid) -> Value {
@@ -52,7 +52,7 @@ pub(crate) fn version(id: Flat) -> Value {
         })
 }
 
-/// `timestamp(id)`: the Unix time in milliseconds that a v7 UUID records.
+/// `timestamp(id)`: the Unix time that a v7 UUID records.
 #[frost_fn]
 pub(crate) fn timestamp(id: Flat) -> Value {
     let millis = uuid_arg(&id)
@@ -62,5 +62,5 @@ pub(crate) fn timestamp(id: Flat) -> Value {
             let (seconds, nanos) = timestamp.to_unix();
             seconds * 1000 + u64::from(nanos / 1_000_000)
         });
-    millis.map_or(Value::Null, millis_value)
+    millis.map_or(Value::Null, timestamp_value)
 }

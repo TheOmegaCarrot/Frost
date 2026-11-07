@@ -14,8 +14,9 @@ const V7: &str = "017f22e2-79b0-7cc3-98c4-dc0c0c07398f";
 /// [`V7`] as a Frost Bytes literal.
 const V7_BYTES: &str = "x'017f22e279b07cc398c4dc0c0c07398f'";
 
-/// The time [`V7`] records: 2022-02-22 19:22:22 UTC.
-const V7_MILLIS: i64 = 1_645_557_742_000;
+/// The time [`V7`] records, 2022-02-22 19:22:22 UTC, in microseconds since the
+/// Unix epoch.
+const V7_MICROS: i64 = 1_645_557_742_000_000;
 
 /// Assert `text` is canonical UUID text: 32 lowercase hex digits, hyphenated
 /// as 8-4-4-4-12, of `version` and the RFC 9562 variant.
@@ -293,28 +294,28 @@ fn version_checks_its_argument_type() {
 
 #[test]
 fn timestamp_reads_the_time_a_v7_uuid_records() {
-    assert_eq!(int(&format!("uuid.timestamp('{V7}')")), V7_MILLIS);
-    assert_eq!(int(&format!("uuid.timestamp({V7_BYTES})")), V7_MILLIS);
+    assert_eq!(int(&format!("uuid.timestamp('{V7}')")), V7_MICROS);
+    assert_eq!(int(&format!("uuid.timestamp({V7_BYTES})")), V7_MICROS);
     assert_eq!(
         int("uuid.timestamp('urn:uuid:017F22E2-79B0-7CC3-98C4-DC0C0C07398F')"),
-        V7_MILLIS
+        V7_MICROS
     );
-    // The largest time 48 bits hold.
+    // The largest time 48 bits of milliseconds hold.
     assert_eq!(
         int("uuid.timestamp('ffffffff-ffff-7fff-bfff-ffffffffffff')"),
-        (1 << 48) - 1
+        ((1 << 48) - 1) * 1000
     );
 }
 
 #[test]
 fn timestamp_reads_the_time_v7_made() {
-    let before = now_millis();
+    let before = now_millis() * 1000;
     let recorded = int("uuid.timestamp(uuid.v7())");
-    let after = now_millis();
+    let after = now_millis() * 1000;
     let recorded = u64::try_from(recorded).expect("a time after the epoch");
     assert!(
         (before..=after).contains(&recorded),
-        "{recorded} is from {before} to {after}"
+        "{recorded} microseconds is from {before} to {after}"
     );
 }
 
