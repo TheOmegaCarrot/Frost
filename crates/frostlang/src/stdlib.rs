@@ -41,6 +41,7 @@ pub use os::os;
 pub use random::{RandomConfig, random};
 pub use regex::regex;
 pub use string::string;
+pub use time::time;
 
 use crate::{Stdlib, StdlibModule};
 
@@ -72,8 +73,8 @@ impl Stdlib {
     /// Containment is not a security boundary: a contained script can still
     /// exhaust memory or run forever.
     ///
-    /// Includes [`bits`], [`encoding`], [`math`], [`random`], [`regex`], and
-    /// [`string`].
+    /// Includes [`bits`], [`encoding`], [`math`], [`random`], [`regex`],
+    /// [`string`], and [`time`].
     pub fn contained(config: StdlibConfig) -> Self {
         Self::new().with_modules([
             bits(),
@@ -82,6 +83,7 @@ impl Stdlib {
             random(config.random),
             regex(),
             string(),
+            time(),
         ])
     }
 

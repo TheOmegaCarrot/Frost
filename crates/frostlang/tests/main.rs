@@ -98,6 +98,7 @@ mod std_os;
 mod std_random;
 mod std_regex;
 mod std_string;
+mod std_time;
 mod stdlib;
 mod structure_literals;
 mod tail_calls;
