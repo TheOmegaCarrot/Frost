@@ -1,0 +1,30 @@
+[package]
+name = "frostlang-datetime"
+version = "0.0.1"
+edition.workspace = true
+rust-version.workspace = true
+# See `[[test]]`.
+autotests = false
+
+[features]
+# Bundles a copy of the IANA Time Zone Database, used where the system has none.
+bundled-tzdb = ["jiff/tzdb-bundle-always"]
+
+[dependencies]
+frostlang = { path = "../../frostlang", version = "0.0.1", default-features = false }
+jiff = "0.2.39"
+serde = { version = "1", features = ["derive"] }
+
+[dev-dependencies]
+# The tests compile Frost source.
+frostlang.workspace = true
+
+# One binary for every integration test, rather than one per file, to save the
+# build time and disk of linking each separately. Each file in `tests/` is a
+# module of `tests/main.rs`, which must declare it.
+[[test]]
+name = "integration"
+path = "tests/main.rs"
+
+[lints]
+workspace = true

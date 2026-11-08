@@ -33,6 +33,7 @@ rust-version = "1.95"
 # overriding a workspace dependency's `default-features` needs a Cargo newer than
 # our `rust-version`.
 frostlang = { path = "crates/frostlang", version = "0.0.1" }
+frostlang-datetime = { path = "crates/ext/frostlang-datetime", version = "0.0.1" }
 frostlang-driver = { path = "crates/frostlang-driver", version = "0.0.1" }
 frostlang-formats = { path = "crates/ext/frostlang-formats", version = "0.0.1" }
 frostlang-fs-resolver = { path = "crates/frostlang-fs-resolver", version = "0.0.1" }
