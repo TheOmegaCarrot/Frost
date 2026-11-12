@@ -10,7 +10,7 @@ use std::time::{Duration, Instant, SystemTime};
 use itertools::Itertools;
 use serde::Deserialize;
 
-use crate::native::{De, Optional};
+use crate::native::{De, Flat, Optional};
 use crate::stdlib::stream::{self, Kind};
 use crate::stdlib::time::unix_micros;
 use crate::{
@@ -127,8 +127,7 @@ fn sleep(us: u64) {
 #[derive(Default, Deserialize)]
 #[serde(default, deny_unknown_fields)]
 struct RunOptions {
-    /// String or Bytes, checked after deserializing: a `Value` arrives as is.
-    stdin: Option<Value>,
+    stdin: Option<Flat>,
     cwd: Option<String>,
     env: Option<BTreeMap<String, String>>,
     replace_env: Option<BTreeMap<String, String>>,
@@ -136,21 +135,13 @@ struct RunOptions {
 }
 
 impl RunOptions {
-    /// Checks what deserializing cannot: options that exclude each other, and
-    /// the type of `stdin`. `function` names the function in errors.
+    /// Checks what deserializing cannot: options that exclude each other.
+    /// `function` names the function in errors.
     fn validate(self, function: &str) -> Result<Self, FrostError> {
         let options = self;
         if options.env.is_some() && options.replace_env.is_some() {
             return Err(FrostError::from_string(format!(
                 "Function {function} takes option `env` or `replace_env`, not both"
-            )));
-        }
-        if let Some(stdin) = &options.stdin
-            && stdin.as_byte_slice().is_none()
-        {
-            return Err(FrostError::from_string(format!(
-                "Function {function} requires String or Bytes for option `stdin`, got {}",
-                stdin.type_name()
             )));
         }
         Ok(options)
@@ -204,7 +195,7 @@ fn run(
     let Optional(options) = options;
     let options = options.map_or_else(RunOptions::default, |De(options)| options);
     let options = options.validate(function)?;
-    let input = options.stdin.as_ref().and_then(Value::as_byte_slice);
+    let input = options.stdin.as_ref().map(Flat::as_bytes);
 
     let mut process = Command::new(&command);
     process
