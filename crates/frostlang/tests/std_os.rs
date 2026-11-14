@@ -485,12 +485,10 @@ mod run {
 
     #[test]
     fn run_checks_its_options() {
-        assert_raises(&[
-            (
-                "os.run('true', [], {env: {}, replace_env: {}})",
-                "Function std.os.run takes option `env` or `replace_env`, not both",
-            ),
-        ]);
+        assert_raises(&[(
+            "os.run('true', [], {env: {}, replace_env: {}})",
+            "Function std.os.run takes option `env` or `replace_env`, not both",
+        )]);
     }
 
     #[test]
@@ -505,8 +503,14 @@ mod run {
             ("{cwd: x'2f'}", "expected String, got Bytes (at `cwd`)"),
             // An option given as Null is given, not left out.
             ("{cwd: null}", "expected String, got Null (at `cwd`)"),
-            ("{stdin: 1}", "expected String or Bytes, got Int (at `stdin`)"),
-            ("{stdin: null}", "expected String or Bytes, got Null (at `stdin`)"),
+            (
+                "{stdin: 1}",
+                "expected String or Bytes, got Int (at `stdin`)",
+            ),
+            (
+                "{stdin: null}",
+                "expected String or Bytes, got Null (at `stdin`)",
+            ),
             ("{env: null}", "expected Map, got Null (at `env`)"),
             ("{binary: 'yes'}", "expected Bool, got String (at `binary`)"),
             ("{env: ['A=b']}", "expected Map, got Array (at `env`)"),
