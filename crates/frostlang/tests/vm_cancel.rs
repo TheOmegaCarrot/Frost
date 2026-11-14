@@ -603,6 +603,34 @@ fn a_native_waiting_on_cancellation_from_another_thread_stops() {
 }
 
 #[test]
+fn a_native_blocked_until_a_cancel_callback_wakes_it_stops() {
+    // The native blocks on a channel with no polling; only the callback it
+    // registers on the run's token can wake it.
+    let host = Host::new();
+    let (started_sender, started) = mpsc::channel();
+    let wait = frost_closure!("wait", move |#[frost(ctx)] ctx| {
+        let (wake, woken) = mpsc::channel();
+        let _callback = ctx
+            .cancel_token()
+            .expect("the run has a token")
+            .on_cancel(move || {
+                let _ = wake.send(());
+            });
+        started_sender.send(()).expect("the test is waiting");
+        woken.recv().expect("the callback wakes the native");
+    });
+    let vm = host.vm_with("wait()", &[("wait", wait)]);
+
+    let token = host.token.clone();
+    let canceller = thread::spawn(move || {
+        started.recv().expect("the native reports that it started");
+        token.cancel();
+    });
+    assert_cancelled(within_deadline(vm));
+    canceller.join().unwrap();
+}
+
+#[test]
 fn a_native_sees_a_cancellation_made_inside_its_call_back_into_frost() {
     // The callback cancels, and `cancel` returning latches the cancellation,
     // so `outer`'s check after the callback sees it.

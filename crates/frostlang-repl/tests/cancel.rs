@@ -122,6 +122,45 @@ fn cancelling_with_no_input_running_does_nothing() {
     );
 }
 
+#[test]
+fn a_cancel_callback_may_cancel_through_the_handle_again() {
+    // The input's `wait()` blocks until a callback on its run's token wakes it.
+    // That callback first cancels through the handle that is cancelling it,
+    // which must not deadlock.
+    within_deadline(|| {
+        let repl = Repl::new();
+        let handle = repl.cancel_handle();
+        let (started_sender, started) = mpsc::channel();
+        let wait = {
+            let handle = handle.clone();
+            frost_closure!("wait", move |#[frost(ctx)] ctx| {
+                let handle = handle.clone();
+                let (wake, woken) = mpsc::channel();
+                let _callback = ctx
+                    .cancel_token()
+                    .expect("a REPL input has a token")
+                    .on_cancel(move || {
+                        handle.cancel();
+                        let _ = wake.send(());
+                    });
+                started_sender.send(()).expect("the test is waiting");
+                woken.recv().expect("the callback wakes the input");
+            })
+        };
+        let mut repl = repl.with_binding("wait", wait).unwrap();
+
+        let canceller = thread::spawn(move || {
+            started.recv().expect("the input reports that it started");
+            handle.cancel()
+        });
+        assert_cancelled(&repl.evaluate("wait()"));
+        assert!(
+            canceller.join().unwrap(),
+            "cancel should report that an input was running"
+        );
+    });
+}
+
 /// A REPL whose `signal()` cancels the input calling it, through a handle
 /// taken before the REPL was configured further.
 fn self_cancelling_repl() -> Repl {

@@ -18,7 +18,7 @@ pub use bytecode::{Bytecode, StackEffect};
 // Only the compiler uses it, which is absent without the `compile` feature.
 #[allow(unused)]
 pub(crate) use bytecode::to_operand;
-pub use cancel::CancelToken;
+pub use cancel::{CancelCallback, CancelToken};
 pub use debug_info::{DebugInfo, OpDebugInfo, SourceLines, SourceLocation, Span};
 pub use disassemble::Disassembly;
 pub use function::{

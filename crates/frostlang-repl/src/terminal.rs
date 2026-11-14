@@ -371,7 +371,10 @@ fn cancel_on_ctrl_c(handle: CancelHandle) {
 }
 
 fn on_ctrl_c() {
-    let cancelled = ctrl_c_target().as_ref().is_some_and(CancelHandle::cancel);
+    // Cancelled after the lock is released: cancelling runs the input's cancel
+    // callbacks, which may reach this target.
+    let target = ctrl_c_target().clone();
+    let cancelled = target.as_ref().is_some_and(CancelHandle::cancel);
     if !cancelled {
         // No input is running: end the process, as Ctrl-C does by default.
         // While input is read, the terminal sends Ctrl-C as a key instead.

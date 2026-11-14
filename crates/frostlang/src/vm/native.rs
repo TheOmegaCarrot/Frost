@@ -166,6 +166,7 @@ impl<'a> NativeCtx<'a> {
     /// For work a native cannot pause to check
     /// [`abort_reason`](Self::abort_reason), such as a long call into a
     /// library, the native can hand that work a clone of the token to watch,
+    /// or register a callback with [`CancelToken::on_cancel`] that stops it,
     /// so that it stops once the run is cancelled. Cancelling the token
     /// cancels the run, and every other run sharing it.
     pub fn cancel_token(&self) -> Option<&CancelToken> {

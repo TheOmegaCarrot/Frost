@@ -42,12 +42,12 @@ pub use core::{
 };
 
 pub use vm::{
-    AbortReason, Arity, CancelToken, ChildVmFactory, Closure, CompiledProgram, ComponentBuilder,
-    Extension, ExtensionBuilder, ExtensionError, HostComponent, HostComponentBuilder,
-    HostComponentError, IdleVm, ImportCtx, ImportResolver, Importer, ImporterBuilder,
-    InvalidComponentName, InvalidParams, MissingCaptures, ModuleId, NativeCtx, NativeFn,
-    NativeFunction, Param, Params, PrintSink, ProgramParts, ProgramResult, RunError, RunErrorKind,
-    SourceLocation, Stdlib, StdlibError, StdlibModule, StdoutSink, Vm, VmFactory,
+    AbortReason, Arity, CancelCallback, CancelToken, ChildVmFactory, Closure, CompiledProgram,
+    ComponentBuilder, Extension, ExtensionBuilder, ExtensionError, HostComponent,
+    HostComponentBuilder, HostComponentError, IdleVm, ImportCtx, ImportResolver, Importer,
+    ImporterBuilder, InvalidComponentName, InvalidParams, MissingCaptures, ModuleId, NativeCtx,
+    NativeFn, NativeFunction, Param, Params, PrintSink, ProgramParts, ProgramResult, RunError,
+    RunErrorKind, SourceLocation, Stdlib, StdlibError, StdlibModule, StdoutSink, Vm, VmFactory,
     VmRuntimeConfiguration, WellFormedProgram,
 };
 

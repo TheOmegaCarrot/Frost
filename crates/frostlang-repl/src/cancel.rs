@@ -20,7 +20,10 @@ impl CancelHandle {
     /// Cancel the input being evaluated, if any.
     /// Returns whether one was.
     pub fn cancel(&self) -> bool {
-        match &*self.lock() {
+        // Cancelled after the lock is released: cancelling runs the token's
+        // callbacks, which may call back into this handle.
+        let token = self.lock().clone();
+        match token {
             Some(token) => {
                 token.cancel();
                 true
