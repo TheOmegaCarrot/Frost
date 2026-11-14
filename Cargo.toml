@@ -7,6 +7,7 @@ members = [
     "crates/frostlang-fs-resolver",
     "crates/frostlang-repl",
     "crates/frostlang-cli",
+    "crates/frostlang-tokio",
     "crates/frostlang-astviz",
     "crates/frostlang-corpus",
     # The first-party extensions, one crate each.
@@ -37,10 +38,12 @@ frostlang-datetime = { path = "crates/ext/frostlang-datetime", version = "0.0.1"
 frostlang-driver = { path = "crates/frostlang-driver", version = "0.0.1" }
 frostlang-formats = { path = "crates/ext/frostlang-formats", version = "0.0.1" }
 frostlang-fs-resolver = { path = "crates/frostlang-fs-resolver", version = "0.0.1" }
+frostlang-http = { path = "crates/ext/frostlang-http", version = "0.0.1" }
 frostlang-macros = { path = "crates/frostlang-macros", version = "0.0.1" }
 frostlang-parse = { path = "crates/frostlang-parse", version = "0.0.1" }
 frostlang-repl = { path = "crates/frostlang-repl", version = "0.0.1" }
 frostlang-sqlite = { path = "crates/ext/frostlang-sqlite", version = "0.0.1" }
+frostlang-tokio = { path = "crates/frostlang-tokio", version = "0.0.1" }
 frostlang-uuid = { path = "crates/ext/frostlang-uuid", version = "0.0.1" }
 # Without the defaults: a statement cache (`cache`) and a WebAssembly build of
 # SQLite (`ffi-sqlite-wasm-rs`). Each crate enables the features it uses.

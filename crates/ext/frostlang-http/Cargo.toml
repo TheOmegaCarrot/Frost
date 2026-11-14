@@ -1,0 +1,48 @@
+[package]
+name = "frostlang-http"
+version = "0.0.1"
+edition.workspace = true
+rust-version.workspace = true
+# See `[[test]]`.
+autotests = false
+
+[dependencies]
+# `auth.basic`'s credentials. The version reqwest uses.
+base64 = "0.23"
+frostlang = { path = "../../frostlang", version = "0.0.1", default-features = false }
+frostlang-tokio.workspace = true
+# To tell, among reqwest's errors, a connection failing from other causes,
+# and to check a URL converts for sending as reqwest will. The version reqwest
+# uses.
+hyper = "1.6"
+# Without the defaults, to choose the TLS backend: `rustls`, verifying against
+# the operating system's trust store. `system-proxy` reads macOS and Windows
+# proxy settings, beyond the environment's.
+reqwest = { version = "0.13.5", default-features = false, features = [
+    "rustls",
+    "http2",
+    "system-proxy",
+    "gzip",
+    "brotli",
+    "zstd",
+] }
+serde = { version = "1", features = ["derive"] }
+url = "2.5"
+
+[dev-dependencies]
+# Compressed response bodies, made from readable text.
+flate2 = "1.1"
+# The tests compile Frost source.
+frostlang.workspace = true
+# A port held bound but not listening, for a connection to be refused.
+socket2 = "0.6"
+
+# One binary for every integration test, rather than one per file, to save the
+# build time and disk of linking each separately. Each file in `tests/` is a
+# module of `tests/main.rs`, which must declare it.
+[[test]]
+name = "integration"
+path = "tests/main.rs"
+
+[lints]
+workspace = true

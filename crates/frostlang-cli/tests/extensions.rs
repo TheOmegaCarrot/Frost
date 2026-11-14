@@ -1,5 +1,7 @@
 //! The first-party extensions `frost` installs.
 
+use std::io::{Read, Write};
+use std::net::TcpListener;
 use std::process::Command;
 
 /// What `frost -e code` prints, which must succeed.
@@ -36,6 +38,37 @@ fn uuid_is_installed() {
         print(uuid.version(uuid.v4()))
     ";
     assert_eq!(eval(code), "4\n");
+}
+
+#[test]
+fn http_is_installed() {
+    // A server answering one request on the loopback interface.
+    let listener = TcpListener::bind("127.0.0.1:0").expect("a port is free");
+    let address = listener
+        .local_addr()
+        .expect("a bound socket has an address");
+    let server = std::thread::spawn(move || {
+        let (mut stream, _) = listener.accept().expect("the script connects");
+        let mut request = Vec::new();
+        let mut byte = [0];
+        while !request.ends_with(b"\r\n\r\n") {
+            stream
+                .read_exact(&mut byte)
+                .expect("the request arrives whole");
+            request.push(byte[0]);
+        }
+        stream
+            .write_all(b"HTTP/1.1 200 OK\r\ncontent-length: 5\r\nconnection: close\r\n\r\nhello")
+            .expect("the script reads the response");
+    });
+    let code = format!(
+        r"
+        def http = import('ext.http')
+        print(http.client().get('http://{address}/').response.body)
+        "
+    );
+    assert_eq!(eval(&code), "hello\n");
+    server.join().expect("the server answered");
 }
 
 #[test]

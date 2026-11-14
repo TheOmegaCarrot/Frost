@@ -53,6 +53,7 @@ independently:
 | `frostlang-fs-resolver` | An optional `ImportResolver` serving `import('a.b.c')` from `a/b/c.frst` under host-configured roots, with caching and cycle detection. |
 | `frostlang-repl` | An interactive read-eval-print loop. |
 | `frostlang-cli` | The `frost` binary, built on `frostlang-driver`. |
+| `frostlang-tokio` | Async Rust behind blocking natives: a private Tokio runtime that extensions built on async clients (such as HTTP) run their futures on. Provides no `ext.*` module of its own. |
 | `frostlang-astviz` | AST visualization; compiles the tree-sitter Frost grammar from `editor/`. Unpublished. |
 | `frostlang-corpus` | The core-language test corpus (`corpus/`, one script per file, each pinning its expected outcome) and its runner, run by `cargo test`. Scripts under `corpus/benchmarks/` marked `bench` are also the benchmarks, run by `cargo bench`. Its `corpus/README.md` and `corpus/MAINTENANCE.md` give the format and the rules for keeping it. Unpublished. |
 

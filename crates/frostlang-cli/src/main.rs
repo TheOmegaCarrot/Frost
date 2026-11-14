@@ -9,6 +9,8 @@ use frostlang::{Importer, ImporterBuilder, Stdlib, VmRuntimeConfiguration, stdli
 use frostlang_driver::{Driver, Exit};
 use frostlang_formats::Formats;
 use frostlang_fs_resolver::{DiagnosticStyle, FsResolver};
+use frostlang_http::HttpConfig;
+use frostlang_tokio::Runtime;
 
 /// How deeply imports may nest: far deeper than a sound module tree needs, and
 /// shallow enough that runaway nesting fails before the native stack runs out.
@@ -17,6 +19,10 @@ const MAX_IMPORT_DEPTH: NonZeroU64 = NonZeroU64::new(64).unwrap();
 /// How deeply calls may nest: far deeper than any sound recursion needs, and
 /// shallow enough that runaway recursion fails before it exhausts memory.
 const MAX_CALL_DEPTH: NonZeroU64 = NonZeroU64::new(1_000_000).unwrap();
+
+/// The largest HTTP response body held in memory: generous, while a runaway
+/// download still fails before it exhausts memory.
+const MAX_HTTP_BODY_SIZE: u64 = 1 << 30;
 
 fn main() -> Exit {
     Driver::new()
@@ -50,12 +56,14 @@ fn importer(script: Option<&Path>) -> Arc<Importer> {
         .chain(module_path)
         .filter(|root| root.is_dir())
         .collect();
+    let http = HttpConfig::new(Runtime::new()).with_max_body_size(MAX_HTTP_BODY_SIZE);
     let importer = ImporterBuilder::new()
         .with_stdlib(Stdlib::complete(StdlibConfig::default()))
         .with_extension(frostlang_uuid::extension())
         .and_then(|importer| importer.with_extension(frostlang_sqlite::extension()))
         .and_then(|importer| importer.with_extension(frostlang_formats::extension(Formats::all())))
         .and_then(|importer| importer.with_extension(frostlang_datetime::extension()))
+        .and_then(|importer| importer.with_extension(frostlang_http::extension(http)))
         .expect("each extension has its own name");
     match FsResolver::new(roots) {
         Ok(resolver) => importer.append_resolver(Arc::new(
