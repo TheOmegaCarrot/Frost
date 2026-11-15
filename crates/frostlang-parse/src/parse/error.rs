@@ -140,7 +140,7 @@ impl Diagnostic {
 /// [`Display`], the same as [`render`](Self::render), or as plain
 /// text with [`render_narrated`](Self::render_narrated). With the
 /// [`graphical-diagnostics`](crate#features) feature, `render_pretty`,
-/// `render_unicode`, and `render_plain` draw it in a fixed style.
+/// `render_unicode`, `render_ascii`, and `render_plain` draw it in a fixed style.
 #[derive(Clone, Debug, thiserror::Error)]
 #[error("{}", self.render())]
 pub struct ParseError(Report);
@@ -223,6 +223,13 @@ impl ParseError {
     #[cfg(feature = "graphical-diagnostics")]
     pub fn render_unicode(&self) -> String {
         self.0.render_themed(GraphicalTheme::unicode_nocolor())
+    }
+
+    /// Render with color and ASCII drawing unconditionally, for a terminal that
+    /// shows color but not box drawing.
+    #[cfg(feature = "graphical-diagnostics")]
+    pub fn render_ascii(&self) -> String {
+        self.0.render_themed(GraphicalTheme::ascii())
     }
 
     /// Render as monochrome ASCII: deterministic, terminal-independent, and the

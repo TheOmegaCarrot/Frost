@@ -69,6 +69,9 @@ fn importer(script: Option<&Path>) -> Arc<Importer> {
         Ok(resolver) => importer.append_resolver(Arc::new(
             resolver
                 .with_symlinks_followed(true)
+                // TODO: `--ascii` and `--color` do not reach imported modules'
+                // diagnostics, since this importer is built before the command
+                // line is parsed.
                 .with_diagnostics(DiagnosticStyle::Unicode),
         )),
         // Only a root removed since it was checked fails here; the standard

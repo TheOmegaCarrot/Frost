@@ -24,14 +24,20 @@ pub trait Frontend {
 
     /// Show text one of the REPL's metacommands produced, which has no
     /// trailing newline. It carries ANSI styling only if
-    /// [`ansi_styling`](Self::ansi_styling) says it may.
+    /// [`ansi_styling`](Self::ansi_styling) says it may, and draws with
+    /// Unicode only if [`unicode`](Self::unicode) does.
     fn render_text(&mut self, text: &str) -> io::Result<()>;
 
     /// Whether text the REPL gives [`render_text`](Self::render_text) may
-    /// carry ANSI styling. A frontend that takes it is taken to show Unicode
-    /// too, so such text may also draw with characters outside ASCII. By
-    /// default, it may not.
+    /// carry ANSI styling. By default, it may not.
     fn ansi_styling(&self) -> bool {
+        false
+    }
+
+    /// Whether text the REPL gives [`render_text`](Self::render_text) may
+    /// draw with Unicode, such as box drawing, rather than ASCII alone. By
+    /// default, it may not.
+    fn unicode(&self) -> bool {
         false
     }
 

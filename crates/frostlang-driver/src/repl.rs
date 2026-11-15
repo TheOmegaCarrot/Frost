@@ -15,7 +15,8 @@ use frostlang_repl::{Frontend, InvalidName, Repl};
 /// Every session starts afresh from these settings.
 #[derive(Debug, Clone)]
 pub struct ReplSettings {
-    // `None` for the default frontend, which takes the command line's color.
+    // `None` for the default frontend, which takes the command line's color
+    // and charset.
     frontend: Option<FrontendFactory>,
     config_file: ConfigFile,
     bindings: BTreeMap<String, Value>,
@@ -49,7 +50,8 @@ impl Default for ReplSettings {
 
 impl ReplSettings {
     /// Sessions on [`frostlang_repl::default_frontend`], colored as the command
-    /// line's `--color` says, reading the default config file (see
+    /// line's `--color` says and drawn in ASCII under `--ascii`, reading the
+    /// default config file (see
     /// [`Repl::with_default_config_file`]), with nothing bound, and keeping as
     /// many recent results as [`Repl::new`] does. With `repl --basic`,
     /// sessions are on [`LineFrontend::stdin`](frostlang_repl::LineFrontend::stdin)
@@ -84,8 +86,8 @@ impl ReplSettings {
     }
 
     /// Set the frontend sessions run on: `make` is called for a new frontend
-    /// at the start of each session. The command line's `--color` and
-    /// `repl --basic` do not apply to it.
+    /// at the start of each session. The command line's `--color`, `--ascii`,
+    /// and `repl --basic` do not apply to it.
     pub fn with_frontend(
         mut self,
         make: impl Fn() -> Box<dyn Frontend> + Send + Sync + 'static,

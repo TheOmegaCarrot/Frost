@@ -11,7 +11,7 @@
 //! use frostlang_repl::{Repl, SessionError};
 //!
 //! fn main() -> Result<(), SessionError> {
-//!     let mut frontend = frostlang_repl::default_frontend(true);
+//!     let mut frontend = frostlang_repl::default_frontend(true, true);
 //!     Repl::new().run(&mut *frontend)
 //! }
 //! ```
@@ -66,7 +66,7 @@ use frostlang::{
 };
 use frostlang_parse::{Token, tokens};
 
-use builtins::Reply;
+use builtins::{Reply, TextStyle};
 use config::Reading;
 use metacommand::{Handler, Registry};
 
@@ -75,19 +75,23 @@ const INPUT_NAME: &str = "<repl>";
 
 /// The frontend a command-line REPL most likely wants. With the `line-editor`
 /// feature, and a terminal on standard input and output, that is a
-/// [`TerminalFrontend::new`], colored if `color` is true. Otherwise it is
-/// [`LineFrontend::stdin`], and `color` is unused.
-pub fn default_frontend(color: bool) -> Box<dyn Frontend> {
+/// [`TerminalFrontend::new`], colored if `color` is true and drawing with
+/// Unicode if `unicode` is. Otherwise it is [`LineFrontend::stdin`], and both
+/// are unused.
+pub fn default_frontend(color: bool, unicode: bool) -> Box<dyn Frontend> {
     #[cfg(feature = "line-editor")]
     {
         use std::io::IsTerminal;
 
         if io::stdin().is_terminal() && io::stdout().is_terminal() {
-            return Box::new(TerminalFrontend::new().with_color(color));
+            let frontend = TerminalFrontend::new()
+                .with_color(color)
+                .with_unicode(unicode);
+            return Box::new(frontend);
         }
     }
     #[cfg(not(feature = "line-editor"))]
-    let _ = color;
+    let _ = (color, unicode);
     Box::new(LineFrontend::stdin())
 }
 
@@ -431,7 +435,11 @@ impl Repl {
             };
             let reply = match registry.resolve(invocation.name()) {
                 Ok(Handler::Builtin(builtin)) => {
-                    self.run_builtin(builtin, &invocation, &registry, frontend.ansi_styling())
+                    let style = TextStyle {
+                        ansi_styling: frontend.ansi_styling(),
+                        unicode: frontend.unicode(),
+                    };
+                    self.run_builtin(builtin, &invocation, &registry, style)
                 }
                 Ok(Handler::Frontend(name)) => {
                     frontend.metacommand(&invocation.named(name))?;

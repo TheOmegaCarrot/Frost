@@ -1,7 +1,8 @@
 //! White-box: how `:strings` and the configuration set how String results are
-//! shown.
-//! The frontend writes results to the process's standard output, which the
-//! public API cannot observe, so these read the setting it keeps.
+//! shown, and how diagnostics are drawn.
+//! The frontend writes results to the process's standard output, and
+//! diagnostics to its standard error, which the public API cannot observe, so
+//! these read the setting it keeps or the text it would write.
 //!
 //! A refused argument is reported on standard error, as at a terminal, so
 //! those cases print a line there.
@@ -88,4 +89,34 @@ fn configuring_applies_the_sections_strings_or_the_default() {
         StringDisplay::Quoted,
         "an invalid section sets nothing"
     );
+}
+
+#[cfg(feature = "graphical-diagnostics")]
+#[test]
+fn diagnostics_draw_in_the_charset_and_color_the_frontend_shows() {
+    use frostlang::compile::{CompilerOptions, compile_program};
+
+    let Err(diagnostics) = compile_program("script.frst", "nope", CompilerOptions::new()) else {
+        panic!("an unbound name does not compile");
+    };
+    for unicode in [false, true] {
+        for color in [false, true] {
+            let frontend = TerminalFrontend::new()
+                .with_unicode(unicode)
+                .with_color(color);
+            let drawn = frontend.render_diagnostics(&diagnostics);
+            let style = format!("unicode {unicode}, color {color}");
+            assert!(drawn.contains("nope"), "{style}: {drawn}");
+            assert_eq!(
+                drawn.contains('\x1b'),
+                color,
+                "{style}: colored exactly when the frontend is, but gave {drawn:?}"
+            );
+            assert_eq!(
+                drawn.is_ascii(),
+                !unicode,
+                "{style}: ASCII exactly when the frontend is, but gave {drawn:?}"
+            );
+        }
+    }
 }

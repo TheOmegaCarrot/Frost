@@ -21,6 +21,7 @@ fn every_style_names_the_file_and_shows_the_snippet_and_label() {
     for (style, rendered) in [
         ("narrated", error.render_narrated()),
         ("plain", error.render_plain()),
+        ("ascii", error.render_ascii()),
         ("unicode", error.render_unicode()),
         ("pretty", error.render_pretty()),
         ("adaptive", error.render()),
@@ -41,6 +42,7 @@ fn every_style_shows_the_help() {
     for (style, rendered) in [
         ("narrated", error.render_narrated()),
         ("plain", error.render_plain()),
+        ("ascii", error.render_ascii()),
         ("unicode", error.render_unicode()),
         ("pretty", error.render_pretty()),
     ] {
@@ -90,6 +92,13 @@ fn unicode_draws_with_unicode_but_has_no_color() {
     let rendered = error().render_unicode();
     assert!(!rendered.is_ascii(), "box-drawing expected:\n{rendered}");
     assert!(!has_escape(&rendered), "{rendered:?}");
+}
+
+#[test]
+fn ascii_draws_with_ascii_and_color() {
+    let rendered = error().render_ascii();
+    assert!(rendered.is_ascii(), "{rendered}");
+    assert!(has_escape(&rendered), "color expected:\n{rendered:?}");
 }
 
 #[test]

@@ -29,16 +29,18 @@ pub struct ScriptedFrontend {
     segments: VecDeque<String>,
     transcript: Transcript,
     ansi_styling: bool,
+    unicode: bool,
 }
 
 impl ScriptedFrontend {
     /// A frontend that reads `segments` in order, recording to a new
-    /// [`Transcript`], and takes text without ANSI styling.
+    /// [`Transcript`], and takes text without ANSI styling, in ASCII.
     pub fn new<S: Into<String>>(segments: impl IntoIterator<Item = S>) -> Self {
         Self {
             segments: segments.into_iter().map(Into::into).collect(),
             transcript: Transcript::default(),
             ansi_styling: false,
+            unicode: false,
         }
     }
 
@@ -54,6 +56,12 @@ impl ScriptedFrontend {
     /// Set what [`Frontend::ansi_styling`] answers.
     pub fn with_ansi_styling(mut self, ansi_styling: bool) -> Self {
         self.ansi_styling = ansi_styling;
+        self
+    }
+
+    /// Set what [`Frontend::unicode`] answers.
+    pub fn with_unicode(mut self, unicode: bool) -> Self {
+        self.unicode = unicode;
         self
     }
 
@@ -83,6 +91,10 @@ impl Frontend for ScriptedFrontend {
 
     fn ansi_styling(&self) -> bool {
         self.ansi_styling
+    }
+
+    fn unicode(&self) -> bool {
+        self.unicode
     }
 }
 

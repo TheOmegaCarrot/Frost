@@ -98,6 +98,7 @@ use settings::{Context, EditMode, Problem, Prompts, Settings, StringDisplay};
 /// input.
 pub struct TerminalFrontend {
     color: bool,
+    unicode: bool,
     // `None` for the default history file.
     history: Option<FileBackedHistory>,
     // Built at the first read, so that the default history file is opened
@@ -122,7 +123,7 @@ impl Default for TerminalFrontend {
 }
 
 impl TerminalFrontend {
-    /// A colored frontend on the terminal, keeping history from one session
+    /// A colored frontend on the terminal, drawing with Unicode, keeping history from one session
     /// to the next in the platform's usual place for it:
     ///
     /// | Platform | History file |
@@ -136,6 +137,7 @@ impl TerminalFrontend {
     pub fn new() -> Self {
         Self {
             color: true,
+            unicode: true,
             history: None,
             editor: None,
             edit_dir: None,
@@ -146,10 +148,17 @@ impl TerminalFrontend {
         }
     }
 
-    /// Set whether to color the prompt, the source being typed, and
-    /// diagnostics.
+    /// Set whether to color the prompt, the source being typed, diagnostics,
+    /// and the text of metacommands.
     pub fn with_color(mut self, color: bool) -> Self {
         self.color = color;
+        self
+    }
+
+    /// Set whether diagnostics and the text of metacommands may draw with
+    /// Unicode, such as box drawing, rather than ASCII alone.
+    pub fn with_unicode(mut self, unicode: bool) -> Self {
+        self.unicode = unicode;
         self
     }
 
@@ -292,9 +301,9 @@ impl Frontend for TerminalFrontend {
             Err(
                 ReplError::Compile(diagnostics)
                 | ReplError::Config(crate::ConfigError::Compile(diagnostics)),
-            ) if self.color => {
+            ) => {
                 let mut stderr = io::stderr().lock();
-                write!(stderr, "{}", diagnostics.render_pretty())?;
+                write!(stderr, "{}", self.render_diagnostics(diagnostics))?;
                 stderr.flush()
             }
             Err(error) => {
@@ -313,6 +322,10 @@ impl Frontend for TerminalFrontend {
 
     fn ansi_styling(&self) -> bool {
         self.color
+    }
+
+    fn unicode(&self) -> bool {
+        self.unicode
     }
 
     fn metacommands(&self) -> Vec<MetacommandSpec> {
@@ -490,6 +503,17 @@ impl TerminalFrontend {
     /// Show `error` the way a failed input is shown.
     fn fail(&mut self, error: MetacommandError) -> io::Result<()> {
         self.render(Err(&ReplError::Metacommand(error)))
+    }
+
+    /// `diagnostics` drawn in the charset and color this frontend shows.
+    #[cfg(feature = "graphical-diagnostics")]
+    fn render_diagnostics(&self, diagnostics: &frostlang::compile::Diagnostics) -> String {
+        match (self.unicode, self.color) {
+            (true, true) => diagnostics.render_pretty(),
+            (true, false) => diagnostics.render_unicode(),
+            (false, true) => diagnostics.render_ascii(),
+            (false, false) => diagnostics.render_plain(),
+        }
     }
 }
 

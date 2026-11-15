@@ -22,6 +22,15 @@ pub(crate) enum Reply {
     ReadConfig(PathBuf, Reading),
 }
 
+/// What the text a built-in metacommand gives may use, as its frontend says.
+#[derive(Clone, Copy)]
+pub(crate) struct TextStyle {
+    /// Whether it may carry ANSI styling.
+    pub(crate) ansi_styling: bool,
+    /// Whether it may draw with Unicode rather than ASCII alone.
+    pub(crate) unicode: bool,
+}
+
 /// `builtin` refusing its argument, for `reason`.
 fn invalid_argument(builtin: Builtin, reason: impl Into<String>) -> ReplError {
     ReplError::Metacommand(MetacommandError::InvalidArgument {
@@ -31,14 +40,13 @@ fn invalid_argument(builtin: Builtin, reason: impl Into<String>) -> ReplError {
 }
 
 impl Repl {
-    /// Run `builtin` as `invocation` asks. Text it gives carries ANSI styling,
-    /// or draws with Unicode, only if `ansi_styling` is true.
+    /// Run `builtin` as `invocation` asks, giving text in `style`.
     pub(crate) fn run_builtin(
         &mut self,
         builtin: Builtin,
         invocation: &Invocation,
         registry: &Registry,
-        ansi_styling: bool,
+        style: TextStyle,
     ) -> Result<Reply, ReplError> {
         let argument = invocation.argument();
         match builtin {
@@ -75,7 +83,7 @@ impl Repl {
                 let closure = self.compile(source, true)?;
                 let listing = bytecode::closure_function(&closure)
                     .disassemble()
-                    .with_color(ansi_styling)
+                    .with_color(style.ansi_styling)
                     .to_string();
                 Ok(Reply::Text(listing.trim_end().to_string()))
             }
@@ -86,12 +94,10 @@ impl Repl {
                         let diagnostic = Diagnostic::from_parse_error(&error, INPUT_NAME, source);
                         ReplError::Compile(Diagnostics::from(diagnostic))
                     })?;
-                // A frontend that shows ANSI styling is a terminal, which is
-                // taken to show Unicode as well.
                 let tree = program
                     .display_tree(source)
-                    .with_unicode(ansi_styling)
-                    .with_color(ansi_styling)
+                    .with_unicode(style.unicode)
+                    .with_color(style.ansi_styling)
                     .to_string();
                 Ok(Reply::Text(tree.trim_end().to_string()))
             }

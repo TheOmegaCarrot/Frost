@@ -25,6 +25,7 @@ fn every_style_names_the_file_and_shows_the_snippet() {
     for (style, rendered) in [
         ("narrated", errors.render_narrated()),
         ("plain", errors.render_plain()),
+        ("ascii", errors.render_ascii()),
         ("unicode", errors.render_unicode()),
         ("pretty", errors.render_pretty()),
     ] {
@@ -92,6 +93,31 @@ fn unicode_is_pretty_without_its_color() {
         unicode,
         "pretty, with its escapes removed, is unicode"
     );
+}
+
+#[test]
+fn ascii_draws_with_ascii_and_color() {
+    let rendered = errors().render_ascii();
+    assert!(rendered.is_ascii(), "{rendered}");
+    assert!(has_escape(&rendered), "color expected:\n{rendered:?}");
+}
+
+#[test]
+fn ascii_is_plain_with_color() {
+    // The two share a layout; only the color escapes differ.
+    let errors = errors();
+    assert_eq!(
+        strip_escapes(&errors.render_ascii()),
+        errors.render_plain(),
+        "ascii, with its escapes removed, is plain"
+    );
+}
+
+#[test]
+fn every_diagnostic_in_the_set_is_drawn_in_ascii() {
+    let errors = errors();
+    let each: Vec<String> = errors.iter().map(Diagnostic::render_ascii).collect();
+    assert_eq!(errors.render_ascii(), each.join("\n"));
 }
 
 /// `text` without its ANSI SGR escapes (`ESC [ ... m`), the only kind color uses.

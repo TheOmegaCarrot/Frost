@@ -626,13 +626,60 @@ fn ast_shows_the_syntax_tree_in_ascii_by_default() {
 }
 
 #[test]
-fn ast_draws_in_unicode_and_color_for_a_frontend_that_takes_ansi() {
-    let mut frontend = ScriptedFrontend::new([":ast 1 + 2"]).with_ansi_styling(true);
+fn ast_draws_in_ascii_for_a_frontend_that_says_nothing_of_unicode() {
+    /// Reads one `:ast`, keeping the text it is shown, and leaves
+    /// `Frontend::unicode` and `Frontend::ansi_styling` as they default.
+    struct Bare {
+        segments: Vec<String>,
+        texts: Vec<String>,
+    }
+    impl Frontend for Bare {
+        fn read_segment(&mut self) -> std::io::Result<Option<String>> {
+            Ok(self.segments.pop())
+        }
+        fn render(&mut self, _: Result<&Value, &ReplError>) -> std::io::Result<()> {
+            Ok(())
+        }
+        fn render_text(&mut self, text: &str) -> std::io::Result<()> {
+            self.texts.push(text.to_string());
+            Ok(())
+        }
+    }
+    let mut frontend = Bare {
+        segments: vec![":ast f(1)".to_string()],
+        texts: Vec::new(),
+    };
     Repl::new().run(&mut frontend).unwrap();
-    let tree = only_text(&frontend.transcript());
-    assert!(tree.contains('\x1b'), "colored: {tree:?}");
-    assert!(tree.contains('\u{251c}'), "box drawing: {tree:?}");
-    assert!(!tree.ends_with('\n'), "{tree:?}");
+    let [tree] = frontend.texts.as_slice() else {
+        panic!("expected one text, got {:?}", frontend.texts);
+    };
+    assert!(tree.is_ascii(), "ASCII by default: {tree:?}");
+    assert!(tree.contains("`--"), "drawn with ASCII branches: {tree:?}");
+}
+
+#[test]
+fn ast_draws_in_unicode_and_color_independently_as_the_frontend_says() {
+    for unicode in [false, true] {
+        for ansi_styling in [false, true] {
+            let mut frontend = ScriptedFrontend::new([":ast 1 + 2"])
+                .with_unicode(unicode)
+                .with_ansi_styling(ansi_styling);
+            Repl::new().run(&mut frontend).unwrap();
+            let tree = only_text(&frontend.transcript());
+            let style = format!("unicode {unicode}, ANSI styling {ansi_styling}");
+            assert_eq!(
+                tree.contains('\x1b'),
+                ansi_styling,
+                "{style}: colored exactly when the frontend takes ANSI styling, but gave {tree:?}"
+            );
+            assert_eq!(
+                tree.contains('\u{251c}'),
+                unicode,
+                "{style}: box drawing exactly when the frontend takes Unicode, but gave {tree:?}"
+            );
+            assert!(!tree.ends_with('\n'), "{style}: {tree:?}");
+        }
+    }
 }
 
 #[test]

@@ -260,7 +260,8 @@ impl Driver {
             Ok(optimization) => optimization,
             Err(invalid) => return usage_error(stderr, &invalid.to_string()),
         };
-        let (color, no_args) = (cli.options.color, cli.options.no_args);
+        let (color, unicode, no_args) =
+            (cli.options.color, !cli.options.ascii, cli.options.no_args);
         let action = match cli.action() {
             Ok(action) => action,
             Err(message) => return usage_error(stderr, &message),
@@ -288,6 +289,7 @@ impl Driver {
                 .with_parse_limits(self.parse_limits),
             no_args,
             color,
+            unicode,
             terminals,
             stdin,
             stderr,
@@ -300,7 +302,7 @@ impl Driver {
             Action::Compile { script, output } => session.compile_file(&script, &output),
             Action::Repl { basic, no_config } => session.run_repl(&self.repl, basic, !no_config),
             Action::List { script, scope } => session.list_file(&script, &scope, &mut stdout),
-            Action::Ast { script, ascii } => session.show_ast(&script, ascii, &mut stdout),
+            Action::Ast(script) => session.show_ast(&script, &mut stdout),
             Action::Nothing if terminals.stdin => session.run_repl(&self.repl, false, true),
             Action::Nothing => session.run_file(&Script::Stdin, Vec::new()),
         }
@@ -392,6 +394,8 @@ struct Session<'a> {
     options: CompilerOptions,
     no_args: bool,
     color: Color,
+    /// Whether to draw with Unicode rather than ASCII alone.
+    unicode: bool,
     terminals: Terminals,
     stdin: &'a mut dyn Read,
     stderr: &'a mut dyn Write,
@@ -490,8 +494,7 @@ impl Session<'_> {
         }
     }
 
-    /// Write the tree `script` parses to, in ASCII if `ascii` is true.
-    fn show_ast(mut self, script: &Script, ascii: bool, output: &mut dyn Write) -> Exit {
+    fn show_ast(mut self, script: &Script, output: &mut dyn Write) -> Exit {
         let source = match self.read_source(script) {
             Ok(source) => source,
             Err(exit) => return exit,
@@ -507,7 +510,7 @@ impl Session<'_> {
         };
         let tree = program
             .display_tree(&source)
-            .with_unicode(!ascii)
+            .with_unicode(self.unicode)
             .with_color(self.colors(self.terminals.stdout));
         match write!(output, "{tree}") {
             Ok(()) => Exit::Success,
@@ -530,7 +533,7 @@ impl Session<'_> {
             if basic {
                 Box::new(LineFrontend::stdin())
             } else {
-                frostlang_repl::default_frontend(color)
+                frostlang_repl::default_frontend(color, self.unicode)
             }
         };
         let (mut frontend, mut repl) = settings.start(repl, default_frontend, config);
@@ -677,10 +680,11 @@ impl Session<'_> {
     /// `diagnostics` as they are written to standard error.
     fn render_diagnostics(&self, diagnostics: &Diagnostics) -> String {
         #[cfg(feature = "graphical-diagnostics")]
-        if self.colors(self.terminals.stderr) {
-            diagnostics.render_pretty()
-        } else {
-            diagnostics.render_plain()
+        match (self.unicode, self.colors(self.terminals.stderr)) {
+            (true, true) => diagnostics.render_pretty(),
+            (true, false) => diagnostics.render_unicode(),
+            (false, true) => diagnostics.render_ascii(),
+            (false, false) => diagnostics.render_plain(),
         }
         #[cfg(not(feature = "graphical-diagnostics"))]
         diagnostics.render_narrated()

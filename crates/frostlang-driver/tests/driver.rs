@@ -222,6 +222,49 @@ fn diagnostics_color_on_request_only() {
     assert!(!ran.stderr.contains(escape), "plain: {:?}", ran.stderr);
 }
 
+#[test]
+fn diagnostics_draw_in_unicode_unless_ascii_is_asked_colored_or_not() {
+    let escape = '\u{1b}';
+    for ascii in [false, true] {
+        for color in ["always", "never"] {
+            let mut args = vec!["--color", color, "-e", "nope"];
+            if ascii {
+                args.insert(0, "--ascii");
+            }
+            let ran = run(&args);
+            assert_eq!(ran.exit, Exit::ScriptFailed, "{args:?}: {ran:?}");
+            assert!(ran.stderr.contains("nope"), "{args:?}: {}", ran.stderr);
+            assert_eq!(
+                ran.stderr.contains(escape),
+                color == "always",
+                "{args:?}: colored exactly when asked, but gave {:?}",
+                ran.stderr
+            );
+            assert_eq!(
+                ran.stderr.is_ascii(),
+                ascii,
+                "{args:?}: ASCII exactly when asked, but gave {:?}",
+                ran.stderr
+            );
+        }
+    }
+}
+
+#[test]
+fn ascii_draws_a_parse_error_from_ast_in_ascii() {
+    let path = script("ast-ascii-broken.frst", "def");
+    for color in ["always", "never"] {
+        let ran = run(&["--ascii", "--color", color, "ast", &path]);
+        assert_eq!(ran.exit, Exit::ScriptFailed, "{color}: {ran:?}");
+        assert!(!ran.stderr.is_empty(), "{color}: {ran:?}");
+        assert!(
+            ran.stderr.is_ascii(),
+            "--color {color}: the diagnostic is ASCII, but gave {:?}",
+            ran.stderr
+        );
+    }
+}
+
 /// `--color auto` goes by the streams the driver writes to, which here are
 /// buffers, not by whether the test process itself is attached to a terminal.
 #[test]
@@ -1903,9 +1946,11 @@ fn ast_draws_in_unicode_by_default_and_ascii_on_request() {
 1:1  |-- left: Literal 1
 1:5  `-- right: Literal 2
 ";
+    // `--ascii` is global: it may come before the subcommand or after it.
     for (args, expected) in [
         (vec!["ast", path.as_str()], unicode),
         (vec!["ast", "--ascii", path.as_str()], ascii),
+        (vec!["--ascii", "ast", path.as_str()], ascii),
     ] {
         let ran = run(&args);
         assert_eq!(ran.exit, Exit::Success, "{args:?}: {ran:?}");
