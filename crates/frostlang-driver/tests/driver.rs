@@ -1891,6 +1891,69 @@ fn ast_shows_a_scripts_syntax_tree_without_running_it() {
 }
 
 #[test]
+fn ast_draws_in_unicode_by_default_and_ascii_on_request() {
+    let path = script("ast-styles.frst", "1 + 2");
+    let unicode = r"
+1:1  BinOp +
+1:1  ├── left: Literal 1
+1:5  └── right: Literal 2
+";
+    let ascii = r"
+1:1  BinOp +
+1:1  |-- left: Literal 1
+1:5  `-- right: Literal 2
+";
+    for (args, expected) in [
+        (vec!["ast", path.as_str()], unicode),
+        (vec!["ast", "--ascii", path.as_str()], ascii),
+    ] {
+        let ran = run(&args);
+        assert_eq!(ran.exit, Exit::Success, "{args:?}: {ran:?}");
+        assert_eq!(ran.stdout, expected.strip_prefix('\n').unwrap(), "{args:?}");
+    }
+}
+
+#[test]
+fn ast_colors_per_the_color_option_in_either_charset() {
+    let escape = '\u{1b}';
+    let path = script("ast-color.frst", "1 + 2");
+    for ascii in [false, true] {
+        let with = |color: &str| {
+            let mut args = vec!["ast", "--color", color, path.as_str()];
+            if ascii {
+                args.insert(1, "--ascii");
+            }
+            run(&args)
+        };
+        let colored = with("always");
+        assert!(
+            colored.stdout.contains(escape),
+            "--ascii {ascii}, --color always: colored, but gave {colored:?}"
+        );
+        assert_eq!(
+            colored.stdout.contains("|--"),
+            ascii,
+            "--ascii {ascii}, --color always: ASCII branches exactly when asked, but gave {:?}",
+            colored.stdout
+        );
+        for color in ["never", "auto"] {
+            // `auto` writes to a buffer here, not a terminal.
+            let plain = with(color);
+            assert!(
+                !plain.stdout.contains(escape),
+                "--ascii {ascii}, --color {color}: uncolored, but gave {plain:?}"
+            );
+            assert_eq!(
+                plain.stdout.is_ascii(),
+                ascii,
+                "--ascii {ascii}, --color {color}: pure ASCII exactly when asked, but gave {:?}",
+                plain.stdout
+            );
+        }
+    }
+}
+
+#[test]
 fn ast_does_not_compile_the_script() {
     // An unbound name parses, though it would not compile.
     let path = script("ast-unbound.frst", "nope");

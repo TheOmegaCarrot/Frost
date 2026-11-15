@@ -1,8 +1,12 @@
-// -- Source location --
-
 use std::ops::Range;
 
 use serde::Serialize;
+
+mod tree;
+
+pub use tree::TreeDisplay;
+
+// -- Source location --
 
 /// A byte range in the source, from `start` (inclusive) to `end` (exclusive).
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash, Serialize)]
@@ -82,15 +86,6 @@ pub enum Binding {
 pub struct Program {
     /// Top-level statements, in source order.
     pub statements: Vec<Spanned<Statement>>,
-}
-
-impl Program {
-    /// The tree as text, for a person inspecting what source parses to. Its
-    /// layout may change from one version to the next.
-    pub fn dump(&self) -> String {
-        // TODO: A more compact printer; spans make this verbose.
-        format!("{:#?}", self.statements)
-    }
 }
 
 // -- Statements --
@@ -436,6 +431,15 @@ impl TypeConstraint {
             .iter()
             .find(|(type_name, _)| *type_name == name)
             .map(|&(_, constraint)| constraint)
+    }
+
+    /// The name written after `is` for this constraint.
+    pub(crate) fn name(self) -> &'static str {
+        TYPE_CONSTRAINTS
+            .iter()
+            .find(|&&(_, constraint)| constraint == self)
+            .map(|&(name, _)| name)
+            .expect("every constraint has a name")
     }
 }
 

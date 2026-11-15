@@ -615,10 +615,30 @@ fn disassemble_needs_source() {
 // --- :ast ---
 
 #[test]
-fn ast_shows_the_syntax_tree() {
+fn ast_shows_the_syntax_tree_in_ascii_by_default() {
     let tree = only_text(&session(&[":ast 1 + 2"]));
-    assert!(tree.contains("BinOp"), "{tree}");
-    assert!(tree.contains("Literal"), "{tree}");
+    // Plain ASCII, without a final line break.
+    let expected = r"
+1:1  BinOp +
+1:1  |-- left: Literal 1
+1:5  `-- right: Literal 2";
+    assert_eq!(tree, expected.strip_prefix('\n').unwrap());
+}
+
+#[test]
+fn ast_draws_in_unicode_and_color_for_a_frontend_that_takes_ansi() {
+    let mut frontend = ScriptedFrontend::new([":ast 1 + 2"]).with_ansi_styling(true);
+    Repl::new().run(&mut frontend).unwrap();
+    let tree = only_text(&frontend.transcript());
+    assert!(tree.contains('\x1b'), "colored: {tree:?}");
+    assert!(tree.contains('\u{251c}'), "box drawing: {tree:?}");
+    assert!(!tree.ends_with('\n'), "{tree:?}");
+}
+
+#[test]
+fn ast_locations_count_from_the_source_given() {
+    let tree = only_text(&session(&[":ast f(\n  1\n)"]));
+    assert!(tree.contains("2:3  "), "the argument is on line 2: {tree}");
 }
 
 #[test]

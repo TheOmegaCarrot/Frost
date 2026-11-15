@@ -28,7 +28,9 @@ pub trait Frontend {
     fn render_text(&mut self, text: &str) -> io::Result<()>;
 
     /// Whether text the REPL gives [`render_text`](Self::render_text) may
-    /// carry ANSI styling. By default, it may not.
+    /// carry ANSI styling. A frontend that takes it is taken to show Unicode
+    /// too, so such text may also draw with characters outside ASCII. By
+    /// default, it may not.
     fn ansi_styling(&self) -> bool {
         false
     }

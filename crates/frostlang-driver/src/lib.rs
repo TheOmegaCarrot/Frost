@@ -300,7 +300,7 @@ impl Driver {
             Action::Compile { script, output } => session.compile_file(&script, &output),
             Action::Repl { basic, no_config } => session.run_repl(&self.repl, basic, !no_config),
             Action::List { script, scope } => session.list_file(&script, &scope, &mut stdout),
-            Action::Ast(script) => session.show_ast(&script, &mut stdout),
+            Action::Ast { script, ascii } => session.show_ast(&script, ascii, &mut stdout),
             Action::Nothing if terminals.stdin => session.run_repl(&self.repl, false, true),
             Action::Nothing => session.run_file(&Script::Stdin, Vec::new()),
         }
@@ -490,7 +490,8 @@ impl Session<'_> {
         }
     }
 
-    fn show_ast(mut self, script: &Script, output: &mut dyn Write) -> Exit {
+    /// Write the tree `script` parses to, in ASCII if `ascii` is true.
+    fn show_ast(mut self, script: &Script, ascii: bool, output: &mut dyn Write) -> Exit {
         let source = match self.read_source(script) {
             Ok(source) => source,
             Err(exit) => return exit,
@@ -504,7 +505,11 @@ impl Session<'_> {
                 return self.report_diagnostics(&Diagnostics::from(diagnostic));
             }
         };
-        match writeln!(output, "{}", program.dump()) {
+        let tree = program
+            .display_tree(&source)
+            .with_unicode(!ascii)
+            .with_color(self.colors(self.terminals.stdout));
+        match write!(output, "{tree}") {
             Ok(()) => Exit::Success,
             Err(error) => self.usage_error(&format!("cannot write the tree: {error}")),
         }

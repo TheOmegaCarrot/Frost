@@ -3,7 +3,9 @@
 //! The API is [`parse_program`], or [`parse_program_with_limits`] to choose how
 //! deeply source may nest (see [`ParseLimits`]), and the real surface of this crate is the
 //! [`ast`] it produces. For tools that work below the level of syntax, such as
-//! highlighting, [`tokens`] exposes the lexer.
+//! highlighting, [`tokens`] exposes the lexer. To show a person what source
+//! parses to, draw the tree with [`Program::display_tree`](ast::Program::display_tree);
+//! to place a span's offsets by line and column, use a [`LineIndex`].
 //! Parsing yields either a complete [`ast::Program`] or a single [`ParseError`]:
 //! the parser stops at the first error and never attempts recovery,
 //! so there is never more than one diagnostic.
@@ -33,8 +35,10 @@
 pub mod ast;
 mod lex;
 mod limits;
+mod line_index;
 mod parse;
 
 pub use lex::{LexError, Token, tokens};
 pub use limits::ParseLimits;
+pub use line_index::{LineIndex, SourceLocation};
 pub use parse::{Label, ParseError, parse_program, parse_program_with_limits};

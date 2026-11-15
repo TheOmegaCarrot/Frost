@@ -31,8 +31,8 @@ fn invalid_argument(builtin: Builtin, reason: impl Into<String>) -> ReplError {
 }
 
 impl Repl {
-    /// Run `builtin` as `invocation` asks. Text it gives carries ANSI styling
-    /// only if `ansi_styling` is true.
+    /// Run `builtin` as `invocation` asks. Text it gives carries ANSI styling,
+    /// or draws with Unicode, only if `ansi_styling` is true.
     pub(crate) fn run_builtin(
         &mut self,
         builtin: Builtin,
@@ -86,7 +86,14 @@ impl Repl {
                         let diagnostic = Diagnostic::from_parse_error(&error, INPUT_NAME, source);
                         ReplError::Compile(Diagnostics::from(diagnostic))
                     })?;
-                Ok(Reply::Text(program.dump()))
+                // A frontend that shows ANSI styling is a terminal, which is
+                // taken to show Unicode as well.
+                let tree = program
+                    .display_tree(source)
+                    .with_unicode(ansi_styling)
+                    .with_color(ansi_styling)
+                    .to_string();
+                Ok(Reply::Text(tree.trim_end().to_string()))
             }
             Builtin::Optimize if argument.is_empty() => Ok(Reply::Text(self.list_optimizations())),
             Builtin::Optimize => {

@@ -118,7 +118,12 @@ enum Command {
         scope: Scope,
     },
     /// Show the syntax tree a script parses to
-    Ast { script: String },
+    Ast {
+        script: String,
+        /// Draw the tree in ASCII rather than Unicode box drawing
+        #[arg(long)]
+        ascii: bool,
+    },
 }
 
 /// The names a host supplies in a script's enclosing scope.
@@ -139,7 +144,7 @@ struct Scope {
 
 #[derive(Debug, Args)]
 pub(crate) struct Options {
-    /// When to color diagnostics, listings, and interactive sessions
+    /// When to color diagnostics, listings, syntax trees, and interactive sessions
     #[arg(long, value_name = "WHEN", default_value = "auto", global = true)]
     pub(crate) color: Color,
 
@@ -210,7 +215,11 @@ pub(crate) enum Action {
         /// The names `--scope` gave.
         scope: Vec<String>,
     },
-    Ast(Script),
+    Ast {
+        script: Script,
+        /// Whether `--ascii` was given.
+        ascii: bool,
+    },
     /// No arguments at all: a session at a terminal, or else the script on
     /// standard input.
     Nothing,
@@ -244,7 +253,10 @@ impl Cli {
                     script: script.into(),
                     scope: scope.names,
                 },
-                Command::Ast { script } => Action::Ast(script.into()),
+                Command::Ast { script, ascii } => Action::Ast {
+                    script: script.into(),
+                    ascii,
+                },
             }),
             (None, Some(code)) => Ok(Action::Eval {
                 code,
