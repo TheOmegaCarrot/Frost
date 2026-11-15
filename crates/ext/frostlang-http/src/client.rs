@@ -5,16 +5,20 @@ use std::num::NonZeroUsize;
 use std::sync::Arc;
 use std::time::Duration;
 
-use frostlang::native::{Bundle, De, Optional};
+use frostlang::native::{Bundle, De, Flat, Optional};
 use frostlang::{FrostError, FrostResult, NativeCtx, Value, frost_bundle, frost_closure};
-use reqwest::Method;
 use reqwest::redirect::Policy;
+use reqwest::{Certificate, Method, Proxy};
+use url::Url;
 
 use crate::HttpConfig;
-use crate::config::{BatchOptions, ClientConfig, RequestConfig, RequestOptions, UrlArg};
+use crate::config::{
+    BatchOptions, ClientConfig, ProxySetting, RequestConfig, RequestOptions, UrlArg,
+};
 use crate::error;
-use crate::exchange::{exchange, outcome_value};
+use crate::exchange::{Prepared, exchange, outcome_value};
 use crate::fields::{Headers, append_query};
+use crate::files::{BodyFile, Destination};
 use crate::urls::{check_base_url, request_url};
 
 /// How long a connection may take to establish, unless a client says.
@@ -55,40 +59,44 @@ impl Client {
     fn new(
         function: &str,
         settings: Arc<HttpConfig>,
-        config: ClientConfig,
+        mut config: ClientConfig,
     ) -> Result<Self, FrostError> {
         let base_url = config
             .base_url
-            .map(|base| check_base_url(function, &base))
+            .as_deref()
+            .map(|base| check_base_url(function, base))
             .transpose()?;
         let headers = config
             .headers
+            .take()
             .map(|fields| Headers::new(function, fields))
             .transpose()?
             .unwrap_or_default()
             .with_defaults(&Headers::user_agent());
-        let redirects = match config.redirects.unwrap_or(REDIRECTS) {
-            0 => Policy::none(),
-            most => Policy::limited(usize::try_from(most).unwrap_or(usize::MAX)),
+        let certificates = ca_certificates(function, config.ca.as_deref().unwrap_or_default())?;
+        let proxy = match &config.proxy {
+            None => ProxyMode::Environment,
+            Some(ProxySetting::Url(url)) => ProxyMode::Through(Box::new(proxy(function, url)?)),
+            Some(ProxySetting::Direct) => ProxyMode::Direct,
         };
-        let mut builder = reqwest::Client::builder()
-            .connect_timeout(
-                config
-                    .connect_timeout
-                    .map_or(CONNECT_TIMEOUT, Duration::from_micros),
-            )
-            .read_timeout(
-                config
-                    .read_timeout
-                    .map_or(READ_TIMEOUT, Duration::from_micros),
-            )
-            .redirect(redirects);
-        if let Some(timeout) = config.timeout {
-            builder = builder.timeout(Duration::from_micros(timeout));
+        let trust_system = config.system_ca != Some(false);
+        let build = |trust_system| build_client(&config, &certificates, &proxy, trust_system);
+        let http = match build(trust_system) {
+            // reqwest refuses to make a client trusting only an empty system
+            // store, rather than one trusting no certificate, which can still
+            // make plain HTTP requests. Without verification, or with `ca`,
+            // the system's store is not all a client trusts.
+            Err(_)
+                if trust_system
+                    && config.verify_tls != Some(false)
+                    && certificates.is_empty()
+                    && system_store_is_empty() =>
+            {
+                build(false)
+            }
+            built => built,
         }
-        let http = builder
-            .build()
-            .map_err(|err| error::could_not(function, "create a client", &err))?;
+        .map_err(|err| error::could_not(function, "create a client", &err))?;
         Ok(Self {
             http,
             base_url,
@@ -105,7 +113,7 @@ impl Client {
         url: &UrlArg,
         method: Option<&str>,
         options: RequestOptions,
-    ) -> Result<reqwest::Request, FrostError> {
+    ) -> Result<Prepared, FrostError> {
         let mut url = request_url(function, self.base_url.as_deref(), url)?;
         if let Some(query) = &options.query {
             append_query(&mut url, query);
@@ -120,9 +128,15 @@ impl Client {
             .http
             .request(method, url)
             .headers(headers.with_defaults(&self.headers).to_map());
-        if let Some(body) = options.body {
-            request = request.body(body.as_bytes().to_vec());
-        }
+        let body_file = match (options.body, options.body_file) {
+            (Some(_), Some(_)) => return Err(error::both_bodies(function)),
+            (Some(body), None) => {
+                request = request.body(body.as_bytes().to_vec());
+                None
+            }
+            (None, Some(path)) => Some(BodyFile::new(function, &path)?),
+            (None, None) => None,
+        };
         if let Some(timeout) = options.timeout {
             request = request.timeout(Duration::from_micros(timeout));
         }
@@ -136,7 +150,15 @@ impl Client {
             .as_str()
             .parse::<hyper::Uri>()
             .map_err(|reason| error::unsendable_url(function, reason))?;
-        Ok(request)
+        let destination = options
+            .save_to
+            .map(|path| Destination::new(function, &path))
+            .transpose()?;
+        Ok(Prepared {
+            request,
+            body_file,
+            destination,
+        })
     }
 
     /// Sends the request `url`, `method`, and `options` describe, for the
@@ -148,10 +170,10 @@ impl Client {
         method: Option<&str>,
         options: RequestOptions,
     ) -> FrostResult {
-        let request = self.prepare(ctx.name(), url, method, options)?;
+        let prepared = self.prepare(ctx.name(), url, method, options)?;
         let outcome = self.settings.runtime.run(
             ctx,
-            exchange(self.http.clone(), request, self.settings.max_body_size),
+            exchange(self.http.clone(), prepared, self.settings.max_body_size),
         )?;
         Ok(outcome_value(outcome))
     }
@@ -260,10 +282,130 @@ impl Client {
         let max_body_size = self.settings.max_body_size;
         let exchanges = requests
             .into_iter()
-            .map(move |request| exchange(http.clone(), request, max_body_size));
+            .map(move |prepared| exchange(http.clone(), prepared, max_body_size));
         let outcomes = self.settings.runtime.run_all(ctx, exchanges, concurrency)?;
         Ok(outcomes.into_iter().map(outcome_value).collect())
     }
+}
+
+/// Which proxy a client's requests go through.
+enum ProxyMode {
+    /// The proxies the environment names.
+    Environment,
+    Through(Box<Proxy>),
+    /// None.
+    Direct,
+}
+
+/// The reqwest client `config` describes, trusting `certificates`, and the
+/// system's store too if `trust_system`, sending its requests by `proxy`.
+fn build_client(
+    config: &ClientConfig,
+    certificates: &[Certificate],
+    proxy: &ProxyMode,
+    trust_system: bool,
+) -> reqwest::Result<reqwest::Client> {
+    let redirects = match config.redirects.unwrap_or(REDIRECTS) {
+        0 => Policy::none(),
+        most => Policy::limited(usize::try_from(most).unwrap_or(usize::MAX)),
+    };
+    let mut builder = reqwest::Client::builder()
+        .connect_timeout(
+            config
+                .connect_timeout
+                .map_or(CONNECT_TIMEOUT, Duration::from_micros),
+        )
+        .read_timeout(
+            config
+                .read_timeout
+                .map_or(READ_TIMEOUT, Duration::from_micros),
+        )
+        .redirect(redirects);
+    if let Some(timeout) = config.timeout {
+        builder = builder.timeout(Duration::from_micros(timeout));
+    }
+    if config.decompress == Some(false) {
+        builder = builder.no_gzip().no_brotli().no_zstd();
+    }
+    let certificates = certificates.to_vec();
+    builder = if trust_system {
+        builder.tls_certs_merge(certificates)
+    } else {
+        builder.tls_certs_only(certificates)
+    };
+    if config.verify_tls == Some(false) {
+        builder = builder.tls_danger_accept_invalid_certs(true);
+    }
+    builder = match proxy {
+        ProxyMode::Environment => builder,
+        ProxyMode::Through(proxy) => builder.proxy(Proxy::clone(proxy)),
+        ProxyMode::Direct => builder.no_proxy(),
+    };
+    builder.build()
+}
+
+/// The certificates in `ca`, each entry PEM content holding one or more, for
+/// the function `function`.
+fn ca_certificates(function: &str, ca: &[Flat]) -> Result<Vec<Certificate>, FrostError> {
+    let mut certificates = Vec::new();
+    for (index, pem) in (0_u64..).zip(ca) {
+        let found = Certificate::from_pem_bundle(pem.as_bytes())
+            .map_err(|err| error::invalid_ca(function, index, error::with_causes(&err)))?;
+        if found.is_empty() {
+            return Err(error::invalid_ca(
+                function,
+                index,
+                "no PEM certificate found",
+            ));
+        }
+        certificates.extend(found);
+    }
+    Ok(certificates)
+}
+
+/// Whether the system's trust store holds no certificate, and could be read,
+/// where reqwest reads it from the system's files: the store `SSL_CERT_FILE`
+/// and `SSL_CERT_DIR` name, or else the distribution's. A store that cannot
+/// be read is a misconfiguration, not an empty store.
+#[cfg(all(
+    unix,
+    not(target_os = "android"),
+    not(target_vendor = "apple"),
+    not(target_arch = "wasm32"),
+))]
+fn system_store_is_empty() -> bool {
+    let store = rustls_native_certs::load_native_certs();
+    store.certs.is_empty() && store.errors.is_empty()
+}
+
+/// Whether the system's trust store holds no certificate: never, where the
+/// operating system verifies certificates itself.
+#[cfg(not(all(
+    unix,
+    not(target_os = "android"),
+    not(target_vendor = "apple"),
+    not(target_arch = "wasm32"),
+)))]
+fn system_store_is_empty() -> bool {
+    false
+}
+
+/// The proxy at `url`, for the function `function`: an http or https proxy,
+/// taken as http if `url` has no scheme.
+fn proxy(function: &str, url: &str) -> Result<Proxy, FrostError> {
+    // reqwest takes a URL with a host as it is, whatever its scheme, while it
+    // is built to connect through http and https proxies only.
+    if let Ok(parsed) = Url::parse(url)
+        && parsed.has_host()
+        && !matches!(parsed.scheme(), "http" | "https")
+    {
+        return Err(error::invalid_proxy(
+            function,
+            url,
+            "its scheme must be http or https",
+        ));
+    }
+    Proxy::all(url).map_err(|err| error::invalid_proxy(function, url, error::with_causes(&err)))
 }
 
 /// The method `method` names, for the function `function`: a standard method

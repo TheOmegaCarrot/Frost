@@ -5,7 +5,7 @@ use std::collections::HashMap;
 
 use frostlang::native::De;
 use frostlang::{FrostError, MapKey, Value, frost_fn};
-use reqwest::header::{HeaderMap, HeaderName, HeaderValue};
+use reqwest::header::{self, HeaderMap, HeaderName, HeaderValue};
 use url::Url;
 use url::form_urlencoded::{Serializer, Target};
 
@@ -17,6 +17,16 @@ use crate::error;
 #[derive(Clone, Default)]
 pub(crate) struct Headers(Vec<(HeaderName, Vec<HeaderValue>)>);
 
+/// The headers the client sets itself, which a script setting could only
+/// make wrong: the host the URL names, the body's framing, and the
+/// compressions the client decompresses.
+const MANAGED: [HeaderName; 4] = [
+    header::HOST,
+    header::CONTENT_LENGTH,
+    header::TRANSFER_ENCODING,
+    header::ACCEPT_ENCODING,
+];
+
 impl Headers {
     /// `fields` checked, for the function `function`.
     pub(crate) fn new(function: &str, fields: HeaderFields) -> Result<Self, FrostError> {
@@ -26,6 +36,9 @@ impl Headers {
         for (name, values) in fields {
             let header = HeaderName::from_bytes(name.as_bytes())
                 .map_err(|_| error::invalid_header_name(function, &name))?;
+            if MANAGED.contains(&header) {
+                return Err(error::managed_header(function, &name));
+            }
             if let Some(first) = spellings.get(&header) {
                 return Err(error::headers_differing_in_case(function, first, &name));
             }
@@ -53,7 +66,7 @@ impl Headers {
     pub(crate) fn user_agent() -> Self {
         let agent = concat!("frost-http/", env!("CARGO_PKG_VERSION"));
         Self(vec![(
-            reqwest::header::USER_AGENT,
+            header::USER_AGENT,
             vec![HeaderValue::from_static(agent)],
         )])
     }

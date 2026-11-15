@@ -1,8 +1,9 @@
 //! The first-party extensions `frost` installs.
 
 use std::io::{Read, Write};
-use std::net::TcpListener;
+use std::net::{SocketAddr, TcpListener};
 use std::process::Command;
+use std::thread::JoinHandle;
 
 /// What `frost -e code` prints, which must succeed.
 fn eval(code: &str) -> String {
@@ -18,7 +19,7 @@ fn eval_in_zone(code: &str, tz: &str) -> String {
 }
 
 /// What `command`, running `frost`, prints for `-e code`, which must succeed.
-fn eval_with(code: &str, mut command: Command) -> String {
+pub(crate) fn eval_with(code: &str, mut command: Command) -> String {
     let output = command
         .args(["-e", code])
         .output()
@@ -40,35 +41,145 @@ fn uuid_is_installed() {
     assert_eq!(eval(code), "4\n");
 }
 
-#[test]
-fn http_is_installed() {
-    // A server answering one request on the loopback interface.
+/// A server on the loopback interface answering one request with `body`, and
+/// its thread, which gives the head of the request it answered.
+pub(crate) fn answer_once(body: &'static str) -> (SocketAddr, JoinHandle<String>) {
     let listener = TcpListener::bind("127.0.0.1:0").expect("a port is free");
     let address = listener
         .local_addr()
         .expect("a bound socket has an address");
     let server = std::thread::spawn(move || {
         let (mut stream, _) = listener.accept().expect("the script connects");
-        let mut request = Vec::new();
+        let mut head = Vec::new();
         let mut byte = [0];
-        while !request.ends_with(b"\r\n\r\n") {
+        while !head.ends_with(b"\r\n\r\n") {
             stream
                 .read_exact(&mut byte)
                 .expect("the request arrives whole");
-            request.push(byte[0]);
+            head.push(byte[0]);
         }
+        let response = format!(
+            "HTTP/1.1 200 OK\r\ncontent-length: {}\r\nconnection: close\r\n\r\n{body}",
+            body.len()
+        );
         stream
-            .write_all(b"HTTP/1.1 200 OK\r\ncontent-length: 5\r\nconnection: close\r\n\r\nhello")
+            .write_all(response.as_bytes())
             .expect("the script reads the response");
+        String::from_utf8(head).expect("the request head is UTF-8")
     });
+    (address, server)
+}
+
+#[test]
+fn http_is_installed() {
+    let (address, server) = answer_once("hello");
     let code = format!(
         r"
         def http = import('ext.http')
         print(http.client().get('http://{address}/').response.body)
         "
     );
-    assert_eq!(eval(&code), "hello\n");
+    assert_eq!(eval_with(&code, without_proxies()), "hello\n");
     server.join().expect("the server answered");
+}
+
+/// A `frost` command with no proxy settings in its environment.
+pub(crate) fn without_proxies() -> Command {
+    let mut command = Command::new(env!("CARGO_BIN_EXE_frost"));
+    for name in ["http_proxy", "https_proxy", "all_proxy", "no_proxy"] {
+        command.env_remove(name).env_remove(name.to_uppercase());
+    }
+    command
+}
+
+/// A `frost` command whose only proxy setting is `http_proxy`, naming
+/// `proxy`.
+fn with_http_proxy(proxy: SocketAddr) -> Command {
+    let mut command = without_proxies();
+    command.env("http_proxy", format!("http://{proxy}"));
+    command
+}
+
+#[test]
+fn http_uses_the_environments_proxy_by_default() {
+    let (proxy, server) = answer_once("hello");
+    let code = r"
+        def http = import('ext.http')
+        print(http.client().get('http://far.invalid/page').response.body)
+    ";
+    assert_eq!(eval_with(code, with_http_proxy(proxy)), "hello\n");
+    let head = server.join().expect("the proxy answered");
+    assert!(
+        head.starts_with("GET http://far.invalid/page HTTP/1.1\r\n"),
+        "the request goes through the proxy: {head}"
+    );
+}
+
+#[test]
+fn http_with_proxy_false_ignores_the_environments() {
+    // The environment's proxy applies to loopback addresses too, so only
+    // `proxy: false` sends this request to the server directly.
+    // Each answers differently, so the output tells which got the request.
+    let (proxy, _proxy_server) = answer_once("proxy");
+    let (address, server) = answer_once("direct");
+    let code = format!(
+        r"
+        def http = import('ext.http')
+        print(http.client({{proxy: false}}).get('http://{address}/page').response.body)
+        "
+    );
+    assert_eq!(eval_with(&code, with_http_proxy(proxy)), "direct\n");
+    let head = server.join().expect("the server answered");
+    assert!(
+        head.starts_with("GET /page HTTP/1.1\r\n"),
+        "the request goes to the server directly: {head}"
+    );
+}
+
+#[test]
+fn http_by_default_sends_even_a_loopback_request_through_the_environments_proxy() {
+    let (proxy, proxy_server) = answer_once("proxy");
+    let (address, _server) = answer_once("direct");
+    let code = format!(
+        r"
+        def http = import('ext.http')
+        print(http.client().get('http://{address}/page').response.body)
+        "
+    );
+    assert_eq!(eval_with(&code, with_http_proxy(proxy)), "proxy\n");
+    let head = proxy_server.join().expect("the proxy answered");
+    assert!(
+        head.starts_with(&format!("GET http://{address}/page HTTP/1.1\r\n")),
+        "the request goes through the proxy: {head}"
+    );
+}
+
+#[test]
+fn http_saves_a_relative_path_under_the_working_directory() {
+    let (address, server) = answer_once("hello");
+    let dir = tempfile::tempdir().expect("a scratch directory can be made");
+    let mut command = without_proxies();
+    command.current_dir(dir.path());
+    let code = format!(
+        r"
+        def http = import('ext.http')
+        print(http.client().get('http://{address}/', {{save_to: 'out.txt'}}).response.file)
+        "
+    );
+    let printed = eval_with(&code, command);
+    server.join().expect("the server answered");
+    let expected = std::fs::canonicalize(dir.path())
+        .expect("the directory exists")
+        .join("out.txt");
+    assert_eq!(
+        printed.trim_end(),
+        expected.to_str().expect("UTF-8"),
+        "the file is reported by its absolute path"
+    );
+    assert_eq!(
+        std::fs::read_to_string(&expected).expect("the file was saved"),
+        "hello"
+    );
 }
 
 #[test]

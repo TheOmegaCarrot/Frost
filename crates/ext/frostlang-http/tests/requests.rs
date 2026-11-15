@@ -294,7 +294,8 @@ fn a_client_reuses_its_connections() {
 
 #[test]
 fn request_options_must_be_known() {
-    let get_options = "expected one of `query`, `headers`, `body`, `timeout` (at a key)";
+    let get_options = "expected one of \
+        `query`, `headers`, `body`, `body_file`, `timeout`, `save_to` (at a key)";
     assert_raises(&[
         (
             "http.client().get('http://a.invalid', {url: 'http://b.invalid'})",
@@ -313,8 +314,8 @@ fn request_options_must_be_known() {
         (
             "http.client().request({url: 'http://a.invalid', query: {}, verbose: true})",
             "Function client.request requires argument 1 (config) to be valid: \
-             unknown field `verbose`, expected one of \
-             `url`, `method`, `query`, `headers`, `body`, `timeout` (at a key)",
+             unknown field `verbose`, expected one of `url`, `method`, `query`, \
+             `headers`, `body`, `body_file`, `timeout`, `save_to` (at a key)",
         ),
         (
             "http.client().request({method: 'GET'})",
@@ -332,10 +333,11 @@ fn request_options_must_be_known() {
              expected Int at least 0, got -1 (at `redirects`)",
         ),
         (
-            "http.client({proxy: false})",
+            "http.client({cookies: true})",
             "Function ext.http.client requires argument 1 (config) to be valid: \
-             unknown field `proxy`, expected one of `base_url`, `headers`, `timeout`, \
-             `connect_timeout`, `read_timeout`, `redirects` (at a key)",
+             unknown field `cookies`, expected one of `base_url`, `headers`, `timeout`, \
+             `connect_timeout`, `read_timeout`, `redirects`, `decompress`, `verify_tls`, \
+             `ca`, `system_ca`, `proxy` (at a key)",
         ),
     ]);
 }
@@ -549,8 +551,8 @@ fn request_all_options_must_be_valid() {
         (
             "http.client().request_all([{url: 'http://a.invalid', retries: 1}])",
             "Function client.request_all requires element 0 of argument 1 (configs) to be valid: \
-             unknown field `retries`, expected one of \
-             `url`, `method`, `query`, `headers`, `body`, `timeout` (at a key)",
+             unknown field `retries`, expected one of `url`, `method`, `query`, \
+             `headers`, `body`, `body_file`, `timeout`, `save_to` (at a key)",
         ),
     ]);
 }

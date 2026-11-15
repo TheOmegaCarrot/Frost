@@ -17,6 +17,14 @@ path = "src/main.rs"
 name = "integration"
 path = "tests/main.rs"
 
+[dev-dependencies]
+# A certificate authority and server certificate, for an HTTPS test server.
+rcgen = { version = "0.14", default-features = false, features = ["crypto", "pem", "aws_lc_rs"] }
+# The HTTPS test server, with the crypto provider `ext.http` uses.
+rustls = { version = "0.23", default-features = false, features = ["aws_lc_rs", "std"] }
+# Scratch directories for files scripts save, and trust stores.
+tempfile = "3.27"
+
 [dependencies]
 frostlang-driver = { workspace = true, features = ["graphical-diagnostics"] }
 frostlang-fs-resolver = { workspace = true, features = ["graphical-diagnostics"] }

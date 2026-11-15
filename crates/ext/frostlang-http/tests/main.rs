@@ -4,8 +4,12 @@
 mod common;
 
 mod cancellation;
+mod compression;
 mod extension;
 mod failures;
 mod fields;
+mod files;
+mod proxy;
 mod requests;
+mod tls;
 mod urls;

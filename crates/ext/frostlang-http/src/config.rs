@@ -23,6 +23,48 @@ pub(crate) struct ClientConfig {
     /// In microseconds.
     pub(crate) read_timeout: Option<u64>,
     pub(crate) redirects: Option<u64>,
+    pub(crate) decompress: Option<bool>,
+    pub(crate) verify_tls: Option<bool>,
+    /// Each as PEM content.
+    pub(crate) ca: Option<Vec<Flat>>,
+    pub(crate) system_ca: Option<bool>,
+    pub(crate) proxy: Option<ProxySetting>,
+}
+
+/// The proxy a client's `proxy` names, or none.
+pub(crate) enum ProxySetting {
+    /// Every request goes through the proxy at this URL.
+    Url(String),
+    /// Every request goes directly, whatever proxies the environment names.
+    Direct,
+}
+
+impl<'de> Deserialize<'de> for ProxySetting {
+    fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        struct ProxySettingVisitor;
+
+        impl Visitor<'_> for ProxySettingVisitor {
+            type Value = ProxySetting;
+
+            fn expecting(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+                f.write_str("String or false")
+            }
+
+            fn visit_str<E: de::Error>(self, value: &str) -> Result<ProxySetting, E> {
+                Ok(ProxySetting::Url(value.to_owned()))
+            }
+
+            fn visit_bool<E: de::Error>(self, value: bool) -> Result<ProxySetting, E> {
+                if value {
+                    Err(E::invalid_value(de::Unexpected::Bool(value), &self))
+                } else {
+                    Ok(ProxySetting::Direct)
+                }
+            }
+        }
+
+        deserializer.deserialize_any(ProxySettingVisitor)
+    }
 }
 
 /// The config `client.request` takes: a [`RequestOptions`] with a URL and
@@ -41,7 +83,11 @@ pub(crate) struct RequestConfig {
     #[serde(default)]
     body: Option<Flat>,
     #[serde(default)]
+    body_file: Option<String>,
+    #[serde(default)]
     timeout: Option<u64>,
+    #[serde(default)]
+    save_to: Option<String>,
 }
 
 impl RequestConfig {
@@ -53,13 +99,17 @@ impl RequestConfig {
             query,
             headers,
             body,
+            body_file,
             timeout,
+            save_to,
         } = self;
         let options = RequestOptions {
             query,
             headers,
             body,
+            body_file,
             timeout,
+            save_to,
         };
         (url, method, options)
     }
@@ -73,8 +123,12 @@ pub(crate) struct RequestOptions {
     pub(crate) query: Option<QueryFields>,
     pub(crate) headers: Option<HeaderFields>,
     pub(crate) body: Option<Flat>,
+    /// A path.
+    pub(crate) body_file: Option<String>,
     /// In microseconds.
     pub(crate) timeout: Option<u64>,
+    /// A path.
+    pub(crate) save_to: Option<String>,
 }
 
 /// The options `client.request_all` takes.

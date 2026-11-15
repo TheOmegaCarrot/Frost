@@ -24,6 +24,7 @@ mod config;
 mod error;
 mod exchange;
 mod fields;
+mod files;
 mod urls;
 
 use std::sync::Arc;
@@ -105,10 +106,27 @@ impl HttpConfig {
 /// - `timeout`: a limit on each whole request, response body included. None
 ///   by default.
 /// - `connect_timeout`: a limit on making a connection; 10 seconds by default.
-/// - `read_timeout`: a limit on waiting for more of a response; 30 seconds by
-///   default.
+/// - `read_timeout`: a limit on waiting; 30 seconds by default. Until the
+///   response starts, it limits the whole wait, sending the body included;
+///   after that, each wait for more of the response's body. A longer upload
+///   needs a longer `read_timeout`; since it is a client's option, that may
+///   call for a client of its own.
 /// - `redirects`: the most redirects a request follows; 10 by default. With
 ///   `0`, a redirect is the response.
+/// - `decompress`: `true` by default. With `false`, the client asks for no
+///   compression, and a body a server compresses anyway, as some do a `.gz`
+///   download, is given as sent, its headers intact.
+/// - `verify_tls`: `true` by default. With `false`, any server certificate is
+///   accepted, and `ca` and `system_ca` go unused.
+/// - `ca`: an Array of certificate authorities to trust, each PEM content as a
+///   String or Bytes, which may hold several certificates. None by default.
+/// - `system_ca`: whether the operating system's trusted authorities are
+///   trusted too; `true` by default. With `false` and no `ca`, or a system
+///   that has no trusted authorities, no server certificate is trusted.
+/// - `proxy`: the URL of an http or https proxy to send every request
+///   through, taken as http if it has no scheme, or `false` for none. By
+///   default, the proxies the environment names, as in `http_proxy`, for
+///   loopback addresses too unless `no_proxy` names them.
 ///
 /// # A client's functions
 ///
@@ -136,9 +154,29 @@ impl HttpConfig {
 /// - `headers`: each value a String, or an Array of String to repeat the
 ///   header. Names may be in any case, but two names may not differ only in
 ///   case. A name with an empty Array sends none of the client's header of
-///   that name.
+///   that name. The client sets `host`, `content-length`,
+///   `transfer-encoding`, and `accept-encoding` itself, in a client's
+///   `headers` too, so naming one raises.
 /// - `body`: a String or Bytes, sent with any method.
+/// - `body_file`: the path of a regular file to send as the body, read as it
+///   is sent. It is sent at its length when its request is sent: if it grows
+///   while sent, only that much is sent, and if it is cut short, the request
+///   fails. At most one of `body` and `body_file`. A redirect that would
+///   send the body again (307 or 308, or 301 or 302 for any method but POST)
+///   is not followed, since a file is sent only once: the redirect is the
+///   response.
 /// - `timeout`: replaces the client's `timeout` for this request.
+/// - `save_to`: the path of a file to save the response's body to, rather
+///   than give it. The body is written beside the file as it arrives, and
+///   replaces the file only once it is whole: a request that fails or is
+///   cancelled leaves the file as it was. The directory must exist. The body
+///   has no maximum size. Any response's body is saved, an error page
+///   included, so to keep a file from being replaced by one, save to a new
+///   path and move the file once `code` is as expected.
+///
+/// A request's files are opened only as it is sent, so a batch holds files
+/// open only for the requests in flight. A file that cannot be opened then
+/// fails the request, rather than raising.
 ///
 /// # Results
 ///
@@ -149,10 +187,15 @@ impl HttpConfig {
 /// - `headers`: a Map from each lowercase name to its value, or to an Array of
 ///   its values if it is repeated.
 /// - `body`: a String if it is UTF-8, otherwise Bytes, whatever its
-///   `content-type`. A compressed body is decompressed.
+///   `content-type`.
+/// - `file`, in place of `body` with `save_to`: the absolute path of the file
+///   saved.
 /// - `url`: the final URL, after any redirects.
 ///
 /// A header's value is likewise a String if it is UTF-8, otherwise Bytes.
+/// Unless the client's `decompress` is `false`, compression is the client's
+/// business: a compressed body is decompressed, and the headers describe it
+/// as decompressed.
 ///
 /// A request that failed gives `{ok: false, error: {kind, message}}`, where
 /// `kind` is one of:
@@ -162,9 +205,12 @@ impl HttpConfig {
 ///   refuses connections, or fails TLS verification.
 /// - `'redirect'`: more redirects than the client follows, or a redirect
 ///   loop.
-/// - `'body'` or `'decode'`: the response body could not be read, or
-///   decompressed.
+/// - `'body'`: a body could not be sent or read whole, as when the
+///   connection closed partway, or a `body_file` could not be read.
+/// - `'decode'`: the response body could not be decompressed.
 /// - `'request'`: the request failed otherwise.
+/// - `'save'`: the response body could not be saved to its `save_to` file,
+///   as when its partial file could not be made.
 /// - `'too_large'`: the response body was larger than the host allows.
 ///
 /// A cancelled run stops every request it is waiting for.

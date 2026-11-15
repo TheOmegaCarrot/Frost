@@ -2,6 +2,7 @@
 //! installed, bound as `http`, against a [`Server`] of the test's own.
 
 pub(crate) mod server;
+pub(crate) mod tls;
 
 use std::fmt::Display;
 use std::io::Write;
@@ -21,6 +22,7 @@ use frostlang_tokio::Runtime;
 use socket2::{Domain, Protocol, Socket, Type};
 
 pub(crate) use server::Server;
+pub(crate) use tls::TestCa;
 
 /// How long a script may take before the test fails.
 /// Generous: it only bounds a hang, and a passing script takes milliseconds.
@@ -33,6 +35,20 @@ pub(crate) fn gzip(text: &str) -> Vec<u8> {
         .write_all(text.as_bytes())
         .expect("writing to memory succeeds");
     encoder.finish().expect("writing to memory succeeds")
+}
+
+/// `text`, compressed with Brotli, as a server compresses a body.
+pub(crate) fn brotli(text: &str) -> Vec<u8> {
+    let mut encoder = brotli::CompressorWriter::new(Vec::new(), 4096, 5, 22);
+    encoder
+        .write_all(text.as_bytes())
+        .expect("writing to memory succeeds");
+    encoder.into_inner()
+}
+
+/// `text`, compressed with Zstandard, as a server compresses a body.
+pub(crate) fn zstd(text: &str) -> Vec<u8> {
+    zstd::encode_all(text.as_bytes(), 0).expect("compressing in memory succeeds")
 }
 
 /// A port held bound but not listening: connecting to it is refused, and no
@@ -91,6 +107,7 @@ pub(crate) enum Ended {
 /// `importer` and cancellable by `token`, on a thread of its own, failing the
 /// test if it does not end within [`DEADLINE`].
 pub(crate) fn run_with(body: &str, importer: Arc<Importer>, token: Option<&CancelToken>) -> Ended {
+    check_no_ambient_proxy();
     let source = format!("def http = import('ext.http')\n{body}");
     let closure = compile_program("main.frst", &source, CompilerOptions::new())
         .unwrap_or_else(|errors| panic!("the script compiles:\n{}", errors.render()))
@@ -118,6 +135,42 @@ pub(crate) fn run_with(body: &str, importer: Arc<Importer>, token: Option<&Cance
             panic!("the script did not end within {DEADLINE:?}:\n{body}")
         }
         Err(mpsc::RecvTimeoutError::Disconnected) => panic!("the script panicked:\n{body}"),
+    }
+}
+
+/// Fails the test if the environment names a proxy that would take the
+/// tests' requests to their own servers: a client uses the environment's
+/// proxies for loopback addresses too, unless `no_proxy` exempts them. The
+/// tests cannot change the environment, which every test reads.
+fn check_no_ambient_proxy() {
+    static PROBLEM: OnceLock<Option<String>> = OnceLock::new();
+    let problem = PROBLEM.get_or_init(|| {
+        // Which spelling of the variable `name` is set, if either is.
+        let set_spelling = |name: &str| {
+            [name.to_string(), name.to_uppercase()]
+                .iter()
+                .find(|name| std::env::var_os(name).is_some_and(|value| !value.is_empty()))
+                .cloned()
+        };
+        let proxy = ["http_proxy", "https_proxy", "all_proxy"]
+            .into_iter()
+            .find_map(set_spelling)?;
+        let exempt = set_spelling("no_proxy")
+            .and_then(|name| std::env::var(name).ok())
+            .is_some_and(|hosts| {
+                hosts
+                    .split(',')
+                    .any(|host| matches!(host.trim(), "*" | "127.0.0.1" | "127.0.0.0/8"))
+            });
+        (!exempt).then(|| {
+            format!(
+                "the environment's `{proxy}` would take the tests' requests to their own \
+                 servers: unset it, or add 127.0.0.1 to `no_proxy`"
+            )
+        })
+    });
+    if let Some(problem) = problem {
+        panic!("{problem}");
     }
 }
 
@@ -176,6 +229,16 @@ pub(crate) fn failure_kind(result: &Value) -> String {
     match at(result, &["error", "kind"]) {
         Value::String(kind) => kind.as_str().to_string(),
         other => panic!("a failure's kind should be a String, but is {other:?}"),
+    }
+}
+
+/// The `message` of the failed result `result`, checking that it failed.
+#[track_caller]
+pub(crate) fn failure_message(result: &Value) -> String {
+    failure_kind(result);
+    match at(result, &["error", "message"]) {
+        Value::String(message) => message.as_str().to_string(),
+        other => panic!("a failure's message should be a String, but is {other:?}"),
     }
 }
 

@@ -3,9 +3,10 @@
 //!
 //! Each test gives a handler, called for each request with the request and
 //! the connection to answer on. The server records every request it reads.
+//! It serves plain HTTP, or HTTPS with a certificate from [`super::tls`].
 
 use std::io::{BufRead, BufReader, Read, Write};
-use std::net::{SocketAddr, TcpListener, TcpStream};
+use std::net::{SocketAddr, TcpListener};
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex};
 use std::thread;
@@ -33,9 +34,17 @@ impl Recorded {
     }
 }
 
+/// A connection's byte stream: plain, or over TLS.
+trait Stream: Read + Write + Send {}
+
+impl<T: Read + Write + Send> Stream for T {}
+
+/// A connection's stream, buffered for reading requests.
+type Reader = BufReader<Box<dyn Stream>>;
+
 /// One request's connection, for a handler to answer on.
 pub(crate) struct Connection<'a> {
-    reader: &'a mut BufReader<TcpStream>,
+    reader: &'a mut Reader,
     close: bool,
 }
 
@@ -80,6 +89,8 @@ type Handler = dyn Fn(&Recorded, &mut Connection<'_>) + Send + Sync;
 
 /// A running test server. Its threads outlive it, idle, until the tests end.
 pub(crate) struct Server {
+    /// `http` or `https`.
+    scheme: &'static str,
     address: SocketAddr,
     log: Arc<Mutex<Vec<Recorded>>>,
     connections: Arc<AtomicUsize>,
@@ -90,10 +101,27 @@ impl Server {
     pub(crate) fn start(
         handler: impl Fn(&Recorded, &mut Connection<'_>) + Send + Sync + 'static,
     ) -> Self {
+        Self::serving(None, handler)
+    }
+
+    /// A server answering each request with `handler`, over TLS with the
+    /// certificate `tls` gives.
+    pub(crate) fn start_tls(
+        tls: Arc<rustls::ServerConfig>,
+        handler: impl Fn(&Recorded, &mut Connection<'_>) + Send + Sync + 'static,
+    ) -> Self {
+        Self::serving(Some(tls), handler)
+    }
+
+    fn serving(
+        tls: Option<Arc<rustls::ServerConfig>>,
+        handler: impl Fn(&Recorded, &mut Connection<'_>) + Send + Sync + 'static,
+    ) -> Self {
         let listener = TcpListener::bind("127.0.0.1:0").expect("the test server binds a port");
         let address = listener
             .local_addr()
             .expect("a bound socket has an address");
+        let scheme = if tls.is_some() { "https" } else { "http" };
         let log = Arc::new(Mutex::new(Vec::new()));
         let connections = Arc::new(AtomicUsize::new(0));
         let handler: Arc<Handler> = Arc::new(handler);
@@ -104,6 +132,14 @@ impl Server {
                 for stream in listener.incoming() {
                     let Ok(stream) = stream else { continue };
                     connections.fetch_add(1, Ordering::SeqCst);
+                    let stream: Box<dyn Stream> = match &tls {
+                        Some(tls) => {
+                            let session = rustls::ServerConnection::new(Arc::clone(tls))
+                                .expect("a TLS session starts");
+                            Box::new(rustls::StreamOwned::new(session, stream))
+                        }
+                        None => Box::new(stream),
+                    };
                     let log = Arc::clone(&log);
                     let handler = Arc::clone(&handler);
                     thread::spawn(move || serve(stream, &log, &*handler));
@@ -111,6 +147,7 @@ impl Server {
             });
         }
         Self {
+            scheme,
             address,
             log,
             connections,
@@ -129,7 +166,7 @@ impl Server {
 
     /// The URL of `path` on this server.
     pub(crate) fn url(&self, path: &str) -> String {
-        format!("http://{}{path}", self.address)
+        format!("{}://{}{path}", self.scheme, self.address)
     }
 
     /// The server's address, as `host:port`.
@@ -155,7 +192,7 @@ impl Server {
 
 /// Answers the requests on `stream` with `handler`, until either side closes
 /// it.
-fn serve(stream: TcpStream, log: &Mutex<Vec<Recorded>>, handler: &Handler) {
+fn serve(stream: Box<dyn Stream>, log: &Mutex<Vec<Recorded>>, handler: &Handler) {
     let mut reader = BufReader::new(stream);
     while let Some(request) = read_request(&mut reader) {
         log.lock().expect("not poisoned").push(request.clone());
@@ -171,7 +208,7 @@ fn serve(stream: TcpStream, log: &Mutex<Vec<Recorded>>, handler: &Handler) {
 }
 
 /// The next request on `reader`, or `None` once the connection closes.
-fn read_request(reader: &mut BufReader<TcpStream>) -> Option<Recorded> {
+fn read_request(reader: &mut Reader) -> Option<Recorded> {
     let request_line = read_line(reader)?;
     let mut parts = request_line.splitn(3, ' ');
     let method = parts.next()?.to_string();
@@ -209,7 +246,7 @@ fn read_request(reader: &mut BufReader<TcpStream>) -> Option<Recorded> {
 }
 
 /// A chunked body from `reader`.
-fn read_chunked(reader: &mut BufReader<TcpStream>) -> Option<Vec<u8>> {
+fn read_chunked(reader: &mut Reader) -> Option<Vec<u8>> {
     let mut body = Vec::new();
     loop {
         let size = usize::from_str_radix(read_line(reader)?.split(';').next()?.trim(), 16).ok()?;
@@ -227,7 +264,7 @@ fn read_chunked(reader: &mut BufReader<TcpStream>) -> Option<Vec<u8>> {
 
 /// A line from `reader` without its line ending, or `None` at the end of the
 /// stream.
-fn read_line(reader: &mut BufReader<TcpStream>) -> Option<String> {
+fn read_line(reader: &mut Reader) -> Option<String> {
     let mut line = Vec::new();
     match reader.read_until(b'\n', &mut line) {
         Ok(0) | Err(_) => None,

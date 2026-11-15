@@ -325,6 +325,34 @@ fn auth_helpers_give_an_authorization_header() {
 }
 
 #[test]
+fn headers_the_client_manages_cannot_be_set() {
+    for name in [
+        "host",
+        "Host",
+        "content-length",
+        "Transfer-Encoding",
+        "ACCEPT-ENCODING",
+    ] {
+        let message = format!("cannot set header \"{name}\": the HTTP client manages it");
+        assert_raises(&[
+            (
+                &format!("http.client().get('http://a.invalid', {{headers: {{['{name}']: 'x'}}}})"),
+                &format!("Function client.get {message}"),
+            ),
+            (
+                &format!("http.client({{headers: {{['{name}']: ['x']}}}})"),
+                &format!("Function ext.http.client {message}"),
+            ),
+            // Even with no value to send.
+            (
+                &format!("http.client({{headers: {{['{name}']: []}}}})"),
+                &format!("Function ext.http.client {message}"),
+            ),
+        ]);
+    }
+}
+
+#[test]
 fn a_client_sends_its_own_user_agent_unless_told_otherwise() {
     let default = format!("frost-http/{}", env!("CARGO_PKG_VERSION"));
     let cases = [
