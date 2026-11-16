@@ -28,5 +28,4 @@ note: required by a bound in `PARAM`
   |                     ^^^^^^^^^^^^^^^ required by this bound in `FrostArg::PARAM`
   |     /// The parameter, unnamed. Name it with [`Param::named`].
   |     const PARAM: Param;
-  |           ----- required by a bound in this associated constant
   = note: this error originates in the macro `from_variant` (in Nightly builds, run with -Z macro-backtrace for more info)

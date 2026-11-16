@@ -27,6 +27,8 @@ help: the trait `FromArg` is implemented for `std::string::String`
 note: required by a bound in `frostlang::native::Args::<'a>::take`
  --> $WORKSPACE/crates/frostlang/src/native/arg.rs
   |
+  | impl<'a> Args<'a> {
+...
   |     pub fn take<T: FrostArg>(&mut self) -> Result<T, FrostError> {
   |                    ^^^^^^^^ required by this bound in `Args::<'a>::take`
   = note: this error originates in the macro `from_variant` (in Nightly builds, run with -Z macro-backtrace for more info)
@@ -61,5 +63,4 @@ note: required by a bound in `PARAM`
   |                     ^^^^^^^^^^^^^^^ required by this bound in `FrostArg::PARAM`
   |     /// The parameter, unnamed. Name it with [`Param::named`].
   |     const PARAM: Param;
-  |           ----- required by a bound in this associated constant
   = note: this error originates in the macro `from_variant` (in Nightly builds, run with -Z macro-backtrace for more info)
