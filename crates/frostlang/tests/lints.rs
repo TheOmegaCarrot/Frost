@@ -324,6 +324,18 @@ fn unread_match_pattern_names_are_linted() {
 }
 
 #[test]
+fn match_arms_a_constant_target_decides_are_linted_alike() {
+    // A constant target leaves out the arms it cannot take and binds the
+    // taken arm's names to constants; neither changes which names are read.
+    assert_unused_cases(&[
+        ("match 5 {\n[a] => 0,\n_ => 1,\n}", &["a"]),
+        ("match 5 {\n1 => 0,\nn => 1,\n}", &["n"]),
+        ("match 5 {\nn => n + 1,\n}", &[]),
+        ("match 5 {\nn is Int => 0,\n[a] => a,\n}", &["n"]),
+    ]);
+}
+
+#[test]
 fn names_under_an_optional_map_key_are_never_linted() {
     assert_unused_cases(&[
         ("def {k?} = {}\n0", &[]),

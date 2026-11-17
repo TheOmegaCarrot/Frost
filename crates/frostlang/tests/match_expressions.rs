@@ -1336,6 +1336,14 @@ fn tail_recursion_through_a_match_runs_in_bounded_depth() {
         }
         count(100000)
         "#,
+        // A constant target decides the arm at compile time.
+        r#"
+        defn count(n) -> if n == 0: "done" else: match 1 {
+            0 => "never",
+            k => count(n - k)
+        }
+        count(100000)
+        "#,
     ] {
         let tail = Script::new(source).max_call_depth(100).run();
         assert_eq!(tail, Value::from("done"), "{source}");
@@ -1454,12 +1462,12 @@ fn with_a_runtime_target_each_part_folds_on_its_own() {
 
 #[test]
 fn a_constant_target_folds_when_its_arms_cannot() {
-    // The arm reads its binding, so the match as a whole is left for runtime.
-    let source = "match [2 * 3] { [n] => n }";
+    // `print` cannot fold, so the match as a whole is left for runtime.
+    let source = "match [2 * 3] { [n] => print(n) }";
     let emitted = Script::new(source).code(FOLD);
     assert_eq!(emitted.count(&Bytecode::Multiply), 0, "{emitted:?}");
     assert_eq!(emitted.count(&Bytecode::MarkStack), 1, "{emitted:?}");
-    assert_values(&[(source, "6")]);
+    assert_eq!(Script::new(source).printed(), ["6"]);
 }
 
 #[test]
@@ -1647,6 +1655,484 @@ fn a_key_not_known_as_a_valid_key_is_looked_up_dynamically() {
         "not a valid Map key",
     )]);
     assert_values(&[("match 5 { {[null]: v} => v, _ => 0 }", "0")]);
+}
+
+// --- A constant target ---
+//
+// A target whose value is known at compile time is tried against each arm's
+// pattern as the arm compiles. What that decides is used only as each option
+// allows: propagation records a matched arm's bindings, branch elimination
+// leaves out the arms that cannot be taken, and folding binds the taken arm's
+// names to constants without a test.
+
+/// Every optimization a constant target's decisions feed.
+const DECIDING: OptimizationOptions = FOLD
+    .with(Optimization::ConstantPropagate, true)
+    .with(Optimization::BranchEliminate, true);
+
+/// Assert that the code holds no test of an arm: no try under a mark, no
+/// `MatchPattern`, no conditional jump, and no raise that no arm matches.
+fn assert_untested(emitted: &Emitted, source: &str) {
+    assert_eq!(tries(emitted), [0; 4], "{source:?}: {emitted:?}");
+    for op in [
+        Bytecode::MatchPattern(0),
+        Bytecode::JumpIfFalse(0),
+        Bytecode::ProduceError,
+    ] {
+        assert_eq!(
+            count_of_kind(emitted, &op),
+            0,
+            "{source:?} has no {op:?}: {emitted:?}"
+        );
+    }
+}
+
+/// How many ops of `op`'s kind the code holds, whatever their operands.
+fn count_of_kind(emitted: &Emitted, op: &Bytecode) -> usize {
+    let kind = std::mem::discriminant(op);
+    emitted
+        .code
+        .iter()
+        .filter(|emitted_op| std::mem::discriminant(*emitted_op) == kind)
+        .count()
+}
+
+#[test]
+fn a_constant_target_takes_the_arm_a_runtime_one_would() {
+    // Each case also runs with the target supplied from the enclosing scope as
+    // `x`, which nothing can decide early: both must agree with the expected
+    // value.
+    for (target, arms, expected) in [
+        ("5", "1 => 0, n => n + 1", "6"),
+        ("5", "n is String => 0, n is Int => n * 2, _ => 1", "10"),
+        ("3.0", "3 => 'Int', _ => 'other'", "'other'"),
+        ("0.0", "-0.0 => 'negative', 0.0 => 'positive'", "'positive'"),
+        ("[1, 2]", "[a] => a, [a, b] => a + b, _ => 0", "3"),
+        ("[1, 2, 3]", "[a, ...rest] => [a, rest]", "[1, [2, 3]]"),
+        ("{a: 1}", "{a, b?} => [a, b]", "[1, null]"),
+        ("{a: 1}", "{b} => b, {a} as all => [a, all]", "[1, {a: 1}]"),
+        ("[2]", "[1] | 1 => 0, [n] | n => n * 10", "20"),
+        ("2", "[n] | n => n * 10", "20"),
+        (
+            "{a: 1, b: 2}",
+            "{a: x, b: y} | {b: y, a: x} => [x, y]",
+            "[1, 2]",
+        ),
+        (
+            "5",
+            "n if: n > 9 => 'big', n if: n > 3 => 'mid', _ => 'small'",
+            "'mid'",
+        ),
+        ("5", "n if: false => 0, n if: null => 1, n => n", "5"),
+        ("5", "n => [1, 2] @ map(fn v -> v + n)", "[6, 7]"),
+        ("[[1], 2]", "[[a], b] if: a < b => a + b", "3"),
+        ("'s'", "_ is Function => 0, s is Flat => s + 't'", "'st'"),
+    ] {
+        let constant = format!("match {target} {{ {arms} }}");
+        let runtime = format!("match x {{ {arms} }}");
+        let expected = run(expected);
+        assert_eq!(run(&constant), expected, "{constant:?} is {expected:?}");
+        assert_eq!(
+            Script::new(&runtime).capture("x", run(target)).run(),
+            expected,
+            "{runtime:?} with `x` {target} is {expected:?}"
+        );
+    }
+}
+
+#[test]
+fn a_constant_target_with_a_function_takes_the_arm_a_runtime_one_would() {
+    // A Function can be bound but never be a constant, so its arm is tried
+    // as usual even when it must match; the catch-all after it is left out.
+    let source = r"
+        defn sq(x) -> x * x
+        match [sq] {
+            [f] if: is_function(f) => print(f(3)),
+            _ => 0,
+        }
+    ";
+    assert_eq!(Script::new(source).printed(), ["9"]);
+    let emitted = Script::new(source).code(DECIDING);
+    assert_eq!(emitted.count(&Bytecode::MarkStack), 1, "{emitted:?}");
+    assert_eq!(emitted.count(&Bytecode::PushInt(0)), 0, "{emitted:?}");
+}
+
+#[test]
+fn a_constant_target_runs_only_the_arm_taken() {
+    assert_noted(&[
+        (
+            "[match 5 { 1 => note(1), n => note(n) }, log()]",
+            "[5, [5]]",
+        ),
+        (
+            "[match 5 { [a] => note(a), n is Int => note(n), _ => note(0) }, log()]",
+            "[5, [5]]",
+        ),
+        // The guard decides at runtime; the arm after it is still reached.
+        (
+            "[match 5 { n if: note(false) => note(n), n => note(-n) }, log()]",
+            "[-5, [false, -5]]",
+        ),
+        (
+            "[match 5 { n if: note(true) => note(n), n => note(-n) }, log()]",
+            "[5, [true, 5]]",
+        ),
+    ]);
+    for prints in [
+        Script::new("match 5 { 1 => print('one'), n => print(n) }").printed(),
+        Script::new("match 5 { n if: n > 1 => print(n), _ => print('other') }").printed(),
+    ] {
+        assert_eq!(prints, ["5"], "only the taken arm prints");
+    }
+}
+
+#[test]
+fn a_constant_target_no_arm_matches_raises_at_runtime() {
+    for source in [
+        "match 5 { 1 => 0, [a] => a }",
+        "match 5 { n if: n > 9 => n }",
+        "match [5] { [n] if: n < 0 => n, {} => 0 }",
+    ] {
+        let emitted = Script::new(source).code(DECIDING);
+        assert_eq!(
+            emitted.count(&Bytecode::ProduceError),
+            1,
+            "{source:?} keeps its raise: {emitted:?}"
+        );
+    }
+    assert_raises(&[
+        (
+            "match 5 { 1 => 0, [a] => a }",
+            "No match arm matches the value: 5",
+        ),
+        (
+            "match 5 { n if: n > 9 => n }",
+            "No match arm matches the value: 5",
+        ),
+        (
+            "match [5] { [n] if: n < 0 => n, {} => 0 }",
+            "No match arm matches the value: [ 5 ]",
+        ),
+    ]);
+    // It raises only if it runs.
+    assert_values(&[(
+        r"
+        def f = fn -> match 5 { 1 => 0 }
+        5
+        ",
+        "5",
+    )]);
+}
+
+#[test]
+fn a_constant_target_leaves_an_erroring_pattern_or_guard_for_runtime() {
+    // Trying the arm early errors, so it is left undecided, and the error is
+    // raised only if the arm is tried.
+    assert_raises(&[
+        ("match 5 { (1 / 0) => 1, _ => 2 }", "Division by zero"),
+        ("match 5 { n if: n / 0 => 1, _ => 2 }", "Division by zero"),
+    ]);
+    // Not tried, it raises nothing.
+    assert_values(&[
+        ("match 5 { 5 => 0, (1 / 0) => 1, _ => 2 }", "0"),
+        ("match 5 { 1 if: 1 / 0 => 1, _ => 2 }", "2"),
+    ]);
+}
+
+#[test]
+fn a_constant_target_folds_through_an_arm_reading_its_bindings() {
+    // Each arm that matches binds known values, so a result reading them
+    // folds, and the match folds to it, with or without compiled patterns.
+    for (source, folded) in [
+        ("match 5 { 1 => 0, n => n + 1 }", Value::Int(6)),
+        ("match 5 { n is Int => n + 1, _ => 0 }", Value::Int(6)),
+        ("match [1, 2] { [a, b] => a + b, _ => 0 }", Value::Int(3)),
+        (
+            "match {k: [1, 2, 3]} { {j} => j, {k: [a, ...rest]} => a + len(rest) }",
+            Value::Int(3),
+        ),
+        ("match 5 { n if: n > 3 => n * 2, _ => 0 }", Value::Int(10)),
+        (
+            "match 5 { 1 | 2 => 0, n is Int => $'int ${n}' }",
+            Value::from("int 5"),
+        ),
+    ] {
+        for options in [DECIDING, DECIDING.with(Optimization::CompilePatterns, true)] {
+            let emitted = Script::new(source).code(options);
+            assert_untested(&emitted, source);
+            let pushes_folded = match &folded {
+                Value::Int(int) => emitted.count(&Bytecode::PushInt(*int)) == 1,
+                other => emitted.constants().contains(other),
+            };
+            assert!(pushes_folded, "{source:?} folds to {folded:?}: {emitted:?}");
+            assert_eq!(emitted.code.len(), 2, "{source:?}: {emitted:?}");
+        }
+        assert_eq!(run(source), folded, "{source:?}");
+    }
+}
+
+#[test]
+fn with_every_arm_foldable_a_constant_target_folds_without_elimination() {
+    // Propagation makes the arm that matches foldable; the arm that does not
+    // reads no binding, so the match folds as a whole.
+    let source = "match 5 { 1 => 0, n => n + 1 }";
+    let emitted = Script::new(source).code(FOLD.with(Optimization::ConstantPropagate, true));
+    assert_untested(&emitted, source);
+    assert_eq!(emitted.count(&Bytecode::PushInt(6)), 1, "{emitted:?}");
+}
+
+#[test]
+fn a_matched_arms_bindings_propagate_even_after_an_undecided_arm() {
+    // Whether the first arm is taken is decided at runtime, but either arm
+    // binds the same known value if it is reached.
+    let source = "match 37 { n if: x => n + 1, n => n + 2 }";
+    let emitted = Script::new(source)
+        .capture("x", Value::Null)
+        .code(FOLD.with(Optimization::ConstantPropagate, true));
+    assert_eq!(emitted.count(&Bytecode::Add), 0, "{emitted:?}");
+    for folded in [38, 39] {
+        assert_eq!(
+            emitted.count(&Bytecode::PushInt(folded)),
+            1,
+            "{folded} is folded: {emitted:?}"
+        );
+    }
+    for (x, expected) in [(true, 38), (false, 39)] {
+        assert_eq!(
+            Script::new(source).capture("x", Value::Bool(x)).run(),
+            Value::Int(expected),
+            "with `x` {x}"
+        );
+    }
+}
+
+#[test]
+fn propagation_alone_loads_a_bindings_known_value() {
+    let source = "match 37 { n => print(n) }";
+    let emitted = Script::new(source).code(UNOPTIMIZED.with(Optimization::ConstantPropagate, true));
+    // The target, and the argument in place of a load of `n`.
+    assert_eq!(emitted.count(&Bytecode::PushInt(37)), 2, "{emitted:?}");
+    assert_eq!(Script::new(source).printed(), ["37"]);
+}
+
+#[test]
+fn branch_elimination_leaves_out_the_arms_a_constant_target_cannot_take() {
+    let source = "match 5 { 1 => 10, [a] => 20, n if: false => 30, n is Int => 40, _ => 50 }";
+    // Without folding, the arm taken is still tried.
+    let emitted = Script::new(source).code(UNOPTIMIZED.with(Optimization::BranchEliminate, true));
+    assert_eq!(emitted.count(&Bytecode::MarkStack), 1, "{emitted:?}");
+    for (result, count) in [(10, 0), (20, 0), (30, 0), (40, 1), (50, 0)] {
+        assert_eq!(
+            emitted.count(&Bytecode::PushInt(result)),
+            count,
+            "the arm resulting in {result} is emitted {count} times: {emitted:?}"
+        );
+    }
+    // With folding, it binds its name without a test.
+    let emitted = Script::new(source).code(DECIDING);
+    assert_untested(&emitted, source);
+    assert_eq!(emitted.count(&Bytecode::PushInt(40)), 1, "{emitted:?}");
+    assert_values(&[(source, "40")]);
+}
+
+#[test]
+fn each_decision_takes_effect_only_under_its_option() {
+    // The first arm can never match; the second always does, but binds a
+    // name, which takes folding to bind without a test.
+    let source = "match 5 { 1 => print(11), n is Int => print(n), _ => 0 }";
+    let propagate = UNOPTIMIZED.with(Optimization::ConstantPropagate, true);
+    for (options, tried_arms) in [
+        // Without branch elimination, every arm is kept, and tried.
+        (propagate, 2),
+        (FOLD.with(Optimization::ConstantPropagate, true), 2),
+        // The first arm is left out, and so is the catch-all; the arm taken is
+        // still tried.
+        (propagate.with(Optimization::BranchEliminate, true), 1),
+        // The arm taken binds its name without a test.
+        (DECIDING, 0),
+    ] {
+        let emitted = Script::new(source).code(options);
+        assert_eq!(
+            emitted.count(&Bytecode::MarkStack),
+            tried_arms,
+            "{tried_arms} arms are tried: {emitted:?}"
+        );
+        let kept = usize::from(!options.branch_eliminate);
+        assert_eq!(
+            emitted.count(&Bytecode::PushInt(11)),
+            kept,
+            "the first arm is left out only by branch elimination: {emitted:?}"
+        );
+        assert_eq!(
+            emitted.count(&Bytecode::PushInt(0)),
+            kept,
+            "the catch-all is left out only by branch elimination: {emitted:?}"
+        );
+    }
+    assert_eq!(Script::new(source).printed(), ["5"]);
+}
+
+#[test]
+fn without_folding_a_computed_value_in_a_pattern_is_not_known() {
+    // As for an `if` condition, a value that only a fold can compute is not
+    // known without folding, so the arm comparing against it is tried at
+    // runtime, whether it would match or not.
+    let branch_eliminate = UNOPTIMIZED.with(Optimization::BranchEliminate, true);
+    for (source, printed) in [
+        ("match 2 { (1 + 1) => print(1), _ => print(2) }", "1"),
+        ("match 3 { (1 + 1) => print(1), _ => print(2) }", "2"),
+    ] {
+        let emitted = Script::new(source).code(branch_eliminate);
+        assert_eq!(
+            emitted.count(&Bytecode::MarkStack),
+            1,
+            "{source:?} tries its first arm: {emitted:?}"
+        );
+        assert_eq!(emitted.count(&Bytecode::Add), 1, "{source:?}: {emitted:?}");
+        // With folding, the value is known, and decides the arm.
+        let emitted =
+            Script::new(source).code(branch_eliminate.with(Optimization::ConstantFold, true));
+        assert_untested(&emitted, source);
+        assert_eq!(emitted.count(&Bytecode::Add), 0, "{source:?}: {emitted:?}");
+        assert_eq!(Script::new(source).printed(), [printed], "{source:?}");
+    }
+}
+
+#[test]
+fn branch_elimination_alone_skips_the_test_of_an_arm_that_binds_nothing() {
+    // With no name to bind, there is no value to fold into a constant, so the
+    // arm taken needs neither a test nor its target, as an `if` would not.
+    let branch_eliminate = UNOPTIMIZED.with(Optimization::BranchEliminate, true);
+    for (source, target) in [
+        (
+            "match true { false => 0, true => print(1), _ => 2 }",
+            Bytecode::PushTrue,
+        ),
+        ("match 5 { 1 => 0, _ => print(2) }", Bytecode::PushInt(5)),
+    ] {
+        let emitted = Script::new(source).code(branch_eliminate);
+        assert_untested(&emitted, source);
+        assert_eq!(
+            emitted.count(&target),
+            0,
+            "{source:?} leaves out its target: {emitted:?}"
+        );
+    }
+    assert_eq!(
+        Script::new("match true { false => 0, true => print(1), _ => 2 }").printed(),
+        ["1"]
+    );
+    assert_eq!(
+        Script::new("match 5 { 1 => 0, _ => print(2) }").printed(),
+        ["2"]
+    );
+}
+
+#[test]
+fn an_arm_known_to_match_with_no_arm_before_it_leaves_out_the_target() {
+    // A known target has no effect, so with no arm left to try it on, it is
+    // never loaded: `[5]` is loaded only to bind `n`, and as the argument.
+    // With an arm left before it, the target is loaded for that arm too.
+    for (source, loads) in [
+        ("match [5] { 1 => 0, n => print(n) }", 2),
+        ("match [5] { _ if: x => 0, n => print(n) }", 3),
+    ] {
+        let emitted = Script::new(source).capture("x", Value::Null).code(DECIDING);
+        assert_eq!(
+            count_of_kind(&emitted, &Bytecode::LoadConst(0)),
+            loads,
+            "{source:?} loads `[5]` {loads} times: {emitted:?}"
+        );
+    }
+    assert_eq!(
+        Script::new("match [5] { 1 => 0, n => print(n) }").printed(),
+        ["[ 5 ]"]
+    );
+}
+
+#[test]
+fn an_arm_known_to_match_clears_its_locals_after_its_result() {
+    assert_lambda_clears(
+        r"
+        fn v -> [match [5] {
+            [a] => [a, v],
+            _ => 0,
+        }]
+        ",
+        DECIDING,
+        &[&["a"]],
+    );
+}
+
+#[test]
+fn an_undecided_arm_keeps_the_target_for_the_arm_known_to_match() {
+    // The first arm's guard is decided at runtime, so the target stays on the
+    // stack for it; the catch-all, known to match, drops it and binds `n`
+    // without a test. The arm between can never match.
+    let source = "match 5 { n if: x => n, 1 => 0, n => n + 2 }";
+    let emitted = Script::new(source).capture("x", Value::Null).code(DECIDING);
+    assert_eq!(tries(&emitted), [1; 4], "{emitted:?}");
+    assert_eq!(emitted.count(&Bytecode::PushInt(0)), 0, "{emitted:?}");
+    assert_eq!(emitted.count(&Bytecode::PushInt(7)), 1, "{emitted:?}");
+    assert_eq!(emitted.count(&Bytecode::ProduceError), 0, "{emitted:?}");
+    for (x, expected) in [(true, 5), (false, 7)] {
+        assert_eq!(
+            Script::new(source).capture("x", Value::Bool(x)).run(),
+            Value::Int(expected),
+            "with `x` {x}"
+        );
+    }
+}
+
+#[test]
+fn an_arm_whose_pattern_uses_runtime_input_is_left_undecided() {
+    let source = "match 5 { (x) => 0, n => n + 1 }";
+    let emitted = Script::new(source).capture("x", Value::Null).code(DECIDING);
+    assert_eq!(tries(&emitted), [1; 4], "{emitted:?}");
+    assert_eq!(emitted.count(&Bytecode::PushInt(6)), 1, "{emitted:?}");
+    for (x, expected) in [(5, 0), (1, 6)] {
+        assert_eq!(
+            Script::new(source).capture("x", Value::Int(x)).run(),
+            Value::Int(expected),
+            "with `x` {x}"
+        );
+    }
+}
+
+#[test]
+fn an_undecided_match_loses_no_fold_in_its_arms() {
+    // `sq(3)` folds within its arm whether or not the match is decided.
+    for (source, options) in [
+        ("match x { n => n + sq(3) }", DECIDING),
+        (
+            "match 5 { 1 => print(1), n => n + sq(3) }",
+            FOLD.with(Optimization::ConstantPropagate, true),
+        ),
+        ("match 5 { n if: x => n + sq(3), _ => 0 }", DECIDING),
+    ] {
+        let source = format!("defn sq(v) -> v * v\n{source}");
+        let emitted = Script::new(&source).capture("x", Value::Null).code(options);
+        assert_eq!(
+            emitted.count(&Bytecode::Call(1)),
+            0,
+            "{source:?} calls no `sq`: {emitted:?}"
+        );
+    }
+}
+
+#[test]
+fn a_constant_targets_left_out_arms_are_still_checked() {
+    assert_compile_errors(&[
+        (
+            "match 5 { [a] => missing, _ => 1 }",
+            "`missing` is not defined",
+        ),
+        ("match 5 { n => n, [a] => missing }", "is never reached"),
+        (
+            "match 5 { 5 => 0, [a] => missing }",
+            "`missing` is not defined",
+        ),
+    ]);
 }
 
 // --- Releasing the arms' locals ---

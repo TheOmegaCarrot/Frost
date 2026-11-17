@@ -29,7 +29,9 @@ use std::sync::Arc;
 
 use crate::bytecode::{Bytecode, CompiledFunction};
 use crate::compile::lower::assemble::{AssemblyOptions, assemble_code};
-use crate::compile::lower::{ExprFragment, FunctionBuilder, Ir, LocalId, Op, UNEMITTED, code_span};
+use crate::compile::lower::{
+    ExprFragment, FunctionBuilder, Ir, JumpType, Label, LocalId, Op, UNEMITTED, code_span,
+};
 use crate::core::find;
 use crate::vm::to_operand;
 use crate::{Arity, IdleVm, MapKey, Value, ValueMap, Vm, VmFactory, VmRuntimeConfiguration};
@@ -86,6 +88,14 @@ impl FoldVm {
         *self.parked.borrow_mut() = Some(idle);
         value
     }
+}
+
+/// What trying a pattern on a compile-time-known value found.
+pub(super) enum KnownMatch {
+    /// The pattern matches, binding its names, in order, to these values.
+    Matches(Vec<Value>),
+    /// The pattern does not match.
+    Fails,
 }
 
 /// The optimal op for a known [`Value`]: an inline push for a scalar, a
@@ -226,6 +236,44 @@ impl FunctionBuilder<'_> {
             .as_array()
             .expect("the fragment's value is the Array of its bindings");
         Some(values.as_slice().to_vec())
+    }
+
+    /// Try `pattern`, `( x -- )` code whose mismatches jump to `fail`, on the
+    /// value of `target`, foldable `( -- x )` code, binding `bound`. `None` if
+    /// either errors.
+    pub(super) fn match_known(
+        &mut self,
+        target: &[Ir],
+        pattern: &[Ir],
+        fail: Label,
+        bound: &[LocalId],
+    ) -> Option<KnownMatch> {
+        let end = self.next_label();
+        let at = |op: Op| op.at(UNEMITTED);
+        let code = [at(Op::Ready(Bytecode::MarkStack))]
+            .into_iter()
+            .chain(target.iter().cloned())
+            .chain(pattern.iter().cloned())
+            .chain([at(Op::Ready(Bytecode::DropMark))])
+            .chain(bound.iter().map(|id| at(Op::LoadLocal(*id))))
+            .chain([
+                at(Op::Ready(Bytecode::MakeArray(to_operand(bound.len())))),
+                at(Op::Jump {
+                    kind: JumpType::Unconditional,
+                    label: end,
+                }),
+                at(Op::Label(fail)),
+                at(Op::Ready(Bytecode::RewindToMark)),
+                at(Op::Ready(Bytecode::PushNull)),
+                at(Op::Label(end)),
+            ])
+            .collect();
+        // A match leaves the Array of its bindings, a mismatch Null.
+        let value = self.evaluate(code)?;
+        Some(match value.as_array() {
+            Some(values) => KnownMatch::Matches(values.as_slice().to_vec()),
+            None => KnownMatch::Fails,
+        })
     }
 
     /// Apply the folding rule (see the module doc) to one node's children: if any

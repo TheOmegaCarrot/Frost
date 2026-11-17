@@ -32,7 +32,7 @@ use crate::compile::{
     Diagnostic, Diagnostics,
     lower::{
         ConstKeyOp, FunctionBuilder, Ir, JumpType, Label, LocalId, Op, Position, debug_span,
-        fold::constant_key_of,
+        fold::{constant_key_of, constant_of, value_to_op},
         globals::global_slot,
         locals::{AllocationPoint, LocalInfo, LocalKind, LocalRun},
         lowered_pattern::{LoweredPattern, pattern_comparand_of, pattern_key_of},
@@ -49,6 +49,10 @@ pub(super) struct PatternFragment {
     /// Whether the pattern uses no runtime input, so code made of it and a
     /// foldable value may fold as a whole.
     pub(super) foldable: bool,
+    /// Whether a value the pattern compares against, or a key it looks up, is
+    /// computed rather than a constant, so knowing it at compile time takes
+    /// evaluating that computation: a fold.
+    pub(super) computed: bool,
     /// The pattern as a `MatchPattern` operand, if it can be one.
     pub(super) match_pattern: Option<LoweredPattern>,
 }
@@ -196,6 +200,7 @@ impl FunctionBuilder<'_> {
                 Ok(PatternFragment {
                     code,
                     foldable: true,
+                    computed: false,
                     match_pattern: Some(CompiledPattern::Binding { types, local }),
                 })
             }
@@ -208,6 +213,7 @@ impl FunctionBuilder<'_> {
                         .map(CompiledPattern::Value);
                 let source = self.source;
                 let foldable = value.foldable;
+                let computed = constant_of(&value.code).is_none();
                 let code = self.check(
                     value
                         .code
@@ -220,6 +226,7 @@ impl FunctionBuilder<'_> {
                 Ok(PatternFragment {
                     code,
                     foldable,
+                    computed,
                     match_pattern,
                 })
             }
@@ -303,11 +310,13 @@ impl FunctionBuilder<'_> {
         }
         code.extend(self.array_layout(elements.len(), rest.is_some(), ctx.mismatch, span));
         let mut foldable = true;
+        let mut computed = false;
         let mut match_elements = Vec::new();
         for element in elements {
             let part = self.compile_pattern(element, ctx)?;
             code.extend(part.code);
             foldable &= part.foldable;
+            computed |= part.computed;
             match_elements.push(part.match_pattern);
         }
         let length = match rest {
@@ -324,6 +333,7 @@ impl FunctionBuilder<'_> {
         Ok(PatternFragment {
             code,
             foldable,
+            computed,
             match_pattern: match_elements
                 .into_iter()
                 .collect::<Option<_>>()
@@ -386,6 +396,7 @@ impl FunctionBuilder<'_> {
             || "expected a Map".to_string(),
         );
         let mut foldable = true;
+        let mut computed = false;
         let mut match_entries = Vec::new();
 
         for entry in entries {
@@ -393,6 +404,7 @@ impl FunctionBuilder<'_> {
             // is looked up directly.
             let key = self.compile_expression(&entry.node.key, Position::Inner)?;
             let key = self.fold_if_eligible(key);
+            computed |= constant_of(&key.code).is_none();
             let match_key = pattern_key_of(&key.code, &self.allocated_in_pattern(ctx.bindings));
             let lookup = key_lookup(key.code);
             let part = &entry.node.pattern;
@@ -403,6 +415,7 @@ impl FunctionBuilder<'_> {
                 self.required_entry(lookup, part, ctx, entry_span)?
             };
             foldable &= key.foldable && fragment.foldable;
+            computed |= fragment.computed;
             code.extend(fragment.code);
             match_entries.push(match_key.zip(fragment.match_pattern).map(|(key, pattern)| {
                 PatternEntry {
@@ -424,6 +437,7 @@ impl FunctionBuilder<'_> {
         Ok(PatternFragment {
             code,
             foldable,
+            computed,
             match_pattern: match_entries
                 .into_iter()
                 .collect::<Option<_>>()
@@ -525,6 +539,7 @@ impl FunctionBuilder<'_> {
         let mut first_bound = Vec::new();
         let mut code = Vec::new();
         let mut foldable = true;
+        let mut computed = false;
         let mut match_branches = Vec::new();
         // An alternative nested in the last branch of another raises as that
         // outer one.
@@ -558,6 +573,7 @@ impl FunctionBuilder<'_> {
                 fragment
             };
             foldable &= fragment.foldable;
+            computed |= fragment.computed;
             match_branches.push(fragment.match_pattern);
 
             // Trying the branch is the branch's own.
@@ -595,6 +611,7 @@ impl FunctionBuilder<'_> {
         Ok(PatternFragment {
             code,
             foldable,
+            computed,
             match_pattern: match_branches
                 .into_iter()
                 .collect::<Option<_>>()
@@ -862,6 +879,24 @@ pub(super) fn cannot_fail(pattern: &Pattern) -> bool {
         Pattern::Alternative(branches) => branches.iter().any(|branch| cannot_fail(&branch.node)),
         Pattern::Value(_) | Pattern::Array { .. } | Pattern::Map { .. } => false,
     }
+}
+
+/// `( -- )`: bind each of `bound` to its compile-time-known value, in order,
+/// as a matched pattern would. Each value is derived from the source at
+/// `matched`, each store from its binding. `None` if any value cannot be a
+/// constant.
+pub(super) fn bind_known(values: &[Value], bound: &[Bound], matched: Span) -> Option<Vec<Ir>> {
+    values
+        .iter()
+        .zip(bound)
+        .map(|(value, bound)| {
+            Some([
+                value_to_op(value.clone())?.at(matched),
+                Op::DefLocal(bound.id).at(debug_span(bound.span)),
+            ])
+        })
+        .collect::<Option<Vec<_>>>()
+        .map(|binds| binds.into_iter().flatten().collect())
 }
 
 /// What a value pattern at `pattern` expected, quoting its source: the value of
