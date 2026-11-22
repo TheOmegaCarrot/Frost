@@ -1,0 +1,7 @@
+# Nothing after `fatal` runs: the division that would raise a different error
+# is never reached.
+#= {raises: 'stop here', inputs: {msg: 'stop here'}}
+def {msg} = import('inputs')
+fatal(msg)
+print('unreachable')
+1 / 0

@@ -509,7 +509,7 @@
 //        7  JumpIfFalse   L0   ; +12
 //        8  LoadGlobal    113  ; error
 //        9  LoadConst     0    ; "Function mutual requires Function as...
-//       10  LoadGlobal    127  ; debug_dump
+//       10  LoadGlobal    128  ; debug_dump
 //       11  ConsumeLocal  1    ; key
 //       12  Call          1
 //       13  LoadConst     1    ; " of argument 1, got "
@@ -1197,7 +1197,7 @@ pub(super) fn functions() -> Value {
                         map([(string("JumpIfFalse"), int(12))]),
                         map([(string("LoadGlobal"), int(113))]),
                         map([(string("LoadConst"), int(0))]),
-                        map([(string("LoadGlobal"), int(127))]),
+                        map([(string("LoadGlobal"), int(128))]),
                         map([(string("ConsumeLocal"), int(1))]),
                         map([(string("Call"), int(1))]),
                         map([(string("LoadConst"), int(1))]),

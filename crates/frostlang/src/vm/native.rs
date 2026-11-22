@@ -139,8 +139,10 @@ impl<'a> NativeCtx<'a> {
     /// A native that works for a long time without calling back into Frost can check
     /// this to stop early. The run is aborting with
     /// [`Cancelled`](AbortReason::Cancelled) as soon as its
-    /// [`CancelToken`](crate::CancelToken) is cancelled, and with
-    /// [`FuelExhausted`](AbortReason::FuelExhausted) once a call has exceeded its fuel.
+    /// [`CancelToken`](crate::CancelToken) is cancelled, with
+    /// [`FuelExhausted`](AbortReason::FuelExhausted) once a call has exceeded its fuel,
+    /// and with [`Fatal`](AbortReason::Fatal) once a function the native called
+    /// back into has called `fatal`.
     /// Once this returns a reason, the run fails with that reason
     /// (see [`RunError::kind`](crate::RunError::kind)),
     /// and anything the native returns is ignored.

@@ -131,6 +131,10 @@ pub enum AbortReason {
     FuelExhausted,
     /// The run's [`CancelToken`](super::CancelToken) was cancelled.
     Cancelled,
+    /// The program called `fatal(value)`: it declared it cannot continue.
+    /// `value`, of any type, is the [`RunError::error`]'s
+    /// [value](crate::FrostError::into_value), for the host to interpret.
+    Fatal,
 }
 
 /// A warm [`Vm`] with no program loaded: its allocations are kept for reuse,

@@ -386,13 +386,13 @@ impl Repl {
                 Ok((tail, exports))
             }
             Err(failure) => {
-                let cancelled = failure.kind() == RunErrorKind::Aborted(AbortReason::Cancelled);
+                let kind = failure.kind();
                 let (error, idle_vm) = failure.into_parts();
                 self.idle_vm = Some(idle_vm);
-                Err(if cancelled {
-                    ReplError::Cancelled(error)
-                } else {
-                    ReplError::Run(error)
+                Err(match kind {
+                    RunErrorKind::Aborted(AbortReason::Cancelled) => ReplError::Cancelled(error),
+                    RunErrorKind::Aborted(AbortReason::Fatal) => ReplError::Fatal(error),
+                    _ => ReplError::Run(error),
                 })
             }
         }
@@ -534,6 +534,11 @@ pub enum ReplError {
     /// The error says where it was running when it stopped.
     #[error("Error: {}", .0.with_backtrace())]
     Cancelled(#[source] FrostError),
+    /// The input called `fatal(value)`. The error's
+    /// [value](FrostError::into_value) is `value`; it shows as `value`'s
+    /// [message](FrostError::message).
+    #[error("Fatal: {}", .0.message())]
+    Fatal(#[source] FrostError),
     /// The input was a [metacommand](Repl#metacommands), which failed.
     #[error("Error: {0}")]
     Metacommand(#[source] MetacommandError),

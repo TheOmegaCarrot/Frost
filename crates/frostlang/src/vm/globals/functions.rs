@@ -5,7 +5,10 @@ use std::sync::Arc;
 use crate::bytecode::{Bytecode, CompiledFunction, FormatVersion};
 use crate::core::FrostResult;
 use crate::native::{Function, Optional, caught};
-use crate::{Arity, Closure, FrostArray, FrostType, NativeCtx, Param, Params, Value, frost_fn};
+use crate::{
+    AbortReason, Arity, Closure, FrostArray, FrostError, FrostType, NativeCtx, Param, Params,
+    Value, frost_fn,
+};
 
 /// `call(f)` / `call(f, args)`: invoke `f`, spreading the elements of `args` (or
 /// no args) as a tail call. A hand-rolled `Between(1, 2)` closure over `DynTailCall`.
@@ -91,6 +94,15 @@ pub(super) fn error_global() -> Value {
         Arity::Exact(1),
         vec![Bytecode::DropBelow(1), Bytecode::ProduceError],
     )
+}
+
+/// `fatal(value)`: end the run uncatchably, with `value` for the host to
+/// interpret (see [`AbortReason::Fatal`]).
+#[frost_fn]
+pub(super) fn fatal(#[frost(ctx)] ctx: &mut NativeCtx<'_>, value: Value) -> FrostResult {
+    Err(ctx
+        .vm
+        .abort_with(AbortReason::Fatal, FrostError::from_value(value)))
 }
 
 #[frost_fn]

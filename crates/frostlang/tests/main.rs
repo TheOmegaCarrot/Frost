@@ -32,6 +32,7 @@ mod effects;
 mod embedding;
 mod emitted_debug_info;
 mod error;
+mod fatal;
 mod folded_constants;
 mod format_strings;
 mod frost_array;

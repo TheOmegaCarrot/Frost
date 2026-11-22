@@ -1,0 +1,5 @@
+# `try_call` cannot catch `fatal`, even when it calls `fatal` directly: the run
+# ends, so the script never reaches its tail.
+#= {raises: 'not catchable'}
+def r = try_call(fatal, ['not catchable'])
+[r.ok, 'unreachable']

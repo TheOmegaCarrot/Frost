@@ -1510,7 +1510,7 @@ fn folds(args: &[&str]) -> bool {
     match ran.exit {
         Exit::Success => true,
         Exit::ScriptFailed => false,
-        Exit::UsageError => panic!("{args:?}: {ran:?}"),
+        Exit::UsageError | Exit::Fatal(_) => panic!("{args:?}: {ran:?}"),
     }
 }
 
@@ -1750,6 +1750,66 @@ fn exit_statuses_are_conventional() {
     assert_eq!(Exit::Success.code(), 0);
     assert_eq!(Exit::ScriptFailed.code(), 1);
     assert_eq!(Exit::UsageError.code(), 2);
+    assert_eq!(Exit::Fatal(Value::from("x")).code(), 1);
+}
+
+// --- A script ending with `fatal` ---
+
+/// Prints, then ends with `fatal`, then would print again.
+const FATAL: &str = "print('before')\nfatal({message: 'stop', code: 3})\nprint('after')";
+
+/// The value [`FATAL`] gives `fatal`.
+fn fatal_value() -> Value {
+    Value::map([("code", Value::Int(3)), ("message", Value::from("stop"))])
+}
+
+#[test]
+fn a_fatal_script_ends_with_its_value_unprinted() {
+    let path = script("fatal.frst", FATAL);
+    for args in [
+        vec![path.as_str()],
+        vec!["run", path.as_str()],
+        vec!["-e", FATAL],
+    ] {
+        let ran = run(&args);
+        assert_eq!(ran.exit, Exit::Fatal(fatal_value()), "{args:?}: {ran:?}");
+        assert_eq!(
+            ran.printed(),
+            ["before"],
+            "nothing runs after `fatal`: {args:?}"
+        );
+        assert_eq!(ran.stderr, "", "the caller decides what to print: {args:?}");
+    }
+}
+
+#[test]
+fn a_fatal_script_on_standard_input_ends_with_its_value() {
+    for args in [vec!["-"], vec![]] {
+        let ran = run_with_stdin(FATAL, &args);
+        assert_eq!(ran.exit, Exit::Fatal(fatal_value()), "{args:?}: {ran:?}");
+        assert_eq!(ran.printed(), ["before"], "{args:?}");
+        assert_eq!(ran.stderr, "", "{args:?}");
+    }
+}
+
+#[test]
+fn a_fatal_image_ends_with_its_value() {
+    let image = image("fatal-image", FATAL, &[]);
+    let ran = run(&["run", &image]);
+    assert_eq!(ran.exit, Exit::Fatal(fatal_value()), "{ran:?}");
+    assert_eq!(ran.printed(), ["before"]);
+}
+
+#[test]
+fn an_error_stays_an_error_and_try_call_cannot_catch_fatal() {
+    // An ordinary error stays one, reported with its trace.
+    let ran = run(&["-e", "error('plain')"]);
+    assert_eq!(ran.exit, Exit::ScriptFailed, "{ran:?}");
+    assert!(ran.stderr.contains("plain"), "{ran:?}");
+    // `try_call` cannot catch `fatal`.
+    let ran = run(&["-e", "try_call(fatal, ['x'])\nprint('after')"]);
+    assert_eq!(ran.exit, Exit::Fatal(Value::from("x")), "{ran:?}");
+    assert!(ran.printed().is_empty(), "{ran:?}");
 }
 
 // --- A script's arguments ---

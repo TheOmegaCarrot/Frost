@@ -1,0 +1,4 @@
+# A non-String payload's message is its debug form, so the Map's contents
+# appear in it.
+#= {raises: ['code', '42']}
+fatal({code: 42})

@@ -1,0 +1,3 @@
+# `fatal` ends the run, and the error carries its String argument as the message.
+#= {raises: 'cannot continue'}
+fatal('cannot continue')

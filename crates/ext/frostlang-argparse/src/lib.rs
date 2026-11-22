@@ -59,12 +59,14 @@ use crate::spec::Spec;
 /// match argparse.parse(args, spec) {
 ///     {value} => greet(value),
 ///     {help: text} | {version: text} => print(text),
-///     {error: message} => error(message),
+///     {error: message} => fatal({message, code: 2}),
 /// }
 /// ```
 ///
 /// Run as `greet -s -g Hi Ada`, it prints `HI, ADA!`; as `greet --help`, its
-/// generated help.
+/// generated help. Run as `greet`, missing `who`, it ends with `fatal`: the
+/// `frost` command prints the message, as given, to standard error, and exits
+/// with status 2, the usual status for a usage error.
 ///
 /// A spec that is not valid is an error.
 ///
@@ -153,7 +155,7 @@ use crate::spec::Spec;
 ///     {value: {command: {add}}} => print($'adding ${add.item} at ${add.priority} priority'),
 ///     {value: {command: {done}}} => each(done.ids, fn id -> print($'done: ${id}')),
 ///     {help: text} | {version: text} => print(text),
-///     {error: message} => error(message),
+///     {error: message} => fatal({message, code: 2}),
 /// }
 /// ```
 ///

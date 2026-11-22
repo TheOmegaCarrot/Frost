@@ -162,6 +162,33 @@ fn an_input_that_does_not_compile_binds_nothing() {
 }
 
 #[test]
+fn an_input_calling_fatal_fails_as_fatal_and_the_session_carries_on() {
+    let mut repl = Repl::new();
+    repl.evaluate("def x = 1").unwrap();
+    for (input, value, shown) in [
+        (
+            "def x = 2\nfatal('stop')",
+            Value::from("stop"),
+            "Fatal: stop",
+        ),
+        (
+            "try_call(fatal, [{code: 2}])",
+            Value::map([("code", Value::Int(2))]),
+            r#"Fatal: { ["code"]: 2 }"#,
+        ),
+    ] {
+        let error = repl.evaluate(input).expect_err("`fatal` fails the input");
+        assert_eq!(error.to_string(), shown, "shown without a trace: {input:?}");
+        let ReplError::Fatal(error) = error else {
+            panic!("{input:?} should fail as fatal, but gave {error:?}");
+        };
+        assert_eq!(error.into_value(), value, "{input:?}");
+    }
+    // Like any failed input, it bound nothing, and the session goes on.
+    assert_eq!(repl.evaluate("x + 1").unwrap(), Value::Int(2));
+}
+
+#[test]
 fn an_input_that_raises_binds_nothing_even_what_it_bound_before_raising() {
     let mut repl = Repl::new();
     repl.evaluate("def x = 1").unwrap();

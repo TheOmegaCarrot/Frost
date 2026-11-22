@@ -1,0 +1,6 @@
+# A wrong arity is an ordinary error, not a fatal one: `try_call` reports it
+# as a failure, and the run continues.
+#= {result: [false, false]}
+def none = try_call(fatal, [])
+def two = try_call(fatal, [1, 2])
+[none.ok, two.ok]

@@ -91,9 +91,11 @@ impl Repl {
                 self.bindings.insert(name.to_owned(), module);
                 Ok(())
             }
-            Err(ReplError::Run(error) | ReplError::Cancelled(error)) => Err(error),
+            Err(ReplError::Run(error) | ReplError::Cancelled(error) | ReplError::Fatal(error)) => {
+                Err(error)
+            }
             Err(other) => {
-                unreachable!("a run fails only by raising or by being cancelled: {other}")
+                unreachable!("a run fails only by raising, cancellation, or `fatal`: {other}")
             }
         }
     }

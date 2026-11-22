@@ -79,7 +79,8 @@ macro_rules! define_globals {
 // The `[Pure]`/`[Impure]` tag is each global's compile-time-fold eligibility; see `Purity`.
 // Default to `Pure`; `Impure` marks the only globals with an effect or context of their own:
 // the I/O of print/mprint, mutable_cell's mutable state,
-// import (the gateway to every other effect), and imported (which reads the running Vm).
+// import (the gateway to every other effect), imported (which reads the running Vm),
+// and fatal (which aborts the running Vm).
 // A higher-order global stays `Pure` (an impure callback stops its own fold),
 // and so does a raising one (error/assert): a fold that reaches a raise just abandons.
 define_globals! {
@@ -208,6 +209,7 @@ define_globals! {
     "call"                  [Pure]   => call_global(),
     "try_call"              [Pure]   => try_call_frost().build(),
     "error"                 [Pure]   => error_global(),
+    "fatal"                 [Impure] => fatal_frost().build(),
     "and_then"              [Pure]   => and_then_frost().build(),
     "or_else"               [Pure]   => or_else_frost().build(),
     "inv"                   [Pure]   => inv_global(),

@@ -48,8 +48,8 @@ use frostlang::compile::{
 };
 use frostlang::image::{self, ImageError};
 use frostlang::{
-    FrostError, Importer, MissingCaptures, RunError, Value, Vm, VmRuntimeConfiguration,
-    WellFormedProgram,
+    AbortReason, FrostError, Importer, MissingCaptures, RunErrorKind, Value, Vm,
+    VmRuntimeConfiguration, WellFormedProgram,
 };
 use frostlang_parse::parse_program_with_limits;
 use frostlang_repl::{Frontend, LineFrontend, Repl, check_name};
@@ -333,7 +333,7 @@ impl<W: Write> Write for Shared<W> {
 
 /// How a [`Driver`] run ended, and so the process's exit status.
 /// Return it from `main` to exit with that status.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum Exit {
     /// Everything asked for was done. Exit status 0.
     Success,
@@ -343,21 +343,38 @@ pub enum Exit {
     /// read, a file could not be written or loaded as an image; or an
     /// interactive session's frontend failed. Exit status 2.
     UsageError,
+    /// The script called `fatal` with this value, of any type, for the caller
+    /// to interpret and report.
+    Fatal(Value),
 }
 
 impl Exit {
-    /// The process exit status this stands for.
-    pub fn code(self) -> u8 {
+    /// The process exit status this stands for: 1 for a `Fatal`, whose caller
+    /// may choose another from its value.
+    pub fn code(&self) -> u8 {
         match self {
             Exit::Success => 0,
-            Exit::ScriptFailed => 1,
+            Exit::ScriptFailed | Exit::Fatal(_) => 1,
             Exit::UsageError => 2,
         }
     }
 }
 
+/// Exits with [`code`](Exit::code), first printing a `Fatal`'s value to
+/// standard error: a String as given, any other value in its debug form.
 impl Termination for Exit {
     fn report(self) -> ExitCode {
+        if let Exit::Fatal(value) = &self {
+            let message = match value {
+                Value::String(text) => text.as_str().to_string(),
+                other => other.to_debug_string(),
+            };
+            if message.ends_with('\n') {
+                eprint!("{message}");
+            } else {
+                eprintln!("{message}");
+            }
+        }
         ExitCode::from(self.code())
     }
 }
@@ -587,11 +604,13 @@ impl Session<'_> {
             .configuration(self.configuration.clone())
             .with_importer(Arc::clone(self.importer))
             .build(closure)
-            .run()
-            .map_err(RunError::into_error);
+            .run();
         match outcome {
             Ok(_) => Exit::Success,
-            Err(error) => self.report_error(&error),
+            Err(failure) if failure.kind() == RunErrorKind::Aborted(AbortReason::Fatal) => {
+                Exit::Fatal(failure.into_error().into_value())
+            }
+            Err(failure) => self.report_error(&failure.into_error()),
         }
     }
 

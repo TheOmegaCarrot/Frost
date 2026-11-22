@@ -1,0 +1,6 @@
+# `fatal` inside a `map` callback wrapped in `try_call` still ends the run,
+# rather than being reported as a failure.
+#= {raises: 'bad element', inputs: {xs: [1, 2, 3]}}
+def {xs} = import('inputs')
+def r = try_call(fn -> map(xs, fn x -> if x == 2: fatal('bad element') else: x), [])
+[r.ok, 'unreachable']
