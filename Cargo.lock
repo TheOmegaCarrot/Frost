@@ -997,6 +997,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "frostlang-argparse"
+version = "0.0.1"
+dependencies = [
+ "clap",
+ "fastrand",
+ "frostlang",
+ "serde",
+]
+
+[[package]]
 name = "frostlang-astviz"
 version = "0.0.1"
 dependencies = [
@@ -1025,6 +1035,7 @@ name = "frostlang-cli"
 version = "0.0.1"
 dependencies = [
  "frostlang",
+ "frostlang-argparse",
  "frostlang-datetime",
  "frostlang-driver",
  "frostlang-formats",

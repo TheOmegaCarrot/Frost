@@ -64,6 +64,7 @@ fn importer(script: Option<&Path>) -> Arc<Importer> {
         .and_then(|importer| importer.with_extension(frostlang_formats::extension(Formats::all())))
         .and_then(|importer| importer.with_extension(frostlang_datetime::extension()))
         .and_then(|importer| importer.with_extension(frostlang_http::extension(http)))
+        .and_then(|importer| importer.with_extension(frostlang_argparse::extension()))
         .expect("each extension has its own name");
     match FsResolver::new(roots) {
         Ok(resolver) => importer.append_resolver(Arc::new(

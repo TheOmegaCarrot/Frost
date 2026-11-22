@@ -1,0 +1,187 @@
+//! Command-line argument parsing for Frost scripts: flags, options,
+//! positional arguments, and subcommands, described by a spec, with generated
+//! help.
+//!
+//! A host installs the extension with [`extension`], and scripts import it as
+//! `ext.argparse`:
+//!
+//! ```
+//! use frostlang::ImporterBuilder;
+//!
+//! let importer = ImporterBuilder::new()
+//!     .with_extension(frostlang_argparse::extension())
+//!     .expect("no other extension is named `argparse`")
+//!     .build();
+//! ```
+
+mod command;
+mod spec;
+
+use std::path::Path;
+
+use clap::error::ErrorKind;
+use frostlang::native::{ArgSite, FromArg};
+use frostlang::{Extension, FrostError, FrostType, MapKey, TypeSet, Value, frost_fn};
+
+use crate::spec::Spec;
+
+/// The `ext.argparse` extension.
+///
+/// `parse(args, spec)` parses the command line `args`, an Array of Strings
+/// whose first is the program's name, as the Map `spec` describes. It returns
+/// a Map of one key, saying how the parse went:
+///
+/// - `{value}`: the command line is valid, and `value` is a Map of what it
+///   gives each argument, by name.
+/// - `{help}` or `{version}`: the command line asked for help or the version,
+///   which this String holds, for the script to print.
+/// - `{error}`: the command line is invalid. This String says why, for the
+///   script to show its user, and how to get help.
+///
+/// ```frost
+/// match import('ext.argparse').parse(args, spec) {
+///     {value} => main(value),
+///     {help: text} | {version: text} => print(text),
+///     {error: message} => error(message),
+/// }
+/// ```
+///
+/// A spec that is not valid is an error.
+///
+/// # The spec
+///
+/// Every key is optional.
+///
+/// - `name`: the program's name, in help and errors. Without it, the name is
+///   the last component of the path in the first of `args`.
+/// - `description`: a line or more for the top of the help.
+/// - `version`: what `--version` (or `-V`) shows, after the name.
+/// - `flags`: a Map of flags by name. A flag named `dry_run` is given as
+///   `--dry-run`. Each is a Map of:
+///   - `short`: one ASCII letter, given after `-`.
+///   - `description`: a line for the help.
+/// - `options`: a Map of options by name, each taking a value, and given as a
+///   flag is. Each is a Map of `short` and `description`, as a flag's, and:
+///   - `required`: whether the option must be given. Without it, it need not.
+///   - `default`: the value when the option is not given. Not with
+///     `required: true` or `repeatable`.
+///   - `repeatable`: whether the option may be given more than once.
+///   - `choices`: an Array of the only values it accepts.
+///   - `value_name`: what the help calls its value.
+/// - `positionals`: an Array of positional arguments, in order. Each is a Map
+///   of:
+///   - `name`: its name (required).
+///   - `description`: a line for the help.
+///   - `required`: whether it must be given. Without it, it must unless it
+///     has a `default`. A required one cannot follow one that is not.
+///   - `default`: the value when it is not given. Not with `required: true`
+///     or `many`.
+///   - `many`: whether it takes every remaining value. Only the last may.
+///   - `choices`: an Array of the only values it accepts.
+/// - `commands`: a Map of subcommands by name, each a spec of its own, without
+///   `name`. A command with `commands` takes no `positionals`, and its command
+///   line must choose one of them. Commands nest at most 32 deep.
+///
+/// A flag's or option's name is ASCII letters, digits, and `_`, not starting
+/// with `_`. A positional argument's or command's is ASCII letters, digits, `-`, and
+/// `_`, not starting with `-`. No two of a command's arguments share a name or
+/// a `short`, though a subcommand's may reuse its parent's. Every command
+/// builds in `--help` and `-h`, and one with a `version` builds in
+/// `--version` and `-V`, so the spec cannot also use them. A command with
+/// `commands` cannot name a flag or option `command`, the key of its choice.
+///
+/// # The value
+///
+/// The `value` Map holds every argument the spec gives, whether or not the
+/// command line gave it:
+///
+/// - A flag is `true` if given, else `false`.
+/// - An option or positional argument is its String value: its `default` or
+///   Null when not given.
+/// - A `repeatable` option or `many` positional argument is an Array of its
+///   String values, in order, which may be empty.
+/// - With `commands`, `command` is a Map of one key, the chosen command's
+///   name, whose value is that command's own `value` Map.
+///
+/// Values are always Strings: a script converts them as it needs, such as
+/// with `to_int`.
+///
+/// # The command line
+///
+/// An option's value follows it as `--name value`, `--name=value`, `-n value`,
+/// or `-nvalue`. Short flags combine, as `-abc`, and the last may be an option
+/// taking the next value. A value may be a negative number. After `--`, every
+/// item is a positional argument, as is `-` alone.
+pub fn extension() -> Extension {
+    Extension::builder("argparse")
+        .function(parse_frost())
+        .build()
+}
+
+/// `parse(args, spec)`: how the command line `args` parses as `spec` says.
+#[frost_fn]
+fn parse(args: CommandLine, spec: Spec) -> Value {
+    let CommandLine(args) = args;
+    let program = spec.name.clone().unwrap_or_else(|| program_name(&args[0]));
+    let command = command::build(&program, &spec.command).bin_name(program);
+    let outcome = match command.try_get_matches_from(args) {
+        Ok(matches) => ("value", command::read(&spec.command, &matches)),
+        Err(error) => error_outcome(&error),
+    };
+    string_keyed_map([outcome])
+}
+
+/// The outcome for `error`, which is not always a failure: clap reports a
+/// request for help or the version as an error too.
+fn error_outcome(error: &clap::Error) -> (&'static str, Value) {
+    let text = trim_trailing_whitespace(&error.render().to_string());
+    match error.kind() {
+        ErrorKind::DisplayHelp => ("help", text.into()),
+        ErrorKind::DisplayVersion => ("version", text.into()),
+        // The script decides how to present the error, so the label clap
+        // starts it with is dropped.
+        _ => (
+            "error",
+            text.strip_prefix("error: ").unwrap_or(&text).into(),
+        ),
+    }
+}
+
+/// `text` without the trailing whitespace clap leaves where a column is
+/// empty, or at the end.
+fn trim_trailing_whitespace(text: &str) -> String {
+    let lines: Vec<&str> = text.lines().map(str::trim_end).collect();
+    lines.join("\n").trim_end().to_string()
+}
+
+/// The Map of `entries`, each keyed by a String.
+pub(crate) fn string_keyed_map<'a>(entries: impl IntoIterator<Item = (&'a str, Value)>) -> Value {
+    entries
+        .into_iter()
+        .map(|(key, value)| (MapKey::from(key), value))
+        .collect()
+}
+
+/// The name a program run as `invoked_as` goes by: the last component of its
+/// path, if it has one.
+fn program_name(invoked_as: &str) -> String {
+    Path::new(invoked_as).file_name().map_or_else(
+        || invoked_as.to_string(),
+        |name| name.to_string_lossy().into_owned(),
+    )
+}
+
+/// A command line: the program's name, then its arguments.
+struct CommandLine(Vec<String>);
+
+impl FromArg for CommandLine {
+    const TYPES: TypeSet = FrostType::ARRAY;
+
+    fn from_arg(value: Value, site: &ArgSite<'_>) -> Result<Self, FrostError> {
+        let args = Vec::<String>::from_arg(value, site)?;
+        if args.is_empty() {
+            return Err(site.requires("non-empty, starting with the program's name"));
+        }
+        Ok(CommandLine(args))
+    }
+}

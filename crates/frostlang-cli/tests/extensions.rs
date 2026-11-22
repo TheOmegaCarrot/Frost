@@ -41,6 +41,21 @@ fn uuid_is_installed() {
     assert_eq!(eval(code), "4\n");
 }
 
+#[test]
+fn argparse_is_installed() {
+    // A script's `args` parse: here, just the name `-e`.
+    let code = r"
+        def argparse = import('ext.argparse')
+        print(argparse.parse(args, {flags: {all: {short: 'a'}}}).value.all)
+    ";
+    assert_eq!(eval(code), "false\n");
+    let code = r"
+        def argparse = import('ext.argparse')
+        print(argparse.parse(['prog', '-a'], {flags: {all: {short: 'a'}}}).value.all)
+    ";
+    assert_eq!(eval(code), "true\n");
+}
+
 /// A server on the loopback interface answering one request with `body`, and
 /// its thread, which gives the head of the request it answered.
 pub(crate) fn answer_once(body: &'static str) -> (SocketAddr, JoinHandle<String>) {
