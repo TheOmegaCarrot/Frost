@@ -38,13 +38,33 @@ use crate::spec::Spec;
 /// - `{error}`: the command line is invalid. This String says why, for the
 ///   script to show its user, and how to get help.
 ///
+/// A script matches on the outcome:
+///
 /// ```frost
-/// match import('ext.argparse').parse(args, spec) {
-///     {value} => main(value),
+/// def argparse = import('ext.argparse')
+///
+/// def spec = {
+///     name: 'greet',
+///     description: 'Greet someone',
+///     flags: {shout: {short: 's', description: 'Greet loudly'}},
+///     options: {greeting: {short: 'g', default: 'Hello'}},
+///     positionals: [{name: 'who', description: 'Whom to greet'}],
+/// }
+///
+/// defn greet(options) -> {
+///     def line = $'${options.greeting}, ${options.who}!'
+///     print(if options.shout: to_upper(line) else: line)
+/// }
+///
+/// match argparse.parse(args, spec) {
+///     {value} => greet(value),
 ///     {help: text} | {version: text} => print(text),
 ///     {error: message} => error(message),
 /// }
 /// ```
+///
+/// Run as `greet -s -g Hi Ada`, it prints `HI, ADA!`; as `greet --help`, its
+/// generated help.
 ///
 /// A spec that is not valid is an error.
 ///
@@ -105,6 +125,40 @@ use crate::spec::Spec;
 ///
 /// Values are always Strings: a script converts them as it needs, such as
 /// with `to_int`.
+///
+/// # Subcommands
+///
+/// The chosen command's name is the one key of `command`, so a script
+/// matches on it:
+///
+/// ```frost
+/// def argparse = import('ext.argparse')
+///
+/// def spec = {
+///     name: 'todo',
+///     commands: {
+///         add: {
+///             description: 'Add an item',
+///             options: {priority: {short: 'p', choices: ['low', 'high'], default: 'low'}},
+///             positionals: [{name: 'item'}],
+///         },
+///         done: {
+///             description: 'Mark items done',
+///             positionals: [{name: 'ids', many: true}],
+///         },
+///     },
+/// }
+///
+/// match argparse.parse(args, spec) {
+///     {value: {command: {add}}} => print($'adding ${add.item} at ${add.priority} priority'),
+///     {value: {command: {done}}} => each(done.ids, fn id -> print($'done: ${id}')),
+///     {help: text} | {version: text} => print(text),
+///     {error: message} => error(message),
+/// }
+/// ```
+///
+/// Run as `todo add -p high 'buy milk'`, it prints
+/// `adding buy milk at high priority`; as `todo done 3 4`, a line for each.
 ///
 /// # The command line
 ///
