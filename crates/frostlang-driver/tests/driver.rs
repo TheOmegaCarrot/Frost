@@ -528,7 +528,7 @@ fn an_image_capturing_what_a_run_cannot_supply_is_a_usage_error() {
 
 #[test]
 fn an_image_capturing_only_args_or_nothing_runs() {
-    let path = host_image("image-host-args", "print(args[0])", &["args"]);
+    let path = host_image("image-host-args", "print(args[1])", &["args"]);
     let ran = run(&["run", &path, "an-arg"]);
     assert_eq!(ran.exit, Exit::Success, "{ran:?}");
     assert_eq!(ran.stdout, "an-arg\n", "the image runs with its arguments");
@@ -644,7 +644,11 @@ fn no_arguments_away_from_a_terminal_run_the_script_on_standard_input() {
     assert_eq!(session.ran.exit, Exit::Success, "{session:?}");
     let ran = run_with_stdin("print(1 + 2)\nprint(args)", &[]);
     assert_eq!(ran.exit, Exit::Success, "{ran:?}");
-    assert_eq!(ran.printed(), ["3", "[]"]);
+    assert_eq!(
+        ran.printed(),
+        ["3", r#"[ "-" ]"#],
+        "named `-`, as if by `-`"
+    );
 }
 
 #[test]
@@ -1750,51 +1754,74 @@ fn exit_statuses_are_conventional() {
 
 // --- A script's arguments ---
 
+/// Prints each of a script's `args` on a line of its own, so a test can
+/// compare them without depending on how an Array prints.
+const PRINT_EACH_ARG: &str = "each(args, print)";
+
 #[test]
-fn a_script_gets_the_arguments_after_it_as_args() {
-    let path = script("args.frst", "print(args)");
+fn a_script_gets_its_path_then_the_arguments_after_it_as_args() {
+    let path = script("args.frst", PRINT_EACH_ARG);
     for args in [
         vec![path.as_str(), "a", "b c"],
         vec!["run", path.as_str(), "a", "b c"],
     ] {
         let ran = run(&args);
         assert_eq!(ran.exit, Exit::Success, "{args:?}: {ran:?}");
-        assert_eq!(ran.printed(), [r#"[ "a", "b c" ]"#], "{args:?}");
+        assert_eq!(ran.printed(), [path.as_str(), "a", "b c"], "{args:?}");
     }
 }
 
 #[test]
-fn a_script_given_no_arguments_gets_an_empty_args() {
-    let path = script("no-args.frst", "print(args)");
-    assert_eq!(run(&[&path]).printed(), ["[]"]);
-    assert_eq!(run(&["-e", "print(args)"]).printed(), ["[]"]);
+fn a_scripts_path_in_args_is_as_the_command_line_wrote_it() {
+    let path = PathBuf::from(script("args-as-written.frst", PRINT_EACH_ARG));
+    let (dir, file) = (path.parent().unwrap(), path.file_name().unwrap());
+    // Each names the same file, but neither is the path as `script` gave it.
+    for written in [
+        dir.join(".").join(file),
+        dir.join("..").join(dir.file_name().unwrap()).join(file),
+    ] {
+        let written = written.to_string_lossy().into_owned();
+        let ran = run(&[&written, "x"]);
+        assert_eq!(ran.exit, Exit::Success, "{written}: {ran:?}");
+        assert_eq!(
+            ran.printed(),
+            [written.as_str(), "x"],
+            "the path is kept, not normalized"
+        );
+    }
 }
 
 #[test]
-fn eval_gets_the_arguments_after_it_as_args() {
-    let ran = run(&["-e", "print(args)", "a", "b"]);
+fn a_script_given_no_arguments_gets_only_its_name_in_args() {
+    let path = script("no-args.frst", PRINT_EACH_ARG);
+    assert_eq!(run(&[&path]).printed(), [path.as_str()]);
+    assert_eq!(run(&["-e", PRINT_EACH_ARG]).printed(), ["-e"]);
+}
+
+#[test]
+fn eval_gets_dash_e_then_the_arguments_after_it_as_args() {
+    let ran = run(&["-e", PRINT_EACH_ARG, "a", "b"]);
     assert_eq!(ran.exit, Exit::Success, "{ran:?}");
-    assert_eq!(ran.printed(), [r#"[ "a", "b" ]"#]);
+    assert_eq!(ran.printed(), ["-e", "a", "b"]);
+    // However the command line spelled the option.
+    let ran = run(&["--eval", PRINT_EACH_ARG, "a"]);
+    assert_eq!(ran.exit, Exit::Success, "{ran:?}");
+    assert_eq!(ran.printed(), ["-e", "a"]);
 }
 
 #[test]
 fn everything_after_the_script_is_its_even_what_looks_like_an_option() {
-    let path = script("option-like-args.frst", "print(args)");
-    for (args, expected) in [
-        (vec![path.as_str(), "-e", "1"], r#"[ "-e", "1" ]"#),
-        (
-            vec![path.as_str(), "--color", "never"],
-            r#"[ "--color", "never" ]"#,
-        ),
-        (
-            vec!["run", path.as_str(), "-O", "none", "x"],
-            r#"[ "-O", "none", "x" ]"#,
-        ),
-        (vec![path.as_str(), "run", "-"], r#"[ "run", "-" ]"#),
+    let path = script("option-like-args.frst", PRINT_EACH_ARG);
+    for args in [
+        vec![path.as_str(), "-e", "1"],
+        vec![path.as_str(), "--color", "never"],
+        vec!["run", path.as_str(), "-O", "none", "x"],
+        vec![path.as_str(), "run", "-"],
     ] {
         let ran = run(&args);
         assert_eq!(ran.exit, Exit::Success, "{args:?}: {ran:?}");
-        assert_eq!(ran.printed(), [expected], "{args:?}");
+        let after_run = args.strip_prefix(&["run"]).unwrap_or(&args);
+        assert_eq!(ran.printed(), after_run, "{args:?}");
     }
 }
 
@@ -1806,11 +1833,13 @@ fn a_script_may_bind_args_itself() {
 }
 
 #[test]
-fn an_image_gets_its_arguments_as_args() {
-    let image = image("args-image", "print(args)", &[]);
-    let ran = run(&["run", &image, "x"]);
-    assert_eq!(ran.exit, Exit::Success, "{ran:?}");
-    assert_eq!(ran.printed(), [r#"[ "x" ]"#]);
+fn an_image_gets_its_path_then_its_arguments_as_args() {
+    let image = image("args-image", PRINT_EACH_ARG, &[]);
+    for args in [vec!["run", image.as_str(), "x"], vec![image.as_str(), "x"]] {
+        let ran = run(&args);
+        assert_eq!(ran.exit, Exit::Success, "{args:?}: {ran:?}");
+        assert_eq!(ran.printed(), [image.as_str(), "x"], "{args:?}");
+    }
 }
 
 #[test]
@@ -1840,10 +1869,10 @@ fn no_args_refuses_arguments_for_the_script() {
 
 #[test]
 fn an_image_runs_as_compiled_whatever_no_args_says() {
-    let image = image("no-args-image", "print(args)", &[]);
+    let image = image("no-args-image", PRINT_EACH_ARG, &[]);
     let ran = run(&["run", "--no-args", &image]);
     assert_eq!(ran.exit, Exit::Success, "{ran:?}");
-    assert_eq!(ran.printed(), ["[]"]);
+    assert_eq!(ran.printed(), [image.as_str()]);
 }
 
 // --- Standard input ---
@@ -1854,7 +1883,7 @@ fn a_script_of_dash_is_read_from_standard_input() {
     for args in [vec!["-", "a"], vec!["run", "-", "a"]] {
         let ran = run_with_stdin(source, &args);
         assert_eq!(ran.exit, Exit::Success, "{args:?}: {ran:?}");
-        assert_eq!(ran.printed(), ["3", r#"[ "a" ]"#], "{args:?}");
+        assert_eq!(ran.printed(), ["3", r#"[ "-", "a" ]"#], "{args:?}");
     }
 }
 

@@ -48,14 +48,14 @@ const ADVANCED: &str = "Advanced options";
 #[derive(Debug, Parser)]
 #[command(
     after_help = "Options go before SCRIPT: everything after it is the script's. \
-                        A SCRIPT of `-` is read from standard input."
+                        A SCRIPT of `-` is read from standard input. \
+                        A script's `args` holds SCRIPT, or `-e`, then its ARGS."
 )]
 pub(crate) struct Cli {
     #[command(subcommand)]
     command: Option<Command>,
 
-    /// A script or compiled image to run (shorthand for `run`), then the
-    /// arguments it gets as `args`
+    /// A script or compiled image to run (shorthand for `run`), then its arguments
     #[arg(
         value_name = "SCRIPT",
         trailing_var_arg = true,
@@ -63,7 +63,7 @@ pub(crate) struct Cli {
     )]
     script_and_args: Vec<String>,
 
-    /// Run CODE as a script, with any ARGS as its `args`
+    /// Run CODE as a script, with any ARGS as its arguments
     #[arg(short = 'e', long = "eval", value_name = "CODE")]
     eval: Option<String>,
 
@@ -73,12 +73,13 @@ pub(crate) struct Cli {
 
 #[derive(Debug, Subcommand)]
 enum Command {
-    /// Run a script, or an image written by `compile`, with ARGS as its `args`
+    /// Run a script, or an image written by `compile`, with ARGS as its arguments
     ///
+    /// Its `args` holds SCRIPT, then ARGS.
     /// An image runs as compiled, whatever optimizations the command line
     /// selects. Run only images you trust: a damaged one may crash.
     Run {
-        /// The script or image, then the arguments it gets as `args`
+        /// The script or image, then its arguments
         #[arg(
             value_name = "SCRIPT",
             required = true,

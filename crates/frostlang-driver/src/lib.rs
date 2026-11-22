@@ -6,8 +6,10 @@
 //! interactive sessions start, in [`ReplSettings`].
 //! [`Driver::run`] then parses a command line and carries it out.
 //!
-//! A script run from the command line has the arguments after it as `args`,
-//! an Array of Strings.
+//! A script run from the command line gets `args`, an Array of Strings:
+//! the script as the command line named it, then the arguments after it.
+//! Code given with `-e` is named `-e`, and a script read from standard input
+//! `-`.
 //!
 //! ```no_run
 //! use frostlang_driver::{Driver, Exit};
@@ -297,7 +299,7 @@ impl Driver {
         let mut stdout = Shared(Arc::clone(stdout));
         match action {
             Action::Run { script, args } => session.run_file(&script, args),
-            Action::Eval { code, args } => session.run_source("<eval>", &code, args),
+            Action::Eval { code, args } => session.run_source("<eval>", "-e", &code, args),
             Action::Check { script, scope } => session.check_file(&script, &scope),
             Action::Compile { script, output } => session.compile_file(&script, &output),
             Action::Repl { basic, no_config } => session.run_repl(&self.repl, basic, !no_config),
@@ -410,7 +412,12 @@ impl Session<'_> {
         if image::is_image(&contents) {
             return match image::decode(&contents) {
                 // The user chose to run this image; see `Command::Run`.
-                Ok(program) => self.run_program(&name(script), program.assert_well_formed(), args),
+                Ok(program) => self.run_program(
+                    &name(script),
+                    program.assert_well_formed(),
+                    &invoked_as(script),
+                    args,
+                ),
                 Err(error) => {
                     let message = format!("cannot run {}: {}", name(script), unloadable(&error));
                     self.usage_error(&message)
@@ -418,7 +425,7 @@ impl Session<'_> {
             };
         }
         match self.source(script, contents) {
-            Ok(source) => self.run_source(&name(script), &source, args),
+            Ok(source) => self.run_source(&name(script), &invoked_as(script), &source, args),
             Err(exit) => exit,
         }
     }
@@ -543,26 +550,33 @@ impl Session<'_> {
         }
     }
 
-    fn run_source(mut self, filename: &str, source: &str, args: Vec<String>) -> Exit {
+    fn run_source(
+        mut self,
+        filename: &str,
+        invoked_as: &str,
+        source: &str,
+        args: Vec<String>,
+    ) -> Exit {
         match self.compile(filename, source) {
-            Ok(program) => self.run_program(filename, program, args),
+            Ok(program) => self.run_program(filename, program, invoked_as, args),
             Err(exit) => exit,
         }
     }
 
-    /// Run `program` with `args` as its arguments, naming it `filename` in
-    /// messages.
+    /// Run `program` as the command line named it, `invoked_as`, with `args`
+    /// after it, naming it `filename` in messages.
     fn run_program(
         mut self,
         filename: &str,
         program: WellFormedProgram,
+        invoked_as: &str,
         args: Vec<String>,
     ) -> Exit {
         if self.no_args && !args.is_empty() {
             return self.usage_error("`--no-args` takes no arguments for the script");
         }
         // An image a host compiled may capture names a run cannot supply.
-        let closure = match close(program, args) {
+        let closure = match close(program, invoked_as, args) {
             Ok(closure) => closure,
             Err(missing) => {
                 let message = format!("cannot run {filename}: {}", unsupplied(missing));
@@ -727,13 +741,25 @@ fn name(script: &Script) -> String {
     }
 }
 
-/// `program`, ready to run with `args` as its arguments,
+/// How a script's `args` names `script`: as the command line did.
+fn invoked_as(script: &Script) -> String {
+    match script {
+        Script::File(path) => path.to_string_lossy().into_owned(),
+        Script::Stdin => "-".to_string(),
+    }
+}
+
+/// `program`, ready to run with `invoked_as` then `args` as its `args`,
 /// or the names it captures besides `args`.
 fn close(
     program: WellFormedProgram,
+    invoked_as: &str,
     args: Vec<String>,
 ) -> Result<Arc<frostlang::Closure>, MissingCaptures> {
-    let args: Value = args.into_iter().map(Value::from).collect();
+    let args: Value = std::iter::once(invoked_as.to_string())
+        .chain(args)
+        .map(Value::from)
+        .collect();
     program.close([(ARGS, args)])
 }
 
