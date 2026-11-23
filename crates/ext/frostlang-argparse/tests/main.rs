@@ -7,6 +7,7 @@ mod clap_rules;
 mod commands;
 mod extension;
 mod generated_specs;
+mod hidden_and_epilog;
 mod outcomes;
 mod parse;
 mod parsing;

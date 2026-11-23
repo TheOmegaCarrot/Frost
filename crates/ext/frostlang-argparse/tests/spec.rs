@@ -14,7 +14,7 @@ fn a_spec_holds_only_its_keys_with_their_types() {
         (
             "{flag: {}}",
             "unknown field `flag`, expected one of `name`, `description`, `version`, \
-             `flags`, `options`, `positionals`, `commands` (at a key)",
+             `epilog`, `hidden`, `flags`, `options`, `positionals`, `commands` (at a key)",
         ),
         ("{name: 1}", "expected String, got Int (at `name`)"),
         ("{flags: []}", "expected Map, got Array (at `flags`)"),
@@ -29,7 +29,8 @@ fn a_spec_holds_only_its_keys_with_their_types() {
         ),
         (
             "{flags: {v: {long: 'verbose'}}}",
-            "unknown field `long`, expected `short` or `description` (at a key of `flags.v`)",
+            "unknown field `long`, expected one of `short`, `description`, `hidden` \
+             (at a key of `flags.v`)",
         ),
         (
             "{options: {n: {required: 'yes'}}}",
@@ -49,14 +50,14 @@ fn a_spec_holds_only_its_keys_with_their_types() {
         ),
         (
             "{positionals: [{name: 'a', repeatable: true}]}",
-            "unknown field `repeatable`, expected one of `name`, `description`, `required`, \
-             `default`, `many`, `choices`, `parse` (at a key of `positionals[0]`)",
+            "unknown field `repeatable`, expected one of `name`, `description`, `hidden`, \
+             `required`, `default`, `many`, `choices`, `parse` (at a key of `positionals[0]`)",
         ),
         (
             "{options: {n: {many: true}}}",
-            "unknown field `many`, expected one of `short`, `description`, `required`, \
-             `default`, `repeatable`, `choices`, `value_name`, `parse` (at a key of \
-             `options.n`)",
+            "unknown field `many`, expected one of `short`, `description`, `hidden`, \
+             `required`, `default`, `repeatable`, `choices`, `value_name`, `parse` \
+             (at a key of `options.n`)",
         ),
     ]);
 }

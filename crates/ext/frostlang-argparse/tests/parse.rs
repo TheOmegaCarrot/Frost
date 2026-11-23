@@ -278,7 +278,8 @@ fn parse_is_a_function() {
         ),
         (
             "{flags: {f: {parse: to_int}}}",
-            "unknown field `parse`, expected `short` or `description` (at a key of `flags.f`)",
+            "unknown field `parse`, expected one of `short`, `description`, `hidden` \
+             (at a key of `flags.f`)",
         ),
     ]);
 }

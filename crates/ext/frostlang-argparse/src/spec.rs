@@ -21,6 +21,10 @@ pub(crate) struct Spec {
 pub(crate) struct CommandSpec {
     pub(crate) description: Option<String>,
     pub(crate) version: Option<String>,
+    /// Shown after the option list in help.
+    pub(crate) epilog: Option<String>,
+    /// Left out of its parent's list of commands in help.
+    pub(crate) hidden: bool,
     /// In name order.
     pub(crate) flags_and_options: Vec<FlagOrOption>,
     pub(crate) operands: Operands,
@@ -39,6 +43,8 @@ pub(crate) struct FlagOrOption {
     pub(crate) name: String,
     pub(crate) short: Option<char>,
     pub(crate) description: Option<String>,
+    /// Left out of help.
+    pub(crate) hidden: bool,
     pub(crate) kind: FlagOrOptionKind,
 }
 
@@ -53,6 +59,8 @@ pub(crate) enum FlagOrOptionKind {
 pub(crate) struct Positional {
     pub(crate) name: String,
     pub(crate) description: Option<String>,
+    /// Left out of help.
+    pub(crate) hidden: bool,
     pub(crate) values: Values,
 }
 
@@ -126,6 +134,12 @@ impl FromArg for Spec {
         // Before anything recurses through the spec.
         check_command_depth(&value).map_err(|error| invalid(&error))?;
         let raw: RawCommand = from_value(value).map_err(|error| invalid(&error.message()))?;
+        if raw.hidden {
+            let place = Place::default().key("hidden");
+            return Err(invalid(&place.problem(
+                "only a command in `commands` is `hidden`, from its parent's help",
+            )));
+        }
         let name = raw.name.clone();
         let word: WordSpecError<'_> = &|error| invalid(error);
         let command =
@@ -142,6 +156,9 @@ struct RawCommand {
     name: Option<String>,
     description: Option<String>,
     version: Option<String>,
+    epilog: Option<String>,
+    #[serde(default)]
+    hidden: bool,
     #[serde(default)]
     flags: BTreeMap<String, RawFlag>,
     #[serde(default)]
@@ -157,6 +174,8 @@ struct RawCommand {
 struct RawFlag {
     short: Option<String>,
     description: Option<String>,
+    #[serde(default)]
+    hidden: bool,
 }
 
 #[derive(Deserialize)]
@@ -164,6 +183,8 @@ struct RawFlag {
 struct RawOption {
     short: Option<String>,
     description: Option<String>,
+    #[serde(default)]
+    hidden: bool,
     required: Option<bool>,
     #[serde(rename = "default")]
     default_value: Option<String>,
@@ -179,6 +200,8 @@ struct RawOption {
 struct RawPositional {
     name: String,
     description: Option<String>,
+    #[serde(default)]
+    hidden: bool,
     required: Option<bool>,
     #[serde(rename = "default")]
     default_value: Option<String>,
@@ -442,6 +465,8 @@ fn check_command(
         name: _,
         description,
         version,
+        epilog,
+        hidden,
         flags,
         options,
         positionals,
@@ -464,6 +489,8 @@ fn check_command(
     Ok(CommandSpec {
         description,
         version,
+        epilog,
+        hidden,
         flags_and_options,
         operands,
     })
@@ -481,6 +508,7 @@ fn check_flags(
         checked.push(FlagOrOption {
             short: taken.take_short(flag.short, &place)?,
             description: flag.description,
+            hidden: flag.hidden,
             kind: FlagOrOptionKind::Flag,
             name,
         });
@@ -514,6 +542,7 @@ fn check_options(
         checked.push(FlagOrOption {
             short,
             description: option.description,
+            hidden: option.hidden,
             kind: FlagOrOptionKind::Option {
                 values,
                 value_name: option.value_name,
@@ -568,6 +597,7 @@ fn check_positionals(
         checked.push(Positional {
             name: positional.name,
             description: positional.description,
+            hidden: positional.hidden,
             values,
         });
     }

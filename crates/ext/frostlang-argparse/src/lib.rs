@@ -81,12 +81,16 @@ use crate::spec::Spec;
 ///   the last component of the path in the first of `args`.
 /// - `description`: a line or more for the top of the help.
 /// - `version`: what `--version` (or `-V`) shows, after the name.
+/// - `epilog`: text for the end of the help, after the options, such as
+///   examples.
 /// - `flags`: a Map of flags by name. A flag named `dry_run` is given as
 ///   `--dry-run`. Each is a Map of:
 ///   - `short`: one ASCII letter, given after `-`.
 ///   - `description`: a line for the help.
+///   - `hidden`: whether to leave it out of the help. It works all the same.
 /// - `options`: a Map of options by name, each taking a value, and given as a
-///   flag is. Each is a Map of `short` and `description`, as a flag's, and:
+///   flag is. Each is a Map of `short`, `description`, and `hidden`, as a
+///   flag's, and:
 ///   - `required`: whether the option must be given. Without it, it need not.
 ///   - `default`: the text taken, as if given, when the option is not. Not
 ///     with `required: true` or `repeatable`.
@@ -100,6 +104,7 @@ use crate::spec::Spec;
 ///   of:
 ///   - `name`: its name (required).
 ///   - `description`: a line for the help.
+///   - `hidden`: whether to leave it out of the help, as a flag's.
 ///   - `required`: whether it must be given. Without it, it must unless it
 ///     has a `default`. A required one cannot follow one that is not.
 ///   - `default`: the text taken, as if given, when it is not. Not with
@@ -111,7 +116,8 @@ use crate::spec::Spec;
 ///     [Parsing values](#parsing-values)).
 /// - `commands`: a Map of subcommands by name, each a spec of its own, without
 ///   `name`. A command with `commands` takes no `positionals`, and its command
-///   line must choose one of them. Commands nest at most 32 deep.
+///   line must choose one of them. Commands nest at most 32 deep. A subcommand
+///   may also be `hidden`, from its parent's list of commands.
 ///
 /// A flag's or option's name is ASCII letters, digits, and `_`, not starting
 /// with `_`. A positional argument's or command's is ASCII letters, digits, `-`, and

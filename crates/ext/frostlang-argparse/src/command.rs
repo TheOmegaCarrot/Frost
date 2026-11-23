@@ -17,9 +17,11 @@ pub(crate) fn build(name: &str, spec: &CommandSpec) -> Command {
     let command = Command::new(name.to_string())
         // A subcommand's help is its `--help`.
         .disable_help_subcommand(true)
+        .hide(spec.hidden)
         .args(spec.flags_and_options.iter().map(flag_or_option_arg));
     let command = with_some(command, spec.description.as_ref(), Command::about);
     let command = with_some(command, spec.version.as_ref(), Command::version);
+    let command = with_some(command, spec.epilog.as_ref(), Command::after_help);
     match &spec.operands {
         Operands::Positionals(positionals) => command.args(positionals.iter().map(positional_arg)),
         Operands::Commands(commands) => command
@@ -31,7 +33,8 @@ pub(crate) fn build(name: &str, spec: &CommandSpec) -> Command {
 fn flag_or_option_arg(spec: &FlagOrOption) -> Arg {
     let arg = Arg::new(spec.name.clone())
         .long(long_form(&spec.name))
-        .short(spec.short);
+        .short(spec.short)
+        .hide(spec.hidden);
     let arg = with_some(arg, spec.description.as_ref(), Arg::help);
     match &spec.kind {
         FlagOrOptionKind::Flag => arg.action(ArgAction::SetTrue),
@@ -44,7 +47,7 @@ fn flag_or_option_arg(spec: &FlagOrOption) -> Arg {
 }
 
 fn positional_arg(positional: &Positional) -> Arg {
-    let arg = Arg::new(positional.name.clone());
+    let arg = Arg::new(positional.name.clone()).hide(positional.hidden);
     let arg = with_some(arg, positional.description.as_ref(), Arg::help);
     let arg = accept_values(arg, &positional.values);
     match positional.values.occurrence {
