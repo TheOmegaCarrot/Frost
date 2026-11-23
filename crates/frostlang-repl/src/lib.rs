@@ -534,9 +534,8 @@ pub enum ReplError {
     /// The error says where it was running when it stopped.
     #[error("Error: {}", .0.with_backtrace())]
     Cancelled(#[source] FrostError),
-    /// The input called `fatal(value)`. The error's
-    /// [value](FrostError::into_value) is `value`; it shows as `value`'s
-    /// [message](FrostError::message).
+    /// The input called `fatal`; see [`AbortReason::Fatal`]. It shows as the
+    /// error's [message](FrostError::message).
     #[error("Fatal: {}", .0.message())]
     Fatal(#[source] FrostError),
     /// The input was a [metacommand](Repl#metacommands), which failed.

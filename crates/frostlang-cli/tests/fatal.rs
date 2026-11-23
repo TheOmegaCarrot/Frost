@@ -1,6 +1,7 @@
 //! How `frost` ends a script that calls `fatal(value)`: what it prints to
 //! standard error, and its exit status, for each form `value` may take.
 
+use std::io;
 use std::process::Command;
 
 /// What `frost -e code` ended with: its exit status, standard output, and
@@ -21,7 +22,13 @@ fn eval(code: &str) -> (i32, String, String) {
 /// more to standard output, `stderr` to standard error, and exits with `code`.
 #[track_caller]
 fn assert_ends(payload: &str, stderr: &str, code: i32) {
-    let source = format!("print('before')\nfatal({payload})\nprint('after')");
+    let source = format!(
+        r"
+print('before')
+fatal({payload})
+print('after')
+"
+    );
     assert_eq!(
         eval(&source),
         (code, "before\n".to_string(), stderr.to_string()),
@@ -95,6 +102,19 @@ fn a_bad_code_is_printed_with_why_and_the_status_is_1() {
     ] {
         assert_ends(payload, &format!("{debug_form}\n{why}\n"), 1);
     }
+}
+
+#[test]
+fn the_exit_status_stands_when_standard_error_cannot_be_written() {
+    // A pipe whose read end is already closed: every write to it fails.
+    let (reader, writer) = io::pipe().expect("a pipe can be made");
+    drop(reader);
+    let status = Command::new(env!("CARGO_BIN_EXE_frost"))
+        .args(["-e", "fatal({message: 'unseen', code: 3})"])
+        .stderr(writer)
+        .status()
+        .expect("`frost` should run");
+    assert_eq!(status.code(), Some(3), "{status:?}");
 }
 
 #[test]

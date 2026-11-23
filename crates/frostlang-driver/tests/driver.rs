@@ -1750,13 +1750,23 @@ fn exit_statuses_are_conventional() {
     assert_eq!(Exit::Success.code(), 0);
     assert_eq!(Exit::ScriptFailed.code(), 1);
     assert_eq!(Exit::UsageError.code(), 2);
+    // A fatal's status follows its value, as `frost`'s tests check in full.
     assert_eq!(Exit::Fatal(Value::from("x")).code(), 1);
+    assert_eq!(Exit::Fatal(Value::map([("code", Value::Int(3))])).code(), 3);
+    assert_eq!(
+        Exit::Fatal(Value::map([("code", Value::Int(300))])).code(),
+        1
+    );
 }
 
 // --- A script ending with `fatal` ---
 
 /// Prints, then ends with `fatal`, then would print again.
-const FATAL: &str = "print('before')\nfatal({message: 'stop', code: 3})\nprint('after')";
+const FATAL: &str = r"
+print('before')
+fatal({message: 'stop', code: 3})
+print('after')
+";
 
 /// The value [`FATAL`] gives `fatal`.
 fn fatal_value() -> Value {
@@ -1801,13 +1811,22 @@ fn a_fatal_image_ends_with_its_value() {
 }
 
 #[test]
-fn an_error_stays_an_error_and_try_call_cannot_catch_fatal() {
-    // An ordinary error stays one, reported with its trace.
+fn an_uncaught_error_is_a_script_failure_not_a_fatal() {
     let ran = run(&["-e", "error('plain')"]);
     assert_eq!(ran.exit, Exit::ScriptFailed, "{ran:?}");
-    assert!(ran.stderr.contains("plain"), "{ran:?}");
-    // `try_call` cannot catch `fatal`.
-    let ran = run(&["-e", "try_call(fatal, ['x'])\nprint('after')"]);
+    assert!(
+        ran.stderr.contains("plain"),
+        "reported with its trace: {ran:?}"
+    );
+}
+
+#[test]
+fn try_call_cannot_catch_a_scripts_fatal() {
+    let source = r"
+try_call(fatal, ['x'])
+print('after')
+";
+    let ran = run(&["-e", source]);
     assert_eq!(ran.exit, Exit::Fatal(Value::from("x")), "{ran:?}");
     assert!(ran.printed().is_empty(), "{ran:?}");
 }

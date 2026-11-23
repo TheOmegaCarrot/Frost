@@ -167,7 +167,10 @@ fn an_input_calling_fatal_fails_as_fatal_and_the_session_carries_on() {
     repl.evaluate("def x = 1").unwrap();
     for (input, value, shown) in [
         (
-            "def x = 2\nfatal('stop')",
+            r"
+def x = 2
+fatal('stop')
+",
             Value::from("stop"),
             "Fatal: stop",
         ),

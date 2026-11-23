@@ -30,6 +30,7 @@
 //!   wants it.
 
 mod cli;
+mod fatal;
 mod repl;
 
 pub use repl::ReplSettings;
@@ -166,6 +167,10 @@ impl Driver {
     /// and version text, go to `stdout`; errors and diagnostics go to `stderr`.
     /// Both are flushed before this returns. Neither is taken to be a
     /// terminal, so `--color auto` writes no color.
+    ///
+    /// A script that calls `fatal` ends this with [`Exit::Fatal`], holding the
+    /// value it gave `fatal`, for the caller to report: returned from `main`,
+    /// `Exit` reports it by its `Termination`.
     pub fn run<I, T>(
         &self,
         args: I,
@@ -343,37 +348,42 @@ pub enum Exit {
     /// read, a file could not be written or loaded as an image; or an
     /// interactive session's frontend failed. Exit status 2.
     UsageError,
-    /// The script called `fatal` with this value, of any type, for the caller
-    /// to interpret and report.
+    /// The script called `fatal` with this value, of any type. Returned from
+    /// `main`, it ends the process as `Exit`'s `Termination` describes; a
+    /// caller may match on it to interpret the value itself.
     Fatal(Value),
 }
 
 impl Exit {
-    /// The process exit status this stands for: 1 for a `Fatal`, whose caller
-    /// may choose another from its value.
+    /// The process exit status this stands for; for a `Fatal`, as its
+    /// `Termination` says.
     pub fn code(&self) -> u8 {
         match self {
             Exit::Success => 0,
-            Exit::ScriptFailed | Exit::Fatal(_) => 1,
+            Exit::ScriptFailed => 1,
             Exit::UsageError => 2,
+            Exit::Fatal(value) => fatal::code(value).get(),
         }
     }
 }
 
-/// Exits with [`code`](Exit::code), first printing a `Fatal`'s value to
-/// standard error: a String as given, any other value in its debug form.
+/// Exits with [`code`](Exit::code). A `Fatal` first prints to standard error by
+/// the value the script gave `fatal`:
+///
+/// - A String is printed as the message, and the exit status is 1.
+/// - A Map whose only keys are `message` and `code`: `message`, a String, is
+///   printed if present, else nothing is; `code`, an Int from 1 to 255, is the
+///   exit status, 1 if absent.
+/// - Anything else is printed in its debug form, and the exit status is 1,
+///   with a line saying why when `code` is the problem. So a mistake, such as
+///   a misspelled key, shows rather than ending silently.
+///
+/// A message is printed as given, followed by a newline unless it ends with
+/// one.
 impl Termination for Exit {
     fn report(self) -> ExitCode {
         if let Exit::Fatal(value) = &self {
-            let message = match value {
-                Value::String(text) => text.as_str().to_string(),
-                other => other.to_debug_string(),
-            };
-            if message.ends_with('\n') {
-                eprint!("{message}");
-            } else {
-                eprintln!("{message}");
-            }
+            fatal::print(value);
         }
         ExitCode::from(self.code())
     }

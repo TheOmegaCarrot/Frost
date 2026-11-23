@@ -40,7 +40,7 @@ impl<'a> NativeCtx<'a> {
         function: &Function,
         args: impl IntoIterator<Item = Value>,
     ) -> FrostResult {
-        // Once the run is fatally aborting, refuse to do any more Frost work; this is
+        // Once the run is aborting, refuse to do any more Frost work; this is
         // what stops a native that caught the abort and tried to re-enter the Vm.
         if let Some(err) = self.vm.abort_error() {
             return Err(err);

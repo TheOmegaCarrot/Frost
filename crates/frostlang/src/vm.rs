@@ -113,7 +113,7 @@ pub struct Vm {
     fuel_used: u64,
 
     // The unrecoverable-error channel.
-    // Once set (e.g. fuel exhaustion) the run is fatally aborting:
+    // Once set (e.g. fuel exhaustion) the run is aborting:
     // unlike an ordinary error this cannot be caught.
     // Set at most once per run, and settable through `&self`,
     // so that a native's `&NativeCtx` can latch a cancellation it notices.
@@ -1324,7 +1324,7 @@ impl Vm {
             })
             .collect();
         self.debug_assert_slots_fit_frames();
-        // During an abort the latch is the authoritative fatal error:
+        // During an abort the latch is the authoritative error:
         // append the frames to it and hand back a copy,
         // so a native above that swallows this copy can't drop the accumulated trace.
         // Otherwise grow the ordinary propagating error as it unwinds.
@@ -1415,7 +1415,7 @@ impl Vm {
             .clone()
     }
 
-    /// The latched abort error if the run is fatally aborting, else `None`.
+    /// The latched abort error if the run is aborting, else `None`.
     /// Returns a clone: the slot stays latched so every enclosing native re-asserts it.
     fn abort_error(&self) -> Option<FrostError> {
         self.abort.get().map(|abort| abort.error.clone())
@@ -1633,7 +1633,7 @@ impl Vm {
 
         // Unrecoverable abort (e.g. fuel exhaustion) is uncatchable: even if this native
         // swallowed the error and returned `Ok`, override its result. Append this native's
-        // frame to the latched fatal error and re-assert it, so the host still sees the
+        // frame to the latched abort error and re-assert it, so the host still sees the
         // full trace to wherever the run aborted.
         if let Some(abort) = self.abort.get_mut() {
             abort

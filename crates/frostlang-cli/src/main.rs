@@ -1,11 +1,8 @@
 //! `frost`: the reference Frost command-line interface.
 
-mod fatal;
-
 use std::env;
 use std::num::NonZeroU64;
 use std::path::{Path, PathBuf};
-use std::process::{ExitCode, Termination};
 use std::sync::Arc;
 
 use frostlang::{Importer, ImporterBuilder, Stdlib, VmRuntimeConfiguration, stdlib::StdlibConfig};
@@ -27,8 +24,8 @@ const MAX_CALL_DEPTH: NonZeroU64 = NonZeroU64::new(1_000_000).unwrap();
 /// download still fails before it exhausts memory.
 const MAX_HTTP_BODY_SIZE: u64 = 1 << 30;
 
-fn main() -> ExitCode {
-    let exit = Driver::new()
+fn main() -> Exit {
+    Driver::new()
         .with_name("frost")
         .with_version(env!("CARGO_PKG_VERSION"))
         .with_configuration(
@@ -37,11 +34,7 @@ fn main() -> ExitCode {
                 .with_max_call_depth(Some(MAX_CALL_DEPTH)),
         )
         .with_importer_for(importer)
-        .run_from_env();
-    match exit {
-        Exit::Fatal(value) => fatal::exit(value),
-        other => other.report(),
-    }
+        .run_from_env()
 }
 
 /// Everything a script may import: the complete standard library, every

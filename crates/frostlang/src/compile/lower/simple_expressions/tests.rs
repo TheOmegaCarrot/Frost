@@ -103,9 +103,16 @@ fn an_unbound_name_lookup_reports_its_canonical_form() {
 
 #[test]
 fn every_impure_global_makes_the_function_effectful() {
-    // The effect sources: output, mutable state, and imports.
+    // The effect sources: output, mutable state, imports, and aborting the run.
     let options = options();
-    for name in ["print", "mprint", "mutable_cell", "import", "imported"] {
+    for name in [
+        "print",
+        "mprint",
+        "mutable_cell",
+        "import",
+        "imported",
+        "fatal",
+    ] {
         let mut builder = builder(&options);
         builder
             .compile_name_lookup(name, SourceSpan::default())
