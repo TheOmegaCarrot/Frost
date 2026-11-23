@@ -137,7 +137,7 @@ impl FromArg for Spec {
         if raw.hidden {
             let place = Place::default().key("hidden");
             return Err(invalid(&place.problem(
-                "only a command in `commands` is `hidden`, from its parent's help",
+                "the program itself cannot be `hidden`; a subcommand hides from its parent's help",
             )));
         }
         let name = raw.name.clone();

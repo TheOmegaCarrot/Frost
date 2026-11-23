@@ -80,10 +80,11 @@ fn a_hidden_subcommand_works_all_the_same() {
 }
 
 #[test]
-fn only_a_subcommand_is_hidden() {
+fn the_program_itself_cannot_be_hidden() {
     assert_invalid_specs(&[(
         "{hidden: true}",
-        "only a command in `commands` is `hidden`, from its parent's help (at `hidden`)",
+        "the program itself cannot be `hidden`; a subcommand hides from its parent's help \
+         (at `hidden`)",
     )]);
     // `hidden: false` asks nothing of the program.
     assert_parses("{hidden: false}", &[(&[], "{}")]);
