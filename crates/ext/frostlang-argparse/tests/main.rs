@@ -8,6 +8,7 @@ mod commands;
 mod extension;
 mod generated_specs;
 mod outcomes;
+mod parse;
 mod parsing;
 mod spec;
 mod strange;

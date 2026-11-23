@@ -21,8 +21,11 @@ use std::path::Path;
 
 use clap::error::ErrorKind;
 use frostlang::native::{ArgSite, FromArg};
-use frostlang::{Extension, FrostError, FrostType, MapKey, TypeSet, Value, frost_fn};
+use frostlang::{
+    Extension, FrostError, FrostResult, FrostType, MapKey, NativeCtx, TypeSet, Value, frost_fn,
+};
 
+use crate::command::ReadError;
 use crate::spec::Spec;
 
 /// The `ext.argparse` extension.
@@ -85,21 +88,27 @@ use crate::spec::Spec;
 /// - `options`: a Map of options by name, each taking a value, and given as a
 ///   flag is. Each is a Map of `short` and `description`, as a flag's, and:
 ///   - `required`: whether the option must be given. Without it, it need not.
-///   - `default`: the value when the option is not given. Not with
-///     `required: true` or `repeatable`.
+///   - `default`: the text taken, as if given, when the option is not. Not
+///     with `required: true` or `repeatable`.
 ///   - `repeatable`: whether the option may be given more than once.
-///   - `choices`: an Array of the only values it accepts.
+///   - `choices`: an Array of the only text it accepts, checked before any
+///     `parse`.
 ///   - `value_name`: what the help calls its value.
+///   - `parse`: a Function that makes its value from the text (see
+///     [Parsing values](#parsing-values)).
 /// - `positionals`: an Array of positional arguments, in order. Each is a Map
 ///   of:
 ///   - `name`: its name (required).
 ///   - `description`: a line for the help.
 ///   - `required`: whether it must be given. Without it, it must unless it
 ///     has a `default`. A required one cannot follow one that is not.
-///   - `default`: the value when it is not given. Not with `required: true`
-///     or `many`.
+///   - `default`: the text taken, as if given, when it is not. Not with
+///     `required: true` or `many`.
 ///   - `many`: whether it takes every remaining value. Only the last may.
-///   - `choices`: an Array of the only values it accepts.
+///   - `choices`: an Array of the only text it accepts, checked before any
+///     `parse`.
+///   - `parse`: a Function that makes its value from the text (see
+///     [Parsing values](#parsing-values)).
 /// - `commands`: a Map of subcommands by name, each a spec of its own, without
 ///   `name`. A command with `commands` takes no `positionals`, and its command
 ///   line must choose one of them. Commands nest at most 32 deep.
@@ -118,15 +127,46 @@ use crate::spec::Spec;
 /// command line gave it:
 ///
 /// - A flag is `true` if given, else `false`.
-/// - An option or positional argument is its String value: its `default` or
-///   Null when not given.
+/// - An option or positional argument is its value: its text, or what its
+///   `parse` makes of it. When not given, it is its `default`'s, or Null.
 /// - A `repeatable` option or `many` positional argument is an Array of its
-///   String values, in order, which may be empty.
+///   values, in order, which may be empty.
 /// - With `commands`, `command` is a Map of one key, the chosen command's
 ///   name, whose value is that command's own `value` Map.
 ///
-/// Values are always Strings: a script converts them as it needs, such as
-/// with `to_int`.
+/// # Parsing values
+///
+/// An option or positional argument with `parse` passes each of its values'
+/// text to it, its `default` included, and takes what it returns. `choices`
+/// are checked against the text first.
+///
+/// - If `parse` returns Null for the command line's text, the command line is
+///   invalid, and the outcome is that `{error}`, unless the command line has
+///   another error, which is reported instead.
+/// - If it returns Null for the `default`, the spec is invalid: an error. The
+///   `default` is parsed only when it is taken; note that this can obscure a
+///   malformed default.
+/// - An error it raises is raised.
+///
+/// The `to_*` functions work as `parse` directly, since each returns Null for
+/// text it cannot convert, and a script's own function can check what it
+/// accepts too:
+///
+/// ```frost
+/// defn positive_int(text) -> to_int(text) @ and_then(fn n -> if n > 0: n else: null)
+///
+/// def spec = {
+///     name: 'fetch',
+///     options: {
+///         retries: {short: 'r', default: '3', parse: positive_int, description: 'A positive Int'},
+///     },
+///     positionals: [{name: 'url'}],
+/// }
+/// ```
+///
+/// With this spec, `fetch -r 5 x` gives `{retries: 5, url: 'x'}` and
+/// `fetch x` gives `{retries: 3, url: 'x'}`, while `fetch -r 0 x` is invalid:
+/// `invalid value '0' for '--retries <retries>'`.
 ///
 /// # Subcommands
 ///
@@ -176,15 +216,21 @@ pub fn extension() -> Extension {
 
 /// `parse(args, spec)`: how the command line `args` parses as `spec` says.
 #[frost_fn]
-fn parse(args: CommandLine, spec: Spec) -> Value {
+fn parse(#[frost(ctx)] ctx: &mut NativeCtx<'_>, args: CommandLine, spec: Spec) -> FrostResult {
     let CommandLine(args) = args;
     let program = spec.name.clone().unwrap_or_else(|| program_name(&args[0]));
-    let command = command::build(&program, &spec.command).bin_name(program);
-    let outcome = match command.try_get_matches_from(args) {
-        Ok(matches) => ("value", command::read(&spec.command, &matches)),
+    let mut command = command::build(&program, &spec.command).bin_name(program);
+    // Parsed in place, so that `command` keeps what clap builds as it parses,
+    // such as each subcommand's name in usage, for the errors `read` words.
+    let outcome = match command.try_get_matches_from_mut(args) {
+        Ok(matches) => match command::read(&spec.command, &matches, &command, ctx) {
+            Ok(value) => ("value", value),
+            Err(ReadError::Invalid(error)) => error_outcome(&error),
+            Err(ReadError::Raised(error)) => return Err(error),
+        },
         Err(error) => error_outcome(&error),
     };
-    string_keyed_map([outcome])
+    Ok(string_keyed_map([outcome]))
 }
 
 /// The outcome for `error`, which is not always a failure: clap reports a

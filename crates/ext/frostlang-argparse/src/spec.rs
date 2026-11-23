@@ -4,7 +4,7 @@
 use std::collections::{BTreeMap, BTreeSet};
 use std::fmt::{self, Display};
 
-use frostlang::native::{ArgSite, FromArg};
+use frostlang::native::{ArgSite, FromArg, Function};
 use frostlang::{
     FrostError, FrostType, MapKey, TypeSet, Value, from_value, is_identifier_like_and_not_keyword,
 };
@@ -61,7 +61,31 @@ pub(crate) struct Values {
     pub(crate) occurrence: Occurrence,
     /// The only values accepted, if limited; never empty.
     pub(crate) choices: Option<Vec<String>>,
+    pub(crate) parse: Option<Parse>,
 }
+
+/// The script's function that makes an argument's value from each text it
+/// takes, its default included.
+pub(crate) struct Parse {
+    pub(crate) function: Function,
+    /// The spec error for `function` giving Null for the argument's default,
+    /// if it has one. Built while the spec is read, the only place a spec error
+    /// can be worded, and raised when a command line leaves the argument to its
+    /// default.
+    null_for_default: Option<FrostError>,
+}
+
+impl Parse {
+    /// See [`Parse::null_for_default`](#structfield.null_for_default).
+    pub(crate) fn null_for_default(&self) -> FrostError {
+        self.null_for_default
+            .clone()
+            .expect("only an argument with a default can take it")
+    }
+}
+
+/// Words a problem with the spec as the error the native raises for it.
+type WordSpecError<'a> = &'a dyn Fn(&SpecError) -> FrostError;
 
 /// How many values an option or positional takes, and what it is without one.
 pub(crate) enum Occurrence {
@@ -103,7 +127,9 @@ impl FromArg for Spec {
         check_command_depth(&value).map_err(|error| invalid(&error))?;
         let raw: RawCommand = from_value(value).map_err(|error| invalid(&error.message()))?;
         let name = raw.name.clone();
-        let command = check_command(raw, &Place::default()).map_err(|error| invalid(&error))?;
+        let word: WordSpecError<'_> = &|error| invalid(error);
+        let command =
+            check_command(raw, &Place::default(), word).map_err(|error| invalid(&error))?;
         Ok(Spec { name, command })
     }
 }
@@ -145,6 +171,7 @@ struct RawOption {
     repeatable: bool,
     choices: Option<Vec<String>>,
     value_name: Option<String>,
+    parse: Option<Function>,
 }
 
 #[derive(Deserialize)]
@@ -158,6 +185,7 @@ struct RawPositional {
     #[serde(default)]
     many: bool,
     choices: Option<Vec<String>>,
+    parse: Option<Function>,
 }
 
 // -- Places in the spec --
@@ -404,7 +432,11 @@ fn check_command_depth(spec: &Value) -> Result<(), SpecError> {
     Ok(())
 }
 
-fn check_command(raw: RawCommand, place: &Place) -> Result<CommandSpec, SpecError> {
+fn check_command(
+    raw: RawCommand,
+    place: &Place,
+    word: WordSpecError<'_>,
+) -> Result<CommandSpec, SpecError> {
     let mut taken = TakenNames::reserved_by(&raw);
     let RawCommand {
         name: _,
@@ -416,11 +448,13 @@ fn check_command(raw: RawCommand, place: &Place) -> Result<CommandSpec, SpecErro
         commands,
     } = raw;
     let mut flags_and_options = check_flags(flags, &mut taken, place)?;
-    flags_and_options.extend(check_options(options, &mut taken, place)?);
+    flags_and_options.extend(check_options(options, &mut taken, place, word)?);
     flags_and_options.sort_by(|a, b| a.name.cmp(&b.name));
     let operands = match (commands.is_empty(), positionals.is_empty()) {
-        (true, _) => Operands::Positionals(check_positionals(positionals, &mut taken, place)?),
-        (false, true) => Operands::Commands(check_commands(commands, place)?),
+        (true, _) => {
+            Operands::Positionals(check_positionals(positionals, &mut taken, place, word)?)
+        }
+        (false, true) => Operands::Commands(check_commands(commands, place, word)?),
         (false, false) => {
             return Err(place
                 .key("positionals")
@@ -458,6 +492,7 @@ fn check_options(
     options: BTreeMap<String, RawOption>,
     taken: &mut TakenNames,
     place: &Place,
+    word: WordSpecError<'_>,
 ) -> Result<Vec<FlagOrOption>, SpecError> {
     let mut checked = Vec::new();
     for (name, option) in options {
@@ -470,9 +505,11 @@ fn check_options(
                 default_value: option.default_value,
                 repeated: option.repeatable,
                 choices: option.choices,
+                parse: option.parse,
             },
             ValueArgument::Option,
             &place,
+            word,
         )?;
         checked.push(FlagOrOption {
             short,
@@ -491,6 +528,7 @@ fn check_positionals(
     positionals: Vec<RawPositional>,
     taken: &mut TakenNames,
     place: &Place,
+    word: WordSpecError<'_>,
 ) -> Result<Vec<Positional>, SpecError> {
     let count = positionals.len();
     let mut checked = Vec::new();
@@ -511,9 +549,11 @@ fn check_positionals(
                 default_value: positional.default_value,
                 repeated: positional.many,
                 choices: positional.choices,
+                parse: positional.parse,
             },
             ValueArgument::Positional,
             &place,
+            word,
         )?;
         let required = matches!(
             values.occurrence,
@@ -537,6 +577,7 @@ fn check_positionals(
 fn check_commands(
     commands: BTreeMap<String, RawCommand>,
     place: &Place,
+    word: WordSpecError<'_>,
 ) -> Result<BTreeMap<String, CommandSpec>, SpecError> {
     let mut checked = BTreeMap::new();
     for (name, command) in commands {
@@ -547,7 +588,7 @@ fn check_commands(
                 .key("name")
                 .problem("a command in `commands` is named by its key, so takes no `name`"));
         }
-        let command = check_command(command, &place)?;
+        let command = check_command(command, &place, word)?;
         checked.insert(name, command);
     }
     Ok(checked)
@@ -559,6 +600,7 @@ struct ValuesSpec {
     default_value: Option<String>,
     repeated: bool,
     choices: Option<Vec<String>>,
+    parse: Option<Function>,
 }
 
 /// A kind of argument that takes values, which decides how its spec asks for
@@ -592,16 +634,32 @@ impl ValueArgument {
     }
 }
 
+/// The spec error for a `parse` giving Null for the default of an argument
+/// with `occurrence` at `place`, if it has a default.
+fn null_for_default(
+    occurrence: &Occurrence,
+    place: &Place,
+    word: WordSpecError<'_>,
+) -> Option<FrostError> {
+    let Occurrence::Defaulted(text) = occurrence else {
+        return None;
+    };
+    let problem = format!("`parse` gives Null for `default` {}", quoted(text));
+    Some(word(&place.key("default").problem(problem)))
+}
+
 fn check_values(
     spec: ValuesSpec,
     argument: ValueArgument,
     place: &Place,
+    word: WordSpecError<'_>,
 ) -> Result<Values, SpecError> {
     let ValuesSpec {
         required,
         default_value,
         repeated,
         choices,
+        parse,
     } = spec;
     if let Some(choices) = &choices {
         let place = place.key("choices");
@@ -645,8 +703,13 @@ fn check_values(
         (false, None) if required_without_default => Occurrence::Required,
         (false, None) => Occurrence::Optional,
     };
+    let parse = parse.map(|function| Parse {
+        function,
+        null_for_default: null_for_default(&occurrence, place, word),
+    });
     Ok(Values {
         occurrence,
         choices,
+        parse,
     })
 }

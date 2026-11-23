@@ -1,8 +1,10 @@
 //! A checked spec as a clap `Command`, and a parse's matches as Frost values.
 
 use clap::builder::PossibleValuesParser;
+use clap::error::{ContextKind, ContextValue, ErrorKind};
+use clap::parser::ValueSource;
 use clap::{Arg, ArgAction, ArgMatches, Command};
-use frostlang::Value;
+use frostlang::{FrostError, NativeCtx, Value};
 
 use crate::spec::{
     COMMAND, CommandSpec, FlagOrOption, FlagOrOptionKind, Occurrence, Operands, Positional, Values,
@@ -79,44 +81,108 @@ fn accept_values(arg: Arg, values: &Values) -> Arg {
     }
 }
 
-/// The Map of what `matches` found for each argument of `spec`, by name.
-pub(crate) fn read(spec: &CommandSpec, matches: &ArgMatches) -> Value {
-    let flags_and_options = spec.flags_and_options.iter().map(|arg| {
+/// Why the values of a parse's arguments could not be read.
+pub(crate) enum ReadError {
+    /// `parse` gave Null for a value the command line gave: the command line's
+    /// mistake, worded by clap.
+    Invalid(clap::Error),
+    /// A `parse` function raised this error, or gave Null for a default.
+    Raised(FrostError),
+}
+
+/// The Map of each argument of `spec`'s value, by name, from `matches`, each
+/// passed through its `parse`. The `parse` functions run in the order `spec`
+/// gives the arguments, so the first that rejects its text is the one
+/// reported; `command` words that usage error.
+pub(crate) fn read(
+    spec: &CommandSpec,
+    matches: &ArgMatches,
+    command: &Command,
+    ctx: &mut NativeCtx<'_>,
+) -> Result<Value, ReadError> {
+    let mut entries = Vec::new();
+    for arg in &spec.flags_and_options {
         let value = match &arg.kind {
             FlagOrOptionKind::Flag => Value::Bool(matches.get_flag(&arg.name)),
-            FlagOrOptionKind::Option { values, .. } => read_values(matches, &arg.name, values),
+            FlagOrOptionKind::Option { values, .. } => {
+                read_values(matches, &arg.name, values, command, ctx)?
+            }
         };
-        (arg.name.as_str(), value)
-    });
-    let operands: Vec<(&str, Value)> = match &spec.operands {
-        Operands::Positionals(positionals) => positionals
-            .iter()
-            .map(|positional| {
-                let value = read_values(matches, &positional.name, &positional.values);
-                (positional.name.as_str(), value)
-            })
-            .collect(),
+        entries.push((arg.name.as_str(), value));
+    }
+    match &spec.operands {
+        Operands::Positionals(positionals) => {
+            for positional in positionals {
+                let value =
+                    read_values(matches, &positional.name, &positional.values, command, ctx)?;
+                entries.push((positional.name.as_str(), value));
+            }
+        }
         Operands::Commands(commands) => {
             let (name, sub_matches) = matches
                 .subcommand()
                 .expect("the command requires a subcommand");
-            let chosen = string_keyed_map([(name, read(&commands[name], sub_matches))]);
-            vec![(COMMAND, chosen)]
+            let sub_command = command
+                .find_subcommand(name)
+                .expect("the chosen subcommand is the command's");
+            let chosen = read(&commands[name], sub_matches, sub_command, ctx)?;
+            entries.push((COMMAND, string_keyed_map([(name, chosen)])));
         }
-    };
-    string_keyed_map(flags_and_options.chain(operands))
+    }
+    Ok(string_keyed_map(entries))
 }
 
-/// What `matches` found for the argument `id`, which takes `values`.
-fn read_values(matches: &ArgMatches, id: &str, values: &Values) -> Value {
-    let string = |value: &String| Value::from(value.as_str());
+/// The value of the argument `id`, which takes `values`, from `matches`, as
+/// [`read`] makes each.
+fn read_values(
+    matches: &ArgMatches,
+    id: &str,
+    values: &Values,
+    command: &Command,
+    ctx: &mut NativeCtx<'_>,
+) -> Result<Value, ReadError> {
+    let value_of = |text: &String| -> Result<Value, ReadError> {
+        let Some(parse) = &values.parse else {
+            return Ok(Value::from(text.as_str()));
+        };
+        let parsed = ctx
+            .invoke(&parse.function, [Value::from(text.as_str())])
+            .map_err(ReadError::Raised)?;
+        if !parsed.is_null() {
+            return Ok(parsed);
+        }
+        Err(match matches.value_source(id) {
+            Some(ValueSource::DefaultValue) => ReadError::Raised(parse.null_for_default()),
+            _ => ReadError::Invalid(invalid_value(command, id, text)),
+        })
+    };
     match values.occurrence {
         Occurrence::Repeated { .. } => matches
             .get_many::<String>(id)
             .into_iter()
             .flatten()
-            .map(string)
+            .map(value_of)
             .collect(),
-        _ => matches.get_one::<String>(id).map_or(Value::Null, string),
+        _ => matches
+            .get_one::<String>(id)
+            .map_or(Ok(Value::Null), value_of),
     }
+}
+
+/// The usage error for `text`, given for the argument `id` of `command`, which
+/// its `parse` gave Null for: the error clap gives for a value its own value
+/// parser rejects.
+fn invalid_value(command: &Command, id: &str, text: &str) -> clap::Error {
+    let arg = command
+        .get_arguments()
+        .find(|arg| arg.get_id() == id)
+        .expect("the argument is the command's")
+        .to_string();
+    let mut error = clap::Error::new(ErrorKind::ValueValidation).with_cmd(command);
+    error.insert(ContextKind::InvalidArg, ContextValue::String(arg));
+    error.insert(
+        ContextKind::InvalidValue,
+        ContextValue::String(text.to_string()),
+    );
+    error
 }

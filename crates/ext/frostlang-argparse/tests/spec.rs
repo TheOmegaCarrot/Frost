@@ -50,12 +50,13 @@ fn a_spec_holds_only_its_keys_with_their_types() {
         (
             "{positionals: [{name: 'a', repeatable: true}]}",
             "unknown field `repeatable`, expected one of `name`, `description`, `required`, \
-             `default`, `many`, `choices` (at a key of `positionals[0]`)",
+             `default`, `many`, `choices`, `parse` (at a key of `positionals[0]`)",
         ),
         (
             "{options: {n: {many: true}}}",
             "unknown field `many`, expected one of `short`, `description`, `required`, \
-             `default`, `repeatable`, `choices`, `value_name` (at a key of `options.n`)",
+             `default`, `repeatable`, `choices`, `value_name`, `parse` (at a key of \
+             `options.n`)",
         ),
     ]);
 }
